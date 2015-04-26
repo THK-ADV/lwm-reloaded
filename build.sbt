@@ -12,3 +12,9 @@ libraryDependencies ++= Seq(
   cache,
   ws
 )
+
+libraryDependencies += "com.unboundid" % "unboundid-ldapsdk" % "2.3.6" withSources() withJavadoc()
+
+libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test"
+
+libraryDependencies += "org.scalatestplus" % "play_2.11" % "1.2.0"
