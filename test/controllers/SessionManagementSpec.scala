@@ -61,8 +61,6 @@ class SessionManagementSpec extends PlaySpec with OneAppPerSuite {
       val result = controllers.SessionManagement.login()(request)
 
       status(result) mustBe UNAUTHORIZED
-      contentType(result) mustBe Some("text/plain")
-      contentAsString(result) must include("invalid credentials")
     }
 
   }
