@@ -6,12 +6,21 @@ import play.api.libs.concurrent.Akka
 import play.api.mvc._
 import play.api.{Configuration, Application, GlobalSettings, Logger}
 
-object Global extends GlobalSettings {
+import scala.concurrent.Future
 
-  import scala.concurrent.duration._
+import scala.concurrent.duration._
+
+trait DefaultTimeout {
+  implicit val timeout = Timeout(5.seconds)
+}
+
+object Global extends GlobalDef with DefaultTimeout
+
+trait GlobalDef extends GlobalSettings {
+
 
   lazy val serviceName = "lwm"
-  implicit val timeout = Timeout(5.seconds)
+  implicit def timeout: Timeout
 
   override def onStart(app: Application) {
     val bindHost = app.configuration.getString("lwm.bindHost").get

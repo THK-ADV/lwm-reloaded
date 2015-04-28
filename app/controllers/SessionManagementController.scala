@@ -2,10 +2,11 @@ package controllers
 
 import akka.util.Timeout
 import play.api.Play.current
-import utils.SessionHandler
+import utils.SessionHandler._
 import play.api.mvc.{Security, Action, Controller}
 import play.libs.Akka
 import play.api.libs.concurrent.{Promise ⇒ PlayPromise}
+import utils.SessionHandler
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
@@ -25,18 +26,17 @@ object SessionManagementController extends Controller {
     val pass = (request.body \ "password").asOpt[String]
 
     if (user.isDefined && pass.isDefined) {
-      val timeoutFuture = PlayPromise.timeout("No response from IDM", controllerTimeout.seconds)
-      val authFuture = (sessionsHandler ? SessionHandler.AuthenticationRequest(user.get.toLowerCase, pass.get)).mapTo[Either[String, SessionHandler.Session]]
+      val authFuture = sessionsHandler ? SessionHandler.AuthenticationRequest(user.get.toLowerCase, pass.get)
 
-      Future.firstCompletedOf(Seq(authFuture, timeoutFuture)).map {
-        case Left(message: String) ⇒ Unauthorized(message)
+      (authFuture map {
+        case SessionHandler.AuthenticationFailure(msg: String) ⇒ Unauthorized(msg)
 
-        case Right(session: SessionHandler.Session) ⇒
+        case SessionHandler.AuthenticationSuccess(session: SessionHandler.Session) ⇒
           Ok("Session created").withSession(
             Security.username -> user.get,
             "session" -> session.id
           )
-      }.recover {
+      }).recover {
         case NonFatal(e) ⇒
           InternalServerError(s"Oops. There seems to be a problem ($e) with the server. We are working on it!")
       }

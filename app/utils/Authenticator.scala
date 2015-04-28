@@ -13,11 +13,7 @@ trait Authenticator {
   def authenticate(user: String, password: String): Future[Boolean]
 }
 
-object LDAPAuthenticator {
-  def apply(bindHost: String, bindPort: Int, DN: String, GDN: String) = new LDAPAuthenticator(bindHost, bindPort, DN, GDN)
-}
-
-class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String) extends Authenticator {
+case class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String) extends Authenticator {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -30,7 +26,7 @@ class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String
   connectionOptions.setAutoReconnect(true)
   connectionOptions.setUseSynchronousMode(true)
 
-  override def authenticate(user: String, password: String): Future[Boolean] = bind() { connection =>
+  override def authenticate(user: String, password: String): Future[Boolean] = bind{ connection: LDAPConnection  =>
     val bindDN = s"uid=$user, $DN"
     val bindRequest = new SimpleBindRequest(bindDN, password)
     val bindResult = connection.bind(bindRequest)
@@ -41,7 +37,7 @@ class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String
       false
   }
 
-  def isMemberOfGroup(user: String, group: String): Future[Boolean] = bind() { connection =>
+  def isMemberOfGroup(user: String, group: String): Future[Boolean] = bind{ connection: LDAPConnection  =>
     val results = connection.search(s"cn=$group,$DN", SearchScope.SUB, s"(memberUid=$user)", "*")
     results.getEntryCount > 0
   }.recover {
@@ -51,7 +47,7 @@ class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String
   }
 
 
-  def getName(user: String): Future[Option[(String, String)]] = bind() { connection =>
+  def getName(user: String): Future[Option[(String, String)]] = bind{ connection: LDAPConnection  =>
     import scala.collection.JavaConverters._
 
     val results = connection.search(s"uid=$user,$DN", SearchScope.SUB, s"(uid=$user)", "sn", "givenName").getSearchEntries.asScala
@@ -69,7 +65,7 @@ class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String
   }
 
 
-  def groupMemberships(user: String): Future[Set[String]] = bind() { connection =>
+  def groupMemberships(user: String): Future[Set[String]] = bind{ connection: LDAPConnection =>
     import scala.collection.JavaConverters._
     val results = connection.search(DN, SearchScope.SUB, "(cn=*)", "*")
     results.getSearchEntries.asScala.filter(_.getAttribute("memberUid").getValues.toList.contains(user)).map(_.getAttribute("cn").getValue).toSet
@@ -80,7 +76,7 @@ class LDAPAuthenticator(bindHost: String, bindPort: Int, DN: String, GDN: String
   }
 
 
-  private def bind[A, B >: LDAPConnection]()(f: (B) => A): Future[A] = Future {
+  private def bind[A, B >: LDAPConnection](f: (B) => A): Future[A] = Future {
     val sslContext = sslUtil.createSSLContext("SSLv3")
     val connection = new LDAPConnection(sslContext.getSocketFactory)
     connection.setConnectionOptions(connectionOptions)

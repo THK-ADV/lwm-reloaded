@@ -9,6 +9,10 @@ import utils.SessionHandler._
 import scala.concurrent.duration.FiniteDuration
 
 object SessionHandler {
+  sealed trait AuthenticationResponse[+A]
+
+  case class AuthenticationSuccess[+A](msg: A) extends AuthenticationResponse[A]
+  case class AuthenticationFailure[+A](msg: A) extends AuthenticationResponse[A]
 
   case class AuthenticationRequest(user: String, password: String)
 
@@ -23,7 +27,7 @@ object SessionHandler {
 
 class SessionHandler(authenticator: Authenticator, lifetime: FiniteDuration) extends Actor {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import context.dispatcher
   import scala.concurrent.duration._
 
   var sessions: Map[Session, DateTime] = Map.empty
@@ -45,10 +49,10 @@ class SessionHandler(authenticator: Authenticator, lifetime: FiniteDuration) ext
         if(member) {
           val session = Session(UUID.randomUUID().toString, user)
           sessions += (session -> DateTime.now())
-          requester ! Right(session)
+          requester ! AuthenticationSuccess(session)
         }
         else {
-          requester ! Left("invalid credentials")
+          requester ! AuthenticationFailure("invalid credentials")
         }
       }
 
