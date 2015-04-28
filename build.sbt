@@ -15,4 +15,10 @@ libraryDependencies ++= Seq(
   ws
 )
 
-libraryDependencies += "org.mockito" % "mockito-core" % "2.0.7-beta" withSource() withJavaDoc()
+libraryDependencies += "com.unboundid" % "unboundid-ldapsdk" % "2.3.6" withSources() withJavadoc()
+
+libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test" withSources() withJavadoc()
+
+libraryDependencies += "org.scalatestplus" % "play_2.11" % "1.2.0" withSources() withJavadoc()
+
+libraryDependencies += "org.mockito" % "mockito-core" % "2.0.7-beta" withSources() withJavadoc()
