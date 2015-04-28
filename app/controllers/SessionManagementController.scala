@@ -1,6 +1,7 @@
 package controllers
 
 import akka.util.Timeout
+import play.api.Play.current
 import utils.SessionHandler
 import play.api.mvc.{Security, Action, Controller}
 import play.libs.Akka
@@ -8,7 +9,7 @@ import play.api.libs.concurrent.{Promise ⇒ PlayPromise}
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-object SessionManagement extends Controller {
+object SessionManagementController extends Controller {
 
   import akka.pattern.ask
 
@@ -17,20 +18,21 @@ object SessionManagement extends Controller {
 
   private implicit val timeout = Timeout(60.seconds)
   private val sessionsHandler = Akka.system.actorSelection("user/sessions")
+  private val controllerTimeout = current.configuration.getInt("lwm.controllers.timeout").get
 
   def login() = Action.async(parse.json) { implicit request ⇒
     val user = (request.body \ "username").asOpt[String]
     val pass = (request.body \ "password").asOpt[String]
 
     if (user.isDefined && pass.isDefined) {
-      val timeoutFuture = PlayPromise.timeout("No response from IDM", 45.second)
+      val timeoutFuture = PlayPromise.timeout("No response from IDM", controllerTimeout.seconds)
       val authFuture = (sessionsHandler ? SessionHandler.AuthenticationRequest(user.get.toLowerCase, pass.get)).mapTo[Either[String, SessionHandler.Session]]
 
       Future.firstCompletedOf(Seq(authFuture, timeoutFuture)).map {
         case Left(message: String) ⇒ Unauthorized(message)
 
         case Right(session: SessionHandler.Session) ⇒
-          Ok("200: Session created").withSession(
+          Ok("Session created").withSession(
             Security.username -> user.get,
             "session" -> session.id
           )
@@ -45,7 +47,7 @@ object SessionManagement extends Controller {
   }
 
   def logout() = Action { request ⇒
-    request.session.get("session").map(sessionsHandler ! SessionHandler.LogoutRequest(_))
+    request.session.get("session").foreach(sessionsHandler ! SessionHandler.LogoutRequest(_))
     Ok("Session removed")
   }
 }
