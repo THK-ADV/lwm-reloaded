@@ -2,31 +2,33 @@ package store
 
 import java.io.File
 
-import models.{UriGenerator, UniqueEntity}
+import models.{UniqueEntity, UriGenerator}
 import org.openrdf.model.Model
 import org.openrdf.repository.sail.SailRepository
 import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.{Sesame, SesameModule}
-import org.w3.banana.{PointedGraph, RDF, RDFModule}
+import org.w3.banana._
 
 import scala.concurrent.duration._
 import scala.util.Try
 
 
-trait SemanticRepository[R <: RDF, Uri <: R#URI, Graph <: R#Graph] extends RDFModule {
+trait SemanticRepository extends RDFModule with RDFOpsModule {
 
-  def ns: Uri
+  def rdfOps: RDFOps[Rdf] = ops
 
-  def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[R, T]): Try[Graph]
+  def ns: Rdf#URI
 
-  def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[R, T], idGenerator: G): Try[Graph]
+  def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[Rdf#Graph]
 
-  def get[T <: UniqueEntity](implicit serialiser: FromPG[R, T], classUri: ClassUrisFor[R, T]): Try[Set[T]]
+  def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Rdf, T], idGenerator: G): Try[Rdf#Graph]
 
-  def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[R, T]): Try[Option[T]]
+  def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]]
 
-  def delete(id: String): Try[Graph]
+  def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
+
+  def delete(id: String): Try[Rdf#Graph]
 
   def contains(id: String): Boolean
 
@@ -36,7 +38,7 @@ trait SemanticRepository[R <: RDF, Uri <: R#URI, Graph <: R#Graph] extends RDFMo
 }
 
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: String) extends SemanticRepository[Sesame, Sesame#URI, Sesame#Graph] with SesameModule {
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: String) extends SemanticRepository with SesameModule {
 
   import ops._
 
@@ -55,7 +57,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[Sesame#Graph] = {
+  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[Rdf#Graph] = {
     val connection = repo.getConnection
     val g = entity.toPG.graph
     rdfStore.appendToGraph(connection, ns, g)
@@ -156,6 +158,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
 
 object SesameRepository {
+
   def apply(folder: File, syncInterval: FiniteDuration, baseNS: String) = new SesameRepository(Some(folder), syncInterval, baseNS)
 
   def apply(folder: File, baseNS: String) = new SesameRepository(Some(folder), baseNS = baseNS)

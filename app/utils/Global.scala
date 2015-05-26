@@ -4,9 +4,8 @@ import akka.util.Timeout
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
 import play.api.mvc._
-import play.api.{Configuration, Application, GlobalSettings, Logger}
-
-import scala.concurrent.Future
+import play.api.{Application, GlobalSettings, Logger}
+import store.{Namespace, SesameRepository}
 
 import scala.concurrent.duration._
 
@@ -17,9 +16,10 @@ trait DefaultTimeout {
 object Global extends GlobalDef with DefaultTimeout
 
 trait GlobalDef extends GlobalSettings {
-
-
   lazy val serviceName = "lwm"
+  lazy val namespace = Namespace("http://baseNS/")
+  lazy val repo = SesameRepository("http://baseNS/") // TODO: proper base ns url
+
   implicit def timeout: Timeout
 
   override def onStart(app: Application) {
