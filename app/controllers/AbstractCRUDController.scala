@@ -2,12 +2,11 @@ package controllers
 
 import models.{UniqueEntity, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
-import org.w3.banana.sesame.{Sesame, SesameModule}
-import org.w3.banana.{RDFModule, RDFOpsModule}
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import store.bind.Bindings
-import store.{SesameRepository, Namespace, SemanticRepository}
+import store.{Namespace, SesameRepository}
 import utils.Global
 
 import scala.util.{Failure, Success}
@@ -36,8 +35,7 @@ trait JsonSerialisation[T] {
   implicit def writes: Writes[T]
 }
 
-abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller
-with  JsonSerialisation[T] with SesameRdfSerialisation[T] {
+abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
 
   override def repository: SesameRepository = Global.repo
 
@@ -134,5 +132,18 @@ with  JsonSerialisation[T] with SesameRdfSerialisation[T] {
     }
   }
 
-  def delete(id: String) = ???
+  def delete(id: String) = Action { implicit request =>
+    repository.delete(id) match {
+      case Success(s) =>
+        Ok(Json.obj(
+          "status" -> "OK",
+          "id" -> s.toString //TODO: determine subject/resource id
+        ))
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> Seq(e.toString)
+        ))
+    }
+  }
 }

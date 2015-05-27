@@ -6,9 +6,9 @@ import models.{UniqueEntity, UriGenerator}
 import org.openrdf.model.Model
 import org.openrdf.repository.sail.SailRepository
 import org.openrdf.sail.memory.MemoryStore
+import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.{Sesame, SesameModule}
-import org.w3.banana._
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -61,6 +61,16 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     val connection = repo.getConnection
     val g = entity.toPG.graph
     rdfStore.appendToGraph(connection, ns, g)
+    println("========================")
+
+    graph match {
+      case Success(s) =>
+        println("Sucess: " + s)
+      case Failure(e) =>
+        println("Failure: " + e)
+    }
+    println("========================")
+
     connection.commit()
     connection.close()
     Try(g)
