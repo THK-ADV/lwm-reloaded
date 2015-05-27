@@ -23,7 +23,7 @@ abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {
 
 
 trait DbSpec[R <: RDF] extends WordSpec with RDFModule with TestBaseDefinition {
-  def repo: SemanticRepository[R, R#URI, R#Graph]
+  def repo: SemanticRepository
 
   def initDB(): Unit
 

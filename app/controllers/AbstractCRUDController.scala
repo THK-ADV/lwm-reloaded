@@ -1,22 +1,47 @@
 package controllers
 
-import models.{UriGenerator, UniqueEntity}
-import org.w3.banana.RDF
-import org.w3.banana.binder.{ToPG, FromPG}
+import models.{UniqueEntity, UriGenerator}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.sesame.{Sesame, SesameModule}
+import org.w3.banana.{RDFModule, RDFOpsModule}
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
+import store.bind.Bindings
+import store.{SesameRepository, Namespace, SemanticRepository}
 import utils.Global
+
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDController[T <: UniqueEntity, R <: RDF, G <: UriGenerator[T]] extends Controller {
 
-  val repo = Global.repo
+trait SesameRdfSerialisation[T <: UniqueEntity] {
+  def baseNS: Namespace
 
+  def repository: SesameRepository
+
+  def defaultBindings: Bindings[Sesame] = Bindings[Sesame](baseNS)
+
+  implicit def rdfWrites: ToPG[Sesame, T]
+
+  implicit def rdfReads: FromPG[Sesame, T]
+
+  implicit def classUrisFor: ClassUrisFor[Sesame, T]
+
+  implicit def uriGenerator: UriGenerator[T]
+}
+
+
+trait JsonSerialisation[T] {
   implicit def reads: Reads[T]
-  implicit def writes: Writes[T]
 
-  implicit def rdfWrites: ToPG[R, T]
-  implicit def rdfReads: FromPG[R, T]
+  implicit def writes: Writes[T]
+}
+
+abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller
+with  JsonSerialisation[T] with SesameRdfSerialisation[T] {
+
+  override def repository: SesameRepository = Global.repo
+
+  override def baseNS: Namespace = Global.namespace
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
@@ -28,7 +53,7 @@ abstract class AbstractCRUDController[T <: UniqueEntity, R <: RDF, G <: UriGener
         ))
       },
       success => {
-        repo.add[T](success) match {
+        repository.add[T](success)(rdfWrites) match {
           case Success(graph) =>
             Created(Json.obj(
               "status" -> "OK",
@@ -46,11 +71,11 @@ abstract class AbstractCRUDController[T <: UniqueEntity, R <: RDF, G <: UriGener
 
   // GET /Ts/:id
   def get(id: String) = Action { implicit request =>
-    repo.get[T](id) match {
+    repository.get[T](id) match {
       case Success(s) =>
-        Json.toJson(s).asOpt match {
-          case Some(t) =>
-            Ok(t)
+        s match {
+          case Some(entity) =>
+            Ok(Json.toJson(entity))
           case None =>
             NotFound(Json.obj(
               "status" -> "KO",
@@ -67,17 +92,9 @@ abstract class AbstractCRUDController[T <: UniqueEntity, R <: RDF, G <: UriGener
 
   // GET /ts
   def all() = Action { implicit request =>
-    repo.get[T] match {
+    repository.get[T] match {
       case Success(s) =>
-        Json.toJson(s).asOpt match {
-          case Some(t) =>
-            Ok(t)
-          case None =>
-            NotFound(Json.obj(
-              "status" -> "KO",
-              "message" -> "No such element..."
-            ))
-        }
+        Ok(Json.toJson(s))
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
@@ -87,11 +104,11 @@ abstract class AbstractCRUDController[T <: UniqueEntity, R <: RDF, G <: UriGener
   }
 
   def update(id: String) = Action { implicit request =>
-    repo.get[T](id) match {
+    repository.get[T](id) match {
       case Success(s) =>
         s match {
           case Some(t) =>
-            repo.update[T, G](t) match {
+            repository.update[T, UriGenerator[T]](t) match {
               case Success(m) =>
                 Ok(Json.obj(
                   "status" -> "OK",

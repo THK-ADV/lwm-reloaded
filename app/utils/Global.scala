@@ -5,7 +5,8 @@ import play.api.Play.current
 import play.api.libs.concurrent.Akka
 import play.api.mvc._
 import play.api.{Application, GlobalSettings, Logger}
-import store.SesameRepository
+import store.{Namespace, SesameRepository}
+import utils.GlobalDef
 
 import scala.concurrent.duration._
 
@@ -17,6 +18,7 @@ object Global extends GlobalDef with DefaultTimeout
 
 trait GlobalDef extends GlobalSettings {
   lazy val serviceName = "lwm"
+  lazy val namespace = Namespace("http://baseNS/")
   lazy val repo = SesameRepository("http://baseNS/") // TODO: proper base ns url
 
   implicit def timeout: Timeout
