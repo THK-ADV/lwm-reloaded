@@ -3,11 +3,12 @@ package controllers
 import models.{UniqueEntity, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
+import play.api.Play
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.Global
+import utils.{GlobalDef, Global}
 
 import scala.util.{Failure, Success}
 
@@ -36,10 +37,11 @@ trait JsonSerialisation[T] {
 }
 
 abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
+  import Play.current
 
-  override def repository: SesameRepository = Global.repo
+  override def repository: SesameRepository = Play.global.asInstanceOf[GlobalDef].repo
 
-  override def baseNS: Namespace = Global.namespace
+  override def baseNS: Namespace = Play.global.asInstanceOf[GlobalDef].namespace
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>

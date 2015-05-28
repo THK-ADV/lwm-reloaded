@@ -7,6 +7,8 @@ version := "1.0-SNAPSHOT"
 
 lazy val sesameVersion = "2.7.15"
 lazy val bananaVersion = "0.8.1"
+lazy val scalazVersion = "7.1.2"
+lazy val scalatestVersion = "2.2.4"
 
 lazy val commonSettings = Seq(
   name := "lwm-semantics",
@@ -21,6 +23,7 @@ lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     libraryDependencies ++= semanticDependencies,
+    libraryDependencies ++= scalazDependencies,
     libraryDependencies ++= testDependencies
   ).
   enablePlugins(PlayScala)
@@ -32,8 +35,13 @@ lazy val semanticDependencies = Seq(
 )
 
 lazy val testDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  "org.scalactic" %% "scalactic" % "2.2.4"
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
+  "org.scalactic" %% "scalactic" % scalatestVersion % "test"
+)
+
+lazy val scalazDependencies = Seq(
+  "org.scalaz" %% "scalaz-core" % scalazVersion,
+  "org.scalaz" %% "scalaz-effect" % scalazVersion
 )
 
 scalaVersion := "2.11.6"

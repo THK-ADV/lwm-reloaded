@@ -11,7 +11,7 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.{Sesame, SesameModule}
 
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 trait SemanticRepository extends RDFModule with RDFOpsModule {
@@ -61,15 +61,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     val connection = repo.getConnection
     val g = entity.toPG.graph
     rdfStore.appendToGraph(connection, ns, g)
-    println("========================")
-
-    graph match {
-      case Success(s) =>
-        println("Sucess: " + s)
-      case Failure(e) =>
-        println("Failure: " + e)
-    }
-    println("========================")
 
     connection.commit()
     connection.close()

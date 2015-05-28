@@ -3,7 +3,9 @@ package controllers
 import akka.util.Timeout
 import models.Degree
 import org.mockito.Mockito._
+import org.openrdf.model.impl.LinkedHashModel
 import org.scalatest.mock.MockitoSugar.mock
+import org.mockito.Matchers._
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import org.w3.banana.sesame.SesameModule
 import play.api.http.HeaderNames
@@ -16,25 +18,26 @@ import utils.GlobalDef
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite with SesameModule {
+class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite {
 
   import DegreeCRUDController._
 
   val degreeToFail = Degree("labelToFail")
   val degreeToPass = Degree("labelToPass")
+  val repository = mock[SesameRepository]
+  println(repository)
 
   implicit override lazy val app: FakeApplication = FakeApplication(withGlobal = Some(new GlobalDef {
     override implicit def timeout: Timeout = 1.minute
 
     override lazy val namespace = Namespace("http://fuckyou/")
-    override lazy val repo = mock[SesameRepository]
-
-    when(repo.add(degreeToFail)).thenReturn(Failure(new Exception()))
-    when(repo.add(degreeToPass)).thenReturn(Success(ops.makeEmptyMGraph()))
+    override lazy val repo = repository
   }))
 
   "A DegreeCRUDController " must {
     "create a new degree" in {
+      when(repository.add(anyObject[Degree]())(anyObject())).thenReturn(Success(new LinkedHashModel))
+
       val json = Json.toJson(degreeToPass)
 
       val request = FakeRequest(
@@ -43,12 +46,14 @@ class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite with Sesam
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> Seq("application/json"))),
         json
       )
-      val result = controllers.DegreeCRUDController.create()(request)
+      val result = route(request).get
 
       status(result) mustBe CREATED
     }
 
     "fail while creating a degree" in {
+      when(repository.add(anyObject[Degree]())(anyObject())).thenReturn(Failure(new Exception()))
+
       val json = Json.toJson(degreeToFail)
 
       val request = FakeRequest(
@@ -57,7 +62,9 @@ class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite with Sesam
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> Seq("application/json"))),
         json
       )
-      val result = controllers.DegreeCRUDController.create()(request)
+
+
+      val result = route(request).get
 
       status(result) mustBe INTERNAL_SERVER_ERROR
     }
