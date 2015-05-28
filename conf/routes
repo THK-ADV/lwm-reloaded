@@ -3,7 +3,16 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET           /                    controllers.Application.index
+POST          /api/sessions        controllers.SessionManagementController.login
+DELETE        /api/sessions        controllers.SessionManagementController.logout
+
+# Degree
+POST          /degrees             controllers.DegreeCRUDController.create()
+POST          /degrees/:id         controllers.DegreeCRUDController.update(id)
+GET           /degrees             controllers.DegreeCRUDController.all()
+GET           /degrees/:id         controllers.DegreeCRUDController.get(id)
+DELETE        /degrees/:id         controllers.DegreeCRUDController.delete(id)
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET           /assets/*file        controllers.Assets.at(path="/public", file)
