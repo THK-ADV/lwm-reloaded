@@ -4,8 +4,9 @@ import models.{Degree, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
+import store.{SesameRepository, Namespace, SemanticRepository}
 
-object DegreeCRUDController extends AbstractCRUDController[Degree] {
+class DegreeCRUDController(repository: SesameRepository, namespace: Namespace) extends AbstractCRUDController[Degree](repository, namespace) {
   override implicit def reads: Reads[Degree] = Json.reads[Degree]
 
   override implicit def writes: Writes[Degree] = Json.writes[Degree]

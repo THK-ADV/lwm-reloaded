@@ -38,12 +38,12 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 }
 
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: String) extends SemanticRepository with SesameModule {
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule {
 
   import ops._
 
-  val ns = makeUri(baseNS)
-  implicit val namespace = Namespace(baseNS)
+  val ns = makeUri(baseNS.base)
+  implicit val namespace = baseNS
 
   val memStore = folder.fold {
     new MemoryStore()
@@ -160,13 +160,13 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
 object SesameRepository {
 
-  def apply(folder: File, syncInterval: FiniteDuration, baseNS: String) = new SesameRepository(Some(folder), syncInterval, baseNS)
+  def apply(folder: File, syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(Some(folder), syncInterval, baseNS)
 
-  def apply(folder: File, baseNS: String) = new SesameRepository(Some(folder), baseNS = baseNS)
+  def apply(folder: File, baseNS: Namespace) = new SesameRepository(Some(folder), baseNS = baseNS)
 
-  def apply(syncInterval: FiniteDuration, baseNS: String) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
+  def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
 
-  def apply(baseNS: String) = new SesameRepository(baseNS = baseNS)
+  def apply(baseNS: Namespace) = new SesameRepository(baseNS = baseNS)
 }
 
 sealed trait ValidationResult

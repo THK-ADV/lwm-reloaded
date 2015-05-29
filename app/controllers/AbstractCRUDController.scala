@@ -7,7 +7,7 @@ import play.api.Play
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import store.bind.Bindings
-import store.{Namespace, SesameRepository}
+import store.{SemanticRepository, Namespace, SesameRepository}
 import utils.{GlobalDef, Global}
 
 import scala.util.{Failure, Success}
@@ -36,12 +36,8 @@ trait JsonSerialisation[T] {
   implicit def writes: Writes[T]
 }
 
-abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
+abstract class AbstractCRUDController[T <: UniqueEntity](val repository: SesameRepository, val baseNS: Namespace) extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
   import Play.current
-
-  override def repository: SesameRepository = Play.global.asInstanceOf[GlobalDef].repo
-
-  override def baseNS: Namespace = Play.global.asInstanceOf[GlobalDef].namespace
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
@@ -49,11 +45,11 @@ abstract class AbstractCRUDController[T <: UniqueEntity] extends Controller with
       errors => {
         BadRequest(Json.obj(
           "status" -> "KO",
-          "errors" -> JsError.toFlatJson(errors)
+          "errors" -> JsError.toJson(errors)
         ))
       },
       success => {
-        repository.add[T](success)(rdfWrites) match {
+        repository.add[T](success) match {
           case Success(graph) =>
             Created(Json.obj(
               "status" -> "OK",

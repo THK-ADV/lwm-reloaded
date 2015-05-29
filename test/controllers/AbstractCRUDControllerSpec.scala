@@ -20,19 +20,10 @@ import scala.util.{Failure, Success}
 
 class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite {
 
-  import DegreeCRUDController._
 
   val degreeToFail = Degree("labelToFail")
   val degreeToPass = Degree("labelToPass")
   val repository = mock[SesameRepository]
-  println(repository)
-
-  implicit override lazy val app: FakeApplication = FakeApplication(withGlobal = Some(new GlobalDef {
-    override implicit def timeout: Timeout = 1.minute
-
-    override lazy val namespace = Namespace("http://fuckyou/")
-    override lazy val repo = repository
-  }))
 
   "A DegreeCRUDController " must {
     "create a new degree" in {

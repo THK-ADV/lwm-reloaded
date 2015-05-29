@@ -17,8 +17,6 @@ object Global extends GlobalDef with DefaultTimeout
 
 trait GlobalDef extends GlobalSettings {
   lazy val serviceName = "lwm"
-  lazy val namespace = Namespace("http://baseNS/")
-  lazy val repo = SesameRepository(namespace.toString) // TODO: proper base ns url
 
   implicit def timeout: Timeout
 
@@ -28,9 +26,7 @@ trait GlobalDef extends GlobalSettings {
     val dn = app.configuration.getString("lwm.bindDN").get
     val gdn = app.configuration.getString("lwm.groupDN").get
     val lifetime = app.configuration.getInt("lwm.sessions.lifetime").get
-    val authenticator = LDAPAuthenticator(bindHost, bindPort, dn, gdn)
 
-    Akka.system.actorOf(SessionHandler.props(authenticator, lifetime.minutes), "sessions")
     Logger.debug("Application has started")
   }
 

@@ -36,12 +36,18 @@ lazy val semanticDependencies = Seq(
 
 lazy val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
-  "org.scalactic" %% "scalactic" % scalatestVersion % "test"
+  "org.scalactic" %% "scalactic" % scalatestVersion % "test",
+  "org.scalatestplus" %% "play" % "1.2.0" % "test",
+  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test"
 )
 
 lazy val scalazDependencies = Seq(
   "org.scalaz" %% "scalaz-core" % scalazVersion,
   "org.scalaz" %% "scalaz-effect" % scalazVersion
+)
+
+lazy val lwmDependencies = Seq(
+  "com.unboundid" % "unboundid-ldapsdk" % "2.3.6"
 )
 
 scalaVersion := "2.11.6"
@@ -51,10 +57,4 @@ libraryDependencies ++= Seq(
   ws
 )
 
-libraryDependencies += "com.unboundid" % "unboundid-ldapsdk" % "2.3.6" withSources() withJavadoc()
-
-libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test" withSources() withJavadoc()
-
-libraryDependencies += "org.scalatestplus" % "play_2.11" % "1.2.0" withSources() withJavadoc()
-
-libraryDependencies += "org.mockito" % "mockito-core" % "2.0.7-beta" withSources() withJavadoc()
+routesGenerator := InjectedRoutesGenerator
