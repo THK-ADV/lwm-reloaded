@@ -1,7 +1,10 @@
+package utils
+
 import controllers.{Assets, DegreeCRUDController, HomepageController}
 import play.api.ApplicationLoader.Context
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
+import play.mvc.Controller
 import router.Routes
 import store.{Namespace, SesameRepository}
 
@@ -13,7 +16,7 @@ class LwmApplicationLoader extends ApplicationLoader {
 
 trait SemanticRepositoryModule {
   self: LwmApplication =>
-  def semanticRepository: SesameRepository
+  def repository: SesameRepository
 
   def namespace: Namespace
 }
@@ -22,7 +25,7 @@ trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
   self: LwmApplication =>
   def namespace: Namespace = Namespace("http://lwm/")
 
-  def semanticRepository: SesameRepository = SesameRepository(namespace)
+  def repository: SesameRepository = SesameRepository(namespace)
 }
 
 trait DegreeManagementModule {
@@ -33,7 +36,7 @@ trait DegreeManagementModule {
 
 trait DefaultDegreeManagementModuleImpl extends DegreeManagementModule {
   self: LwmApplication with SemanticRepositoryModule =>
-  lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(semanticRepository, namespace)
+  lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(repository, namespace)
 }
 
 trait DefaultHomepageModuleImpl extends HomepageModule {

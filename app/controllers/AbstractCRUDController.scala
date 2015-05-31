@@ -8,17 +8,18 @@ import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import store.bind.Bindings
 import store.{SemanticRepository, Namespace, SesameRepository}
-import utils.{GlobalDef, Global}
+import utils.{SemanticRepositoryModule, GlobalDef, Global}
 
 import scala.util.{Failure, Success}
 
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
-  def baseNS: Namespace
+
+  def namespace: Namespace
 
   def repository: SesameRepository
 
-  def defaultBindings: Bindings[Sesame] = Bindings[Sesame](baseNS)
+  def defaultBindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
   implicit def rdfWrites: ToPG[Sesame, T]
 
@@ -36,8 +37,9 @@ trait JsonSerialisation[T] {
   implicit def writes: Writes[T]
 }
 
-abstract class AbstractCRUDController[T <: UniqueEntity](val repository: SesameRepository, val baseNS: Namespace) extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
+trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
   import Play.current
+
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
