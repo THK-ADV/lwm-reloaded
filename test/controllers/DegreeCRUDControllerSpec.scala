@@ -1,31 +1,34 @@
 package controllers
 
-import akka.util.Timeout
+import base.TestBaseDefinition
 import models.Degree
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.impl.LinkedHashModel
+import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import org.mockito.Matchers._
-import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
-import org.w3.banana.sesame.SesameModule
+import org.scalatestplus.play.PlaySpec
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import play.api.test.{FakeApplication, FakeHeaders, FakeRequest, Helpers}
+import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import store.{Namespace, SesameRepository}
-import utils.GlobalDef
 
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite {
 
+
+class DegreeCRUDControllerSpec extends WordSpec with TestBaseDefinition {
+  import Degree._
 
   val degreeToFail = Degree("labelToFail")
   val degreeToPass = Degree("labelToPass")
   val repository = mock[SesameRepository]
+  
 
-  "A DegreeCRUDController " must {
+  val controller = new DegreeCRUDController(repository, Namespace("http://testNamespace/"))
+  
+  "A DegreeCRUDController " should {
     "create a new degree" in {
       when(repository.add(anyObject[Degree]())(anyObject())).thenReturn(Success(new LinkedHashModel))
 
@@ -33,13 +36,13 @@ class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite {
 
       val request = FakeRequest(
         Helpers.POST,
-        routes.DegreeCRUDController.create().url,
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> Seq("application/json"))),
+        "/degrees",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
         json
       )
-      val result = route(request).get
+      val result = controller.create()(request)
 
-      status(result) mustBe CREATED
+      status(result) shouldBe CREATED
     }
 
     "fail while creating a degree" in {
@@ -49,15 +52,15 @@ class AbstractCRUDControllerSpec extends PlaySpec with OneAppPerSuite {
 
       val request = FakeRequest(
         Helpers.POST,
-        routes.DegreeCRUDController.create().url,
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> Seq("application/json"))),
+        "/degrees",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
         json
       )
 
 
-      val result = route(request).get
+      val result = controller.create()(request)
 
-      status(result) mustBe INTERNAL_SERVER_ERROR
+      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
   }
 }

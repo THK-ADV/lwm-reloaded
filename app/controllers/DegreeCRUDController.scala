@@ -8,9 +8,9 @@ import store.{SesameRepository, Namespace, SemanticRepository}
 import utils.SemanticRepositoryModule
 
 class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[Degree]{
-  override implicit def reads: Reads[Degree] = Json.reads[Degree]
+  override implicit def reads: Reads[Degree] = Degree.reads
 
-  override implicit def writes: Writes[Degree] = Json.writes[Degree]
+  override implicit def writes: Writes[Degree] = Degree.writes
 
   override implicit def rdfReads: FromPG[Sesame, Degree] = defaultBindings.DegreeBinding.degreeBinder
 

@@ -4,7 +4,6 @@ import controllers.{Assets, DegreeCRUDController, HomepageController}
 import play.api.ApplicationLoader.Context
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
-import play.mvc.Controller
 import router.Routes
 import store.{Namespace, SesameRepository}
 
@@ -15,37 +14,33 @@ class LwmApplicationLoader extends ApplicationLoader {
 }
 
 trait SemanticRepositoryModule {
-  self: LwmApplication =>
   def repository: SesameRepository
 
   def namespace: Namespace
 }
 
 trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
-  self: LwmApplication =>
   def namespace: Namespace = Namespace("http://lwm/")
 
   def repository: SesameRepository = SesameRepository(namespace)
 }
 
 trait DegreeManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: SemanticRepositoryModule =>
   def degreeManagementController: DegreeCRUDController
 }
 
 
 trait DefaultDegreeManagementModuleImpl extends DegreeManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: SemanticRepositoryModule =>
   lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(repository, namespace)
 }
 
 trait DefaultHomepageModuleImpl extends HomepageModule {
-  self: LwmApplication =>
   lazy val homepageController = new HomepageController
 }
 
 trait HomepageModule {
-  self: LwmApplication =>
   def homepageController: HomepageController
 }
 
@@ -59,8 +54,11 @@ trait DefaultAssetsModuleImpl extends AssetsModule {
   lazy val assetsController = new Assets(httpErrorHandler)
 }
 
-trait LwmApplication extends BuiltInComponentsFromContext {
-  self: HomepageModule with SemanticRepositoryModule with DegreeManagementModule with AssetsModule =>
+abstract class LwmApplication(context: Context) extends BuiltInComponentsFromContext(context)
+with HomepageModule
+with SemanticRepositoryModule
+with DegreeManagementModule
+with AssetsModule {
   lazy val router: Router = new Routes(httpErrorHandler, homepageController, degreeManagementController, assetsController)
 }
 

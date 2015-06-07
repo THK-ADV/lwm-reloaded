@@ -25,8 +25,7 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= semanticDependencies,
     libraryDependencies ++= scalazDependencies,
     libraryDependencies ++= testDependencies
-  ).
-  enablePlugins(PlayScala)
+  ).enablePlugins(PlayScala)
 
 lazy val semanticDependencies = Seq(
   "org.w3" %% "banana-rdf" % bananaVersion,
