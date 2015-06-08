@@ -20,7 +20,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
   import bindings.StudentBinding._
   import bindings.uuidBinder
 
-  lazy val repo = SesameRepository("http://testCase/baseNS/")
+  lazy val repo = SesameRepository(ns)
 
   "Sesame Repository" should {
     "add a student" in {

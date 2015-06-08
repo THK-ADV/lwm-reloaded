@@ -5,6 +5,8 @@ name := """lwm-reloaded"""
 
 version := "1.0-SNAPSHOT"
 
+resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
+
 lazy val sesameVersion = "2.7.15"
 lazy val bananaVersion = "0.8.1"
 lazy val scalazVersion = "7.1.2"
@@ -25,8 +27,7 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= semanticDependencies,
     libraryDependencies ++= scalazDependencies,
     libraryDependencies ++= testDependencies
-  ).
-  enablePlugins(PlayScala)
+  ).enablePlugins(PlayScala)
 
 lazy val semanticDependencies = Seq(
   "org.w3" %% "banana-rdf" % bananaVersion,
@@ -36,7 +37,9 @@ lazy val semanticDependencies = Seq(
 
 lazy val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
-  "org.scalactic" %% "scalactic" % scalatestVersion % "test"
+  "org.scalactic" %% "scalactic" % scalatestVersion % "test",
+  "org.scalatestplus" %% "play" % "1.4.0-M3" % "test",
+  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test"
 )
 
 lazy val scalazDependencies = Seq(
@@ -44,17 +47,18 @@ lazy val scalazDependencies = Seq(
   "org.scalaz" %% "scalaz-effect" % scalazVersion
 )
 
+lazy val lwmDependencies = Seq(
+  "com.unboundid" % "unboundid-ldapsdk" % "2.3.6"
+)
+
 scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
   cache,
-  ws
+  ws,
+  specs2,
+  json,
+  filters
 )
 
-libraryDependencies += "com.unboundid" % "unboundid-ldapsdk" % "2.3.6" withSources() withJavadoc()
-
-libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test" withSources() withJavadoc()
-
-libraryDependencies += "org.scalatestplus" % "play_2.11" % "1.2.0" withSources() withJavadoc()
-
-libraryDependencies += "org.mockito" % "mockito-core" % "2.0.7-beta" withSources() withJavadoc()
+routesGenerator := InjectedRoutesGenerator

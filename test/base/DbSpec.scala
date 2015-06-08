@@ -4,11 +4,11 @@ import org.scalatest._
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import org.w3.banana.{RDF, RDFModule}
 import store.Prefixes.LWMPrefix
-import store.{SemanticRepository, SesameRepository}
+import store.{Namespace, SemanticRepository, SesameRepository}
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {
   val lwm = LWMPrefix[Sesame]
-  lazy val repo = SesameRepository(s"http://testDB/${this.getClass.getSimpleName}")
+  lazy val repo = SesameRepository(Namespace(s"http://testDB/${this.getClass.getSimpleName}"))
 
   override def initDB(): Unit = {}
 
