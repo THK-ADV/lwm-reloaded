@@ -5,6 +5,8 @@ name := """lwm-reloaded"""
 
 version := "1.0-SNAPSHOT"
 
+resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
+
 lazy val sesameVersion = "2.7.15"
 lazy val bananaVersion = "0.8.1"
 lazy val scalazVersion = "7.1.2"
@@ -36,7 +38,7 @@ lazy val semanticDependencies = Seq(
 lazy val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.scalactic" %% "scalactic" % scalatestVersion % "test",
-  "org.scalatestplus" %% "play" % "1.2.0" % "test",
+  "org.scalatestplus" %% "play" % "1.4.0-M3" % "test",
   "org.mockito" % "mockito-core" % "2.0.8-beta" % "test"
 )
 
@@ -53,7 +55,10 @@ scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
   cache,
-  ws
+  ws,
+  specs2,
+  json,
+  filters
 )
 
 routesGenerator := InjectedRoutesGenerator
