@@ -10,7 +10,6 @@ import store.{Namespace, SesameRepository}
 
 import scala.util.{Failure, Success}
 
-
 trait SesameRdfSerialisation[T <: UniqueEntity] {
 
   def namespace: Namespace
@@ -28,7 +27,6 @@ trait SesameRdfSerialisation[T <: UniqueEntity] {
   implicit def uriGenerator: UriGenerator[T]
 }
 
-
 trait JsonSerialisation[T] {
   implicit def reads: Reads[T]
 
@@ -36,7 +34,6 @@ trait JsonSerialisation[T] {
 }
 
 trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
-
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
@@ -57,7 +54,7 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> Seq(e.getStackTrace.mkString(","))
+              "errors" -> e.getMessage
             ))
         }
       }
@@ -80,7 +77,7 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
-          "errors" -> Seq(e.toString)
+          "errors" -> e.getMessage
         ))
     }
   }
@@ -93,7 +90,7 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
-          "errors" -> Seq(e.toString)
+          "errors" -> e.getMessage
         ))
     }
   }
@@ -107,12 +104,12 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
               case Success(m) =>
                 Ok(Json.obj(
                   "status" -> "OK",
-                  "id" -> m.toString //TODO: determine subject/resource id
+                  "id" -> m.subjects().iterator().next().toString
                 ))
               case Failure(e) =>
                 InternalServerError(Json.obj(
                   "status" -> "KO",
-                  "errors" -> Seq(e.toString)
+                  "errors" -> e.getMessage
                 ))
             }
           case None =>
@@ -124,7 +121,7 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
-          "errors" -> Seq(e.toString)
+          "errors" -> e.getMessage
         ))
     }
   }
@@ -134,12 +131,12 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
       case Success(s) =>
         Ok(Json.obj(
           "status" -> "OK",
-          "id" -> s.toString //TODO: determine subject/resource id
+          "id" -> s.subjects().iterator().next().toString
         ))
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
-          "errors" -> Seq(e.toString)
+          "errors" -> e.getMessage
         ))
     }
   }

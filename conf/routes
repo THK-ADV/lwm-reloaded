@@ -2,14 +2,105 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                    controllers.HomepageController.index
+GET           /                                       controllers.HomepageController.index
 
 # Degree
-POST          /degrees             controllers.DegreeCRUDController.create()
-POST          /degrees/:id         controllers.DegreeCRUDController.update(id)
-GET           /degrees             controllers.DegreeCRUDController.all()
-GET           /degrees/:id         controllers.DegreeCRUDController.get(id)
-DELETE        /degrees/:id         controllers.DegreeCRUDController.delete(id)
+POST          /degrees                                controllers.DegreeCRUDController.create()
+POST          /degrees/:id                            controllers.DegreeCRUDController.update(id)
+GET           /degrees                                controllers.DegreeCRUDController.all()
+GET           /degrees/:id                            controllers.DegreeCRUDController.get(id)
+DELETE        /degrees/:id                            controllers.DegreeCRUDController.delete(id)
+
+# Course
+POST          /courses                                controllers.CourseCRUDController.create()
+POST          /courses/:id                            controllers.CourseCRUDController.update(id)
+GET           /courses                                controllers.CourseCRUDController.all()
+GET           /courses/:id                            controllers.CourseCRUDController.get(id)
+DELETE        /courses/:id                            controllers.CourseCRUDController.delete(id)
+
+# Employee
+POST          /employees                              controllers.EmployeeCRUDController.create()
+POST          /employees/:id                          controllers.EmployeeCRUDController.update(id)
+GET           /employees                              controllers.EmployeeCRUDController.all()
+GET           /employees/:id                          controllers.EmployeeCRUDController.get(id)
+DELETE        /employees/:id                          controllers.EmployeeCRUDController.delete(id)
+
+# Group
+POST          /groups                                 controllers.GroupCRUDController.create()
+POST          /groups/:id                             controllers.GroupCRUDController.update(id)
+GET           /groups                                 controllers.GroupCRUDController.all()
+GET           /groups/:id                             controllers.GroupCRUDController.get(id)
+DELETE        /groups/:id                             controllers.GroupCRUDController.delete(id)
+
+# GroupScheduleAssociation
+POST          /groupScheduleAssociations              controllers.GroupScheduleAssociationCRUDController.create()
+POST          /groupScheduleAssociations/:id          controllers.GroupScheduleAssociationCRUDController.update(id)
+GET           /groupScheduleAssociations              controllers.GroupScheduleAssociationCRUDController.all()
+GET           /groupScheduleAssociations/:id          controllers.GroupScheduleAssociationCRUDController.get(id)
+DELETE        /groupScheduleAssociations/:id          controllers.GroupScheduleAssociationCRUDController.delete(id)
+
+# GroupSchedule
+POST          /groupSchedules                         controllers.GroupScheduleCRUDController.create()
+POST          /groupSchedules/:id                     controllers.GroupScheduleCRUDController.update(id)
+GET           /groupSchedules                         controllers.GroupScheduleCRUDController.all()
+GET           /groupSchedules/:id                     controllers.GroupScheduleCRUDController.get(id)
+DELETE        /groupSchedules/:id                     controllers.GroupScheduleCRUDController.delete(id)
+
+# Labwork
+POST          /labworks                               controllers.LabworkCRUDController.create()
+POST          /labworks/:id                           controllers.LabworkCRUDController.update(id)
+GET           /labworks                               controllers.LabworkCRUDController.all()
+GET           /labworks/:id                           controllers.LabworkCRUDController.get(id)
+DELETE        /labworks/:id                           controllers.LabworkCRUDController.delete(id)
+
+# Room
+POST          /rooms                                  controllers.RoomCRUDController.create()
+POST          /rooms/:id                              controllers.RoomCRUDController.update(id)
+GET           /rooms                                  controllers.RoomCRUDController.all()
+GET           /rooms/:id                              controllers.RoomCRUDController.get(id)
+DELETE        /rooms/:id                              controllers.RoomCRUDController.delete(id)
+
+# Semester
+POST          /semesters                              controllers.SemesterCRUDController.create()
+POST          /semesters/:id                          controllers.SemesterCRUDController.update(id)
+GET           /semesters                              controllers.SemesterCRUDController.all()
+GET           /semesters/:id                          controllers.SemesterCRUDController.get(id)
+DELETE        /semesters/:id                          controllers.SemesterCRUDController.delete(id)
+
+# Student
+POST          /students                               controllers.StudentCRUDController.create()
+POST          /students/:id                           controllers.StudentCRUDController.update(id)
+GET           /students                               controllers.StudentCRUDController.all()
+GET           /students/:id                           controllers.StudentCRUDController.get(id)
+DELETE        /students/:id                           controllers.StudentCRUDController.delete(id)
+
+# StudentScheduleAssociation
+POST          /studentScheduleAssociations            controllers.StudentScheduleAssociationCRUDController.create()
+POST          /studentScheduleAssociations/:id        controllers.StudentScheduleAssociationCRUDController.update(id)
+GET           /studentScheduleAssociations            controllers.StudentScheduleAssociationCRUDController.all()
+GET           /studentScheduleAssociations/:id        controllers.StudentScheduleAssociationCRUDController.get(id)
+DELETE        /studentScheduleAssociations/:id        controllers.StudentScheduleAssociationCRUDController.delete(id)
+
+# StudentSchedule
+POST          /studentSchedules                       controllers.StudentScheduleCRUDController.create()
+POST          /studentSchedules/:id                   controllers.StudentScheduleCRUDController.update(id)
+GET           /studentSchedules                       controllers.StudentScheduleCRUDController.all()
+GET           /studentSchedules/:id                   controllers.StudentScheduleCRUDController.get(id)
+DELETE        /studentSchedules/:id                   controllers.StudentScheduleCRUDController.delete(id)
+
+# Timetable
+POST          /timetables                             controllers.TimetableCRUDController.create()
+POST          /timetables/:id                         controllers.TimetableCRUDController.update(id)
+GET           /timetables                             controllers.TimetableCRUDController.all()
+GET           /timetables/:id                         controllers.TimetableCRUDController.get(id)
+DELETE        /timetables/:id                         controllers.TimetableCRUDController.delete(id)
+
+# TimetableEntry
+POST          /timetableEntries                       controllers.TimetableEntryCRUDController.create()
+POST          /timetableEntries/:id                   controllers.TimetableEntryCRUDController.update(id)
+GET           /timetableEntries                       controllers.TimetableEntryCRUDController.all()
+GET           /timetableEntries/:id                   controllers.TimetableEntryCRUDController.get(id)
+DELETE        /timetableEntries/:id                   controllers.TimetableEntryCRUDController.delete(id)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file        controllers.Assets.at(path="/public", file)
+GET           /assets/*file                           controllers.Assets.at(path="/public", file)

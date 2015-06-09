@@ -18,13 +18,11 @@ import scala.util.{Failure, Success}
 abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec with TestBaseDefinition {
   val factory = ValueFactoryImpl.getInstance()
 
-
   lazy val passModel: LinkedHashModel = {
     val m = new LinkedHashModel()
     m.add(factory.createURI(s"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"), factory.createURI("http://somePredicate"), factory.createLiteral(""))
     m
   }
-
 
   val repository = mock[SesameRepository]
 
@@ -32,6 +30,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
   def entityToFail: T
 
+  def mimeType: String
 
   def controller: AbstractCRUDController[T]
 
@@ -39,9 +38,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
   implicit def jsonWrites: Writes[T]
 
-
   def namespace: Namespace = Namespace("http://testNamespace/")
-
 
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
@@ -54,30 +51,189 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
       val request = FakeRequest(
         POST,
         s"/${entityTypeName.toLowerCase}s",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
       val result = controller.create()(request)
 
       status(result) shouldBe CREATED
+      contentType(result) shouldBe Some(mimeType)
       contentAsString(result) shouldBe expected
-
     }
+
     s"not create a new $entityTypeName when there is an exception" in {
-      when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception("mimimimi")))
+      val errorMessage = s"Oops, cant create $entityTypeName for some reason"
+      when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val json = Json.toJson(entityToFail)
 
+      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName.toLowerCase}s",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
       val result = controller.create()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"fail while validating a $entityTypeName with invalid json data" in {
+      val json = Json.toJson("no valid data")
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName.toLowerCase}s",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        json
+      )
+      val result = controller.create()(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some(mimeType)
       contentAsString(result) should include ("KO")
+      contentAsString(result) should include ("errors")
+    }
+
+    s"not get a single $entityTypeName when its not found" in {
+      when(repository.get[T](anyString())(anyObject())).thenReturn(Success(None))
+
+      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+      )
+      val result = controller.get(entityToFail.id.toString)(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"not get a single $entityTypeName when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+      when(repository.get[T](anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+      )
+      val result = controller.get(entityToFail.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"successfully get a single $entityTypeName" in {
+      when(repository.get[T](anyString())(anyObject())).thenReturn(Success(Some(entityToPass)))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+      )
+      val result = controller.get(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe Json.toJson(entityToPass).toString()
+    }
+
+    s"successfully get all ${entityTypeName}s" in {
+      val allEntities = Set(entityToPass, entityToFail)
+      when(repository.get[T](anyObject(), anyObject())).thenReturn(Success(allEntities))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe Json.toJson(allEntities).toString()
+    }
+
+    s"not get all ${entityTypeName}s when there is an exception" in {
+      val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
+      when(repository.get[T](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"successfully delete an existing $entityTypeName" in {
+      when(repository.delete(anyString())).thenReturn(Success(passModel))
+
+      val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
+      val request = FakeRequest(
+        DELETE,
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+      )
+      val result = controller.delete(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedPassModel
+    }
+
+    s"not delete an existing $entityTypeName when there is an exception" in {
+      val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
+      when(repository.delete(anyString())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
+      val request = FakeRequest(
+        DELETE,
+        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+      )
+      val result = controller.delete(entityToFail.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"successfully update an existing $entityTypeName" in {
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(passModel))
+
+      val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedPassModel
+    }
+
+    s"not update an existing $entityTypeName when there is an exception" in {
+      val errorMessage = s"Oops, cant update the desired $entityTypeName for some reason"
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+      )
+      val result = controller.update(entityToFail.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
     }
   }
 }
