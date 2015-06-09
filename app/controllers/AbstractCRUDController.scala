@@ -3,12 +3,10 @@ package controllers
 import models.{UniqueEntity, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.Play
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import store.bind.Bindings
-import store.{SemanticRepository, Namespace, SesameRepository}
-import utils.{SemanticRepositoryModule, GlobalDef, Global}
+import store.{Namespace, SesameRepository}
 
 import scala.util.{Failure, Success}
 
@@ -38,7 +36,6 @@ trait JsonSerialisation[T] {
 }
 
 trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
-  import Play.current
 
 
   // POST /Ts
@@ -55,12 +52,12 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
           case Success(graph) =>
             Created(Json.obj(
               "status" -> "OK",
-              "id" -> graph.toString //TODO: determine resource id
+              "id" -> graph.subjects().iterator().next().toString
             ))
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> Seq(e.toString)
+              "errors" -> Seq(e.getStackTrace.mkString(","))
             ))
         }
       }
