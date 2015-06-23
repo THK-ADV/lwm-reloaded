@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{TimetableCRUDController, AbstractCRUDController}
 import models.timetable.Timetable
 import play.api.libs.json.Writes
 

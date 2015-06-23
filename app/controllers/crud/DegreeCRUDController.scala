@@ -1,4 +1,4 @@
-package controllers
+package controllers.crud
 
 import models.{Degree, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}

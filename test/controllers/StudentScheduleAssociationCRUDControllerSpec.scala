@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{StudentScheduleAssociationCRUDController, AbstractCRUDController}
 import models.schedules.StudentScheduleAssociation
 import play.api.libs.json.Writes
 

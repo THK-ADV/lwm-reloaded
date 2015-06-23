@@ -2,8 +2,8 @@ package utils
 
 import akka.actor.ActorSystem
 import controllers._
+import controllers.crud._
 import play.api.ApplicationLoader.Context
-import play.api.libs.concurrent.Akka
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
@@ -28,7 +28,8 @@ trait SessionRepositoryModule {
   def sessionRepository: SessionHandling
 }
 
-trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule { self: AkkaActorSystemModule =>
+trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule {
+  self: AkkaActorSystemModule =>
 
   override def sessionRepository: SessionHandling = new SessionRepository(system)
 }

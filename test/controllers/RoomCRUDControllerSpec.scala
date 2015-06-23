@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{AbstractCRUDController, RoomCRUDController}
 import models.Room
 import play.api.libs.json.Writes
 

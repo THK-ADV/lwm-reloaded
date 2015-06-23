@@ -1,4 +1,4 @@
-package controllers
+package controllers.crud
 
 import models.UriGenerator
 import models.schedules.GroupScheduleAssociation

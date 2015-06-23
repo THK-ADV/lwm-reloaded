@@ -1,8 +1,7 @@
 package models.users
 
 import java.util.UUID
-
-import controllers.JsonSerialisation
+import controllers.crud.JsonSerialisation
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 import store.Namespace

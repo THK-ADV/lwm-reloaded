@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{AbstractCRUDController, DegreeCRUDController}
 import models.Degree
 import play.api.libs.json.{Writes, Reads}
 

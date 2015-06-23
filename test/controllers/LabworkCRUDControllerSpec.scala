@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{LabworkCRUDController, AbstractCRUDController}
 import models.Labwork
 import play.api.libs.json.Writes
 

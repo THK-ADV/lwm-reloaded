@@ -1,8 +1,7 @@
 package models.timetable
 
 import java.util.UUID
-
-import controllers.JsonSerialisation
+import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import play.api.libs.json.{Json, Reads, Writes}
 import store.Namespace

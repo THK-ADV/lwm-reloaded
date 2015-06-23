@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{AbstractCRUDController, EmployeeCRUDController}
 import models.users.Employee
 import play.api.libs.json.Writes
 

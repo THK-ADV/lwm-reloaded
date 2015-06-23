@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{AbstractCRUDController, GroupScheduleCRUDController}
 import models.schedules.GroupSchedule
 import play.api.libs.json.Writes
 

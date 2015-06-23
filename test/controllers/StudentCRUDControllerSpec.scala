@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{StudentCRUDController, AbstractCRUDController}
 import models.users.Student
 import play.api.libs.json.Writes
 

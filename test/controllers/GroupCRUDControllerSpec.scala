@@ -1,5 +1,6 @@
 package controllers
 
+import controllers.crud.{GroupCRUDController, AbstractCRUDController}
 import models.Group
 import play.api.libs.json.Writes
 
