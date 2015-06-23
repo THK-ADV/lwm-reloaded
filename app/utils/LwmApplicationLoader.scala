@@ -1,7 +1,9 @@
 package utils
 
+import akka.actor.ActorSystem
 import controllers._
 import play.api.ApplicationLoader.Context
+import play.api.libs.concurrent.Akka
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
@@ -11,6 +13,24 @@ class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {
     new DefaultLwmApplication(context).application
   }
+}
+
+trait AkkaActorSystemModule {
+  implicit def system = ActorSystem("lwm-system")
+}
+
+trait SessionControllerModule {
+  self: SessionRepositoryModule =>
+  def sessionController: SessionManagement = new SessionManagement(sessionRepository)
+}
+
+trait SessionRepositoryModule {
+  def sessionRepository: SessionHandling
+}
+
+trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule { self: AkkaActorSystemModule =>
+
+  override def sessionRepository: SessionHandling = new SessionRepository(system)
 }
 
 trait SemanticRepositoryModule {
@@ -50,7 +70,7 @@ trait EmployeeManagementModule {
   def employeeManagementController: EmployeeCRUDController
 }
 
-trait DefaultEmployeeManagementModuleImpl extends EmployeeManagementModule{
+trait DefaultEmployeeManagementModuleImpl extends EmployeeManagementModule {
   self: SemanticRepositoryModule =>
   lazy val employeeManagementController: EmployeeCRUDController = new EmployeeCRUDController(repository, namespace)
 }
@@ -200,6 +220,9 @@ with StudentScheduleAssociationManagementModule
 with StudentScheduleManagementModule
 with TimetableManagementModule
 with TimetableEntryManagementModule
+with SessionRepositoryModule
+with SessionControllerModule
+with AkkaActorSystemModule
 with AssetsModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
@@ -218,6 +241,7 @@ with AssetsModule {
     studentScheduleManagementController,
     timetableManagementController,
     timetableEntryManagementController,
+    sessionController,
     assetsController
   )
 }
@@ -239,4 +263,5 @@ with DefaultStudentScheduleAssociationManagementModuleImpl
 with DefaultStudentScheduleManagementModuleImpl
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableEntryManagementModuleImpl
+with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
