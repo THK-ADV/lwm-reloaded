@@ -17,7 +17,7 @@ class LabworkBindingSpec extends SesameDbSpec{
   import bindings.LabworkBinding._
   import bindings.uuidBinder
 
-  val labwork = Labwork("AP Praktikum")
+  val labwork = Labwork("AP Praktikum", Labwork.randomUUID)
   val labworkGraph = (
       URI(Labwork.generateUri(labwork)).a(lwm.Labwork)
         -- lwm.label ->- labwork.label

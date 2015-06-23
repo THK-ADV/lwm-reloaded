@@ -17,7 +17,7 @@ class DegreeBindingSpec extends SesameDbSpec {
   import bindings.DegreeBinding._
   import bindings.uuidBinder
 
-  val degree = Degree("Studiengang")
+  val degree = Degree("Studiengang", Degree.randomUUID)
   val degreeGraph = (
     URI(Degree.generateUri(degree)).a(lwm.Degree)
       -- lwm.label ->- degree.label

@@ -1,15 +1,17 @@
 package models
 
 import java.util.UUID
+
 import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Json, Reads, Writes}
-import store.Namespace
 
-case class Room(label: String, id: Option[UUID] = Some(UUID.randomUUID())) extends UniqueEntity
+case class Room(label: String, id: UUID) extends UniqueEntity
 
-object Room extends UriGenerator[Room] with JsonSerialisation[Room] {
+case class RoomProtocol(label: String)
 
-  override implicit def reads: Reads[Room] = Json.reads[Room]
+object Room extends UriGenerator[Room] with JsonSerialisation[RoomProtocol, Room] {
+
+  override implicit def reads: Reads[RoomProtocol] = Json.reads[RoomProtocol]
 
   override implicit def writes: Writes[Room] = Json.writes[Room]
 

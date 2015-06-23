@@ -1,16 +1,18 @@
 package models.schedules
 
 import java.util.UUID
+
 import controllers.crud.JsonSerialisation
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
-import store.Namespace
 
-case class GroupScheduleAssociation(date: String, timetableEntry: String, id: Option[UUID] = Some(UUID.randomUUID())) extends UniqueEntity
+case class GroupScheduleAssociation(date: String, timetableEntry: String, id: UUID) extends UniqueEntity
 
-object GroupScheduleAssociation extends UriGenerator[GroupScheduleAssociation] with JsonSerialisation[GroupScheduleAssociation] {
+case class GroupScheduleAssociationProtocol(date: String, timetableEntry: String)
 
-  override implicit def reads: Reads[GroupScheduleAssociation] = Json.reads[GroupScheduleAssociation]
+object GroupScheduleAssociation extends UriGenerator[GroupScheduleAssociation] with JsonSerialisation[GroupScheduleAssociationProtocol, GroupScheduleAssociation] {
+
+  override implicit def reads: Reads[GroupScheduleAssociationProtocol] = Json.reads[GroupScheduleAssociationProtocol]
 
   override implicit def writes: Writes[GroupScheduleAssociation] = Json.writes[GroupScheduleAssociation]
 

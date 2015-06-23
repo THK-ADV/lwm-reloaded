@@ -17,7 +17,7 @@ class TimetableEntryBindingSpec extends SesameDbSpec {
   import bindings.TimetableEntryBinding._
   import bindings.uuidBinder
 
-  val timetableEntry = TimetableEntry("supervisor", "room", "startTime", "endTime")
+  val timetableEntry = TimetableEntry("supervisor", "room", "startTime", "endTime", TimetableEntry.randomUUID)
   val timetableEntryGraph = (
     URI(TimetableEntry.generateUri(timetableEntry)).a(lwm.TimetableEntry)
       -- lwm.supervisor ->- timetableEntry.supervisor

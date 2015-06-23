@@ -9,35 +9,35 @@ import org.openrdf.model.impl.{LinkedHashModel, ValueFactoryImpl}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import play.api.http.HeaderNames
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import store.{Namespace, SesameRepository}
 
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec with TestBaseDefinition {
-  val factory = ValueFactoryImpl.getInstance()
-
+abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition {
   lazy val passModel: LinkedHashModel = {
     val m = new LinkedHashModel()
     m.add(factory.createURI(s"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"), factory.createURI("http://somePredicate"), factory.createLiteral(""))
     m
   }
-
+  val factory = ValueFactoryImpl.getInstance()
   val repository = mock[SesameRepository]
 
-  def entityToPass: T
+  def entityToPass: O
 
-  def entityToFail: T
+  def entityToFail: O
 
   def mimeType: String
 
-  def controller: AbstractCRUDController[T]
+  def controller: AbstractCRUDController[I, O]
 
   def entityTypeName: String
 
-  implicit def jsonWrites: Writes[T]
+  val inputJson: JsValue
+
+  implicit def jsonWrites: Writes[O]
 
   def namespace: Namespace = Namespace("http://testNamespace/")
 
@@ -45,15 +45,13 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
     s"successfully create a new $entityTypeName" in {
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(passModel))
 
-      val json = Json.toJson(entityToPass)
-
       val expected = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
 
       val request = FakeRequest(
         POST,
         s"/${entityTypeName.toLowerCase}s",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        inputJson
       )
       val result = controller.create()(request)
 
@@ -66,14 +64,12 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
       val errorMessage = s"Oops, cant create $entityTypeName for some reason"
       when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
-      val json = Json.toJson(entityToFail)
-
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName.toLowerCase}s",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        inputJson
       )
       val result = controller.create()(request)
 
@@ -95,12 +91,12 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some(mimeType)
-      contentAsString(result) should include ("KO")
-      contentAsString(result) should include ("errors")
+      contentAsString(result) should include("KO")
+      contentAsString(result) should include("errors")
     }
 
     s"not get a single $entityTypeName when its not found" in {
-      when(repository.get[T](anyString())(anyObject())).thenReturn(Success(None))
+      when(repository.get[O](anyString())(anyObject())).thenReturn(Success(None))
 
       val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
       val request = FakeRequest(
@@ -116,7 +112,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
     s"not get a single $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-      when(repository.get[T](anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.get[O](anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
@@ -131,7 +127,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
     }
 
     s"successfully get a single $entityTypeName" in {
-      when(repository.get[T](anyString())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[O](anyString())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         GET,
@@ -146,7 +142,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
     s"successfully get all ${entityTypeName}s" in {
       val allEntities = Set(entityToPass, entityToFail)
-      when(repository.get[T](anyObject(), anyObject())).thenReturn(Success(allEntities))
+      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(allEntities))
 
       val request = FakeRequest(
         GET,
@@ -161,7 +157,7 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
 
     s"not get all ${entityTypeName}s when there is an exception" in {
       val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
-      when(repository.get[T](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.get[O](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
@@ -212,7 +208,9 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
       val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
@@ -228,13 +226,50 @@ abstract class AbstractCRUDControllerSpec[T <: UniqueEntity] extends WordSpec wi
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
       )
       val result = controller.update(entityToFail.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some(mimeType)
       contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"not update an existing $entityTypeName when its not found" in {
+      when(repository.get[O](anyString())(anyObject())).thenReturn(Success(None))
+
+      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    s"not update an existing $entityTypeName with invalid json data" in {
+      when(repository.get[O](anyString())(anyObject())).thenReturn(Success(Some(entityToPass)))
+
+      val json = Json.toJson("no valid data")
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        json
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some(mimeType)
+      contentAsString(result) should include("KO")
+      contentAsString(result) should include("errors")
     }
   }
 }

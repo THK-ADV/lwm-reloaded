@@ -17,7 +17,7 @@ class GroupBindingSpec extends SesameDbSpec {
   import bindings.GroupBinding._
   import bindings.uuidBinder
 
-  val group = Group("GroupSchedule", "Label", "Labwork")
+  val group = Group("GroupSchedule", "Label", "Labwork", Group.randomUUID)
   val groupGraph = (
     URI(Group.generateUri(group)).a(lwm.Group)
       -- lwm.groupSchedule ->- group.groupSchedule

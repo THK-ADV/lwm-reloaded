@@ -1,12 +1,14 @@
 package models.users
 
-import store.Namespace
-import models.{UriGenerator, UniqueEntity}
+import models.{UniqueEntity, UriGenerator}
 
 trait User extends UniqueEntity {
   def systemId: String
+
   def lastname: String
+
   def firstname: String
+
   def email: String
 }
 

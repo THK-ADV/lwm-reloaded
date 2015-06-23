@@ -1,7 +1,9 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.UriGenerator
-import models.schedules.GroupScheduleAssociation
+import models.schedules.{GroupScheduleAssociationProtocol, GroupScheduleAssociation}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -10,7 +12,7 @@ import store.{Namespace, SesameRepository}
 
 import scala.collection.Map
 
-class GroupScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[GroupScheduleAssociation] {
+class GroupScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[GroupScheduleAssociationProtocol, GroupScheduleAssociation] {
    override implicit def rdfWrites: ToPG[Sesame, GroupScheduleAssociation] = defaultBindings.GroupScheduleAssociationBinding.groupScheduleAssociationBinder
 
    override implicit def rdfReads: FromPG[Sesame, GroupScheduleAssociation] = defaultBindings.GroupScheduleAssociationBinding.groupScheduleAssociationBinder
@@ -19,9 +21,11 @@ class GroupScheduleAssociationCRUDController(val repository: SesameRepository, v
 
    override implicit def uriGenerator: UriGenerator[GroupScheduleAssociation] = GroupScheduleAssociation
 
-   override implicit def reads: Reads[GroupScheduleAssociation] = GroupScheduleAssociation.reads
+   override implicit def reads: Reads[GroupScheduleAssociationProtocol] = GroupScheduleAssociation.reads
 
    override implicit def writes: Writes[GroupScheduleAssociation] = GroupScheduleAssociation.writes
 
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+
+   override protected def fromInput(input: GroupScheduleAssociationProtocol, id: Option[UUID]): GroupScheduleAssociation = ???
 }

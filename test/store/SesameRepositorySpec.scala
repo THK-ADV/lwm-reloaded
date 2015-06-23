@@ -23,8 +23,8 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
   lazy val repo = SesameRepository(ns)
 
   "Sesame Repository" should {
-    "add a student" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
+    "add an entity" in {
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
 
       val g = repo.add(student)
 
@@ -45,8 +45,9 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           fail(s"Addition not successful: $e")
       }
     }
-    "delete a student" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
+
+    "delete an entity" in {
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
 
       val repoSize = repo.size
       val graph = repo delete Student.generateUri(student)
@@ -58,8 +59,9 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           fail("repo could not delete the given entity")
       }
     }
-    "delete stuff" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
+
+    "delete entities" in {
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
       repo.add(student)
       val studentUri = Student.generateUri(student)
 
@@ -69,11 +71,12 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       repo.contains(studentUri) shouldBe false
       repo should have size 0
     }
-    "get list of stuff" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de")
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de")
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de")
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de")
+
+    "get list of entities" in {
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -87,22 +90,26 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           fail(s"Could not get list of students: $e")
       }
     }
+
     "get an explicit entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      repo add student
 
       val explicitStudent = repo get Student.generateUri(student)
 
       explicitStudent match {
-        case Success(s) =>
-          s.foreach(ss => ss shouldEqual student)
+        case Success(Some(s)) =>
+          s shouldEqual student
+        case Success(None) =>
+          fail("repo could not unwrap an optional type")
         case Failure(e) =>
           fail("repo could not return explicit entity")
       }
 
     }
-    "update a student" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
-      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
+    "update an entity" in {
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
 
       val g = repo.add(student)
 
@@ -129,6 +136,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       g match {
         case Success(graph) =>
           graph.isIsomorphicWith(expectedGraph) shouldBe true
+
           implicit val generator = Student
           val updated = repo.update(studentUpdated)
           updated match {
@@ -142,9 +150,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           fail(s"Student could not be added to graph: $e")
       }
     }
-    "contains a student" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de")
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de")
+
+    "contains an entity" in {
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Student.randomUUID)
 
       repo add student
 
@@ -155,7 +164,6 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       didContainAnotherStudent shouldBe false
     }
   }
-
 
   override protected def beforeEach(): Unit = {
     repo.reset().foreach(r => assert(repo.size == 0))

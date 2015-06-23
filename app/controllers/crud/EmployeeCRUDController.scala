@@ -1,7 +1,9 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.UriGenerator
-import models.users.Employee
+import models.users.{EmployeeProtocol, Employee}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -10,7 +12,7 @@ import store.{Namespace, SesameRepository}
 
 import scala.collection.Map
 
-class EmployeeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[Employee] {
+class EmployeeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[EmployeeProtocol, Employee] {
    override implicit def rdfWrites: ToPG[Sesame, Employee] = defaultBindings.EmployeeBinding.employeeBinder
 
    override implicit def rdfReads: FromPG[Sesame, Employee] = defaultBindings.EmployeeBinding.employeeBinder
@@ -19,9 +21,11 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override implicit def uriGenerator: UriGenerator[Employee] = Employee
 
-   override implicit def reads: Reads[Employee] = Employee.reads
+   override implicit def reads: Reads[EmployeeProtocol] = Employee.reads
 
    override implicit def writes: Writes[Employee] = Employee.writes
 
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+
+   override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = ???
 }

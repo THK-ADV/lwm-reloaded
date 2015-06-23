@@ -40,11 +40,11 @@ GET           /groupScheduleAssociations/:id          controllers.crud.GroupSche
 DELETE        /groupScheduleAssociations/:id          controllers.crud.GroupScheduleAssociationCRUDController.delete(id)
 
 # GroupSchedule
-POST          /groupSchedules                         controllers.crud.GroupScheduleCRUDController.create()
-POST          /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.update(id)
-GET           /groupSchedules                         controllers.crud.GroupScheduleCRUDController.all()
-GET           /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.get(id)
-DELETE        /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.delete(id)
+#POST          /groupSchedules                         controllers.crud.GroupScheduleCRUDController.create()
+#POST          /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.update(id)
+#GET           /groupSchedules                         controllers.crud.GroupScheduleCRUDController.all()
+#GET           /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.get(id)
+#DELETE        /groupSchedules/:id                     controllers.crud.GroupScheduleCRUDController.delete(id)
 
 # Labwork
 POST          /labworks                               controllers.crud.LabworkCRUDController.create()
@@ -82,18 +82,18 @@ GET           /studentScheduleAssociations/:id        controllers.crud.StudentSc
 DELETE        /studentScheduleAssociations/:id        controllers.crud.StudentScheduleAssociationCRUDController.delete(id)
 
 # StudentSchedule
-POST          /studentSchedules                       controllers.crud.StudentScheduleCRUDController.create()
-POST          /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.update(id)
-GET           /studentSchedules                       controllers.crud.StudentScheduleCRUDController.all()
-GET           /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.get(id)
-DELETE        /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.delete(id)
+#POST          /studentSchedules                       controllers.crud.StudentScheduleCRUDController.create()
+#POST          /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.update(id)
+#GET           /studentSchedules                       controllers.crud.StudentScheduleCRUDController.all()
+#GET           /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.get(id)
+#DELETE        /studentSchedules/:id                   controllers.crud.StudentScheduleCRUDController.delete(id)
 
 # Timetable
-POST          /timetables                             controllers.crud.TimetableCRUDController.create()
-POST          /timetables/:id                         controllers.crud.TimetableCRUDController.update(id)
-GET           /timetables                             controllers.crud.TimetableCRUDController.all()
-GET           /timetables/:id                         controllers.crud.TimetableCRUDController.get(id)
-DELETE        /timetables/:id                         controllers.crud.TimetableCRUDController.delete(id)
+#POST          /timetables                             controllers.crud.TimetableCRUDController.create()
+#POST          /timetables/:id                         controllers.crud.TimetableCRUDController.update(id)
+#GET           /timetables                             controllers.crud.TimetableCRUDController.all()
+#GET           /timetables/:id                         controllers.crud.TimetableCRUDController.get(id)
+#DELETE        /timetables/:id                         controllers.crud.TimetableCRUDController.delete(id)
 
 # TimetableEntry
 POST          /timetableEntries                       controllers.crud.TimetableEntryCRUDController.create()

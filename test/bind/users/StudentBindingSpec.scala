@@ -17,7 +17,7 @@ class StudentBindingSpec extends SesameDbSpec {
   import bindings.StudentBinding._
   import bindings.uuidBinder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de")
+  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Student.randomUUID)
   val studentGraph = (
     URI(Student.generateUri(student)).a(lwm.Student)
       -- lwm.systemId ->- student.systemId

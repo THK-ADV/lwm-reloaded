@@ -17,7 +17,7 @@ class RoomBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.RoomBinding._
 
-  val room = Room("label")
+  val room = Room("label", Room.randomUUID)
   val roomGraph = (
     URI(Room.generateUri(room)).a(lwm.Room)
       -- lwm.label ->- room.label

@@ -1,6 +1,8 @@
 package controllers.crud
 
-import models.{Degree, UriGenerator}
+import java.util.UUID
+
+import models.{DegreeProtocol, Degree, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -9,8 +11,8 @@ import store.{Namespace, SesameRepository}
 
 import scala.collection.Map
 
-class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[Degree]{
-  override implicit def reads: Reads[Degree] = Degree.reads
+class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[DegreeProtocol, Degree]{
+  override implicit def reads: Reads[DegreeProtocol] = Degree.reads
 
   override implicit def writes: Writes[Degree] = Degree.writes
 
@@ -23,4 +25,6 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
 
   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+
+  override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = ???
 }

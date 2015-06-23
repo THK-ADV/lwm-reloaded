@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.{Semester, SemesterProtocol, UriGenerator}
 import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -10,7 +12,12 @@ import store.{Namespace, SesameRepository}
 import scala.collection.Map
 import scala.util.{Failure, Success}
 
-class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController2[SemesterProtocol, Semester] {
+object SemesterCRUDController {
+  val yearAttribute = "year"
+  val periodAttribute = "period"
+}
+
+class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[SemesterProtocol, Semester] {
   override implicit def rdfWrites: ToPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder
 
   override implicit def rdfReads: FromPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder
@@ -26,7 +33,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   override def getWithFilter(queryString: Map[String, Seq[String]]) = {
     repository.get[Semester] match {
       case Success(semesters) =>
-        val attributes = List(queryString.get("year"), queryString.get("period"))
+        val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 
         attributes match {
           case List(Some(years), None) =>
@@ -51,10 +58,10 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
               ))
             } else {
               val filteredByPeriod = period.head match {
-                case ss if ss.equals("SS") =>
-                  Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
-                case ws if ws.equals("WS") =>
-                  Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
+                case ss if ss.toLowerCase.equals("ss") =>
+                  Some(filteredByYear.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
+                case ws if ws.toLowerCase.equals("ws") =>
+                  Some(filteredByYear.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
                 case _ => None
               }
 
@@ -71,9 +78,9 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
           case List(None, Some(period)) =>
             val filteredByPeriod = period.head match {
-              case ss if ss.equals("SS") =>
+              case ss if ss.toLowerCase.equals("ss") =>
                 Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
-              case ws if ws.equals("WS") =>
+              case ws if ws.toLowerCase.equals("ws") =>
                 Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
               case _ => None
             }
@@ -103,5 +110,10 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     }
   }
 
-  override protected def fromInput(input: SemesterProtocol): Semester = Semester(input.name, input.startDate, input.endDate, input.examPeriod, Some(Semester.randomUUID))
+  override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
+    case Some(s) =>
+      Semester(input.name, input.startDate, input.endDate, input.examPeriod, s)
+    case None =>
+      Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
+  }
 }

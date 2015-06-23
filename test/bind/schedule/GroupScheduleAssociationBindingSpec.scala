@@ -17,7 +17,7 @@ class GroupScheduleAssociationBindingSpec extends SesameDbSpec {
   import bindings.GroupScheduleAssociationBinding._
   import bindings.uuidBinder
 
-  val groupScheduleAssociation = GroupScheduleAssociation("date", "timetableEntry")
+  val groupScheduleAssociation = GroupScheduleAssociation("date", "timetableEntry", GroupScheduleAssociation.randomUUID)
   val groupScheduleAssociationGraph = (
     URI(GroupScheduleAssociation.generateUri(groupScheduleAssociation)).a(lwm.GroupScheduleAssociation)
       -- lwm.date ->- groupScheduleAssociation.date
@@ -31,6 +31,7 @@ class GroupScheduleAssociationBindingSpec extends SesameDbSpec {
 
       graph isIsomorphicWith groupScheduleAssociationGraph shouldBe true
     }
+
     "return a groupScheduleAssociation based on a RDF graph representation" in {
       val expectedGroupScheduleAssociation = PointedGraph[Rdf](URI(GroupScheduleAssociation.generateUri(groupScheduleAssociation)), groupScheduleAssociationGraph).as[GroupScheduleAssociation]
 

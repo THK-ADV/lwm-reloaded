@@ -1,20 +1,18 @@
 package models.users
 
 import java.util.UUID
+
 import controllers.crud.JsonSerialisation
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
-import store.Namespace
 
-case class Employee(systemId: String,
-                    lastname: String,
-                    firstname: String,
-                    email: String,
-                    id: Option[UUID] = Some(UUID.randomUUID())) extends User
+case class Employee(systemId: String, lastname: String, firstname: String, email: String, id: UUID) extends User
 
-object Employee extends UriGenerator[Employee] with JsonSerialisation[Employee] {
+case class EmployeeProtocol(systemId: String, lastname: String, firstname: String, email: String)
 
-  override implicit def reads: Reads[Employee] = Json.reads[Employee]
+object Employee extends UriGenerator[Employee] with JsonSerialisation[EmployeeProtocol, Employee] {
+
+  override implicit def reads: Reads[EmployeeProtocol] = Json.reads[EmployeeProtocol]
 
   override implicit def writes: Writes[Employee] = Json.writes[Employee]
 

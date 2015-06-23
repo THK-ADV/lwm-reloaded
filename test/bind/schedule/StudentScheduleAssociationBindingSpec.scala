@@ -17,7 +17,7 @@ class StudentScheduleAssociationBindingSpec extends SesameDbSpec {
   import bindings.StudentScheduleAssociationBinding._
   import bindings.uuidBinder
 
-  val studentScheduleAssociation = StudentScheduleAssociation("date", "groupScheduleAssociation", "timetableEntry")
+  val studentScheduleAssociation = StudentScheduleAssociation("date", "groupScheduleAssociation", "timetableEntry", StudentScheduleAssociation.randomUUID)
   val studentScheduleAssociationGraph = (
     URI(StudentScheduleAssociation.generateUri(studentScheduleAssociation)).a(lwm.StudentScheduleAssociation)
       -- lwm.date ->- studentScheduleAssociation.date

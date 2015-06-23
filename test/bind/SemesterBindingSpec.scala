@@ -14,10 +14,10 @@ class SemesterBindingSpec extends SesameDbSpec {
   implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
   val bindings = Bindings[Sesame](ns)
-  import bindings.SemesterBinding._
   import bindings.uuidBinder
+  import bindings.SemesterBinding._
 
-  val semester = Semester("name", "startDate", "endDate", "examPeriod")
+  val semester = Semester("name", "startDate", "endDate", "examPeriod", Semester.randomUUID)
   val semesterGraph = (
     URI(Semester.generateUri(semester)).a(lwm.Semester)
       -- lwm.name ->- semester.name

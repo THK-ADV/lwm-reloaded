@@ -1,16 +1,18 @@
 package models.timetable
 
 import java.util.UUID
+
 import controllers.crud.JsonSerialisation
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
-import store.Namespace
 
-case class TimetableEntry(supervisor: String, room: String, startTime: String, endTime: String, id: Option[UUID] = Some(UUID.randomUUID())) extends UniqueEntity
+case class TimetableEntry(supervisor: String, room: String, startTime: String, endTime: String, id: UUID) extends UniqueEntity
 
-object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntry] {
+case class TimetableEntryProtocol(supervisor: String, room: String, startTime: String, endTime: String)
 
-  override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
+object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntryProtocol, TimetableEntry] {
+
+  override implicit def reads: Reads[TimetableEntryProtocol] = Json.reads[TimetableEntryProtocol]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
