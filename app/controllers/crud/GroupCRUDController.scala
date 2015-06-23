@@ -4,7 +4,10 @@ import models.{Group, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
+import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+
+import scala.collection.Map
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[Group] {
    override implicit def rdfWrites: ToPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
@@ -18,4 +21,6 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
    override implicit def reads: Reads[Group] = Group.reads
 
    override implicit def writes: Writes[Group] = Group.writes
- }
+
+   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+}

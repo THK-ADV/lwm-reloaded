@@ -6,11 +6,10 @@ import models._
 import models.schedules.{GroupSchedule, GroupScheduleAssociation, StudentSchedule, StudentScheduleAssociation}
 import models.timetable.{Timetable, TimetableEntry}
 import models.users.{Employee, Student}
-import models.users.{Employee, Student}
-import store.Namespace
-import store.Prefixes.LWMPrefix
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
+import store.Namespace
+import store.Prefixes.LWMPrefix
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -134,8 +133,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val name = property[String](lwm.name)
     private val startDate = property[String](lwm.startDate)
     private val endDate = property[String](lwm.endDate)
+    private val examPeriod = property[String](lwm.examPeriod)
 
-    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, startDate, endDate, id)(Semester.apply, Semester.unapply) withClasses classUri
+    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, startDate, endDate, examPeriod, id)(Semester.apply, Semester.unapply) withClasses classUri
 
   }
 

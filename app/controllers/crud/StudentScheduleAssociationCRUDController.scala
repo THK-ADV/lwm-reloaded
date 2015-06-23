@@ -5,7 +5,10 @@ import models.schedules.StudentScheduleAssociation
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
+import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+
+import scala.collection.Map
 
 class StudentScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[StudentScheduleAssociation] {
    override implicit def rdfWrites: ToPG[Sesame, StudentScheduleAssociation] = defaultBindings.StudentScheduleAssociationBinding.studentScheduleAssociationBinder
@@ -19,4 +22,6 @@ class StudentScheduleAssociationCRUDController(val repository: SesameRepository,
    override implicit def reads: Reads[StudentScheduleAssociation] = StudentScheduleAssociation.reads
 
    override implicit def writes: Writes[StudentScheduleAssociation] = StudentScheduleAssociation.writes
- }
+
+   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+}

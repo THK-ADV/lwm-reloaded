@@ -4,10 +4,11 @@ import models.{UniqueEntity, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.{Result, Action, Controller}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 
+import scala.collection.Map
 import scala.util.{Failure, Success}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
@@ -33,7 +34,11 @@ trait JsonSerialisation[T] {
   implicit def writes: Writes[T]
 }
 
-trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] {
+trait Filterable {
+  def getWithFilter(queryString: Map[String, Seq[String]]): Result
+}
+
+trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSerialisation[T] with SesameRdfSerialisation[T] with Filterable {
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
@@ -82,16 +87,20 @@ trait AbstractCRUDController[T <: UniqueEntity] extends Controller with JsonSeri
     }
   }
 
-  // GET /ts
+  // GET /ts with optional queries
   def all() = Action { implicit request =>
-    repository.get[T] match {
-      case Success(s) =>
-        Ok(Json.toJson(s))
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
+    if (request.queryString.isEmpty) {
+      repository.get[T] match {
+        case Success(s) =>
+          Ok(Json.toJson(s))
+        case Failure(e) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          ))
+      }
+    } else {
+      getWithFilter(request.queryString)
     }
   }
 

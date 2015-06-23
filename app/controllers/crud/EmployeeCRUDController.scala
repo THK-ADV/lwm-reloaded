@@ -5,7 +5,10 @@ import models.users.Employee
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
+import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+
+import scala.collection.Map
 
 class EmployeeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[Employee] {
    override implicit def rdfWrites: ToPG[Sesame, Employee] = defaultBindings.EmployeeBinding.employeeBinder
@@ -19,4 +22,6 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
    override implicit def reads: Reads[Employee] = Employee.reads
 
    override implicit def writes: Writes[Employee] = Employee.writes
- }
+
+   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+}

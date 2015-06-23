@@ -74,6 +74,8 @@ object Prefixes {
     val title = apply("title")
     //AssignmentAssociation
     val visible = apply("visible")
+    //Semester
+    val examPeriod = apply("examPeriod")
 
 
     val Assignment = apply("Assignment")
