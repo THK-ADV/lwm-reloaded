@@ -11,5 +11,5 @@ trait User extends UniqueEntity {
 }
 
 object User extends UriGenerator[User] {
-  def generateUri(user: User)(implicit ns: Namespace): String = s"${ns}users/${user.id}"
+  override def base: String = "users"
 }

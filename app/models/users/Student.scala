@@ -10,12 +10,13 @@ case class Student(systemId: String,
                    lastname: String,
                    firstname: String,
                    email: String,
-                   registrationId: String, id: UUID = UUID.randomUUID()) extends User
+                   registrationId: String, id: Option[UUID] = Some(UUID.randomUUID())) extends User
 
 object Student extends UriGenerator[Student] with JsonSerialisation[Student] {
-  def generateUri(student: Student)(implicit ns: Namespace): String = s"${ns}students/${student.id}"
 
   override implicit def reads: Reads[Student] = Json.reads[Student]
 
   override implicit def writes: Writes[Student] = Json.writes[Student]
+
+  override def base: String = "students"
 }

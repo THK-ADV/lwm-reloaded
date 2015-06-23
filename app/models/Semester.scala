@@ -1,16 +1,19 @@
 package models
 
 import java.util.UUID
-import controllers.crud.JsonSerialisation
+
+import controllers.crud.JsonSerialisation2
 import play.api.libs.json.{Json, Reads, Writes}
-import store.Namespace
 
-case class Semester(name: String, startDate: String, endDate: String, examPeriod: String, id: UUID = UUID.randomUUID()) extends UniqueEntity
+case class Semester(name: String, startDate: String, endDate: String, examPeriod: String, id: Option[UUID]) extends UniqueEntity
 
-object Semester extends UriGenerator[Semester] with JsonSerialisation[Semester] {
-  def generateUri(semester: Semester)(implicit ns: Namespace): String = s"${ns}semesters/${semester.id}"
+case class SemesterProtocol(name: String, startDate: String, endDate: String, examPeriod: String)
 
-  override implicit def reads: Reads[Semester] = Json.reads[Semester]
+object Semester extends UriGenerator[Semester] with JsonSerialisation2[SemesterProtocol, Semester] {
+
+  override implicit def reads: Reads[SemesterProtocol] = Json.reads[SemesterProtocol]
 
   override implicit def writes: Writes[Semester] = Json.writes[Semester]
+
+  override def base: String = "semesters"
 }

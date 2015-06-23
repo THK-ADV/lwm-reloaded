@@ -24,7 +24,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Rdf, T], idGenerator: G): Try[Rdf#Graph]
 
-  def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]]
+  def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Seq[T]]
 
   def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
 
@@ -72,14 +72,15 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     repo.shutDown()
   }
 
-  override def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]] = {
+  override def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Seq[T]] = {
     val connection = repo.getConnection
 
     val ts = rdfStore.getGraph(connection, ns).map { graph =>
       classUri.classes.toList.flatMap { clazz =>
         graph.getAllInstancesOf(clazz).toList.map(_.as[T])
-      }.filter(_.isSuccess).map(_.get).toSet
+      }.filter(_.isSuccess).map(_.get).map(entry => entry.id.get -> entry).map(i => {println(i); i}).toMap.values.toSeq
     }
+
 
     connection.close()
 
@@ -130,11 +131,11 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
   override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[Model] = {
     val connection = repo.getConnection
-    val entityUri = idGenerator.generateUri(entity)
+    val maybeUri = idGenerator.generateUri(entity)
 
-    val result = (for {
-      graph <- delete(entityUri)
-    } yield add(entity)).flatten
+    val result = maybeUri.fold[Try[Model]](Failure(new RuntimeException("Entity doesn't have an ID!"))) { uri =>
+      (for(g <- delete(uri)) yield add(entity)).flatten
+    }
 
     connection.close()
 

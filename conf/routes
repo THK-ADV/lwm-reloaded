@@ -102,8 +102,8 @@ GET           /timetableEntries                       controllers.crud.Timetable
 GET           /timetableEntries/:id                   controllers.crud.TimetableEntryCRUDController.get(id)
 DELETE        /timetableEntries/:id                   controllers.crud.TimetableEntryCRUDController.delete(id)
 
-POST          /sessions                               controllers.SessionManagement.login
-DELETE        /sessions                               controllers.SessionManagement.logout
+POST          /sessions                               controllers.SessionController.login
+DELETE        /sessions                               controllers.SessionController.logout
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                           controllers.Assets.at(path="/public", file)

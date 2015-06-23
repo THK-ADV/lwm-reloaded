@@ -2,12 +2,7 @@ package services
 
 import java.util.UUID
 
-import akka.actor.{ActorLogging, Actor, Props, ActorSystem}
-import controllers.SessionRepositoryActor.RemovalFailure
-import controllers.SessionRepositoryActor.SessionRemovalRequest
-import controllers.SessionRepositoryActor.SessionRequest
-import controllers.SessionRepositoryActor.ValidationFailure
-import controllers.SessionRepositoryActor.ValidationRequest
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import models.Session
 
 import scala.concurrent.Future
@@ -22,9 +17,6 @@ trait SessionHandlingService {
   def deleteSession(id: UUID): Future[Boolean]
 
 }
-
-
-
 
 
 class ActorBasedSessionService(system: ActorSystem) extends SessionHandlingService {
