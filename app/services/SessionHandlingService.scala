@@ -1,38 +1,19 @@
-package controllers
+package services
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{ActorLogging, Actor, Props, ActorSystem}
+import controllers.SessionRepositoryActor.RemovalFailure
+import controllers.SessionRepositoryActor.SessionRemovalRequest
+import controllers.SessionRepositoryActor.SessionRequest
+import controllers.SessionRepositoryActor.ValidationFailure
+import controllers.SessionRepositoryActor.ValidationRequest
 import models.Session
-import play.api.mvc.{Action, Controller}
 
 import scala.concurrent.Future
 
 
-class SessionManagement(sessionRepository: SessionHandling) extends Controller {
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  def login = Action.async(parse.json) { implicit request =>
-    sessionRepository.newSession("").map { session =>
-      Ok.withSession("session-id" -> session.id.toString)
-    }
-  }
-
-  def logout = Action.async { implicit request =>
-    request.session.get("session-id") match {
-      case Some(id) =>
-        sessionRepository.deleteSession(UUID.fromString(id)).map { result =>
-          if (result) Ok.withNewSession else Unauthorized
-        }
-      case None =>
-        Future.successful(Unauthorized)
-    }
-
-  }
-}
-
-
-trait SessionHandling {
+trait SessionHandlingService {
 
   def newSession(user: String): Future[Session]
 
@@ -42,16 +23,20 @@ trait SessionHandling {
 
 }
 
-class SessionRepository(system: ActorSystem) extends SessionHandling {
 
-  import SessionRepositoryActor._
+
+
+
+class ActorBasedSessionService(system: ActorSystem) extends SessionHandlingService {
+
+  import SessionServiceActor._
   import akka.pattern.ask
   import akka.util.Timeout
   import system.dispatcher
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(SessionRepositoryActor.props)
+  private val ref = system.actorOf(SessionServiceActor.props)
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String): Future[Session] = (ref ? SessionRequest(user)).mapTo[Session]
@@ -61,8 +46,6 @@ class SessionRepository(system: ActorSystem) extends SessionHandling {
       true
     case ValidationFailure(reason) =>
       false
-    case _ =>
-      false
   }
 
 
@@ -70,17 +53,13 @@ class SessionRepository(system: ActorSystem) extends SessionHandling {
     case RemovalSuccessful =>
       true
     case RemovalFailure(reason) =>
-      println(reason)
-      false
-    case _ =>
-      println("huh")
       false
   }
 
 }
 
 
-object SessionRepositoryActor {
+object SessionServiceActor {
 
   case class SessionRemovalRequest(id: UUID)
 
@@ -103,12 +82,12 @@ object SessionRepositoryActor {
   case object Update
 
 
-  def props: Props = Props(new SessionRepositoryActor)
+  def props: Props = Props(new SessionServiceActor)
 }
 
-class SessionRepositoryActor extends Actor with ActorLogging {
+class SessionServiceActor extends Actor with ActorLogging {
 
-  import SessionRepositoryActor._
+  import SessionServiceActor._
 
   import scala.concurrent.duration._
 
