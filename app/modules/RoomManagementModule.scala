@@ -9,6 +9,6 @@ trait RoomManagementModule {
 }
 
 trait DefaultRoomManagementModuleImpl extends RoomManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val roomManagementController: RoomCRUDController = new RoomCRUDController(repository, namespace)
 }

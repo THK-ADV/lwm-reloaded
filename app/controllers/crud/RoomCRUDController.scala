@@ -26,5 +26,8 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
 
-   override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = ???
+   override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
+      case Some(id) => Room(input.label, id)
+      case None => Room(input.label, Room.randomUUID)
+   }
 }

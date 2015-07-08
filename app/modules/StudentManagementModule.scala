@@ -11,6 +11,6 @@ trait StudentManagementModule {
 }
 
 trait DefaultStudentManagementModuleImpl extends StudentManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val studentManagementController: StudentCRUDController = new StudentCRUDController(repository, namespace)
 }

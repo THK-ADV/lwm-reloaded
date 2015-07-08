@@ -8,6 +8,6 @@ trait CourseManagementModule {
 }
 
 trait DefaultCourseManagementModuleImpl extends CourseManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val courseManagementController: CourseCRUDController = new CourseCRUDController(repository, namespace)
 }

@@ -85,12 +85,12 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     ts
   }
 
-  override def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
+  override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
     val connection = repo.getConnection
-    val uri = makeUri(id)
+    val url = makeUri(uri)
 
     val ts = rdfStore.getGraph(connection, ns).map { graph =>
-      PointedGraph[Rdf](uri, graph).as[T].toOption
+      PointedGraph[Rdf](url, graph).as[T].toOption
     }
 
     connection.close()

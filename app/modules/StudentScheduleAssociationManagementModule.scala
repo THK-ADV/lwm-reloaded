@@ -11,6 +11,6 @@ trait StudentScheduleAssociationManagementModule {
 }
 
 trait DefaultStudentScheduleAssociationManagementModuleImpl extends StudentScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController = new StudentScheduleAssociationCRUDController(repository, namespace)
 }

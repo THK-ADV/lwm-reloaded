@@ -9,6 +9,6 @@ trait GroupScheduleAssociationManagementModule {
 }
 
 trait DefaultGroupScheduleAssociationManagementModuleImpl extends GroupScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val groupScheduleAssociationManagementController: GroupScheduleAssociationCRUDController = new GroupScheduleAssociationCRUDController(repository, namespace)
 }

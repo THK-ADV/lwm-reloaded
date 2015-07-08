@@ -3,6 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.{UniqueEntity, UriGenerator}
+import modules.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
@@ -13,9 +14,7 @@ import store.{Namespace, SesameRepository}
 import scala.collection.Map
 import scala.util.{Failure, Success}
 
-trait SesameRdfSerialisation[T <: UniqueEntity] {
-
-  def namespace: Namespace
+trait SesameRdfSerialisation[T <: UniqueEntity] { self: BaseNamespace =>
 
   def repository: SesameRepository
 
@@ -44,7 +43,12 @@ trait ModelConverter[I, O] {
   protected def fromInput(input: I, id: Option[UUID] = None): O
 }
 
-trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller with JsonSerialisation[I, O] with SesameRdfSerialisation[O] with Filterable with ModelConverter[I, O] {
+trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
+with JsonSerialisation[I, O]
+with SesameRdfSerialisation[O]
+with Filterable
+with ModelConverter[I, O]
+with BaseNamespace {
 
   // POST /Ts
   def create() = Action(parse.json) { implicit request =>
@@ -74,7 +78,10 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller with JsonS
 
   // GET /Ts/:id
   def get(id: String) = Action { implicit request =>
-    repository.get[O](id) match {
+    val uri = s"$namespace${request.uri}"
+    println(uri)
+
+    repository.get[O](uri) match {
       case Success(s) =>
         s match {
           case Some(entity) =>

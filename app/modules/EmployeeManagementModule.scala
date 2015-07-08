@@ -9,6 +9,6 @@ trait EmployeeManagementModule {
 }
 
 trait DefaultEmployeeManagementModuleImpl extends EmployeeManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val employeeManagementController: EmployeeCRUDController = new EmployeeCRUDController(repository, namespace)
 }

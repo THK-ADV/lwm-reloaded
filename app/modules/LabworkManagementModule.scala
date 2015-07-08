@@ -10,6 +10,6 @@ trait LabworkManagementModule {
 
 
 trait DefaultLabworkManagementModuleImpl extends LabworkManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val labworkManagementController: LabworkCRUDController = new LabworkCRUDController(repository, namespace)
 }

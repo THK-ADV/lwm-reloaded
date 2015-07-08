@@ -1,16 +1,26 @@
 package modules
 
+import play.api.Play
 import store.{Namespace, SesameRepository}
 
 
-trait SemanticRepositoryModule {
-  def repository: SesameRepository
-
+trait BaseNamespace {
   def namespace: Namespace
 }
 
+trait ConfigurableBaseNamespace extends BaseNamespace {
+  self: ConfigurationModule =>
+  lwmConfig.underlying.resolve()
+  override def namespace: Namespace = Namespace(lwmConfig.underlying.getString("lwm.namespace"))
+}
+
+trait SemanticRepositoryModule {
+  self: BaseNamespace =>
+  def repository: SesameRepository
+}
+
 trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
-  def namespace: Namespace = Namespace("http://lwm/")
+  self: BaseNamespace =>
 
   def repository: SesameRepository = SesameRepository(namespace)
 }

@@ -9,6 +9,6 @@ trait DegreeManagementModule {
 }
 
 trait DefaultDegreeManagementModuleImpl extends DegreeManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(repository, namespace)
 }

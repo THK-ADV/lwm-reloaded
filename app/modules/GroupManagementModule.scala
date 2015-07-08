@@ -9,6 +9,6 @@ trait GroupManagementModule {
 }
 
 trait DefaultGroupManagementModuleImpl extends GroupManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val groupManagementController: GroupCRUDController = new GroupCRUDController(repository, namespace)
 }

@@ -32,6 +32,8 @@ trait DefaultAssetsModuleImpl extends AssetsModule {
 }
 
 abstract class LwmApplication(context: Context) extends BuiltInComponentsFromContext(context)
+with ConfigurationModule
+with BaseNamespace
 with HomepageModule
 with SemanticRepositoryModule
 with DegreeManagementModule
@@ -75,6 +77,8 @@ with AssetsModule {
 }
 
 class DefaultLwmApplication(context: Context) extends LwmApplication(context)
+with ConfigurationModuleImpl
+with ConfigurableBaseNamespace
 with DefaultSemanticRepositoryModuleImpl
 with DefaultHomepageModuleImpl
 with DefaultDegreeManagementModuleImpl

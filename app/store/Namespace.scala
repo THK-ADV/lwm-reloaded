@@ -1,5 +1,6 @@
 package store
 
 case class Namespace(base: String) {
-  override def toString = if (base.endsWith("/")) base else s"$base/"
+  private val trimmed = if (base.endsWith("/")) base.substring(0, base.size - 1) else s"$base"
+  override def toString = trimmed
 }

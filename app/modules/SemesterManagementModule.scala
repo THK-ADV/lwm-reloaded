@@ -9,6 +9,6 @@ trait SemesterManagementModule {
 }
 
 trait DefaultSemesterManagementModuleImpl extends SemesterManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with BaseNamespace =>
   lazy val semesterManagementController: SemesterCRUDController = new SemesterCRUDController(repository, namespace)
 }
