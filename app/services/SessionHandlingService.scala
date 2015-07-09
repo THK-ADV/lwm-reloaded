@@ -22,7 +22,7 @@ trait SessionHandlingService {
 }
 
 
-class ActorBasedSessionService(system: ActorSystem) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator) extends SessionHandlingService {
 
   import SessionServiceActor._
   import akka.util.Timeout
@@ -31,7 +31,7 @@ class ActorBasedSessionService(system: ActorSystem) extends SessionHandlingServi
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(RoundRobinPool(10, resizer = Some(DefaultResizer(10, 20))).props(SessionServiceActor.props(???)))
+  private val ref = system.actorOf(RoundRobinPool(10, resizer = Some(DefaultResizer(10, 20))).props(SessionServiceActor.props(authenticator)))
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String, password: String): Future[Session] = (ref ? SessionRequest(user, password)).mapTo[Session]
