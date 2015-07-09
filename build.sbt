@@ -25,6 +25,7 @@ lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     libraryDependencies ++= semanticDependencies,
+    libraryDependencies ++= lwmDependencies,
     libraryDependencies ++= scalazDependencies,
     libraryDependencies ++= testDependencies
   ).enablePlugins(PlayScala)
