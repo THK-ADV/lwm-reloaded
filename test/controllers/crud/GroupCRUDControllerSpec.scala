@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{GroupCRUDController, AbstractCRUDController}
-import models.{GroupProtocol, Group}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.{Group, GroupProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
   override val entityToPass: Group = Group("groupSchedule to pass", "label to pass", "labwork to pass", Group.randomUUID)

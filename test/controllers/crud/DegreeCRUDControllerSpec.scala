@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, DegreeCRUDController}
 import models.{Degree, DegreeProtocol}
-import play.api.libs.json.{Json, JsValue, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree] {
   override val entityToPass: Degree = Degree("label to pass", Degree.randomUUID)

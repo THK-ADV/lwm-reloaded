@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, EmployeeCRUDController}
-import models.users.{EmployeeProtocol, Employee}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.users.{Employee, EmployeeProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProtocol, Employee] {
   override val entityToPass: Employee = Employee("system id to pass", "surname to pass", "forename to pass", "email to pass", Employee.randomUUID)

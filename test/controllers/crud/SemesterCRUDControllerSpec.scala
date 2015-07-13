@@ -1,8 +1,7 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, SemesterCRUDController}
 import models.{Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.mockito.Matchers._

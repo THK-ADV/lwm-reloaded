@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{LabworkCRUDController, AbstractCRUDController}
-import models.{LabworkProtocol, Labwork}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.{Labwork, LabworkProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtocol, Labwork] {
   override val entityToPass: Labwork = Labwork("label to pass", Labwork.randomUUID)

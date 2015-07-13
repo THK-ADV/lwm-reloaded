@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, CourseCRUDController}
 import models.{Course, CourseProtocol}
-import play.api.libs.json.{Json, JsValue, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
   override val entityToPass: Course = Course("label to pass", "lecturer to pass", Course.randomUUID)

@@ -1,7 +1,6 @@
-package controllers
+package controllers.crud
 
 import base.TestBaseDefinition
-import controllers.crud.AbstractCRUDController
 import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._

@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{StudentScheduleAssociationCRUDController, AbstractCRUDController}
-import models.schedules.{StudentScheduleAssociationProtocol, StudentScheduleAssociation}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.schedules.{StudentScheduleAssociation, StudentScheduleAssociationProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class StudentScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentScheduleAssociationProtocol, StudentScheduleAssociation] {
   override val entityToPass: StudentScheduleAssociation = StudentScheduleAssociation("date to pass", "groupScheduleAssociation to pass", "timetableEntry to pass", StudentScheduleAssociation.randomUUID)

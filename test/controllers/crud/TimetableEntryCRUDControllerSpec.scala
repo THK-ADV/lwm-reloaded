@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{TimetableEntryCRUDController, AbstractCRUDController}
-import models.timetable.{TimetableEntryProtocol, TimetableEntry}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.timetable.{TimetableEntry, TimetableEntryProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableEntryProtocol, TimetableEntry] {
   override val entityToPass: TimetableEntry = TimetableEntry("supervisor to pass", "room to pass", "startTime to pass", "endTime to pass", TimetableEntry.randomUUID)

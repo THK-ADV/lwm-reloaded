@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
-import models.Session
+import models.{Session, SessionValidation}
 import utils.Authenticator
 
 import scala.concurrent.Future
@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 trait SessionHandlingService {
 
-  def newSession(user: String, password: String): Future[Session]
+  def newSession(user: String, password: String): Future[SessionValidation]
 
   def isValid(iD: UUID): Future[Boolean]
 
@@ -34,7 +34,8 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator
   private val ref = system.actorOf(RoundRobinPool(10, resizer = Some(DefaultResizer(10, 20))).props(SessionServiceActor.props(authenticator)))
   private implicit val timeout = Timeout(5.seconds)
 
-  override def newSession(user: String, password: String): Future[Session] = (ref ? SessionRequest(user, password)).mapTo[Session]
+  //BUG. mapTo requires the result to be of type `session` but SessionRequest can return either a `Session`, `ValidationFailure'. => CastException
+  override def newSession(user: String, password: String): Future[SessionValidation] = (ref ? SessionRequest(user, password)).mapTo[SessionValidation]
 
   override def isValid(id: UUID): Future[Boolean] = (ref ? ValidationRequest(id)).map {
     case ValidationSuccess =>
@@ -68,7 +69,7 @@ object SessionServiceActor {
 
   case class ValidationRequest(id: UUID)
 
-  case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
+  case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse //TODO: redundancy in session
 
   case class SessionRequest(user: String, password: String)
 
@@ -103,10 +104,10 @@ class SessionServiceActor(authenticator: Authenticator) extends Actor with Actor
             sessions = sessions + (session.user -> session)
             requester ! session
           } else {
-            requester ! ValidationFailure("Invalid Credentials")
+            requester ! models.ValidationFailure("Invalid Credentials")
           }
         case Failure(e) =>
-          requester ! ValidationFailure(e.getMessage)
+          requester ! models.ValidationFailure(e.getMessage)
       }
 
     case ValidationRequest(id) =>

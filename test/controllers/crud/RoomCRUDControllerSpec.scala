@@ -1,10 +1,9 @@
-package controllers
+package controllers.crud
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, RoomCRUDController}
-import models.{RoomProtocol, Room}
-import play.api.libs.json.{Json, JsValue, Writes}
+import models.{Room, RoomProtocol}
+import play.api.libs.json.{JsValue, Json, Writes}
 
 class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room] {
   override val entityToPass: Room = Room("label to pass", Room.randomUUID)
