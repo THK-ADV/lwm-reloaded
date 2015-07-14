@@ -1,133 +1,117 @@
 package controllers
 
+import java.util.UUID
+
 import base.TestBaseDefinition
-import modules.{AkkaActorSystemModule, SessionRepositoryModule}
+import models.Session
+import modules._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.play.OneAppPerSuite
+import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.mvc.Security
 import play.api.test.Helpers._
-import play.api.test.{FakeApplication, FakeHeaders, FakeRequest}
-import services.{ActorBasedSessionService, SessionHandlingService}
-import utils.Authenticator
+import play.api.test._
+import play.api.{http, Application, ApplicationLoader}
+import services.SessionHandlingService
+import utils._
 
 import scala.concurrent.Future
 
-class SessionControllerSpec extends WordSpec with TestBaseDefinition {
 
-  val sessionRepository: SessionRepositoryModule = new SessionRepositoryModule with AkkaActorSystemModule {
+class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
+  val uuid = UUID.randomUUID()
+  val uuid2 = UUID.randomUUID()
 
-    val authenticator: Authenticator = mock[Authenticator]
+  val sessionRepository: SessionRepositoryModule = new SessionRepositoryModule {
 
-    when(authenticator.authenticate("student1", "abcde123")).thenReturn(Future.successful(true))
-    when(authenticator.authenticate("student1", "blabla")).thenReturn(Future.successful(false))
-    when(authenticator.authenticate("foo", "bar")).thenReturn(Future.successful(false))
 
-    override def sessionService: SessionHandlingService = new ActorBasedSessionService(system, authenticator)
+    val service = mock[SessionHandlingService]
+
+    when(service.newSession("student1", "abcde123")).thenReturn(Future.successful(Session("student1")))
+    when(service.newSession("student1", "blabla")).thenReturn(Future.failed(new RuntimeException("Invalid Credentials")))
+    when(service.isValid(uuid)).thenReturn(Future.successful(true))
+    when(service.deleteSession(uuid)).thenReturn(Future.successful(true))
+    when(service.deleteSession(uuid2)).thenReturn(Future.successful(false))
+
+
+    override def sessionService: SessionHandlingService = service
   }
 
   val controller = new SessionController(sessionRepository.sessionService)
 
+  class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
+    override def load(context: Context): Application = new DefaultLwmApplication(context) {
+      override def sessionController: SessionController = controller
+    }.application
+  })
+
+
   "A SessionControllerSpec " should {
-    "allow students to log in and log out" in {
+    "allow students to log in and log out" in new WithDepsApplication {
       val json = Json.obj(
         "username" -> "student1",
         "password" -> "abcde123"
       )
 
-      val loginRequest = FakeRequest(
+      val result = route(FakeRequest(
         POST,
         "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> http.MimeTypes.JSON)),
         json
-      )
-
-      val result = controller.login()(loginRequest)
+      )).get
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some("application/json")
-      //contentAsString(result) shouldBe errorMessage
+      session(result).data.keys should contain ("session-id")
     }
 
-    "not allow students to log in when there is a validation error" in {
+    "not allow students to log in with invalid credentials" in new WithDepsApplication {
       val invalidJson = Json.obj(
-        "name" -> "foo",
-        "secret" -> "bar"
+        "name" -> "student1",
+        "secret" -> "blabla"
       )
 
-      val loginRequest = FakeRequest(
+      val result =  route(FakeRequest(
         POST,
         "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> http.MimeTypes.JSON)),
         invalidJson
-      )
-
-      val result = controller.login()(loginRequest)
+      )).get
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
+      session(result).data.keys should not contain "session-id"
       contentAsString(result) should include("KO")
       contentAsString(result) should include("errors")
     }
 
-    "not allow students to log in when they have invalid credentials" in {
-      val errorMessage = s"""{"status":"KO","errors":"Invalid Credentials"}"""
-
-      val json = Json.obj(
-        "username" -> "student1",
-        "password" -> "blabla"
-      )
-
-      val loginRequest = FakeRequest(
-        POST,
-        "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
-        json
-      )
-
-      val result = controller.login()(loginRequest)
-
-      status(result) shouldBe UNAUTHORIZED
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe errorMessage
-    }
-
-    "allow students to successfully log out" in {
-      val json = Json.obj(
-        "username" -> "student1",
-        "password" -> "abcde123"
-      )
-
+    "allow students to successfully log out" in new WithDepsApplication {
       val request = FakeRequest(
         DELETE,
-        "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
-        json
-      ).withSession(SessionController.sessionId -> "1", Security.username -> "student1")
+        "/sessions"
+      ).withSession(SessionController.sessionId -> uuid.toString, Security.username -> "student1")
 
-      val result = controller.logout()(request).run
+      val result =  route(request).get
 
       status(result) shouldBe OK
+      session(result).data.keys should not contain "session-id"
     }
 
-    "not allow students to successfully log out when there is no session match" in {
-      val json = Json.obj(
-        "username" -> "student1",
-        "password" -> "abcde123"
-      )
+    "not allow students to successfully log out when there is no session match" in new WithDepsApplication {
+
 
       val request = FakeRequest(
         DELETE,
-        "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
-        json
-      ).withSession(SessionController.sessionId -> "fd500d9e-04a8-453b-aad6-e70395432494", Security.username -> "student1")
+        "/sessions"
+      ).withSession(SessionController.sessionId -> uuid2.toString, Security.username -> "student1")
 
-      val result = controller.logout()(request).run
+      val result =  route(request).get
 
       status(result) shouldBe BAD_REQUEST
     }
+
   }
 }

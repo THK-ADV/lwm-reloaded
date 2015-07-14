@@ -22,7 +22,11 @@ trait LDAPAuthenticatorModule extends AuthenticatorModule {
 
 trait SessionControllerModule {
   self: SessionRepositoryModule =>
-  def sessionController: SessionController = new SessionController(sessionService)
+  def sessionController: SessionController
+}
+
+trait DefaultSessionControllerModuleImpl extends SessionControllerModule{ self: SessionRepositoryModule =>
+  override def sessionController: SessionController = new SessionController(sessionService)
 }
 
 trait SessionRepositoryModule {

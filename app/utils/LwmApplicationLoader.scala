@@ -98,3 +98,4 @@ with DefaultTimetableEntryManagementModuleImpl
 with LDAPAuthenticatorModule
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
+with DefaultSessionControllerModuleImpl

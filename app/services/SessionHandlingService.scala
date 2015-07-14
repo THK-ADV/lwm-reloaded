@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
-import models.{Session, SessionValidation}
+import models.Session
 import utils.Authenticator
 
 import scala.concurrent.Future
@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 trait SessionHandlingService {
 
-  def newSession(user: String, password: String): Future[SessionValidation]
+  def newSession(user: String, password: String): Future[Session]
 
   def isValid(iD: UUID): Future[Boolean]
 
@@ -25,17 +25,30 @@ trait SessionHandlingService {
 class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator) extends SessionHandlingService {
 
   import SessionServiceActor._
+  import akka.pattern.ask
   import akka.util.Timeout
   import system.dispatcher
-  import akka.pattern.ask
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(RoundRobinPool(10, resizer = Some(DefaultResizer(10, 20))).props(SessionServiceActor.props(authenticator)))
+  private val ref = system.actorOf(SessionServiceActor.props(authenticator))
   private implicit val timeout = Timeout(5.seconds)
 
-  //BUG. mapTo requires the result to be of type `session` but SessionRequest can return either a `Session`, `ValidationFailure'. => CastException
-  override def newSession(user: String, password: String): Future[SessionValidation] = (ref ? SessionRequest(user, password)).mapTo[SessionValidation]
+  override def newSession(user: String, password: String): Future[Session] = {
+    val promise = concurrent.Promise[Session]()
+    (ref ? SessionRequest(user, password)).mapTo[AuthenticationResponse].onComplete {
+      case Success(response) =>
+        response match {
+          case AuthenticationSuccess(session) =>
+            promise.success(session)
+          case AuthenticationFailure(message) =>
+            promise.failure(new RuntimeException(message))
+        }
+      case Failure(t) =>
+        promise.failure(t)
+    }
+    promise.future
+  }
 
   override def isValid(id: UUID): Future[Boolean] = (ref ? ValidationRequest(id)).map {
     case ValidationSuccess =>
@@ -69,7 +82,9 @@ object SessionServiceActor {
 
   case class ValidationRequest(id: UUID)
 
-  case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse //TODO: redundancy in session
+  case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
+
+  //TODO: redundancy in session
 
   case class SessionRequest(user: String, password: String)
 
@@ -78,6 +93,11 @@ object SessionServiceActor {
   case object ValidationSuccess extends ValidationResponse
 
   case object Update
+
+
+  sealed trait AuthenticationResponse
+  case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+  case class AuthenticationFailure(message: String) extends AuthenticationResponse
 }
 
 class SessionServiceActor(authenticator: Authenticator) extends Actor with ActorLogging {
@@ -102,12 +122,12 @@ class SessionServiceActor(authenticator: Authenticator) extends Actor with Actor
           if (authenticated) {
             val session = Session(user.toLowerCase)
             sessions = sessions + (session.user -> session)
-            requester ! session
+            requester ! AuthenticationSuccess(session)
           } else {
-            requester ! models.ValidationFailure("Invalid Credentials")
+            requester ! AuthenticationFailure("Invalid Credentials")
           }
         case Failure(e) =>
-          requester ! models.ValidationFailure(e.getMessage)
+          requester ! AuthenticationFailure(e.getMessage)
       }
 
     case ValidationRequest(id) =>

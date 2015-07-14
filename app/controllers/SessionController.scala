@@ -29,11 +29,6 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
         sessionRepository.newSession(success.username, success.password).map {
           case s: Session =>
             Ok.withSession(SessionController.sessionId -> s.id.toString, Security.username -> s.user)
-
-          case f: ValidationFailure => Unauthorized(Json.obj(
-            "status" -> "KO",
-            "errors" -> f.s
-          ))
         }
       }
     )
@@ -43,7 +38,7 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
     request.session.get(SessionController.sessionId) match {
       case Some(id) =>
         sessionRepository.deleteSession(UUID.fromString(id)).map { result =>
-          if (result) Ok.withNewSession else Unauthorized
+          if (result) Ok.withNewSession else BadRequest
         }
       case None =>
         Future.successful(Unauthorized)
