@@ -72,32 +72,32 @@ object SessionServiceActor {
 
   def props(authenticator: Authenticator): Props = Props(new SessionServiceActor(authenticator))
 
-  sealed trait RemovalResponse
-
-  sealed trait ValidationResponse
-
-  case class SessionRemovalRequest(id: UUID)
-
-  case class RemovalFailure(reason: String) extends RuntimeException(reason) with RemovalResponse
-
-  case class ValidationRequest(id: UUID)
-
-  case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
-
-  //TODO: redundancy in session
-
-  case class SessionRequest(user: String, password: String)
-
-  case object RemovalSuccessful extends RemovalResponse
-
-  case object ValidationSuccess extends ValidationResponse
-
-  case object Update
 
 
-  sealed trait AuthenticationResponse
-  case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
-  case class AuthenticationFailure(message: String) extends AuthenticationResponse
+  private[services] case class SessionRemovalRequest(id: UUID)
+
+  private[services] sealed trait RemovalResponse
+
+  private[services] case class RemovalFailure(reason: String) extends RuntimeException(reason) with RemovalResponse
+  private[services] case object RemovalSuccessful extends RemovalResponse
+
+
+  private[services] case class ValidationRequest(id: UUID)
+
+  private[services] case class SessionRequest(user: String, password: String)
+
+
+  private[services] sealed trait ValidationResponse
+  private[services] case object ValidationSuccess extends ValidationResponse
+  private[services] case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
+
+
+  private[SessionServiceActor] case object Update
+
+
+  private[services] trait AuthenticationResponse
+  private[services] case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+  private[services] case class AuthenticationFailure(message: String) extends AuthenticationResponse
 }
 
 class SessionServiceActor(authenticator: Authenticator) extends Actor with ActorLogging {

@@ -28,7 +28,6 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   val sessionRepository: SessionRepositoryModule = new SessionRepositoryModule {
 
-
     val service = mock[SessionHandlingService]
 
     when(service.newSession("student1", "abcde123")).thenReturn(Future.successful(Session("student1")))
