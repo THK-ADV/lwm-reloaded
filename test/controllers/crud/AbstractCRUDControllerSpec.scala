@@ -7,11 +7,14 @@ import org.mockito.Mockito._
 import org.openrdf.model.impl.{LinkedHashModel, ValueFactoryImpl}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
+import play.api.{Application, ApplicationLoader}
+import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.test.{WithApplicationLoader, FakeHeaders, FakeRequest}
 import store.{Namespace, SesameRepository}
+import utils.{DefaultLwmApplication, LWMMimeType}
 
 import scala.util.{Failure, Success}
 
@@ -28,7 +31,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def entityToFail: O
 
-  def mimeType: String
+  def mimeType: LWMMimeType
 
   def controller: AbstractCRUDController[I, O]
 
@@ -40,6 +43,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def namespace: Namespace = Namespace("http://testNamespace/")
 
+  class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
+    override def load(context: Context): Application = new DefaultLwmApplication(context).application
+  })
+
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(passModel))
@@ -48,15 +55,28 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s",
+        s"/${entityTypeName}s",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
       val result = controller.create()(request)
 
       status(result) shouldBe CREATED
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expected
+    }
+
+    s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
+      val result = route(FakeRequest(
+        POST,
+        s"/${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        inputJson
+      )).get
+
+      status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
+      contentType(result) shouldBe Some("text/html")
+      contentAsString(result) should include (s"Expecting ${mimeType.value} body")
     }
 
     s"not create a new $entityTypeName when there is an exception" in {
@@ -66,14 +86,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s",
+        s"/${entityTypeName}s",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
       val result = controller.create()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -82,14 +102,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s",
+        s"/${entityTypeName}s",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
       val result = controller.create()(request)
 
       status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) should include("KO")
       contentAsString(result) should include("errors")
     }
@@ -100,12 +120,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+        s"/${entityTypeName}s/${entityToFail.id}"
       )
       val result = controller.get(entityToFail.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -116,12 +136,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+        s"/${entityTypeName}s/${entityToFail.id}"
       )
       val result = controller.get(entityToFail.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -130,12 +150,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+        s"/${entityTypeName}s/${entityToPass.id}"
       )
       val result = controller.get(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(entityToPass).toString()
     }
 
@@ -145,12 +165,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s"
+        s"/${entityTypeName}s"
       )
       val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(allEntities).toString()
     }
 
@@ -161,12 +181,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s"
+        s"/${entityTypeName}s"
       )
       val result = controller.all()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -176,12 +196,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         DELETE,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}"
+        s"/${entityTypeName}s/${entityToPass.id}"
       )
       val result = controller.delete(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedPassModel
     }
 
@@ -192,12 +212,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         DELETE,
-        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}"
+        s"/${entityTypeName}s/${entityToFail.id}"
       )
       val result = controller.delete(entityToFail.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -207,14 +227,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedPassModel
     }
 
@@ -225,14 +245,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToFail.id}",
+        s"/${entityTypeName}s/${entityToFail.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
       val result = controller.update(entityToFail.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -242,14 +262,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -259,16 +279,29 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val json = Json.toJson("no valid data")
       val request = FakeRequest(
         POST,
-        s"/${entityTypeName.toLowerCase}s/${entityToPass.id}",
+        s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) should include("KO")
       contentAsString(result) should include("errors")
+    }
+
+    s"should return the expected content type for $entityTypeName" in {
+      val request = FakeRequest(
+        HEAD,
+        s"/${entityTypeName}s"
+      )
+
+      val result = controller.header()(request)
+
+      status(result) shouldBe NO_CONTENT
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsString(result) shouldBe empty
     }
   }
 }

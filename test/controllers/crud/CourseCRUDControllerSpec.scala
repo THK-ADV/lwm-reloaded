@@ -4,11 +4,15 @@ import java.util.UUID
 
 import models.{Course, CourseProtocol}
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.Result
+import utils.LWMMimeType
+
+import scala.collection.Map
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
   override val entityToPass: Course = Course("label to pass", "lecturer to pass", Course.randomUUID)
 
-  override def entityTypeName: String = "Course"
+  override def entityTypeName: String = "course"
 
   override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace) {
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
@@ -18,7 +22,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override implicit val jsonWrites: Writes[Course] = Course.writes
 
-  override val mimeType: String = "application/json" //TODO: this should be a proper content type
+  override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input",

@@ -8,6 +8,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+import utils.LWMMimeType
 
 import scala.collection.Map
 
@@ -27,7 +28,9 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
 
    override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
-      case Some(id) => Room(input.label, id)
+      case Some(uuid) => Room(input.label, uuid)
       case None => Room(input.label, Room.randomUUID)
    }
+
+   override def mimeType: LWMMimeType = LWMMimeType.roomV1Json
 }

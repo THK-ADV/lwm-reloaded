@@ -8,6 +8,7 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import store.{Namespace, SesameRepository}
+import utils.LWMMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -45,7 +46,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
                 "message" -> "No such element..."
               ))
             } else {
-              Ok(Json.toJson(filteredByYear))
+              Ok(Json.toJson(filteredByYear)).as(mimeType)
             }
 
           case List(Some(years), Some(period)) =>
@@ -67,7 +68,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
               filteredByPeriod match {
                 case Some(sem) =>
-                  Ok(Json.toJson(sem))
+                  Ok(Json.toJson(sem)).as(mimeType)
                 case None =>
                   NotFound(Json.obj(
                     "status" -> "KO",
@@ -87,7 +88,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
             filteredByPeriod match {
               case Some(sem) =>
-                Ok(Json.toJson(sem))
+                Ok(Json.toJson(sem)).as(mimeType)
               case None =>
                 NotFound(Json.obj(
                   "status" -> "KO",
@@ -111,9 +112,11 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   }
 
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
-    case Some(s) =>
-      Semester(input.name, input.startDate, input.endDate, input.examPeriod, s)
+    case Some(uuid) =>
+      Semester(input.name, input.startDate, input.endDate, input.examPeriod, uuid)
     case None =>
       Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
   }
+
+  override def mimeType: LWMMimeType = LWMMimeType.semesterV1Json
 }

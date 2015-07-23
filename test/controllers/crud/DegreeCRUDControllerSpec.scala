@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models.{Degree, DegreeProtocol}
 import play.api.libs.json.{JsValue, Json, Writes}
+import utils.LWMMimeType
 
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree] {
   override val entityToPass: Degree = Degree("label to pass", Degree.randomUUID)
@@ -16,9 +17,9 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
 
   override implicit val jsonWrites: Writes[Degree] = Degree.writes
 
-  override val mimeType: String = "application/json" //TODO: this should be a proper content type
+  override val mimeType: LWMMimeType = LWMMimeType.degreeV1Json
 
-  override def entityTypeName: String = "Degree"
+  override def entityTypeName: String = "degree"
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input"

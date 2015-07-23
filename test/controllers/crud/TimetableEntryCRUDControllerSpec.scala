@@ -4,11 +4,12 @@ import java.util.UUID
 
 import models.timetable.{TimetableEntry, TimetableEntryProtocol}
 import play.api.libs.json.{JsValue, Json, Writes}
+import utils.LWMMimeType
 
 class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableEntryProtocol, TimetableEntry] {
   override val entityToPass: TimetableEntry = TimetableEntry("supervisor to pass", "room to pass", "startTime to pass", "endTime to pass", TimetableEntry.randomUUID)
 
-  override def entityTypeName: String = "TimetableEntry"
+  override def entityTypeName: String = "timetableEntry"
 
   override val controller: AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] = new TimetableEntryCRUDController(repository, namespace) {
     override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = entityToPass
@@ -18,7 +19,7 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
 
   override implicit val jsonWrites: Writes[TimetableEntry] = TimetableEntry.writes
 
-  override val mimeType: String = "application/json" //TODO: this should be a proper content type
+  override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
 
   override val inputJson: JsValue = Json.obj(
     "supervisor" -> "supervisor input",

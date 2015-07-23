@@ -21,8 +21,6 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
 
   private implicit val executionContext = ExecutionContext.fromExecutorService(new ThreadPoolExecutor(0, 32, 60L, TimeUnit.SECONDS, new SynchronousQueue[Runnable]))
 
-  private val log = LoggerFactory.getLogger(getClass.getName)
-
   private val trustManager = new TrustAllTrustManager()
   // Yes, it is actually a bad idea to trust every server but for now it's okay as we only use it with exactly one server in a private network.
   private val sslUtil = new SSLUtil(trustManager)
@@ -41,7 +39,7 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
       val bindDN = s"uid=$user, $dn"
       val bindRequest = new SimpleBindRequest(bindDN, password)
       val bindResult = connection.bind(bindRequest)
-      if (bindResult.getResultCode == ResultCode.SUCCESS) true else false
+      bindResult.getResultCode == ResultCode.SUCCESS
   }
 
 

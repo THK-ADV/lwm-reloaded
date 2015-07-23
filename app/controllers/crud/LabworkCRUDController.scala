@@ -8,6 +8,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+import utils.LWMMimeType
 
 import scala.collection.Map
 
@@ -27,4 +28,6 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
 
    override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
+
+   override def mimeType: LWMMimeType = LWMMimeType.laboworkV1Json
 }

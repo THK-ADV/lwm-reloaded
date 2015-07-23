@@ -9,6 +9,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
+import utils.LWMMimeType
 
 import scala.collection.Map
 
@@ -28,4 +29,6 @@ class TimetableEntryCRUDController(val repository: SesameRepository, val namespa
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
 
    override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = ???
+
+   override def mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
 }

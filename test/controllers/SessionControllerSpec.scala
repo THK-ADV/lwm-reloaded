@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Session
+import models.{Login, Session}
 import modules._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -23,18 +23,25 @@ import scala.concurrent.Future
 
 
 class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
-  val uuid = UUID.randomUUID()
-  val uuid2 = UUID.randomUUID()
+
+  val loginToPass = Login("student1", "abcde123")
+  val loginToFail = Login("student1", "blabla")
+  val mimeType = LWMMimeType.loginV1Json
+
+  val validUuid = UUID.randomUUID()
+  val invalidUuid = UUID.randomUUID()
+
+  val invalidCredentialException = new RuntimeException("Invalid Credentials")
 
   val sessionRepository: SessionRepositoryModule = new SessionRepositoryModule {
 
     val service = mock[SessionHandlingService]
 
-    when(service.newSession("student1", "abcde123")).thenReturn(Future.successful(Session("student1")))
-    when(service.newSession("student1", "blabla")).thenReturn(Future.failed(new RuntimeException("Invalid Credentials")))
-    when(service.isValid(uuid)).thenReturn(Future.successful(true))
-    when(service.deleteSession(uuid)).thenReturn(Future.successful(true))
-    when(service.deleteSession(uuid2)).thenReturn(Future.successful(false))
+    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username)))
+    when(service.newSession(loginToFail.username, loginToFail.password)).thenReturn(Future.failed(invalidCredentialException))
+    when(service.isValid(validUuid)).thenReturn(Future.successful(true))
+    when(service.deleteSession(validUuid)).thenReturn(Future.successful(true))
+    when(service.deleteSession(invalidUuid)).thenReturn(Future.successful(false))
 
 
     override def sessionService: SessionHandlingService = service
@@ -50,39 +57,78 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
 
   "A SessionControllerSpec " should {
-    "allow students to log in and log out" in new WithDepsApplication {
+    "allow students to log in" in new WithDepsApplication {
       val json = Json.obj(
-        "username" -> "student1",
-        "password" -> "abcde123"
+        "username" -> loginToPass.username,
+        "password" -> loginToPass.password
       )
 
       val result = route(FakeRequest(
         POST,
         "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> http.MimeTypes.JSON)),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )).get
 
       status(result) shouldBe OK
-      session(result).data.keys should contain ("session-id")
+      contentType(result) shouldBe Some[String](mimeType)
+      session(result).data.keys should contain (SessionController.sessionId)
+    }
+
+    "not allow students to log in with invalid mimeType" in new WithDepsApplication {
+      val json = Json.obj(
+        "username" -> loginToPass.username,
+        "password" -> loginToPass.password
+      )
+
+      val result = route(FakeRequest(
+        POST,
+        "/sessions",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
+        json
+      )).get
+
+      status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
+      contentType(result) shouldBe Some("text/html")
+      contentAsString(result) should include (s"Expecting ${LWMMimeType.loginV1Json.value} body")
     }
 
     "not allow students to log in with invalid credentials" in new WithDepsApplication {
-      val invalidJson = Json.obj(
-        "name" -> "student1",
-        "secret" -> "blabla"
+      import scala.concurrent.ExecutionContext.Implicits.global
+
+      val json = Json.obj(
+        "username" -> loginToFail.username,
+        "password" -> loginToFail.password
       )
 
-      val result =  route(FakeRequest(
+      val result = route(FakeRequest(
         POST,
         "/sessions",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> http.MimeTypes.JSON)),
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        json
+      )).get
+
+      result onFailure {
+        case e => e shouldEqual invalidCredentialException
+      }
+    }
+
+    "not allow students to log in with invalid json" in new WithDepsApplication {
+      val invalidJson = Json.obj(
+        "name" -> loginToFail.username,
+        "secret" -> loginToFail.password
+      )
+
+      val result = route(FakeRequest(
+        POST,
+        "/sessions",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         invalidJson
       )).get
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      session(result).data.keys should not contain "session-id"
+      session(result).data.keys should not contain SessionController.sessionId
       contentAsString(result) should include("KO")
       contentAsString(result) should include("errors")
     }
@@ -91,26 +137,34 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       val request = FakeRequest(
         DELETE,
         "/sessions"
-      ).withSession(SessionController.sessionId -> uuid.toString, Security.username -> "student1")
+      ).withSession(SessionController.sessionId -> validUuid.toString, Security.username -> loginToPass.username)
 
-      val result =  route(request).get
+      val result = route(request).get
 
       status(result) shouldBe OK
-      session(result).data.keys should not contain "session-id"
+      session(result).data.keys should not contain SessionController.sessionId
     }
 
     "not allow students to successfully log out when there is no session match" in new WithDepsApplication {
-
-
       val request = FakeRequest(
         DELETE,
         "/sessions"
-      ).withSession(SessionController.sessionId -> uuid2.toString, Security.username -> "student1")
+      ).withSession(SessionController.sessionId -> invalidUuid.toString, Security.username -> loginToFail.username)
 
-      val result =  route(request).get
+      val result = route(request).get
 
       status(result) shouldBe BAD_REQUEST
     }
 
+    "should return the expected content type" in new WithDepsApplication {
+      val result = route(FakeRequest(
+        HEAD,
+        "/sessions"
+      )).get
+
+      status(result) shouldBe NO_CONTENT
+      contentType(result) shouldBe Some[String](LWMMimeType.loginV1Json)
+      contentAsString(result) shouldBe empty
+    }
   }
 }
