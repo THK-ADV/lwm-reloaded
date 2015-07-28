@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.timetable.{TimetableEntry, TimetableEntryProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -27,4 +29,9 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
     "startTime" -> "startTime input",
     "endTime" -> "endTime input"
   )
+
+  import bindings.TimetableEntryBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

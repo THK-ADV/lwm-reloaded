@@ -30,5 +30,5 @@ class TimetableEntryCRUDController(val repository: SesameRepository, val namespa
 
    override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
 }

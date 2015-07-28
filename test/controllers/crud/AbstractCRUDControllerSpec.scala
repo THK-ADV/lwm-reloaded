@@ -4,28 +4,31 @@ import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.openrdf.model.impl.{LinkedHashModel, ValueFactoryImpl}
+import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import play.api.{Application, ApplicationLoader}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
-import play.api.test.{WithApplicationLoader, FakeHeaders, FakeRequest}
+import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
+import play.api.{Application, ApplicationLoader}
+import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.{DefaultLwmApplication, LWMMimeType}
 
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition {
-  lazy val passModel: LinkedHashModel = {
-    val m = new LinkedHashModel()
-    m.add(factory.createURI(s"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"), factory.createURI("http://somePredicate"), factory.createLiteral(""))
-    m
-  }
+abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule {
+
   val factory = ValueFactoryImpl.getInstance()
   val repository = mock[SesameRepository]
+
+  val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+
+  def pointedGraph: PointedGraph[Rdf]
 
   def entityToPass: O
 
@@ -49,9 +52,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
-      when(repository.add(anyObject())(anyObject())).thenReturn(Success(passModel))
-
-      val expected = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
+      when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
 
       val request = FakeRequest(
         POST,
@@ -62,8 +63,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val result = controller.create()(request)
 
       status(result) shouldBe CREATED
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expected
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
     s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
@@ -191,9 +192,9 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.delete(anyString())).thenReturn(Success(passModel))
+      when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
 
-      val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
+      val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         DELETE,
         s"/${entityTypeName}s/${entityToPass.id}"
@@ -222,9 +223,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully update an existing $entityTypeName" in {
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(passModel))
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
 
-      val expectedPassModel = s"""{"status":"OK","id":"http://${namespace.base}${entityTypeName.toLowerCase}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName}s/${entityToPass.id}",
@@ -234,8 +234,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedPassModel
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
     s"not update an existing $entityTypeName when there is an exception" in {

@@ -31,6 +31,8 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
+  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
+
   override def getWithFilter(queryString: Map[String, Seq[String]]) = {
     repository.get[Semester] match {
       case Success(semesters) =>
@@ -117,6 +119,4 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case None =>
       Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
   }
-
-  override def mimeType: LWMMimeType = LWMMimeType.semesterV1Json
 }

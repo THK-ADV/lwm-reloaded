@@ -23,7 +23,7 @@ object LWMMimeType {
 
   val groupV1Json = LWMMimeType("application/vnd.fhk.group.V1+json")
 
-  val laboworkV1Json = LWMMimeType("application/vnd.fhk.labwork.V1+json")
+  val labworkV1Json = LWMMimeType("application/vnd.fhk.labwork.V1+json")
 
   val roomV1Json = LWMMimeType("application/vnd.fhk.room.V1+json")
 
@@ -52,7 +52,7 @@ object LWMContentTypes extends ContentTypes {
 
   def groupV1ContentType(implicit codec: Codec) = withCharset(LWMMimeType.groupV1Json)
 
-  def labworkV1ContentType(implicit codec: Codec) = withCharset(LWMMimeType.laboworkV1Json)
+  def labworkV1ContentType(implicit codec: Codec) = withCharset(LWMMimeType.labworkV1Json)
 
   def roomV1ContentType(implicit codec: Codec) = withCharset(LWMMimeType.roomV1Json)
 
@@ -72,7 +72,7 @@ object LWMAccepts {
   val CourseV1Accept = Accepting(LWMMimeType.courseV1Json)
   val DegreeV1Accept = Accepting(LWMMimeType.degreeV1Json)
   val GroupV1Accept = Accepting(LWMMimeType.groupV1Json)
-  val LabworkV1Accept = Accepting(LWMMimeType.laboworkV1Json)
+  val LabworkV1Accept = Accepting(LWMMimeType.labworkV1Json)
   val RoomV1Accept = Accepting(LWMMimeType.roomV1Json)
   val SemesterV1Accept = Accepting(LWMMimeType.semesterV1Json)
   val StudentScheduleAssociationV1Accept = Accepting(LWMMimeType.studentScheduleAssociationV1Json)

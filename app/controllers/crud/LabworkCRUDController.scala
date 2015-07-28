@@ -29,5 +29,5 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.laboworkV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.labworkV1Json
 }

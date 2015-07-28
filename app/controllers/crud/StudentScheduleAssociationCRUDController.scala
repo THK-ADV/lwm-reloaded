@@ -30,5 +30,5 @@ class StudentScheduleAssociationCRUDController(val repository: SesameRepository,
 
    override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.studentScheduleAssociationV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.studentScheduleAssociationV1Json
 }

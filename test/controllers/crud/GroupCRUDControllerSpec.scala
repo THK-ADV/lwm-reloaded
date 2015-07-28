@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.{Group, GroupProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -26,4 +28,9 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "label" -> "label input",
     "labwork" -> "labwork input"
   )
+
+  import bindings.GroupBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

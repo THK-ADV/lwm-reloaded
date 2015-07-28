@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.schedules.{StudentScheduleAssociation, StudentScheduleAssociationProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -26,4 +28,9 @@ class StudentScheduleAssociationCRUDControllerSpec extends AbstractCRUDControlle
     "groupScheduleAssociation" -> "groupScheduleAssociation input",
     "timetableEntry" -> "timetableEntry"
   )
+
+  import bindings.StudentScheduleAssociationBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

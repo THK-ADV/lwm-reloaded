@@ -2,24 +2,26 @@ package controllers
 
 import java.util.UUID
 
+import controllers.crud.ContentTyped
 import models.{Login, Session}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
 import services.SessionHandlingService
-import utils.{LWMBodyParser, LWMMimeType}
+import utils.{ContentTypedAction, LWMBodyParser, LWMMimeType}
 
 import scala.concurrent.Future
 
 object SessionController {
   val sessionId = "session-id"
-  val mimeType = LWMMimeType.loginV1Json
 }
 
-class SessionController(sessionRepository: SessionHandlingService) extends Controller {
+class SessionController(sessionRepository: SessionHandlingService) extends Controller with ContentTyped {
+
+  implicit override val mimeType: LWMMimeType = LWMMimeType.loginV1Json
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def login = Action.async(LWMBodyParser.parseWith(SessionController.mimeType)) { implicit request =>
+  def login = ContentTypedAction.async { implicit request =>
     request.body.validate[Login].fold(
       errors => {
         Future.successful(BadRequest(Json.obj(
@@ -33,7 +35,7 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
             Ok.withSession(
               SessionController.sessionId -> s.id.toString,
               Security.username -> s.user
-            ).as(SessionController.mimeType)
+            ).as(mimeType)
         }
       }
     )
@@ -51,6 +53,6 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
   }
 
   def header = Action { implicit request =>
-    NoContent.as(SessionController.mimeType)
+    NoContent.as(mimeType)
   }
 }

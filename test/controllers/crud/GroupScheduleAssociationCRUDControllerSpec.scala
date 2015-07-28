@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.schedules.{GroupScheduleAssociation, GroupScheduleAssociationProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -25,4 +27,9 @@ class GroupScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerS
     "date" -> "date input",
     "timetableEntry" -> "timetableEntry input"
   )
+
+  import bindings.GroupScheduleAssociationBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

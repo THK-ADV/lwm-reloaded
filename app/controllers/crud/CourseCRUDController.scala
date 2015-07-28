@@ -32,5 +32,5 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     case None => Course(input.label, input.lecturer, Course.randomUUID)
   }
 
-  override def mimeType: LWMMimeType = LWMMimeType.courseV1Json
+  override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
 }

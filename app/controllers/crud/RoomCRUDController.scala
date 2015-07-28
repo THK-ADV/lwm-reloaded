@@ -32,5 +32,5 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
       case None => Room(input.label, Room.randomUUID)
    }
 
-   override def mimeType: LWMMimeType = LWMMimeType.roomV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.roomV1Json
 }

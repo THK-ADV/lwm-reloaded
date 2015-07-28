@@ -29,5 +29,5 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
    override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.groupV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.groupV1Json
 }

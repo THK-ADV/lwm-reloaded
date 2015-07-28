@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.{Degree, DegreeProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -24,4 +26,9 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input"
   )
+
+  import bindings.DegreeBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

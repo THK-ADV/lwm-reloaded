@@ -30,5 +30,5 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.studentV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.studentV1Json
 }

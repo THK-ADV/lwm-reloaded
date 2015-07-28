@@ -3,6 +3,8 @@ package controllers.crud
 import java.util.UUID
 
 import models.users.{Student, StudentProtocol}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LWMMimeType
 
@@ -28,4 +30,10 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
     "email" -> "email input",
     "registrationId" -> "registrationId input"
   )
+
+  import bindings.StudentBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }
+

@@ -6,6 +6,8 @@ import models.{Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -34,6 +36,11 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     "endDate" -> "endDate input",
     "examPeriod" -> "examPeriod input"
   )
+
+  import bindings.SemesterBinding._
+  import ops._
+
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A SemesterCRUDController " should {
     "successfully return all semesters for a year" in {

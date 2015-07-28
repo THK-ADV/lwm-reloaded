@@ -10,7 +10,7 @@ import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Result, Action, Controller}
 import store.bind.Bindings
 import store.SesameRepository
-import utils.{LWMBodyParser, LWMMimeType}
+import utils.{ContentTypedAction, LWMBodyParser, LWMMimeType}
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -45,7 +45,7 @@ trait ModelConverter[I, O] {
 }
 
 trait ContentTyped {
-  def mimeType: LWMMimeType
+  implicit val mimeType: LWMMimeType
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
@@ -57,7 +57,7 @@ with BaseNamespace
 with ContentTyped {
 
   // POST /Ts
-  def create = Action(LWMBodyParser.parseWith(mimeType)) { implicit request =>
+  def create = ContentTypedAction { implicit request =>
     request.body.validate[I].fold(
       errors => {
         BadRequest(Json.obj(
@@ -68,10 +68,7 @@ with ContentTyped {
       success => {
         repository.add[O](fromInput(success)) match {
           case Success(graph) =>
-            Created(Json.obj(
-              "status" -> "OK",
-              "id" -> graph.subjects().iterator().next().toString
-            ))
+            Created(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -122,7 +119,7 @@ with ContentTyped {
     }
   }
 
-  def update(id: String) = Action(LWMBodyParser.parseWith(mimeType)) { implicit request =>
+  def update(id: String) = ContentTypedAction { implicit request =>
     repository.get[O](id) match {
       case Success(s) =>
         s match {
@@ -136,11 +133,8 @@ with ContentTyped {
               },
               success => {
                 repository.update[O, UriGenerator[O]](fromInput(success, Some(t.id))) match {
-                  case Success(m) =>
-                    Ok(Json.obj(
-                      "status" -> "OK",
-                      "id" -> m.subjects().iterator().next().toString
-                    ))
+                  case Success(graph) =>
+                    Ok(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",

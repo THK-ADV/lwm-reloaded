@@ -29,5 +29,5 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = ???
 
-  override def mimeType: LWMMimeType = LWMMimeType.degreeV1Json
+  override val mimeType: LWMMimeType = LWMMimeType.degreeV1Json
 }

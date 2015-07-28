@@ -30,5 +30,5 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = ???
 
-   override def mimeType: LWMMimeType = LWMMimeType.employeeV1Json
+   override val mimeType: LWMMimeType = LWMMimeType.employeeV1Json
 }

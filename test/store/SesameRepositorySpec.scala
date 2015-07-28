@@ -39,8 +39,8 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
         ).graph
 
       g match {
-        case Success(graph) =>
-          graph.isIsomorphicWith(expectedGraph) shouldBe true
+        case Success(pointedGraph) =>
+          pointedGraph.graph.isIsomorphicWith(expectedGraph) shouldBe true
         case Failure(e) =>
           fail(s"Addition not successful: $e")
       }
@@ -135,13 +135,13 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
       g match {
         case Success(graph) =>
-          graph.isIsomorphicWith(expectedGraph) shouldBe true
+          graph.graph.isIsomorphicWith(expectedGraph) shouldBe true
 
           implicit val generator = Student
           val updated = repo.update(studentUpdated)
           updated match {
-            case Success(updatedGraph) =>
-              updatedGraph.isIsomorphicWith(expectedGraphUpdated) shouldBe true
+            case Success(pointedGraph) =>
+              pointedGraph.graph.isIsomorphicWith(expectedGraphUpdated) shouldBe true
             case Failure(e) =>
               fail(s"Could not update student: $e")
           }
