@@ -20,9 +20,9 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def ns: Rdf#URI
 
-  def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[Rdf#Graph]
+  def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]]
 
-  def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Rdf, T], idGenerator: G): Try[Rdf#Graph]
+  def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Rdf, T], idGenerator: G): Try[PointedGraph[Rdf]]
 
   def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]]
 
@@ -57,14 +57,15 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[Rdf#Graph] = {
+  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = {
     val connection = repo.getConnection
-    val g = entity.toPG.graph
+    val pg = entity.toPG
+    val g = pg.graph
     rdfStore.appendToGraph(connection, ns, g)
 
     connection.commit()
     connection.close()
-    Try(g)
+    Try(pg)
   }
 
 
@@ -127,7 +128,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     s
   }
 
-  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[Model] = {
+  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[PointedGraph[Rdf]] = {
     val connection = repo.getConnection
     val entityUri = idGenerator.generateUri(entity)
 
@@ -136,7 +137,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     } yield add(entity)).flatten
 
     connection.close()
-
     result
   }
 

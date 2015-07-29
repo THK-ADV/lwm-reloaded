@@ -9,7 +9,8 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Result, Action, Controller}
 import store.bind.Bindings
-import store.{Namespace, SesameRepository}
+import store.SesameRepository
+import utils.{ContentTypedAction, LWMBodyParser, LWMMimeType}
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -43,15 +44,20 @@ trait ModelConverter[I, O] {
   protected def fromInput(input: I, id: Option[UUID] = None): O
 }
 
+trait ContentTyped {
+  implicit val mimeType: LWMMimeType
+}
+
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 with JsonSerialisation[I, O]
 with SesameRdfSerialisation[O]
 with Filterable
 with ModelConverter[I, O]
-with BaseNamespace {
+with BaseNamespace
+with ContentTyped {
 
   // POST /Ts
-  def create() = Action(parse.json) { implicit request =>
+  def create = ContentTypedAction { implicit request =>
     request.body.validate[I].fold(
       errors => {
         BadRequest(Json.obj(
@@ -62,10 +68,7 @@ with BaseNamespace {
       success => {
         repository.add[O](fromInput(success)) match {
           case Success(graph) =>
-            Created(Json.obj(
-              "status" -> "OK",
-              "id" -> graph.subjects().iterator().next().toString
-            ))
+            Created(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -79,13 +82,12 @@ with BaseNamespace {
   // GET /Ts/:id
   def get(id: String) = Action { implicit request =>
     val uri = s"$namespace${request.uri}"
-    println(uri)
 
     repository.get[O](uri) match {
       case Success(s) =>
         s match {
           case Some(entity) =>
-            Ok(Json.toJson(entity))
+            Ok(Json.toJson(entity)).as(mimeType)
           case None =>
             NotFound(Json.obj(
               "status" -> "KO",
@@ -105,7 +107,7 @@ with BaseNamespace {
     if (request.queryString.isEmpty) {
       repository.get[O] match {
         case Success(s) =>
-          Ok(Json.toJson(s))
+          Ok(Json.toJson(s)).as(mimeType)
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
@@ -117,7 +119,7 @@ with BaseNamespace {
     }
   }
 
-  def update(id: String) = Action(parse.json) { implicit request =>
+  def update(id: String) = ContentTypedAction { implicit request =>
     repository.get[O](id) match {
       case Success(s) =>
         s match {
@@ -131,11 +133,8 @@ with BaseNamespace {
               },
               success => {
                 repository.update[O, UriGenerator[O]](fromInput(success, Some(t.id))) match {
-                  case Success(m) =>
-                    Ok(Json.obj(
-                      "status" -> "OK",
-                      "id" -> m.subjects().iterator().next().toString
-                    ))
+                  case Success(graph) =>
+                    Ok(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
@@ -171,5 +170,9 @@ with BaseNamespace {
           "errors" -> e.getMessage
         ))
     }
+  }
+
+  def header = Action { implicit request =>
+    NoContent.as(mimeType)
   }
 }

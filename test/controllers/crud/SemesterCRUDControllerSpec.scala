@@ -6,9 +6,12 @@ import models.{Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import utils.LWMMimeType
 
 import scala.util.{Failure, Success}
 
@@ -17,6 +20,16 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val entityToFail: Semester = Semester("name to fail", "startDate to fail", "endDate to fail", "examPeriod to fail", Semester.randomUUID)
 
+  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace) {
+    override protected def fromInput(input: SemesterProtocol, id: Option[UUID]) = entityToPass
+  }
+
+  override implicit val jsonWrites: Writes[Semester] = Semester.writes
+
+  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
+
+  override def entityTypeName: String = "semester"
+
   override val inputJson: JsValue = Json.obj(
     "name" -> "name input",
     "startDate" -> "startDate input",
@@ -24,15 +37,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     "examPeriod" -> "examPeriod input"
   )
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace) {
-    override protected def fromInput(input: SemesterProtocol, id: Option[UUID]) = entityToPass
-  }
+  import bindings.SemesterBinding._
+  import ops._
 
-  override implicit val jsonWrites: Writes[Semester] = Semester.writes
-
-  override val mimeType: String = "application/json" //TODO: this should be a proper content type
-
-  override def entityTypeName: String = "Semester"
+  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A SemesterCRUDController " should {
     "successfully return all semesters for a year" in {
@@ -49,7 +57,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(entitiesForYear).toString()
     }
 
@@ -72,7 +80,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(Seq(semesterIn2015, semesterIn2017)).toString()
     }
 
@@ -93,7 +101,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -112,7 +120,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -133,7 +141,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -154,7 +162,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(Set(semesterInSS)).toString()
     }
 
@@ -179,7 +187,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(Set(semesterInSS2015, semesterInSS2018)).toString()
     }
 
@@ -201,7 +209,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
@@ -222,7 +230,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some(mimeType)
+      contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
   }
