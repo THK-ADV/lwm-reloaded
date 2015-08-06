@@ -4,7 +4,8 @@ import java.io.File
 
 import models.{UniqueEntity, UriGenerator}
 import org.openrdf.model.Model
-import org.openrdf.repository.sail.SailRepository
+import org.openrdf.query.QueryLanguage
+import org.openrdf.repository.sail.{SailRepositoryConnection, SailRepository}
 import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -68,6 +69,12 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     Try(pg)
   }
 
+  /*def conBuilder[B](f: SailRepositoryConnection => B): B = {
+    val connection = repo.getConnection
+    val res = f(connection)
+    connection.close()
+    res
+  }*/
 
   override def close() = {
     repo.shutDown()
@@ -154,6 +161,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
       graph <- rdfStore.getGraph(connection, ns)
     } yield graph.contains(uri, null, null)).getOrElse(false)
   }
+
 }
 
 

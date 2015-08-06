@@ -6,6 +6,7 @@ import play.api.ApplicationLoader.Context
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
+import security.RefRole
 
 class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {
@@ -53,7 +54,8 @@ with TimetableEntryManagementModule
 with SessionRepositoryModule
 with SessionControllerModule
 with AkkaActorSystemModule
-with AssetsModule {
+with AssetsModule
+with RoleManagementModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -99,3 +101,4 @@ with LDAPAuthenticatorModule
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultSessionControllerModuleImpl
+with DefaultRoleManagementModuleImpl

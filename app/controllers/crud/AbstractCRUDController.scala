@@ -6,11 +6,12 @@ import models.{UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsError, Json, Reads, Writes}
-import play.api.mvc.{Result, Action, Controller}
-import store.bind.Bindings
+import play.api.libs.json._
+import play.api.mvc._
+import security.Permission
 import store.SesameRepository
-import utils.{ContentTypedAction, LWMBodyParser, LWMMimeType}
+import store.bind.Bindings
+import utils.{ContentTypedAction, LWMMimeType, SecuredContentTypedAction}
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -48,6 +49,7 @@ trait ContentTyped {
   implicit val mimeType: LWMMimeType
 }
 
+
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 with JsonSerialisation[I, O]
 with SesameRdfSerialisation[O]
@@ -77,6 +79,16 @@ with ContentTyped {
         }
       }
     )
+  }
+
+  object Perms {
+    val perms = Set(Permission("createSemester"), Permission("get"), Permission("view"), Permission("delete"))
+  }
+
+  def testCreate = SecuredContentTypedAction { session =>
+    checker(Perms.perms)(session)
+  } { implicit request => //doshit
+    Ok()
   }
 
   // GET /Ts/:id
@@ -175,4 +187,6 @@ with ContentTyped {
   def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
+
+  def checker(toCheck: Set[Permission])(session: Session, possibleModuleId: Option[String] = None): Boolean
 }
