@@ -10,11 +10,11 @@ import play.api.ApplicationLoader.Context
 import play.api.mvc.{Security, Results}
 import play.api.test.{WithApplicationLoader, FakeRequest}
 import play.api.test.Helpers._
-import services.RoleServiceLike
+import services.{RoleService, RoleServiceLike}
 import utils.{LWMMimeType, DefaultLwmApplication}
-import utils.LWMActions.{SecuredContentTypedAction, SecureAction}
+import utils.LWMActions.{SecureContentTypedAction, SecureAction}
 
-class SecuredActionSpec extends WordSpec with TestBaseDefinition {
+class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
   val insufficientPermissions = Set(Permission("view"), Permission("delete"))
@@ -24,10 +24,12 @@ class SecuredActionSpec extends WordSpec with TestBaseDefinition {
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
 
-  val requiredModule1Role = RefRole(Some(module1), role1)
-  val module1UserRole = RefRole(Some(module1), role2)
-  val module2UserRole = RefRole(Some(module2), role2)
-  
+  val module1UserRole1 = RefRole(Some(module1), role1)
+  val module1UserRole2 = RefRole(Some(module1), role2)
+  val module2UserRole2 = RefRole(Some(module2), role2)
+
+  val defaultRoleService = new RoleService()
+
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context).application
   })
@@ -38,35 +40,32 @@ class SecuredActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike[RefRole] {
         override def permissionsFor(systemId: String): Set[RefRole] = Set()
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = true
+        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole]()(_ => true) { req => Results.Ok("Passed") }
+      val action1 = SecureAction[RefRole]()(_ => true) { req => Results.Ok("Passed") }
+      val action2 = SecureAction[RefRole]()(_ => false) {req => Results.Ok("Passed")}
 
       val request = FakeRequest("GET", "/")
 
-      val result = call(action, request)
+      val result1 = call(action1, request)
+      val result2 = call(action2, request)
 
-      status(result) should be(OK)
-      contentAsString(result) should be("Passed")
+      status(result1) should be(OK)
+      status(result2) should be(UNAUTHORIZED)
+      contentAsString(result1) should be("Passed")
+      contentAsString(result2) should be("Insufficient permissions for given action")
     }
 
-    "propagate an action when sufficient permission are provided" in new WithDepsApplication {
+    "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
 
       implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(requiredModule1Role)
+        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole1)
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {
-          (for {
-            me <- checker.find(r => checkee map (_.module) contains r.module)
-            him <- checkee.find(r => r.module == me.module)
-          } yield {
-            him.role.permissions.forall(me.role.permissions.contains)
-          }) getOrElse false
-        }
+        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(requiredModule1Role)) {
+      val action = SecureAction[RefRole](Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
@@ -81,19 +80,12 @@ class SecuredActionSpec extends WordSpec with TestBaseDefinition {
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
 
       implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole)
+        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole2)
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {
-          (for {
-            me <- checker.find(r => checkee map (_.module) contains r.module)
-            him <- checkee.find(r => r.module == me.module)
-          } yield {
-              him.role.permissions.forall(me.role.permissions.contains)
-            }) getOrElse false
-        }
+        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(requiredModule1Role)) {
+      val action = SecureAction[RefRole](Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
@@ -105,22 +97,15 @@ class SecuredActionSpec extends WordSpec with TestBaseDefinition {
       contentAsString(result) should be("Insufficient permissions for given action")
     }
 
-    "block the propagation of an action when an improper module are provided" in new WithDepsApplication {
+    "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
 
       implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module2UserRole)
+        override def permissionsFor(systemId: String): Set[RefRole] = Set(module2UserRole2)
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {
-          (for {
-            me <- checker.find(r => checkee map (_.module) contains r.module)
-            him <- checkee.find(r => r.module == me.module)
-          } yield {
-              him.role.permissions.forall(me.role.permissions.contains)
-            }) getOrElse false
-        }
+        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(requiredModule1Role)) {
+      val action = SecureAction[RefRole](Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
@@ -136,17 +121,12 @@ class SecuredActionSpec extends WordSpec with TestBaseDefinition {
       implicit val mimeType = LWMMimeType.loginV1Json
 
       implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole)
+        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole2)
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = (for {
-          me <- checker.find(r => checkee map (_.module) contains r.module)
-          him <- checkee.find(r => r.module == me.module)
-        } yield {
-            him.role.permissions.forall(me.role.permissions.contains)
-          }) getOrElse false
+        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecuredContentTypedAction[RefRole]()(_ => true) {
+      val action = SecureContentTypedAction[RefRole]()(_ => true) {
         request =>
           request.body.validate[Login].fold(
             seq => {

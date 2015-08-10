@@ -37,7 +37,7 @@ object LWMActions {
 
   }
 
-  object SecuredContentTypedAction {
+  object SecureContentTypedAction {
 
     def apply[A]()(predicate: Set[A] => Boolean)(block: Request[JsValue] => Result)(implicit mimeType: LWMMimeType, roleService: RoleServiceLike[A]) = {
       securedAction[A](predicate)(roleService)(LWMBodyParser.parseWith(mimeType))(block)

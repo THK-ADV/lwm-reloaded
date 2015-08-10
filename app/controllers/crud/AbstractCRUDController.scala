@@ -12,7 +12,7 @@ import security.Permission
 import services.RoleService
 import store.SesameRepository
 import store.bind.Bindings
-import utils.LWMActions.{SecuredContentTypedAction, ContentTypedAction}
+import utils.LWMActions.{SecureContentTypedAction, ContentTypedAction}
 import utils.LWMMimeType
 
 import scala.collection.Map
@@ -184,5 +184,4 @@ with ContentTyped {
     NoContent.as(mimeType)
   }
 
-  //def checker()(possibleModuleId: Option[String] = None): Boolean
 }
