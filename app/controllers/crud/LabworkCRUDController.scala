@@ -24,7 +24,7 @@ object LabworkCRUDController {
    val deletePerm = "deletePerm"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
+class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[LabworkProtocol, Labwork] {
    override implicit def rdfWrites: ToPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
 
    override implicit def rdfReads: FromPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
@@ -42,24 +42,5 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
    override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.labworkV1Json
-
-   def checker(toCheck: Set[Permission])(session: Session, possibleModuleId: Option[String] = None): Boolean = {
-      val systemId = session.get(Security.username).get
-
-      val rights = roleService.permissionsFor(systemId)
-
-      possibleModuleId match {
-         case Some(r) => repository.get(r).map { labwork =>
-            rights.find(_.module.get == labwork.get.id) map {
-               case RefRole(a, b) => b.permissions.forall(toCheck.contains)
-            }
-         } getOrElse Some(false) getOrElse false
-
-         case None => rights.filterNot(_.module.isEmpty).forall {
-            case RefRole(a, b) => b.permissions.forall(toCheck.contains)
-         }
-      }
-
-   }
 
 }

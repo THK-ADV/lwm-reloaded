@@ -7,7 +7,8 @@ import models.{Login, Session}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
 import services.SessionHandlingService
-import utils.{ContentTypedAction, LWMBodyParser, LWMMimeType}
+import utils.LWMActions.ContentTypedAction
+import utils.LWMMimeType
 
 import scala.concurrent.Future
 

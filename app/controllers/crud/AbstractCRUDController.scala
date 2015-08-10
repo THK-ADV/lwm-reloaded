@@ -9,9 +9,11 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc._
 import security.Permission
+import services.RoleService
 import store.SesameRepository
 import store.bind.Bindings
-import utils.{ContentTypedAction, LWMMimeType, SecuredContentTypedAction}
+import utils.LWMActions.{SecuredContentTypedAction, ContentTypedAction}
+import utils.LWMMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -49,6 +51,9 @@ trait ContentTyped {
   implicit val mimeType: LWMMimeType
 }
 
+trait Secured {
+  implicit val roleService: RoleService
+}
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 with JsonSerialisation[I, O]
@@ -57,6 +62,7 @@ with Filterable
 with ModelConverter[I, O]
 with BaseNamespace
 with ContentTyped {
+
 
   // POST /Ts
   def create = ContentTypedAction { implicit request =>
@@ -79,16 +85,6 @@ with ContentTyped {
         }
       }
     )
-  }
-
-  object Perms {
-    val perms = Set(Permission("createSemester"), Permission("get"), Permission("view"), Permission("delete"))
-  }
-
-  def testCreate = SecuredContentTypedAction { session =>
-    checker(Perms.perms)(session)
-  } { implicit request => //doshit
-    Ok()
   }
 
   // GET /Ts/:id
@@ -188,5 +184,5 @@ with ContentTyped {
     NoContent.as(mimeType)
   }
 
-  def checker(toCheck: Set[Permission])(session: Session, possibleModuleId: Option[String] = None): Boolean
+  //def checker()(possibleModuleId: Option[String] = None): Boolean
 }
