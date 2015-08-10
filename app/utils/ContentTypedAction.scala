@@ -1,6 +1,6 @@
 package utils
 
-import play.api.libs.json.JsValue
+import play.api.libs.json.{Json, JsValue}
 import play.api.mvc._
 
 import services.RoleServiceLike
@@ -70,7 +70,10 @@ case class Permitted[R](predicate: Set[R] => Boolean) extends ActionFilter[({typ
     if(predicate(request.userPermissions))
       None
     else
-      Some(Results.Unauthorized("Insufficient permissions for given action"))
+      Some(Results.Unauthorized(Json.obj(
+        "status" -> "KO",
+        "message" -> "Insufficient permissions for given action"
+      )))
   }
 }
 

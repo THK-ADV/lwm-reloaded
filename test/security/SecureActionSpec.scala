@@ -29,6 +29,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   val module2UserRole2 = RefRole(Some(module2), role2)
 
   val defaultRoleService = new RoleService()
+  val failedResponse = Json.obj(
+    "status" -> "KO",
+    "message" -> "Insufficient permissions for given action"
+  )
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context).application
@@ -54,7 +58,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       status(result1) should be(OK)
       status(result2) should be(UNAUTHORIZED)
       contentAsString(result1) should be("Passed")
-      contentAsString(result2) should be("Insufficient permissions for given action")
+      contentAsJson(result2) should be(failedResponse)
     }
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
@@ -94,7 +98,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       val result = call(action, request)
 
       status(result) should be(UNAUTHORIZED)
-      contentAsString(result) should be("Insufficient permissions for given action")
+      contentAsJson(result) should be(failedResponse)
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
@@ -114,7 +118,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       val result = call(action, request)
 
       status(result) should be(UNAUTHORIZED)
-      contentAsString(result) should be("Insufficient permissions for given action")
+      contentAsJson(result) should be(failedResponse)
     }
 
     "parse content types securely" in new WithDepsApplication {
