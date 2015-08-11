@@ -11,8 +11,14 @@ import play.api.mvc.{Security, Results}
 import play.api.test.{WithApplicationLoader, FakeRequest}
 import play.api.test.Helpers._
 import services.{RoleService, RoleServiceLike}
+import store.SemanticRepository
 import utils.{LWMMimeType, DefaultLwmApplication}
 import utils.LWMActions.{SecureContentTypedAction, SecureAction}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.openrdf.model.impl.ValueFactoryImpl
+import org.scalatest.mock.MockitoSugar.mock
+
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
@@ -28,7 +34,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   val module1UserRole2 = RefRole(Some(module1), role2)
   val module2UserRole2 = RefRole(Some(module2), role2)
 
-  val defaultRoleService = new RoleService()
+  val repository = mock[SemanticRepository]
+  val defaultRoleService = new RoleService(repository)
+
   val failedResponse = Json.obj(
     "status" -> "KO",
     "message" -> "Insufficient permissions for given action"

@@ -13,7 +13,7 @@ class GroupScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerS
 
   override def entityTypeName: String = "groupScheduleAssociation"
 
-  override val controller: AbstractCRUDController[GroupScheduleAssociationProtocol, GroupScheduleAssociation] = new GroupScheduleAssociationCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[GroupScheduleAssociationProtocol, GroupScheduleAssociation] = new GroupScheduleAssociationCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: GroupScheduleAssociationProtocol, id: Option[UUID]): GroupScheduleAssociation = entityToPass
   }
 

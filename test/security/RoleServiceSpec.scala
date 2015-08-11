@@ -5,6 +5,11 @@ import java.util.UUID
 import base.TestBaseDefinition
 import org.scalatest.WordSpec
 import services.RoleService
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.openrdf.model.impl.ValueFactoryImpl
+import org.scalatest.mock.MockitoSugar.mock
+import store.SemanticRepository
 
 class RoleServiceSpec extends WordSpec with TestBaseDefinition {
 
@@ -23,7 +28,9 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition {
   val module1UserRole2 = RefRole(Some(module1), role2)
   val module2UserRole2 = RefRole(Some(module2), role2)
 
-  def roleService = new RoleService()
+  val repository = mock[SemanticRepository]
+
+  def roleService = new RoleService(repository)
 
   "A role service" should {
 

@@ -8,12 +8,13 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType
 
 import scala.collection.Map
 
-class EmployeeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[EmployeeProtocol, Employee] {
+class EmployeeCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[EmployeeProtocol, Employee] {
    override implicit def rdfWrites: ToPG[Sesame, Employee] = defaultBindings.EmployeeBinding.employeeBinder
 
    override implicit def rdfReads: FromPG[Sesame, Employee] = defaultBindings.EmployeeBinding.employeeBinder

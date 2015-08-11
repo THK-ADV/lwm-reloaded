@@ -12,10 +12,11 @@ trait RoleServiceLike[A] {
   def checkFor(checkee: Set[A])(systemId: String) = checkWith(checkee)(permissionsFor(systemId))
 }
 
-class RoleService(/*repository: SemanticRepository*/) extends RoleServiceLike[RefRole] {
+class RoleService(repository: SemanticRepository) extends RoleServiceLike[RefRole] {
   override def permissionsFor(systemId: String): Set[RefRole] = ???
 
   /*
+   * TODO: Possible optimization
    * In a situation like the following:
    *
    *  _  -> StudentPerms
@@ -27,7 +28,7 @@ class RoleService(/*repository: SemanticRepository*/) extends RoleServiceLike[Re
    * should not reveal any side effects. (A => A => A)
    */
   override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {
-    checkee.par.forall { r =>
+    checkee.forall { r =>
       checker.filter(_.module == r.module)
         .find(e => r.role.permissions.forall(e.role.permissions.contains)) match {
         case Some(ref) => true

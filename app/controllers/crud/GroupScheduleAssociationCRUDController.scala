@@ -8,12 +8,13 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType
 
 import scala.collection.Map
 
-class GroupScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[GroupScheduleAssociationProtocol, GroupScheduleAssociation] {
+class GroupScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[GroupScheduleAssociationProtocol, GroupScheduleAssociation] {
    override implicit def rdfWrites: ToPG[Sesame, GroupScheduleAssociation] = defaultBindings.GroupScheduleAssociationBinding.groupScheduleAssociationBinder
 
    override implicit def rdfReads: FromPG[Sesame, GroupScheduleAssociation] = defaultBindings.GroupScheduleAssociationBinding.groupScheduleAssociationBinder

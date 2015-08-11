@@ -13,7 +13,7 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
 
   override def entityTypeName: String = "room"
 
-  override val controller: AbstractCRUDController[RoomProtocol, Room] = new RoomCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[RoomProtocol, Room] = new RoomCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = entityToPass
   }
 

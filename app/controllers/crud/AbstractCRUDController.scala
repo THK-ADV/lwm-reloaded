@@ -61,7 +61,8 @@ with SesameRdfSerialisation[O]
 with Filterable
 with ModelConverter[I, O]
 with BaseNamespace
-with ContentTyped {
+with ContentTyped
+with Secured {
 
 
   // POST /Ts

@@ -13,7 +13,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   override def entityTypeName: String = "labwork"
 
-  override val controller: AbstractCRUDController[LabworkProtocol, Labwork] = new LabworkCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[LabworkProtocol, Labwork] = new LabworkCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = entityToPass
   }
 

@@ -16,7 +16,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override def entityTypeName: String = "course"
 
-  override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
   }
 

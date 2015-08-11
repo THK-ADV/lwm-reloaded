@@ -20,7 +20,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val entityToFail: Semester = Semester("name to fail", "startDate to fail", "endDate to fail", "examPeriod to fail", Semester.randomUUID)
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: SemesterProtocol, id: Option[UUID]) = entityToPass
   }
 

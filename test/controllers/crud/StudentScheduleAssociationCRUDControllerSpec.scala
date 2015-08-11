@@ -13,7 +13,7 @@ class StudentScheduleAssociationCRUDControllerSpec extends AbstractCRUDControlle
 
   override def entityTypeName: String = "studentScheduleAssociation"
 
-  override val controller: AbstractCRUDController[StudentScheduleAssociationProtocol, StudentScheduleAssociation] = new StudentScheduleAssociationCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[StudentScheduleAssociationProtocol, StudentScheduleAssociation] = new StudentScheduleAssociationCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = entityToPass
   }
 

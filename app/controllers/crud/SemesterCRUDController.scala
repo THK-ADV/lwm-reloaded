@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
+import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType
 
@@ -18,7 +19,7 @@ object SemesterCRUDController {
   val periodAttribute = "period"
 }
 
-class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[SemesterProtocol, Semester] {
+class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester] {
   override implicit def rdfWrites: ToPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder
 
   override implicit def rdfReads: FromPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder

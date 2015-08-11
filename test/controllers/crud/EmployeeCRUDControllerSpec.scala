@@ -13,7 +13,7 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
 
   override def entityTypeName: String = "employee"
 
-  override val controller: AbstractCRUDController[EmployeeProtocol, Employee] = new EmployeeCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[EmployeeProtocol, Employee] = new EmployeeCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = entityToPass
   }
 

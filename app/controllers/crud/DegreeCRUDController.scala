@@ -7,12 +7,13 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType
 
 import scala.collection.Map
 
-class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[DegreeProtocol, Degree]{
+class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
   override implicit def reads: Reads[DegreeProtocol] = Degree.reads
 
   override implicit def writes: Writes[Degree] = Degree.writes

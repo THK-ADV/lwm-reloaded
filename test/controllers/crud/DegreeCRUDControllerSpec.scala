@@ -11,7 +11,7 @@ import utils.LWMMimeType
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree] {
   override val entityToPass: Degree = Degree("label to pass", Degree.randomUUID)
 
-  override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = entityToPass
   }
 

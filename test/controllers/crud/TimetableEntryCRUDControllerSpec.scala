@@ -13,7 +13,7 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
 
   override def entityTypeName: String = "timetableEntry"
 
-  override val controller: AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] = new TimetableEntryCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] = new TimetableEntryCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = entityToPass
   }
 

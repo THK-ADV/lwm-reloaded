@@ -24,7 +24,7 @@ object LabworkCRUDController {
    val deletePerm = "deletePerm"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[LabworkProtocol, Labwork] {
+class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
    override implicit def rdfWrites: ToPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
 
    override implicit def rdfReads: FromPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
