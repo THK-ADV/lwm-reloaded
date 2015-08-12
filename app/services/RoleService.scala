@@ -1,7 +1,9 @@
 package services
 
 import models.security.RefRole
+import store.Prefixes.LWMPrefix
 import store.SemanticRepository
+import utils.Ops
 
 trait RoleServiceLike[A] {
   def permissionsFor(systemId: String): Set[A]
@@ -13,9 +15,25 @@ trait RoleServiceLike[A] {
 
 class RoleService(repository: SemanticRepository) extends RoleServiceLike[RefRole] {
   override def permissionsFor(username: String): Set[RefRole] = {
+    import repository._
+    import Ops._
+    val prefix = LWMPrefix[Rdf]
 
-
-    ???
+    select.map { v =>
+      sequence(
+        v.flatMap { bs =>
+          get[RefRole](bs.getValue("s").stringValue()).toOption
+        }
+      )
+    } >>
+      s"""
+        | Select ?s where {
+        | ?s ${resource(prefix.systemId)} ${literal(username)}
+        | }
+      """.stripMargin match {
+      case Some(r) => r map (_.toSet) getOrElse Set.empty[RefRole]
+      case _ => Set.empty[RefRole]
+    }
   }
 
   /*
@@ -26,8 +44,8 @@ class RoleService(repository: SemanticRepository) extends RoleServiceLike[RefRol
    *  _  -> EmployeePerms
    *  ...
    *
-   * Instead of checking if one of n similar categories contains all permissions, we might simply merge them both and check if
-   * the current slice is contained in their merger. As both of them are, technically, part of the same domain, their merger
+   * Instead of checking if one of n similar categories contains all permissions, we might simply merge all of them and check if
+   * the current slice is contained in their merger. As all of them are, technically, part of the same domain, their merger
    * should not reveal any side effects. (A => A => A)
    */
   override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {

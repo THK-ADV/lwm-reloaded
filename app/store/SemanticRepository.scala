@@ -3,20 +3,18 @@ package store
 import java.io.File
 
 import models.{UniqueEntity, UriGenerator}
-import org.openrdf.model.Model
-import org.openrdf.query.{BindingSet, QueryLanguage}
 import org.openrdf.repository.RepositoryConnection
-import org.openrdf.repository.sail.{SailRepositoryConnection, SailRepository}
+import org.openrdf.repository.sail.SailRepository
 import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
-import org.w3.banana.binder.{RecordBinder, ClassUrisFor, FromPG, ToPG}
-import org.w3.banana.sesame.{Sesame, SesameModule}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.sesame._
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 
-trait SemanticRepository extends RDFModule with RDFOpsModule {
+trait SemanticRepository extends RDFModule with RDFOpsModule with SPARQLQueryEngine { self: APIModule =>
 
   def rdfOps: RDFOps[Rdf] = ops
 
@@ -39,8 +37,18 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
   def close(): Unit
 }
 
+object SesameRepository {
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule with SPARQLQueryEngine {
+  def apply(folder: File, syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(Some(folder), syncInterval, baseNS)
+
+  def apply(folder: File, baseNS: Namespace) = new SesameRepository(Some(folder), baseNS = baseNS)
+
+  def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
+
+  def apply(baseNS: Namespace) = new SesameRepository(baseNS = baseNS)
+}
+
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameAPI {
 
   import ops._
 
@@ -155,25 +163,13 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     } yield graph.contains(uri, null, null)).getOrElse(false)
   }
 
-
+  //Side-effect
   override def withConnection[A](f: (RepositoryConnection) => A): A = {
     val conn = repo.getConnection
     val res = f(conn)
     conn.close()
     res
   }
-}
-
-
-object SesameRepository {
-
-  def apply(folder: File, syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(Some(folder), syncInterval, baseNS)
-
-  def apply(folder: File, baseNS: Namespace) = new SesameRepository(Some(folder), baseNS = baseNS)
-
-  def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
-
-  def apply(baseNS: Namespace) = new SesameRepository(baseNS = baseNS)
 }
 
 sealed trait ValidationResult

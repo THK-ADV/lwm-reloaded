@@ -2,17 +2,15 @@ package store
 
 import org.openrdf.query.BindingSet
 import org.openrdf.repository.RepositoryConnection
-import org.w3.banana.sesame.{Sesame, SesameModule}
-import store.Prefixes.LWMPrefix
 
 trait Query[A] {
-  self: SesameModule =>
+  self: APIModule =>
   type QURI = String
   type QNode = String
 
   def resource(s: String): QURI = resource(ops.makeUri(s))
 
-  def resource(uri: Sesame#URI): QURI = s"<${uri.stringValue()}>"
+  def resource(uri: Rdf#URI): QURI = s"<$uri>"
 
   def literal(value: String): QNode = s""""$value""""
 
@@ -38,22 +36,21 @@ case class QueryOperation[A](action: String => Option[A]) {
 }
 
 trait QueryEngine[A] extends Query[A] {
-  self: SesameModule =>
+  self: APIModule =>
 }
 
 trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
-  self: SesameModule =>
-
-  val prefix = LWMPrefix[Sesame]
+  self: APIModule =>
 
   override def select: QueryOperation[Vector[BindingSet]] = {
     import rdfStore._
     import sparqlOps._
-    QueryOperation(s => parseSelect(s).flatMap { q =>
-      withConnection { connection =>
-        executeSelect(connection, q, Map())
-      }
-    }.toOption)
+    QueryOperation(s =>
+      parseSelect(s).flatMap { q =>
+        withConnection { connection =>
+          executeSelect(connection, q, Map()).map(_.asInstanceOf[Vector[BindingSet]])
+        }
+      }.toOption)
   }
 
   override def ask: QueryOperation[Boolean] = {
