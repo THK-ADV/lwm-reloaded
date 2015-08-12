@@ -76,8 +76,10 @@ object Prefixes {
     val visible = apply("visible")
     //Semester
     val examPeriod = apply("examPeriod")
-    //User roles
+    //Security Roles
     val refroles = apply("refRoles")
+    val role = apply("role")
+    val module = apply("module")
 
     val Assignment = apply("Assignment")
     val AssignmentAssociation = apply("AssignmentAssociation")

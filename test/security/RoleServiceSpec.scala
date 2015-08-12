@@ -22,12 +22,12 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition {
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
 
-  val noneModule1Role1 = RefRole(None, role1)
-  val noneModule1Role2 = RefRole(None, role2)
+  val noneModule1Role1 = RefRole(None, role1, RefRole.randomUUID)
+  val noneModule1Role2 = RefRole(None, role2, RefRole.randomUUID)
 
-  val module1UserRole1 = RefRole(Some(module1), role1)
-  val module1UserRole2 = RefRole(Some(module1), role2)
-  val module2UserRole2 = RefRole(Some(module2), role2)
+  val module1UserRole1 = RefRole(Some(module1), role1, RefRole.randomUUID)
+  val module1UserRole2 = RefRole(Some(module1), role2, RefRole.randomUUID)
+  val module2UserRole2 = RefRole(Some(module2), role2, RefRole.randomUUID)
 
   val repository = mock[SemanticRepository]
 

@@ -4,16 +4,19 @@ import java.util.UUID
 
 import models._
 import models.schedules.{GroupScheduleAssociation, StudentScheduleAssociation}
+import models.security.{Permission, Role, RefRole}
 import models.timetable.TimetableEntry
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
+import play.api.libs.json.Json
 import store.Namespace
 import store.Prefixes.LWMPrefix
 
-import scala.language.implicitConversions
+import scala.language.{postfixOps, implicitConversions}
+import scala.reflect.macros.whitebox
 import scala.util.Try
 
 
@@ -52,6 +55,18 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
+  implicit val roleBinder = new PGBinder[Rdf, Role] {
+    override def toPG(t: Role): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.name + ","+ t.permissions.mkString(","), xsd.string))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[Role] = {
+      pointed.pointer.as[String].map { value =>
+        Role(value.split(",")(0), value.split(",") drop(1) map Permission.apply toSet)
+      }
+    }
+  }
+
   val id = property[UUID](lwm.id)
 
   object StudentBinding {
@@ -75,6 +90,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val email = property[String](lwm.email)
 
     implicit val employeeBinder = pgbWithId[Employee](employee => makeUri(Employee.generateUri(employee)))(systemId, lastname, firstname, email, id)(Employee.apply, Employee.unapply) withClasses classUri
+  }
+
+  object RefRoleBinding {
+    implicit val clazz = lwm.RefRole
+    implicit val classUri = classUrisFor[RefRole](clazz)
+
+    private val module = optional[UUID](lwm.module)
+    private val role = property[Role](lwm.role)
+
+    implicit val refRoleBinder = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
   }
 
   object LabworkBinding {
