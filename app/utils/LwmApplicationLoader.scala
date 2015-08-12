@@ -1,12 +1,12 @@
 package utils
 
 import controllers._
+import models.security.RefRole
 import modules._
 import play.api.ApplicationLoader.Context
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
-import security.RefRole
 
 class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {

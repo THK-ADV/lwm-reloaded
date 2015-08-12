@@ -3,6 +3,7 @@ package security
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.security.{Permission, RefRole, Role}
 import org.scalatest.WordSpec
 import services.RoleService
 import org.mockito.Matchers._

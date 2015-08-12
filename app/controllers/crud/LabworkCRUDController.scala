@@ -2,13 +2,12 @@ package controllers.crud
 
 import java.util.UUID
 
-import controllers.SessionController
-import models.{Course, LabworkProtocol, Labwork, UriGenerator}
+import models.security.Permission
+import models.{Labwork, LabworkProtocol, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Reads, Writes}
-import play.api.mvc.{Session, Security, Request, Result}
-import security.{Permission, RefRole}
+import play.api.libs.json.{Reads, Writes}
+import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType

@@ -2,13 +2,13 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.Permission
 import models.{UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc._
-import security.Permission
 import services.RoleService
 import store.SesameRepository
 import store.bind.Bindings

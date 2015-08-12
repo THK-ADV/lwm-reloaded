@@ -4,15 +4,16 @@ import java.io.File
 
 import models.{UniqueEntity, UriGenerator}
 import org.openrdf.model.Model
-import org.openrdf.query.QueryLanguage
+import org.openrdf.query.{BindingSet, QueryLanguage}
+import org.openrdf.repository.RepositoryConnection
 import org.openrdf.repository.sail.{SailRepositoryConnection, SailRepository}
 import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.binder.{RecordBinder, ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.{Sesame, SesameModule}
 
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 trait SemanticRepository extends RDFModule with RDFOpsModule {
@@ -39,7 +40,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 }
 
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule {
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule with SPARQLQueryEngine {
 
   import ops._
 
@@ -57,7 +58,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   val repo = new SailRepository(memStore)
   repo.initialize()
 
-
   override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = {
     val connection = repo.getConnection
     val pg = entity.toPG
@@ -68,13 +68,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     connection.close()
     Try(pg)
   }
-
-  /*def conBuilder[B](f: SailRepositoryConnection => B): B = {
-    val connection = repo.getConnection
-    val res = f(connection)
-    connection.close()
-    res
-  }*/
 
   override def close() = {
     repo.shutDown()
@@ -162,6 +155,13 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     } yield graph.contains(uri, null, null)).getOrElse(false)
   }
 
+
+  override def withConnection[A](f: (RepositoryConnection) => A): A = {
+    val conn = repo.getConnection
+    val res = f(conn)
+    conn.close()
+    res
+  }
 }
 
 

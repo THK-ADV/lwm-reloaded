@@ -1,8 +1,7 @@
 package services
 
-import security.{Permission, RefRole}
+import models.security.RefRole
 import store.SemanticRepository
-
 
 trait RoleServiceLike[A] {
   def permissionsFor(systemId: String): Set[A]
@@ -13,7 +12,11 @@ trait RoleServiceLike[A] {
 }
 
 class RoleService(repository: SemanticRepository) extends RoleServiceLike[RefRole] {
-  override def permissionsFor(systemId: String): Set[RefRole] = ???
+  override def permissionsFor(username: String): Set[RefRole] = {
+
+
+    ???
+  }
 
   /*
    * TODO: Possible optimization

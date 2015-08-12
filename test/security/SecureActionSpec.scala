@@ -3,6 +3,7 @@ package security
 import java.util.UUID
 import base.TestBaseDefinition
 import models.Login
+import models.security.{Permission, RefRole, Role}
 import org.scalatest.WordSpec
 import play.api.libs.json.Json
 import play.api.{Application, ApplicationLoader}
