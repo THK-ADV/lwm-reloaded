@@ -16,6 +16,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
   val lwm = LWMPrefix[Sesame]
 
   lazy val repo = SesameRepository(ns)
+  
+  lazy val prefixes = LWMPrefix[repo.Rdf]
 
   import bindings.StudentBinding._
 
@@ -35,9 +37,14 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
         })
       } >> s"""
               |Select ?s where {
-              |?s ${repo.resource(repo.prefix.systemId)} ${repo.literal("mi1111")}
+              |?s ${repo.resource(prefixes.systemId)} ${repo.literal("mi1111")}
               |}
         """.stripMargin
+
+      result.flatten match {
+        case Some(s) => s.head shouldBe student
+        case _ => fail("Query returned nothing")
+      }
 
     }
 
@@ -49,8 +56,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
       val result = repo.ask >>
         s"""
            |ASK {
-           |?s ${repo.resource(repo.prefix.systemId)} ${repo.literal("mi1112")}
-            |}
+           |?s ${repo.resource(prefixes.systemId)} ${repo.literal("mi1112")}
+           |}
          """.stripMargin
 
       result match {

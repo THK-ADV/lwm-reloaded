@@ -165,28 +165,6 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       didContainAnotherStudent shouldBe false
     }
 
-    "execute a query" in {
-      import recordBinder._
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Student.randomUUID)
-      repo add student
-      repo add anotherStudent
-
-      val q = s"""Select ?id where { ?id <${property[String](lwm.systemId).uri}> "mi1111" }"""
-
-      val res = repo.query(q) { bs =>
-        bs.getValue("id").stringValue
-      }.map(_.head)
-
-      res match {
-        case Success(uri) =>
-          val resultStudent = repo get uri
-          resultStudent shouldBe Success(Some(student))
-
-        case Failure(e) => fail("Query could not be executed", e)
-      }
-
-    }
   }
 
   override protected def beforeEach(): Unit = {
