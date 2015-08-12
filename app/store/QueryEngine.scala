@@ -2,9 +2,10 @@ package store
 
 import org.openrdf.query.BindingSet
 import org.openrdf.repository.RepositoryConnection
+import org.w3.banana.sesame.SesameModule
 
 trait Query[A] {
-  self: APIModule =>
+  self: SesameModule =>
   type QURI = String
   type QNode = String
 
@@ -36,11 +37,11 @@ case class QueryOperation[A](action: String => Option[A]) {
 }
 
 trait QueryEngine[A] extends Query[A] {
-  self: APIModule =>
+  self: SesameModule =>
 }
 
 trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
-  self: APIModule =>
+  self: SesameModule =>
 
   override def select: QueryOperation[Vector[BindingSet]] = {
     import rdfStore._
@@ -48,7 +49,7 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
     QueryOperation(s =>
       parseSelect(s).flatMap { q =>
         withConnection { connection =>
-          executeSelect(connection, q, Map()).map(_.asInstanceOf[Vector[BindingSet]])
+          executeSelect(connection, q, Map())
         }
       }.toOption)
   }

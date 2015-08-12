@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 
-trait SemanticRepository extends RDFModule with RDFOpsModule with SPARQLQueryEngine { self: APIModule =>
+trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def rdfOps: RDFOps[Rdf] = ops
 
@@ -48,7 +48,7 @@ object SesameRepository {
   def apply(baseNS: Namespace) = new SesameRepository(baseNS = baseNS)
 }
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameAPI {
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule with SPARQLQueryEngine {
 
   import ops._
 

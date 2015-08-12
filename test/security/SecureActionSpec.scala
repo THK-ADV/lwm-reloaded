@@ -12,7 +12,7 @@ import play.api.mvc.{Security, Results}
 import play.api.test.{WithApplicationLoader, FakeRequest}
 import play.api.test.Helpers._
 import services.{RoleService, RoleServiceLike}
-import store.SemanticRepository
+import store.{SesameRepository, SemanticRepository}
 import utils.{LWMMimeType, DefaultLwmApplication}
 import utils.LWMActions.{SecureContentTypedAction, SecureAction}
 import org.mockito.Matchers._
@@ -35,7 +35,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   val module1UserRole2 = RefRole(Some(module1), role2, RefRole.randomUUID)
   val module2UserRole2 = RefRole(Some(module2), role2, RefRole.randomUUID)
 
-  val repository = mock[SemanticRepository]
+  val repository = mock[SesameRepository]
   val defaultRoleService = new RoleService(repository)
 
   val failedResponse = Json.obj(

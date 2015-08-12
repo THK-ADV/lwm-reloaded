@@ -2,8 +2,9 @@ package services
 
 import models.security.RefRole
 import store.Prefixes.LWMPrefix
-import store.SemanticRepository
-import utils.Ops
+import store.SesameRepository
+import store.bind.Bindings
+import utils.Ops._
 
 trait RoleServiceLike[A] {
   def permissionsFor(systemId: String): Set[A]
@@ -13,22 +14,24 @@ trait RoleServiceLike[A] {
   def checkFor(checkee: Set[A])(systemId: String) = checkWith(checkee)(permissionsFor(systemId))
 }
 
-class RoleService(repository: SemanticRepository) extends RoleServiceLike[RefRole] {
+class RoleService(repository: SesameRepository) extends RoleServiceLike[RefRole] {
   override def permissionsFor(username: String): Set[RefRole] = {
     import repository._
-    import Ops._
     val prefix = LWMPrefix[Rdf]
+    val bindings = Bindings[Rdf](namespace)
+    import bindings.RefRoleBinding._
 
     select.map { v =>
       sequence(
         v.flatMap { bs =>
-          get[RefRole](bs.getValue("s").stringValue()).toOption
+          get[RefRole](bs.getValue("refRoles").stringValue()).toOption
         }
       )
     } >>
       s"""
-        | Select ?s where {
-        | ?s ${resource(prefix.systemId)} ${literal(username)}
+        | Select ?refRoles where {
+        | ?s ${resource(prefix.systemId)} ${literal(username)} .
+        | ?s ${resource(prefix.refroles)} ?refRoles
         | }
       """.stripMargin match {
       case Some(r) => r map (_.toSet) getOrElse Set.empty[RefRole]
