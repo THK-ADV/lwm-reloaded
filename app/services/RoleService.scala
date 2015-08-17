@@ -1,43 +1,28 @@
 package services
 
-import models.security.RefRole
+import models.security.{ContextualRole, Authority, RefRole}
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
 import utils.Ops._
 
-trait RoleServiceLike[A] {
-  def permissionsFor(systemId: String): Set[A]
+trait RoleServiceLike {
 
-  def checkWith(checkee: Set[A])(checker: Set[A]): Boolean
+  def authorityFor(userId: String): Option[Authority]
 
-  def checkFor(checkee: Set[A])(systemId: String) = checkWith(checkee)(permissionsFor(systemId))
+  def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean
+
+  def checkFor(checkee: Set[RefRole])(userId: String): Boolean = authorityFor(userId) exists (e => checkWith(checkee)(e.refRoles))
 }
 
-class RoleService(repository: SesameRepository) extends RoleServiceLike[RefRole] {
-  override def permissionsFor(username: String): Set[RefRole] = {
-    import repository._
-    val prefix = LWMPrefix[Rdf]
-    val bindings = Bindings[Rdf](namespace)
-    import bindings.RefRoleBinding._
+class RoleService(repository: SesameRepository) extends RoleServiceLike {
 
-    select.map { v =>
-      sequence(
-        v.flatMap { bs =>
-          get[RefRole](bs.getValue("refRoles").stringValue()).toOption
-        }
-      )
-    } >>
-      s"""
-        | Select ?refRoles where {
-        | ?s ${resource(prefix.systemId)} ${literal(username)} .
-        | ?s ${resource(prefix.refroles)} ?refRoles
-        | }
-      """.stripMargin match {
-      case Some(r) => r map (_.toSet) getOrElse Set.empty[RefRole]
-      case _ => Set.empty[RefRole]
-    }
-  }
+  import repository._
+  private val lwm = LWMPrefix[Rdf]
+  private val bindings = Bindings[Rdf](namespace)
+  import bindings.AuthorityBinding._
+
+  override def authorityFor(userId: String): Option[Authority] = get[Authority].map (_.find(_.id.toString == userId)).toOption.flatten
 
   /*
    * TODO: Possible optimization
@@ -60,5 +45,4 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike[RefRole]
       }
     }
   }
-
 }

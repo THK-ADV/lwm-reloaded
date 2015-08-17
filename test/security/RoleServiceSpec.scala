@@ -10,7 +10,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.mock.MockitoSugar.mock
-import store.{SesameRepository, SemanticRepository}
+import store.{Namespace, SesameRepository, SemanticRepository}
 
 class RoleServiceSpec extends WordSpec with TestBaseDefinition {
 
@@ -29,7 +29,9 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition {
   val module1UserRole2 = RefRole(Some(module1), role2, RefRole.randomUUID)
   val module2UserRole2 = RefRole(Some(module2), role2, RefRole.randomUUID)
 
-  val repository = mock[SesameRepository]
+  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
+
+  val repository = SesameRepository(ns)
 
   def roleService = new RoleService(repository)
 

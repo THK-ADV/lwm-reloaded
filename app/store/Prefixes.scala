@@ -80,6 +80,7 @@ object Prefixes {
     val refroles = apply("refRoles")
     val role = apply("role")
     val module = apply("module")
+    val privileged = apply("privileged")
 
     val Assignment = apply("Assignment")
     val AssignmentAssociation = apply("AssignmentAssociation")
@@ -102,6 +103,7 @@ object Prefixes {
     val TimetableEntry = apply("TimetableEntry")
     val User = apply("User")
     val RefRole = apply("RefRole")
+    val Authority = apply("Authority")
 
   }
 

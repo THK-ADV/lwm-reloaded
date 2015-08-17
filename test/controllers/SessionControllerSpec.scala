@@ -37,7 +37,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
     val service = mock[SessionHandlingService]
 
-    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username)))
+    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username, UUID.randomUUID())))
     when(service.newSession(loginToFail.username, loginToFail.password)).thenReturn(Future.failed(invalidCredentialException))
     when(service.isValid(validUuid)).thenReturn(Future.successful(true))
     when(service.deleteSession(validUuid)).thenReturn(Future.successful(true))

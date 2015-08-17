@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import models.schedules.{GroupScheduleAssociation, StudentScheduleAssociation}
-import models.security.{Permission, Role, RefRole}
+import models.security.{Authority, Permission, Role, RefRole}
 import models.timetable.TimetableEntry
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
@@ -100,6 +100,17 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val role = property[Role](lwm.role)
 
     implicit val refRoleBinder = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
+  }
+
+  object AuthorityBinding {
+    import RefRoleBinding._
+    implicit val clazz = lwm.Authority
+    implicit val classUri = classUrisFor[Authority](clazz)
+
+    private val privileged = property[UUID](lwm.privileged)
+    private val refroles = set[RefRole](lwm.refroles)
+
+    implicit val authorityBinder = pgbWithId[Authority](auth => makeUri(Authority.generateUri(auth)))(privileged, refroles, id)(Authority.apply, Authority.unapply) withClasses classUri
   }
 
   object LabworkBinding {

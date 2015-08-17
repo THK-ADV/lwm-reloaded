@@ -34,7 +34,7 @@ trait SessionRepositoryModule {
 }
 
 trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule {
-  self: AkkaActorSystemModule with AuthenticatorModule =>
+  self: AkkaActorSystemModule with AuthenticatorModule with SemanticRepositoryModule with UsernameResolverModule =>
 
-  override def sessionService: SessionHandlingService = new ActorBasedSessionService(system, authenticator)
+  override def sessionService: SessionHandlingService = new ActorBasedSessionService(system, authenticator, resolver)
 }

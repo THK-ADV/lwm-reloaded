@@ -55,7 +55,8 @@ with SessionRepositoryModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with RoleManagementModule {
+with RoleManagementModule
+with UsernameResolverModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -102,3 +103,4 @@ with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultSessionControllerModuleImpl
 with DefaultRoleManagementModuleImpl
+with DefaultUserResolverModule

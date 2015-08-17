@@ -14,6 +14,7 @@ import scala.concurrent.Future
 
 object SessionController {
   val sessionId = "session-id"
+  val userId = "user-id"
 }
 
 class SessionController(sessionRepository: SessionHandlingService) extends Controller with ContentTyped {
@@ -35,7 +36,8 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
           case s: Session =>
             Ok.withSession(
               SessionController.sessionId -> s.id.toString,
-              Security.username -> s.user
+              SessionController.userId -> s.userId.toString,
+              Security.username -> s.username
             ).as(mimeType)
         }
       }

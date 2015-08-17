@@ -1,24 +1,22 @@
 package security
 
 import java.util.UUID
+
 import base.TestBaseDefinition
+import controllers.SessionController
 import models.Login
-import models.security.{Permission, RefRole, Role}
+import models.security.{Authority, Permission, RefRole, Role}
 import org.scalatest.WordSpec
-import play.api.libs.json.Json
-import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
-import play.api.mvc.{Security, Results}
-import play.api.test.{WithApplicationLoader, FakeRequest}
+import play.api.libs.json.Json
+import play.api.mvc.Results
 import play.api.test.Helpers._
-import services.{RoleService, RoleServiceLike}
-import store.{SesameRepository, SemanticRepository}
-import utils.{LWMMimeType, DefaultLwmApplication}
-import utils.LWMActions.{SecureContentTypedAction, SecureAction}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.openrdf.model.impl.ValueFactoryImpl
-import org.scalatest.mock.MockitoSugar.mock
+import play.api.test.{FakeRequest, WithApplicationLoader}
+import play.api.{Application, ApplicationLoader}
+import services.{RoleService, RoleServiceLike, UsernameResolver}
+import store.{Namespace, SesameRepository}
+import utils.LWMActions.{SecureAction, SecureContentTypedAction}
+import utils.{DefaultLwmApplication, LWMMimeType}
 
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
@@ -35,31 +33,36 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   val module1UserRole2 = RefRole(Some(module1), role2, RefRole.randomUUID)
   val module2UserRole2 = RefRole(Some(module2), role2, RefRole.randomUUID)
 
-  val repository = mock[SesameRepository]
+  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
+  val repository = SesameRepository(ns)
   val defaultRoleService = new RoleService(repository)
-
+  val userId = UUID.randomUUID()
   val failedResponse = Json.obj(
     "status" -> "KO",
     "message" -> "Insufficient permissions for given action"
   )
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
-    override def load(context: Context): Application = new DefaultLwmApplication(context).application
+    override def load(context: Context): Application = new DefaultLwmApplication(context) {
+      override def resolver: UsernameResolver = new UsernameResolver {
+        override def resolve(systemId: String): Option[UUID] = Some(userId)
+      }
+    }.application
   })
 
   "A secured action" should {
 
-    "apply a simple permission checking function" in {
-      implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set()
+    "apply a simple permission checking function" in new WithDepsApplication {
+      implicit val roleService = new RoleServiceLike {
+        override def authorityFor(systemId: String): Option[Authority] = Some(Authority.empty)
 
         override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action1 = SecureAction[RefRole]()(_ => true) { req => Results.Ok("Passed") }
-      val action2 = SecureAction[RefRole]()(_ => false) {req => Results.Ok("Passed")}
+      val action1 = SecureAction()(_ => true) { req => Results.Ok("Passed") }
+      val action2 = SecureAction()(_ => false) {req => Results.Ok("Passed")}
 
-      val request = FakeRequest("GET", "/")
+      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
 
       val result1 = call(action1, request)
       val result2 = call(action2, request)
@@ -72,17 +75,17 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
 
-      implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole1)
+      implicit val roleService = new RoleServiceLike {
+        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole1), UUID.randomUUID()))
 
         override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(module1UserRole1)) {
+      val action = SecureAction(Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(Security.username -> "bla")
+      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
 
       val result = call(action, request)
 
@@ -92,17 +95,17 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
 
-      implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole2)
+      implicit val roleService = new RoleServiceLike {
+        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
 
         override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(module1UserRole1)) {
+      val action = SecureAction(Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(Security.username -> "blabla")
+      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
 
       val result = call(action, request)
 
@@ -112,17 +115,17 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
 
-      implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module2UserRole2)
+      implicit val roleService = new RoleServiceLike {
+        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module2UserRole2), UUID.randomUUID()))
 
         override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction[RefRole](Set(module1UserRole1)) {
+      val action = SecureAction(Set(module1UserRole1)) {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(Security.username -> "blabla")
+      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
 
       val result = call(action, request)
 
@@ -133,13 +136,13 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "parse content types securely" in new WithDepsApplication {
       implicit val mimeType = LWMMimeType.loginV1Json
 
-      implicit val roleService = new RoleServiceLike[RefRole] {
-        override def permissionsFor(systemId: String): Set[RefRole] = Set(module1UserRole2)
+      implicit val roleService = new RoleServiceLike {
+        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
 
         override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureContentTypedAction[RefRole]()(_ => true) {
+      val action = SecureContentTypedAction()(_ => true) {
         request =>
           request.body.validate[Login].fold(
             seq => {
@@ -157,7 +160,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       )
 
       val request = FakeRequest("POST", "/")
-        .withSession(Security.username -> "blabla")
+        .withSession(SessionController.userId -> userId.toString)
         .withJsonBody(login)
         .withHeaders("Content-Type" -> mimeType.value)
 

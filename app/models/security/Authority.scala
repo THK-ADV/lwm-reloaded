@@ -3,12 +3,18 @@ package models.security
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.{UriGenerator, UniqueEntity}
-import play.api.libs.json.{Json, Reads, Writes}
+import models.{UniqueEntity, UriGenerator}
+import play.api.libs.json.{Format, Json, Reads, Writes}
+
+sealed trait ContextualRole
+
+case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID) extends UniqueEntity
+
+case class AuthorityProtocol(user: UUID, authority: Set[RefRole])
 
 case class RefRole(module: Option[UUID] = None, role: Role, id: UUID) extends UniqueEntity
 
-case class RefRoleProtocol(module: Option[UUID] = None, role: Role)
+case class RefRoleProtocol(role: Role, module: Option[UUID] = None)
 
 case class Role(name: String, permissions: Set[Permission])
 
@@ -23,7 +29,18 @@ object Permissions {
   val joinLabwork = Permission("join an existing labwork")
 }
 
+object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
+  def empty = Authority(UUID.randomUUID(), Set.empty[RefRole], UUID.randomUUID())
+
+  override def base: String = "authorities"
+
+  override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
+
+  override implicit def writes: Writes[Authority] = Json.writes[Authority]
+}
+
 object Roles {
+
   import Permissions._
 
   val admin = Role("admin", Set(createCourse))
@@ -46,8 +63,9 @@ object Role extends JsonSerialisation[Role, Role] {
 }
 
 object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProtocol, RefRole] {
-
   override def base: String = "refRoles"
+
+  implicit def format: Format[RefRole] = Json.format[RefRole]
 
   override implicit def reads: Reads[RefRoleProtocol] = Json.reads[RefRoleProtocol]
 
