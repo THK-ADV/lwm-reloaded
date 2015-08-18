@@ -34,5 +34,5 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
   import bindings.CourseBinding._
   import ops._
 
-  override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
+  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

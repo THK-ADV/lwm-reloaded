@@ -64,7 +64,6 @@ with BaseNamespace
 with ContentTyped
 with Secured {
 
-
   // POST /Ts
   def create = ContentTypedAction { implicit request =>
     request.body.validate[I].fold(

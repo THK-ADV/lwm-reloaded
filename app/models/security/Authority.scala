@@ -10,11 +10,11 @@ sealed trait ContextualRole
 
 case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID) extends UniqueEntity
 
-case class AuthorityProtocol(user: UUID, authority: Set[RefRole])
+case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
 
 case class RefRole(module: Option[UUID] = None, role: Role, id: UUID) extends UniqueEntity
 
-case class RefRoleProtocol(role: Role, module: Option[UUID] = None)
+case class RefRoleProtocol(module: Option[UUID] = None, role: Role)
 
 case class Role(name: String, permissions: Set[Permission])
 

@@ -52,6 +52,8 @@ with StudentScheduleAssociationManagementModule
 //with TimetableManagementModule
 with TimetableEntryManagementModule
 with SessionRepositoryModule
+with RefRoleManagementModule
+with AuthorityManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
@@ -74,6 +76,8 @@ with UsernameResolverModule {
     //studentScheduleManagementController,
     //timetableManagementController,
     timetableEntryManagementController,
+    refRoleManagementController,
+    authorityManagementController,
     sessionController,
     assetsController
   )
@@ -101,6 +105,8 @@ with DefaultTimetableEntryManagementModuleImpl
 with LDAPAuthenticatorModule
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
+with DefaultRefRoleManagementModuleImpl
+with DefaultAuthorityManagementModuleImpl
 with DefaultSessionControllerModuleImpl
 with DefaultRoleManagementModuleImpl
 with DefaultUserResolverModule

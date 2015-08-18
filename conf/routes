@@ -113,6 +113,22 @@ GET           /timetableEntries/:id                   controllers.crud.Timetable
 DELETE        /timetableEntries/:id                   controllers.crud.TimetableEntryCRUDController.delete(id)
 HEAD          /timetableEntries                       controllers.crud.TimetableEntryCRUDController.header
 
+# RefRole
+POST          /refRoles                               controllers.crud.RefRoleCRUDController.create
+POST          /refRoles/:id                           controllers.crud.RefRoleCRUDController.update(id)
+GET           /refRoles                               controllers.crud.RefRoleCRUDController.all
+GET           /refRoles/:id                           controllers.crud.RefRoleCRUDController.get(id)
+DELETE        /refRoles/:id                           controllers.crud.RefRoleCRUDController.delete(id)
+HEAD          /refRoles                               controllers.crud.RefRoleCRUDController.header
+
+# Authority
+POST          /authorities                            controllers.crud.AuthorityCRUDController.create
+POST          /authorities/:id                        controllers.crud.AuthorityCRUDController.update(id)
+GET           /authorities                            controllers.crud.AuthorityCRUDController.all
+GET           /authorities/:id                        controllers.crud.AuthorityCRUDController.get(id)
+DELETE        /authorities/:id                        controllers.crud.AuthorityCRUDController.delete(id)
+HEAD          /authorities                            controllers.crud.AuthorityCRUDController.header
+
 # Sessions
 POST          /sessions                               controllers.SessionController.login
 DELETE        /sessions                               controllers.SessionController.logout

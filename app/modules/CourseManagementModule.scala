@@ -5,6 +5,7 @@ import services.RoleService
 
 trait CourseManagementModule {
   self: SemanticRepositoryModule with RoleManagementModule =>
+
   def courseManagementController: CourseCRUDController
 }
 
