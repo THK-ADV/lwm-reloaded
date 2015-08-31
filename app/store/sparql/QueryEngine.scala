@@ -3,7 +3,6 @@ package store.sparql
 import org.openrdf.query.BindingSet
 import org.openrdf.repository.RepositoryConnection
 import org.w3.banana.sesame.SesameModule
-import store.sparql.Properties
 
 trait Query[A] {
   self: SesameModule =>

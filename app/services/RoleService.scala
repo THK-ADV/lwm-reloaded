@@ -1,6 +1,6 @@
 package services
 
-import models.security.{ContextualRole, Authority, RefRole}
+import models.security.{Authority, RefRole}
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
