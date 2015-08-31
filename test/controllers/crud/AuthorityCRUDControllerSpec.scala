@@ -9,7 +9,7 @@ import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import utils.LWMMimeType
-
+//TODO: BUGGY. REPAIR. NAOW!
 class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
 
   override def entityTypeName: String = "authority"

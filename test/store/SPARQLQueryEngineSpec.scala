@@ -35,9 +35,9 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
         sequence(v map { bs =>
           repo.get[Student](bs.getValue("s").stringValue()).toOption.flatten
         })
-      } >> s"""
+      } <> s"""
               |Select ?s where {
-              |?s ${repo.resource(prefixes.systemId)} ${repo.literal("mi1111")}
+              |?s <${prefixes.systemId}> "${student.systemId}"
               |}
         """.stripMargin
 
@@ -53,10 +53,10 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
 
       repo add anotherStudent
 
-      val result = repo.ask >>
+      val result = repo.ask <>
         s"""
            |ASK {
-           |?s ${repo.resource(prefixes.systemId)} ${repo.literal("mi1112")}
+           |?s <${prefixes.systemId}> "${anotherStudent.systemId}"
            |}
          """.stripMargin
 

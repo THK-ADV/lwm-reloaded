@@ -6,7 +6,19 @@ import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-sealed trait ContextualRole
+/*
+ * BUG: Because the authority gets serialised together with a number of other sub-graphs (namely `RefRole`s),
+ * two main subjects emerge that compete every time one tries to extract the main node
+ * of an `Authority` graph. This in turn creates fluctuations in the test cases.
+ * Mainly: `successfully delete an existing "authority" graph`
+ *
+ * Possible solution:
+ * Do not save whole chunks of `RefRole` sub-graphs in an `Authority` but rather
+ * just reference existing ones by their UUID.
+ * This adds another step in the retrieval process (we might need to dereference the set
+ * of UUID's) but avoids the unwanted deletion of existing `RefRole`s that get caught in
+ * the deletion process of an `Authority`
+ */
 
 case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID) extends UniqueEntity
 

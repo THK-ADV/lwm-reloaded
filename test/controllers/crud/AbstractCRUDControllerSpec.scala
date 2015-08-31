@@ -42,6 +42,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def entityTypeName: String
 
+  def grammify: String => String = s => if(s.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ies" else entityTypeName + s
+
   val inputJson: JsValue
 
   implicit def jsonWrites: Writes[O]
@@ -162,7 +164,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) shouldBe Json.toJson(entityToPass).toString()
     }
 
-    s"successfully get all ${entityTypeName}s" in {
+    s"successfully get all ${grammify(entityTypeName)}" in {
       val allEntities = Set(entityToPass, entityToFail)
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(allEntities))
 
@@ -177,14 +179,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) shouldBe Json.toJson(allEntities).toString()
     }
 
-    s"not get all ${entityTypeName}s when there is an exception" in {
+    s"not get all ${grammify(entityTypeName)} when there is an exception" in {
       val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName}s"
+        s"/${grammify(entityTypeName)}"
       )
       val result = controller.all()(request)
 
@@ -196,12 +198,15 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"successfully delete an existing $entityTypeName" in {
       when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
 
-      val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
+      val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${grammify(entityTypeName)}/${entityToPass.id}"}"""
       val request = FakeRequest(
         DELETE,
-        s"/${entityTypeName}s/${entityToPass.id}"
+        s"/${grammify(entityTypeName)}/${entityToPass.id}"
       )
       val result = controller.delete(entityToPass.id.toString)(request)
+
+      println("RESULT: " + contentAsString(result))
+      println("EXPECTATION: " + expectedPassModel)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")

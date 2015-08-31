@@ -1,30 +1,23 @@
-package store
+package store.sparql
 
 import org.openrdf.query.BindingSet
 import org.openrdf.repository.RepositoryConnection
 import org.w3.banana.sesame.SesameModule
+import store.sparql.Properties
 
 trait Query[A] {
   self: SesameModule =>
-  type QURI = String
-  type QNode = String
-
-  def resource(s: String): QURI = resource(ops.makeUri(s))
-
-  def resource(uri: Rdf#URI): QURI = s"<$uri>"
-
-  def literal(value: String): QNode = s""""$value""""
 
   def select: QueryOperation[A]
 
   def ask: QueryOperation[Boolean]
 
-  def withConnection[A](f: RepositoryConnection => A): A
+  def withConnection[B](f: RepositoryConnection => B): B
 }
 
 case class QueryOperation[A](action: String => Option[A]) {
 
-  def >>(q: String): Option[A] = run(q)
+  def <>(q: String): Option[A] = run(q)
 
   def run: String => Option[A] = q => action(q)
 
@@ -43,9 +36,10 @@ trait QueryEngine[A] extends Query[A] {
 trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
   self: SesameModule =>
 
+  import rdfStore._
+  import sparqlOps._
+
   override def select: QueryOperation[Vector[BindingSet]] = {
-    import rdfStore._
-    import sparqlOps._
     QueryOperation(s =>
       parseSelect(s).flatMap { q =>
         withConnection { connection =>
@@ -55,8 +49,6 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
   }
 
   override def ask: QueryOperation[Boolean] = {
-    import rdfStore._
-    import sparqlOps._
     QueryOperation(s => parseAsk(s).flatMap { q =>
       withConnection { connection =>
         executeAsk(connection, q, Map())

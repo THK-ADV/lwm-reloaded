@@ -9,6 +9,7 @@ import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
+import store.sparql.SPARQLQueryEngine
 
 import scala.concurrent.duration._
 import scala.util.Try
