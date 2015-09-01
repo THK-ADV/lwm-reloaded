@@ -3,10 +3,12 @@ package store.sparql
 object SDSL {
 
 }
+
 //TODO: EXPAND AND ADD TESTS
 sealed trait Clause {
   def run: String = foldRight("") { (clause, acc) =>
     clause match {
+      case AskClause(body, t) => acc + "ASK { " + body.run + "}"
       case SelectClause(v, t) => acc + s"SELECT ${v.mkString(" ")} "
       case DistinctClause(v, t) => acc + s"DISTINCT ${v.mkString(" ")} "
       case EverythingClause(t) => acc + "* "
@@ -93,14 +95,16 @@ case class EverythingClause(tail: Clause = NoneClause) extends ConsClause {
   override def append(c: Clause): Clause = EverythingClause(tail append c)
 }
 
-trait SelectOperation extends Properties {
+case class AskClause(body: Clause, tail: Clause = NoneClause) extends ConsClause {
+  override def append(c: Clause): Clause = AskClause(body, tail append c)
+}
+
+trait SelectOperation extends Clauses with Properties {
   def apply(args: String*) = SelectClause((args map v).toVector)
 
   def distinct(args: String*) = asSelect(SelectClause() append DistinctClause((args map v).toVector))
 
   def * = asSelect(SelectClause() append EverythingClause())
-
-  def ^[A <: Properties#Property](s: A, p: A, o: A): StatementClause[A] = StatementClause((s, p, o))
 
   private def asSelect: Clause => SelectClause = c => c.asInstanceOf[SelectClause]
 
@@ -120,6 +124,15 @@ trait SelectOperation extends Properties {
 
     def desc(elm: String) = asSelect(select append DescendingClause(v(elm)))
   }
+
+}
+
+trait AskOperation extends Clauses with Properties {
+  def apply(c: Clause): AskClause = AskClause(c)
+}
+
+trait Clauses {
+  def ^[A <: Properties#Property](s: A, p: A, o: A): StatementClause[A] = StatementClause((s, p, o))
 
   implicit class ClauseOps(c: Clause) {
 
@@ -168,13 +181,14 @@ trait Properties {
     override def toString: String = s"?$v"
   }
 
-  def s: String => Res = s => Res(s)
+  def s[A]: A => Res = s => Res(s.toString)
 
-  def p: String => Res = s => Res(s)
+  def p[A]: A => Res = s => Res(s.toString)
 
-  def o: String => Property = s => if (s.contains("http")) Res(s) else Lit(s)
+  def o[A]: A => Property = s => if (s.toString.contains("http")) Res(s.toString) else Lit(s.toString)
 
-  def v: String => Var = s => Var(s)
+  def v[A]: A => Var = s => Var(s.toString)
 }
 
 object select extends SelectOperation
+object ask extends AskOperation

@@ -6,6 +6,7 @@ import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
+import utils.Ops._
 
 
 class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -16,7 +17,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
   val lwm = LWMPrefix[Sesame]
 
   lazy val repo = SesameRepository(ns)
-  
+
   lazy val prefixes = LWMPrefix[repo.Rdf]
 
   import bindings.StudentBinding._
@@ -31,14 +32,15 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
 
       repo add student
 
-      val result = repo.select.map { v =>
+      val result = repo.selectOperation.map { v =>
         sequence(v map { bs =>
           repo.get[Student](bs.getValue("s").stringValue()).toOption.flatten
         })
-      } <> s"""
-              |Select ?s where {
-              |?s <${prefixes.systemId}> "${student.systemId}"
-              |}
+      } <>
+        s"""
+           |Select ?s where {
+           |?s <${prefixes.systemId}> "${student.systemId}"
+           |}
         """.stripMargin
 
       result.flatten match {
@@ -53,7 +55,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
 
       repo add anotherStudent
 
-      val result = repo.ask <>
+      val result = repo.askOperation <>
         s"""
            |ASK {
            |?s <${prefixes.systemId}> "${anotherStudent.systemId}"
@@ -63,6 +65,31 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
       result match {
         case Some(v) => v shouldBe true
         case _ => fail("Result was not true")
+      }
+    }
+
+    "play well with the SPARQL DSL" in {
+      import store.sparql._
+      import store.sparql.select._
+
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+
+      val query =
+        (select("s") where {
+          ^(v("s"), p(prefixes.systemId), o(student.systemId))
+        }).run
+
+      repo add student
+
+      val result = repo.selectOperation.map { v =>
+        sequence(v map { bs =>
+          repo.get[Student](bs.getValue("s").stringValue()).toOption.flatten
+        })
+      } <> query
+
+      result.flatten match {
+        case Some(s) => s.head shouldBe student
+        case _ => fail("Query returned nothing")
       }
     }
   }
