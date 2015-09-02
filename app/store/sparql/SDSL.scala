@@ -4,7 +4,15 @@ object SDSL {
 
 }
 
-//TODO: EXPAND AND ADD TESTS
+//TODO: EXPAND FURTHER
+/**
+ * Abstract type of a query clause and its underlying interpretation.
+ *
+ * The Clauses are manipulated as a head :: tail type structure.
+ * It is built analogous to typical recursive Cons- datastructures, where
+ * a Cons-type and a None- or Nil-type describe the "full" and "empty"
+ * variations of the structure.
+ **/
 sealed trait Clause {
   def run: String = foldRight("") { (clause, acc) =>
     clause match {
@@ -47,6 +55,7 @@ trait ConsClause extends Clause {
   def tail: Clause
 }
 
+//--- The current algebra
 case class SelectClause(v: Vector[Properties#Var] = Vector.empty[Properties#Var], tail: Clause = NoneClause) extends ConsClause {
   override def append(c: Clause): Clause = SelectClause(v, tail append c)
 }
@@ -98,7 +107,11 @@ case class EverythingClause(tail: Clause = NoneClause) extends ConsClause {
 case class AskClause(body: Clause, tail: Clause = NoneClause) extends ConsClause {
   override def append(c: Clause): Clause = AskClause(body, tail append c)
 }
+//---
 
+/**
+ * DSL backbone for a SELECT operation.
+ */
 trait SelectOperation extends Clauses with Properties {
   def apply(args: String*) = SelectClause((args map v).toVector)
 
@@ -127,10 +140,19 @@ trait SelectOperation extends Clauses with Properties {
 
 }
 
+/**
+ * DSL backbone for an ASK operation.
+ */
 trait AskOperation extends Clauses with Properties {
   def apply(c: Clause): AskClause = AskClause(c)
 }
 
+/**
+ * DSL backbone for any Clause.
+ *
+ * More concrete operations that need to support further clause nesting and operations must
+ * mixin this trait.
+ */
 trait Clauses {
   def ^[A <: Properties#Property](s: A, p: A, o: A): StatementClause[A] = StatementClause((s, p, o))
 
@@ -147,6 +169,14 @@ trait Clauses {
 
 }
 
+/**
+ * It defines types and helper functions that amass
+ * to type constraints within clauses.
+ *
+ * These are defined to concretize the DSL usage,
+ * and normalise inputs such that they conform to
+ * the SPARQL specification.
+ */
 trait Properties {
 
   trait Property {
@@ -181,12 +211,46 @@ trait Properties {
     override def toString: String = s"?$v"
   }
 
+  /**
+   * Normalises input to a `Res` (Resource), viewed semantically
+   * as a subject with the following representation: <`subject`>
+   *
+   * It normalises based on the `String` representation of the input value `A`
+   * @tparam A input value
+   * @return Resource
+   */
   def s[A]: A => Res = s => Res(s.toString)
 
+  /**
+   * Normalises input to a `Res` (Resource), viewed semantically
+   * as a predicate with the following representation: <`predicate`>
+   *
+   * It normalises based on the `String` representation of the input value `A`
+   * @tparam A input value
+   * @return Resource
+   */
   def p[A]: A => Res = s => Res(s.toString)
 
+  /**
+   * Normalises input to either a `Res` (Resource) or `Lit` (Literal),
+   * depending on how the underlying `String` representation of the input value `A`
+   * is structured.
+   *
+   * It is viewed semantically as either a subject or an object (with the following
+   * representation: "`object`")
+   * @tparam A input value
+   * @return Resource or Literal
+   */
   def o[A]: A => Property = s => if (s.toString.contains("http")) Res(s.toString) else Lit(s.toString)
 
+  /**
+   * Normalises input to a `Var` (Variable), viewed semantically as a
+   * variable with the following representation: ?`variable`
+   *
+   * It normalises based on the `String` representation of the input value `A`
+   * @tparam A input value
+   * @return Variable
+   */
   def v[A]: A => Var = s => Var(s.toString)
 }
 

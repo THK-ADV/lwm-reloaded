@@ -20,15 +20,51 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
  * the deletion process of an `Authority`
  */
 
+/**
+ * Structure linking an user to his/her respective authority in the system.
+ * `Authority` is created in order to separate the concerns between user data and
+ * his/her permissions in the underlying system.
+ * It abstracts over the set of all partial permissions a user has in the system.
+ *
+ * @param user The referenced user
+ * @param refRoles User roles relative to a module
+ * @param id Unique id of the `Authority`
+ */
+
 case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID) extends UniqueEntity
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
 
+/**
+ * Structure binding a particular module to a particular `Role` or set of permissions.
+ * A `RefRole` assigns a `Role` to a certain module and references the relation between both.
+ * This in turn grants users specific permissions in specific cases.
+ * i.e:
+ * AP1 -> Coworker
+ * BS -> Student
+ *
+ * @param module Referenced course/module
+ * @param role `Role` for that course/module
+ * @param id Unique id of the `RefRole`
+ */
 case class RefRole(module: Option[UUID] = None, role: Role, id: UUID) extends UniqueEntity
 
 case class RefRoleProtocol(module: Option[UUID] = None, role: Role)
 
+/**
+ * Structure abstracting over a set of unary `Permission`s.
+ * These sets are aggregated to specific `Role`s such that default, reusable `Role`s are possible.
+ *
+ * @param name Name or label of the `Role`
+ * @param permissions The unary permissions of that `Role`
+ */
 case class Role(name: String, permissions: Set[Permission])
+
+/**
+ * Wrapper for a unary permission.
+ * 
+ * @param value Raw permission label
+ */
 
 case class Permission(value: String) {
   override def toString: String = value

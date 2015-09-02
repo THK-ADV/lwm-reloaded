@@ -7,11 +7,27 @@ import org.w3.banana.sesame.SesameModule
 
 trait Query[A] {
   self: SesameModule =>
-
+  /**
+   * Initiates a SELECT `QueryOperation` that automatically checks the validity of the input SELECT query.
+   *
+   * @return QueryOperation[A] Monad encapsulation of what actions should be done with the query result
+   */
   def selectOperation: QueryOperation[A]
 
+  /**
+   * Analogous to the `selectOperation` but as an ASK query.
+   * @return Boolean result of the ask operation
+   */
   def askOperation: QueryOperation[Boolean]
 
+  /**
+   * Provider of a `RepositoryConnection`.
+   * This is used as a closure in relation with `QueryOperation`s, in order to capture
+   * a connection for late evaluation.
+   * @param f Consumer function
+   * @tparam B Result type of `f`
+   * @return Result of `f`
+   */
   def withConnection[B](f: RepositoryConnection => B): B
 }
 
@@ -24,8 +40,6 @@ case class QueryOperation[A](action: String => Option[A]) {
   def map[B](f: A => B): QueryOperation[B] = flatMap(a => new QueryOperation[B](q => run(q) map f))
 
   def flatMap[B](f: A => QueryOperation[B]) = new QueryOperation[B](q => run(q).flatMap(a => f(a) run q)) //not so stack-safe
-
-  def asOpt: QueryOperation[Option[A]] = new QueryOperation[Option[A]](s => run(s) map Option.apply)
 
 }
 
@@ -56,12 +70,18 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
     }.toOption)
   }
 
-  //memoize query
-  def extract(s: String) = {
-    selectOperation map { v =>
-      v.map(_.getValue(s))
-    }
-  }
+  /**
+   * Inverts the right-associativity of a QueryOperation, to a left-associativity. (lazy -> eager)
+   *
+   * This means that the following:
+   * `QueryOperation.flatMap(f) <> queryString`
+   * is inverted to:
+   * `query(queryString).flatMap(f)`
+   *
+   * A helper function directly integrating the SPARQL-DSL.
+   * @param clause SelectClause to be run
+   * @return QueryOperation Monad encapsulating the result
+   */
 
   def query(clause: SelectClause) =
     selectOperation.map { v =>
