@@ -1,7 +1,5 @@
 package store
 
-import java.util.UUID
-
 import base.TestBaseDefinition
 import models.users.Student
 import org.scalatest.WordSpec

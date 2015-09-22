@@ -1,5 +1,7 @@
 package store
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import models.users.Student
 import org.scalatest.WordSpec
@@ -89,6 +91,28 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
 
       result.flatten match {
         case Some(s) => s.head shouldBe student
+        case _ => fail("Query returned nothing")
+      }
+    }
+
+    "allow inversions to left-associativity" in {
+      import store.sparql._
+      import store.sparql.select._
+
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+
+      val clause =
+        select("s", "id") where {
+          ^(v("s"), p(prefixes.systemId), o(student.systemId)).
+            ^(v("s"), p(prefixes.id), v("id"))
+        }
+
+      repo add student
+
+      val result = repo.query(clause).flatMap(_.get("id")).map(v => UUID.fromString(v.stringValue()))
+
+      result match {
+        case Some(s) => s shouldBe student.id
         case _ => fail("Query returned nothing")
       }
     }

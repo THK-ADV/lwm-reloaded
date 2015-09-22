@@ -18,8 +18,8 @@ class LwmUsernameResolver(val repository: SesameRepository) extends UsernameReso
     repository.query {
       select("id") where {
         ^(v("s"), p(prefix.systemId), o(systemId)).
-          ^(v("s"), p(prefix.id), o("id"))
+          ^(v("s"), p(prefix.id), v("id"))
       }
-    }.flatMap(_.map(value => UUID.fromString(value.stringValue())).headOption)
+    }.flatMap(_.get("id")).map(v => UUID.fromString(v.stringValue()))
   }
 }

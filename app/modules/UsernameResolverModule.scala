@@ -1,6 +1,6 @@
 package modules
 
-import store.{UsernameResolver, LwmUsernameResolver}
+import store.{LwmUsernameResolver, UsernameResolver}
 
 trait UsernameResolverModule {
   self: SemanticRepositoryModule =>
