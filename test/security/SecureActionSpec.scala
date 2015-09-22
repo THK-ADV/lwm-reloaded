@@ -13,10 +13,10 @@ import play.api.mvc.Results
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
-import services.{RoleService, RoleServiceLike, UsernameResolver}
-import store.{Namespace, SesameRepository}
+import services.{RoleService, RoleServiceLike}
+import store.{UsernameResolver, Namespace, SesameRepository}
 import utils.LWMActions.{SecureAction, SecureContentTypedAction}
-import utils.{DefaultLwmApplication, LWMMimeType}
+import utils.{LwmMimeType, DefaultLwmApplication}
 
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
@@ -134,7 +134,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "parse content types securely" in new WithDepsApplication {
-      implicit val mimeType = LWMMimeType.loginV1Json
+      implicit val mimeType = LwmMimeType.loginV1Json
 
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))

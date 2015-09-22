@@ -6,7 +6,7 @@ import models.timetable.{TimetableEntry, TimetableEntryProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableEntryProtocol, TimetableEntry] {
   override val entityToPass: TimetableEntry = TimetableEntry("supervisor to pass", "room to pass", "startTime to pass", "endTime to pass", TimetableEntry.randomUUID)
@@ -21,7 +21,7 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
 
   override implicit val jsonWrites: Writes[TimetableEntry] = TimetableEntry.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.timetableEntryV1Json
 
   override val inputJson: JsValue = Json.obj(
     "supervisor" -> "supervisor input",
@@ -30,8 +30,8 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
     "endTime" -> "endTime input"
   )
 
-  import bindings.TimetableEntryBinding._
   import ops._
+  import bindings.TimetableEntryBinding._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

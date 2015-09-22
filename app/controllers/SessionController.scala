@@ -8,7 +8,7 @@ import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
 import services.SessionHandlingService
 import utils.LWMActions.ContentTypedAction
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.concurrent.Future
 
@@ -19,7 +19,7 @@ object SessionController {
 
 class SessionController(sessionRepository: SessionHandlingService) extends Controller with ContentTyped {
 
-  implicit override val mimeType: LWMMimeType = LWMMimeType.loginV1Json
+  implicit override val mimeType: LwmMimeType = LwmMimeType.loginV1Json
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

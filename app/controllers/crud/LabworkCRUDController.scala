@@ -10,7 +10,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -40,6 +40,6 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.labworkV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
 }

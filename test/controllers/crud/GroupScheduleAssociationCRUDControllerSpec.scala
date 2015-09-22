@@ -6,7 +6,7 @@ import models.schedules.{GroupScheduleAssociation, GroupScheduleAssociationProto
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class GroupScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupScheduleAssociationProtocol, GroupScheduleAssociation] {
   override val entityToPass: GroupScheduleAssociation = GroupScheduleAssociation("date to pass", "timetableEntry to pass", GroupScheduleAssociation.randomUUID)
@@ -21,15 +21,15 @@ class GroupScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerS
 
   override implicit val jsonWrites: Writes[GroupScheduleAssociation] = GroupScheduleAssociation.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.groupScheduleAssociationV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.groupScheduleAssociationV1Json
 
   override val inputJson: JsValue = Json.obj(
     "date" -> "date input",
     "timetableEntry" -> "timetableEntry input"
   )
 
-  import bindings.GroupScheduleAssociationBinding._
   import ops._
+  import bindings.GroupScheduleAssociationBinding._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

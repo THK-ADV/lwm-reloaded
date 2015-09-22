@@ -3,14 +3,14 @@ package controllers.crud
 import java.util.UUID
 
 import models.UriGenerator
-import models.schedules.{StudentScheduleAssociationProtocol, StudentScheduleAssociation}
+import models.schedules.{StudentScheduleAssociation, StudentScheduleAssociationProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -31,5 +31,5 @@ class StudentScheduleAssociationCRUDController(val repository: SesameRepository,
 
    override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.studentScheduleAssociationV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.studentScheduleAssociationV1Json
 }

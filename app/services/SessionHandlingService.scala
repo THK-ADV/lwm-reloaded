@@ -6,15 +6,11 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
 import models.Session
 import modules.UsernameResolverModule
-import store.SemanticRepository
+import store.{UsernameResolver, SemanticRepository}
 import utils.Authenticator
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
-trait UsernameResolver {
-  def resolve(systemId: String): Option[UUID]
-}
 
 trait SessionHandlingService {
 

@@ -6,10 +6,7 @@ import models.{Course, CourseProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.Result
-import utils.LWMMimeType
-
-import scala.collection.Map
+import utils.LwmMimeType
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
   override val entityToPass: Course = Course("label to pass", "lecturer to pass", Course.randomUUID)
@@ -24,7 +21,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override implicit val jsonWrites: Writes[Course] = Course.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input",

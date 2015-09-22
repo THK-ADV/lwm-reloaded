@@ -6,7 +6,7 @@ import models.users.{Employee, EmployeeProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProtocol, Employee] {
   override val entityToPass: Employee = Employee("system id to pass", "surname to pass", "forename to pass", "email to pass", Employee.randomUUID)
@@ -21,7 +21,7 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
 
   override implicit val jsonWrites: Writes[Employee] = Employee.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.employeeV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
 
   override val inputJson: JsValue = Json.obj(
       "systemId" -> "systemId input",
@@ -30,8 +30,8 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
       "email" -> "email input"
     )
 
-  import bindings.EmployeeBinding._
   import ops._
+  import bindings.EmployeeBinding._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

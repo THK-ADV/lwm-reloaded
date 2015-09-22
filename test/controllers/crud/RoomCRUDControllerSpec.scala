@@ -6,7 +6,7 @@ import models.{Room, RoomProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room] {
   override val entityToPass: Room = Room("label to pass", Room.randomUUID)
@@ -21,7 +21,7 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
 
   override implicit val jsonWrites: Writes[Room] = Room.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.roomV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input"

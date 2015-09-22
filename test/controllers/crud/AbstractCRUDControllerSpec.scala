@@ -18,7 +18,7 @@ import play.api.{Application, ApplicationLoader}
 import services.RoleService
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.{DefaultLwmApplication, LWMMimeType}
+import utils.{DefaultLwmApplication, LwmMimeType}
 
 import scala.util.{Failure, Success}
 
@@ -36,7 +36,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def entityToFail: O
 
-  def mimeType: LWMMimeType
+  def mimeType: LwmMimeType
 
   def controller: AbstractCRUDController[I, O]
 

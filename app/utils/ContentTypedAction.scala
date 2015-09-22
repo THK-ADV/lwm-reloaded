@@ -12,9 +12,9 @@ object LWMActions {
 
   object ContentTypedAction {
 
-    def apply(block: Request[JsValue] => Result)(implicit mimeType: LWMMimeType): Action[JsValue] = Action(LWMBodyParser.parseWith(mimeType))(block)
+    def apply(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType): Action[JsValue] = Action(LwmBodyParser.parseWith(mimeType))(block)
 
-    def async(block: Request[JsValue] => Future[Result])(implicit mimeType: LWMMimeType): Action[JsValue] = Action.async(LWMBodyParser.parseWith(mimeType))(block)
+    def async(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType): Action[JsValue] = Action.async(LwmBodyParser.parseWith(mimeType))(block)
 
   }
 
@@ -40,20 +40,20 @@ object LWMActions {
 
   object SecureContentTypedAction {
 
-    def apply()(predicate: Authority => Boolean)(block: Request[JsValue] => Result)(implicit mimeType: LWMMimeType, roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService)(LWMBodyParser.parseWith(mimeType))(block)
+    def apply()(predicate: Authority => Boolean)(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(predicate)(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def apply(permissions: Set[RefRole])(block: Request[JsValue] => Result)(implicit mimeType: LWMMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService)(LWMBodyParser.parseWith(mimeType))(block)
+    def apply(permissions: Set[RefRole])(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async()(predicate: Authority => Boolean)(block: Request[JsValue] => Future[Result])(implicit mimeType: LWMMimeType, roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService).async(LWMBodyParser.parseWith(mimeType))(block)
+    def async()(predicate: Authority => Boolean)(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(predicate)(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async(permissions: Set[RefRole])(block: Request[JsValue] => Future[Result])(implicit mimeType: LWMMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService).async(LWMBodyParser.parseWith(mimeType))(block)
+    def async(permissions: Set[RefRole])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
   }

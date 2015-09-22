@@ -1,18 +1,16 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.Course
-import models.security.{Permission, Role, RefRole, RefRoleProtocol}
+import models.security.{Permission, RefRole, RefRoleProtocol, Role}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.http.HeaderNames
-import play.api.libs.json.{Reads, Json, Writes, JsValue}
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
-import utils.LWMMimeType
+import play.api.test.{FakeHeaders, FakeRequest}
+import utils.LwmMimeType
 
 import scala.util.Success
 
@@ -30,7 +28,7 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
   override implicit val jsonWrites: Writes[RefRole] = RefRole.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.refRoleV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 

@@ -26,7 +26,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   val loginToPass = Login("student1", "abcde123")
   val loginToFail = Login("student1", "blabla")
-  val mimeType = LWMMimeType.loginV1Json
+  val mimeType = LwmMimeType.loginV1Json
 
   val validUuid = UUID.randomUUID()
   val invalidUuid = UUID.randomUUID()
@@ -90,7 +90,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
       status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
       contentType(result) shouldBe Some("text/html")
-      contentAsString(result) should include (s"Expecting ${LWMMimeType.loginV1Json.value} body")
+      contentAsString(result) should include (s"Expecting ${LwmMimeType.loginV1Json.value} body")
     }
 
     "not allow students to log in with invalid credentials" in new WithDepsApplication {
@@ -163,7 +163,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       )).get
 
       status(result) shouldBe NO_CONTENT
-      contentType(result) shouldBe Some[String](LWMMimeType.loginV1Json)
+      contentType(result) shouldBe Some[String](LwmMimeType.loginV1Json)
       contentAsString(result) shouldBe empty
     }
   }

@@ -2,7 +2,6 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.security.Permission
 import models.{UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -12,8 +11,8 @@ import play.api.mvc._
 import services.RoleService
 import store.SesameRepository
 import store.bind.Bindings
-import utils.LWMActions.{SecureContentTypedAction, ContentTypedAction}
-import utils.LWMMimeType
+import utils.LWMActions.ContentTypedAction
+import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -48,7 +47,7 @@ trait ModelConverter[I, O] {
 }
 
 trait ContentTyped {
-  implicit val mimeType: LWMMimeType
+  implicit val mimeType: LwmMimeType
 }
 
 trait Secured {

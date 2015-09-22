@@ -9,7 +9,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success}
@@ -32,7 +32,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]]) = {
     repository.get[Semester] match {

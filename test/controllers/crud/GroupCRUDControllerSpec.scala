@@ -6,7 +6,7 @@ import models.{Group, GroupProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
   override val entityToPass: Group = Group("groupSchedule to pass", "label to pass", "labwork to pass", Group.randomUUID)
@@ -21,7 +21,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override implicit val jsonWrites: Writes[Group] = Group.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.groupV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   override val inputJson: JsValue = Json.obj(
     "groupSchedule" -> "groupSchedule input",

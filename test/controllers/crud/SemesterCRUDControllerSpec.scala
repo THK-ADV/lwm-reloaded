@@ -11,7 +11,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
@@ -26,7 +26,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override implicit val jsonWrites: Writes[Semester] = Semester.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override def entityTypeName: String = "semester"
 

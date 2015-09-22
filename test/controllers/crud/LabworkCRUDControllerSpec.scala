@@ -6,7 +6,7 @@ import models.{Labwork, LabworkProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtocol, Labwork] {
   override val entityToPass: Labwork = Labwork("label to pass", Labwork.randomUUID)
@@ -21,7 +21,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   override implicit val jsonWrites: Writes[Labwork] = Labwork.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.labworkV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input"

@@ -4,13 +4,13 @@ import java.util.UUID
 
 import models.UriGenerator
 import models.security.{RefRole, RefRoleProtocol}
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -34,5 +34,5 @@ class RefRoleCRUDController(val repository: SesameRepository, val namespace: Nam
     case None => RefRole(input.module, input.role, RefRole.randomUUID)
   }
 
-  override implicit val mimeType: LWMMimeType = LWMMimeType.refRoleV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 }

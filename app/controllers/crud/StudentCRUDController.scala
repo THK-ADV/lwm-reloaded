@@ -3,14 +3,14 @@ package controllers.crud
 import java.util.UUID
 
 import models.UriGenerator
-import models.users.{StudentProtocol, Student}
+import models.users.{Student, StudentProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -31,5 +31,5 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.studentV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.studentV1Json
 }

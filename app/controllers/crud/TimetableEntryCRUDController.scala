@@ -3,14 +3,14 @@ package controllers.crud
 import java.util.UUID
 
 import models.UriGenerator
-import models.timetable.{TimetableEntryProtocol, TimetableEntry}
+import models.timetable.{TimetableEntry, TimetableEntryProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -31,5 +31,5 @@ class TimetableEntryCRUDController(val repository: SesameRepository, val namespa
 
    override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.timetableEntryV1Json
 }

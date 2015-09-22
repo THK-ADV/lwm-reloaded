@@ -6,7 +6,7 @@ import models.users.{Student, StudentProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtocol, Student] {
   override val entityToPass: Student = Student("system id to pass", "surname to pass", "forename to pass", "email to pass", "registration id to pass", Student.randomUUID)
@@ -21,7 +21,7 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
 
   override implicit val jsonWrites: Writes[Student] = Student.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.studentV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.studentV1Json
 
   override val inputJson: JsValue = Json.obj(
     "systemId" -> "systemId input",

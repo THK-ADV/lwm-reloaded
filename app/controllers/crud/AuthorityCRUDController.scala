@@ -4,13 +4,13 @@ import java.util.UUID
 
 import models.UriGenerator
 import models.security.{Authority, AuthorityProtocol}
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
@@ -35,5 +35,5 @@ class AuthorityCRUDController(val repository: SesameRepository, val namespace: N
     case None => Authority(input.user, input.refRoles, Authority.randomUUID)
   }
 
-  override implicit val mimeType: LWMMimeType = LWMMimeType.authorityV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 }
