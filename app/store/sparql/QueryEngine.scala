@@ -31,6 +31,11 @@ trait Query[A] {
   def withConnection[B](f: RepositoryConnection => B): B
 }
 
+//TODO: Add an algebra for a query result
+//Assume that results are generally bundled in key-value pair collections, because their amount is a priori unknown
+//As a collection, it is then possible to write a combinator that simply extracts values based on an identifier
+//Thus, a manipulation like the following should be possible. `result.at("foo").at("bar")` -> get values for "foo" and "bar"
+
 case class QueryOperation[A](action: String => Option[A]) {
 
   def <>(q: String): Option[A] = run(q)
@@ -80,12 +85,17 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
    *
    * A helper function directly integrating the SPARQL-DSL.
    * @param clause SelectClause to be run
-   * @return QueryOperation Monad encapsulating the result
+   * @return QueryOperation Monad encapsulating the result as a `Map[String, Value]`
    */
 
-  def query(clause: SelectClause) =
+  def query(clause: SelectClause) = {
+    import scala.collection.JavaConversions._
     selectOperation.map { v =>
-      clause.v.flatMap(varr => v.map(_.getValue(varr.v)))
+      v.foldRight(Map[String, Value]()){ (l1, r1) =>
+        l1.getBindingNames.toStream.foldRight(r1) { (l2, r2) =>
+          r2 + (l2 -> l1.getValue(l2))
+        }
+      }
     } <> clause.run
-
+  }
 }

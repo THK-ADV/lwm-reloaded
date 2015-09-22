@@ -9,7 +9,7 @@ object SDSL {
  * Abstract type of a query clause and its underlying interpretation.
  *
  * The Clauses are manipulated as a head :: tail type structure.
- * It is built analogous to typical recursive Cons- datastructures, where
+ * It is built analogous to typical recursive Cons- data structures, where
  * a Cons-type and a None- or Nil-type describe the "full" and "empty"
  * variations of the structure.
  **/
