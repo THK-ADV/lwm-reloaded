@@ -56,7 +56,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority.empty)
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
+        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
       val action1 = SecureAction()(_ => true) { req => Results.Ok("Passed") }
@@ -78,10 +78,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole1), UUID.randomUUID()))
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
+        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction(Set(module1UserRole1)) {
+      val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
       }
 
@@ -98,10 +98,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
+        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction(Set(module1UserRole1)) {
+      val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
       }
 
@@ -118,10 +118,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module2UserRole2), UUID.randomUUID()))
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
+        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
-      val action = SecureAction(Set(module1UserRole1)) {
+      val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
       }
 
@@ -139,7 +139,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val roleService = new RoleServiceLike {
         override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
 
-        override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
+        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
       }
 
       val action = SecureContentTypedAction()(_ => true) {

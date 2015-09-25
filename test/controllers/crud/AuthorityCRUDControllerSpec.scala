@@ -6,13 +6,22 @@ import models.users.User
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, Result, AnyContent, Request}
+import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 //TODO: BUGGY. REPAIR. NAOW!
 class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
 
   override def entityTypeName: String = "authority"
 
-  override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityCRUDController(repository, namespace, roleService)
+  override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def securedt(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
+  }
 
   override val entityToFail: Authority = Authority(
     User.randomUUID,

@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
@@ -12,17 +14,19 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, AnyContent, Request, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.RoleService
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
+import utils.LWMActions.ContentTypedAction
 import utils.{DefaultLwmApplication, LwmMimeType}
 
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule {
+abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule { self =>
 
   val factory = ValueFactoryImpl.getInstance()
   val repository = mock[SesameRepository]
@@ -44,6 +48,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   val inputJson: JsValue
 
+  val userId = UUID.randomUUID()
+
   implicit def jsonWrites: Writes[O]
 
   def namespace: Namespace = Namespace("http://testNamespace/")
@@ -51,7 +57,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   def fgrammar(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
 
   class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
-    override def load(context: Context): Application = new DefaultLwmApplication(context).application
+    override def load(context: Context): Application = new DefaultLwmApplication(context) {
+      override lazy val roleService: RoleService = self.roleService
+
+    }.application
   })
 
   s"A ${entityTypeName}CRUDController " should {

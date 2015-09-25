@@ -1,28 +1,40 @@
 package services
 
-import models.security.{Authority, RefRole}
+import java.util.UUID
+
+import models.security.{Permission, Roles, Authority, RefRole}
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
-import utils.Ops._
 
 trait RoleServiceLike {
 
   def authorityFor(userId: String): Option[Authority]
 
-  def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean
+  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean
 
-  def checkFor(checkee: Set[RefRole])(userId: String): Boolean = authorityFor(userId) exists (e => checkWith(checkee)(e.refRoles))
+  def checkFor(checkee: (Option[UUID], Set[Permission]))(userId: String): Boolean = authorityFor(userId) exists (e => checkWith(checkee)(e.refRoles))
 }
 
 class RoleService(repository: SesameRepository) extends RoleServiceLike {
 
   import repository._
+
   private val lwm = LWMPrefix[Rdf]
   private val bindings = Bindings[Rdf](namespace)
-  import bindings.AuthorityBinding._
 
-  override def authorityFor(userId: String): Option[Authority] = get[Authority].map (_.find(_.id.toString == userId)).toOption.flatten
+  override def authorityFor(userId: String): Option[Authority] = {
+    import store.sparql.select
+    import store.sparql.select._
+    import bindings.AuthorityBinding._
+    import bindings.RefRoleBinding._
+
+    repository.query {
+      select("auth") where {
+        ^(v("auth"), p(lwm.privileged), o(userId))
+      }
+    }.flatMap(_.get("auth")).flatMap(v => get[Authority](v.stringValue()).toOption.flatten)
+  }
 
   /*
    * TODO: Possible optimization
@@ -36,13 +48,13 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
    * the current slice is contained in their merger. As all of them are, technically, part of the same domain, their merger
    * should not reveal any side effects. (A => A => A)
    */
-  override def checkWith(checkee: Set[RefRole])(checker: Set[RefRole]): Boolean = {
-    checkee.forall { r =>
-      checker.filter(_.module == r.module)
-        .find(e => r.role.permissions.forall(e.role.permissions.contains)) match {
-        case Some(ref) => true
-        case _ => false
+  override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = checkee match {
+    case (module, permissions) => val res = checker.find(_.module == checkee._1) match {
+        case Some(ref) => permissions.forall(ref.role.permissions.contains)
+        case None => checker.exists(_.role == Roles.admin)
       }
-    }
+    println(s"-----------------------------------------------CHECKEE: $checkee :: CHECKER: $checker")
+    println(s"-----------------------------------------------RESULT: $res")
+    res
   }
 }

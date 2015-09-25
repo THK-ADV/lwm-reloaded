@@ -2,17 +2,21 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.{Roles, Role, RefRole}
 import models.{Semester, SemesterProtocol, UriGenerator}
 import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
+import play.api.mvc.{Request, Result, AnyContent, Action}
 import services.RoleService
 import store.{Namespace, SesameRepository}
+import utils.LWMActions.{SecureContentTypedAction, SecureAction}
 import utils.LwmMimeType
-
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Failure, Success}
+import Roles._
 
 object SemesterCRUDController {
   val yearAttribute = "year"
@@ -120,4 +124,12 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case None =>
       Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
   }
+
+  override protected def invokeAction(act: Rule)(moduleId: Option[String] = None) = Invoke {
+    case All => Block(None, Set(allSemesters))
+    case Get => Block(None, Set(getSemester))
+    case _ => Block((None, admin.permissions))
+  }.run(act)
+
+
 }

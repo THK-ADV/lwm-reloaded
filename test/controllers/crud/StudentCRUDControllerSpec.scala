@@ -6,6 +6,8 @@ import models.users.{Student, StudentProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, Result, AnyContent, Request}
+import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtocol, Student] {
@@ -14,6 +16,12 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
   override def entityTypeName: String = "student"
 
   override val controller: AbstractCRUDController[StudentProtocol, Student] = new StudentCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def securedt(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
     override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = entityToPass
   }
 

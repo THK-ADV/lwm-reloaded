@@ -105,7 +105,7 @@ object SessionServiceActor {
 
 }
 
-class SessionServiceActor(authenticator: Authenticator)(uResolver: String => Option[UUID]) extends Actor with ActorLogging {
+class SessionServiceActor(authenticator: Authenticator)(resolve: String => Option[UUID]) extends Actor with ActorLogging {
 
   import SessionServiceActor._
 
@@ -124,7 +124,7 @@ class SessionServiceActor(authenticator: Authenticator)(uResolver: String => Opt
 
       authenticator.authenticate(user, password).onComplete {
         case Success(authenticated) =>
-          uResolver(user) match {
+          resolve(user) match {
             case Some(userId) if authenticated =>
               val session = Session(user.toLowerCase, userId)
               sessions = sessions + (session.username -> session)

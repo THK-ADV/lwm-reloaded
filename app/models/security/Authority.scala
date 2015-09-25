@@ -31,7 +31,7 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
  * @param id Unique id of the `Authority`
  */
 
-case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID) extends UniqueEntity
+case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID = Authority.randomUUID) extends UniqueEntity
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
 
@@ -47,7 +47,12 @@ case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
  * @param role `Role` for that course/module
  * @param id Unique id of the `RefRole`
  */
-case class RefRole(module: Option[UUID] = None, role: Role, id: UUID) extends UniqueEntity
+case class RefRole(module: Option[UUID] = None, role: Role, id: UUID = RefRole.randomUUID) extends UniqueEntity {
+  def ++ (r: RefRole): RefRole = (module, r.module) match {
+    case (Some(m1), Some(m2)) if m1 == m2 => RefRole(module, Role(role.name, role.permissions ++ r.role.permissions), UUID.randomUUID())
+    case _ => this
+  }
+}
 
 case class RefRoleProtocol(module: Option[UUID] = None, role: Role)
 
@@ -72,9 +77,16 @@ case class Permission(value: String) {
 
 object Permissions {
 
+  val prime = Permission("Prime")
+
+  val getSemester = Permission("get an existing semester")
+
+  val allSemesters = Permission("get all semesters")
+
   val createCourse = Permission("create a new course")
 
   val joinLabwork = Permission("join an existing labwork")
+
 }
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
@@ -91,9 +103,16 @@ object Roles {
 
   import Permissions._
 
-  val admin = Role("admin", Set(createCourse))
+  def ref(module: Option[String], role: Role): RefRole = RefRole(module.map(UUID.fromString), role, RefRole.randomUUID)
+
+  val admin = Role("admin", Set(prime))
 
   val user = Role("user", Set(joinLabwork))
+
+  val employee = Role("employee", Set(allSemesters))
+
+  val student = Role("student", Set(getSemester, joinLabwork))
+
 }
 
 object Permission extends JsonSerialisation[Permission, Permission] {

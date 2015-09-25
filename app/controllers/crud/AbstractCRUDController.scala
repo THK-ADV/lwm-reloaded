@@ -2,6 +2,7 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.Permission
 import models.{UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -11,7 +12,7 @@ import play.api.mvc._
 import services.RoleService
 import store.SesameRepository
 import store.bind.Bindings
-import utils.LWMActions.ContentTypedAction
+import utils.LWMActions._
 import utils.LwmMimeType
 
 import scala.collection.Map
@@ -54,6 +55,26 @@ trait Secured {
   implicit val roleService: RoleService
 }
 
+trait Deferred { self: Secured with ContentTyped =>
+
+  sealed trait Rule
+  case object Create extends Rule
+  case object Delete extends Rule
+  case object All extends Rule
+  case object Get extends Rule
+  case object Update extends Rule
+
+  case class Invoke(run: Rule => Block)
+  case class Block(lookup: (Option[String], Set[Permission])) {
+    def secured(block: Request[AnyContent] => Result): Action[AnyContent] = lookup match {
+      case (o, s) => SecureAction((o.map(UUID.fromString), s))(block)
+    }
+    def securedt(block: Request[JsValue] => Result): Action[JsValue] = lookup match {
+      case (o, s) => SecureContentTypedAction((o.map(UUID.fromString), s))(block)
+    }
+  }
+}
+
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 with JsonSerialisation[I, O]
 with SesameRdfSerialisation[O]
@@ -61,10 +82,11 @@ with Filterable
 with ModelConverter[I, O]
 with BaseNamespace
 with ContentTyped
-with Secured {
+with Secured
+with Deferred {
 
   // POST /Ts
-  def create = ContentTypedAction { implicit request =>
+  def create = invokeAction(Create)(None) securedt { implicit request =>
     request.body.validate[I].fold(
       errors => {
         BadRequest(Json.obj(
@@ -87,7 +109,7 @@ with Secured {
   }
 
   // GET /Ts/:id
-  def get(id: String) = Action { implicit request =>
+  def get(id: String) = invokeAction(Get)(Some(id)) secured { implicit request =>
     val uri = s"$namespace${request.uri}"
 
     repository.get[O](uri) match {
@@ -110,7 +132,7 @@ with Secured {
   }
 
   // GET /ts with optional queries
-  def all() = Action { implicit request =>
+  def all() = invokeAction(All)(None) secured { implicit request =>
     if (request.queryString.isEmpty) {
       repository.get[O] match {
         case Success(s) =>
@@ -126,7 +148,8 @@ with Secured {
     }
   }
 
-  def update(id: String) = ContentTypedAction { implicit request =>
+
+  def update(id: String) = invokeAction(Update)(Some(id)) securedt { implicit request =>
     repository.get[O](id) match {
       case Success(s) =>
         s match {
@@ -164,7 +187,7 @@ with Secured {
     }
   }
 
-  def delete(id: String) = Action { implicit request =>
+  def delete(id: String) = invokeAction(Delete)(Some(id)) secured { implicit request =>
     repository.delete(id) match {
       case Success(s) =>
         Ok(Json.obj(
@@ -183,4 +206,9 @@ with Secured {
     NoContent.as(mimeType)
   }
 
+
+  protected def invokeAction(rule: Rule)(moduleId: Option[String]): Block = Block((None, Set()))
+
 }
+
+

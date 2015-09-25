@@ -8,8 +8,10 @@ import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, Result, AnyContent, Request}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
+import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 import scala.util.Success
@@ -20,7 +22,14 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
   override def entityTypeName: String = "refRole"
 
-  override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService)
+  override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def securedt(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
+  }
 
   override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role("role to fail", Set(Permission("perm to pass"))), RefRole.randomUUID)
 

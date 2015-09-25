@@ -1,7 +1,9 @@
 package utils
 
+import java.util.UUID
+
 import controllers.SessionController
-import models.security.{Authority, RefRole}
+import models.security.{Role, Permission, Authority, RefRole}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import services.RoleServiceLike
@@ -24,17 +26,20 @@ object LWMActions {
       securedAction(predicate)(roleService)(block)
     }
 
-    def apply(permissions: Set[RefRole])(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService)(block)
+    def apply(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
+      securedAction(userAuth =>
+        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(block)
     }
 
     def async()(predicate: Authority => Boolean)(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
       securedAction(predicate)(roleService).async(block)
     }
 
-    def async(permissions: Set[RefRole])(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService).async(block)
+    def async(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
+      securedAction(userAuth =>
+        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(block)
     }
+
 
   }
 
@@ -44,16 +49,18 @@ object LWMActions {
       securedAction(predicate)(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def apply(permissions: Set[RefRole])(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
+    def apply(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth =>
+        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async()(predicate: Authority => Boolean)(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(predicate)(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async(permissions: Set[RefRole])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(permissions)(userAuth.refRoles))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
+    def async(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth =>
+        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
   }
@@ -89,8 +96,6 @@ case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthReque
       authority <- roleService.authorityFor(userId)
     } yield f(authority)) getOrElse f(Authority.empty)
   }
-
-
 }
 
 

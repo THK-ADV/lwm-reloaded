@@ -6,6 +6,8 @@ import models.schedules.{StudentScheduleAssociation, StudentScheduleAssociationP
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, Result, AnyContent, Request}
+import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class StudentScheduleAssociationCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentScheduleAssociationProtocol, StudentScheduleAssociation] {
@@ -14,6 +16,12 @@ class StudentScheduleAssociationCRUDControllerSpec extends AbstractCRUDControlle
   override def entityTypeName: String = "studentScheduleAssociation"
 
   override val controller: AbstractCRUDController[StudentScheduleAssociationProtocol, StudentScheduleAssociation] = new StudentScheduleAssociationCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def securedt(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
     override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = entityToPass
   }
 
