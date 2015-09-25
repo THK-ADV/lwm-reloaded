@@ -2,17 +2,36 @@ package services
 
 import java.util.UUID
 
-import models.security.{Permission, Roles, Authority, RefRole}
+import models.security._
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
 
 trait RoleServiceLike {
 
+  /**
+   * Retrieves the authority of a particular user.
+   * @param userId User ID
+   * @return User's possible authority
+   */
   def authorityFor(userId: String): Option[Authority]
 
+  /**
+   * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
+   * @param checkee restrictions
+   * @param checker to be checked
+   * @return true/false
+   */
   def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean
 
+  /**
+   * Composition between `authorityFor` and `checkWith` functions.
+   * Checks if a particular user is allowed to pass the restrictions defined in `checkee`
+   *
+   * @param checkee restrictions
+   * @param userId User ID
+   * @return true/false
+   */
   def checkFor(checkee: (Option[UUID], Set[Permission]))(userId: String): Boolean = authorityFor(userId) exists (e => checkWith(checkee)(e.refRoles))
 }
 
@@ -36,25 +55,14 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
     }.flatMap(_.get("auth")).flatMap(v => get[Authority](v.stringValue()).toOption.flatten)
   }
 
-  /*
-   * TODO: Possible optimization
-   * In a situation like the following:
-   *
-   *  _  -> StudentPerms
-   *  _  -> EmployeePerms
-   *  ...
-   *
-   * Instead of checking if one of n similar categories contains all permissions, we might simply merge all of them and check if
-   * the current slice is contained in their merger. As all of them are, technically, part of the same domain, their merger
-   * should not reveal any side effects. (A => A => A)
-   */
+
   override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = checkee match {
-    case (module, permissions) => val res = checker.find(_.module == checkee._1) match {
-        case Some(ref) => permissions.forall(ref.role.permissions.contains)
-        case None => checker.exists(_.role == Roles.admin)
-      }
-    println(s"-----------------------------------------------CHECKEE: $checkee :: CHECKER: $checker")
-    println(s"-----------------------------------------------RESULT: $res")
-    res
+    case (module, permissions) =>
+      import bindings.RoleBinding._
+      (for {
+        ref <- checker.find(_.module == checkee._1)
+        role <- repository.get[Role](Role.generateUri(ref.role)).toOption.flatten
+      } yield permissions.forall(role.permissions.contains)) getOrElse checker.exists(_.role == Roles.admin.id)
+
   }
 }

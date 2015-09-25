@@ -9,7 +9,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Action, Result, AnyContent, Request}
 import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
-//TODO: BUGGY. REPAIR. NAOW!
+
 class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
 
   override def entityTypeName: String = "authority"
@@ -25,13 +25,13 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
 
   override val entityToFail: Authority = Authority(
     User.randomUUID,
-    Set(RefRole(Some(Course.randomUUID), Role("role to fail", Set(Permission("perm to fail"))), RefRole.randomUUID)),
+    Set(RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)),
     Authority.randomUUID
   )
 
   override val entityToPass: Authority = Authority(
     User.randomUUID,
-    Set(RefRole(Some(Course.randomUUID), Role("role to pass", Set(Permission("perm to pass"))), RefRole.randomUUID)),
+    Set(RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)),
     Authority.randomUUID
   )
 
@@ -48,12 +48,7 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
     "user" -> User.randomUUID,
     "refRoles" -> Json.arr(Json.obj(
       "module" -> Some(Course.randomUUID.toString),
-      "role" -> Json.obj(
-        "name" -> "role input",
-        "permissions" -> Json.arr(Json.obj(
-          "value" -> "perm"
-        ))
-      ),
+      "role" -> Role.randomUUID.toString,
       "id" -> RefRole.randomUUID.toString
     ))
   )

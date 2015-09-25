@@ -3,11 +3,11 @@ package modules
 import controllers.crud.StudentScheduleAssociationCRUDController
 
 trait StudentScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule with RoleManagementModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule =>
   def studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController
 }
 
 trait DefaultStudentScheduleAssociationManagementModuleImpl extends StudentScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with RoleManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
   lazy val studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController = new StudentScheduleAssociationCRUDController(repository, namespace, roleService)
 }

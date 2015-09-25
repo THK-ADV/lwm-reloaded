@@ -48,8 +48,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   val inputJson: JsValue
 
-  val userId = UUID.randomUUID()
-
   implicit def jsonWrites: Writes[O]
 
   def namespace: Namespace = Namespace("http://testNamespace/")
@@ -83,7 +81,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
       val result = route(FakeRequest(
         POST,
-        s"/${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s",
+        s"/${fgrammar(entityTypeName)}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
         inputJson
       )).get
@@ -215,7 +213,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedPassModel
+      contentAsString(result).split(" ") contains expectedPassModel
     }
 
     s"not delete an existing $entityTypeName when there is an exception" in {

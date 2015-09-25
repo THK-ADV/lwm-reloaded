@@ -13,13 +13,18 @@ import play.api.mvc.Results
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
-import services.{RoleService, RoleServiceLike}
+import services.RoleService
 import store.{UsernameResolver, Namespace, SesameRepository}
 import utils.LWMActions.{SecureAction, SecureContentTypedAction}
 import utils.{LwmMimeType, DefaultLwmApplication}
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar.mock
+import org.mockito.Matchers._
 
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
+
+  implicit val roleService = mock[RoleService]
 
   val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
   val insufficientPermissions = Set(Permission("view"), Permission("delete"))
@@ -29,9 +34,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
 
-  val module1UserRole1 = RefRole(Some(module1), role1, RefRole.randomUUID)
-  val module1UserRole2 = RefRole(Some(module1), role2, RefRole.randomUUID)
-  val module2UserRole2 = RefRole(Some(module2), role2, RefRole.randomUUID)
+  val module1UserRole1 = RefRole(Some(module1), role1.id, RefRole.randomUUID)
+  val module1UserRole2 = RefRole(Some(module1), role2.id, RefRole.randomUUID)
+  val module2UserRole2 = RefRole(Some(module2), role2.id, RefRole.randomUUID)
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(ns)
@@ -53,11 +58,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   "A secured action" should {
 
     "apply a simple permission checking function" in new WithDepsApplication {
-      implicit val roleService = new RoleServiceLike {
-        override def authorityFor(systemId: String): Option[Authority] = Some(Authority.empty)
-
-        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
-      }
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority.empty))
 
       val action1 = SecureAction()(_ => true) { req => Results.Ok("Passed") }
       val action2 = SecureAction()(_ => false) {req => Results.Ok("Passed")}
@@ -74,12 +75,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
-
-      implicit val roleService = new RoleServiceLike {
-        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole1), UUID.randomUUID()))
-
-        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
-      }
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole1), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole1))).thenReturn(true)
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -94,12 +91,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
-
-      implicit val roleService = new RoleServiceLike {
-        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
-
-        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
-      }
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole2))).thenReturn(false)
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -114,12 +107,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
-
-      implicit val roleService = new RoleServiceLike {
-        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module2UserRole2), UUID.randomUUID()))
-
-        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
-      }
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module2UserRole2), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module2UserRole2))).thenReturn(false)
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -136,11 +125,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "parse content types securely" in new WithDepsApplication {
       implicit val mimeType = LwmMimeType.loginV1Json
 
-      implicit val roleService = new RoleServiceLike {
-        override def authorityFor(systemId: String): Option[Authority] = Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID()))
-
-        override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = defaultRoleService.checkWith(checkee)(checker)
-      }
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID())))
+      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(true)
 
       val action = SecureContentTypedAction()(_ => true) {
         request =>

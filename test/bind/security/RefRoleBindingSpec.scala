@@ -17,17 +17,17 @@ class RefRoleBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](ns)
   import bindings.RefRoleBinding._
   import bindings.uuidBinder
-  import bindings.roleBinder
+  import bindings.RoleBinding._
 
   val refRoleWithCourse = RefRole(
     Some(Course.randomUUID),
-    Role("role", Set(Permission("perm"))),
+    Role.randomUUID,
     RefRole.randomUUID
   )
 
   val refRoleWithoutCourse = RefRole(
     None,
-    Role("role", Set(Permission("perm"))),
+    Role.randomUUID,
     RefRole.randomUUID
   )
 

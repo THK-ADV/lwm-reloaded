@@ -22,15 +22,17 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   val role2 = Role("testRole2", insufficientPermissions)
   val role3 = Roles.admin
 
-  val noneModule1Role1 = RefRole(None, role1)
-  val noneModule1Role2 = RefRole(None, role2)
+  val roles = Vector(role1, role2, role3)
 
-  val module1UserRole1 = RefRole(Some(module1), role1)
-  val module1UserRole2 = RefRole(Some(module1), role2)
-  val module2UserRole2 = RefRole(Some(module2), role2)
-  val adminRole = RefRole(None, Roles.admin)
+  val noneModule1Role1 = RefRole(None, role1.id)
+  val noneModule1Role2 = RefRole(None, role2.id)
 
-  def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.module, r.role.permissions)
+  val module1UserRole1 = RefRole(Some(module1), role1.id)
+  val module1UserRole2 = RefRole(Some(module1), role2.id)
+  val module2UserRole2 = RefRole(Some(module2), role2.id)
+  val adminRole = RefRole(None, Roles.admin.id)
+
+  def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.module, roles.find(_.id == r.role).get.permissions)
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
@@ -45,22 +47,30 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   "A role service" should {
 
     "check refroles properly" in {
+      import bindings.RoleBinding._
+
+      repository.add(role1)
+      repository.add(role2)
+      repository.add(role3)
+
       val result1 = roleService.checkWith(unbox(module1UserRole1))(Set(module1UserRole2))
       val result2 = roleService.checkWith(unbox(module1UserRole1))(Set(module1UserRole1, module2UserRole2))
       val result3 = roleService.checkWith(unbox(noneModule1Role1))(Set(module1UserRole1, noneModule1Role1, module2UserRole2))
       val result4 = roleService.checkWith(unbox(module1UserRole1))(Set(adminRole))
-
+      val result5 = roleService.checkWith(unbox(module2UserRole2))(Set(module1UserRole1))
 
       result1 shouldBe false
       result2 shouldBe true
       result3 shouldBe true
       result4 shouldBe true
+      result5 shouldBe false
     }
 
 
     "retrieve authorities properly" in {
       import bindings.StudentBinding._
       import bindings.AuthorityBinding._
+      import bindings.RoleBinding._
 
       val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Student.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Student.randomUUID)
@@ -72,6 +82,9 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       repository.add(student1)
       repository.add(student2)
       repository.add(student3)
+      repository.add(role1)
+      repository.add(role2)
+      repository.add(role3)
       repository.add(authority1)
       repository.add(authority2)
 

@@ -26,13 +26,13 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   val authorityForCourse1 = RefRole(
     Some(Course.randomUUID),
-    Role("role", Set(Permission("create"))),
+    Role.randomUUID,
     RefRole.randomUUID
   )
 
   val authorityForCourse2 = RefRole(
     Some(Course.randomUUID),
-    Role("role", Set(Permission("delete"), Permission("view"))),
+    Role.randomUUID,
     RefRole.randomUUID
   )
 

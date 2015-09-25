@@ -53,12 +53,13 @@ with StudentScheduleAssociationManagementModule
 //with TimetableManagementModule
 with TimetableEntryManagementModule
 with SessionRepositoryModule
+with SecurityManagementModule
+with RoleManagementModule
 with RefRoleManagementModule
 with AuthorityManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with RoleManagementModule
 with UsernameResolverModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
@@ -77,6 +78,7 @@ with UsernameResolverModule {
     //studentScheduleManagementController,
     //timetableManagementController,
     timetableEntryManagementController,
+    roleManagementController,
     refRoleManagementController,
     authorityManagementController,
     sessionController,
@@ -106,8 +108,9 @@ with DefaultTimetableEntryManagementModuleImpl
 with LDAPAuthenticatorModule
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
+with DefaultRoleManagementModule
 with DefaultRefRoleManagementModuleImpl
 with DefaultAuthorityManagementModuleImpl
 with DefaultSessionControllerModuleImpl
-with DefaultRoleManagementModuleImpl
+with DefaultSecurityManagementModule
 with DefaultUserResolverModule

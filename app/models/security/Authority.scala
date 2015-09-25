@@ -6,23 +6,9 @@ import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-/*
- * BUG: Because the authority gets serialised together with a number of other sub-graphs (namely `RefRole`s),
- * two main subjects emerge that compete every time one tries to extract the main node
- * of an `Authority` graph. This in turn creates fluctuations in the test cases.
- * Mainly: `successfully delete an existing "authority" graph`
- *
- * Possible solution:
- * Do not save whole chunks of `RefRole` sub-graphs in an `Authority` but rather
- * just reference existing ones by their UUID.
- * This adds another step in the retrieval process (we might need to dereference the set
- * of UUID's) but avoids the unwanted deletion of existing `RefRole`s that get caught in
- * the deletion process of an `Authority`
- */
-
 /**
- * Structure linking an user to his/her respective authority in the system.
- * `Authority` is created in order to separate the concerns between user data and
+ * Structure linking a user to his/her respective authority in the system.
+ * `Authority` is created in order to separate concerns between user data and
  * his/her permissions in the underlying system.
  * It abstracts over the set of all partial permissions a user has in the system.
  *
@@ -36,37 +22,43 @@ case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID = Authority.ra
 case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
 
 /**
- * Structure binding a particular module to a particular `Role` or set of permissions.
- * A `RefRole` assigns a `Role` to a certain module and references the relation between both.
+ * Structure binding a particular module to a particular `Role`(or set of permissions).
+ * `RefRole`s bind `Role`s and modules together.
  * This in turn grants users specific permissions in specific cases.
- * i.e:
- * AP1 -> Coworker
- * BS -> Student
+ *  i.e:
+ *    AP1 -> Coworker
+ *    BS -> Student
+ *
+ * Because `Role`s need to be independent, they are only referenced in this graph.
+ * Directly integrating them in the `RefRole` graph would mean that, upon deletion,
+ * the `Role`s themselves would also be deleted.
+ *
  *
  * @param module Referenced course/module
- * @param role `Role` for that course/module
+ * @param role Reference to `Role` Instance of that course/module
  * @param id Unique id of the `RefRole`
  */
-case class RefRole(module: Option[UUID] = None, role: Role, id: UUID = RefRole.randomUUID) extends UniqueEntity {
-  def ++ (r: RefRole): RefRole = (module, r.module) match {
-    case (Some(m1), Some(m2)) if m1 == m2 => RefRole(module, Role(role.name, role.permissions ++ r.role.permissions), UUID.randomUUID())
-    case _ => this
-  }
-}
+case class RefRole(module: Option[UUID] = None, role: UUID, id: UUID = RefRole.randomUUID) extends UniqueEntity
 
-case class RefRoleProtocol(module: Option[UUID] = None, role: Role)
+case class RefRoleProtocol(module: Option[UUID] = None, role: UUID)
 
 /**
  * Structure abstracting over a set of unary `Permission`s.
  * These sets are aggregated to specific `Role`s such that default, reusable `Role`s are possible.
+ * `Role`s are independent. They can only be referenced by other graphs.
  *
  * @param name Name or label of the `Role`
  * @param permissions The unary permissions of that `Role`
  */
-case class Role(name: String, permissions: Set[Permission])
+case class Role(name: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity {
+  override def equals(obj: scala.Any): Boolean =
+    obj.asInstanceOf[Role].name == name && obj.asInstanceOf[Role].permissions == permissions
+}
+
+case class RoleProtocol(name: String, permissions: Set[Permission])
 
 /**
- * Wrapper for a unary permission.
+ * A unary permission.
  * 
  * @param value Raw permission label
  */
@@ -89,21 +81,9 @@ object Permissions {
 
 }
 
-object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
-  def empty = Authority(UUID.randomUUID(), Set.empty[RefRole], UUID.randomUUID())
-
-  override def base: String = "authorities"
-
-  override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
-
-  override implicit def writes: Writes[Authority] = Json.writes[Authority]
-}
-
 object Roles {
 
   import Permissions._
-
-  def ref(module: Option[String], role: Role): RefRole = RefRole(module.map(UUID.fromString), role, RefRole.randomUUID)
 
   val admin = Role("admin", Set(prime))
 
@@ -122,14 +102,20 @@ object Permission extends JsonSerialisation[Permission, Permission] {
   override implicit def writes: Writes[Permission] = Json.writes[Permission]
 }
 
-object Role extends JsonSerialisation[Role, Role] {
+object Role extends UriGenerator[Role] with JsonSerialisation[RoleProtocol, Role] {
 
-  override implicit def reads: Reads[Role] = Json.reads[Role]
+  implicit def format: Format[Role] = Json.format[Role]
+
+  override implicit def reads: Reads[RoleProtocol] = Json.reads[RoleProtocol]
 
   override implicit def writes: Writes[Role] = Json.writes[Role]
+
+  override def base: String = "roles"
 }
 
 object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProtocol, RefRole] {
+  import Role._
+
   override def base: String = "refRoles"
 
   implicit def format: Format[RefRole] = Json.format[RefRole]
@@ -137,4 +123,15 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
   override implicit def reads: Reads[RefRoleProtocol] = Json.reads[RefRoleProtocol]
 
   override implicit def writes: Writes[RefRole] = Json.writes[RefRole]
+}
+
+object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
+
+  def empty = Authority(UUID.randomUUID(), Set.empty[RefRole], UUID.randomUUID())
+
+  override def base: String = "authorities"
+
+  override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
+
+  override implicit def writes: Writes[Authority] = Json.writes[Authority]
 }

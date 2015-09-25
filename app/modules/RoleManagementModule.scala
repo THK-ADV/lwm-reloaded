@@ -1,16 +1,13 @@
 package modules
 
-import services.RoleService
-import utils.LwmApplication
+import controllers.crud.RoleCRUDController
 
 trait RoleManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
-
-  def roleService: RoleService
+  self: SemanticRepositoryModule with SecurityManagementModule =>
+  def roleManagementController: RoleCRUDController
 }
 
-trait DefaultRoleManagementModuleImpl extends RoleManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
-
-  lazy val roleService: RoleService = new RoleService(repository)
+trait DefaultRoleManagementModule extends RoleManagementModule {
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  override def roleManagementController: RoleCRUDController = new RoleCRUDController(repository, namespace, roleService)
 }

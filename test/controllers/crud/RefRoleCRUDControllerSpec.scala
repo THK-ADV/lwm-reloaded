@@ -17,6 +17,7 @@ import utils.LwmMimeType
 import scala.util.Success
 
 class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole] {
+
   import bindings.RefRoleBinding._
   import ops._
 
@@ -26,14 +27,15 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
     override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
       override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+
       override def securedt(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
     }
 
   }
 
-  override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role("role to fail", Set(Permission("perm to pass"))), RefRole.randomUUID)
+  override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
-  override val entityToPass: RefRole = RefRole(Some(Course.randomUUID), Role("role to pass", Set(Permission("perm to fail"))), RefRole.randomUUID)
+  override val entityToPass: RefRole = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
   override implicit val jsonWrites: Writes[RefRole] = RefRole.writes
 
@@ -43,25 +45,15 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
   override val inputJson: JsValue = Json.obj(
     "module" -> Some(Course.randomUUID.toString),
-    "role" -> Json.obj(
-      "name" -> "role input",
-      "permissions" -> Json.arr(Json.obj(
-        "value" -> "perm"
-      ))
-    )
+    "role" -> Role.randomUUID
   )
 
   val noModuleJson: JsValue = Json.obj(
     "module" -> None,
-    "role" -> Json.obj(
-      "name" -> "no module",
-      "permissions" -> Json.arr(Json.obj(
-        "value" -> "no module"
-      ))
-    )
+    "role" -> Role.randomUUID.toString
   )
 
-  val noModuleRefRole = RefRole(None, Role("no module", Set(Permission("no module"))), RefRole.randomUUID)
+  val noModuleRefRole = RefRole(None, Role.randomUUID, RefRole.randomUUID)
 
   "A RefRoleCRUDControllerSpec also" should {
     s"handle refRoles with no module properly" in {

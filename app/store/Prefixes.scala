@@ -77,8 +77,9 @@ object Prefixes {
     //Semester
     val examPeriod = apply("examPeriod")
     //Roles-Permissions
-    val refroles = apply("refRoles")
     val role = apply("role")
+    val refroles = apply("refRoles")
+    val permissions = apply("permissions")
     val module = apply("module")
     val privileged = apply("privileged")
 
@@ -102,6 +103,7 @@ object Prefixes {
     val Timetable = apply("Timetable")
     val TimetableEntry = apply("TimetableEntry")
     val User = apply("User")
+    val Role = apply("Role")
     val RefRole = apply("RefRole")
     val Authority = apply("Authority")
 

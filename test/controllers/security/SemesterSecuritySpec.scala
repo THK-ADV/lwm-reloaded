@@ -4,21 +4,17 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import controllers.crud.SemesterCRUDController
 import models.Semester
 import models.security.{Permissions, RefRole, Authority, Roles}
 import org.scalatest.WordSpecLike
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
-import play.api.mvc.Headers
 import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import services.RoleService
 import utils.{LwmMimeType, DefaultLwmApplication}
-import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import play.api.test.Helpers._
 
@@ -39,7 +35,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
     "Allow invocations when user is admin" in new FakeApplication() {
       val user = UUID.randomUUID()
-      val userRefRole = RefRole(None, Roles.admin)
+      val userRefRole = RefRole(None, Roles.admin.id)
       val userAuth = Authority(user, Set(userRefRole))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
@@ -63,7 +59,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
     "Block invocations when user not an admin" in new FakeApplication() {
       val user = UUID.randomUUID()
-      val userRefRole = RefRole(None, Roles.user)
+      val userRefRole = RefRole(None, Roles.user.id)
       val userAuth = Authority(user, Set(userRefRole))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
@@ -86,7 +82,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
     "Allow invocations when employee wants to get all semesters" in new FakeApplication() {
       val user = UUID.randomUUID()
-      val userRefRole = RefRole(None, Roles.employee)
+      val userRefRole = RefRole(None, Roles.employee.id)
       val userAuth = Authority(user, Set(userRefRole))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
@@ -103,7 +99,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
     "Allow invocations when student wants to get all semesters" in new FakeApplication() {
       val user = UUID.randomUUID()
-      val userRefRole = RefRole(None, Roles.student)
+      val userRefRole = RefRole(None, Roles.student.id)
       val userAuth = Authority(user, Set(userRefRole))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
