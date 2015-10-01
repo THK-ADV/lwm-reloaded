@@ -26,9 +26,9 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override implicit def writes: Writes[Student] = Student.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.studentV1Json
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Student]): Result = ???
 }

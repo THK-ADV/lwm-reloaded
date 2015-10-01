@@ -25,9 +25,9 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
    override implicit def writes: Writes[Group] = Group.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.groupV1Json
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Result = ???
 }

@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
+import play.api.mvc.Result
 import store.{Namespace, SesameRepository}
 import utils.LWMMimeType
 
@@ -33,82 +34,65 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]) = {
-    repository.get[Semester] match {
-      case Success(semesters) =>
-        val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
+  override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]): Result = {
+    val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 
-        attributes match {
-          case List(Some(years), None) =>
-            val filteredByYear = years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => DateTime.parse(sem.startDate).getYear.toString.equals(year)))
+    def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
+      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => DateTime.parse(sem.startDate).getYear.toString.equals(year)))
+    }
 
-            if (filteredByYear.isEmpty) {
-              NotFound(Json.obj(
-                "status" -> "KO",
-                "message" -> "No such element..."
-              ))
-            } else {
-              Ok(Json.toJson(filteredByYear)).as(mimeType)
-            }
+    def filterByPeriod(period: Seq[String], semesters: Set[Semester]): Result = {
+      val byPeriod = period.head match {
+        case ss if ss.toLowerCase.equals("ss") =>
+          Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
+        case ws if ws.toLowerCase.equals("ws") =>
+          Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
+        case _ => None
+      }
 
-          case List(Some(years), Some(period)) =>
-            val filteredByYear = years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => DateTime.parse(sem.startDate).getYear.toString.equals(year)))
+      byPeriod match {
+        case Some(sem) =>
+          Ok(Json.toJson(sem)).as(mimeType)
+        case None =>
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+      }
+    }
 
-            if (filteredByYear.isEmpty) {
-              NotFound(Json.obj(
-                "status" -> "KO",
-                "message" -> "No such element..."
-              ))
-            } else {
-              val filteredByPeriod = period.head match {
-                case ss if ss.toLowerCase.equals("ss") =>
-                  Some(filteredByYear.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
-                case ws if ws.toLowerCase.equals("ws") =>
-                  Some(filteredByYear.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
-                case _ => None
-              }
+    attributes match {
+      case List(Some(years), None) =>
+        val byYears = filterByYears(years, semesters)
 
-              filteredByPeriod match {
-                case Some(sem) =>
-                  Ok(Json.toJson(sem)).as(mimeType)
-                case None =>
-                  NotFound(Json.obj(
-                    "status" -> "KO",
-                    "message" -> "No such element..."
-                  ))
-              }
-            }
-
-          case List(None, Some(period)) =>
-            val filteredByPeriod = period.head match {
-              case ss if ss.toLowerCase.equals("ss") =>
-                Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
-              case ws if ws.toLowerCase.equals("ws") =>
-                Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
-              case _ => None
-            }
-
-            filteredByPeriod match {
-              case Some(sem) =>
-                Ok(Json.toJson(sem)).as(mimeType)
-              case None =>
-                NotFound(Json.obj(
-                  "status" -> "KO",
-                  "message" -> "No such element..."
-                ))
-            }
-
-          case _ =>
-            ServiceUnavailable(Json.obj(
-              "status" -> "KO",
-              "message" -> "query not found"
-            ))
+        if (byYears.isEmpty) {
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+        } else {
+          Ok(Json.toJson(byYears)).as(mimeType)
         }
 
-      case Failure(e) =>
-        InternalServerError(Json.obj(
+      case List(Some(years), Some(period)) =>
+        val byYears = filterByYears(years, semesters)
+
+        if (byYears.isEmpty) {
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+        } else {
+          filterByPeriod(period, byYears)
+        }
+
+      case List(None, Some(period)) =>
+        filterByPeriod(period, semesters)
+
+      case _ =>
+        ServiceUnavailable(Json.obj(
           "status" -> "KO",
-          "errors" -> e.getMessage
+          "message" -> "query attribute not found"
         ))
     }
   }

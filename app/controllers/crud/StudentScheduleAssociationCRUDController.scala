@@ -26,9 +26,9 @@ class StudentScheduleAssociationCRUDController(val repository: SesameRepository,
 
    override implicit def writes: Writes[StudentScheduleAssociation] = StudentScheduleAssociation.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.studentScheduleAssociationV1Json
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[StudentScheduleAssociation]): Result = ???
 }

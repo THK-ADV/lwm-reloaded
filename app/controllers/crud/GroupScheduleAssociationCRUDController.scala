@@ -26,9 +26,9 @@ class GroupScheduleAssociationCRUDController(val repository: SesameRepository, v
 
    override implicit def writes: Writes[GroupScheduleAssociation] = GroupScheduleAssociation.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: GroupScheduleAssociationProtocol, id: Option[UUID]): GroupScheduleAssociation = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.groupScheduleAssociationV1Json
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[GroupScheduleAssociation]): Result = ???
 }

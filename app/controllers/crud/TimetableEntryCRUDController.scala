@@ -26,9 +26,9 @@ class TimetableEntryCRUDController(val repository: SesameRepository, val namespa
 
    override implicit def writes: Writes[TimetableEntry] = TimetableEntry.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = ???
 
    override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[TimetableEntry]): Result = ???
 }
