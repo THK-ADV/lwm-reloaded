@@ -43,6 +43,14 @@ object Prefixes {
     val index = apply("index")
     //Labwork, Course, Degree, Group, Room
     val label = apply("label")
+    val types = apply("types")
+    val entries = apply("entries")
+    val numberOfEntries = apply("numberOfEntries")
+    val assignmentPlan = apply("assignmentPlan")
+    val semester = apply("semester")
+    val course = apply("course")
+    val degree = apply("degree")
+
     //AssignmentAssociation, Group
     val labwork = apply("labwork")
     //Student, User
@@ -106,6 +114,8 @@ object Prefixes {
     val Role = apply("Role")
     val RefRole = apply("RefRole")
     val Authority = apply("Authority")
+    val AssignmentPlan = apply("AssignmentPlan")
+    val AssignmentEntry = apply("AssignmentEntry")
 
   }
 

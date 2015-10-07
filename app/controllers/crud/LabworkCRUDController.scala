@@ -38,7 +38,10 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
 
-   override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
+   override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = id match {
+      case Some(i) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, i)
+      case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, Labwork.randomUUID)
+   }
 
    override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 

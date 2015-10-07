@@ -61,7 +61,8 @@ with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with UsernameResolverModule {
+with UsernameResolverModule
+with EntryTypeManagementModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -72,6 +73,7 @@ with UsernameResolverModule {
     groupScheduleAssociationManagementController,
     //groupScheduleManagementController,
     labworkManagementController,
+    entryTypeController,
     roomManagementController,
     semesterManagementController,
     studentManagementController,
@@ -117,3 +119,4 @@ with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
 with DefaultUserResolverModule
+with DefaultEntryTypeManagementModule
