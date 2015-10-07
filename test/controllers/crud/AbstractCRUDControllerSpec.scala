@@ -1,7 +1,5 @@
 package controllers.crud
 
-import java.util.UUID
-
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
@@ -14,14 +12,12 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, AnyContent, Request, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.RoleService
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.LWMActions.ContentTypedAction
 import utils.{DefaultLwmApplication, LwmMimeType}
 
 import scala.util.{Failure, Success}
@@ -301,7 +297,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) should include("errors")
     }
 
-    s"should return the expected content type for $entityTypeName" in {
+    s"return the expected content type for $entityTypeName" in {
       val request = FakeRequest(
         HEAD,
         s"/${entityTypeName}s"

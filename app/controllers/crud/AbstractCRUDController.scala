@@ -263,7 +263,4 @@ with Deferred {
   def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
-
 }
-
-

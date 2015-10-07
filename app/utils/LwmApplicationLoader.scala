@@ -57,6 +57,7 @@ with SecurityManagementModule
 with RoleManagementModule
 with RefRoleManagementModule
 with AuthorityManagementModule
+with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
@@ -81,6 +82,7 @@ with UsernameResolverModule {
     roleManagementController,
     refRoleManagementController,
     authorityManagementController,
+    permissionManagementController,
     sessionController,
     assetsController
   )
@@ -111,6 +113,7 @@ with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
 with DefaultRefRoleManagementModuleImpl
 with DefaultAuthorityManagementModuleImpl
+with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
 with DefaultUserResolverModule

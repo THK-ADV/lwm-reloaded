@@ -118,7 +118,7 @@ POST          /roles                                  controllers.crud.RoleCRUDC
 POST          /roles/:id                              controllers.crud.RoleCRUDController.update(id)
 GET           /roles/:id                              controllers.crud.RoleCRUDController.get(id)
 GET           /roles                                  controllers.crud.RoleCRUDController.all()
-DELETE        /roles/:id                              controllers.crud.RefRoleCRUDController.delete(id)
+DELETE        /roles/:id                              controllers.crud.RoleCRUDController.delete(id)
 HEAD          /roles                                  controllers.crud.RoleCRUDController.header
 
 # RefRole
@@ -136,6 +136,10 @@ GET           /authorities                            controllers.crud.Authority
 GET           /authorities/:id                        controllers.crud.AuthorityCRUDController.get(id)
 DELETE        /authorities/:id                        controllers.crud.AuthorityCRUDController.delete(id)
 HEAD          /authorities                            controllers.crud.AuthorityCRUDController.header
+
+# Permission
+GET           /permissions                            controllers.PermissionController.all
+HEAD          /permissions                            controllers.PermissionController.header
 
 # Sessions
 POST          /sessions                               controllers.SessionController.login

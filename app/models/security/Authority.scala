@@ -79,6 +79,7 @@ object Permissions {
 
   val joinLabwork = Permission("join an existing labwork")
 
+  val allValues = Vector(getSemester, allSemesters, createCourse, joinLabwork)
 }
 
 object Roles {
