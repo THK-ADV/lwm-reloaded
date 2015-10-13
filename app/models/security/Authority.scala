@@ -50,10 +50,7 @@ case class RefRoleProtocol(module: Option[UUID] = None, role: UUID)
  * @param name Name or label of the `Role`
  * @param permissions The unary permissions of that `Role`
  */
-case class Role(name: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity {
-  override def equals(obj: scala.Any): Boolean =
-    obj.asInstanceOf[Role].name == name && obj.asInstanceOf[Role].permissions == permissions
-}
+case class Role(name: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
 
 case class RoleProtocol(name: String, permissions: Set[Permission])
 

@@ -103,7 +103,7 @@ trait Deferred {
      * @param block Function block
      * @return Action
      */
-    def securedt(block: Request[JsValue] => Result): Action[JsValue] = restrictions match {
+    def secureContentTyped(block: Request[JsValue] => Result): Action[JsValue] = restrictions match {
       case (o, s) => SecureContentTypedAction((o.map(UUID.fromString), s))(block)
     }
   }
@@ -143,7 +143,7 @@ with Secured
 with Deferred {
 
   // POST /Ts
-  def create = invokeAction(Create)(None) securedt { implicit request =>
+  def create = invokeAction(Create)(None) secureContentTyped { implicit request =>
     request.body.validate[I].fold(
       errors => {
         BadRequest(Json.obj(
@@ -206,7 +206,7 @@ with Deferred {
   }
 
 
-  def update(id: String) = invokeAction(Update)(Some(id)) securedt { implicit request =>
+  def update(id: String) = invokeAction(Update)(Some(id)) secureContentTyped { implicit request =>
     repository.get[O](id) match {
       case Success(s) =>
         s match {

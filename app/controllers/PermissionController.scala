@@ -32,6 +32,6 @@ with ContentTyped  {
   }
 
   override protected def invokeAction(act: Rule)(moduleId: Option[String] = None) = Invoke {
-    case All => Block((None, admin.permissions))
+    case _ => Block((None, admin.permissions))
   }.run(act)
 }
