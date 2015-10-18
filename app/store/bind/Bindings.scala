@@ -4,16 +4,19 @@ import java.util.UUID
 
 import models._
 import models.schedules.{GroupScheduleAssociation, StudentScheduleAssociation}
+import models.security.{Authority, Permission, Role, RefRole}
 import models.timetable.TimetableEntry
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
+import play.api.libs.json.Json
 import store.Namespace
 import store.Prefixes.LWMPrefix
 
-import scala.language.implicitConversions
+import scala.language.{postfixOps, implicitConversions}
+import scala.reflect.macros.whitebox
 import scala.util.Try
 
 
@@ -52,6 +55,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
+  implicit val permissionBinder = new PGBinder[Rdf, Permission] {
+    override def toPG(t: Permission): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.value, xsd.string))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[Permission] = {
+      pointed.pointer.as[String].map(Permission.apply)
+    }
+  }
+
   val id = property[UUID](lwm.id)
 
   object StudentBinding {
@@ -75,6 +88,41 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val email = property[String](lwm.email)
 
     implicit val employeeBinder = pgbWithId[Employee](employee => makeUri(Employee.generateUri(employee)))(systemId, lastname, firstname, email, id)(Employee.apply, Employee.unapply) withClasses classUri
+  }
+
+  object RoleBinding {
+
+    implicit val clazz = lwm.Role
+    implicit val classUri = classUrisFor[Role](clazz)
+
+    private val name = property[String](lwm.name)
+    private val permissions = set[Permission](lwm.permissions)
+
+    implicit val roleBinder = pgbWithId[Role](role => makeUri(Role.generateUri(role)))(name, permissions, id)(Role.apply, Role.unapply) withClasses classUri
+  }
+
+  object RefRoleBinding {
+    import RoleBinding._
+
+    implicit val clazz = lwm.RefRole
+    implicit val classUri = classUrisFor[RefRole](clazz)
+
+    private val module = optional[UUID](lwm.module)
+    private val role = property[UUID](lwm.role)
+
+    implicit val refRoleBinder = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
+  }
+
+  object AuthorityBinding {
+    import RefRoleBinding._
+
+    implicit val clazz = lwm.Authority
+    implicit val classUri = classUrisFor[Authority](clazz)
+
+    private val privileged = property[UUID](lwm.privileged)
+    private val refroles = set[RefRole](lwm.refroles)
+
+    implicit val authorityBinder = pgbWithId[Authority](auth => makeUri(Authority.generateUri(auth)))(privileged, refroles, id)(Authority.apply, Authority.unapply) withClasses classUri
   }
 
   object LabworkBinding {

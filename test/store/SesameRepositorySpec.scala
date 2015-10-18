@@ -2,10 +2,11 @@ package store
 
 import base.TestBaseDefinition
 import models.users.Student
-import store.Prefixes.LWMPrefix
-import store.bind.Bindings
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
+import store.Prefixes.LWMPrefix
+import store.bind.Bindings
+
 import scala.util.{Failure, Success}
 
 class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameModule {

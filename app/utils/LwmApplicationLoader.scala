@@ -1,11 +1,13 @@
 package utils
 
 import controllers._
+import models.security.RefRole
 import modules._
 import play.api.ApplicationLoader.Context
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
+
 
 class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {
@@ -51,9 +53,15 @@ with StudentScheduleAssociationManagementModule
 //with TimetableManagementModule
 with TimetableEntryManagementModule
 with SessionRepositoryModule
+with SecurityManagementModule
+with RoleManagementModule
+with RefRoleManagementModule
+with AuthorityManagementModule
+with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
-with AssetsModule {
+with AssetsModule
+with UsernameResolverModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -71,6 +79,10 @@ with AssetsModule {
     //studentScheduleManagementController,
     //timetableManagementController,
     timetableEntryManagementController,
+    roleManagementController,
+    refRoleManagementController,
+    authorityManagementController,
+    permissionManagementController,
     sessionController,
     assetsController
   )
@@ -98,4 +110,10 @@ with DefaultTimetableEntryManagementModuleImpl
 with LDAPAuthenticatorModule
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
+with DefaultRoleManagementModule
+with DefaultRefRoleManagementModuleImpl
+with DefaultAuthorityManagementModuleImpl
+with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
+with DefaultSecurityManagementModule
+with DefaultUserResolverModule

@@ -3,17 +3,18 @@ package controllers.crud
 import java.util.UUID
 
 import models.UriGenerator
-import models.schedules.{StudentScheduleAssociationProtocol, StudentScheduleAssociation}
+import models.schedules.{StudentScheduleAssociation, StudentScheduleAssociationProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
-class StudentScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[StudentScheduleAssociationProtocol, StudentScheduleAssociation] {
+class StudentScheduleAssociationCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[StudentScheduleAssociationProtocol, StudentScheduleAssociation] {
    override implicit def rdfWrites: ToPG[Sesame, StudentScheduleAssociation] = defaultBindings.StudentScheduleAssociationBinding.studentScheduleAssociationBinder
 
    override implicit def rdfReads: FromPG[Sesame, StudentScheduleAssociation] = defaultBindings.StudentScheduleAssociationBinding.studentScheduleAssociationBinder
@@ -30,5 +31,5 @@ class StudentScheduleAssociationCRUDController(val repository: SesameRepository,
 
    override protected def fromInput(input: StudentScheduleAssociationProtocol, id: Option[UUID]): StudentScheduleAssociation = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.studentScheduleAssociationV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.studentScheduleAssociationV1Json
 }

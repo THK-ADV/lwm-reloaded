@@ -6,14 +6,22 @@ import models.timetable.{TimetableEntry, TimetableEntryProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import utils.LWMMimeType
+import play.api.mvc.{Action, Result, AnyContent, Request}
+import utils.LWMActions.ContentTypedAction
+import utils.LwmMimeType
 
 class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableEntryProtocol, TimetableEntry] {
   override val entityToPass: TimetableEntry = TimetableEntry("supervisor to pass", "room to pass", "startTime to pass", "endTime to pass", TimetableEntry.randomUUID)
 
   override def entityTypeName: String = "timetableEntry"
 
-  override val controller: AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] = new TimetableEntryCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] = new TimetableEntryCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
     override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = entityToPass
   }
 
@@ -21,7 +29,7 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
 
   override implicit val jsonWrites: Writes[TimetableEntry] = TimetableEntry.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.timetableEntryV1Json
 
   override val inputJson: JsValue = Json.obj(
     "supervisor" -> "supervisor input",
@@ -30,8 +38,8 @@ class TimetableEntryCRUDControllerSpec extends AbstractCRUDControllerSpec[Timeta
     "endTime" -> "endTime input"
   )
 
-  import bindings.TimetableEntryBinding._
   import ops._
+  import bindings.TimetableEntryBinding._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

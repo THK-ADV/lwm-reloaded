@@ -4,11 +4,11 @@ import controllers.crud.GroupScheduleAssociationCRUDController
 
 
 trait GroupScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule =>
   def groupScheduleAssociationManagementController: GroupScheduleAssociationCRUDController
 }
 
 trait DefaultGroupScheduleAssociationManagementModuleImpl extends GroupScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace =>
-  lazy val groupScheduleAssociationManagementController: GroupScheduleAssociationCRUDController = new GroupScheduleAssociationCRUDController(repository, namespace)
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  lazy val groupScheduleAssociationManagementController: GroupScheduleAssociationCRUDController = new GroupScheduleAssociationCRUDController(repository, namespace, roleService)
 }

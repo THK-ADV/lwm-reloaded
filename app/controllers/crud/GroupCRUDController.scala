@@ -2,17 +2,18 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.{GroupProtocol, Group, UriGenerator}
+import models.{Group, GroupProtocol, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
-class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[GroupProtocol, Group] {
+class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[GroupProtocol, Group] {
    override implicit def rdfWrites: ToPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
 
    override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
@@ -29,5 +30,5 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
    override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.groupV1Json
+   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 }

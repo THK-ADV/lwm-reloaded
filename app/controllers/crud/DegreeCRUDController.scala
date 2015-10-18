@@ -2,17 +2,18 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.{DegreeProtocol, Degree, UriGenerator}
+import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
-class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[DegreeProtocol, Degree]{
+class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
   override implicit def reads: Reads[DegreeProtocol] = Degree.reads
 
   override implicit def writes: Writes[Degree] = Degree.writes
@@ -29,5 +30,5 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = ???
 
-  override val mimeType: LWMMimeType = LWMMimeType.degreeV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 }
