@@ -27,12 +27,12 @@ class RefRoleCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override implicit def rdfWrites: ToPG[Sesame, RefRole] = defaultBindings.RefRoleBinding.refRoleBinder
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
   override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = id match {
     case Some(uuid) => RefRole(input.module, input.role, uuid)
     case None => RefRole(input.module, input.role, RefRole.randomUUID)
   }
+
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Result = ???
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 }

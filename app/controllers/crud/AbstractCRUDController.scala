@@ -40,8 +40,8 @@ trait JsonSerialisation[I, O] {
   implicit def writes: Writes[O]
 }
 
-trait Filterable {
-  def getWithFilter(queryString: Map[String, Seq[String]]): Result
+trait Filterable[O] {
+  def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[O]): Result
 }
 
 trait ModelConverter[I, O] {
@@ -135,7 +135,7 @@ trait Deferred {
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 with JsonSerialisation[I, O]
 with SesameRdfSerialisation[O]
-with Filterable
+with Filterable[O]
 with ModelConverter[I, O]
 with BaseNamespace
 with ContentTyped
@@ -190,18 +190,17 @@ with Deferred {
 
   // GET /ts with optional queries
   def all() = invokeAction(All)(None) secured { implicit request =>
-    if (request.queryString.isEmpty) {
-      repository.get[O] match {
-        case Success(s) =>
+    repository.get[O] match {
+      case Success(s) =>
+        if (request.queryString.isEmpty)
           Ok(Json.toJson(s)).as(mimeType)
-        case Failure(e) =>
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          ))
-      }
-    } else {
-      getWithFilter(request.queryString)
+        else
+          getWithFilter(request.queryString)(s)
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
     }
   }
 
