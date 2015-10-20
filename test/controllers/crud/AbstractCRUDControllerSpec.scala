@@ -15,16 +15,18 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
+import services.RoleService
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.{DefaultLwmApplication, LWMMimeType}
+import utils.{DefaultLwmApplication, LwmMimeType}
 
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule {
+abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule { self =>
 
   val factory = ValueFactoryImpl.getInstance()
   val repository = mock[SesameRepository]
+  val roleService = mock[RoleService]
 
   val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
@@ -34,7 +36,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def entityToFail: O
 
-  def mimeType: LWMMimeType
+  def mimeType: LwmMimeType
 
   def controller: AbstractCRUDController[I, O]
 
@@ -46,8 +48,13 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def namespace: Namespace = Namespace("http://testNamespace/")
 
+  def fgrammar(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
+
   class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
-    override def load(context: Context): Application = new DefaultLwmApplication(context).application
+    override def load(context: Context): Application = new DefaultLwmApplication(context) {
+      override lazy val roleService: RoleService = self.roleService
+
+    }.application
   })
 
   s"A ${entityTypeName}CRUDController " should {
@@ -70,7 +77,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
       val result = route(FakeRequest(
         POST,
-        s"/${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s",
+        s"/${fgrammar(entityTypeName)}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
         inputJson
       )).get
@@ -160,7 +167,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) shouldBe Json.toJson(entityToPass).toString()
     }
 
-    s"successfully get all ${entityTypeName}s" in {
+    s"successfully get all ${fgrammar(entityTypeName)}" in {
       val allEntities = Set(entityToPass, entityToFail)
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(allEntities))
 
@@ -175,7 +182,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) shouldBe Json.toJson(allEntities).toString()
     }
 
-    s"not get all ${entityTypeName}s when there is an exception" in {
+    s"not get all ${fgrammar(entityTypeName)} when there is an exception" in {
       val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
@@ -193,7 +200,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"successfully delete an existing $entityTypeName" in {
       when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
-
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         DELETE,
@@ -203,7 +209,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedPassModel
+      contentAsString(result).split(" ") contains expectedPassModel
     }
 
     s"not delete an existing $entityTypeName when there is an exception" in {
@@ -291,7 +297,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsString(result) should include("errors")
     }
 
-    s"should return the expected content type for $entityTypeName" in {
+    s"return the expected content type for $entityTypeName" in {
       val request = FakeRequest(
         HEAD,
         s"/${entityTypeName}s"

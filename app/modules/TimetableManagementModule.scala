@@ -14,11 +14,11 @@ import controllers.crud.TimetableEntryCRUDController
 //}
 
 trait TimetableEntryManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule =>
   def timetableEntryManagementController: TimetableEntryCRUDController
 }
 
 trait DefaultTimetableEntryManagementModuleImpl extends TimetableEntryManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace =>
-  lazy val timetableEntryManagementController: TimetableEntryCRUDController = new TimetableEntryCRUDController(repository, namespace)
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  lazy val timetableEntryManagementController: TimetableEntryCRUDController = new TimetableEntryCRUDController(repository, namespace, roleService)
 }

@@ -2,15 +2,12 @@ package modules
 
 import controllers.crud.StudentScheduleAssociationCRUDController
 
-/**
- * Created by rgiacinto on 29/06/15.
- */
 trait StudentScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule =>
   def studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController
 }
 
 trait DefaultStudentScheduleAssociationManagementModuleImpl extends StudentScheduleAssociationManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace =>
-  lazy val studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController = new StudentScheduleAssociationCRUDController(repository, namespace)
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  lazy val studentScheduleAssociationManagementController: StudentScheduleAssociationCRUDController = new StudentScheduleAssociationCRUDController(repository, namespace, roleService)
 }

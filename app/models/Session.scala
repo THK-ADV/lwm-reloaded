@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 
 sealed trait SessionValidation
 
-case class Session(user: String, id: UUID = UUID.randomUUID(), expirationDate: DateTime = DateTime.now().plusDays(1)) extends SessionValidation
+case class Session(username: String, userId: UUID, id: UUID = UUID.randomUUID(), expirationDate: DateTime = DateTime.now().plusDays(1)) extends SessionValidation
 
 case class ValidationFailure(s: String) extends SessionValidation
 

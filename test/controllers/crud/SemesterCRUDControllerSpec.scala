@@ -2,16 +2,23 @@ package controllers.crud
 
 import java.util.UUID
 
+import controllers.SessionController
+import models.security.{RefRole, Authority, Roles, Permissions}
 import models.{Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
+import play.api.{Application, ApplicationLoader}
+import play.api.ApplicationLoader.Context
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.test.FakeRequest
+import play.api.mvc._
+import play.api.test.{FakeApplication, WithApplicationLoader, FakeRequest}
 import play.api.test.Helpers._
-import utils.LWMMimeType
+import services.RoleService
+import utils.LWMActions.ContentTypedAction
+import utils.{DefaultLwmApplication, LwmMimeType}
 
 import scala.util.{Failure, Success}
 
@@ -20,13 +27,19 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val entityToFail: Semester = Semester("name to fail", "startDate to fail", "endDate to fail", "examPeriod to fail", Semester.randomUUID)
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace) {
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
+
+  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
     override protected def fromInput(input: SemesterProtocol, id: Option[UUID]) = entityToPass
   }
 
   override implicit val jsonWrites: Writes[Semester] = Semester.writes
-
-  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
 
   override def entityTypeName: String = "semester"
 
@@ -40,10 +53,13 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
   import bindings.SemesterBinding._
   import ops._
 
+
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A SemesterCRUDController " should {
+
     "successfully return all semesters for a year" in {
+
       val semesterWithDate = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate)
       val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
@@ -54,13 +70,13 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=$year"
       )
+
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(entitiesForYear).toString()
     }
-
     "successfully return all semesters for many years" in {
       val semesterIn2015 = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val semesterIn2016 = Semester("name to pass", DateTime.now().plusYears(1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)

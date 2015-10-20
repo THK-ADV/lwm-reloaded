@@ -2,24 +2,26 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.Permissions._
+import models.security.Roles._
 import models.{Semester, SemesterProtocol, UriGenerator}
 import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Failure, Success}
 
 object SemesterCRUDController {
   val yearAttribute = "year"
   val periodAttribute = "period"
 }
 
-class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[SemesterProtocol, Semester] {
+class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester] {
   override implicit def rdfWrites: ToPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder
 
   override implicit def rdfReads: FromPG[Sesame, Semester] = defaultBindings.SemesterBinding.semesterBinder
@@ -32,7 +34,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.semesterV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]): Result = {
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
@@ -103,4 +105,12 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case None =>
       Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
   }
+
+  override protected def invokeAction(act: Rule)(moduleId: Option[String] = None) = Invoke {
+    case All => Block(None, Set(allSemesters))
+    case Get => Block(None, Set(getSemester))
+    case _ => Block((None, admin.permissions))
+  }.run(act)
+
+
 }

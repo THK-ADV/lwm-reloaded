@@ -26,7 +26,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   val loginToPass = Login("student1", "abcde123")
   val loginToFail = Login("student1", "blabla")
-  val mimeType = LWMMimeType.loginV1Json
+  val mimeType = LwmMimeType.loginV1Json
 
   val validUuid = UUID.randomUUID()
   val invalidUuid = UUID.randomUUID()
@@ -37,7 +37,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
     val service = mock[SessionHandlingService]
 
-    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username)))
+    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username, validUuid)))
     when(service.newSession(loginToFail.username, loginToFail.password)).thenReturn(Future.failed(invalidCredentialException))
     when(service.isValid(validUuid)).thenReturn(Future.successful(true))
     when(service.deleteSession(validUuid)).thenReturn(Future.successful(true))
@@ -73,6 +73,31 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       session(result).data.keys should contain (SessionController.sessionId)
+      session(result).data.keys should contain (SessionController.userId)
+      session(result).data.keys should contain (Security.username)
+    }
+
+    "allow students to log in with proper username resolving" in new WithDepsApplication {
+      val json = Json.obj(
+        "username" -> loginToPass.username,
+        "password" -> loginToPass.password
+      )
+
+      val result = route(FakeRequest(
+        POST,
+        "/sessions",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        json
+      )).get
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+
+      session(result).data.keys should contain (SessionController.userId)
+      session(result).data.get(SessionController.userId) shouldBe Some(validUuid.toString)
+
+      session(result).data.keys should contain (Security.username)
+      session(result).data.get(Security.username) shouldBe Some(loginToPass.username)
     }
 
     "not allow students to log in with invalid mimeType" in new WithDepsApplication {
@@ -90,7 +115,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
       status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
       contentType(result) shouldBe Some("text/html")
-      contentAsString(result) should include (s"Expecting ${LWMMimeType.loginV1Json.value} body")
+      contentAsString(result) should include (s"Expecting ${LwmMimeType.loginV1Json.value} body")
     }
 
     "not allow students to log in with invalid credentials" in new WithDepsApplication {
@@ -163,7 +188,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       )).get
 
       status(result) shouldBe NO_CONTENT
-      contentType(result) shouldBe Some[String](LWMMimeType.loginV1Json)
+      contentType(result) shouldBe Some[String](LwmMimeType.loginV1Json)
       contentAsString(result) shouldBe empty
     }
   }

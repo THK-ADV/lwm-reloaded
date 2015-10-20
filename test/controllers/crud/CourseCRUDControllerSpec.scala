@@ -9,17 +9,24 @@ import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, Result, AnyContent, Request}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import utils.LWMMimeType
+import utils.LWMActions.ContentTypedAction
+import utils.LwmMimeType
 
 import scala.util.Success
-
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
   override val entityToPass: Course = Course("label to pass", "abbreviation to pass", User.randomUUID, Course.randomUUID)
 
-  override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace) {
+  override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
+
+    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
+      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
+      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    }
+
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
   }
 
@@ -27,7 +34,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override implicit val jsonWrites: Writes[Course] = Course.writes
 
-  override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override val inputJson: JsValue = Json.obj(
     "label" -> "label input",

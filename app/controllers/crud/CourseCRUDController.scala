@@ -2,13 +2,14 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.{CourseProtocol, Course, UriGenerator}
+import models.{Course, CourseProtocol, UriGenerator}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -17,7 +18,7 @@ object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
 
-class CourseCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[CourseProtocol, Course] {
+class CourseCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course] {
   override implicit def rdfWrites: ToPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
 
   override implicit def rdfReads: FromPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
@@ -35,7 +36,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     case None => Course(input.label, input.abbreviation, input.lecturer, Course.randomUUID)
   }
 
-  override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
+  override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Result = {
     import CourseCRUDController._

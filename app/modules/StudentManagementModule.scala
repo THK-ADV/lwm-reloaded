@@ -2,15 +2,12 @@ package modules
 
 import controllers.crud.StudentCRUDController
 
-/**
- * Created by rgiacinto on 29/06/15.
- */
 trait StudentManagementModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule =>
   def studentManagementController: StudentCRUDController
 }
 
 trait DefaultStudentManagementModuleImpl extends StudentManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace =>
-  lazy val studentManagementController: StudentCRUDController = new StudentCRUDController(repository, namespace)
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  lazy val studentManagementController: StudentCRUDController = new StudentCRUDController(repository, namespace, roleService)
 }

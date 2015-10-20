@@ -7,9 +7,9 @@ import play.api.mvc.{BodyParser, BodyParsers, RequestHeader, Result}
 
 import scala.concurrent.Future
 
-object LWMBodyParser extends BodyParsers {
+object LwmBodyParser extends BodyParsers {
 
-  def parseWith(mimeType: LWMMimeType): BodyParser[JsValue] = parse.when (
+  def parseWith(mimeType: LwmMimeType): BodyParser[JsValue] = parse.when (
     _.contentType.exists(m => m.equalsIgnoreCase(mimeType)),
     parse.tolerantJson(parse.DefaultMaxTextLength),
     createBadResult(s"Expecting ${mimeType.value} body", UNSUPPORTED_MEDIA_TYPE)

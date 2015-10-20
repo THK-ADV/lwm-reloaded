@@ -10,6 +10,7 @@ trait User extends UniqueEntity {
   def firstname: String
 
   def email: String
+
 }
 
 object User extends UriGenerator[User] {

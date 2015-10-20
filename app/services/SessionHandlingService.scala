@@ -5,11 +5,12 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
 import models.Session
+import modules.UsernameResolverModule
+import store.{UsernameResolver, SemanticRepository}
 import utils.Authenticator
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
 
 trait SessionHandlingService {
 
@@ -21,8 +22,7 @@ trait SessionHandlingService {
 
 }
 
-
-class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator, resolver: UsernameResolver) extends SessionHandlingService {
 
   import SessionServiceActor._
   import akka.pattern.ask
@@ -31,7 +31,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(SessionServiceActor.props(authenticator))
+  private val ref = system.actorOf(SessionServiceActor.props(authenticator, resolver.resolve))
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String, password: String): Future[Session] = {
@@ -70,8 +70,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator
 
 object SessionServiceActor {
 
-  def props(authenticator: Authenticator): Props = Props(new SessionServiceActor(authenticator))
-
+  def props(authenticator: Authenticator, resolver: String => Option[UUID]): Props = Props(new SessionServiceActor(authenticator)(resolver))
 
 
   private[services] case class SessionRemovalRequest(id: UUID)
@@ -79,6 +78,7 @@ object SessionServiceActor {
   private[services] sealed trait RemovalResponse
 
   private[services] case class RemovalFailure(reason: String) extends RuntimeException(reason) with RemovalResponse
+
   private[services] case object RemovalSuccessful extends RemovalResponse
 
 
@@ -88,7 +88,9 @@ object SessionServiceActor {
 
 
   private[services] sealed trait ValidationResponse
+
   private[services] case object ValidationSuccess extends ValidationResponse
+
   private[services] case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
 
 
@@ -96,11 +98,14 @@ object SessionServiceActor {
 
 
   private[services] trait AuthenticationResponse
+
   private[services] case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+
   private[services] case class AuthenticationFailure(message: String) extends AuthenticationResponse
+
 }
 
-class SessionServiceActor(authenticator: Authenticator) extends Actor with ActorLogging {
+class SessionServiceActor(authenticator: Authenticator)(resolve: String => Option[UUID]) extends Actor with ActorLogging {
 
   import SessionServiceActor._
 
@@ -119,12 +124,13 @@ class SessionServiceActor(authenticator: Authenticator) extends Actor with Actor
 
       authenticator.authenticate(user, password).onComplete {
         case Success(authenticated) =>
-          if (authenticated) {
-            val session = Session(user.toLowerCase)
-            sessions = sessions + (session.user -> session)
-            requester ! AuthenticationSuccess(session)
-          } else {
-            requester ! AuthenticationFailure("Invalid Credentials")
+          resolve(user) match {
+            case Some(userId) if authenticated =>
+              val session = Session(user.toLowerCase, userId)
+              sessions = sessions + (session.username -> session)
+              requester ! AuthenticationSuccess(session)
+            case _ =>
+              requester ! AuthenticationFailure("Invalid Credentials")
           }
         case Failure(e) =>
           requester ! AuthenticationFailure(e.getMessage)

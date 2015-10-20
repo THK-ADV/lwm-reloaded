@@ -3,17 +3,18 @@ package controllers.crud
 import java.util.UUID
 
 import models.UriGenerator
-import models.timetable.{TimetableEntryProtocol, TimetableEntry}
+import models.timetable.{TimetableEntry, TimetableEntryProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
+import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMMimeType
+import utils.LwmMimeType
 
 import scala.collection.Map
 
-class TimetableEntryCRUDController(val repository: SesameRepository, val namespace: Namespace) extends AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] {
+class TimetableEntryCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableEntryProtocol, TimetableEntry] {
    override implicit def rdfWrites: ToPG[Sesame, TimetableEntry] = defaultBindings.TimetableEntryBinding.timetableEntryBinder
 
    override implicit def rdfReads: FromPG[Sesame, TimetableEntry] = defaultBindings.TimetableEntryBinding.timetableEntryBinder
@@ -28,7 +29,7 @@ class TimetableEntryCRUDController(val repository: SesameRepository, val namespa
 
    override protected def fromInput(input: TimetableEntryProtocol, id: Option[UUID]): TimetableEntry = ???
 
-   override val mimeType: LWMMimeType = LWMMimeType.timetableEntryV1Json
-
    override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[TimetableEntry]): Result = ???
+
+   override val mimeType: LwmMimeType = LwmMimeType.timetableEntryV1Json
 }
