@@ -38,37 +38,27 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
   override val mimeType: LWMMimeType = LWMMimeType.courseV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Result = {
-    val attribute = queryString.get(CourseCRUDController.lecturerAttribute)
+    import CourseCRUDController._
 
-    attribute match {
-      case Some(queryParameter) =>
-        val uuid = Try(UUID.fromString(queryParameter.head))
+    val filtered = queryString.foldRight(Try[Set[Course]](courses)) {
+      case ((`lecturerAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.lecturer == p)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
 
-        uuid match {
-          case Success(s) =>
-            val byLecturer = courses.filter(c => c.lecturer == s)
+    filtered match {
+      case Success(s) =>
+        if (s.isEmpty)
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+        else
+          Ok(Json.toJson(s)).as(mimeType)
 
-            if (byLecturer.isEmpty) {
-              NotFound(Json.obj(
-                "status" -> "KO",
-                "message" -> "No such element..."
-              ))
-            } else {
-              Ok(Json.toJson(byLecturer)).as(mimeType)
-            }
-
-          case Failure(e) =>
-            BadRequest(Json.obj(
-              "status" -> "KO",
-              "errors" -> e.getMessage
-            ))
-        }
-
-      case None =>
-        ServiceUnavailable(Json.obj(
-          "status" -> "KO",
-          "message" -> "query attribute not found"
-        ))
+      case Failure(e) => BadRequest(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
     }
   }
 }

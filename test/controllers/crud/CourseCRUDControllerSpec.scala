@@ -43,9 +43,11 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A CourseCRUDControllerSpec " should {
-    "successfully return the corresponding course for a given lecturer" in {
+    "return the corresponding course for a given lecturer" in {
+      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
+      val second = Course("label2", "abbreviation2", lecturer.id, Course.randomUUID)
       val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
       val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
@@ -55,7 +57,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${second.lecturer.toString}"
+        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${lecturer.id.toString}"
       )
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
@@ -65,12 +67,12 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       contentAsString(result) shouldBe Json.toJson(Set(second)).toString
     }
 
-    "successfully return all corresponding courses for a given lecturer" in {
-      val lecturer = Employee.randomUUID
+    "return all corresponding courses for a given lecturer" in {
+      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
 
-      val first = Course("label1", "abbreviation1", lecturer, Course.randomUUID)
+      val first = Course("label1", "abbreviation1", lecturer.id, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", lecturer, Course.randomUUID)
+      val third = Course("label3", "abbreviation3", lecturer.id, Course.randomUUID)
       val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
@@ -79,7 +81,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${lecturer.toString}"
+        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${lecturer.id.toString}"
       )
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
@@ -90,8 +92,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses for a lecturer when there is no match" in {
+      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
       val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
-      val lecturer = Employee.randomUUID
 
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
@@ -104,7 +106,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${lecturer.toString}"
+        s"/${entityTypeName.toLowerCase}s?${CourseCRUDController.lecturerAttribute}=${lecturer.id.toString}"
       )
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
@@ -115,7 +117,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses when there is an invalid query attribute" in {
-      val expectedErrorMessage = s"""{"status":"KO","message":"query attribute not found"}"""
+      val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
 
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
@@ -133,14 +135,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
 
-      status(result) shouldBe SERVICE_UNAVAILABLE
+      status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
       contentAsString(result) shouldBe expectedErrorMessage
     }
 
     "not return courses when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
-      val expectedErrorMessage = s"""{"status":"KO","errors":"Invalid UUID string: $invalidParameter"}"""
+      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
 
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
