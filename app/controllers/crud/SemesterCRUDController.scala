@@ -38,10 +38,8 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]) = {
-    repository.get[Semester] match {
-      case Success(semesters) =>
-        val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
+  override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]) = {
+    val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 
         attributes match {
           case List(Some(years), None) =>
@@ -109,13 +107,6 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
               "message" -> "query not found"
             ))
         }
-
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
   }
 
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {

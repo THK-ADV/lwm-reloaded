@@ -26,7 +26,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def writes: Writes[Course] = Course.writes
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Result = ???
 
   override protected def fromInput(input: CourseProtocol, id: Option[UUID]): Course = id match {
     case Some(uuid) => Course(input.label, input.lecturer, uuid)

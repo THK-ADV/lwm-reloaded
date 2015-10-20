@@ -58,7 +58,7 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
         "/entryTypes"
       )
       val result = controller.header()(request)
-      status (result) shouldBe NO_CONTENT
+      status(result) shouldBe NO_CONTENT
       contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe empty
     }
