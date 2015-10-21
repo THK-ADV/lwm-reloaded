@@ -16,9 +16,9 @@ import scala.util.{Try, Failure, Success}
 import LabworkCRUDController._
 
 object LabworkCRUDController {
-  val courseParameter = "course"
-  val degreeParameter = "degree"
-  val semesterParamter = "semester"
+  val courseAttribute = "course"
+  val degreeAttribute = "degree"
+  val semesterAttribute = "semester"
 
 }
 
@@ -36,34 +36,34 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
   override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = id match {
-    case Some(i) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, i)
+    case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, uuid)
     case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, Labwork.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Result = {
-    val filtered = queryString.foldRight(Try[Set[Labwork]](all)) {
-      case ((`courseParameter`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
-      case ((`degreeParameter`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
-      case ((`semesterParamter`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
+  override def getWithFilter(queryString: Map[String, Seq[String]])(labworks: Set[Labwork]): Result = {
+    val filtered = queryString.foldRight(Try[Set[Labwork]](labworks)) {
+      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
+      case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
+      case ((`semesterAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
 
     filtered match {
-      case Success(f) =>
-        if (f.isEmpty) {
+      case Success(s) =>
+        if (s.isEmpty)
           NotFound(Json.obj(
             "status" -> "KO",
             "message" -> "No such element..."
           ))
-        } else
-          Ok(Json.toJson(f))
+         else
+          Ok(Json.toJson(s)).as(mimeType)
 
       case Failure(e) =>
-        InternalServerError(Json.obj(
+        BadRequest(Json.obj(
           "status" -> "KO",
-          "errors" -> e.getMessage
+          "message" -> e.getMessage
         ))
     }
   }
