@@ -8,14 +8,13 @@ import modules._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import org.scalatestplus.play.OneAppPerSuite
 import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.mvc.Security
 import play.api.test.Helpers._
 import play.api.test._
-import play.api.{http, Application, ApplicationLoader}
+import play.api.{Application, ApplicationLoader}
 import services.SessionHandlingService
 import utils._
 

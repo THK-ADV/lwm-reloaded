@@ -60,7 +60,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
         override type R = Nothing
 
-        override def missingUserData[A <: User](v: A): Try[PointedGraph[this.R]] = Failure(new Throwable("Not invoked"))
+        override def missingUserData[A <: User](v: A): Try[PointedGraph[R]] = Failure(new Throwable("Not invoked"))
       }
     }.application
   })

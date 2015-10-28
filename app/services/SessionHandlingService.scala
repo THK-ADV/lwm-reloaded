@@ -24,6 +24,7 @@ trait SessionHandlingService {
   def deleteSession(id: UUID): Future[Boolean]
 
 }
+
 //TODO: TEST THESE BLOODY ACTORS!!!!!!!!
 class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
 
@@ -73,7 +74,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, 
 
 object SessionServiceActor {
 
-  def props(authenticator: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(authenticator)(resolvers))
+  def props(ldap: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
 
 
   private[services] case class SessionRemovalRequest(id: UUID)
@@ -87,7 +88,7 @@ object SessionServiceActor {
 
   private[services] case class ValidationRequest(id: UUID)
 
-  private[services] case class SessionRequest(user: String, password: String)
+  case class SessionRequest(user: String, password: String)
 
 
   private[services] sealed trait ValidationResponse
@@ -102,9 +103,9 @@ object SessionServiceActor {
 
   private[services] trait AuthenticationResponse
 
-  private[services] case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+  case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
 
-  private[services] case class AuthenticationFailure(message: String) extends AuthenticationResponse
+  case class AuthenticationFailure(message: String) extends AuthenticationResponse
 
 }
 
@@ -127,13 +128,19 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
     case SessionRequest(user, password) =>
       val requester = sender()
 
-      def resolve(auth: Boolean): Future[Session] = username(user) match {
-        case Some(userId) if auth => Future.successful {
-          Session(user.toLowerCase, userId)
+      def resolve(auth: Boolean): Future[Session] = if (auth) {
+        username(user) match {
+          case Some(userId) => Future.successful {
+            Session(user.toLowerCase, userId)
+          }
+          case _ => ldap.attributes(user).map(missingUserData).flatMap {
+            case Success(_) => resolve(auth)
+            case Failure(t) => Future.failed(t)
+          }
         }
-        case Some(_) if !auth => Future.failed(new Throwable("Invalid credentials"))
-        case _ => ldap.attributes(user).map(resolvers.missingUserData).flatMap(_ => resolve(auth))
       }
+
+      else Future.failed(new Throwable("Invalid credentials"))
 
       ldap.authenticate(user, password).flatMap(resolve).onComplete {
         case Success(session) =>
@@ -164,4 +171,5 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
     case Update =>
       sessions = sessions.filter(_._2.expirationDate.isAfterNow)
   }
+
 }
