@@ -5,19 +5,21 @@ import java.util.concurrent._
 
 import com.unboundid.ldap.sdk._
 import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
+import models.users.User
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
-trait Authenticator{
+trait LDAPService {
   def authenticate(user: String, password: String): Future[Boolean]
+  def attributes(user: String): Future[User]
 }
 
 /**
- * The [[LDAPAuthentication]] object enables the user to communicate with an LDAP service.
+ * The [[LDAPServiceImpl]] object enables the user to communicate with an LDAP service.
  */
-case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) extends Authenticator {
+case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends LDAPService {
 
   private implicit val executionContext = ExecutionContext.fromExecutorService(new ThreadPoolExecutor(0, 32, 60L, TimeUnit.SECONDS, new SynchronousQueue[Runnable]))
 
@@ -105,4 +107,6 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
         throw new RuntimeException("No name")
       }
   }
+
+  override def attributes(user: String): Future[User] = ???
 }

@@ -107,7 +107,7 @@ with DefaultStudentScheduleAssociationManagementModuleImpl
 //with DefaultStudentScheduleManagementModuleImpl
 //with DefaultTimetableManagementModuleImpl
 with DefaultTimetableEntryManagementModuleImpl
-with LDAPAuthenticatorModule
+with LDAPModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
