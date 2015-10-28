@@ -5,7 +5,7 @@ import java.util.concurrent._
 
 import com.unboundid.ldap.sdk._
 import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
-import models.users.User
+import models.users.{Employee, Student, User}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -108,5 +108,26 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       }
   }
 
-  override def attributes(user: String): Future[User] = ???
+  override def attributes(user: String): Future[User] = bind(bindHost, bindPort, dn, "") {
+    connection ⇒
+      import scala.collection.JavaConverters._
+
+      val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala
+
+      if (results.size == 1) {
+        val forename = results.head.getAttribute("givenName").getValue
+        val surname = results.head.getAttribute("sn").getValue
+        val employeeType = results.head.getAttribute("employeeType").getValue
+        val mail = results.head.getAttribute("mail").getValue
+
+        employeeType match {
+          case "employee" => Employee(user, surname, forename, mail, Employee.randomUUID)
+          case "student" => Student(user, surname, forename, mail, "", Student.randomUUID)
+          case _ => throw new RuntimeException("employeeType should be either employee or student")
+        }
+
+      } else {
+        throw new RuntimeException("no attributes found")
+      }
+  }
 }
