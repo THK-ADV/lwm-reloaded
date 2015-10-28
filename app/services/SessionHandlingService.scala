@@ -25,7 +25,6 @@ trait SessionHandlingService {
 
 }
 
-//TODO: TEST THESE BLOODY ACTORS!!!!!!!!
 class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
 
   import SessionServiceActor._
