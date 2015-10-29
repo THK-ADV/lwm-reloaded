@@ -17,7 +17,7 @@ import scalaz.effect.IO
 
 trait SessionHandlingService {
 
-  def newSession(user: String, password: String): Future[Session]
+  def   newSession(user: String, password: String): Future[Session]
 
   def isValid(iD: UUID): Future[Boolean]
 

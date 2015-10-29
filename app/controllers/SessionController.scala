@@ -32,7 +32,6 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
         )))
       },
       success => {
-
         sessionRepository.newSession(success.username, success.password).map {
           case s: Session =>
             Ok.withSession(
