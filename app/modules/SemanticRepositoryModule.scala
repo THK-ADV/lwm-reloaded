@@ -1,6 +1,5 @@
 package modules
 
-import play.api.Play
 import store.{Namespace, SesameRepository}
 
 
@@ -18,9 +17,8 @@ trait SemanticRepositoryModule {
   self: BaseNamespace =>
   def repository: SesameRepository
 }
-
+//TODO: ADD A BLOODY FOLDER FOR STORAGE!!!
 trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
   self: BaseNamespace =>
-
-  def repository: SesameRepository = SesameRepository(namespace)
+  val repository: SesameRepository = SesameRepository(namespace)
 }
