@@ -36,10 +36,10 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override implicit def writes: Writes[Labwork] = Labwork.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = ???
 
-   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Result = ???
+
+  override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
 }

@@ -1,6 +1,7 @@
 package modules
 
 import controllers.SessionController
+import play.filters.cors.CORSFilter
 import services.{ActorBasedSessionService, SessionHandlingService}
 import utils.{LDAPService, LDAPServiceImpl}
 
@@ -8,7 +9,6 @@ import utils.{LDAPService, LDAPServiceImpl}
 trait LDAPModule {
   def ldap: LDAPService
 }
-
 
 trait LDAPModuleImpl extends LDAPModule {
   self: ConfigurationModule =>

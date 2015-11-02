@@ -35,5 +35,5 @@ class RoleCRUDController(val repository: SesameRepository, val namespace: Namesp
     case None => Role(input.name, input.permissions)
   }
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Role]): Result = ???
 }
