@@ -116,19 +116,18 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala.toList
 
       def gather(entries: List[SearchResultEntry]): Try[User] = results match {
-        case h :: Nil =>
-          for {
-            forename <- Try(h.getAttribute("givenName").getValue)
-            surname <- Try(h.getAttribute("sn").getValue)
-            employeeType <- Try(h.getAttribute("employeeType").getValue)
-            mail <- Try(h.getAttribute("mail").getValue)
-            person <- employeeType match {
-              case "employee" => Success(Employee(user, surname, forename, mail, Employee.randomUUID))
-              case "student" => Success(Student(user, surname, forename, mail, "", Student.randomUUID))
-              case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
-            }
-          } yield person
+        case h :: Nil => Try {
+          val forename = results.head.getAttribute("givenName").getValue
+          val surname = results.head.getAttribute("sn").getValue
+          val employeeType = results.head.getAttribute("employeeType").getValue
+          val mail = results.head.getAttribute("mail").getValue
 
+          employeeType match {
+            case "employee" => Success(Employee(user, surname, forename, mail, Employee.randomUUID))
+            case "student" => Success(Student(user, surname, forename, mail, "", Student.randomUUID))
+            case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
+          }
+        }.flatten
         case _ :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
 
         case _ => Failure(new Throwable("No attributes found"))
