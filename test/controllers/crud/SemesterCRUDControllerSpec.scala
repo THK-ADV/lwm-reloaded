@@ -148,7 +148,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
 
-      val expectedErrorMessage = s"""{"status":"KO","message":"query not found"}"""
+      val expectedErrorMessage = s"""{"status":"KO","message":"query attribute not found"}"""
 
       val request = FakeRequest(
         GET,

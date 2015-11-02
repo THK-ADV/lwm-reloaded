@@ -41,5 +41,4 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
-
 }

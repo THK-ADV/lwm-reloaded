@@ -43,6 +43,7 @@ object Prefixes {
     val index = apply("index")
     //Labwork, Course, Degree, Group, Room
     val label = apply("label")
+    val abbreviation = apply("abbreviation")
     //AssignmentAssociation, Group
     val labwork = apply("labwork")
     //Student, User
