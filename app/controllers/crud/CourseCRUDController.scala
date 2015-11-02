@@ -36,8 +36,6 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     case None => Course(input.label, input.abbreviation, input.lecturer, Course.randomUUID)
   }
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Course]): Result = ???
-
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Result = {
