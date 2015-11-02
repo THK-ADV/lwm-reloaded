@@ -111,6 +111,4 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case Get => Block(None, Set(getSemester))
     case _ => Block((None, admin.permissions))
   }.run(act)
-
-
 }

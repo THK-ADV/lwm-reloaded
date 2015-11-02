@@ -32,6 +32,8 @@ class RefRoleCRUDController(val repository: SesameRepository, val namespace: Nam
     case None => RefRole(input.module, input.role, RefRole.randomUUID)
   }
 
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Result = ???
+
   override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Result = ???
