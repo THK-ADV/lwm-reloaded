@@ -2,6 +2,7 @@ package bind
 
 import base.SesameDbSpec
 import models.Course
+import models.users.User
 import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
@@ -17,10 +18,11 @@ class CourseBindingSpec extends SesameDbSpec {
   import bindings.CourseBinding._
   import bindings.uuidBinder
 
-  val course = Course("AP", "Victor", Course.randomUUID)
+  val course = Course("Algorithmen und Programmierung", "AP", User.randomUUID, Course.randomUUID)
   val courseGraph = (
     URI(Course.generateUri(course)).a(lwm.Course)
       -- lwm.label ->- course.label
+      -- lwm.abbreviation ->- course.abbreviation
       -- lwm.lecturer ->- course.lecturer
       -- lwm.id->- course.id
     ).graph
