@@ -26,12 +26,12 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def writes: Writes[Course] = Course.writes
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
   override protected def fromInput(input: CourseProtocol, id: Option[UUID]): Course = id match {
     case Some(uuid) => Course(input.label, input.lecturer, uuid)
     case None => Course(input.label, input.lecturer, Course.randomUUID)
   }
+
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Course]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 }

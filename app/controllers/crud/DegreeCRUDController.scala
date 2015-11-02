@@ -26,9 +26,9 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
 
-  override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
   override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = ???
+
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 }

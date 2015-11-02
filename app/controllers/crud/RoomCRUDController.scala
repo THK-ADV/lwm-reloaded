@@ -26,12 +26,12 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override implicit def writes: Writes[Room] = Room.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
       case Some(uuid) => Room(input.label, uuid)
       case None => Room(input.label, Room.randomUUID)
    }
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Result = ???
 
    override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 }

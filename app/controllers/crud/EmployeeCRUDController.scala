@@ -27,9 +27,9 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override implicit def writes: Writes[Employee] = Employee.writes
 
-   override def getWithFilter(queryString: Map[String, Seq[String]]): Result = ???
-
    override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = ???
+
+   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Employee]): Result = ???
 
    override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
 }

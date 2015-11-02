@@ -1,9 +1,9 @@
 package utils
 
 import controllers._
-import models.security.RefRole
 import modules._
 import play.api.ApplicationLoader.Context
+import play.api.mvc.EssentialFilter
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
@@ -61,7 +61,11 @@ with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with UsernameResolverModule {
+with UsernameResolverModule
+with CORSFilterModule {
+
+  override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
+
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -117,3 +121,4 @@ with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
 with DefaultUserResolverModule
+with DefaultCORSFilterModule
