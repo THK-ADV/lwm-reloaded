@@ -61,8 +61,9 @@ with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with UsernameResolverModule
-with CORSFilterModule {
+with ResolversModule
+with CORSFilterModule
+with ApiDataModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -88,7 +89,8 @@ with CORSFilterModule {
     authorityManagementController,
     permissionManagementController,
     sessionController,
-    assetsController
+    apiDataController,
+      assetsController
   )
 }
 
@@ -120,5 +122,6 @@ with DefaultAuthorityManagementModuleImpl
 with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
-with DefaultUserResolverModule
+with DefaultResolversModule
 with DefaultCORSFilterModule
+with DefaultApiDataModule

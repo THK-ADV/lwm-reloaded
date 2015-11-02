@@ -2,13 +2,13 @@ package modules
 
 import store.{LwmResolvers, Resolvers}
 
-trait UsernameResolverModule {
+trait ResolversModule {
   self: SemanticRepositoryModule =>
   def resolver: Resolvers
 }
 
 
-trait DefaultUserResolverModule extends UsernameResolverModule {
+trait DefaultResolversModule extends ResolversModule {
   self: SemanticRepositoryModule =>
   override def resolver: Resolvers = new LwmResolvers(repository)
 }

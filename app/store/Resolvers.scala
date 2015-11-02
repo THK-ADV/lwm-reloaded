@@ -41,19 +41,23 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
 
 
   override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = {
-    import bindings.AuthorityBinding._
-    import bindings.RoleBinding
+    import bindings.RoleBinding._
+    withConnection(conn =>
+    rdfStore.getGraph(conn, ns).map(println)
+    )
     def f[Z <: User](e: Z)(implicit serialiser: ToPG[Sesame, Z]): Try[PointedGraph[Sesame]] =
       for {
-        roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
-        filtered = roles.find(_.name == Roles.studentRole)
+        roles <- repository.get[Role]
+        filtered = roles.find(_.name.toLowerCase == Roles.student.name.toLowerCase)
         user <- filtered match {
           case Some(role) =>
+            import bindings.AuthorityBinding._
             for {
               user <- repository.add[Z](e)(serialiser)
               _ <- repository.add[Authority](Authority(v.id, Set(RefRole(None, role.id))))
             } yield user
           case _ =>
+            println(roles)
             Failure(new Throwable("No student role found while resolving user"))
         }
       } yield user

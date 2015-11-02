@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
 import models.Session
 import models.users.{Student, Employee}
-import modules.UsernameResolverModule
+import modules.ResolversModule
 import org.w3.banana.sesame.SesameModule
 import store.{LwmResolvers, Resolvers, SemanticRepository}
 import utils.LDAPService
