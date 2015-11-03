@@ -109,6 +109,6 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   override protected def invokeAction(act: Rule)(moduleId: Option[String] = None) = Invoke {
     case All => Block(None, Set(allSemesters))
     case Get => Block(None, Set(getSemester))
-    case _ => Block((None, admin.permissions))
+    case _ => Block((None, Set(prime)))
   }.run(act)
 }

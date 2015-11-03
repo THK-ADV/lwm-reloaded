@@ -5,16 +5,19 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.routing.{DefaultResizer, RoundRobinPool}
 import models.Session
-import modules.UsernameResolverModule
-import store.{UsernameResolver, SemanticRepository}
-import utils.Authenticator
+import models.users.{Student, Employee}
+import modules.ResolversModule
+import org.w3.banana.sesame.SesameModule
+import store.{LwmResolvers, Resolvers, SemanticRepository}
+import utils.LDAPService
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import scalaz.effect.IO
 
 trait SessionHandlingService {
 
-  def newSession(user: String, password: String): Future[Session]
+  def   newSession(user: String, password: String): Future[Session]
 
   def isValid(iD: UUID): Future[Boolean]
 
@@ -22,7 +25,7 @@ trait SessionHandlingService {
 
 }
 
-class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator, resolver: UsernameResolver) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
 
   import SessionServiceActor._
   import akka.pattern.ask
@@ -31,7 +34,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(SessionServiceActor.props(authenticator, resolver.resolve))
+  private val ref = system.actorOf(SessionServiceActor.props(authenticator, resolvers))
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String, password: String): Future[Session] = {
@@ -70,7 +73,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: Authenticator
 
 object SessionServiceActor {
 
-  def props(authenticator: Authenticator, resolver: String => Option[UUID]): Props = Props(new SessionServiceActor(authenticator)(resolver))
+  def props(ldap: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
 
 
   private[services] case class SessionRemovalRequest(id: UUID)
@@ -84,7 +87,7 @@ object SessionServiceActor {
 
   private[services] case class ValidationRequest(id: UUID)
 
-  private[services] case class SessionRequest(user: String, password: String)
+  case class SessionRequest(user: String, password: String)
 
 
   private[services] sealed trait ValidationResponse
@@ -99,17 +102,19 @@ object SessionServiceActor {
 
   private[services] trait AuthenticationResponse
 
-  private[services] case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+  case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
 
-  private[services] case class AuthenticationFailure(message: String) extends AuthenticationResponse
+  case class AuthenticationFailure(message: String) extends AuthenticationResponse
 
 }
 
-class SessionServiceActor(authenticator: Authenticator)(resolve: String => Option[UUID]) extends Actor with ActorLogging {
+class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor with ActorLogging {
 
   import SessionServiceActor._
 
   import scala.concurrent.duration._
+
+  import resolvers._
 
   implicit val dispatcher = context.system.dispatcher
 
@@ -122,16 +127,24 @@ class SessionServiceActor(authenticator: Authenticator)(resolve: String => Optio
     case SessionRequest(user, password) =>
       val requester = sender()
 
-      authenticator.authenticate(user, password).onComplete {
-        case Success(authenticated) =>
-          resolve(user) match {
-            case Some(userId) if authenticated =>
-              val session = Session(user.toLowerCase, userId)
-              sessions = sessions + (session.username -> session)
-              requester ! AuthenticationSuccess(session)
-            case _ =>
-              requester ! AuthenticationFailure("Invalid Credentials")
+      def resolve(auth: Boolean): Future[Session] = if (auth) {
+        username(user) match {
+          case Some(userId) => Future.successful {
+            Session(user.toLowerCase, userId)
           }
+          case _ => ldap.attributes(user).map(missingUserData).flatMap {
+            case Success(_) => resolve(auth)
+            case Failure(t) => Future.failed(t)
+          }
+        }
+      }
+
+      else Future.failed(new Throwable("Invalid credentials"))
+
+      ldap.authenticate(user, password).flatMap(resolve).onComplete {
+        case Success(session) =>
+          sessions = sessions + (session.username -> session)
+          requester ! AuthenticationSuccess(session)
         case Failure(e) =>
           requester ! AuthenticationFailure(e.getMessage)
       }
@@ -157,4 +170,5 @@ class SessionServiceActor(authenticator: Authenticator)(resolve: String => Optio
     case Update =>
       sessions = sessions.filter(_._2.expirationDate.isAfterNow)
   }
+
 }

@@ -5,19 +5,22 @@ import java.util.concurrent._
 
 import com.unboundid.ldap.sdk._
 import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
-import org.slf4j.LoggerFactory
+import models.users.{Employee, Student, User}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 
-trait Authenticator{
+trait LDAPService {
   def authenticate(user: String, password: String): Future[Boolean]
+
+  def attributes(user: String): Future[User]
 }
 
 /**
- * The [[LDAPAuthentication]] object enables the user to communicate with an LDAP service.
- */
-case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) extends Authenticator {
+  * The [[LDAPServiceImpl]] object enables the user to communicate with an LDAP service.
+  */
+case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends LDAPService {
 
   private implicit val executionContext = ExecutionContext.fromExecutorService(new ThreadPoolExecutor(0, 32, 60L, TimeUnit.SECONDS, new SynchronousQueue[Runnable]))
 
@@ -29,11 +32,11 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
   connectionOptions.setUseSynchronousMode(true)
 
   /**
-   * Tries to authenticate a user with the the LDAP service.
-   * @param user the user
-   * @param password the password for this user
-   * @return either a boolean if the connection was successful or a String with the error message
-   */
+    * Tries to authenticate a user with the the LDAP service.
+    * @param user the user
+    * @param password the password for this user
+    * @return either a boolean if the connection was successful or a String with the error message
+    */
   def authenticate(user: String, password: String): Future[Boolean] = bind(bindHost, bindPort, dn, "", ssl = true) {
     connection ⇒
       val bindDN = s"uid=$user, $dn"
@@ -44,13 +47,13 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
 
 
   /**
-   * Grabs all groups from LDAP.
-   * @param user the user
-   * @param bindHost the host
-   * @param bindPort the port
-   * @param dn the dn
-   * @return Either an error message or a with the names of the groups
-   */
+    * Grabs all groups from LDAP.
+    * @param user the user
+    * @param bindHost the host
+    * @param bindPort the port
+    * @param dn the dn
+    * @return Either an error message or a with the names of the groups
+    */
   def groupMembership(user: String, bindHost: String, bindPort: Int, dn: String): Future[Set[String]] = bind(bindHost, bindPort, dn, "") {
     connection ⇒
       import scala.collection.JavaConverters._
@@ -67,16 +70,16 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
   }
 
   /**
-   * Establishes a connection with the LDAP Server and runs an arbitrary function.
-   * @param host the host of the LDAP server
-   * @param port the port of the LDAP Server
-   * @param dn
-   * @param password the password needed for the binding operation
-   * @param ssl is it a secure connection?
-   * @param f the function that is executed when the connection was established
-   * @tparam A the return value when the function was successfully executed
-   * @return the result of the function f
-   */
+    * Establishes a connection with the LDAP Server and runs an arbitrary function.
+    * @param host the host of the LDAP server
+    * @param port the port of the LDAP Server
+    * @param dn
+    * @param password the password needed for the binding operation
+    * @param ssl is it a secure connection?
+    * @param f the function that is executed when the connection was established
+    * @tparam A the return value when the function was successfully executed
+    * @return the result of the function f
+    */
   def bind[A](host: String, port: Int, dn: String, password: String, ssl: Boolean = true)(f: LDAPConnection ⇒ A): Future[A] = Future {
     val connection = if (ssl) {
       val sslContext = sslUtil.createSSLContext("SSLv3")
@@ -103,6 +106,36 @@ case class LDAPAuthentication(bindHost: String, bindPort: Int, dn: String) exten
         (givenName, sn)
       } else {
         throw new RuntimeException("No name")
+      }
+  }
+
+  override def attributes(user: String): Future[User] = bind(bindHost, bindPort, dn, "") {
+    connection ⇒
+      import scala.collection.JavaConverters._
+
+      val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala.toList
+
+      def gather(entries: List[SearchResultEntry]): Try[User] = results match {
+        case h :: Nil => Try {
+          val forename = results.head.getAttribute("givenName").getValue
+          val surname = results.head.getAttribute("sn").getValue
+          val employeeType = results.head.getAttribute("employeeType").getValue
+          val mail = results.head.getAttribute("mail").getValue
+
+          employeeType match {
+            case "employee" => Success(Employee(user, surname, forename, mail, Employee.randomUUID))
+            case "student" => Success(Student(user, surname, forename, mail, "", Student.randomUUID))
+            case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
+          }
+        }.flatten
+        case _ :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
+
+        case _ => Failure(new Throwable("No attributes found"))
+      }
+
+      gather(results) match {
+        case Success(u) => u
+        case Failure(e) => throw new RuntimeException(e.getMessage)
       }
   }
 }
