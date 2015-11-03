@@ -59,6 +59,11 @@ GET           /labworks/:id                           controllers.crud.LabworkCR
 DELETE        /labworks/:id                           controllers.crud.LabworkCRUDController.delete(id)
 HEAD          /labworks                               controllers.crud.LabworkCRUDController.header
 
+# Labwork Entry Type
+
+GET           /entryTypes                             controllers.EntryTypeController.all
+HEAD          /entryTypes                             controllers.EntryTypeController.header()
+
 # Room
 POST          /rooms                                  controllers.crud.RoomCRUDController.create
 POST          /rooms/:id                              controllers.crud.RoomCRUDController.update(id)

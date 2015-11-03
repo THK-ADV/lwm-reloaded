@@ -61,6 +61,7 @@ with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
+with EntryTypeManagementModule
 with ResolversModule
 with CORSFilterModule
 with ApiDataModule {
@@ -77,6 +78,7 @@ with ApiDataModule {
     groupScheduleAssociationManagementController,
     //groupScheduleManagementController,
     labworkManagementController,
+    entryTypeController,
     roomManagementController,
     semesterManagementController,
     studentManagementController,
@@ -90,7 +92,7 @@ with ApiDataModule {
     permissionManagementController,
     sessionController,
     apiDataController,
-      assetsController
+    assetsController
   )
 }
 
@@ -122,6 +124,7 @@ with DefaultAuthorityManagementModuleImpl
 with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
+with DefaultEntryTypeManagementModule
 with DefaultResolversModule
 with DefaultCORSFilterModule
 with DefaultApiDataModule

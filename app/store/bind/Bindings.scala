@@ -65,6 +65,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
+  implicit val entryTypeBinder = new PGBinder[Rdf, EntryType] {
+    override def toPG(t: EntryType): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.value, xsd.string))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[EntryType] = {
+      pointed.pointer.as[String].map(EntryType.apply)
+    }
+  }
+
   val id = property[UUID](lwm.id)
 
   object StudentBinding {
@@ -125,12 +135,43 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val authorityBinder = pgbWithId[Authority](auth => makeUri(Authority.generateUri(auth)))(privileged, refroles, id)(Authority.apply, Authority.unapply) withClasses classUri
   }
 
+  object AssignmentEntryBinding {
+    implicit val clazz = lwm.AssignmentEntry
+    implicit val classUri = classUrisFor[AssignmentEntry](clazz)
+
+    private val index = property[Int](lwm.index)
+    private val types = set[EntryType](lwm.types)
+
+    implicit val assignmentEntryBinder = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, types, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
+  }
+
+
+  object AssignmentPlanBinding {
+    import AssignmentEntryBinding._
+
+    implicit val clazz = lwm.AssignmentPlan
+    implicit val classUri = classUrisFor[AssignmentPlan](clazz)
+
+    private val numberOfEntries = property[Int](lwm.numberOfEntries)
+    private val entries = set[AssignmentEntry](lwm.entries)
+
+    implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(numberOfEntries, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
+  }
+
   object LabworkBinding {
+    import AssignmentPlanBinding._
+
     val clazz = lwm.Labwork
     implicit val classUri = classUrisFor[Labwork](clazz)
-    val label = property[String](lwm.label)
 
-    implicit val labworkBinder = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    val label = property[String](lwm.label)
+    val description = property[String](lwm.description)
+    val semester = property[UUID](lwm.semester)
+    val course = property[UUID](lwm.course)
+    val degree = property[UUID](lwm.degree)
+    val assignmentPlan = property[AssignmentPlan](lwm.assignmentPlan)
+
+    implicit val labworkBinder = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, assignmentPlan, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {
