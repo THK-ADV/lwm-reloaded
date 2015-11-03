@@ -28,12 +28,12 @@ class AuthorityCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit def writes: Writes[Authority] = Authority.writes
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(authorities: Set[Authority]): Result = ???
-
   override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = id match {
     case Some(uuid) => Authority(input.user, input.refRoles, uuid)
     case None => Authority(input.user, input.refRoles, Authority.randomUUID)
   }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
+
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Result = ???
 }

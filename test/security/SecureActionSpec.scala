@@ -6,7 +6,10 @@ import base.TestBaseDefinition
 import controllers.SessionController
 import models.Login
 import models.security.{Authority, Permission, RefRole, Role}
+import models.users.User
 import org.scalatest.WordSpec
+import org.w3.banana.PointedGraph
+import org.w3.banana.binder.ToPG
 import play.api.ApplicationLoader.Context
 import play.api.libs.json.Json
 import play.api.mvc.Results
@@ -14,12 +17,15 @@ import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.RoleService
-import store.{UsernameResolver, Namespace, SesameRepository}
+import store.bind.Bindings
+import store.{Resolvers, Namespace, SesameRepository}
 import utils.LWMActions.{SecureAction, SecureContentTypedAction}
 import utils.{LwmMimeType, DefaultLwmApplication}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 import org.mockito.Matchers._
+
+import scala.util.{Failure, Try}
 
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
@@ -49,8 +55,12 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override def resolver: UsernameResolver = new UsernameResolver {
-        override def resolve(systemId: String): Option[UUID] = Some(userId)
+      override def resolver: Resolvers = new Resolvers {
+        override def username(systemId: String): Option[UUID] = Some(userId)
+
+        override type R = Nothing
+
+        override def missingUserData[A <: User](v: A): Try[PointedGraph[R]] = Failure(new Throwable("Not invoked"))
       }
     }.application
   })

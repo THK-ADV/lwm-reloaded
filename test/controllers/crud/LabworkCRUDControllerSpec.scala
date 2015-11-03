@@ -80,7 +80,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   "A LabworkCRUDControllerSpec " should {
     "return the corresponding labwork for a given course" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -105,7 +105,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given course" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -130,7 +130,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "not return labworks for a course when there is no match" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
       val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -156,7 +156,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "not return labworks when there is an invalid query attribute" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
       val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -360,7 +360,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given course and degree" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
       val degree = Degree("label", Degree.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -386,7 +386,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given course and semester" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -438,7 +438,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given degree, course and semester" in {
-      val course = Course("label", Employee.randomUUID.toString, Course.randomUUID)
+      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
       val degree = Degree("label", Degree.randomUUID)
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
 

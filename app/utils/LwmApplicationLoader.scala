@@ -1,9 +1,9 @@
 package utils
 
 import controllers._
-import models.security.RefRole
 import modules._
 import play.api.ApplicationLoader.Context
+import play.api.mvc.EssentialFilter
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
@@ -61,8 +61,13 @@ with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with AssetsModule
-with UsernameResolverModule
-with EntryTypeManagementModule {
+with EntryTypeManagementModule
+with ResolversModule
+with CORSFilterModule
+with ApiDataModule {
+
+  override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
+
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
@@ -86,6 +91,7 @@ with EntryTypeManagementModule {
     authorityManagementController,
     permissionManagementController,
     sessionController,
+    apiDataController,
     assetsController
   )
 }
@@ -109,7 +115,7 @@ with DefaultStudentScheduleAssociationManagementModuleImpl
 //with DefaultStudentScheduleManagementModuleImpl
 //with DefaultTimetableManagementModuleImpl
 with DefaultTimetableEntryManagementModuleImpl
-with LDAPAuthenticatorModule
+with LDAPModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
@@ -118,5 +124,7 @@ with DefaultAuthorityManagementModuleImpl
 with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
-with DefaultUserResolverModule
 with DefaultEntryTypeManagementModule
+with DefaultResolversModule
+with DefaultCORSFilterModule
+with DefaultApiDataModule

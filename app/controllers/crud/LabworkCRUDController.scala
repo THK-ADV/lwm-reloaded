@@ -57,7 +57,7 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
             "status" -> "KO",
             "message" -> "No such element..."
           ))
-         else
+        else
           Ok(Json.toJson(s)).as(mimeType)
 
       case Failure(e) =>
