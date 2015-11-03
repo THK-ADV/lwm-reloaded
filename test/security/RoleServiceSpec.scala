@@ -3,6 +3,7 @@ package security
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.Degree
 import models.security._
 import models.users.Student
 import org.scalatest.WordSpec
@@ -72,9 +73,9 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       import bindings.AuthorityBinding._
       import bindings.RoleBinding._
 
-      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Student.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Student.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Student.randomUUID)
+      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
 
       val authority1 = Authority(student1.id, Set(module1UserRole1, module2UserRole2))
       val authority2 = Authority(student2.id, Set(module2UserRole2, noneModule1Role1))

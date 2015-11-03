@@ -2,6 +2,7 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.Degree
 import models.users.{Student, StudentProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -11,7 +12,7 @@ import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtocol, Student] {
-  override val entityToPass: Student = Student("system id to pass", "surname to pass", "forename to pass", "email to pass", "registration id to pass", Student.randomUUID)
+  override val entityToPass: Student = Student("system id to pass", "surname to pass", "forename to pass", "email to pass", "registration id to pass", Degree.randomUUID, Student.randomUUID)
 
   override def entityTypeName: String = "student"
 
@@ -25,7 +26,7 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
     override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = entityToPass
   }
 
-  override val entityToFail: Student = Student("system id to fail", "surname to fail", "forename to fail", "email to fail", "registration id to fail", Student.randomUUID)
+  override val entityToFail: Student = Student("system id to fail", "surname to fail", "forename to fail", "email to fail", "registration id to fail", Degree.randomUUID, Student.randomUUID)
 
   override implicit val jsonWrites: Writes[Student] = Student.writes
 
@@ -36,7 +37,8 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
     "lastname" -> "lastname input",
     "firstname" -> "firstname input",
     "email" -> "email input",
-    "registrationId" -> "registrationId input"
+    "registrationId" -> "registrationId input",
+    "enrollment" -> Degree.randomUUID.toString
   )
 
   import bindings.StudentBinding._

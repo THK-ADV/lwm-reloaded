@@ -146,6 +146,14 @@ HEAD          /authorities                            controllers.crud.Authority
 GET           /permissions                            controllers.PermissionController.all
 HEAD          /permissions                            controllers.PermissionController.header
 
+# LabworkApplications
+POST          /labworkApplications                    controllers.crud.LabworkApplicationCRUDController.create
+POST          /labworkApplications/:id                controllers.crud.LabworkApplicationCRUDController.update(id)
+GET           /labworkApplications                    controllers.crud.LabworkApplicationCRUDController.all
+GET           /labworkApplications/:id                controllers.crud.LabworkApplicationCRUDController.get(id)
+DELETE        /labworkApplications/:id                controllers.crud.LabworkApplicationCRUDController.delete(id)
+HEAD          /labworkApplications                    controllers.crud.LabworkApplicationCRUDController.header
+
 # Sessions
 POST          /sessions                               controllers.SessionController.login
 DELETE        /sessions                               controllers.SessionController.logout

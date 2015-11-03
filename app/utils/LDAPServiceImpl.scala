@@ -5,6 +5,7 @@ import java.util.concurrent._
 
 import com.unboundid.ldap.sdk._
 import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
+import models.Degree
 import models.users.{Employee, Student, User}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -124,7 +125,7 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
 
           employeeType match {
             case "employee" => Success(Employee(user, surname, forename, mail, Employee.randomUUID))
-            case "student" => Success(Student(user, surname, forename, mail, "", Student.randomUUID))
+            case "student" => Success(Student(user, surname, forename, mail, "", Degree.randomUUID, Student.randomUUID))
             case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
           }
         }.flatten

@@ -3,6 +3,7 @@ package store.bind
 import java.util.UUID
 
 import models._
+import models.applications.LabworkApplication
 import models.schedules.{GroupScheduleAssociation, StudentScheduleAssociation}
 import models.security.{Authority, Permission, Role, RefRole}
 import models.timetable.TimetableEntry
@@ -49,8 +50,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[DateTime] = {
-      pointed.pointer.as[String].map { value =>
-        DateTime.parse(value)
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => DateTime.parse(stringVal)
       }
     }
   }
@@ -77,6 +78,18 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   val id = property[UUID](lwm.id)
 
+  object LabworkApplicationBinding {
+    implicit val clazz = lwm.LabworkApplication
+    implicit val classUri = classUrisFor[LabworkApplication](clazz)
+
+    private val labwork = property[UUID](lwm.labwork)
+    private val applicant = property[UUID](lwm.applicant)
+    private val timestamp = property[DateTime](lwm.timestamp)
+    private val friends = set[UUID](lwm.friends)
+
+    implicit val labworkApplicationBinder = pgbWithId[LabworkApplication](application => makeUri(LabworkApplication.generateUri(application)))(labwork, applicant, friends, timestamp, id)(LabworkApplication.apply, LabworkApplication.unapply) withClasses classUri
+  }
+
   object StudentBinding {
     implicit val clazz = lwm.Student
     implicit val classUri = classUrisFor[Student](clazz)
@@ -84,9 +97,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val firstname = property[String](lwm.firstname)
     private val registrationId = property[String](lwm.registrationId)
     private val systemId = property[String](lwm.systemId)
+    private val enrollment = property[UUID](lwm.enrollment)
     private val email = property[String](lwm.email)
 
-    implicit val studentBinder = pgbWithId[Student](student => makeUri(Student.generateUri(student)))(systemId, lastname, firstname, email, registrationId, id)(Student.apply, Student.unapply) withClasses classUri
+    implicit val studentBinder = pgbWithId[Student](student => makeUri(Student.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, id)(Student.apply, Student.unapply) withClasses classUri
   }
 
   object EmployeeBinding {

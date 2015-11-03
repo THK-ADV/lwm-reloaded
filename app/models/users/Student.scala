@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Student(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, id: UUID) extends User
+case class Student(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, id: UUID) extends User
 
 case class StudentProtocol(systemId: String, lastname: String, firstname: String, email: String, registrationId: String)
 
