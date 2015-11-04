@@ -1,7 +1,7 @@
 package bind.security
 
 import base.SesameDbSpec
-import models.Course
+import models.{Degree, Course}
 import models.security.{Authority, Permission, Role, RefRole}
 import models.users.Student
 import org.w3.banana.PointedGraph
@@ -22,7 +22,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
   import bindings.AuthorityBinding._
   import bindings.uuidBinder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Student.randomUUID)
+  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID,Student.randomUUID)
 
   val authorityForCourse1 = RefRole(
     Some(Course.randomUUID),

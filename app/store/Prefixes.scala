@@ -52,8 +52,12 @@ object Prefixes {
     val course = apply("course")
     val degree = apply("degree")
 
+    val applicant = apply("applicant")
+    val timestamp = apply("timestamp")
+    val friends = apply("friends")
+
     val abbreviation = apply("abbreviation")
-    //AssignmentAssociation, Group
+    //LabworkAssociation, AssignmentAssociation, Group
     val labwork = apply("labwork")
     //Student, User
     val lastname = apply("lastname")
@@ -93,6 +97,9 @@ object Prefixes {
     val module = apply("module")
     val privileged = apply("privileged")
 
+    //Labwork registration
+    val enrollment = apply("enrollment")
+
     val Assignment = apply("Assignment")
     val AssignmentAssociation = apply("AssignmentAssociation")
     val Course = apply("Course")
@@ -118,6 +125,7 @@ object Prefixes {
     val Authority = apply("Authority")
     val AssignmentPlan = apply("AssignmentPlan")
     val AssignmentEntry = apply("AssignmentEntry")
+    val LabworkApplication = apply("LabworkApplication")
 
   }
 

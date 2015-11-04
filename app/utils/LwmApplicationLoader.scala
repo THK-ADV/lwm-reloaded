@@ -64,7 +64,8 @@ with AssetsModule
 with EntryTypeManagementModule
 with ResolversModule
 with CORSFilterModule
-with ApiDataModule {
+with ApiDataModule
+with LabworkApplicationManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -90,6 +91,7 @@ with ApiDataModule {
     refRoleManagementController,
     authorityManagementController,
     permissionManagementController,
+    labworkApplicationController,
     sessionController,
     apiDataController,
     assetsController
@@ -128,3 +130,4 @@ with DefaultEntryTypeManagementModule
 with DefaultResolversModule
 with DefaultCORSFilterModule
 with DefaultApiDataModule
+with DefaultLabworkApplicationManagementModule

@@ -1,6 +1,7 @@
 package store
 
 import base.TestBaseDefinition
+import models.Degree
 import models.users.Student
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
@@ -25,7 +26,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
   "Sesame Repository" should {
     "add an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val g = repo.add(student)
 
@@ -36,6 +37,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           -- lwm.lastname ->- student.lastname
           -- lwm.registrationId ->- student.registrationId
           -- lwm.email ->- student.email
+          -- lwm.enrollment ->- student.enrollment
           -- lwm.id ->- student.id
         ).graph
 
@@ -48,7 +50,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "delete an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val repoSize = repo.size
       val graph = repo delete Student.generateUri(student)
@@ -62,7 +64,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "delete entities" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
       repo.add(student)
       val studentUri = Student.generateUri(student)
 
@@ -74,10 +76,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "get list of entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -93,7 +95,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "get an explicit entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
       repo add student
 
       val explicitStudent = repo get Student.generateUri(student)
@@ -109,8 +111,8 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
     }
     "update an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val g = repo.add(student)
 
@@ -121,6 +123,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           -- lwm.lastname ->- student.lastname
           -- lwm.registrationId ->- student.registrationId
           -- lwm.email ->- student.email
+          -- lwm.enrollment ->- student.enrollment
           -- lwm.id ->- student.id
         ).graph
 
@@ -131,6 +134,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           -- lwm.lastname ->- studentUpdated.lastname
           -- lwm.registrationId ->- studentUpdated.registrationId
           -- lwm.email ->- studentUpdated.email
+          -- lwm.enrollment ->- studentUpdated.enrollment
           -- lwm.id ->- studentUpdated.id
         ).graph
 
@@ -153,8 +157,8 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "contains an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       repo add student
 

@@ -26,6 +26,7 @@ object LwmMimeType {
   val roleV1Json = LwmMimeType("application/vnd.fhk.role.V1+json")
   val permissionV1Json = LwmMimeType("application/vnd.fhk.permission.V1+json")
   val entryTypeV1Json = LwmMimeType("application/vnd.fhk.entryType.V1+json")
+  val labworkApplicationV1Json = LwmMimeType("application/vnd.fhk.labworkApplication.V1+json")
 
   implicit def unboxMimeType(mime: LwmMimeType): String = mime.value
 }
@@ -68,6 +69,7 @@ object LwmContentTypes extends ContentTypes {
 
   def entryTypeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.entryTypeV1Json)
 
+  def labworkApplicationV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.labworkApplicationV1Json)
 }
 
 object LwmAccepts {
@@ -87,4 +89,5 @@ object LwmAccepts {
   val RoleV1Accept = Accepting(LwmMimeType.roleV1Json)
   val PermissionV1Accept = Accepting(LwmMimeType.permissionV1Json)
   val EntryTypeV1Accept = Accepting(LwmMimeType.entryTypeV1Json)
+  val LabworkApplicationV1Accept = Accepting(LwmMimeType.labworkApplicationV1Json)
 }

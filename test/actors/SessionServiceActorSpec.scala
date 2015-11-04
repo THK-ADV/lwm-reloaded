@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import base.TestBaseDefinition
+import models.Degree
 import models.security.{Roles, Role}
 import models.users.Student
 import org.mockito.Matchers._
@@ -30,7 +31,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 
-  val user = Student("mi1111", "Last", "First", "Email", "111111", Student.randomUUID)
+  val user = Student("mi1111", "Last", "First", "Email", "111111", Degree.randomUUID, Student.randomUUID)
   val actorRef = system.actorOf(SessionServiceActor.props(ldap, resolver))
 
   "A SessionServiceActor" should {

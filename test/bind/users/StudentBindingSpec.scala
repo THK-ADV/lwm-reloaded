@@ -1,6 +1,7 @@
 package bind.users
 
 import base.SesameDbSpec
+import models.Degree
 import models.users.Student
 import store.Namespace
 import store.bind.Bindings
@@ -17,13 +18,14 @@ class StudentBindingSpec extends SesameDbSpec {
   import bindings.StudentBinding._
   import bindings.uuidBinder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Student.randomUUID)
+  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
   val studentGraph = (
     URI(Student.generateUri(student)).a(lwm.Student)
       -- lwm.systemId ->- student.systemId
       -- lwm.lastname ->- student.lastname
       -- lwm.firstname ->- student.firstname
       -- lwm.registrationId ->- student.registrationId
+      -- lwm.enrollment ->- student.enrollment
       -- lwm.email ->- student.email
       -- lwm.id ->- student.id
     ).graph

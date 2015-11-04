@@ -3,6 +3,7 @@ package store
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.Degree
 import models.users.Student
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
@@ -30,7 +31,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
     "execute select queries" in {
       import utils.Ops._
 
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       repo add student
 
@@ -53,7 +54,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
     }
 
     "execute ask queries" in {
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Student.randomUUID)
+      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       repo add anotherStudent
 
@@ -74,7 +75,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
       import store.sparql._
       import store.sparql.select._
 
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val query =
         (select("s") where {
@@ -99,7 +100,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
       import store.sparql._
       import store.sparql.select._
 
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val clause =
         select("s", "id") where {
