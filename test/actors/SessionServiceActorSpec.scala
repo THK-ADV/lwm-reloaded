@@ -58,7 +58,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
       result match {
         case a: AuthenticationFailure =>
-          a.message shouldBe "No student role found while resolving user"
+          a.message shouldBe "No role found while resolving user"
         case _ => fail("Should not return a success")
       }
     }
