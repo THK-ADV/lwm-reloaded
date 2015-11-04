@@ -2,7 +2,7 @@ package store
 
 import base.TestBaseDefinition
 import models.Degree
-import models.users.Student
+import models.users.{Employee, Student}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -11,6 +11,7 @@ import services.RoleService
 import models.security.{Roles, Role, Authority}
 
 import scala.util.{Failure, Success}
+import scalaz.FingerTree
 
 class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
@@ -23,6 +24,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
   import bindings.AuthorityBinding._
   import bindings.RoleBinding._
   import bindings.permissionBinder
+  import bindings.EmployeeBinding._
 
   val repo = SesameRepository(ns)
 
@@ -67,23 +69,40 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       result shouldBe None
     }
 
-    "resolve a student and his authority when non-existent" in {
+    "resolve a student, employee and their authorities when non-existent" in {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
       repo.add[Role](Roles.student)
-      repo.add[Role](Roles.employee)
+      repo.add[Role](Roles.user)
 
       resolver.missingUserData(student1)
+      resolver.missingUserData(employee)
 
-      val result = repo.get[Student](Student.generateUri(student1)(repo.namespace)).toOption.flatten
-      val possibleAuthority = roleService.authorityFor(student1.id.toString)
+      val studentResult = repo.get[Student](Student.generateUri(student1)(repo.namespace)).toOption.flatten
+      val studentAuth = roleService.authorityFor(student1.id.toString)
 
+      val employeeResult = repo.get[Employee](Employee.generateUri(employee)(repo.namespace)).toOption.flatten
+      val employeeAuth = roleService.authorityFor(employee.id.toString)
 
-      (result, possibleAuthority) match {
+      (studentResult, studentAuth) match {
         case (Some(student), Some(auth)) =>
           student shouldBe student1
           auth.user shouldBe student1.id
+          auth.refRoles.exists(_.role == Roles.student.id) shouldBe true
+          auth.refRoles.size shouldBe 1
         case (None, _) => fail("Could not retrieve student")
+
+        case (_, None) => fail("Authority either not created or not found")
+      }
+
+      (employeeResult, employeeAuth) match {
+        case (Some(emp), Some(auth)) =>
+          emp shouldBe employee
+          auth.user shouldBe employee.id
+          auth.refRoles.exists(_.role == Roles.user.id) shouldBe true
+          auth.refRoles.size shouldBe 1
+        case (None, _) => fail("Could not retrieve user")
 
         case (_, None) => fail("Authority either not created or not found")
       }
@@ -105,8 +124,6 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
           s shouldBe None
           repo.size shouldBe 0
       }
-
-
     }
   }
 

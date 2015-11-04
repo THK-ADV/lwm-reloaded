@@ -35,7 +35,7 @@ class ApiDataControllerSpec extends WordSpec with TestBaseDefinition {
 
       status(result) shouldBe OK
       contentAsString(result) shouldBe "Graph created"
-      numberOfRoles shouldBe Success(3)
+      numberOfRoles shouldBe Success(4)
     }
   }
 }

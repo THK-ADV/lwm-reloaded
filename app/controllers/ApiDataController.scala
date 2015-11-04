@@ -16,7 +16,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def populate = Action { request =>
     import bindings.RoleBinding._
-    List(admin, student, employee).map(repository.add[Role]).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
+    List(admin, student, employee, user).map(repository.add[Role]).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
         case Failure(e) => Failure(e)
