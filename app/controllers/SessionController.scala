@@ -11,6 +11,7 @@ import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 object SessionController {
   val sessionId = "session-id"
@@ -39,6 +40,12 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
               SessionController.userId -> s.userId.toString,
               Security.username -> s.username
             ).as(mimeType)
+        }.recover {
+          case NonFatal(e) =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> e.getMessage
+            ))
         }
       }
     )
