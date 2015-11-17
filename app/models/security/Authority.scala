@@ -76,6 +76,16 @@ object Permissions {
 
   val joinLabwork = Permission("join an existing labwork")
 
+  val createGroup = Permission("create a new group")
+
+  val allGroups = Permission("get all groups")
+
+  val getGroup = Permission("get a group")
+
+  val updateGroup = Permission("update a group")
+
+  val deleteGroup = Permission("delete a group")
+
   val allValues = Vector(getSemester, allSemesters, createCourse, joinLabwork)
 }
 

@@ -4,22 +4,17 @@ import java.util.UUID
 
 import models._
 import models.applications.LabworkApplication
-import models.schedules.{GroupScheduleAssociation, StudentScheduleAssociation}
 import models.security.{Authority, Permission, Role, RefRole}
-import models.timetable.TimetableEntry
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
-import play.api.libs.json.Json
 import store.Namespace
 import store.Prefixes.LWMPrefix
 
 import scala.language.{postfixOps, implicitConversions}
-import scala.reflect.macros.whitebox
 import scala.util.Try
-
 
 class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordBinder: RecordBinder[Rdf]) {
 
@@ -209,27 +204,11 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object GroupBinding {
     val clazz = lwm.Group
     implicit val classUri = classUrisFor[Group](clazz)
-    private val groupSchedule = property[String](lwm.groupSchedule)
     private val label = property[String](lwm.label)
-    private val labwork = property[String](lwm.labwork)
+    private val labwork = property[UUID](lwm.labwork)
+    private val members = set[UUID](lwm.members)
 
-    implicit val groupBinder = pgbWithId[Group](group => makeUri(Group.generateUri(group)))(groupSchedule, label, labwork, id)(Group.apply, Group.unapply) withClasses classUri
-  }
-
-  //  object GroupScheduleBinding {
-  //    val clazz = lwm.GroupSchedule
-  //    implicit val classUri = classUrisFor[GroupSchedule](clazz)
-  //
-  //    implicit val groupScheduleBinder = pgbWithId[GroupSchedule](groupSchedule => makeUri(GroupSchedule.generateUri(groupSchedule)))(id)(GroupSchedule.apply, GroupSchedule.unapply) withClasses classUri
-  //  }
-
-  object GroupScheduleAssociationBinding {
-    val clazz = lwm.GroupScheduleAssociation
-    implicit val classUri = classUrisFor[GroupScheduleAssociation](clazz)
-    private val date = property[String](lwm.date)
-    private val timetableEntry = property[String](lwm.timetableEntry)
-
-    implicit val groupScheduleAssociationBinder = pgbWithId[GroupScheduleAssociation](groupScheduleAssociation => makeUri(GroupScheduleAssociation.generateUri(groupScheduleAssociation)))(date, timetableEntry, id)(GroupScheduleAssociation.apply, GroupScheduleAssociation.unapply) withClasses classUri
+    implicit val groupBinder = pgbWithId[Group](group => makeUri(Group.generateUri(group)))(label, labwork, members, id)(Group.apply, Group.unapply) withClasses classUri
   }
 
   object RoomBinding {
@@ -250,42 +229,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, startDate, endDate, examPeriod, id)(Semester.apply, Semester.unapply) withClasses classUri
   }
-
-  //  object StudentScheduleBinding {
-  //    val clazz = lwm.StudentSchedule
-  //    implicit val classUri = classUrisFor[StudentSchedule](clazz)
-  //
-  //    implicit val studentScheduleBinder = pgbWithId[StudentSchedule](studentSchedule => makeUri(StudentSchedule.generateUri(studentSchedule)))(id)(StudentSchedule.apply, StudentSchedule.unapply) withClasses classUri
-  //  }
-
-  object StudentScheduleAssociationBinding {
-    implicit val clazz = lwm.StudentScheduleAssociation
-    implicit val classUri = classUrisFor[StudentScheduleAssociation](clazz)
-    private val date = property[String](lwm.date)
-    private val groupScheduleAssociation = property[String](lwm.groupScheduleAssociation)
-    private val timetableEntry = property[String](lwm.timetableEntry)
-
-    implicit val studentScheduleAssociationBinder = pgbWithId[StudentScheduleAssociation](studentScheduleAssociation => makeUri(StudentScheduleAssociation.generateUri(studentScheduleAssociation)))(date, groupScheduleAssociation, timetableEntry, id)(StudentScheduleAssociation.apply, StudentScheduleAssociation.unapply) withClasses classUri
-  }
-
-  //  object TimetableBinding {
-  //    implicit val clazz = lwm.Timetable
-  //    implicit val classUri = classUrisFor[Timetable](clazz)
-  //
-  //    implicit val timetableBinder = pgbWithId[Timetable](timetable => makeUri(Timetable.generateUri(timetable)))(id)(Timetable.apply, Timetable.unapply) withClasses classUri
-  //  }
-
-  object TimetableEntryBinding {
-    implicit val clazz = lwm.TimetableEntry
-    implicit val classUri = classUrisFor[TimetableEntry](clazz)
-    private val supervisor = property[String](lwm.supervisor)
-    private val room = property[String](lwm.room)
-    private val startTime = property[String](lwm.startTime)
-    private val endTime = property[String](lwm.endTime)
-
-    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, startTime, endTime, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
-  }
-
 }
 
 object Bindings {

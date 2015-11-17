@@ -2,16 +2,17 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.{Group, GroupProtocol}
+import models.users.Student
+import models.{Labwork, Group, GroupProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Action, Result, AnyContent, Request}
 import utils.LWMActions.ContentTypedAction
-import utils.LwmMimeType
+import utils.{LwmAccepts, LwmMimeType}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
-  override val entityToPass: Group = Group("groupSchedule to pass", "label to pass", "labwork to pass", Group.randomUUID)
+  override val entityToPass: Group = Group("label to pass", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
 
   override def entityTypeName: String = "group"
 
@@ -25,16 +26,16 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = entityToPass
   }
 
-  override val entityToFail: Group = Group("groupSchedule to fail", "label to fail", "labwork to fail", Group.randomUUID)
+  override val entityToFail: Group = Group("label to fail", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
 
   override implicit val jsonWrites: Writes[Group] = Group.writes
 
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "groupSchedule" -> "groupSchedule input",
     "label" -> "label input",
-    "labwork" -> "labwork input"
+    "labwork" -> entityToPass.labwork,
+    "members" -> entityToPass.members
   )
 
   import bindings.GroupBinding._

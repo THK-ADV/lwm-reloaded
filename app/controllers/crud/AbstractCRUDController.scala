@@ -16,6 +16,7 @@ import utils.LWMActions._
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
@@ -73,13 +74,23 @@ trait Deferred {
 
   case object Create extends Rule
 
+  case object CreateRef extends Rule
+
   case object Delete extends Rule
+
+  case object DeleteRef extends Rule
 
   case object All extends Rule
 
+  case object AllRef extends Rule
+
   case object Get extends Rule
 
+  case object GetRef extends Rule
+
   case object Update extends Rule
+
+  case object UpdateRef extends Rule
 
   case class Invoke(run: Rule => Block)
 
@@ -96,6 +107,9 @@ trait Deferred {
       case (o, s) => SecureAction((o.map(UUID.fromString), s))(block)
     }
 
+    def securedAsync(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = restrictions match {
+      case (o, s) => SecureAction.async((o.map(UUID.fromString), s))(block)
+    }
     /**
      * Invocation of a `SecureContentTypedAction`.
      * `Block` feeds its restrictions to the `SecureContentTypedAction`.
@@ -105,6 +119,10 @@ trait Deferred {
      */
     def secureContentTyped(block: Request[JsValue] => Result): Action[JsValue] = restrictions match {
       case (o, s) => SecureContentTypedAction((o.map(UUID.fromString), s))(block)
+    }
+
+    def secureContentTypedAsync(block: Request[JsValue] => Future[Result]): Action[JsValue] = restrictions match {
+      case (o, s) => SecureContentTypedAction.async((o.map(UUID.fromString), s))(block)
     }
   }
 
