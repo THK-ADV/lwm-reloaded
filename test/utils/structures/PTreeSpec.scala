@@ -99,7 +99,6 @@ class PTreeSpec extends WordSpec with TestBaseDefinition {
       @annotation.tailrec
       def go[A](tree: PTree[A], n: Int): Int = tree.root match {
         case (v, tail@PNode(_, _, _, _)) =>
-          //println(v)
           go(tail, n + 1)
         case (_, PLeaf()) => n
       }

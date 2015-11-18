@@ -1,23 +1,26 @@
 package utils
 
+import scala.collection.GenTraversable
 import scala.util.Random
 import PTree._
 
 object PTree {
 
-  def nodef[A](a: => A, f: A*) = PNode[A](a, f.toList, leaf, leaf)
+  type Pair[A] = (A, List[A])
 
   def nodef[A](a: => A, l: List[A]) = PNode[A](a, l, leaf, leaf)
 
   def nodec[A](a: => A, l: List[A], left: PTree[A], right: PTree[A]) = PNode[A](a, l, left, right)
 
-  def arrange[A](forest: Vector[PTree[A]]): PTree[A] = forest reduce (_ ++ _)
-
-  def node[A](a: => A) = PNode[A](a, List.empty[A], leaf, leaf)
+  def arrange[A](forest: GenTraversable[PTree[A]]): PTree[A] = forest reduce (_ ++ _)
 
   def leaf[A]: PLeaf[A] = PLeaf()
 
-  def sort[A](forest: Vector[PTree[A]]): Vector[A] = {
+  def node[A](a: => A) = PNode[A](a, List.empty[A], leaf, leaf)
+
+  def nodef[A](a: => A, f: A*) = PNode[A](a, f.toList, leaf, leaf)
+
+  def sort[A](forest: GenTraversable[PTree[A]]): Vector[A] = {
     @annotation.tailrec
     def go(pri: PTree[A], post: Vector[A], cache: Vector[A]): Vector[A] = pri match {
       case node@PNode(v, f, _, _) if f.isEmpty => go(node.root._2, post, cache :+ node.value)
@@ -26,9 +29,10 @@ object PTree {
         case (None, _) => post ++ cache
       }
     }
-
     go(arrange(forest), Vector(), Vector())
   }
+
+  def sort[A](pairs: GenTraversable[Pair[A]]): Vector[A] = sort(pairs map (pair => nodef(pair._1, pair._2)))
 
 }
 

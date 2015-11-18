@@ -91,9 +91,12 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
   def query(clause: SelectClause) = {
     import scala.collection.JavaConversions._
     selectOperation.map { v =>
-      v.foldRight(Map[String, Value]()){ (l1, r1) =>
-        l1.getBindingNames.toStream.foldRight(r1) { (l2, r2) =>
-          r2 + (l2 -> l1.getValue(l2))
+      v.foldRight(Map[String, List[Value]]()){ (l1, r1) =>
+        l1.getBindingNames.toVector.foldRight(r1) { (l2, r2) =>
+          r2.get(l2) match {
+            case Some(vl) => r2.updated(l2, vl :+ l1.getValue(l2))
+            case None => r2 + (l2 -> List(l1.getValue(l2)))
+          }
         }
       }
     } <> clause.run

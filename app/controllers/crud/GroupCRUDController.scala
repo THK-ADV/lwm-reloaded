@@ -3,6 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models._
+import org.w3.banana.PointedGraph
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -12,7 +13,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
@@ -39,7 +40,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         ))
       },
       success => {
-          ???
+        ???
       }
     )
   }
@@ -55,17 +56,30 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
       },
       success => {
         val labels = ('A' to 'Z').toVector.take(success.count)
-        val participants = groupService.participantsFor(success.labwork).grouped(success.count).toList.zip(labels)
-        val result = participants.map(p => Group(p._2.toString, success.labwork, p._1.toSet, Group.randomUUID)).map(g => repository.add(g))
+        val participants = groupService.participantsFor(success.labwork) map (_.grouped(success.count).toVector.zip(labels))
 
         import utils.Ops._
-        sequence(result) match {
-          case Success(s) => ???
-            //Created(Json.toJson(s map rdfReads.fromPG)).as(mimeType)
-          case Failure(e) =>
+        val result = participants map { pairs =>
+          sequence[Try, PointedGraph[repository.Rdf]] {
+            for {
+              group <- pairs
+              groupM = Group(group._2.toString, success.labwork, group._1.toSet, Group.randomUUID)
+            } yield repository.add[Group](groupM)
+          }
+        }
+
+        result match {
+          case Some(Success(s)) =>
+            Created(Json.toJson(s map rdfReads.fromPG)).as(mimeType)
+          case Some(Failure(e)) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
               "errors" -> e.getMessage
+            ))
+          case _ =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> "no participants found"
             ))
         }
       }

@@ -31,12 +31,17 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   val bindings = Bindings(repository.namespace)
 
   override def username(systemId: String): Option[UUID] = {
-    repository.query {
+    val result = repository.query {
       select("id") where {
         ^(v("s"), p(prefix.systemId), o(systemId)).
           ^(v("s"), p(prefix.id), v("id"))
       }
-    }.flatMap(_.get("id")).map(v => UUID.fromString(v.stringValue()))
+    }.flatMap(_.get("id"))
+
+    for {
+      values <- result
+      first <- values.headOption
+    } yield UUID.fromString(first.stringValue())
   }
 
 

@@ -48,11 +48,17 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
     import bindings.AuthorityBinding._
     import bindings.RefRoleBinding._
 
-    repository.query {
+    val result = repository.query {
       select("auth") where {
         ^(v("auth"), p(lwm.privileged), o(userId))
       }
-    }.flatMap(_.get("auth")).flatMap(v => get[Authority](v.stringValue()).toOption.flatten)
+    }.flatMap(_.get("auth"))
+
+    for {
+      values <- result
+      first <- values.headOption
+      authority <- repository.get[Authority](first.stringValue()).toOption.flatten
+    } yield authority
   }
 
 
