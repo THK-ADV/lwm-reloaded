@@ -1,8 +1,10 @@
 package utils
 
 import scala.annotation.tailrec
+import scala.collection.GenTraversable
 import scala.language.higherKinds
 import scala.util.Try
+import scalaz.Monad
 
 
 /*
@@ -17,38 +19,28 @@ import scala.util.Try
 object Ops {
 
   implicit val optApplicative = new Monad[Option] {
-    override def apply[A](a: A): Option[A] = Option(a)
+    override def bind[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
 
-    override def flatMap[A, B](z: Option[A])(f: (A) => Option[B]): Option[B] = z flatMap f
-
-    override def map[A, B](z: Option[A])(f: (A) => B): Option[B] = z map f
+    override def point[A](a: => A): Option[A] = Some(a)
   }
 
   implicit val tryApplicative = new Monad[Try] {
-    override def apply[A](a: A): Try[A] = Try(a)
+    override def bind[A, B](fa: Try[A])(f: (A) => Try[B]): Try[B] = fa flatMap f
 
-    override def flatMap[A, B](z: Try[A])(f: (A) => Try[B]): Try[B] = z flatMap f
-
-    override def map[A, B](z: Try[A])(f: (A) => B): Try[B] = z map f
+    override def point[A](a: => A): Try[A] = Try(a)
   }
 
 
-  def sequence[F[+_], A](z: Vector[F[A]])(implicit AF: Monad[F]): F[Vector[A]] = {
-    import AF._
+  def sequence[F[+_], A](z: GenTraversable[F[A]])(implicit AF: Monad[F]): F[Vector[A]] = {
+    import AF.monadSyntax._
     @tailrec
-    def go(toGo: Vector[F[A]], soFar: F[Vector[A]]): F[Vector[A]] = {
+    def go(toGo: GenTraversable[F[A]], soFar: F[Vector[A]]): F[Vector[A]] = {
       if (toGo.isEmpty) soFar
       else {
-        go(toGo.tail, flatMap(soFar)(va => map(toGo.head)(a => va :+ a)))
+        go(toGo.tail, soFar flatMap (va => toGo.head map (a => va :+ a)))
       }
     }
-    go(z, apply(Vector()))
+    go(z, point(Vector()))
   }
-}
-
-trait Monad[F[+_]] {
-  def apply[A](a: A): F[A]
-  def map[A, B](z: F[A])(f: A => B): F[B]
-  def flatMap[A, B](z: F[A])(f: A => F[B]): F[B]
 }
 

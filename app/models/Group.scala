@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Group(label: String, labwork: UUID, members: Set[UUID], id: UUID) extends UniqueEntity
+case class Group(label: String, labwork: UUID, members: Set[UUID], id: UUID = Group.randomUUID) extends UniqueEntity
 
 case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 

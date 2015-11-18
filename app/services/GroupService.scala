@@ -13,14 +13,14 @@ trait GroupServiceLike {
 }
 
 class GroupService(repository: SesameRepository) extends GroupServiceLike {
+
   import repository._
 
   private val lwm = LWMPrefix[Rdf]
   private val bindings = Bindings[Rdf](namespace)
 
   override def participantsFor(labwork: UUID): List[UUID] = {
-    val a = repository.get[LabworkApplication].get.filter(l => l.labwork == labwork)
-    
+    //val a = repository.get[LabworkApplication].get.filter(l => l.labwork == labwork)
     ???
   }
 }

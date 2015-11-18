@@ -16,7 +16,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override def entityTypeName: String = "group"
 
-  override val controller: AbstractCRUDController[GroupProtocol, Group] = new GroupCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[GroupProtocol, Group] = new GroupCRUDController(repository, namespace, roleService, groupService) {
 
     override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
       override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
