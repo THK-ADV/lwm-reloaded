@@ -112,9 +112,6 @@ sealed abstract class PTree[A] {
 
   def map[B](f: A => B): PTree[B] = this match {
     case PLeaf() => PLeaf()
-    case PNode(v, fz, PLeaf(), PLeaf()) => nodef(f(v), fz map f)
-    case PNode(v, fz, PLeaf(), right) => nodec(f(v), fz map f, PLeaf(), right map f)
-    case PNode(v, fz, left, PLeaf()) => nodec(f(v), fz map f, left map f, PLeaf())
     case PNode(v, fz, left, right) => nodec(f(v), fz map f, left map f, right map f)
   }
 
