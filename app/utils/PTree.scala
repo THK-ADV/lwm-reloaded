@@ -32,7 +32,7 @@ object PTree {
     go(arrange(forest), Vector(), Vector())
   }
 
-  def sort[A](pairs: GenTraversable[Pair[A]]): Vector[A] = sort(pairs map (pair => nodef(pair._1, pair._2)))
+  def sortWithPairs[A](pairs: GenTraversable[Pair[A]]): Vector[A] = sort[A](pairs map (pair => nodef(pair._1, pair._2)))
 
 }
 

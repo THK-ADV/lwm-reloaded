@@ -30,26 +30,24 @@ class GroupService(repository: SesameRepository) extends GroupServiceLike {
   override def participantsFor(labwork: UUID): Option[Vector[UUID]] = {
     applicationsFor(labwork) map { v =>
       val nodes = v map (app => (app.applicant, app.friends.toList))
-        sort(nodes)
+        sortWithPairs(nodes)
     }
   }
 
 
   def applicationsFor(labwork: UUID): Option[Vector[LabworkApplication]] = {
-    import utils.Ops._
-
     val result = repository.query {
       select("id") where {
         ^(v("id"), p(lwm.labwork), o(Labwork.generateUri(labwork))).
           ^(v("id"), p(rdf.typ), s(lwm.LabworkApplication))
       }
-    }.flatMap(_.get("id"))
-    
-    sequence {
-      for {
-        values <- result
-        all <- values map (v => repository.get[LabworkApplication](v.stringValue()).toOption.flatten)
-      } yield all
     }
+
+    for {
+      map <- result
+      values <- map.get("id")
+      asStrings = values.map(_.stringValue())
+      applications <- repository.getMany[LabworkApplication](asStrings).toOption
+    } yield applications.toVector
   }
 }

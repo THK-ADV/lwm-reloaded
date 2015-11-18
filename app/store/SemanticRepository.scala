@@ -22,7 +22,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def ns: Rdf#URI
 
-  def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Rdf, T]): Try[GenTraversable[PointedGraph[Rdf]]]
+  def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Rdf, T]): Try[Vector[PointedGraph[Rdf]]]
 
   def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]]
 
@@ -31,6 +31,8 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
   def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]]
 
   def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
+
+  def getMany[T <: UniqueEntity](ids: GenTraversable[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
 
   def delete(id: String): Try[Rdf#Graph]
 
@@ -71,18 +73,32 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Sesame, T]): Try[GenTraversable[PointedGraph[Sesame]]] = {
+  override def getMany[T <: UniqueEntity](ids: GenTraversable[String])(implicit serialiser: FromPG[Sesame, T]): Try[Vector[T]] = {
     val connection = repo.getConnection
-    val graphs = entities map (_.toPG)
     import utils.Ops._
 
-    val res = sequence[Try, Unit] {
-      graphs map { pointed =>
-        rdfStore.appendToGraph(connection, ns, pointed.graph)
+    val ts = ids.map { uri =>
+      val url = makeUri(uri)
+      rdfStore.getGraph(connection, ns) flatMap { graph =>
+        PointedGraph[Rdf](url, graph).as[T]
       }
-    }
+    }.sequence
 
-    res map (_ => graphs)
+    connection.close()
+    ts
+  }
+
+  override def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Sesame, T]): Try[Vector[PointedGraph[Sesame]]] = {
+    val connection = repo.getConnection
+    val graphs = entities.map (_.toPG).toVector
+    import utils.Ops._
+
+    val ts = graphs.map { pointed =>
+        rdfStore.appendToGraph(connection, ns, pointed.graph)
+      }.sequence
+
+    connection.close()
+    ts map (_ => graphs)
   }
 
   override def close() = {

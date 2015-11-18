@@ -55,22 +55,19 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         ))
       },
       success => {
-        val labels = ('A' to 'Z').toVector.take(success.count)
-        val participants = groupService.participantsFor(success.labwork) map (_.grouped(success.count).toVector.zip(labels))
-
+        val labels = ('A' to 'Z').take(success.count)
+        val participants = groupService.participantsFor(success.labwork).map(_.grouped(success.count).toVector.zip(labels))
         import utils.Ops._
-        val result = participants map { pairs =>
-          sequence[Try, PointedGraph[repository.Rdf]] {
-            for {
-              group <- pairs
-              groupM = Group(group._2.toString, success.labwork, group._1.toSet, Group.randomUUID)
-            } yield repository.add[Group](groupM)
+
+        val result = participants.map { groups =>
+          repository addMany {
+            groups map (pair => Group(pair._2.toString, success.labwork, pair._1.toSet))
           }
-        }
+        }.flatMap(_.toOption).map(_.map(rdfReads.fromPG).sequence)
 
         result match {
           case Some(Success(s)) =>
-            Created(Json.toJson(s map rdfReads.fromPG)).as(mimeType)
+            Created(Json.toJson(s)).as(mimeType)
           case Some(Failure(e)) =>
             InternalServerError(Json.obj(
               "status" -> "KO",

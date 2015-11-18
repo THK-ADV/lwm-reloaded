@@ -16,7 +16,7 @@ import scalaz.Monad
  * This allows for the following morphism F[G[_]] -> G[F[_]] such that:
  * Option1[Try[Option2[A]]] -> Try[Option1.Option2[A].flatten] -> Try[Option[A]]
  */
-object Ops {
+object Ops { self =>
 
   implicit val optApplicative = new Monad[Option] {
     override def bind[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
@@ -30,9 +30,12 @@ object Ops {
     override def point[A](a: => A): Try[A] = Try(a)
   }
 
+  implicit class SeqOps[F[+_], A](z: GenTraversable[F[A]]) {
+    def sequence(implicit M: Monad[F]) = self.sequence[F, A](z)
+  }
 
-  def sequence[F[+_], A](z: GenTraversable[F[A]])(implicit AF: Monad[F]): F[Vector[A]] = {
-    import AF.monadSyntax._
+  def sequence[F[+_], A](z: GenTraversable[F[A]])(implicit M: Monad[F]): F[Vector[A]] = {
+    import M.monadSyntax._
     @tailrec
     def go(toGo: GenTraversable[F[A]], soFar: F[Vector[A]]): F[Vector[A]] = {
       if (toGo.isEmpty) soFar
