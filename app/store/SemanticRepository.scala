@@ -11,6 +11,7 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
 import store.sparql.SPARQLQueryEngine
 
+import scala.collection.GenTraversable
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -20,6 +21,8 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
   def rdfOps: RDFOps[Rdf] = ops
 
   def ns: Rdf#URI
+
+  def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Rdf, T]): Try[GenTraversable[PointedGraph[Rdf]]]
 
   def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]]
 
@@ -33,9 +36,9 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def contains(id: String): Boolean
 
-  private[store] def reset(): Try[Unit]
-
   def close(): Unit
+
+  private[store] def reset(): Try[Unit]
 }
 
 object SesameRepository {
@@ -67,15 +70,19 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   val repo = new SailRepository(memStore)
   repo.initialize()
 
-  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = {
-    val connection = repo.getConnection
-    val pg = entity.toPG
-    val g = pg.graph
-    rdfStore.appendToGraph(connection, ns, g)
 
-    connection.commit()
-    connection.close()
-    Try(pg)
+  override def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Sesame, T]): Try[GenTraversable[PointedGraph[Sesame]]] = {
+    val connection = repo.getConnection
+    val graphs = entities map (_.toPG)
+    import utils.Ops._
+
+    val res = sequence[Try, Unit] {
+      graphs map { pointed =>
+        rdfStore.appendToGraph(connection, ns, pointed.graph)
+      }
+    }
+
+    res map (_ => graphs)
   }
 
   override def close() = {
@@ -115,21 +122,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     g
   }
 
-  override def delete(id: String): Try[Rdf#Graph] = {
-    val connection = repo.getConnection
-    val uri = makeUri(id)
-
-    val g = rdfStore.getGraph(connection, ns).map { graph =>
-      rdfStore.removeTriples(connection, ns, graph.triples.filter(t => t.getSubject == uri || t.getObject == uri))
-      graph
-    }
-
-    connection.commit()
-    connection.close()
-
-    g
-  }
-
   def size: Int = {
     val connection = repo.getConnection
     val s = rdfStore.getGraph(connection, ns).map(_.size()).getOrElse(0)
@@ -149,11 +141,30 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     result
   }
 
-  override private[store] def reset(): Try[Unit] = {
+  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = {
     val connection = repo.getConnection
-    val result = rdfStore.removeGraph(connection, ns)
+    val pg = entity.toPG
+    val g = pg.graph
+    rdfStore.appendToGraph(connection, ns, g)
+
+    connection.commit()
     connection.close()
-    result
+    Try(pg)
+  }
+
+  override def delete(id: String): Try[Rdf#Graph] = {
+    val connection = repo.getConnection
+    val uri = makeUri(id)
+
+    val g = rdfStore.getGraph(connection, ns).map { graph =>
+      rdfStore.removeTriples(connection, ns, graph.triples.filter(t => t.getSubject == uri || t.getObject == uri))
+      graph
+    }
+
+    connection.commit()
+    connection.close()
+
+    g
   }
 
   override def contains(id: String): Boolean = {
@@ -170,6 +181,13 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     val res = f(conn)
     conn.close()
     res
+  }
+
+  override private[store] def reset(): Try[Unit] = {
+    val connection = repo.getConnection
+    val result = rdfStore.removeGraph(connection, ns)
+    connection.close()
+    result
   }
 }
 
