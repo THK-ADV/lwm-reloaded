@@ -49,6 +49,27 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       }
     }
 
+    "simultaneously add many entities" in {
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+
+      val students = List(student1, student2, student3, student4)
+
+      val g = repo.addMany(students)
+      val studentsFromRepo = repo.get[Student]
+
+      (g, studentsFromRepo) match {
+        case (Success(graphs), Success(fromRepo)) =>
+          fromRepo.size shouldBe students.size
+          fromRepo foreach { student =>
+            students.contains(student) shouldBe true
+          }
+        case _ => fail("Addition not successful")
+      }
+    }
+
     "delete an entity" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
