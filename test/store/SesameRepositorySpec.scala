@@ -86,13 +86,14 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
     "delete entities" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      repo.add(student)
       val studentUri = Student.generateUri(student)
 
+      repo.add(student)
       repo.contains(studentUri) shouldBe true
-      repo.delete(studentUri)
 
+      repo.delete(studentUri)
       repo.contains(studentUri) shouldBe false
+
       repo should have size 0
     }
 

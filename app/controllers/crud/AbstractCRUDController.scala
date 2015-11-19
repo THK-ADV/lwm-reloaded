@@ -262,8 +262,10 @@ with Deferred {
   }
 
   def delete(id: String) = invokeAction(Delete)(Some(id)) secured { implicit request =>
+    val uri = s"$namespace${request.uri}"
+
     import collection.JavaConversions._
-    repository.delete(id) match {
+    repository.delete(uri) match {
       case Success(s) =>
         Ok(Json.obj(
           "status" -> "OK",
