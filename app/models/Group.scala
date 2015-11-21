@@ -11,7 +11,7 @@ case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
 sealed abstract class GroupConstraints(labwork: UUID)
 
-case class GroupSizeProtocol(labwork: UUID, min: Int, max: Int) extends GroupConstraints(labwork)
+case class GroupRangeProtocol(labwork: UUID, min: Int, max: Int) extends GroupConstraints(labwork)
 
 case class GroupCountProtocol(labwork: UUID, count: Int) extends GroupConstraints(labwork)
 
@@ -22,11 +22,12 @@ object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, G
   override implicit def writes: Writes[Group] = Json.writes[Group]
 
   override def base: String = "groups"
+
 }
 
-object GroupSizeProtocol {
+object GroupRangeProtocol {
 
-  implicit def reads: Reads[GroupSizeProtocol] = Json.reads[GroupSizeProtocol]
+  implicit def reads: Reads[GroupRangeProtocol] = Json.reads[GroupRangeProtocol]
 }
 
 object GroupCountProtocol {

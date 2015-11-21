@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.Course
 import models.security._
 import models.users.User
@@ -15,12 +17,7 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
   override def entityTypeName: String = "authority"
 
   override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityCRUDController(repository, namespace, roleService) {
-
-    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
-    }
-
+    override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = entityToPass
   }
 
   override val entityToFail: Authority = Authority(

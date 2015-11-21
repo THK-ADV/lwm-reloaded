@@ -1,7 +1,7 @@
 package utils
 
-import scala.annotation.tailrec
-import scala.collection.GenTraversable
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 import scala.language.higherKinds
 import scala.util.Try
 import scalaz.Monad
@@ -16,7 +16,8 @@ import scalaz.Monad
  * This allows for the following morphism F[G[_]] -> G[F[_]] such that:
  * Option1[Try[Option2[A]]] -> Try[Option1.Option2[A].flatten] -> Try[Option[A]]
  */
-object Ops { self =>
+object Ops {
+  self =>
 
   implicit val optApplicative = new Monad[Option] {
     override def bind[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
@@ -30,20 +31,19 @@ object Ops { self =>
     override def point[A](a: => A): Try[A] = Try(a)
   }
 
-  implicit class SeqOps[F[+_], A](z: GenTraversable[F[A]]) {
-    def sequence(implicit M: Monad[F]) = self.sequence[F, A](z)
+  def sequence[F[+_], A, M[X] <: TraversableOnce[X]](z: M[F[A]])(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = {
+    import M.monadSyntax._
+
+    def go(toGo: List[F[A]], soFar: F[mutable.Builder[A, M[A]]]): F[M[A]] = toGo match {
+      case h :: t => go(t, h flatMap (a => soFar map (_ += a)))
+      case Nil => soFar map (_.result())
+    }
+
+    go(z.toList, point(cbf()))
   }
 
-  def sequence[F[+_], A](z: GenTraversable[F[A]])(implicit M: Monad[F]): F[Vector[A]] = {
-    import M.monadSyntax._
-    @tailrec
-    def go(toGo: GenTraversable[F[A]], soFar: F[Vector[A]]): F[Vector[A]] = {
-      if (toGo.isEmpty) soFar
-      else {
-        go(toGo.tail, soFar flatMap (va => toGo.head map (a => va :+ a)))
-      }
-    }
-    go(z, point(Vector()))
+  implicit class SeqOps[F[+_], A, M[X] <: TraversableOnce[X]](z: M[F[A]]) {
+    def sequence(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = self.sequence[F, A, M](z)
   }
 }
 

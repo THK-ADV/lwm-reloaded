@@ -5,15 +5,15 @@ import services.{GroupServiceLike, GroupService}
 import utils.LwmApplication
 
 trait GroupServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: LwmApplication with SemanticRepositoryModule with LabworkApplicationServiceModule =>
 
   def groupService: GroupServiceLike
 }
 
 trait DefaultGroupServiceManagementModule extends GroupServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: LwmApplication with SemanticRepositoryModule with LabworkApplicationServiceModule =>
 
-  lazy val groupService: GroupServiceLike = new GroupService(repository)
+  lazy val groupService: GroupServiceLike = new GroupService(repository, labworkApplicationService)
 }
 
 trait GroupManagementModule {

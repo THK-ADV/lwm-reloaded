@@ -22,11 +22,6 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
 
-    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
-    }
-
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
   }
 

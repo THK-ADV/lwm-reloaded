@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.Course
 import models.security.{Permission, RefRole, RefRoleProtocol, Role}
 import org.mockito.Matchers._
@@ -24,13 +26,7 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
   override def entityTypeName: String = "refRole"
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService) {
-
-    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
-    }
-
+    override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = entityToPass
   }
 
   override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)

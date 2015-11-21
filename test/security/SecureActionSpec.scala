@@ -9,7 +9,6 @@ import models.security.{Authority, Permission, RefRole, Role}
 import models.users.User
 import org.scalatest.WordSpec
 import org.w3.banana.PointedGraph
-import org.w3.banana.binder.ToPG
 import play.api.ApplicationLoader.Context
 import play.api.libs.json.Json
 import play.api.mvc.Results
@@ -17,7 +16,6 @@ import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.RoleService
-import store.bind.Bindings
 import store.{Resolvers, Namespace, SesameRepository}
 import utils.LWMActions.{SecureAction, SecureContentTypedAction}
 import utils.{LwmMimeType, DefaultLwmApplication}

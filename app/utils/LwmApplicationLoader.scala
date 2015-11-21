@@ -60,7 +60,8 @@ with EntryTypeManagementModule
 with ResolversModule
 with CORSFilterModule
 with ApiDataModule
-with LabworkApplicationManagementModule {
+with LabworkApplicationManagementModule
+with LabworkApplicationServiceModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -115,3 +116,4 @@ with DefaultResolversModule
 with DefaultCORSFilterModule
 with DefaultApiDataModule
 with DefaultLabworkApplicationManagementModule
+with DefaultLabworkApplicationServiceModule

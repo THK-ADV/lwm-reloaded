@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import models.security.{Permission, Role, RoleProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -15,11 +17,7 @@ class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Ro
   override def entityTypeName: String = "role"
 
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleCRUDController(repository, namespace, roleService) {
-
-    override protected def invokeAction(rule: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
-    }
+    override protected def fromInput(input: RoleProtocol, id: Option[UUID]): Role = entityToPass
   }
 
   override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)

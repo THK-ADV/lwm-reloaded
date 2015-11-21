@@ -1,6 +1,7 @@
 package controllers.crud
 
 import java.net.URLEncoder
+import java.util.UUID
 
 import models._
 import models.applications.{LabworkApplication, LabworkApplicationProtocol}
@@ -22,34 +23,24 @@ import scala.concurrent.Future
 import scala.util.{Try, Success}
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication] {
+
   import bindings.LabworkApplicationBinding._
   import bindings.uuidBinder
   import bindings.jodaDateTimeBinder
   import ops._
 
-  override def entityTypeName: String = "labworkApplication"
-
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
-
   override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(
     repository,
     namespace,
     roleService
   ) {
-    override protected def invokeAction(rule: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
-    }
+    override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = entityToPass
   }
-
   override val entityToFail: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-
   override val entityToPass: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
-
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
-
   override val inputJson: JsValue = Json.obj(
     "labwork" -> Labwork.randomUUID.toString,
     "applicant" -> Student.randomUUID.toString,
@@ -57,6 +48,8 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       Student.randomUUID.toString,
       Student.randomUUID.toString)
   )
+
+  override def entityTypeName: String = "labworkApplication"
 
   def encode(s: String) = URLEncoder.encode(s, "UTF-8")
 
@@ -88,134 +81,134 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     }
   }
 
-    "return all corresponding applications for a given labwork" in {
-      val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+  "return all corresponding applications for a given labwork" in {
+    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
-      val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
-      val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val third = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
-      val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val third = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
 
-      val applications = Set(first, second, third, fourth)
+    val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
 
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
-      )
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
+    )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
-    }
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+  }
 
-    "not return applications for a labwork when there is no match" in {
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
-      val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+  "not return applications for a labwork when there is no match" in {
+    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
+    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
-      val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
 
-      val applications = Set(first, second, third, fourth)
+    val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
 
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
-      )
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
+    )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
-    }
+    status(result) shouldBe NOT_FOUND
+    contentType(result) shouldBe Some("application/json")
+    contentAsString(result) shouldBe expectedMessage
+  }
 
-    "not return applications when there is an invalid query attribute" in {
-      val expectedMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
-      val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+  "not return applications when there is an invalid query attribute" in {
+    val expectedMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
+    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
-      val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
 
-      val applications = Set(first, second, third, fourth)
+    val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
 
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s?unknownAttribute=attributeValue"
-      )
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?unknownAttribute=attributeValue"
+    )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
-    }
+    status(result) shouldBe BAD_REQUEST
+    contentType(result) shouldBe Some("application/json")
+    contentAsString(result) shouldBe expectedMessage
+  }
 
-    "not return applications when there is an invalid query parameter value" in {
-      val invalidParameter = "invalidParameterValue"
-      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
+  "not return applications when there is an invalid query parameter value" in {
+    val invalidParameter = "invalidParameterValue"
+    val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
 
-      val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
-      val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
 
-      val applications = Set(first, second, third, fourth)
+    val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
 
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s?$labworkAttribute=invalidParameterValue"
-      )
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?$labworkAttribute=invalidParameterValue"
+    )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
-    }
+    status(result) shouldBe BAD_REQUEST
+    contentType(result) shouldBe Some("application/json")
+    contentAsString(result) shouldBe expectedErrorMessage
+  }
 
-    "return the corresponding application for a given applicant" in {
-      val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+  "return the corresponding application for a given applicant" in {
+    val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
 
-      val first = LabworkApplication(Labwork.randomUUID, applicant.id, Set(Student.randomUUID))
-      val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-      val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val first = LabworkApplication(Labwork.randomUUID, applicant.id, Set(Student.randomUUID))
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
 
-      val applications = Set(first, second, third, fourth)
+    val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
 
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s?$applicantAttribute=${applicant.id.toString}"
-      )
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?$applicantAttribute=${applicant.id.toString}"
+    )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first)).toString
-    }
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+  }
   "return all corresponding applications for a given applicant" in {
     val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
 
@@ -342,7 +335,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val tthen = DateTime.now.plusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), time)
-    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID),tthen)
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tthen)
     val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tthen)
     val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tthen)
     val applications = Set(first, second, third, fourth)
@@ -419,7 +412,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val after = DateTime.now.plusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
-    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID),after)
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), after)
     val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), after)
     val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), after)
     val applications = Set(first, second, third, fourth)
@@ -496,7 +489,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val before = DateTime.now.minusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
-    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID),before)
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
     val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
     val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
     val applications = Set(first, second, third, fourth)

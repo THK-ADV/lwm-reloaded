@@ -11,7 +11,6 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
 import store.sparql.SPARQLQueryEngine
 
-import scala.collection.GenTraversable
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -22,7 +21,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def ns: Rdf#URI
 
-  def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Rdf, T]): Try[Vector[PointedGraph[Rdf]]]
+  def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Rdf, T]): Try[Vector[PointedGraph[Rdf]]]
 
   def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]]
 
@@ -32,7 +31,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
 
-  def getMany[T <: UniqueEntity](ids: GenTraversable[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
+  def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
 
   def delete(id: String): Try[Rdf#Graph]
 
@@ -73,7 +72,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def getMany[T <: UniqueEntity](ids: GenTraversable[String])(implicit serialiser: FromPG[Sesame, T]): Try[Vector[T]] = {
+  override def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Sesame, T]): Try[Vector[T]] = {
     val connection = repo.getConnection
     import utils.Ops._
 
@@ -85,10 +84,10 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     }.sequence
 
     connection.close()
-    ts
+    ts map (_.toVector)
   }
 
-  override def addMany[T <: UniqueEntity](entities: GenTraversable[T])(implicit serialiser: ToPG[Sesame, T]): Try[Vector[PointedGraph[Sesame]]] = {
+  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Sesame, T]): Try[Vector[PointedGraph[Sesame]]] = {
     val connection = repo.getConnection
     val graphs = entities.map (_.toPG).toVector
     import utils.Ops._
@@ -97,6 +96,8 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
         rdfStore.appendToGraph(connection, ns, pointed.graph)
       }.sequence
 
+    //this might not really be a good idea, since we don't know if any of our many updates have failed or not
+    connection.commit()
     connection.close()
     ts map (_ => graphs)
   }

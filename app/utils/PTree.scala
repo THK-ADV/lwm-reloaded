@@ -12,7 +12,7 @@ object PTree {
 
   def nodec[A](a: => A, l: List[A], left: PTree[A], right: PTree[A]) = PNode[A](a, l, left, right)
 
-  def arrange[A](forest: GenTraversable[PTree[A]]): PTree[A] = forest reduce (_ ++ _)
+  def arrange[A](forest: TraversableOnce[PTree[A]]): PTree[A] = forest reduce (_ ++ _)
 
   def leaf[A]: PLeaf[A] = PLeaf()
 
@@ -20,7 +20,7 @@ object PTree {
 
   def nodef[A](a: => A, f: A*) = PNode[A](a, f.toList, leaf, leaf)
 
-  def sort[A](forest: GenTraversable[PTree[A]]): Vector[A] = {
+  def sort[A](forest: TraversableOnce[PTree[A]]): Vector[A] = {
     @annotation.tailrec
     def go(pri: PTree[A], post: Vector[A], cache: Vector[A]): Vector[A] = pri match {
       case node@PNode(v, f, _, _) if f.isEmpty => go(node.root._2, post, cache :+ node.value)
@@ -32,7 +32,7 @@ object PTree {
     go(arrange(forest), Vector(), Vector())
   }
 
-  def sortWithPairs[A](pairs: GenTraversable[Pair[A]]): Vector[A] = sort[A](pairs map (pair => nodef(pair._1, pair._2)))
+  def sortWithPairs[A](pairs: TraversableOnce[Pair[A]]): Vector[A] = sort[A](pairs map (pair => nodef(pair._1, pair._2)))
 
 }
 
