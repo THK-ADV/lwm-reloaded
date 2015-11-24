@@ -33,6 +33,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
 
+  // TODO: consider return type
   def delete(id: String): Try[Rdf#Graph]
 
   def contains(id: String): Boolean

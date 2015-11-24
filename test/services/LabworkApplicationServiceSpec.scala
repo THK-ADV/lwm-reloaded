@@ -4,6 +4,7 @@ import base.TestBaseDefinition
 import models._
 import models.applications.LabworkApplication
 import models.users.User
+import org.joda.time.DateTime
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.SesameModule
 import store.{SesameRepository, Namespace}
@@ -47,7 +48,6 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
 
       repository.add[Labwork](labwork)
       repository.addMany[LabworkApplication](applications)
-
 
       val resApplications = applicationService.applicationsFor(labwork.id)
 
@@ -104,7 +104,33 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
         case Some(v) => fail("Should not return any LabworkApplication")
         case None =>
       }
+    }
 
+    "return applications for a given labwork ordered by timestamp" in {
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan)
+      val applications = List(
+        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now()),
+        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusDays(1)),
+        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusHours(4)),
+        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(50)),
+        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(10))
+      )
+      implicit val dateTimeOrdering = new Ordering[DateTime] {
+        override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
+      }
+
+      repository.add[Labwork](labwork)
+      repository.addMany[LabworkApplication](applications)
+
+      val resApplications = applicationService.applicationsFor(labwork.id)
+
+      resApplications match {
+        case Some(v) =>
+          v.size shouldBe applications.size
+          v.forall(applications.contains) shouldBe true
+          applications.sortBy(_.timestamp).map(_.applicant) shouldBe v.map(_.applicant)
+        case None => fail("LabworkApplicaitons should exist")
+      }
     }
   }
 

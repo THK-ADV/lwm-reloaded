@@ -44,7 +44,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
-  "A CourseCRUDControllerSpec " should {
+  "A CourseCRUDControllerSpec also " should {
     "return the corresponding course for a given lecturer" in {
       val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
 

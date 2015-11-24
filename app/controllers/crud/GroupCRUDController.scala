@@ -12,6 +12,12 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import security.Permissions._
 import scala.collection.Map
+import scala.util.{Success, Failure, Try}
+
+object GroupCRUDController {
+
+  val labworkAttribute = "labwork"
+}
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
@@ -26,11 +32,34 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override implicit def writes: Writes[Group] = Group.writes
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(groups: Set[Group]): Result = ???
+  override def getWithFilter(queryString: Map[String, Seq[String]])(groups: Set[Group]): Result = {
+    import GroupCRUDController._
+
+    val filtered = queryString.foldRight(Try[Set[Group]](groups)) {
+      case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+
+    filtered match {
+      case Success(s) =>
+        if (s.isEmpty)
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+        else
+          Ok(Json.toJson(s)).as(mimeType)
+
+      case Failure(e) => BadRequest(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
 
   //TODO: Repair information inconsistency
   // POST /labworks/id/groups/range
-  def createWithRange(labwork: String) = restrictedContext(labwork)(CreateRef) contentTypedAction { implicit request =>
+  def createWithRange(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
     request.body.validate[GroupRangeProtocol].fold(
       errors => {
         BadRequest(Json.obj(
@@ -66,7 +95,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   // POST /labworks/id/groups/count
-  def createWithCount(labwork: String) = restrictedContext(labwork)(CreateRef) contentTypedAction { implicit request =>
+  def createWithCount(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
     request.body.validate[GroupCountProtocol].fold(
       errors => {
         BadRequest(Json.obj(
@@ -98,19 +127,19 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
 
-  def allFrom(labwork: String) = restrictedContext(labwork)(AllRef) asyncAction { request =>
+  def allFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>
     super.all(NonSecureBlock)(request)
   }
 
-  def updateFrom(labwork: String, id: String) = restrictedContext(labwork)(UpdateRef) asyncContentTypedAction { request =>
+  def updateFrom(labwork: String, id: String) = restrictedContext(labwork)(Update) asyncContentTypedAction { request =>
     super.update(id, NonSecureBlock)(request)
   }
 
-  def getFrom(labwork: String, id: String) = restrictedContext(labwork)(GetRef) asyncAction { request =>
+  def getFrom(labwork: String, id: String) = restrictedContext(labwork)(Get) asyncAction { request =>
     super.get(id, NonSecureBlock)(request)
   }
 
-  def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(DeleteRef) asyncAction { request =>
+  def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(Delete) asyncAction { request =>
     super.delete(id, NonSecureBlock)(request)
   }
 
@@ -119,11 +148,11 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case CreateRef => SecureBlock(moduleId, Set(createGroup))
-    case AllRef => SecureBlock(moduleId, Set(allGroups))
-    case UpdateRef => SecureBlock(moduleId, Set(updateGroup))
-    case GetRef => SecureBlock(moduleId, Set(getGroup))
-    case DeleteRef => SecureBlock(moduleId, Set(deleteGroup))
+    case Create => SecureBlock(moduleId, Set(createGroup))
+    case All => SecureBlock(moduleId, Set(allGroups))
+    case Update => SecureBlock(moduleId, Set(updateGroup))
+    case Get => SecureBlock(moduleId, Set(getGroup))
+    case Delete => SecureBlock(moduleId, Set(deleteGroup))
     case _ => NonSecureBlock
   }
 

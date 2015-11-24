@@ -26,8 +26,8 @@ sealed trait Clause {
       case FilterNotExistsClause(body, t) => acc + s"FILTER NOT EXISTS { " + body.run + "} ."
       case OptionalClause(body, t) => acc + "OPTIONAL { " + body.run + "} ."
       case OrderByClause(o, t) => acc + s"ORDER BY ${o getOrElse ""} "
-      case AscendingClause(v, t) => acc + s"ASC($v) "
-      case DescendingClause(v, t) => acc + s"DESC($v)"
+      case AscendingClause(v, t) => acc + s"ORDER BY ASC($v) "
+      case DescendingClause(v, t) => acc + s"ORDER BY DESC($v)"
       case GroupByClause(p, t) => acc + s"GROUP BY $p "
       case _ => acc
     }

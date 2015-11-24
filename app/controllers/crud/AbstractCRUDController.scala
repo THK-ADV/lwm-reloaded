@@ -82,7 +82,7 @@ trait SecureControllerContext {
   trait SecureContext {
 
     def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(o, s) => restricted(Some(UUID.fromString(o)), s)
+      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
       case PartialSecureBlock(set) => restricted(None, set)
       case NonSecureBlock => simple()
     }
@@ -118,24 +118,13 @@ trait SecureControllerContext {
 
   case object Create extends Rule
 
-  case object CreateRef extends Rule
-
   case object Delete extends Rule
-
-  case object DeleteRef extends Rule
 
   case object All extends Rule
 
-  case object AllRef extends Rule
-
   case object Get extends Rule
 
-  case object GetRef extends Rule
-
   case object Update extends Rule
-
-  case object UpdateRef extends Rule
-
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
@@ -158,9 +147,10 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         ))
       },
       success => {
-        repository.add[O](fromInput(success)) match {
+        val model = fromInput(success)
+        repository.add[O](model) match {
           case Success(graph) =>
-            Created(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
+            Created(Json.toJson(model)).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -224,9 +214,10 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
                 ))
               },
               success => {
-                repository.update[O, UriGenerator[O]](fromInput(success, Some(t.id))) match {
+                val model = fromInput(success, Some(t.id))
+                repository.update[O, UriGenerator[O]](model) match {
                   case Success(graph) =>
-                    Ok(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
+                    Ok(Json.toJson(model)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",

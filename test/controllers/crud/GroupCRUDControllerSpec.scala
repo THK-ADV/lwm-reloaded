@@ -14,7 +14,7 @@ import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 import play.api.test.Helpers._
-import scala.util.{Failure, Try}
+import scala.util.{Success, Failure, Try}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
   override val entityToPass: Group = Group("label to pass", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
@@ -53,6 +53,138 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
 
   "A GroupCRUDController also" should {
+
+    "return the corresponding group for a given labwork" in {
+      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+
+      val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
+      val second = Group("second", labwork.id, Set.empty[UUID])
+      val third = Group("third", Labwork.randomUUID, Set.empty[UUID])
+      val fourth = Group("fourth", Labwork.randomUUID, Set.empty[UUID])
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsString(result) shouldBe Json.toJson(Set(second)).toString
+    }
+
+    "return all corresponding groups for a given labwork" in {
+      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+
+      val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
+      val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
+      val third = Group("third", labwork.id, Set.empty[UUID])
+      val fourth = Group("fourth", labwork.id, Set.empty[UUID])
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsString(result) shouldBe Json.toJson(Set(third, fourth)).toString
+    }
+
+    "not return groups for a labwork when there is no match" in {
+      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
+
+      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+
+      val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
+      val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
+      val third = Group("third", Labwork.randomUUID, Set.empty[UUID])
+      val fourth = Group("fourth", Labwork.randomUUID, Set.empty[UUID])
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsString(result) shouldBe expectedMessage
+    }
+
+    "not return groups when there is an invalid query attribute" in {
+      val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
+
+      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+
+      val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
+      val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
+      val third = Group("third", Labwork.randomUUID, Set.empty[UUID])
+      val fourth = Group("fourth", Labwork.randomUUID, Set.empty[UUID])
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?invalidAttribute=${labwork.id.toString}"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some("application/json")
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
+
+    "not return groups when there is an invalid query parameter value" in {
+      val invalidParameter = "invalidParameterValue"
+      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
+
+      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+
+      val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
+      val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
+      val third = Group("third", Labwork.randomUUID, Set.empty[UUID])
+      val fourth = Group("fourth", Labwork.randomUUID, Set.empty[UUID])
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}invalidParameter?${GroupCRUDController.labworkAttribute}=$invalidParameter"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some("application/json")
+      contentAsString(result) shouldBe expectedErrorMessage
+    }
 
     "create groups given some arbitrary group size" in {
       val labwork = Labwork.randomUUID

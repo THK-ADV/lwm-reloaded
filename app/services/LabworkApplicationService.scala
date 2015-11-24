@@ -29,10 +29,11 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
 
   override def applicationsFor(labwork: UUID): Option[Vector[LabworkApplication]] = {
     val result = repository.query {
-      select("id") where {
+      select("id", "timestamp") where {
         ^(v("id"), p(lwm.labwork), o(labwork)) .
-          ^(v("id"), p(rdf.`type`), s(lwm.LabworkApplication))
-      }
+          ^(v("id"), p(rdf.`type`), s(lwm.LabworkApplication)) .
+          ^(v("id"), p(lwm.timestamp), v("timestamp"))
+      } desc "timestamp"
     }
 
     for {

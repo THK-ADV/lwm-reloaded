@@ -43,29 +43,4 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
     "module" -> Some(Course.randomUUID.toString),
     "role" -> Role.randomUUID
   )
-
-  val noModuleJson: JsValue = Json.obj(
-    "module" -> None,
-    "role" -> Role.randomUUID.toString
-  )
-
-  val noModuleRefRole = RefRole(None, Role.randomUUID, RefRole.randomUUID)
-
-  "A RefRoleCRUDControllerSpec also" should {
-    s"handle refRoles with no module properly" in {
-      when(repository.add(anyObject())(anyObject())).thenReturn(Success(noModuleRefRole.toPG))
-
-      val request = FakeRequest(
-        POST,
-        s"/${entityTypeName}s",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        noModuleJson
-      )
-      val result = controller.create()(request)
-
-      status(result) shouldBe CREATED
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(noModuleRefRole)
-    }
-  }
 }
