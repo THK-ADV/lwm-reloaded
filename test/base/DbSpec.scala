@@ -1,7 +1,7 @@
 package base
 
 import org.scalatest._
-import org.scalatest.concurrent.Futures
+import org.scalatest.concurrent.{ScalaFutures, Futures}
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import org.w3.banana.{RDF, RDFModule}
 import store.Prefixes.LWMPrefix
@@ -43,6 +43,6 @@ trait DbSpec[R <: RDF] extends WordSpec with RDFModule with TestBaseDefinition {
   }
 }
 
-trait TestBaseDefinition extends BeforeAndAfterAll with BeforeAndAfterEach with Matchers with Futures with OptionValues with EitherValues {
+trait TestBaseDefinition extends BeforeAndAfterAll with BeforeAndAfterEach with Matchers with ScalaFutures with OptionValues with EitherValues {
   this: Suite =>
 }

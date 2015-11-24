@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan, id: UUID) extends UniqueEntity
+case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan, id: UUID = Labwork.randomUUID) extends UniqueEntity
 
 case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan)
 

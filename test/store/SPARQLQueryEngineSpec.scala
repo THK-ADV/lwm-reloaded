@@ -110,7 +110,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
 
       repo add student
 
-      val result = repo.query(clause).flatMap(_.get("id")).map(v => UUID.fromString(v.stringValue()))
+      val result = repo.query(clause).flatMap(_.get("id")).flatMap(_.headOption).map(v => UUID.fromString(v.stringValue()))
 
       result match {
         case Some(s) => s shouldBe student.id

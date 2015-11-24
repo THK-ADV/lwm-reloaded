@@ -1,7 +1,8 @@
 package bind
 
 import base.SesameDbSpec
-import models.Group
+import models.users.Student
+import models.{Labwork, Group}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -17,12 +18,12 @@ class GroupBindingSpec extends SesameDbSpec {
   import bindings.GroupBinding._
   import bindings.uuidBinder
 
-  val group = Group("GroupSchedule", "Label", "Labwork", Group.randomUUID)
+  val group = Group("Label", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID), Group.randomUUID)
   val groupGraph = (
     URI(Group.generateUri(group)).a(lwm.Group)
-      -- lwm.groupSchedule ->- group.groupSchedule
       -- lwm.label ->- group.label
       -- lwm.labwork ->- group.labwork
+      -- lwm.members ->- group.members
       -- lwm.id ->- group.id
     ).graph
 

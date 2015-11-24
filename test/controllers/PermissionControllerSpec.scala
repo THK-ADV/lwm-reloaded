@@ -20,9 +20,8 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
   val namespace = Namespace("http://testNamespace/")
 
   val controller = new PermissionController(repository, namespace, roleService) {
-    override protected def invokeAction(act: Rule)(moduleId: Option[String]): Block = new Block((None, Set())) {
-      override def secured(block: (Request[AnyContent]) => Result): Action[AnyContent] = Action(block)
-      override def secureContentTyped(block: (Request[JsValue]) => Result): Action[JsValue] = ContentTypedAction(block)(mimeType)
+    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case _ => NonSecureBlock
     }
   }
   val mimeType = LwmMimeType.permissionV1Json

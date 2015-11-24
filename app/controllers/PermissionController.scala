@@ -1,6 +1,6 @@
 package controllers
 
-import controllers.crud.{Deferred, Secured, ContentTyped, JsonSerialisation}
+import controllers.crud.{SecureControllerContext, Secured, ContentTyped, JsonSerialisation}
 import models.security.Permissions._
 import models.security.Roles._
 import models.security.{Permissions, Permission}
@@ -12,18 +12,18 @@ import store.{SesameRepository, Namespace}
 import utils.LwmMimeType
 
 class PermissionController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
-with JsonSerialisation[Permission, Permission]
-with BaseNamespace
-with Secured
-with Deferred
-with ContentTyped  {
+  with JsonSerialisation[Permission, Permission]
+  with BaseNamespace
+  with Secured
+  with SecureControllerContext
+  with ContentTyped {
+  override implicit val mimeType: LwmMimeType = LwmMimeType.permissionV1Json
+
   override implicit def reads: Reads[Permission] = Permission.reads
 
   override implicit def writes: Writes[Permission] = Permission.writes
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.permissionV1Json
-
-  def all = invokeAction(All)(None) secured { implicit request =>
+  def all(secureContext: SecureContext = contextFrom(All)) = secureContext action { implicit request =>
     Ok(Json.toJson(Permissions.allValues)).as(mimeType)
   }
 
@@ -31,7 +31,7 @@ with ContentTyped  {
     NoContent.as(mimeType)
   }
 
-  override protected def invokeAction(act: Rule)(moduleId: Option[String] = None) = Invoke {
-    case _ => Block((None, Set(Permissions.prime)))
-  }.run(act)
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Set(Permissions.prime))
+  }
 }

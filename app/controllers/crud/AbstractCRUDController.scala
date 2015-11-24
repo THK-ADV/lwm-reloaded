@@ -16,6 +16,7 @@ import utils.LWMActions._
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
@@ -57,17 +58,61 @@ trait Secured {
 }
 
 /**
- * `Deferred` provides an algebra for separately and indirectly composing
- * a `SecureAction` with the `Permission`s required to run that `SecureAction`.
- *
- * Each controller has specialised restrictions for their respective
- * CRUD operations. This means that they must somehow be "deferred to"
- * the generalised specification of these restrictions.
- *
- * `Deferred` grants this possibility.
- */
-trait Deferred {
+  * `SecureControllerContext` provides an algebra for separately and indirectly composing
+  * a `SecureAction` with the `Permission`s required to run that `SecureAction`.
+  *
+  * Each controller has specialised restrictions for their respective
+  * CRUD operations. This means that they must somehow be "deferred to"
+  * the generalised specification of these restrictions.
+  *
+  */
+trait SecureControllerContext {
   self: Secured with ContentTyped =>
+
+  //to be specialized
+  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => NonSecureBlock
+  }
+
+  //to be specialized
+  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => NonSecureBlock
+  }
+
+  trait SecureContext {
+
+    def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
+      case PartialSecureBlock(set) => restricted(None, set)
+      case NonSecureBlock => simple()
+    }
+
+    def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
+      restricted = (opt, perms) => SecureAction((opt, perms))(block),
+      simple = Action(block)
+    )
+
+    def contentTypedAction(block: Request[JsValue] => Result): Action[JsValue] = apply[JsValue](
+      restricted = (opt, perms) => SecureContentTypedAction((opt, perms))(block),
+      simple = ContentTypedAction(block)
+    )
+
+    def asyncAction(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = apply[AnyContent](
+      restricted = (opt, perms) => SecureAction.async((opt, perms))(block),
+      simple = Action.async(block)
+    )
+
+    def asyncContentTypedAction(block: Request[JsValue] => Future[Result]): Action[JsValue] = apply[JsValue](
+      restricted = (opt, perms) => SecureContentTypedAction.async((opt, perms))(block),
+      simple = ContentTypedAction.async(block)
+    )
+  }
+
+  case class SecureBlock(restrictionRef: String, set: Set[Permission]) extends SecureContext
+
+  case class PartialSecureBlock(s: Set[Permission]) extends SecureContext
+
+  case object NonSecureBlock extends SecureContext
 
   sealed trait Rule
 
@@ -80,70 +125,20 @@ trait Deferred {
   case object Get extends Rule
 
   case object Update extends Rule
-
-  case class Invoke(run: Rule => Block)
-
-  case class Block(restrictions: (Option[String], Set[Permission])) {
-
-    /**
-     * Invocation of a `SecureAction`.
-     * `Block` feeds its restrictions to the `SecureAction`.
-     *
-     * @param block Function block
-     * @return Action
-     */
-    def secured(block: Request[AnyContent] => Result): Action[AnyContent] = restrictions match {
-      case (o, s) => SecureAction((o.map(UUID.fromString), s))(block)
-    }
-
-    /**
-     * Invocation of a `SecureContentTypedAction`.
-     * `Block` feeds its restrictions to the `SecureContentTypedAction`.
-     *
-     * @param block Function block
-     * @return Action
-     */
-    def secureContentTyped(block: Request[JsValue] => Result): Action[JsValue] = restrictions match {
-      case (o, s) => SecureContentTypedAction((o.map(UUID.fromString), s))(block)
-    }
-  }
-
-  /**
-   * Allows `Action` invocations based on restrictions defined by the `Rule`.
-   * Specialisations of this define a set of restrictions for each `Rule`.
-   *
-   *  i.e: Invoke {
-   *    case Create => ..restrictions
-   *    case Delete => ..restrictions
-   *    ..
-   *  }
-   *
-   * These restrictions are then fed to a `SecureAction` that can be invoked
-   * by using the functions defined on `Block`.
-   *
-   * [`moduleId` is added as an additional dependency, because some controllers
-   * depend on module restrictions to function properly. Specialisations can simply omit this
-   * parameter if they haven't need of it]
-   *
-   * @param rule Rule referencing operation restrictions
-   * @param moduleId possible module id
-   * @return Invoke Block
-   */
-  protected def invokeAction(rule: Rule)(moduleId: Option[String]): Block = Block((None, Set()))
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
-with JsonSerialisation[I, O]
-with SesameRdfSerialisation[O]
-with Filterable[O]
-with ModelConverter[I, O]
-with BaseNamespace
-with ContentTyped
-with Secured
-with Deferred {
+  with JsonSerialisation[I, O]
+  with SesameRdfSerialisation[O]
+  with Filterable[O]
+  with ModelConverter[I, O]
+  with BaseNamespace
+  with ContentTyped
+  with Secured
+  with SecureControllerContext {
 
   // POST /Ts
-  def create = invokeAction(Create)(None) secureContentTyped { implicit request =>
+  def create(securedContext: SecureContext = contextFrom(Create)) = securedContext contentTypedAction { implicit request =>
     request.body.validate[I].fold(
       errors => {
         BadRequest(Json.obj(
@@ -152,9 +147,10 @@ with Deferred {
         ))
       },
       success => {
-        repository.add[O](fromInput(success)) match {
+        val model = fromInput(success)
+        repository.add[O](model) match {
           case Success(graph) =>
-            Created(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
+            Created(Json.toJson(model)).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -166,7 +162,7 @@ with Deferred {
   }
 
   // GET /Ts/:id
-  def get(id: String) = invokeAction(Get)(Some(id)) secured { implicit request =>
+  def get(id: String, securedContext: SecureContext = contextFrom(Get)) = securedContext action { implicit request =>
     val uri = s"$namespace${request.uri}"
 
     repository.get[O](uri) match {
@@ -189,7 +185,7 @@ with Deferred {
   }
 
   // GET /ts with optional queries
-  def all() = invokeAction(All)(None) secured { implicit request =>
+  def all(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
     repository.get[O] match {
       case Success(s) =>
         if (request.queryString.isEmpty)
@@ -205,7 +201,7 @@ with Deferred {
   }
 
 
-  def update(id: String) = invokeAction(Update)(Some(id)) secureContentTyped { implicit request =>
+  def update(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
     repository.get[O](id) match {
       case Success(s) =>
         s match {
@@ -218,9 +214,10 @@ with Deferred {
                 ))
               },
               success => {
-                repository.update[O, UriGenerator[O]](fromInput(success, Some(t.id))) match {
+                val model = fromInput(success, Some(t.id))
+                repository.update[O, UriGenerator[O]](model) match {
                   case Success(graph) =>
-                    Ok(Json.toJson(rdfReads.fromPG(graph).get)).as(mimeType)
+                    Ok(Json.toJson(model)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
@@ -243,9 +240,11 @@ with Deferred {
     }
   }
 
-  def delete(id: String) = invokeAction(Delete)(Some(id)) secured { implicit request =>
+  def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
+    val uri = s"$namespace${request.uri}"
+
     import collection.JavaConversions._
-    repository.delete(id) match {
+    repository.delete(uri) match {
       case Success(s) =>
         Ok(Json.obj(
           "status" -> "OK",

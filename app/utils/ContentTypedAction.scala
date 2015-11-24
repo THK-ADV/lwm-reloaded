@@ -66,6 +66,8 @@ object LWMActions {
   }
 
   final private def securedAction(predicate: Authority => Boolean)(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
+
+
 }
 
 
@@ -84,6 +86,7 @@ case class Permitted(predicate: Authority => Boolean) extends ActionFilter[AuthR
       )))
   }
 }
+
 
 
 case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthRequest] {
