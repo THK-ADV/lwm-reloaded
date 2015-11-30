@@ -202,7 +202,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 
 
   def update(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
-    repository.get[O](id) match {
+    val uri = s"$namespace${request.uri}"
+
+    repository.get[O](uri) match {
       case Success(s) =>
         s match {
           case Some(t) =>
