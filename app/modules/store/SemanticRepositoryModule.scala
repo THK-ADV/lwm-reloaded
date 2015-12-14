@@ -1,5 +1,6 @@
-package modules
+package modules.store
 
+import modules.ConfigurationModule
 import store.{Namespace, SesameRepository}
 
 

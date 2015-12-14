@@ -11,11 +11,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import services.SessionServiceActor
+import services.{LDAPService, SessionServiceActor}
 import services.SessionServiceActor.{AuthenticationSuccess, AuthenticationFailure}
 import store.bind.Bindings
 import store.{LwmResolvers, Namespace, SesameRepository}
-import utils.LDAPService
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps

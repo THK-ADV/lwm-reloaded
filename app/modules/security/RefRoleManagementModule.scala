@@ -1,6 +1,7 @@
-package modules
+package modules.security
 
-import controllers.crud.RefRoleCRUDController
+import controllers.crud.security.RefRoleCRUDController
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait RefRoleManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule =>

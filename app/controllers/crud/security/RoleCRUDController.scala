@@ -1,10 +1,11 @@
-package controllers.crud
+package controllers.crud.security
 
 import java.util.UUID
 
+import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.{Role, RoleProtocol}
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result

@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models._
 import models.applications.LabworkApplication
+import models.schedule.{Schedule, TimetableEntry, Timetable}
 import models.security.{Authority, Permission, Role, RefRole}
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
@@ -88,6 +89,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object StudentBinding {
     implicit val clazz = lwm.Student
     implicit val classUri = classUrisFor[Student](clazz)
+
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val registrationId = property[String](lwm.registrationId)
@@ -101,6 +103,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object EmployeeBinding {
     implicit val clazz = lwm.Employee
     implicit val classUri = classUrisFor[Employee](clazz)
+
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val systemId = property[String](lwm.systemId)
@@ -110,7 +113,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RoleBinding {
-
     implicit val clazz = lwm.Role
     implicit val classUri = classUrisFor[Role](clazz)
 
@@ -170,7 +172,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object LabworkBinding {
     import AssignmentPlanBinding._
 
-    val clazz = lwm.Labwork
+    implicit val clazz = lwm.Labwork
     implicit val classUri = classUrisFor[Labwork](clazz)
 
     val label = property[String](lwm.label)
@@ -184,8 +186,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object CourseBinding {
-    val clazz = lwm.Course
+    implicit val clazz = lwm.Course
     implicit val classUri = classUrisFor[Course](clazz)
+
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
     private val lecturer = property[UUID](lwm.lecturer)
@@ -194,16 +197,18 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object DegreeBinding {
-    val clazz = lwm.Degree
+    implicit val clazz = lwm.Degree
     implicit val classUri = classUrisFor[Degree](clazz)
+
     private val label = property[String](lwm.label)
 
     implicit val degreeBinder = pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, id)(Degree.apply, Degree.unapply) withClasses classUri
   }
 
   object GroupBinding {
-    val clazz = lwm.Group
+    implicit val clazz = lwm.Group
     implicit val classUri = classUrisFor[Group](clazz)
+
     private val label = property[String](lwm.label)
     private val labwork = property[UUID](lwm.labwork)
     private val members = set[UUID](lwm.members)
@@ -212,22 +217,62 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RoomBinding {
-    val clazz = lwm.Room
+    implicit val clazz = lwm.Room
     implicit val classUri = classUrisFor[Room](clazz)
+
     private val label = property[String](lwm.label)
 
     implicit val roomBinder = pgbWithId[Room](room => makeUri(Room.generateUri(room)))(label, id)(Room.apply, Room.unapply) withClasses classUri
   }
 
   object SemesterBinding {
-    val clazz = lwm.Semester
+    implicit val clazz = lwm.Semester
     implicit val classUri = classUrisFor[Semester](clazz)
-    private val name = property[String](lwm.name)
-    private val startDate = property[String](lwm.startDate)
-    private val endDate = property[String](lwm.endDate)
-    private val examPeriod = property[String](lwm.examPeriod)
 
-    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, startDate, endDate, examPeriod, id)(Semester.apply, Semester.unapply) withClasses classUri
+    private val name = property[String](lwm.name)
+    private val start = property[String](lwm.start)
+    private val end = property[String](lwm.end)
+    private val exam = property[String](lwm.exam)
+
+    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, start, end, exam, id)(Semester.apply, Semester.unapply) withClasses classUri
+  }
+
+  object TimetableBinding {
+    import TimetableEntryBinding._
+
+    implicit val clazz = lwm.Timetable
+    implicit val classUri = classUrisFor[Timetable](clazz)
+
+    private val labwork = property[UUID](lwm.labwork)
+    private val entries = set[TimetableEntry](lwm.entries)(TimetableEntryBinding.timetableEntryBinder)
+    private val start = property[DateTime](lwm.start)
+    private val blacklist = set[DateTime](lwm.blacklist)
+    private val buffer = property[Int](lwm.buffer)
+
+    implicit val timetableBinder = pgbWithId[Timetable](timetable => makeUri(Timetable.generateUri(timetable)))(labwork, entries, start, blacklist, buffer, id)(Timetable.apply, Timetable.unapply) withClasses classUri
+  }
+
+  object TimetableEntryBinding {
+    implicit val clazz = lwm.TimetableEntry
+    implicit val classUri = classUrisFor[TimetableEntry](clazz)
+
+    private val supervisor = property[UUID](lwm.supervisor)
+    private val room = property[UUID](lwm.room)
+    private val degree = property[UUID](lwm.degree)
+    private val day = property[DateTime](lwm.day)
+    private val start = property[DateTime](lwm.start)
+    private val end = property[DateTime](lwm.end)
+
+    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, day, start, end, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+  }
+
+  object ScheduleBinding {
+    implicit val clazz = lwm.Schedule
+    implicit val classUri = classUrisFor[Schedule](clazz)
+
+    private val labwork = property[UUID](lwm.labwork)
+
+    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, id)(Schedule.apply, Schedule.unapply) withClasses classUri
   }
 }
 

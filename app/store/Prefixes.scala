@@ -12,7 +12,7 @@ object Prefixes {
     //Labwork, Course, Degree, Group, Room
     val label = apply("label")
 
-    // Labwork, LabworkApplication
+    // Labwork, LabworkApplication, TimetableEntry
     val description = apply("description")
     val assignmentPlan = apply("assignmentPlan")
     val semester = apply("semester")
@@ -30,13 +30,13 @@ object Prefixes {
     val systemId = apply("systemId")
     val enrollment = apply("enrollment")
 
-    // Semester
+    // Semester, Timetable, TimetableEntry
     val name = apply("name")
-    val endDate = apply("endDate")
-    val startDate = apply("startDate")
-    val examPeriod = apply("examPeriod")
+    val end = apply("end")
+    val start = apply("start")
+    val exam = apply("exam")
 
-    // AssignmentEntry, AssignmentPlan
+    // AssignmentEntry, AssignmentPlan, Timetable
     val index = apply("index")
     val types = apply("types")
     val entries = apply("entries")
@@ -53,9 +53,18 @@ object Prefixes {
     val module = apply("module")
     val privileged = apply("privileged")
 
-    //Group
+    //Group, Timetable, Schedule
     val members = apply("members")
     val labwork = apply("labwork")
+
+    // Timetable
+    val blacklist = apply("blacklist")
+    val buffer = apply("buffer")
+
+    // TimetableEntry
+    val supervisor = apply("supervisor")
+    val room = apply("room")
+    val day = apply("day")
 
     // classes
     val Course = apply("Course")
@@ -72,6 +81,9 @@ object Prefixes {
     val AssignmentPlan = apply("AssignmentPlan")
     val AssignmentEntry = apply("AssignmentEntry")
     val LabworkApplication = apply("LabworkApplication")
+    val Timetable = apply("Timetable")
+    val TimetableEntry = apply("TimetableEntry")
+    val Schedule = apply("Schedule")
   }
 
   object LWMPrefix {

@@ -10,7 +10,7 @@ import play.api.mvc.Result
 import services.{GroupServiceLike, RoleService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import security.Permissions._
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Success, Failure, Try}
 

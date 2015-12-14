@@ -21,9 +21,9 @@ class SemesterBindingSpec extends SesameDbSpec {
   val semesterGraph = (
     URI(Semester.generateUri(semester)).a(lwm.Semester)
       -- lwm.name ->- semester.name
-      -- lwm.startDate ->- semester.startDate
-      -- lwm.endDate ->- semester.endDate
-      -- lwm.examPeriod ->- semester.examPeriod
+      -- lwm.start ->- semester.startDate
+      -- lwm.end ->- semester.endDate
+      -- lwm.exam ->- semester.examPeriod
       -- lwm.id ->- semester.id
     ).graph
 

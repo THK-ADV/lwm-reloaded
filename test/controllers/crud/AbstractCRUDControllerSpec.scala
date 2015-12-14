@@ -15,7 +15,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
-import services.{GroupService, RoleService}
+import services.{TimetableService, GroupService, RoleService}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.{DefaultLwmApplication, LwmMimeType}
@@ -28,6 +28,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
   val groupService = mock[GroupService]
+  val timetableService = mock[TimetableService]
 
   val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 

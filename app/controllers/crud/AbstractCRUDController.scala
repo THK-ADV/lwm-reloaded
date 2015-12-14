@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models.security.Permission
 import models.{UniqueEntity, UriGenerator}
-import modules.BaseNamespace
+import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._

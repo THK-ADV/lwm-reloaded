@@ -1,6 +1,8 @@
 package modules
 
 import controllers.crud.LabworkCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 
 trait LabworkManagementModule {

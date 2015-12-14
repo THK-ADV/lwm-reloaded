@@ -1,7 +1,8 @@
-package controllers.crud
+package controllers.crud.user
 
 import java.util.UUID
 
+import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.users.{Student, StudentProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}

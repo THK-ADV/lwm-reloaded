@@ -1,6 +1,8 @@
 package modules
 
 import controllers.crud.GroupCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services.{GroupServiceLike, GroupService}
 import utils.LwmApplication
 

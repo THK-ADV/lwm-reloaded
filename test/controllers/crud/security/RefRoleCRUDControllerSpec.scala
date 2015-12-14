@@ -1,28 +1,19 @@
-package controllers.crud
+package controllers.crud.security
 
 import java.util.UUID
 
+import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.Course
-import models.security.{Permission, RefRole, RefRoleProtocol, Role}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
+import models.security.{RefRole, RefRoleProtocol, Role}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, Result, AnyContent, Request}
-import play.api.test.Helpers._
-import play.api.test.{FakeHeaders, FakeRequest}
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
-
-import scala.util.Success
 
 class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole] {
 
-  import bindings.RefRoleBinding._
   import ops._
-
+  import bindings.RefRoleBinding._
   override def entityTypeName: String = "refRole"
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService) {

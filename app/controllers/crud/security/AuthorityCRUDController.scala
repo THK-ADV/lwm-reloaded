@@ -1,7 +1,8 @@
-package controllers.crud
+package controllers.crud.security
 
 import java.util.UUID
 
+import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.{Authority, AuthorityProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}

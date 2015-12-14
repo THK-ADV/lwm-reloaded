@@ -1,4 +1,4 @@
-package modules
+package modules.store
 
 import store.{LwmResolvers, Resolvers}
 

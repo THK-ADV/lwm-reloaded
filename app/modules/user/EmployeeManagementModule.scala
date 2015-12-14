@@ -1,7 +1,8 @@
-package modules
+package modules.user
 
-import controllers.crud.EmployeeCRUDController
-
+import controllers.crud.user.EmployeeCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait EmployeeManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule =>

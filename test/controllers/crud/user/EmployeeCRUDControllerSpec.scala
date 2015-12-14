@@ -1,13 +1,12 @@
-package controllers.crud
+package controllers.crud.user
 
 import java.util.UUID
 
+import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.users.{Employee, EmployeeProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, Result, AnyContent, Request}
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProtocol, Employee] {
@@ -35,6 +34,5 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
 
   import ops._
   import bindings.EmployeeBinding._
-
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 }

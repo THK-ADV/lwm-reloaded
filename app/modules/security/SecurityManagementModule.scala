@@ -1,5 +1,6 @@
-package modules
+package modules.security
 
+import modules.store.SemanticRepositoryModule
 import services.RoleService
 import utils.LwmApplication
 

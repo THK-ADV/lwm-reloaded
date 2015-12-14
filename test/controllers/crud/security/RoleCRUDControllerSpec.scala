@@ -1,19 +1,17 @@
-package controllers.crud
+package controllers.crud.security
 
 import java.util.UUID
 
+import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.security.{Permission, Role, RoleProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, Result, AnyContent, Request}
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] {
-  import bindings.RoleBinding._
   import ops._
-
+  import bindings.RoleBinding._
   override def entityTypeName: String = "role"
 
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleCRUDController(repository, namespace, roleService) {

@@ -1,6 +1,7 @@
-package modules
+package modules.security
 
-import controllers.crud.AuthorityCRUDController
+import controllers.crud.security.AuthorityCRUDController
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait AuthorityManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule =>

@@ -2,12 +2,15 @@ package utils
 
 import controllers._
 import modules._
+import modules.schedule._
+import modules.security._
+import modules.store._
+import modules.user.{DefaultEmployeeManagementModuleImpl, EmployeeManagementModule, DefaultStudentManagementModuleImpl, StudentManagementModule}
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router
 import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
-
 
 class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {
@@ -61,7 +64,10 @@ with ResolversModule
 with CORSFilterModule
 with ApiDataModule
 with LabworkApplicationManagementModule
-with LabworkApplicationServiceModule {
+with LabworkApplicationServiceModule
+with ScheduleManagementModule
+with TimetableManagementModule
+with TimetableServiceManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -82,6 +88,8 @@ with LabworkApplicationServiceModule {
     authorityManagementController,
     permissionManagementController,
     labworkApplicationController,
+    scheduleManagementController,
+    timetableManagementController,
     sessionController,
     apiDataController,
     assetsController
@@ -117,3 +125,6 @@ with DefaultCORSFilterModule
 with DefaultApiDataModule
 with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationServiceModule
+with DefaultScheduleManagementModuleImpl
+with DefaultTimetableManagementModuleImpl
+with DefaultTimetableServiceManagementModule

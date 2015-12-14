@@ -1,6 +1,8 @@
-package modules
+package modules.user
 
-import controllers.crud.StudentCRUDController
+import controllers.crud.user.StudentCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait StudentManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule =>
