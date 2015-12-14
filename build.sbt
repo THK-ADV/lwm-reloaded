@@ -51,6 +51,7 @@ lazy val scalazDependencies = Seq(
 )
 
 lazy val lwmDependencies = Seq(
+  "com.chuusai" %% "shapeless" % "2.2.5",
   "com.unboundid" % "unboundid-ldapsdk" % "2.3.6"
 )
 
