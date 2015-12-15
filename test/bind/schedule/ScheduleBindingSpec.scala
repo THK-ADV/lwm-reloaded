@@ -2,7 +2,7 @@ package bind.schedule
 
 import base.SesameDbSpec
 import models.Labwork
-import models.schedule.Schedule
+import models.schedule.{ScheduleEntry, Schedule}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -17,11 +17,13 @@ class ScheduleBindingSpec extends SesameDbSpec {
   import ops._
   import bindings.uuidBinder
   import bindings.ScheduleBinding.scheduleBinder
+  import bindings.ScheduleEntryBinding.scheduleEntryBinder
 
-  val schedule = Schedule(Labwork.randomUUID, Schedule.randomUUID)
+  val schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
   val scheduleGraph = (
     URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
       -- lwm.labwork ->- schedule.labwork
+      -- lwm.entries ->- schedule.entries
       -- lwm.id ->- schedule.id
     ).graph
 

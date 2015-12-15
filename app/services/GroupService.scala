@@ -3,12 +3,15 @@ package services
 import java.util.UUID
 import java.util.concurrent.Executors
 
+import models.Group
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
+import store.bind.Bindings
 import utils.PTree._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scalaz.StreamT._
 
 trait GroupServiceLike {
@@ -21,6 +24,7 @@ trait GroupServiceLike {
 
   def sortApplicantsForMany(labworks: TraversableOnce[UUID]): Future[Option[Map[UUID, Vector[UUID]]]]
 
+  def groupsFor(labwork: UUID): Try[Set[Group]]
 }
 
 class GroupService(private val repository: SesameRepository, private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
@@ -29,8 +33,9 @@ class GroupService(private val repository: SesameRepository, private val applica
 
   private val lwm = LWMPrefix[Rdf]
   private val rdf = RDFPrefix[Rdf]
-  private implicit val exec = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+  private val bindings = Bindings[Rdf](namespace)
 
+  private implicit val exec = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   override def sortApplicantsFor(labwork: UUID): Option[Vector[UUID]] = {
     applicationService.applicationsFor(labwork) map { v =>
@@ -51,5 +56,11 @@ class GroupService(private val repository: SesameRepository, private val applica
     }
 
     concurrent.map(_.sequence.map(_.toMap))
+  }
+
+  override def groupsFor(labwork: UUID): Try[Set[Group]] = {
+    import bindings.GroupBinding._
+
+    repository.get[Group].map(f => f.filter(g => g.labwork == labwork))
   }
 }

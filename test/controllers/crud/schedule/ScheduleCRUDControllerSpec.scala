@@ -4,16 +4,16 @@ import java.util.UUID
 
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.Labwork
-import models.schedule.{Schedule, ScheduleProtocol}
+import models.schedule.{ScheduleEntry, Schedule, ScheduleProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import utils.LwmMimeType
 
 class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProtocol, Schedule] {
-  override val entityToFail: Schedule = Schedule(Labwork.randomUUID, Schedule.randomUUID)
+  override val entityToFail: Schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
 
-  override val entityToPass: Schedule = Schedule(Labwork.randomUUID, Schedule.randomUUID)
+  override val entityToPass: Schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
 
   import ops._
   import bindings.ScheduleBinding.scheduleBinder
@@ -39,6 +39,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   override val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "labwork" -> entityToPass.labwork
+    "labwork" -> entityToPass.labwork,
+    "entries" -> entityToPass.entries
   )
 }

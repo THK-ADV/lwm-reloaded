@@ -22,8 +22,8 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
 
-  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
-  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
+  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
+  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), DateTime.now, Set(DateTime.now, DateTime.now), 0, Timetable.randomUUID)
   val timetableGraph = (
     URI(Timetable.generateUri(timetable)).a(lwm.Timetable)

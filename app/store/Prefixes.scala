@@ -30,13 +30,13 @@ object Prefixes {
     val systemId = apply("systemId")
     val enrollment = apply("enrollment")
 
-    // Semester, Timetable, TimetableEntry
+    // Semester, Timetable, TimetableEntry, ScheduleEntry
     val name = apply("name")
     val end = apply("end")
     val start = apply("start")
     val exam = apply("exam")
 
-    // AssignmentEntry, AssignmentPlan, Timetable
+    // AssignmentEntry, AssignmentPlan, Timetable, Schedule
     val index = apply("index")
     val types = apply("types")
     val entries = apply("entries")
@@ -61,10 +61,14 @@ object Prefixes {
     val blacklist = apply("blacklist")
     val buffer = apply("buffer")
 
-    // TimetableEntry
+    // TimetableEntry, ScheduleEntry
     val supervisor = apply("supervisor")
     val room = apply("room")
     val day = apply("day")
+    val date = apply("date")
+
+    // ScheduleEntry
+    val group = apply("group")
 
     // classes
     val Course = apply("Course")
@@ -84,6 +88,7 @@ object Prefixes {
     val Timetable = apply("Timetable")
     val TimetableEntry = apply("TimetableEntry")
     val Schedule = apply("Schedule")
+    val ScheduleEntry = apply("ScheduleEntry")
   }
 
   object LWMPrefix {

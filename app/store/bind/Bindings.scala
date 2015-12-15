@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import models.applications.LabworkApplication
-import models.schedule.{Schedule, TimetableEntry, Timetable}
+import models.schedule.{ScheduleEntry, Schedule, TimetableEntry, Timetable}
 import models.security.{Authority, Permission, Role, RefRole}
 import models.users.{Employee, Student}
 import org.joda.time.DateTime
@@ -262,17 +262,36 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val day = property[DateTime](lwm.day)
     private val start = property[DateTime](lwm.start)
     private val end = property[DateTime](lwm.end)
+    private val date = property[DateTime](lwm.date)
 
-    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, day, start, end, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, day, start, end, date, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
   }
 
   object ScheduleBinding {
+    import ScheduleEntryBinding._
+
     implicit val clazz = lwm.Schedule
     implicit val classUri = classUrisFor[Schedule](clazz)
 
     private val labwork = property[UUID](lwm.labwork)
+    private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryBinding.scheduleEntryBinder)
 
-    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+  }
+
+  object ScheduleEntryBinding {
+    implicit val clazz = lwm.ScheduleEntry
+    implicit val classUri = classUrisFor[ScheduleEntry](clazz)
+
+    private val start = property[DateTime](lwm.start)
+    private val end = property[DateTime](lwm.end)
+    private val day = property[DateTime](lwm.day)
+    private val date = property[DateTime](lwm.date)
+    private val room = property[UUID](lwm.room)
+    private val supervisor = property[UUID](lwm.supervisor)
+    private val group = property[UUID](lwm.group)
+
+    implicit val scheduleEntryBinder = pgbWithId[ScheduleEntry](scheduleEntry => makeUri(ScheduleEntry.generateUri(scheduleEntry)))(start, end, day, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 }
 

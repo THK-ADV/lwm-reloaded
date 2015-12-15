@@ -19,17 +19,17 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: DateTim
 
 case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: DateTime, blacklist: Set[DateTime] = Set.empty[DateTime], buffer: Int = 0)
 
-case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime, id: UUID) extends UniqueEntity {
+case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime, date: DateTime, id: UUID) extends UniqueEntity {
 
   // TODO: FIX THIS BLOODY DATETIME COMPARISON
   override def equals(that: scala.Any): Boolean = that match {
-    case TimetableEntry(sup2, room2, degree2, day2, start2, end2, id2) =>
-      supervisor == sup2 && room == room2 && degree2 == degree && day2.isEqual(day) && start2.isEqual(start) && end2.isEqual(end) && id2 == id
+    case TimetableEntry(sup2, room2, degree2, day2, start2, end2, date2, id2) =>
+      supervisor == sup2 && room == room2 && degree2 == degree && day2.isEqual(day) && start2.isEqual(start) && end2.isEqual(end) && id2 == id && date2.isEqual(date)
     case _ => false
   }
 }
 
-case class TimetableEntryProtocol(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime)
+case class TimetableEntryProtocol(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime, date: DateTime)
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable] {
 
