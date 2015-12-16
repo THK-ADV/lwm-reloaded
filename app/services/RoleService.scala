@@ -2,6 +2,7 @@ package services
 
 import java.util.UUID
 
+import models.Labwork
 import models.security._
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
@@ -11,14 +12,16 @@ trait RoleServiceLike {
 
   /**
    * Retrieves the authority of a particular user.
-   * @param userId User ID
+    *
+    * @param userId User ID
    * @return User's possible authority
    */
   def authorityFor(userId: String): Option[Authority]
 
   /**
    * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
-   * @param checkee restrictions
+    *
+    * @param checkee restrictions
    * @param checker to be checked
    * @return true/false
    */
@@ -63,12 +66,15 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
 
 
   override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = checkee match {
-    case (module, permissions) =>
+    case (moduleCont, permissions) =>
       import bindings.RoleBinding._
-      (for {
-        ref <- checker.find(_.module == checkee._1)
-        role <- repository.get[Role](Role.generateUri(ref.role)).toOption.flatten
-      } yield permissions.forall(role.permissions.contains)) getOrElse checker.exists(_.role == Roles.admin.id)
-
+      import bindings.LabworkBinding._
+      checker.exists(_.role == Roles.admin.id) || {
+        val course = moduleCont flatMap (u => repository.get[Labwork](Labwork.generateUri(u)).toOption.flatten.map(_.course))
+        (for {
+          ref <- checker.find(_.module == course)
+          role <- repository.get[Role](Role.generateUri(ref.role)).toOption.flatten
+        } yield permissions.forall(role.permissions.contains)) getOrElse false
+      }
   }
 }

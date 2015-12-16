@@ -19,13 +19,13 @@ import scalaz.Monad
 object Ops {
   self =>
 
-  implicit val optApplicative = new Monad[Option] {
+  implicit val optM = new Monad[Option] {
     override def bind[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
 
     override def point[A](a: => A): Option[A] = Some(a)
   }
 
-  implicit val tryApplicative = new Monad[Try] {
+  implicit val tryM = new Monad[Try] {
     override def bind[A, B](fa: Try[A])(f: (A) => Try[B]): Try[B] = fa flatMap f
 
     override def point[A](a: => A): Try[A] = Try(a)

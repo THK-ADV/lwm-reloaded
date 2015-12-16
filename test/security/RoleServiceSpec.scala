@@ -3,7 +3,7 @@ package security
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Degree
+import models.{AssignmentPlan, Semester, Labwork, Degree}
 import models.security._
 import models.users.Student
 import org.scalatest.WordSpec
@@ -19,6 +19,10 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
   val module1 = UUID.randomUUID()
   val module2 = UUID.randomUUID()
+
+  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID, AssignmentPlan(0, Set.empty))
+  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID, AssignmentPlan(0, Set.empty))
+
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
   val role3 = Roles.admin
@@ -49,22 +53,27 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
     "check refroles properly" in {
       import bindings.RoleBinding._
+      import bindings.LabworkBinding._
 
       repository.add(role1)
       repository.add(role2)
       repository.add(role3)
+      repository.add(lab1)
+      repository.add(lab2)
 
-      val result1 = roleService.checkWith(unbox(module1UserRole1))(Set(module1UserRole2))
-      val result2 = roleService.checkWith(unbox(module1UserRole1))(Set(module1UserRole1, module2UserRole2))
-      val result3 = roleService.checkWith(unbox(noneModule1Role1))(Set(module1UserRole1, noneModule1Role1, module2UserRole2))
-      val result4 = roleService.checkWith(unbox(module1UserRole1))(Set(adminRole))
-      val result5 = roleService.checkWith(unbox(module2UserRole2))(Set(module1UserRole1))
+      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole2))
+      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole1, module2UserRole2))
+      val result3 = roleService.checkWith((None, role1.permissions))(Set(module1UserRole1, noneModule1Role1, module2UserRole2))
+      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(adminRole))
+      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(Set(module1UserRole1))
+      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(Set(adminRole))
 
       result1 shouldBe false
       result2 shouldBe true
       result3 shouldBe true
       result4 shouldBe true
       result5 shouldBe false
+      result6 shouldBe true
     }
 
 
