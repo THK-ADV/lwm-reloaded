@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Room(label: String, id: UUID) extends UniqueEntity
+case class Room(label: String, id: UUID = Room.randomUUID) extends UniqueEntity
 
 case class RoomProtocol(label: String)
 
