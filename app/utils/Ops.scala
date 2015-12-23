@@ -38,7 +38,6 @@ object Ops {
       case h :: t => go(t, h flatMap (a => soFar map (_ += a)))
       case Nil => soFar map (_.result())
     }
-
     go(z.toList, point(cbf()))
   }
 
