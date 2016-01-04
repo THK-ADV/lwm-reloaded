@@ -6,7 +6,6 @@ import models.security.Roles._
 import org.w3.banana.PointedGraph
 import play.api.libs.json._
 import play.api.mvc.{Action, Controller}
-import shapeless.HNil
 import store.SesameRepository
 import store.bind.Bindings
 import scala.language.higherKinds

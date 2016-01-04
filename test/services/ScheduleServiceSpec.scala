@@ -250,10 +250,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val right = schedules.last
       val result = scheduleService.crossover(left, right)
 
-      val l1 = left.entries.toVector.sortBy(_.date).map(_.group.label)
-      val l2 = result._1.entries.toVector.sortBy(_.date).map(_.group.label)
-      l1.zip(l2).foreach(println)
-      /*schedules.head should not be result._1
+      schedules.head should not be result._1
       schedules.last should not be result._2
 
       result._1.entries.zip(left.entries).count(e => e._1 == e._2) < left.entries.size shouldBe true
@@ -263,7 +260,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       leftCount != left.entries.size && leftCount < left.entries.size && leftCount > 0 && leftCount > left.entries.size / 2 shouldBe true
 
       val rightCount = result._2.entries.count(c => right.entries.contains(c))
-      rightCount != right.entries.size && rightCount < right.entries.size && rightCount > 0 && rightCount > right.entries.size / 2 shouldBe true*/
+      rightCount != right.entries.size && rightCount < right.entries.size && rightCount > 0 && rightCount > right.entries.size / 2 shouldBe true
     }
   }
 }

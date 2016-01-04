@@ -10,9 +10,23 @@ import scala.language.higherKinds
 
 case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group)
 
-case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID)
+case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID) {
 
-case class ScheduleEntryG(start: DateTime, end: DateTime, day: DateTime, date: DateTime, room: UUID, supervisor: UUID, group: Group, id: UUID)
+  override def equals(that: scala.Any): Boolean = that match {
+    case ScheduleG(l, e, i) =>
+      labwork == l && entries.zip(e).forall(z => z._1 == z._2) && id == i
+    case _ => false
+  }
+}
+
+case class ScheduleEntryG(start: DateTime, end: DateTime, day: DateTime, date: DateTime, room: UUID, supervisor: UUID, group: Group, id: UUID) {
+
+  override def equals(that: scala.Any): Boolean = that match {
+    case ScheduleEntryG(s, e, dy, da, r, su, g, i) =>
+      start.isEqual(s) && end.isEqual(e) && day.isEqual(dy) && date.isEqual(da) && room == r && su == su && group == g && id == i
+    case _ => false
+  }
+}
 
 trait ScheduleServiceLike {
 
@@ -29,14 +43,14 @@ trait ScheduleServiceLike {
 
 class ScheduleService extends ScheduleServiceLike {
 
+  implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
+    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
+  }
+
   override def populate(times: Int, timetable: Timetable, groups: Set[Group]): Vector[ScheduleG] = (0 until times).map(_ => populate(timetable, groups)).toVector
 
   private def populate(timetable: Timetable, groups: Set[Group]): ScheduleG = {
     import scala.util.Random._
-
-    implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
-      override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
-    }
 
     val entries = timetable.entries.toVector.sortBy(_.date).grouped(groups.size).flatMap(_.zip(shuffle(groups)).map {
       case (t, group) => ScheduleEntryG(t.start, t.end, t.day, t.date, t.room, t.supervisor, group, ScheduleEntry.randomUUID)
@@ -104,18 +118,27 @@ class ScheduleService extends ScheduleServiceLike {
     import scala.util.Random._
 
     def sameDate(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-      left.date == right.date && left.day == right.day && left.start == right.start && left.end == right.end
+      left.date.isEqual(right.date) && left.day.isEqual(right.day) && left.start.isEqual(right.start) && left.end.isEqual(right.end)
     }
 
     val size = left.entries.map(_.group).size
-    val pairs = left.entries.zip(right.entries).toVector.grouped(size).toVector
-    val crossover = shuffle(pairs(nextInt(size))).take(2)
+    val pairs = left.entries.toVector.sortBy(_.date).zip(right.entries.toVector.sortBy(_.date)).grouped(size).toVector
+    val week = nextInt(pairs.size)
+
+    val toCross = shuffle(pairs(week)).take(2).unzip._1
+    val r = pairs(week).unzip._2
+    val l = pairs(week).unzip._1
+    val a = r(l.indexOf(toCross.head))
+    val b = r(l.indexOf(toCross.last))
+
+    val crossover = toCross.zip(Vector(b, a))
+    val rCrossover = toCross.zip(Vector(a, b))
 
     val crossed = pairs.flatMap {
-      case swap if swap.containsSlice(crossover) =>
+      case swap if swap.exists(p => rCrossover.contains(p)) =>
         val u = swap.unzip
 
-        val l = u._1.map (ss => (ss, crossover.find(cs => sameDate(cs._1, ss)))).foldLeft(Vector[ScheduleEntryG]()) {
+        val l = u._1.map (ss => (ss, crossover.find(cs => sameDate(ss, cs._1)))).foldLeft(Vector[ScheduleEntryG]()) {
           case (vec, (e, Some((_, withEntry)))) => vec :+ ScheduleEntryG(withEntry.start, withEntry.end, withEntry.day, withEntry.date, withEntry.room, withEntry.supervisor, e.group, e.id)
           case (vec, (e, None)) => vec :+ e
         }
