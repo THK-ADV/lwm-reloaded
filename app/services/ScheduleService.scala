@@ -5,7 +5,8 @@ import java.util.UUID
 import models.Group
 import models.schedule.{ScheduleEntry, Schedule, Timetable}
 import org.joda.time.DateTime
-
+import utils.Evaluation._
+import utils.TypeClasses._
 import scala.language.higherKinds
 
 case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group)
@@ -45,11 +46,47 @@ trait ScheduleServiceLike {
   def evaluate(schedule: ScheduleG, appointments: Int): Evaluation
 }
 
-class ScheduleService extends ScheduleServiceLike {
+class ScheduleService extends ScheduleServiceLike { self =>
 
   implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
   }
+
+  def eval: EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, appointments))
+  def mut: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutate(s))
+  def mutDest: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutateDestructive(s, e.err.toVector))
+  def cross: CrossE[ScheduleG, Conflict, Int] = CrossE.instance[ScheduleG, Conflict, Int] {
+    case ((s1, _), (s2, _)) => crossover(s1, s2)
+  }
+
+  def evaluate2(schedule: ScheduleG, appointments: Int): utils.Evaluation[Conflict, Int] = {
+    def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
+      (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
+    }
+
+    val integrity = schedule.entries.groupBy(_.group) forall {
+      case (_, ss) => ss.size == appointments
+    }
+
+    //if it's consistent, then calculate it's proper weight, otherwise give it the maximum possible value
+    if (integrity) {
+      // /check entries against each already existing schedule
+      scheduleFor(schedule.labwork)
+        .flatMap(_.entries)
+        .map(e => (e, schedule.entries.find(f => collide(e, f))))
+        .foldLeft(evaluationV[Conflict, Int](0)) {
+          case (eval, (ee, Some(e))) =>
+            val m = ee.group.members.intersect(e.group.members)
+            val c = Conflict(e, m.toVector, e.group)
+            eval.map(_ + m.size).mapErrWhole(_ :+ c)
+        }
+    } else {
+      evaluationV[Conflict, Int](Integer.MAX_VALUE)
+    }
+  }
+
+  //TODO: Returns the amount of required appointments
+  private def appointments: Int = ???
 
   override def populate(times: Int, timetable: Timetable, groups: Set[Group]): Vector[ScheduleG] = (0 until times).map(_ => populate(timetable, groups)).toVector
 
@@ -93,7 +130,7 @@ class ScheduleService extends ScheduleServiceLike {
     conflicts.foldRight(schedule) {
       case (c, s) =>
         val g = s.entries.map(_.group).toVector.sortBy(_.label).last // TODO: choose another group by time
-        val x = g.members.take(c.member.size).toList
+      val x = g.members.take(c.member.size).toList
 
         val ncg = c.group.members.foldLeft((Set[UUID](), x)) {
           case ((set, xs), problem) if c.member.contains(problem) => (set + xs.head, xs.tail)

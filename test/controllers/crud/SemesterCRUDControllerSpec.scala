@@ -56,7 +56,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A SemesterCRUDController " should {
-
+    //TODO: TEST DOES NOT PASS!!!
     "successfully return all semesters for a year" in {
 
       val semesterWithDate = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
@@ -76,6 +76,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe Json.toJson(entitiesForYear).toString()
     }
+
+    //TODO: TEST DOES NOT PASS!!!
     "successfully return all semesters for many years" in {
       val semesterIn2015 = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val semesterIn2016 = Semester("name to pass", DateTime.now().plusYears(1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)

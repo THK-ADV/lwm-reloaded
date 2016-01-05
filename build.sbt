@@ -12,6 +12,7 @@ lazy val sesameVersion = "2.7.15"
 lazy val bananaVersion = "0.8.1"
 lazy val scalazVersion = "7.1.2"
 lazy val scalatestVersion = "2.2.4"
+lazy val scalacheckVersion = "1.12.5"
 
 lazy val commonSettings = Seq(
   name := "lwm-semantics",
@@ -38,6 +39,7 @@ lazy val semanticDependencies = Seq(
 )
 
 lazy val testDependencies = Seq(
+  "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.scalactic" %% "scalactic" % scalatestVersion % "test",
   "org.scalatestplus" %% "play" % "1.4.0-M3" % "test",
