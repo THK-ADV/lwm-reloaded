@@ -28,6 +28,8 @@ case class ScheduleEntryG(start: DateTime, end: DateTime, day: DateTime, date: D
   }
 }
 
+case class Evaluation(value: Int, conflicts: List[Conflict])
+
 trait ScheduleServiceLike {
 
   def applyBlacklist(timetable: Timetable): Timetable
@@ -39,6 +41,8 @@ trait ScheduleServiceLike {
   def mutateDestructive(schedule: ScheduleG, conflicts: Vector[Conflict]): ScheduleG
 
   def crossover(left: ScheduleG, right: ScheduleG): (ScheduleG, ScheduleG)
+
+  def evaluate(schedule: ScheduleG, appointments: Int): Evaluation
 }
 
 class ScheduleService extends ScheduleServiceLike {
@@ -153,5 +157,36 @@ class ScheduleService extends ScheduleServiceLike {
     }.unzip
 
     (ScheduleG(left.labwork, crossed._1.toSet, left.id), ScheduleG(right.labwork, crossed._2.toSet, right.id))
+  }
+
+  //TODO: expand to UUID -> Labwork -> SemesterId -> ScheduleG's
+  private def scheduleFor(labwork: UUID): List[ScheduleG] = ???
+
+  //TODO: Schedule for is external dependency, that gets retrieved a priori
+  override def evaluate(schedule: ScheduleG, appointments: Int): Evaluation = {
+    def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
+      (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
+    }
+
+    // /check entries against each already existing schedule
+    val conflicts = scheduleFor(schedule.labwork).flatMap(_.entries).map(e => (e, schedule.entries.find(f => collide(e, f)))).foldLeft(List.empty[Conflict]) {
+      case (list, (ee, Some(e))) =>
+        val m = ee.group.members.intersect(e.group.members)
+        val c = Conflict(e, m.toVector, e.group)
+        list :+ c
+    }
+
+    /*conflicts.groupBy(_.group).foldLeft(Evaluation(0, List.empty[Conflict])) {
+      case (e, (group, list)) => Evaluation(e.value + list.size, e.conflicts ::: list)
+    }*/
+
+    //check integrity of group-appointment relation
+    val integrity = schedule.entries.groupBy(_.group) forall {
+      case (_, ss) => ss.size == appointments
+    }
+
+    val factor = if (integrity) 1000 else 0
+
+    Evaluation(conflicts.foldRight(factor)(_.member.size + _), conflicts)
   }
 }
