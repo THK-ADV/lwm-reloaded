@@ -3,8 +3,20 @@ package modules.schedule
 import controllers.crud.schedule.ScheduleCRUDController
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
-import services.{TimetableService, TimetableServiceLike}
+import services.{ScheduleService, ScheduleServiceLike, TimetableService, TimetableServiceLike}
 import utils.LwmApplication
+
+trait ScheduleServiceManagementModule {
+  self: LwmApplication with SemanticRepositoryModule =>
+
+  def scheduleService: ScheduleServiceLike
+}
+
+trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
+  self: LwmApplication with SemanticRepositoryModule =>
+
+  lazy val scheduleService: ScheduleServiceLike = new ScheduleService(repository)
+}
 
 trait TimetableServiceManagementModule {
   self: LwmApplication =>

@@ -5,6 +5,7 @@ import java.util.UUID
 import models.Group
 import models.schedule.{ScheduleEntry, Schedule, Timetable}
 import org.joda.time.DateTime
+import store.SesameRepository
 import utils.Evaluation._
 import utils.TypeClasses._
 import scala.language.higherKinds
@@ -46,7 +47,7 @@ trait ScheduleServiceLike {
   def evaluate(schedule: ScheduleG, appointments: Int): Evaluation
 }
 
-class ScheduleService extends ScheduleServiceLike { self =>
+class ScheduleService(private val repository: SesameRepository) extends ScheduleServiceLike { self =>
 
   implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)

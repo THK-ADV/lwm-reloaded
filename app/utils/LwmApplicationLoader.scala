@@ -67,7 +67,8 @@ with LabworkApplicationManagementModule
 with LabworkApplicationServiceModule
 with ScheduleManagementModule
 with TimetableManagementModule
-with TimetableServiceManagementModule {
+with TimetableServiceManagementModule
+with ScheduleServiceManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -128,3 +129,4 @@ with DefaultLabworkApplicationServiceModule
 with DefaultScheduleManagementModuleImpl
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableServiceManagementModule
+with DefaultScheduleServiceManagementModule

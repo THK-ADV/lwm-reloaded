@@ -8,10 +8,13 @@ import models.schedule.{TimetableEntry, Timetable}
 import models.users.Employee
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
+import org.scalatest.mock.MockitoSugar
+import store.SesameRepository
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
-  val scheduleService = new ScheduleService()
+  val repo = MockitoSugar.mock[SesameRepository]
+  val scheduleService = new ScheduleService(repo)
 
   implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
@@ -261,6 +264,33 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       val rightCount = result._2.entries.count(c => right.entries.contains(c))
       rightCount != right.entries.size && rightCount < right.entries.size && rightCount > 0 && rightCount > right.entries.size / 2 shouldBe true
+    }
+
+    "evaluate an given schedule" in {
+      val entries = Set(
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
+        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
+      )
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+
+      val AID = Group.randomUUID
+      val BID = Group.randomUUID
+      val CID = Group.randomUUID
+      val groups = Set(
+        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), AID),
+        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), BID),
+        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), CID)
+      )
+
+      val schedule = scheduleService.populate(1, timetable, groups).head
+      val result = scheduleService.evaluate(schedule, 2)
+
+      println(result)
+      true shouldBe true
     }
   }
 }
