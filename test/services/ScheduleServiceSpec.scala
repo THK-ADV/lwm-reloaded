@@ -287,7 +287,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val schedule = scheduleService.populate(1, timetable, groups).head
-      val result = scheduleService.evaluate(schedule, 2)
+      val result = scheduleService.evaluate(schedule, 2, Vector())
 
       println(result)
       true shouldBe true

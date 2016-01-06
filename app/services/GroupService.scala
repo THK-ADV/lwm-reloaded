@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 import java.util.concurrent.Executors
-
+import utils.Ops.MonadInstances._
 import models.Group
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix

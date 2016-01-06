@@ -1,7 +1,8 @@
 package store
 
 import java.io.File
-
+import utils.Ops._
+import utils.Ops.MonadInstances._
 import models.{UniqueEntity, UriGenerator}
 import org.openrdf.repository.RepositoryConnection
 import org.openrdf.repository.sail.SailRepository
@@ -31,6 +32,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
 
+  //TODO: Rebuild with the same datastructure getMany(f: F[_]): F[_]
   def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
 
   // TODO: consider return type
@@ -75,7 +77,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
   override def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Sesame, T]): Try[Vector[T]] = {
     val connection = repo.getConnection
-    import utils.Ops._
 
     val ts = ids.map { uri =>
       val url = makeUri(uri)
@@ -91,7 +92,6 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Sesame, T]): Try[Vector[PointedGraph[Sesame]]] = {
     val connection = repo.getConnection
     val graphs = entities.map (_.toPG).toVector
-    import utils.Ops._
 
     val ts = graphs.map { pointed =>
         rdfStore.appendToGraph(connection, ns, pointed.graph)

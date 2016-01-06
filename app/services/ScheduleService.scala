@@ -1,14 +1,17 @@
 package services
 
 import java.util.UUID
-
-import models.Group
+import utils.Ops._
+import models.{Labwork, Group}
 import models.schedule.{ScheduleEntry, Schedule, Timetable}
 import org.joda.time.DateTime
+import store.Prefixes.LWMPrefix
 import store.SesameRepository
+import store.bind.Bindings
 import utils.Evaluation._
 import utils.TypeClasses._
 import scala.language.higherKinds
+import scala.util.Try
 
 case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group)
 
@@ -44,23 +47,27 @@ trait ScheduleServiceLike {
 
   def crossover(left: ScheduleG, right: ScheduleG): (ScheduleG, ScheduleG)
 
-  def evaluate(schedule: ScheduleG, appointments: Int): Evaluation
+  def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation
+
+  def prepare(labwork: UUID): Try[Option[Vector[ScheduleG]]]
 }
 
 class ScheduleService(private val repository: SesameRepository) extends ScheduleServiceLike { self =>
+
+  import repository.namespace
 
   implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
   }
 
-  def eval: EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, appointments))
+  def eval(all: Vector[ScheduleG], appts: Int): EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, all, appts))
   def mut: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutate(s))
   def mutDest: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutateDestructive(s, e.err.toVector))
   def cross: CrossE[ScheduleG, Conflict, Int] = CrossE.instance[ScheduleG, Conflict, Int] {
     case ((s1, _), (s2, _)) => crossover(s1, s2)
   }
 
-  def evaluate2(schedule: ScheduleG, appointments: Int): utils.Evaluation[Conflict, Int] = {
+  def evaluate2(schedule: ScheduleG, all: Vector[ScheduleG], appointments: Int): utils.Evaluation[Conflict, Int] = {
     def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
       (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
     }
@@ -71,9 +78,8 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
 
     //if it's consistent, then calculate it's proper weight, otherwise give it the maximum possible value
     if (integrity) {
-      // /check entries against each already existing schedule
-      scheduleFor(schedule.labwork)
-        .flatMap(_.entries)
+      // check entries against each already existing schedule
+        all.flatMap(_.entries)
         .map(e => (e, schedule.entries.find(f => collide(e, f))))
         .foldLeft(evaluationV[Conflict, Int](0)) {
           case (eval, (ee, Some(e))) =>
@@ -85,9 +91,6 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
       evaluationV[Conflict, Int](Integer.MAX_VALUE)
     }
   }
-
-  //TODO: Returns the amount of required appointments
-  private def appointments: Int = ???
 
   override def populate(times: Int, timetable: Timetable, groups: Set[Group]): Vector[ScheduleG] = (0 until times).map(_ => populate(timetable, groups)).toVector
 
@@ -197,26 +200,73 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     (ScheduleG(left.labwork, crossed._1.toSet, left.id), ScheduleG(right.labwork, crossed._2.toSet, right.id))
   }
 
-  //TODO: expand to UUID -> Labwork -> SemesterId -> ScheduleG's
-  private def scheduleFor(labwork: UUID): List[ScheduleG] = ???
+  def appointments(labwork: UUID): Try[Option[Int]] = {
+    lazy val bindings = Bindings[repository.Rdf](namespace)
+    import bindings.LabworkBinding._
 
-  //TODO: Schedule for is external dependency, that gets retrieved a priori
-  override def evaluate(schedule: ScheduleG, appointments: Int): Evaluation = {
+    repository.get[Labwork](Labwork.generateUri(labwork)).map(_ map (_.assignmentPlan.numberOfEntries))
+  }
+
+  private def scheduleFor(labwork: UUID): Try[Option[Vector[Schedule]]] = {
+    lazy val bindings = Bindings[repository.Rdf](repository.namespace)
+    lazy val lwm = LWMPrefix[repository.Rdf]
+
+    import store.sparql.select._
+    import store.sparql.select
+    import bindings.ScheduleBinding._
+    import bindings.ScheduleEntryBinding._
+    import TraverseInstances._
+    import MonadInstances.tryM
+
+    lazy val id = Labwork.generateUri(labwork)
+
+    val query = select distinct "schedules" where {
+      ^(s(id), p(lwm.semester), v("semester")) .
+      ^(s(id), p(lwm.course), v("primaryCourse")) .
+      ^(v("primaryCourse"), p(lwm.semester), v("semesterIndex")) .
+      ^(v("schedules"), p(lwm.labwork), v("labwork")) .
+      ^(v("labwork"), p(lwm.semester), v("semester")) .
+      ^(v("labwork"), p(lwm.course), v("course")) .
+      ^(v("course"), p(lwm.semester), v("semesterIndex"))
+    }
+
+      repository.query(query)
+      .map(_("schedules").map(value => Schedule.generateUri(UUID.fromString(value.stringValue()))))
+      .map(repository.getMany[Schedule])
+      .sequenceM
+  }
+
+  private def toScheduleG(schedule: Schedule) = {
+    lazy val bindings = Bindings[repository.Rdf](namespace)
+    import bindings.GroupBinding._
+    import MonadInstances._
+
+    val maybeEntries = sequence(
+      schedule.entries flatMap { entry =>
+         val group = repository.get[Group](Group.generateUri(entry.group)).toOption
+          group.peak(g => ScheduleEntryG(entry.start, entry.end, entry.day, entry.date, entry.room, entry.supervisor, g, entry.id))
+      })
+
+    maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
+  }
+
+  override def prepare(labwork: UUID): Try[Option[Vector[ScheduleG]]] = {
+    import MonadInstances._
+    scheduleFor(labwork).flatPeak(_.map(s => toScheduleG(s)).sequence)
+  }
+
+  override def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation = {
     def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
       (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
     }
 
     // /check entries against each already existing schedule
-    val conflicts = scheduleFor(schedule.labwork).flatMap(_.entries).map(e => (e, schedule.entries.find(f => collide(e, f)))).foldLeft(List.empty[Conflict]) {
+    val conflicts = all.flatMap(_.entries).map(e => (e, schedule.entries.find(f => collide(e, f)))).foldLeft(List.empty[Conflict]) {
       case (list, (ee, Some(e))) =>
         val m = ee.group.members.intersect(e.group.members)
         val c = Conflict(e, m.toVector, e.group)
         list :+ c
     }
-
-    /*conflicts.groupBy(_.group).foldLeft(Evaluation(0, List.empty[Conflict])) {
-      case (e, (group, list)) => Evaluation(e.value + list.size, e.conflicts ::: list)
-    }*/
 
     //check integrity of group-appointment relation
     val integrity = schedule.entries.groupBy(_.group) forall {
