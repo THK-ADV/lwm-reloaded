@@ -49,6 +49,8 @@ trait ScheduleServiceLike {
 
   def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation
 
+  def evaluate2(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): utils.Evaluation[Conflict, Int]
+
   def prepare(labwork: UUID): Try[Option[Vector[ScheduleG]]]
 }
 
@@ -60,14 +62,14 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
   }
 
-  def eval(all: Vector[ScheduleG], appts: Int): EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, all, appts))
+  def eval(all: Vector[ScheduleG], appts: Int): EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, appts, all))
   def mut: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutate(s))
   def mutDest: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutateDestructive(s, e.err.toVector))
   def cross: CrossE[ScheduleG, Conflict, Int] = CrossE.instance[ScheduleG, Conflict, Int] {
     case ((s1, _), (s2, _)) => crossover(s1, s2)
   }
 
-  def evaluate2(schedule: ScheduleG, all: Vector[ScheduleG], appointments: Int): utils.Evaluation[Conflict, Int] = {
+  override def evaluate2(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): utils.Evaluation[Conflict, Int] = {
     def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
       (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
     }
@@ -134,7 +136,7 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     conflicts.foldRight(schedule) {
       case (c, s) =>
         val g = s.entries.map(_.group).toVector.sortBy(_.label).last // TODO: choose another group by time
-      val x = g.members.take(c.member.size).toList
+        val x = g.members.take(c.member.size).toList
 
         val ncg = c.group.members.foldLeft((Set[UUID](), x)) {
           case ((set, xs), problem) if c.member.contains(problem) => (set + xs.head, xs.tail)
@@ -223,17 +225,17 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     val query = select distinct "schedules" where {
       ^(s(id), p(lwm.semester), v("semester")) .
       ^(s(id), p(lwm.course), v("primaryCourse")) .
-      ^(v("primaryCourse"), p(lwm.semester), v("semesterIndex")) .
+      ^(v("primaryCourse"), p(lwm.semesterIndex), v("semesterIndex")) .
       ^(v("schedules"), p(lwm.labwork), v("labwork")) .
       ^(v("labwork"), p(lwm.semester), v("semester")) .
       ^(v("labwork"), p(lwm.course), v("course")) .
-      ^(v("course"), p(lwm.semester), v("semesterIndex"))
+      ^(v("course"), p(lwm.semesterIndex), v("semesterIndex"))
     }
-
-      repository.query(query)
-      .map(_("schedules").map(value => Schedule.generateUri(UUID.fromString(value.stringValue()))))
-      .map(repository.getMany[Schedule])
-      .sequenceM
+    println(repository.query(query))
+    repository.query(query)
+    .map(_("schedules").map(value => Schedule.generateUri(UUID.fromString(value.stringValue()))))
+    .map(repository.getMany[Schedule])
+    .sequenceM
   }
 
   private def toScheduleG(schedule: Schedule) = {
@@ -248,6 +250,12 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
       })
 
     maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
+  }
+
+  def toSchedule(schedule: ScheduleG): Schedule = {
+    val entries = schedule.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+
+    Schedule(schedule.labwork, entries, schedule.id)
   }
 
   override def prepare(labwork: UUID): Try[Option[Vector[ScheduleG]]] = {
@@ -273,7 +281,7 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
       case (_, ss) => ss.size == appointments
     }
 
-    val factor = if (integrity) 1000 else 0
+    val factor = if (integrity) 0 else 1000
 
     Evaluation(conflicts.foldRight(factor)(_.member.size + _), conflicts)
   }

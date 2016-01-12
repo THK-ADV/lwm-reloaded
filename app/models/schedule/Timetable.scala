@@ -19,7 +19,7 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: DateTim
 
 case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: DateTime, blacklist: Set[DateTime] = Set.empty[DateTime], buffer: Int = 0)
 
-case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime, date: DateTime, id: UUID) extends UniqueEntity {
+case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, day: DateTime, start: DateTime, end: DateTime, date: DateTime, id: UUID = TimetableEntry.randomUUID) extends UniqueEntity {
 
   // TODO: FIX THIS BLOODY DATETIME COMPARISON
   override def equals(that: scala.Any): Boolean = that match {

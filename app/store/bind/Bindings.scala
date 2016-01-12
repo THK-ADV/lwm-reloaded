@@ -192,8 +192,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
     private val lecturer = property[UUID](lwm.lecturer)
+    private val semesterIndex = property[Int](lwm.semesterIndex)
 
-    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, abbreviation, lecturer, id)(Course.apply, Course.unapply) withClasses classUri
+    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, abbreviation, lecturer, semesterIndex, id)(Course.apply, Course.unapply) withClasses classUri
   }
 
   object DegreeBinding {

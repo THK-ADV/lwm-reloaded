@@ -18,7 +18,7 @@ class CourseBindingSpec extends SesameDbSpec {
   import bindings.CourseBinding._
   import bindings.uuidBinder
 
-  val course = Course("Algorithmen und Programmierung", "AP", User.randomUUID, Course.randomUUID)
+  val course = Course("Algorithmen und Programmierung", "AP", User.randomUUID, 1, Course.randomUUID)
   val courseGraph = (
     URI(Course.generateUri(course)).a(lwm.Course)
       -- lwm.label ->- course.label

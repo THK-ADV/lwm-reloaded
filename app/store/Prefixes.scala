@@ -45,6 +45,7 @@ object Prefixes {
     // Course
     val abbreviation = apply("abbreviation")
     val lecturer = apply("lecturer")
+    val semesterIndex = apply("semesterIndex")
 
     // RefRole, Role, Authority
     val role = apply("role")
