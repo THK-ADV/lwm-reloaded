@@ -15,6 +15,12 @@ object Ops { self =>
       override def point[A](a: => A): Vector[A] = Vector(a)
     }
 
+    implicit val listM: Monad[List] = new Monad[List] {
+      override def point[A](a: => A): List[A] = List(a)
+
+      override def bind[A, B](fa: List[A])(f: (A) => List[B]): List[B] = fa flatMap f
+    }
+
     implicit val optM: Monad[Option] = new Monad[Option] {
       override def bind[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
 
