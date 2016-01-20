@@ -3,15 +3,12 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models._
-import models.schedule.{Schedule, TimetableEntry, Timetable}
+import models.{Room, Labwork, Degree, Group, Semester, Course, AssignmentPlan, AssignmentEntry}
+import models.schedule.{TimetableEntry, Timetable}
 import models.users.{Student, Employee}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
-import store.Prefixes.LWMPrefix
-import store.sparql.select
-import store.sparql.select._
 import store.{Namespace, SesameRepository}
 import store.bind.Bindings
 
@@ -20,16 +17,14 @@ import scala.util.{Failure, Success}
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
+  import ScheduleG.dateOrd
+
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
   val repo = SesameRepository(ns)
   import repo._
   val bindings = Bindings(ns)
 
   val scheduleService = new ScheduleService(repo)
-
-  implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
-    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
-  }
 
   "A ScheduleService " should {
 
@@ -589,7 +584,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       repo.addMany(Vector(ap1, ma1))
       repo.add[Semester](semester1)
       repo.addMany(Vector(ap1Prak, ma1Prak))
-      repo.addMany(s.flatMap(_.entries.map(_.group)))
+      repo.addMany(ap.entries.map(_.group))
       repo.add(scheduleService.toSchedule(ap))
 
       val app = scheduleService.appointments(ma.labwork).get.get

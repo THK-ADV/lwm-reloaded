@@ -32,6 +32,12 @@ object Ops { self =>
 
       override def point[A](a: => A): Try[A] = Try(a)
     }
+
+    implicit val intM: Monoid[Int] = new Monoid[Int] {
+      override def append(f1: Int, f2: => Int): Int = f1 + f2
+
+      override def zero: Int = 0
+    }
   }
 
   object TraverseInstances {

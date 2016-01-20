@@ -11,12 +11,11 @@ import scala.util.{Failure, Success}
 
 trait SessionHandlingService {
 
-  def   newSession(user: String, password: String): Future[Session]
+  def newSession(user: String, password: String): Future[Session]
 
   def isValid(iD: UUID): Future[Boolean]
 
   def deleteSession(id: UUID): Future[Boolean]
-
 }
 
 class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {

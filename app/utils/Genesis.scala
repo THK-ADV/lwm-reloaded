@@ -19,7 +19,7 @@ object Genesis {
                                 c: CrossE[A, E, V],
                                 o: Ordering[V]) = {
     lazy val size = pop.size
-    (lift[A, E, V] _ andThen applyNEagerly(span)(eval andThen take(n) andThen repl(size)))(pop).elem
+    (lift[A, E, V] _ andThen applyNEagerly(span)(eval andThen take(n) andThen repl(size)))(pop)
   }
 
   def byCriteria[A, E, V: Monoid](pop: Vector[A], span: Int)
@@ -31,7 +31,7 @@ object Genesis {
                                   c: CrossE[A, E, V],
                                   o: Ordering[V]) = {
     lazy val size = pop.size
-    (lift[A, E, V] _ andThen applyNEagerly(span)(eval andThen takeWith(p) andThen repl(size)))(pop).elem
+    (lift[A, E, V] _ andThen applyNEagerly(span)(eval andThen takeWith(p) andThen repl(size)))(pop)
   }
 
   def measureByTaking[A, E, V: Monoid](pop: Vector[A], span: Int, n: Int = 10)
@@ -43,7 +43,7 @@ object Genesis {
                                        o: Ordering[V]) = {
     lazy val size = pop.size
     (lift[A, E, V] _ andThen applyNMeasure(span)(eval andThen take(n) andThen repl(size)))(pop) match {
-      case (gen, int) => (gen.elem, int)
+      case (gen, int) => (gen, int)
     }
 
   }
@@ -58,7 +58,7 @@ object Genesis {
                                          o: Ordering[V]) = {
     lazy val size = pop.size
     (lift[A, E, V] _ andThen applyNMeasure(span)(eval andThen takeWith(p) andThen repl(size)))(pop) match {
-      case (gen, int) => (gen.elem, int)
+      case (gen, int) => (gen, int)
     }
   }
 

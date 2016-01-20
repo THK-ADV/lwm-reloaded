@@ -8,7 +8,6 @@ import org.joda.time.DateTime
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
-import utils.Evaluation._
 import utils.TypeClasses._
 import scala.language.higherKinds
 import scala.util.Try
@@ -89,28 +88,8 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
 
   // TODO: get rid of that
   override def evaluate2(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): utils.Evaluation[Conflict, Int] = {
-    def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-      (left.date.isEqual(right.date) && left.day.isEqual(right.day)) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
-    }
-
-    val integrity = schedule.entries.groupBy(_.group) forall {
-      case (_, ss) => ss.size == appointments
-    }
-
-    //if it's consistent, then calculate it's proper weight, otherwise give it the maximum possible value
-    if (integrity) {
-      // check entries against each already existing schedule
-        all.flatMap(_.entries)
-        .map(e => (e, schedule.entries.find(f => collide(e, f))))
-        .foldLeft(evaluationV[Conflict, Int](0)) {
-          case (eval, (ee, Some(e))) =>
-            val m = ee.group.members.intersect(e.group.members)
-            val c = Conflict(e, m.toVector, e.group)
-            eval.map(_ + m.size).mapErrWhole(_ :+ c)
-        }
-    } else {
-      evaluationV[Conflict, Int](Integer.MAX_VALUE)
-    }
+    val ev = evaluate(schedule, appointments, all)
+    utils.Evaluation.evaluation(ev.value, ev.conflicts)
   }
 
   override def populate(times: Int, timetable: Timetable, groups: Set[Group]): Vector[ScheduleG] = (0 until times).map(_ => populate(timetable, groups)).toVector
@@ -293,7 +272,8 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     }
 
     // /check entries against each already existing schedule
-    val conflicts = all.flatMap(_.entries).map(e => (e, schedule.entries.find(f => collide(e, f)).map(_.group.members.intersect(e.group.members)))).foldLeft(List.empty[Conflict]) {
+    val conflicts = all.flatMap(_.entries)
+      .map(e => (e, schedule.entries.find(f => collide(e, f)).map(_.group.members.intersect(e.group.members)))).foldLeft(List.empty[Conflict]) {
       case (list, (ee, Some(m))) if m.nonEmpty =>
         val c = Conflict(ee, m.toVector, ee.group)
         list :+ c
@@ -307,7 +287,7 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
 
     val factor = if (integrity) 0 else 1000
 
-    Evaluation(conflicts.foldRight(factor)(_.member.size + _), conflicts) // TODO: consider adding entries too. e.g. c 1 value 2 but also c2 value 2, always 2 guys on 2 different days
+    Evaluation(conflicts.foldRight(factor)(_.member.size + _) * conflicts.size, conflicts)
   }
 
   override def crossover(left: ScheduleG, right: ScheduleG, conflicts: Vector[Conflict]): (ScheduleG, ScheduleG) = (left, right)
