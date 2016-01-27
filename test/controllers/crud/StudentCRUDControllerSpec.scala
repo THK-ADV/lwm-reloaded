@@ -19,6 +19,8 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
   override val controller: AbstractCRUDController[StudentProtocol, Student] = new StudentCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = entityToPass
+
+    override protected def duplicate(input: StudentProtocol, output: Student): Boolean = true
   }
 
   override val entityToFail: Student = Student("system id to fail", "surname to fail", "forename to fail", "email to fail", "registration id to fail", Degree.randomUUID, Student.randomUUID)
@@ -28,12 +30,12 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
   override val mimeType: LwmMimeType = LwmMimeType.studentV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "systemId" -> "systemId input",
-    "lastname" -> "lastname input",
-    "firstname" -> "firstname input",
-    "email" -> "email input",
-    "registrationId" -> "registrationId input",
-    "enrollment" -> Degree.randomUUID.toString
+    "systemId" -> entityToPass.systemId,
+    "lastname" -> entityToPass.lastname,
+    "firstname" -> entityToPass.firstname,
+    "email" -> entityToPass.email,
+    "registrationId" -> entityToPass.registrationId,
+    "enrollment" -> entityToPass.enrollment
   )
 
   import bindings.StudentBinding._

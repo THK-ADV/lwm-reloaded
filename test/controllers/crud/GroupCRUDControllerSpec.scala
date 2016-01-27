@@ -29,12 +29,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = entityToPass
+
+    override protected def duplicate(input: GroupProtocol, output: Group): Boolean = true
   }
   override val entityToFail: Group = Group("label to fail", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
   override implicit val jsonWrites: Writes[Group] = Group.writes
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
   override val inputJson: JsValue = Json.obj(
-    "label" -> "label input",
+    "label" -> entityToPass.label,
     "labwork" -> entityToPass.labwork,
     "members" -> entityToPass.members
   )

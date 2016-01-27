@@ -34,4 +34,6 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
    override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Result = ???
 
    override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
+
+   override protected def duplicate(input: RoomProtocol, output: Room): Boolean = input.label == output.label
 }

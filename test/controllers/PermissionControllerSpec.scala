@@ -38,7 +38,7 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(permissions).toString
+      contentAsJson(result) shouldBe Json.toJson(permissions)
     }
 
     "return the expected content type" in {

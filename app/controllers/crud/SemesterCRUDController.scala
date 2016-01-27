@@ -112,4 +112,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case _ => PartialSecureBlock(Set(prime))
   }
 
+  override protected def duplicate(input: SemesterProtocol, output: Semester): Boolean = {
+    input.name == output.name && input.startDate == output.startDate && input.endDate == output.endDate
+  }
 }

@@ -18,6 +18,8 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
 
   override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = entityToPass
+
+    override protected def duplicate(input: AuthorityProtocol, output: Authority): Boolean = true
   }
 
   override val entityToFail: Authority = Authority(
@@ -42,11 +44,7 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
   override val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "user" -> User.randomUUID,
-    "refRoles" -> Json.arr(Json.obj(
-      "module" -> Some(Course.randomUUID.toString),
-      "role" -> Role.randomUUID.toString,
-      "id" -> RefRole.randomUUID.toString
-    ))
+    "user" -> entityToPass.user,
+    "refRoles" -> entityToPass.refRoles
   )
 }

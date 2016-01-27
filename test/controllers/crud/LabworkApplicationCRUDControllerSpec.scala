@@ -30,23 +30,21 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   import ops._
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
-  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(
-    repository,
-    namespace,
-    roleService
-  ) {
+  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, namespace, roleService) {
+
     override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = entityToPass
+
+    override protected def duplicate(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = true
   }
+
   override val entityToFail: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
   override val entityToPass: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
   override val inputJson: JsValue = Json.obj(
-    "labwork" -> Labwork.randomUUID.toString,
-    "applicant" -> Student.randomUUID.toString,
-    "friends" -> Json.arr(
-      Student.randomUUID.toString,
-      Student.randomUUID.toString)
+    "labwork" -> entityToPass.labwork,
+    "applicant" -> entityToPass.applicant,
+    "friends" -> entityToPass.friends
   )
 
   override def entityTypeName: String = "labworkApplication"

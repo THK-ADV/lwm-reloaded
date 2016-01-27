@@ -32,9 +32,9 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "label" -> "label input",
-    "abbreviation" -> "abbreviation input",
-    "lecturer" -> User.randomUUID.toString
+    "label" -> entityToPass.label,
+    "abbreviation" -> entityToPass.abbreviation,
+    "lecturer" -> entityToPass.lecturer
   )
 
   override def entityTypeName: String = "course"

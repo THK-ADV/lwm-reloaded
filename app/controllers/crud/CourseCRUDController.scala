@@ -62,4 +62,8 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
       ))
     }
   }
+
+  override protected def duplicate(input: CourseProtocol, output: Course): Boolean = {
+    input.label == output.label && input.abbreviation == output.abbreviation
+  }
 }

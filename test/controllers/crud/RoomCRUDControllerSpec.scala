@@ -27,7 +27,7 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
   override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "label" -> "label input"
+    "label" -> entityToPass.label
   )
 
   import bindings.RoomBinding._

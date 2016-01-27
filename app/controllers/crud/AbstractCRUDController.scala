@@ -47,6 +47,8 @@ trait Filterable[O] {
 
 trait ModelConverter[I, O] {
   protected def fromInput(input: I, id: Option[UUID] = None): O
+
+  protected def duplicate(input: I, output: O): Boolean = false
 }
 
 trait ContentTyped {
@@ -147,10 +149,28 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         ))
       },
       success => {
-        val model = fromInput(success)
-        repository.add[O](model) match {
-          case Success(graph) =>
-            Created(Json.toJson(model)).as(mimeType)
+        repository.get[O] match { // TODO consider finding existing elements by dedicated query instead of getting all and filtering after
+          case Success(s) =>
+              s.find(e => duplicate(success, e)) match {
+                case Some(ss) =>
+                  Accepted(Json.obj(
+                    "status" -> "KO",
+                    "message" -> s"model already exists",
+                    "id" -> ss.id
+                  ))
+                case None =>
+                  val model = fromInput(success)
+
+                  repository.add[O](model) match {
+                    case Success(graph) =>
+                      Created(Json.toJson(model)).as(mimeType)
+                    case Failure(e) =>
+                      InternalServerError(Json.obj(
+                        "status" -> "KO",
+                        "errors" -> e.getMessage
+                      ))
+                    }
+                  }
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -199,7 +219,6 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         ))
     }
   }
-
 
   def update(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
     val uri = s"$namespace${request.uri}"
