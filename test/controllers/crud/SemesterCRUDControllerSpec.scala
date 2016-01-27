@@ -43,10 +43,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
   override def entityTypeName: String = "semester"
 
   override val inputJson: JsValue = Json.obj(
-    "name" -> "name input",
-    "startDate" -> "startDate input",
-    "endDate" -> "endDate input",
-    "examPeriod" -> "examPeriod input"
+    "name" -> entityToPass.name,
+    "startDate" -> entityToPass.startDate,
+    "endDate" -> entityToPass.endDate,
+    "examPeriod" -> entityToPass.examPeriod
   )
 
   import bindings.SemesterBinding._

@@ -34,4 +34,6 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
+
+  override protected def duplicate(input: DegreeProtocol, output: Degree): Boolean = input.label == output.label
 }

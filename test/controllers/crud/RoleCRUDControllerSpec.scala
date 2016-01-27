@@ -17,7 +17,10 @@ class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Ro
   override def entityTypeName: String = "role"
 
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleCRUDController(repository, namespace, roleService) {
+
     override protected def fromInput(input: RoleProtocol, id: Option[UUID]): Role = entityToPass
+
+    override protected def duplicate(input: RoleProtocol, output: Role): Boolean = true
   }
 
   override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)
@@ -31,9 +34,7 @@ class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Ro
   override val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "name" -> "role",
-    "permissions" -> Json.arr(Json.obj(
-      "value" -> "perm"
-    ))
+    "name" -> entityToPass.name,
+    "permissions" -> entityToPass.permissions
   )
 }

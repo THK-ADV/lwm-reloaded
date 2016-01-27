@@ -61,6 +61,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
+      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
       val request = FakeRequest(
         POST,
@@ -73,6 +74,26 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       status(result) shouldBe CREATED
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
+    }
+
+    s"handle this model issue when creating a new $entityTypeName which already exists" in {
+      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass)))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}s",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
+      )
+      val result = controller.create()(request)
+
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
+      )
     }
 
     s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
@@ -91,8 +112,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"not create a new $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant create $entityTypeName for some reason"
       when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName}s",
@@ -103,7 +124,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"fail while validating a $entityTypeName with invalid json data" in {
@@ -126,7 +150,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"not get a single $entityTypeName when its not found" in {
       when(repository.get[O](anyString())(anyObject())).thenReturn(Success(None))
 
-      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
       val request = FakeRequest(
         GET,
         s"/${entityTypeName}s/${entityToFail.id}"
@@ -135,14 +158,16 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     s"not get a single $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
       when(repository.get[O](anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         GET,
         s"/${entityTypeName}s/${entityToFail.id}"
@@ -151,7 +176,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"successfully get a single $entityTypeName" in {
@@ -165,7 +193,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(entityToPass).toString()
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
     s"successfully get all ${fgrammar(entityTypeName)}" in {
@@ -180,14 +208,13 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(allEntities).toString()
+      contentAsJson(result) shouldBe Json.toJson(allEntities)
     }
 
     s"not get all ${fgrammar(entityTypeName)} when there is an exception" in {
       val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         GET,
         s"/${entityTypeName}s"
@@ -196,7 +223,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"successfully delete an existing $entityTypeName" in {
@@ -217,7 +247,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
       when(repository.delete(anyString())).thenReturn(Failure(new Exception(errorMessage)))
 
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         DELETE,
         s"/${entityTypeName}s/${entityToFail.id}"
@@ -226,7 +255,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"successfully update an existing $entityTypeName" in {
@@ -249,7 +281,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val errorMessage = s"Oops, cant update the desired $entityTypeName for some reason"
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName}s/${entityToFail.id}",
@@ -260,13 +291,15 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"not update an existing $entityTypeName when its not found" in {
       when(repository.get[O](anyString())(anyObject())).thenReturn(Success(None))
 
-      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
       val request = FakeRequest(
         POST,
         s"/${entityTypeName}s/${entityToPass.id}",
@@ -277,7 +310,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     s"not update an existing $entityTypeName with invalid json data" in {
@@ -309,6 +345,14 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       status(result) shouldBe NO_CONTENT
       contentType(result) shouldBe Some[String](mimeType)
       contentAsString(result) shouldBe empty
+    }
+  }
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+
+    repository.withConnection { conn =>
+      repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }
 }

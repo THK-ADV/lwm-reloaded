@@ -27,7 +27,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
   override def entityTypeName: String = "degree"
 
   override val inputJson: JsValue = Json.obj(
-    "label" -> "label input"
+    "label" -> entityToPass.label
   )
 
   import bindings.DegreeBinding._

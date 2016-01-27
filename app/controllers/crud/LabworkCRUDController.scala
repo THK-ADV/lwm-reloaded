@@ -67,4 +67,8 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
         ))
     }
   }
+
+  override protected def duplicate(input: LabworkProtocol, output: Labwork): Boolean = {
+    input.semester == output.semester && input.course == output.course && input.degree == output.degree
+  }
 }

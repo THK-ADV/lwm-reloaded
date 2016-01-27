@@ -18,6 +18,8 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
   override val controller: AbstractCRUDController[EmployeeProtocol, Employee] = new EmployeeCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = entityToPass
+
+    override protected def duplicate(input: EmployeeProtocol, output: Employee): Boolean = true
   }
 
   override val entityToFail: Employee = Employee("system id to fail", "surname to fail", "forename to fail", "email to fail", Employee.randomUUID)
@@ -27,10 +29,10 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
   override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
 
   override val inputJson: JsValue = Json.obj(
-      "systemId" -> "systemId input",
-      "lastname" -> "lastname input",
-      "firstname" -> "firstname input",
-      "email" -> "email input"
+      "systemId" -> entityToPass.systemId,
+      "lastname" -> entityToPass.lastname,
+      "firstname" -> entityToPass.firstname,
+      "email" -> entityToPass.email
     )
 
   import ops._

@@ -27,6 +27,8 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = entityToPass
+
+    override protected def duplicate(input: RefRoleProtocol, output: RefRole): Boolean = true
   }
 
   override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
@@ -40,7 +42,7 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
-    "module" -> Some(Course.randomUUID.toString),
-    "role" -> Role.randomUUID
+    "module" -> entityToPass.module,
+    "role" -> entityToPass.role
   )
 }

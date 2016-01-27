@@ -50,22 +50,12 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "label" -> "label input",
-    "description" -> "description input",
-    "semester" -> Semester.randomUUID.toString,
-    "course" -> Course.randomUUID.toString,
-    "degree" -> Degree.randomUUID.toString,
-    "assignmentPlan" -> Json.obj(
-      "numberOfEntries" -> 1,
-      "entries" -> Json.arr(Json.obj(
-        "index" -> 0,
-        "types" -> Json.arr(Json.obj(
-          "value" -> "entry"
-        )),
-        "id" -> AssignmentEntry.randomUUID.toString
-      )),
-      "id" -> AssignmentPlan.randomUUID.toString
-    )
+    "label" -> entityToPass.label,
+    "description" -> entityToPass.description,
+    "semester" -> entityToPass.semester,
+    "course" -> entityToPass.course,
+    "degree" -> entityToPass.degree,
+    "assignmentPlan" -> entityToPass.assignmentPlan
   )
 
   import bindings.LabworkBinding._
