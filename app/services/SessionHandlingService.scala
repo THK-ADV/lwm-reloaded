@@ -22,7 +22,6 @@ trait SessionHandlingService {
   def isValid(iD: UUID): Future[Boolean]
 
   def deleteSession(id: UUID): Future[Boolean]
-
 }
 
 class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
@@ -60,21 +59,17 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, 
       false
   }
 
-
   override def deleteSession(id: UUID): Future[Boolean] = (ref ? SessionRemovalRequest(id)).map {
     case RemovalSuccessful =>
       true
     case RemovalFailure(reason) =>
       false
   }
-
 }
-
 
 object SessionServiceActor {
 
   def props(ldap: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
-
 
   private[services] case class SessionRemovalRequest(id: UUID)
 

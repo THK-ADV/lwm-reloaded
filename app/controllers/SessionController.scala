@@ -65,4 +65,15 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
   def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
+
+  def valid = Action.async { implicit request =>
+    request.session.get(SessionController.sessionId) match {
+      case Some(id) =>
+        sessionRepository.isValid(UUID.fromString(id)).map( result =>
+          if (result) Ok else Unauthorized
+        )
+      case None =>
+        Future.successful(Unauthorized)
+    }
+  }
 }
