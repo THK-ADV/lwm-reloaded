@@ -42,7 +42,6 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
     when(service.deleteSession(validUuid)).thenReturn(Future.successful(true))
     when(service.deleteSession(invalidUuid)).thenReturn(Future.successful(false))
 
-
     override def sessionService: SessionHandlingService = service
   }
 
@@ -53,7 +52,6 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       override def sessionController: SessionController = controller
     }.application
   })
-
 
   "A SessionControllerSpec " should {
     "allow students to log in" in new WithDepsApplication {

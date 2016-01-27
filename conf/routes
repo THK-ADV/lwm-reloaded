@@ -118,6 +118,7 @@ HEAD          /labworkApplications                   controllers.crud.LabworkApp
 
 # Sessions
 POST          /sessions                              controllers.SessionController.login
+GET           /sessions                              controllers.SessionController.valid
 DELETE        /sessions                              controllers.SessionController.logout
 HEAD          /sessions                              controllers.SessionController.header
 
