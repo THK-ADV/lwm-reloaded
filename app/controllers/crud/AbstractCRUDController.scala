@@ -223,42 +223,50 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   def update(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
     val uri = s"$namespace${request.uri}"
 
-    repository.get[O](uri) match {
-      case Success(s) =>
-        s match {
-          case Some(t) =>
-            request.body.validate[I].fold(
-              errors => {
-                BadRequest(Json.obj(
-                  "status" -> "KO",
-                  "errors" -> JsError.toJson(errors)
-                ))
-              },
-              success => {
-                val model = fromInput(success, Some(t.id))
-                repository.update[O, UriGenerator[O]](model) match {
+    request.body.validate[I].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => {
+        repository.get[O](uri) match {
+          case Success(s) =>
+            s match {
+              case Some(ss) =>
+                val existingModel = fromInput(success, Some(ss.id))
+
+                repository.update[O, UriGenerator[O]](existingModel) match {
                   case Success(graph) =>
-                    Ok(Json.toJson(model)).as(mimeType)
+                    Ok(Json.toJson(existingModel)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
                       "errors" -> e.getMessage
                     ))
                 }
-              }
-            )
-          case None =>
-            NotFound(Json.obj(
+              case None => // TODO consider calling create function instead of reimplementing
+                val newModel = fromInput(success)
+
+                repository.add[O](newModel) match {
+                  case Success(graph) =>
+                    Created(Json.toJson(newModel)).as(mimeType)
+                  case Failure(e) =>
+                    InternalServerError(Json.obj(
+                      "status" -> "KO",
+                      "errors" -> e.getMessage
+                    ))
+                }
+            }
+          case Failure(e) =>
+            InternalServerError(Json.obj(
               "status" -> "KO",
-              "message" -> "No such element..."
+              "errors" -> e.getMessage
             ))
         }
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
+      }
+    )
   }
 
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>

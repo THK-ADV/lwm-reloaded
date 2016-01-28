@@ -86,7 +86,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(second)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(second))
     }
 
     "return all corresponding labworks for a given course" in {
@@ -111,12 +111,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(second, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(second, fourth))
     }
 
     "not return labworks for a course when there is no match" in {
-      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
+      val course = Course("label", "abbreviation", Employee.randomUUID, Course.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -137,12 +136,14 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "not return labworks when there is an invalid query attribute" in {
-      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
-      val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
+      val course = Course("label", "abbreviation", Employee.randomUUID, Course.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -163,12 +164,14 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "Unknown attribute"
+      )
     }
 
     "not return labworks when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
-      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -189,11 +192,14 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Invalid UUID string: $invalidParameter"
+      )
     }
 
     "return the corresponding labwork for a given degree" in {
-      val degree = Degree("label", Degree.randomUUID)
+      val degree = Degree("label", "description", Degree.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id, plan, Labwork.randomUUID)
@@ -214,11 +220,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first))
     }
 
     "return all corresponding labworks for a given degree" in {
-      val degree = Degree("label", Degree.randomUUID)
+      val degree = Degree("label", "description", Degree.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id, plan, Labwork.randomUUID)
@@ -239,12 +245,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first, fourth))
     }
 
     "not return labworks for a degree when there is no match" in {
-      val degree = Degree("label", Degree.randomUUID)
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
+      val degree = Degree("label", "description", Degree.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -265,7 +270,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "return the corresponding labwork for a given semester" in {
@@ -290,7 +298,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
     }
 
     "return all corresponding labworks for a given semester" in {
@@ -315,12 +323,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(third, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(third, fourth))
     }
 
     "not return labworks for a semester when there is no match" in {
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
@@ -341,12 +348,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "return all corresponding labworks for a given course and degree" in {
-      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
-      val degree = Degree("label", Degree.randomUUID)
+      val course = Course("label", "abbreviation", Employee.randomUUID, Course.randomUUID)
+      val degree = Degree("label", "description", Degree.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, degree.id, plan, Labwork.randomUUID)
@@ -367,11 +377,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first, third))
     }
 
     "return all corresponding labworks for a given course and semester" in {
-      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
+      val course = Course("label", "abbreviation", Employee.randomUUID, Course.randomUUID)
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -393,11 +403,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(second, third)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(second, third))
     }
 
     "return all corresponding labworks for a given degree and semester" in {
-      val degree = Degree("label", Degree.randomUUID)
+      val degree = Degree("label", "description", Degree.randomUUID)
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -419,12 +429,12 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, second, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first, second, fourth))
     }
 
     "return all corresponding labworks for a given degree, course and semester" in {
-      val course = Course("label", "", Employee.randomUUID, Course.randomUUID)
-      val degree = Degree("label", Degree.randomUUID)
+      val course = Course("label", "abbreviation", Employee.randomUUID, Course.randomUUID)
+      val degree = Degree("label", "description", Degree.randomUUID)
       val semester = Semester("name", "start date", "end date", "exam period", Semester.randomUUID)
 
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")), AssignmentEntry.randomUUID)), AssignmentPlan.randomUUID)
@@ -446,7 +456,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first, fourth))
     }
   }
 }

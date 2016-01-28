@@ -23,7 +23,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.EmployeeBinding._
     import bindings.AuthorityBinding._
 
-    def roomgen(n: Int) = Stream.continually(Room(s"R ${nextInt(3)}.${nextInt(9)}${nextInt(9)}${nextInt(9)}")).take(n) ++ List(Room("H32-LC"), Room("H32-BG"), Room("H32-HA"))
+    def roomgen(n: Int) = Stream.continually(Room(s"R ${nextInt(3)}.${nextInt(9)}${nextInt(9)}${nextInt(9)}", "Desc")).take(n) ++ List(Room("H32-LC", "H32-LC Desc"), Room("H32-BG", "H32-BG Desc"), Room("H32-HA", "H32-HA Desc"))
 
     val rooms = roomgen(10).toList.map(repository.add[Room])
     val roles = List(admin, student, employee, user).map(repository.add[Role])

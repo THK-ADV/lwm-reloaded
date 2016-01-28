@@ -55,13 +55,12 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
-  "A SemesterCRUDController " should {
+  "A SemesterCRUDController also" should {
 
     "successfully return all semesters for a year" in {
-
-      val semesterWithDate = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", DateTime.now.toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate)
-      val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
+      val year = DateTime.now.getYear.toString
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
 
@@ -74,40 +73,39 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(entitiesForYear).toString()
+      contentAsJson(result) shouldBe Json.toJson(entitiesForYear)
     }
-    "successfully return all semesters for many years" in {
-      val semesterIn2015 = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2016 = Semester("name to pass", DateTime.now().plusYears(1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2017 = Semester("name to pass", DateTime.now().plusYears(2).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2018 = Semester("name to pass", DateTime.now().plusYears(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
 
-      val entitiesForYear = Set(semesterIn2015, semesterIn2016, semesterIn2017, semesterIn2018)
-      val year2015 = new DateTime(2015, 1, 1, 1, 1).getYear.toString
-      val year2017 = new DateTime(2017, 1, 1, 1, 1).getYear.toString
+    "successfully return all semesters for many years" in {
+      val first = Semester("name to pass", DateTime.now.toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val second = Semester("name to pass", DateTime.now.plusYears(1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val third = Semester("name to pass", DateTime.now.plusYears(2).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val fourth = Semester("name to pass", DateTime.now.plusYears(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+
+      val entitiesForYear = Set(first, second, third, fourth)
+      val some = DateTime.parse(first.startDate).getYear.toString
+      val other = DateTime.parse(third.startDate).getYear.toString
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?year=$year2015,$year2017"
+        s"/${entityTypeName.toLowerCase}s?year=$some,$other"
       )
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Seq(semesterIn2015, semesterIn2017)).toString()
+      contentAsJson(result) shouldBe Json.toJson(Seq(first, third))
     }
 
     "not return semesters for a year when there is no match" in {
-      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", DateTime.now.minusYears(1).getYear.toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val anotherSemesterWithDate = Semester("name to pass", DateTime.now.minusYears(2).getYear.toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
-      val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
+      val year = DateTime.now.getYear.toString
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
-
-      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
 
       val request = FakeRequest(
         GET,
@@ -117,16 +115,17 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "not return semesters for a year when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
+      val year = DateTime.now.getYear.toString
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
 
       val request = FakeRequest(
         GET,
@@ -136,18 +135,19 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> s"$errorMessage"
+      )
     }
 
     "not return semesters when there is an invalid query" in {
-      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", DateTime.now.minusYears(2).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val anotherSemesterWithDate = Semester("name to pass", DateTime.now.minusYears(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
-      val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
+      val year = DateTime.now.getYear.toString
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
-
-      val expectedErrorMessage = s"""{"status":"KO","message":"query attribute not found"}"""
 
       val request = FakeRequest(
         GET,
@@ -157,12 +157,15 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "query attribute not found"
+      )
     }
 
     "successfully return all semesters for a specific period" in {
-      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInWS = Semester("name to pass", DateTime.now.withMonthOfYear(10).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", DateTime.now.withMonthOfYear(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
@@ -178,44 +181,43 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(semesterInSS)).toString()
+      contentAsJson(result) shouldBe Json.toJson(Set(semesterInSS))
     }
 
     "successfully return all semesters in different years for a specific period" in {
-      val semesterInWS2015 = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInWS2017 = Semester("name to pass", new DateTime(2017, 12, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS2015 = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS2018 = Semester("name to pass", new DateTime(2018, 5, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val firstWS = Semester("name to pass", DateTime.now.withMonthOfYear(10).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val secondWS = Semester("name to pass", DateTime.now.plusYears(2).withMonthOfYear(12).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val firstSS = Semester("name to pass", DateTime.now.withMonthOfYear(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val secondSS = Semester("name to pass", DateTime.now.plusYears(3).withMonthOfYear(5).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
 
-      val semesters = Set(semesterInWS2015, semesterInWS2017, semesterInSS2015, semesterInSS2018)
+      val semesters = Set(firstWS, secondWS, firstSS, secondSS)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
 
-      val year2015 = DateTime.parse(semesterInSS2015.startDate).getYear.toString
-      val year2018 = DateTime.parse(semesterInSS2018.startDate).getYear.toString
+      val first = DateTime.parse(firstSS.startDate).getYear.toString
+      val second = DateTime.parse(secondSS.startDate).getYear.toString
       val period = "SS"
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?year=$year2015,$year2018&period=$period"
+        s"/${entityTypeName.toLowerCase}s?year=$first,$second&period=$period"
       )
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(semesterInSS2015, semesterInSS2018)).toString()
+      contentAsJson(result) shouldBe Json.toJson(Set(firstSS, secondSS))
     }
 
     "not return semesters for a specific period when there is not match" in {
-      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInWS = Semester("name to pass", DateTime.now.withMonthOfYear(10).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", DateTime.now.withMonthOfYear(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
 
       val year = DateTime.parse(semesterInSS.startDate).getYear.toString
       val period = "invalid period"
-      val expectedErrorMessage = s"""{"status":"KO","message":"No such element..."}"""
 
       val request = FakeRequest(
         GET,
@@ -225,17 +227,19 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "not return semesters for a specific period when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", DateTime.now.withMonthOfYear(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val year = DateTime.parse(semesterInSS.startDate).getYear.toString
-      val expectedErrorMessage = s"""{"status":"KO","errors":"$errorMessage"}"""
       val period = "SS"
 
       val request = FakeRequest(
@@ -246,7 +250,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
   }
 }

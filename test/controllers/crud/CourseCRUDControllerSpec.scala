@@ -66,7 +66,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(second)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(second))
     }
 
     "return all corresponding courses for a given lecturer" in {
@@ -90,12 +90,11 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first, third))
     }
 
     "not return courses for a lecturer when there is no match" in {
       val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
 
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
@@ -115,12 +114,13 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "not return courses when there is an invalid query attribute" in {
-      val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
-
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
       val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
@@ -139,12 +139,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "Unknown attribute"
+      )
     }
 
     "not return courses when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
-      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
 
       val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
       val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
@@ -164,7 +166,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Invalid UUID string: $invalidParameter"
+      )
     }
   }
 }

@@ -27,8 +27,8 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
    override implicit def writes: Writes[Room] = Room.writes
 
    override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
-      case Some(uuid) => Room(input.label, uuid)
-      case None => Room(input.label, Room.randomUUID)
+      case Some(uuid) => Room(input.label, input.description, uuid)
+      case None => Room(input.label, input.description, Room.randomUUID)
    }
 
    override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Result = ???

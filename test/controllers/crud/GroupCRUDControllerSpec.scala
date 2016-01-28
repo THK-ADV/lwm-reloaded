@@ -78,7 +78,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(second)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(second))
     }
 
     "return all corresponding groups for a given labwork" in {
@@ -103,12 +103,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(third, fourth)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(third, fourth))
     }
 
     "not return groups for a labwork when there is no match" in {
-      val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
-
       val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
 
@@ -130,12 +128,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
 
     "not return groups when there is an invalid query attribute" in {
-      val expectedErrorMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
-
       val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
 
@@ -157,12 +156,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "Unknown attribute"
+      )
     }
 
     "not return groups when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
-      val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
 
       val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
@@ -185,7 +186,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
-      contentAsString(result) shouldBe expectedErrorMessage
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Invalid UUID string: $invalidParameter"
+      )
     }
 
     "create groups given some arbitrary group size" in {
@@ -232,8 +236,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val max = 20
       val applicantsAmount = 100
       val calculatedGroupSize = (min to max).reduce { (l, r) =>
-        if(l % applicantsAmount < r % applicantsAmount) r
-        else l
+        if(l % applicantsAmount < r % applicantsAmount) r else l
       } + 1
 
       val predictedGroupsNumber = (applicantsAmount / calculatedGroupSize) + 1

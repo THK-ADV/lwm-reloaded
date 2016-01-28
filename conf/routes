@@ -6,7 +6,7 @@ GET           /                                      controllers.HomepageControl
 
 # Degree
 POST          /degrees                               controllers.crud.DegreeCRUDController.create()
-POST          /degrees/:id                           controllers.crud.DegreeCRUDController.update(id)
+PUT           /degrees/:id                           controllers.crud.DegreeCRUDController.update(id)
 GET           /degrees                               controllers.crud.DegreeCRUDController.all()
 GET           /degrees/:id                           controllers.crud.DegreeCRUDController.get(id)
 DELETE        /degrees/:id                           controllers.crud.DegreeCRUDController.delete(id)
@@ -14,7 +14,7 @@ HEAD          /degrees                               controllers.crud.DegreeCRUD
 
 # Course
 POST          /courses                               controllers.crud.CourseCRUDController.create()
-POST          /courses/:id                           controllers.crud.CourseCRUDController.update(id)
+PUT           /courses/:id                           controllers.crud.CourseCRUDController.update(id)
 GET           /courses                               controllers.crud.CourseCRUDController.all()
 GET           /courses/:id                           controllers.crud.CourseCRUDController.get(id)
 DELETE        /courses/:id                           controllers.crud.CourseCRUDController.delete(id)
@@ -22,7 +22,7 @@ HEAD          /courses                               controllers.crud.CourseCRUD
 
 # Employee
 POST          /employees                             controllers.crud.EmployeeCRUDController.create()
-POST          /employees/:id                         controllers.crud.EmployeeCRUDController.update(id)
+PUT           /employees/:id                         controllers.crud.EmployeeCRUDController.update(id)
 GET           /employees                             controllers.crud.EmployeeCRUDController.all()
 GET           /employees/:id                         controllers.crud.EmployeeCRUDController.get(id)
 DELETE        /employees/:id                         controllers.crud.EmployeeCRUDController.delete(id)
@@ -38,14 +38,14 @@ HEAD          /groups                                controllers.crud.GroupCRUDC
 # Groups restricted
 POST          /labworks/:labwork/groups/count        controllers.crud.GroupCRUDController.createWithCount(labwork)
 POST          /labworks/:labwork/groups/range        controllers.crud.GroupCRUDController.createWithRange(labwork)
-POST          /labworks/:labwork/groups/:id          controllers.crud.GroupCRUDController.updateFrom(labwork, id)
+PUT           /labworks/:labwork/groups/:id          controllers.crud.GroupCRUDController.updateFrom(labwork, id)
 GET           /labworks/:labwork/groups              controllers.crud.GroupCRUDController.allFrom(labwork)
 GET           /labworks/:labwork/groups/:id          controllers.crud.GroupCRUDController.getFrom(labwork, id)
 DELETE        /labworks/:labwork/groups/:id          controllers.crud.GroupCRUDController.deleteFrom(labwork, id)
 
 # Labwork
 POST          /labworks                              controllers.crud.LabworkCRUDController.create()
-POST          /labworks/:id                          controllers.crud.LabworkCRUDController.update(id)
+PUT           /labworks/:id                          controllers.crud.LabworkCRUDController.update(id)
 GET           /labworks                              controllers.crud.LabworkCRUDController.all()
 GET           /labworks/:id                          controllers.crud.LabworkCRUDController.get(id)
 DELETE        /labworks/:id                          controllers.crud.LabworkCRUDController.delete(id)
@@ -58,7 +58,7 @@ HEAD          /entryTypes                            controllers.EntryTypeContro
 
 # Room
 POST          /rooms                                 controllers.crud.RoomCRUDController.create()
-POST          /rooms/:id                             controllers.crud.RoomCRUDController.update(id)
+PUT           /rooms/:id                             controllers.crud.RoomCRUDController.update(id)
 GET           /rooms                                 controllers.crud.RoomCRUDController.all()
 GET           /rooms/:id                             controllers.crud.RoomCRUDController.get(id)
 DELETE        /rooms/:id                             controllers.crud.RoomCRUDController.delete(id)
@@ -66,7 +66,7 @@ HEAD          /rooms                                 controllers.crud.RoomCRUDCo
 
 # Semester
 POST          /semesters                             controllers.crud.SemesterCRUDController.create()
-POST          /semesters/:id                         controllers.crud.SemesterCRUDController.update(id)
+PUT           /semesters/:id                         controllers.crud.SemesterCRUDController.update(id)
 GET           /semesters                             controllers.crud.SemesterCRUDController.all()
 GET           /semesters/:id                         controllers.crud.SemesterCRUDController.get(id)
 DELETE        /semesters/:id                         controllers.crud.SemesterCRUDController.delete(id)
@@ -74,7 +74,7 @@ HEAD          /semesters                             controllers.crud.SemesterCR
 
 # Student
 POST          /students                              controllers.crud.StudentCRUDController.create()
-POST          /students/:id                          controllers.crud.StudentCRUDController.update(id)
+PUT           /students/:id                          controllers.crud.StudentCRUDController.update(id)
 GET           /students                              controllers.crud.StudentCRUDController.all()
 GET           /students/:id                          controllers.crud.StudentCRUDController.get(id)
 DELETE        /students/:id                          controllers.crud.StudentCRUDController.delete(id)
@@ -82,7 +82,7 @@ HEAD          /students                              controllers.crud.StudentCRU
 
 #Role
 POST          /roles                                 controllers.crud.RoleCRUDController.create()
-POST          /roles/:id                             controllers.crud.RoleCRUDController.update(id)
+PUT           /roles/:id                             controllers.crud.RoleCRUDController.update(id)
 GET           /roles/:id                             controllers.crud.RoleCRUDController.get(id)
 GET           /roles                                 controllers.crud.RoleCRUDController.all()
 DELETE        /roles/:id                             controllers.crud.RoleCRUDController.delete(id)
@@ -90,7 +90,7 @@ HEAD          /roles                                 controllers.crud.RoleCRUDCo
 
 # RefRole
 POST          /refRoles                              controllers.crud.RefRoleCRUDController.create()
-POST          /refRoles/:id                          controllers.crud.RefRoleCRUDController.update(id)
+PUT           /refRoles/:id                          controllers.crud.RefRoleCRUDController.update(id)
 GET           /refRoles                              controllers.crud.RefRoleCRUDController.all()
 GET           /refRoles/:id                          controllers.crud.RefRoleCRUDController.get(id)
 DELETE        /refRoles/:id                          controllers.crud.RefRoleCRUDController.delete(id)
@@ -98,7 +98,7 @@ HEAD          /refRoles                              controllers.crud.RefRoleCRU
 
 # Authority
 POST          /authorities                           controllers.crud.AuthorityCRUDController.create()
-POST          /authorities/:id                       controllers.crud.AuthorityCRUDController.update(id)
+PUT           /authorities/:id                       controllers.crud.AuthorityCRUDController.update(id)
 GET           /authorities                           controllers.crud.AuthorityCRUDController.all()
 GET           /authorities/:id                       controllers.crud.AuthorityCRUDController.get(id)
 DELETE        /authorities/:id                       controllers.crud.AuthorityCRUDController.delete(id)
@@ -110,7 +110,7 @@ HEAD          /permissions                           controllers.PermissionContr
 
 # LabworkApplications
 POST          /labworkApplications                   controllers.crud.LabworkApplicationCRUDController.create()
-POST          /labworkApplications/:id               controllers.crud.LabworkApplicationCRUDController.update(id)
+PUT           /labworkApplications/:id               controllers.crud.LabworkApplicationCRUDController.update(id)
 GET           /labworkApplications                   controllers.crud.LabworkApplicationCRUDController.all()
 GET           /labworkApplications/:id               controllers.crud.LabworkApplicationCRUDController.get(id)
 DELETE        /labworkApplications/:id               controllers.crud.LabworkApplicationCRUDController.delete(id)
