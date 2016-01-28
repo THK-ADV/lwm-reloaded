@@ -1,5 +1,7 @@
 package controllers.crud
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
@@ -231,6 +233,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"successfully delete an existing $entityTypeName" in {
       when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
+
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
         DELETE,
@@ -265,7 +268,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
 
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
@@ -282,7 +285,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/${entityTypeName}s/${entityToFail.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
@@ -297,23 +300,21 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       )
     }
 
-    s"not update an existing $entityTypeName when its not found" in {
-      when(repository.get[O](anyString())(anyObject())).thenReturn(Success(None))
+    s"not update but create a new $entityTypeName when its not found" in {
+      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(None))
+      when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
 
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         inputJson
       )
-      val result = controller.update(entityToPass.id.toString)(request)
+      val result = controller.update(UUID.randomUUID().toString)(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
     s"not update an existing $entityTypeName with invalid json data" in {
@@ -321,7 +322,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       val json = Json.toJson("no valid data")
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/${entityTypeName}s/${entityToPass.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
