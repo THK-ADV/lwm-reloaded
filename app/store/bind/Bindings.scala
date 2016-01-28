@@ -197,8 +197,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val clazz = lwm.Degree
     implicit val classUri = classUrisFor[Degree](clazz)
     private val label = property[String](lwm.label)
+    private val description = property[String](lwm.description)
 
-    implicit val degreeBinder = pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, id)(Degree.apply, Degree.unapply) withClasses classUri
+    implicit val degreeBinder = pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, description, id)(Degree.apply, Degree.unapply) withClasses classUri
   }
 
   object GroupBinding {
@@ -215,8 +216,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val clazz = lwm.Room
     implicit val classUri = classUrisFor[Room](clazz)
     private val label = property[String](lwm.label)
+    private val description = property[String](lwm.description)
 
-    implicit val roomBinder = pgbWithId[Room](room => makeUri(Room.generateUri(room)))(label, id)(Room.apply, Room.unapply) withClasses classUri
+    implicit val roomBinder = pgbWithId[Room](room => makeUri(Room.generateUri(room)))(label, description, id)(Room.apply, Room.unapply) withClasses classUri
   }
 
   object SemesterBinding {

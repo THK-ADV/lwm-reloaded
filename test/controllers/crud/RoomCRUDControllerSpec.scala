@@ -11,7 +11,7 @@ import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room] {
-  override val entityToPass: Room = Room("label to pass", Room.randomUUID)
+  override val entityToPass: Room = Room("label to pass", "description to pass", Room.randomUUID)
 
   override def entityTypeName: String = "room"
 
@@ -20,14 +20,15 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
     override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = entityToPass
   }
 
-  override val entityToFail: Room = Room("label to fail", Room.randomUUID)
+  override val entityToFail: Room = Room("label to fail", "description to fail", Room.randomUUID)
 
   override implicit val jsonWrites: Writes[Room] = Room.writes
 
   override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "label" -> entityToPass.label
+    "label" -> entityToPass.label,
+    "description" -> entityToPass.description
   )
 
   import bindings.RoomBinding._

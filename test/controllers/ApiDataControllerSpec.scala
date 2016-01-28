@@ -26,10 +26,12 @@ class ApiDataControllerSpec extends WordSpec with TestBaseDefinition {
   "An ApiDataController" should {
     "create the appropriate start values" in {
       import bindings.RoleBinding._
+
       val request = FakeRequest(
-      GET,
-      "api/populate"
+        GET,
+        "api/populate"
       )
+
       val result = controller.populate(request)
       val numberOfRoles = repository.get[Role].map(_.size)
 
