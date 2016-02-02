@@ -53,8 +53,6 @@ trait ScheduleConverter {
 
 trait ScheduleServiceLike {
 
-  def applyBlacklist(timetable: Timetable): Timetable
-
   def populate(times: Int, timetable: Timetable, groups: Set[Group]): Vector[ScheduleG]
 
   def mutate(schedule: ScheduleG): ScheduleG
@@ -103,8 +101,6 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
 
     ScheduleG(timetable.labwork, entries, Schedule.randomUUID)
   }
-
-  override def applyBlacklist(timetable: Timetable): Timetable = timetable
 
   override def mutate(schedule: ScheduleG): ScheduleG = {
     import scala.util.Random._
@@ -272,8 +268,7 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     }
 
     // /check entries against each already existing schedule
-    val conflicts = all.flatMap(_.entries)
-      .map(e => (e, schedule.entries.find(f => collide(e, f)).map(_.group.members.intersect(e.group.members)))).foldLeft(List.empty[Conflict]) {
+    val conflicts = all.flatMap(_.entries).map(e => (e, schedule.entries.find(f => collide(e, f)).map(_.group.members.intersect(e.group.members)))).foldLeft(List.empty[Conflict]) {
       case (list, (ee, Some(m))) if m.nonEmpty =>
         val c = Conflict(ee, m.toVector, ee.group)
         list :+ c
