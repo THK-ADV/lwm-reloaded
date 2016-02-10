@@ -1,7 +1,7 @@
-package bind
+package bind.semester
 
 import base.SesameDbSpec
-import models.Semester
+import models.semester.{Blacklist, Semester}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -15,15 +15,17 @@ class SemesterBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](ns)
   import bindings.uuidBinder
-  import bindings.SemesterBinding._
+  import bindings.BlacklistBinding.blacklistBinder
+  import bindings.SemesterBinding.semesterBinder
 
-  val semester = Semester("name", "startDate", "endDate", "examPeriod", Semester.randomUUID)
+  val semester = Semester("name", "startDate", "endDate", "examPeriod", Blacklist.empty, Semester.randomUUID)
   val semesterGraph = (
     URI(Semester.generateUri(semester)).a(lwm.Semester)
       -- lwm.name ->- semester.name
       -- lwm.start ->- semester.startDate
       -- lwm.end ->- semester.endDate
       -- lwm.exam ->- semester.examPeriod
+      -- lwm.blacklist ->- semester.blacklist
       -- lwm.id ->- semester.id
     ).graph
 

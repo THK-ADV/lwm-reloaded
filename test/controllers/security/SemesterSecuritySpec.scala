@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.Semester
 import models.security.{Permissions, RefRole, Authority, Roles}
+import models.semester.{Blacklist, Semester}
 import org.scalatest.WordSpecLike
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
@@ -42,7 +42,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       when(roleService.checkWith((None, Set(Permissions.prime)))(Set(userRefRole))).thenReturn(true)
 
 
-      val semester = Semester("SS", "A", "B", "Exam", Semester.randomUUID)
+      val semester = Semester("SS", "A", "B", "Exam", Blacklist.empty, Semester.randomUUID)
       val json = Json.toJson(semester)
 
       val request = FakeRequest(
@@ -65,7 +65,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
       when(roleService.checkWith((None, Set(Permissions.prime)))(Set(userRefRole))).thenReturn(false)
 
-      val semester = Semester("SS", "A", "B", "Exam", Semester.randomUUID)
+      val semester = Semester("SS", "A", "B", "Exam", Blacklist.empty, Semester.randomUUID)
       val json = Json.toJson(semester)
 
       val request = FakeRequest(

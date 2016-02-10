@@ -1,31 +1,25 @@
-package controllers.crud
+package controllers.crud.semester
 
 import java.util.UUID
 
-import controllers.SessionController
-import models.security.{RefRole, Authority, Roles, Permissions}
-import models.{Semester, SemesterProtocol}
+import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import models.semester.{Blacklist, Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.{Application, ApplicationLoader}
-import play.api.ApplicationLoader.Context
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc._
-import play.api.test.{FakeApplication, WithApplicationLoader, FakeRequest}
+import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.RoleService
-import utils.LWMActions.ContentTypedAction
-import utils.{DefaultLwmApplication, LwmMimeType}
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
 class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester] {
-  override val entityToPass: Semester = Semester("name to pass", "startDate to pass", "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+  override val entityToPass: Semester = Semester("name to pass", "startDate to pass", "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
 
-  override val entityToFail: Semester = Semester("name to fail", "startDate to fail", "endDate to fail", "examPeriod to fail", Semester.randomUUID)
+  override val entityToFail: Semester = Semester("name to fail", "startDate to fail", "endDate to fail", "examPeriod to fail", Blacklist.empty, Semester.randomUUID)
 
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
@@ -49,9 +43,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     "examPeriod" -> "examPeriod input"
   )
 
-  import bindings.SemesterBinding._
   import ops._
-
+  import bindings.SemesterBinding.semesterBinder
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -59,7 +52,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     //TODO: TEST DOES NOT PASS!!!
     "successfully return all semesters for a year" in {
 
-      val semesterWithDate = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate)
       val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
 
@@ -79,10 +72,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     //TODO: TEST DOES NOT PASS!!!
     "successfully return all semesters for many years" in {
-      val semesterIn2015 = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2016 = Semester("name to pass", DateTime.now().plusYears(1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2017 = Semester("name to pass", DateTime.now().plusYears(2).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterIn2018 = Semester("name to pass", DateTime.now().plusYears(3).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterIn2015 = Semester("name to pass", DateTime.now().toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterIn2016 = Semester("name to pass", DateTime.now().plusYears(1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterIn2017 = Semester("name to pass", DateTime.now().plusYears(2).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterIn2018 = Semester("name to pass", DateTime.now().plusYears(3).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
 
       val entitiesForYear = Set(semesterIn2015, semesterIn2016, semesterIn2017, semesterIn2018)
       val year2015 = new DateTime(2015, 1, 1, 1, 1).getYear.toString
@@ -102,8 +95,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "not return semesters for a year when there is no match" in {
-      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
 
@@ -142,8 +135,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "not return semesters when there is an invalid query" in {
-      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterWithDate = Semester("name to pass", new DateTime(2014, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val anotherSemesterWithDate = Semester("name to pass", new DateTime(2013, 1, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = new DateTime(2015, 1, 1, 1, 1).getYear.toString
 
@@ -163,8 +156,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "successfully return all semesters for a specific period" in {
-      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
@@ -184,10 +177,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "successfully return all semesters in different years for a specific period" in {
-      val semesterInWS2015 = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInWS2017 = Semester("name to pass", new DateTime(2017, 12, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS2015 = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS2018 = Semester("name to pass", new DateTime(2018, 5, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInWS2015 = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterInWS2017 = Semester("name to pass", new DateTime(2017, 12, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterInSS2015 = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterInSS2018 = Semester("name to pass", new DateTime(2018, 5, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
 
       val semesters = Set(semesterInWS2015, semesterInWS2017, semesterInSS2015, semesterInSS2018)
 
@@ -209,8 +202,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "not return semesters for a specific period when there is not match" in {
-      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInWS = Semester("name to pass", new DateTime(2015, 10, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
@@ -232,7 +225,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     "not return semesters for a specific period when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Semester.randomUUID)
+      val semesterInSS = Semester("name to pass", new DateTime(2015, 3, 1, 1, 1).toString, "endDate to pass", "examPeriod to pass", Blacklist.empty, Semester.randomUUID)
 
       when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 

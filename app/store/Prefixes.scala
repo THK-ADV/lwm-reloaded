@@ -38,9 +38,13 @@ object Prefixes {
 
     // AssignmentEntry, AssignmentPlan, Timetable, Schedule
     val index = apply("index")
+    val duration = apply("duration")
     val types = apply("types")
     val entries = apply("entries")
     val numberOfEntries = apply("numberOfEntries")
+
+    // Blacklist
+    val dates = apply("dates")
 
     // Course
     val abbreviation = apply("abbreviation")
@@ -90,6 +94,7 @@ object Prefixes {
     val TimetableEntry = apply("TimetableEntry")
     val Schedule = apply("Schedule")
     val ScheduleEntry = apply("ScheduleEntry")
+    val Blacklist = apply("Blacklist")
   }
 
   object LWMPrefix {

@@ -4,6 +4,7 @@ import controllers._
 import modules._
 import modules.schedule._
 import modules.security._
+import modules.semester._
 import modules.store._
 import modules.user.{DefaultEmployeeManagementModuleImpl, EmployeeManagementModule, DefaultStudentManagementModuleImpl, StudentManagementModule}
 import play.api.ApplicationLoader.Context
@@ -68,7 +69,9 @@ with LabworkApplicationServiceModule
 with ScheduleManagementModule
 with TimetableManagementModule
 with TimetableServiceManagementModule
-with ScheduleServiceManagementModule {
+with ScheduleServiceManagementModule
+with BlacklistManagementModule
+with BlacklistServiceManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -91,6 +94,7 @@ with ScheduleServiceManagementModule {
     labworkApplicationController,
     scheduleManagementController,
     timetableManagementController,
+    blacklistManagementController,
     sessionController,
     apiDataController,
     assetsController
@@ -130,3 +134,5 @@ with DefaultScheduleManagementModuleImpl
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableServiceManagementModule
 with DefaultScheduleServiceManagementModule
+with DefaultBlacklistManagementModuleImpl
+with DefaultBlacklistServiceManagementModule

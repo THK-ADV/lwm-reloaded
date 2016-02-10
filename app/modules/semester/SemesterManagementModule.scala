@@ -1,6 +1,6 @@
-package modules
+package modules.semester
 
-import controllers.crud.SemesterCRUDController
+import controllers.crud.semester.SemesterCRUDController
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 

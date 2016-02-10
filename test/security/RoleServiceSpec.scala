@@ -3,7 +3,8 @@ package security
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{AssignmentPlan, Semester, Labwork, Degree}
+import models.semester.Semester
+import models.{AssignmentPlan, Labwork, Degree}
 import models.security._
 import models.users.Student
 import org.scalatest.WordSpec

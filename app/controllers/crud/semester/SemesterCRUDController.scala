@@ -1,9 +1,11 @@
-package controllers.crud
+package controllers.crud.semester
 
 import java.util.UUID
 
+import controllers.crud.AbstractCRUDController
+import models.UriGenerator
 import models.security.Permissions._
-import models.{Semester, SemesterProtocol, UriGenerator}
+import models.semester.{Semester, SemesterProtocol}
 import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -100,9 +102,9 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
     case Some(uuid) =>
-      Semester(input.name, input.startDate, input.endDate, input.examPeriod, uuid)
+      Semester(input.name, input.startDate, input.endDate, input.examPeriod, input.blacklist, uuid)
     case None =>
-      Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
+      Semester(input.name, input.startDate, input.endDate, input.examPeriod, input.blacklist, Semester.randomUUID)
   }
 
 

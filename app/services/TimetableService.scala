@@ -2,29 +2,25 @@ package services
 
 import models.{Group, AssignmentPlan}
 import models.schedule.{TimetableEntry, TimetableProtocol, Timetable}
-import org.joda.time.DateTime
 
 trait TimetableServiceLike {
 
   def extrapolateEntries(timetable: TimetableProtocol, assignmentPlan: AssignmentPlan, groups: Set[Group]): Timetable
-
-  def applyBlacklist(entries: Set[TimetableEntry], localBlacklist: Set[DateTime], globalBlacklist: Set[DateTime]): Set[TimetableEntry]
 }
 
-class TimetableService extends TimetableServiceLike {
+class TimetableService(private val blacklistService: BlacklistServiceLike) extends TimetableServiceLike {
 
   override def extrapolateEntries(timetable: TimetableProtocol, assignmentPlan: AssignmentPlan, groups: Set[Group]): Timetable = {
-    val appointments = assignmentPlan.numberOfEntries * groups.size
     val w = 30 // TODO chose a proper value by calculating semester.end - semester.start in weeks
 
-    extrapolateByWeeks(w, appointments, timetable)
+    extrapolateByWeeks(w, timetable, assignmentPlan, groups)
   }
 
-  private def extrapolateByWeeks(weeks: Int, appointments: Int, timetable: TimetableProtocol): Timetable = {
-    import ScheduleG.dateOrd
+  private def extrapolateByWeeks(weeks: Int, timetable: TimetableProtocol, assignmentPlan: AssignmentPlan, groups: Set[Group]): Timetable = {
+    val appointments = assignmentPlan.numberOfEntries * groups.size
 
     val futureEntries = (0 until weeks).foldLeft((timetable, Set.empty[TimetableEntry])) {
-      case ((t, vec), week) => // TODO increase week counter depending on assignment plan buffers
+      case ((t, vec), week) =>
         val future = t.entries.map {
           case e => TimetableEntry(e.supervisor, e.room, e.degree, e.day.plusWeeks(week), e.start.plusWeeks(week), e.end.plusWeeks(week), e.date.plusWeeks(week), e.id)
         }
@@ -32,21 +28,27 @@ class TimetableService extends TimetableServiceLike {
         (t, vec ++ future)
     }._2
 
-    applyBlacklist(futureEntries, timetable.blacklist, Set.empty[DateTime]) match {
+    val filtered = blacklistService.applyBlacklist(futureEntries, timetable.localBlacklist)
+    takeAppointments(filtered, assignmentPlan, groups.size) match {
       case enough if enough.size >= appointments =>
-        val appEntries = enough.toVector.sortBy(_.start).take(appointments).toSet // toSet destroys ordering, but it works
-        Timetable(timetable.labwork, appEntries.toSet, timetable.start, timetable.blacklist, timetable.buffer, Timetable.randomUUID)
+        Timetable(timetable.labwork, enough, timetable.start, timetable.localBlacklist, Timetable.randomUUID)
       case _ =>
-        extrapolateByWeeks(weeks * 2, appointments, timetable)
+        extrapolateByWeeks(weeks * 2, timetable, assignmentPlan, groups)
     }
   }
 
-  override def applyBlacklist(entries: Set[TimetableEntry], localBlacklist: Set[DateTime], globalBlacklist: Set[DateTime]): Set[TimetableEntry] = {
-    val blacklist = localBlacklist ++ globalBlacklist
+  private def takeAppointments(entries: Set[TimetableEntry], assignmentPlan: AssignmentPlan, groupSize: Int): Set[TimetableEntry] = {
+    import TimetableEntry.dateOrd
 
-    entries.map(e => (e, blacklist.find(_.isEqual(e.date)))).foldLeft(Set.empty[TimetableEntry]) {
-      case (set, (_, Some(_))) => set
-      case (set, (oe, None)) => set + oe
-    }
+    val sorted = entries.toVector.sortBy(_.start)
+    val initial = sorted.take(groupSize)
+    val remaining = sorted.drop(groupSize)
+
+    assignmentPlan.entries.toVector.sortBy(_.index).drop(1).foldLeft(remaining, initial) {
+      case ((e, set), ae) =>
+        val skip = groupSize * (ae.duration - 1)
+        val remain = e.drop(skip)
+        (remain.drop(groupSize), set ++ remain.take(groupSize))
+    }._2.toSet
   }
 }

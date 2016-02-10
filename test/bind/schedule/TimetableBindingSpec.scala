@@ -1,6 +1,7 @@
 package bind.schedule
 
 import base.SesameDbSpec
+import models.semester.Blacklist
 import models.{Room, Labwork, Degree}
 import models.schedule.{TimetableEntry, Timetable}
 import models.users.Employee
@@ -21,17 +22,18 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.jodaDateTimeBinder
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
+  import bindings.BlacklistBinding.blacklistBinder
 
   val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
   val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
-  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), DateTime.now, Set(DateTime.now, DateTime.now), 0, Timetable.randomUUID)
+  val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
+  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), DateTime.now, localBlacklist, Timetable.randomUUID)
   val timetableGraph = (
     URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
       -- lwm.labwork ->- timetable.labwork
       -- lwm.entries ->- timetable.entries
       -- lwm.start ->- timetable.start
-      -- lwm.blacklist ->- timetable.blacklist
-      -- lwm.buffer ->- timetable.buffer
+      -- lwm.blacklist ->- timetable.localBlacklist
       -- lwm.id ->- timetable.id
     ).graph
 

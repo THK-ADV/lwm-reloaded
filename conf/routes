@@ -65,12 +65,12 @@ DELETE        /rooms/:id                                    controllers.crud.Roo
 HEAD          /rooms                                        controllers.crud.RoomCRUDController.header
 
 # Semester
-POST          /semesters                                    controllers.crud.SemesterCRUDController.create()
-POST          /semesters/:id                                controllers.crud.SemesterCRUDController.update(id)
-GET           /semesters                                    controllers.crud.SemesterCRUDController.all()
-GET           /semesters/:id                                controllers.crud.SemesterCRUDController.get(id)
-DELETE        /semesters/:id                                controllers.crud.SemesterCRUDController.delete(id)
-HEAD          /semesters                                    controllers.crud.SemesterCRUDController.header
+POST          /semesters                                    controllers.crud.semester.SemesterCRUDController.create()
+POST          /semesters/:id                                controllers.crud.semester.SemesterCRUDController.update(id)
+GET           /semesters                                    controllers.crud.semester.SemesterCRUDController.all()
+GET           /semesters/:id                                controllers.crud.semester.SemesterCRUDController.get(id)
+DELETE        /semesters/:id                                controllers.crud.semester.SemesterCRUDController.delete(id)
+HEAD          /semesters                                    controllers.crud.semester.SemesterCRUDController.header
 
 # Student
 POST          /students                                     controllers.crud.user.StudentCRUDController.create()
@@ -141,6 +141,14 @@ POST          /labworks/:labwork/timetables/:id             controllers.crud.sch
 GET           /labworks/:labwork/timetables                 controllers.crud.schedule.TimetableCRUDController.allFrom(labwork)
 GET           /labworks/:labwork/timetables/:id             controllers.crud.schedule.TimetableCRUDController.getFrom(labwork, id)
 DELETE        /labworks/:labwork/timetables/:id             controllers.crud.schedule.TimetableCRUDController.deleteFrom(labwork, id)
+
+# Blacklist
+POST          /blacklists                                   controllers.crud.semester.BlacklistCRUDController.create()
+POST          /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.update(id)
+GET           /blacklists                                   controllers.crud.semester.BlacklistCRUDController.all()
+GET           /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.get(id)
+DELETE        /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.delete(id)
+HEAD          /blacklists                                   controllers.crud.semester.BlacklistCRUDController.header
 
 # Sessions
 POST          /sessions                                     controllers.SessionController.login

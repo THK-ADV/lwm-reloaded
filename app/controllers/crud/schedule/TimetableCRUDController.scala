@@ -38,8 +38,8 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
 
   override protected def fromInput(input: TimetableProtocol, id: Option[UUID]): Timetable = id match {
-    case Some(uuid) => Timetable(input.labwork, input.entries, input.start, input.blacklist, input.buffer, uuid)
-    case None => Timetable(input.labwork, input.entries, input.start, input.blacklist, input.buffer, Timetable.randomUUID)
+    case Some(uuid) => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, uuid)
+    case None => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

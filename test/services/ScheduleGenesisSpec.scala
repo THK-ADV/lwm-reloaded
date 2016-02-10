@@ -2,6 +2,7 @@ package services
 
 import base.TestBaseDefinition
 import models.schedule.{Timetable, TimetableEntry}
+import models.semester.{Blacklist, Semester}
 import models.users.{Student, Employee}
 import models._
 import org.joda.time.DateTime
@@ -24,7 +25,7 @@ class ScheduleSpecHelper(private val scheduleService: ScheduleService) {
       case (l, e) =>
         val count = e.size / l.assignmentPlan.numberOfEntries
         val g = shuffle(students).take(count * groupSize).grouped(groupSize).map(s => Group("", l.id, s.toSet, Group.randomUUID)).toSet
-        val t = Timetable(l.id, e, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+        val t = Timetable(l.id, e, DateTime.now, Blacklist.empty, Timetable.randomUUID)
         scheduleService.populate(pop, t, g)
     }
   }
@@ -43,16 +44,16 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
   "A ScheduleGenesisSpec" should {
 
     "generate an initial scheduleG with one population and generation" in {
-      import bindings.AssignmentPlanBinding._
-      import bindings.CourseBinding._
-      import bindings.DegreeBinding._
-      import bindings.SemesterBinding._
-      import bindings.LabworkBinding._
+      import bindings.AssignmentPlanBinding.assignmentPlanBinder
+      import bindings.CourseBinding.courseBinder
+      import bindings.DegreeBinding.degreeBinder
+      import bindings.SemesterBinding.semesterBinder
+      import bindings.LabworkBinding.labworkBinder
 
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "start1", "end1", "exam1", Semester.randomUUID)
+      val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
 
       val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
@@ -131,19 +132,19 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
     }
 
     "generate a further scheduleG with few populations and generations" in {
-      import bindings.AssignmentPlanBinding._
-      import bindings.CourseBinding._
-      import bindings.DegreeBinding._
-      import bindings.SemesterBinding._
-      import bindings.LabworkBinding._
-      import bindings.ScheduleBinding._
-      import bindings.GroupBinding._
+      import bindings.AssignmentPlanBinding.assignmentPlanBinder
+      import bindings.CourseBinding.courseBinder
+      import bindings.DegreeBinding.degreeBinder
+      import bindings.SemesterBinding.semesterBinder
+      import bindings.LabworkBinding.labworkBinder
+      import bindings.ScheduleBinding.scheduleBinder
+      import bindings.GroupBinding.groupBinder
 
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", Employee.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "start1", "end1", "exam1", Semester.randomUUID)
+      val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
 
@@ -247,20 +248,20 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
     }
 
     "generate yet another scheduleG with few populations and generations" in {
-      import bindings.AssignmentPlanBinding._
-      import bindings.CourseBinding._
-      import bindings.DegreeBinding._
-      import bindings.SemesterBinding._
-      import bindings.LabworkBinding._
-      import bindings.ScheduleBinding._
-      import bindings.GroupBinding._
+      import bindings.AssignmentPlanBinding.assignmentPlanBinder
+      import bindings.CourseBinding.courseBinder
+      import bindings.DegreeBinding.degreeBinder
+      import bindings.SemesterBinding.semesterBinder
+      import bindings.LabworkBinding.labworkBinder
+      import bindings.ScheduleBinding.scheduleBinder
+      import bindings.GroupBinding.groupBinder
 
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", Employee.randomUUID, 1, Course.randomUUID)
       val gdvk = Course("gdvk", "c3", Employee.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "start1", "end1", "exam1", Semester.randomUUID)
+      val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
       val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, ma1.id, mi.id, plan)

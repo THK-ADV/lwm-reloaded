@@ -18,18 +18,6 @@ trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementMo
   lazy val scheduleService: ScheduleServiceLike = new ScheduleService(repository)
 }
 
-trait TimetableServiceManagementModule {
-  self: LwmApplication =>
-
-  def timetableService: TimetableServiceLike
-}
-
-trait DefaultTimetableServiceManagementModule extends TimetableServiceManagementModule {
-  self: LwmApplication =>
-
-  lazy val timetableService: TimetableServiceLike = new TimetableService()
-}
-
 trait ScheduleManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with TimetableServiceManagementModule =>
 

@@ -3,7 +3,8 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{Room, Labwork, Degree, Group, Semester, Course, AssignmentPlan, AssignmentEntry}
+import models.semester.{Blacklist, Semester}
+import models.{Room, Labwork, Degree, Group, Course, AssignmentPlan, AssignmentEntry}
 import models.schedule.{TimetableEntry, Timetable}
 import models.users.{Student, Employee}
 import org.joda.time.DateTime
@@ -29,7 +30,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   "A ScheduleService " should {
 
     "should convert from scheduleG to schedule" in {
-      import bindings.GroupBinding._
+      import bindings.GroupBinding.groupBinder
 
       val entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
@@ -38,7 +39,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -59,7 +60,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "should convert from schedule to scheduleG" in {
-      import bindings.GroupBinding._
+      import bindings.GroupBinding.groupBinder
 
       val entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
@@ -68,7 +69,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -93,7 +94,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "return number of appointments based on labwork" in {
-      import bindings.LabworkBinding._
+      import bindings.LabworkBinding.labworkBinder
 
       val number = 2
       val assignmentPlan = AssignmentPlan(number, Set.empty[AssignmentEntry])
@@ -113,11 +114,11 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "return empty list of scheduleG's when there are no existing schedules to prepare" in {
-      import bindings.CourseBinding._
-      import bindings.LabworkBinding._
-      import bindings.SemesterBinding._
+      import bindings.CourseBinding.courseBinder
+      import bindings.LabworkBinding.labworkBinder
+      import bindings.SemesterBinding.semesterBinder
 
-      val semester = Semester("name", "start", "end", "exam", Semester.randomUUID)
+      val semester = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
       val course = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, assignmentPlan)
@@ -135,19 +136,19 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "prepare by retrieving and mapping existing schedules to scheduleG's" in {
-      import bindings.ScheduleBinding._
-      import bindings.CourseBinding._
-      import bindings.LabworkBinding._
-      import bindings.SemesterBinding._
-      import bindings.GroupBinding._
+      import bindings.ScheduleBinding.scheduleBinder
+      import bindings.CourseBinding.courseBinder
+      import bindings.LabworkBinding.labworkBinder
+      import bindings.SemesterBinding.semesterBinder
+      import bindings.GroupBinding.groupBinder
 
       val course1 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course2 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course3 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
 
-      val semester1 = Semester("name", "start", "end", "exam", Semester.randomUUID)
-      val semester2 = Semester("name", "start", "end", "exam", Semester.randomUUID)
-      val semester3 = Semester("name", "start", "end", "exam", Semester.randomUUID)
+      val semester1 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
+      val semester2 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
+      val semester3 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
 
       val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, assignmentPlan)
@@ -162,9 +163,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
       )
-      val timetable1 = Timetable(labwork1.id, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
-      val timetable2 = Timetable(labwork2.id, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
-      val timetable3 = Timetable(labwork3.id, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable1 = Timetable(labwork1.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable2 = Timetable(labwork2.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable3 = Timetable(labwork3.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -209,7 +210,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val AID = Group.randomUUID
       val BID = Group.randomUUID
@@ -240,7 +241,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val AID = Group.randomUUID
       val BID = Group.randomUUID
@@ -276,7 +277,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -305,7 +306,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
       val sb = Group.randomUUID
       val nb = Group.randomUUID
       val ok1 = Group.randomUUID
@@ -357,7 +358,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
       val sb1 = Group.randomUUID
       val nb1 = Group.randomUUID
       val sb2 = Group.randomUUID
@@ -417,7 +418,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -445,7 +446,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "evaluate an given schedule when there are no other schedules" in {
-      import bindings.LabworkBinding._
+      import bindings.LabworkBinding.labworkBinder
 
       val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan)
@@ -458,7 +459,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
       )
-      val timetable = Timetable(labwork.id, entries, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+      val timetable = Timetable(labwork.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
         Group("A", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -480,12 +481,12 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "evaluate an given schedule when there are some other schedules" in {
-      import bindings.CourseBinding._
-      import bindings.SemesterBinding._
-      import bindings.LabworkBinding._
-      import bindings.ScheduleBinding._
-      import bindings.DegreeBinding._
-      import bindings.GroupBinding._
+      import bindings.CourseBinding.courseBinder
+      import bindings.SemesterBinding.semesterBinder
+      import bindings.LabworkBinding.labworkBinder
+      import bindings.ScheduleBinding.scheduleBinder
+      import bindings.DegreeBinding.degreeBinder
+      import bindings.GroupBinding.groupBinder
 
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
 
@@ -494,7 +495,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", Employee.randomUUID, 1, Course.randomUUID)
 
-      val semester1 = Semester("semester1", "start1", "end1", "exam1", Semester.randomUUID)
+      val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
 
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
@@ -571,7 +572,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
           case (l, e) =>
             val count = e.size / l.assignmentPlan.numberOfEntries
             val g = shuffle(students).take(count * groupSize).grouped(groupSize).map(s => Group("", l.id, s.toSet, Group.randomUUID)).toSet
-            val t = Timetable(l.id, e, DateTime.now, Set.empty[DateTime], 0, Timetable.randomUUID)
+            val t = Timetable(l.id, e, DateTime.now, Blacklist.empty, Timetable.randomUUID)
             scheduleService.populate(1, t, g).head
         }
       }

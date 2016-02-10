@@ -26,6 +26,7 @@ object LwmMimeType {
   val labworkApplicationV1Json = LwmMimeType("application/vnd.fhk.labworkApplication.V1+json")
   val scheduleV1Json = LwmMimeType("application/vnd.fhk.schedule.V1+json")
   val timetableV1Json = LwmMimeType("application/vnd.fhk.timetable.V1+json")
+  val blacklistV1Json = LwmMimeType("application/vnd.fhk.blacklist.V1+json")
 
   implicit def unboxMimeType(mime: LwmMimeType): String = mime.value
 }
@@ -67,6 +68,8 @@ object LwmContentTypes extends ContentTypes {
   def scheduleV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.scheduleV1Json)
 
   def timetableV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.timetableV1Json)
+
+  def blacklistV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.blacklistV1Json)
 }
 
 object LwmAccepts {
@@ -87,4 +90,5 @@ object LwmAccepts {
   val LabworkApplicationV1Accept = Accepting(LwmMimeType.labworkApplicationV1Json)
   val ScheduleV1Accept = Accepting(LwmMimeType.scheduleV1Json)
   val TimetableV1Accept = Accepting(LwmMimeType.timetableV1Json)
+  val BlacklistV1Accept = Accepting(LwmMimeType.blacklistV1Json)
 }
