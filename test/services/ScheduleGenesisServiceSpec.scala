@@ -11,10 +11,11 @@ import org.scalatest.WordSpec
 import store.bind.Bindings
 import store.{SesameRepository, Namespace}
 import utils.Genesis
+import org.scalatest.mock.MockitoSugar.mock
 
-class ScheduleSpecHelper(private val scheduleService: ScheduleService) {
+class ScheduleSpecHelper {
 
-  def schedules(labworks: Vector[Labwork], entries: Vector[Set[TimetableEntry]], pop: Int): Vector[Vector[ScheduleG]] = {
+  def prepare(labworks: Vector[Labwork], entries: Vector[Set[TimetableEntry]]): Vector[(Timetable, Set[Group])] = {
     import scala.util.Random._
 
     val numberOfGroups = entries.map(_.size).max / labworks.map(_.assignmentPlan.numberOfEntries).max
@@ -26,38 +27,29 @@ class ScheduleSpecHelper(private val scheduleService: ScheduleService) {
         val count = e.size / l.assignmentPlan.numberOfEntries
         val g = shuffle(students).take(count * groupSize).grouped(groupSize).map(s => Group("", l.id, s.toSet, Group.randomUUID)).toSet
         val t = Timetable(l.id, e, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-        scheduleService.populate(pop, t, g)
+        (t, g)
     }
   }
 }
 
-class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
+class ScheduleGenesisServiceSpec extends WordSpec with TestBaseDefinition {
 
-  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-  val repo = SesameRepository(ns)
-  import repo._
-  val bindings = Bindings(ns)
+  val scheduleService = new ScheduleService
+  val helper = new ScheduleSpecHelper
+  val scheduleGenesisService = new ScheduleGenesisService(scheduleService)
 
-  val scheduleService = new ScheduleService(repo)
-  val helper = new ScheduleSpecHelper(scheduleService)
+  val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
+  val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
-  "A ScheduleGenesisSpec" should {
+  "A ScheduleGenesisServiceSpec" should {
 
     "generate an initial scheduleG with one population and generation" in {
-      import bindings.AssignmentPlanBinding.assignmentPlanBinder
-      import bindings.CourseBinding.courseBinder
-      import bindings.DegreeBinding.degreeBinder
-      import bindings.SemesterBinding.semesterBinder
-      import bindings.LabworkBinding.labworkBinder
-
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
 
-      val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
-      val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 08:00:00"), ft.parseDateTime("27/10/2015 09:00:00"), fd.parseDateTime("27/10/2015")),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 09:00:00"), ft.parseDateTime("27/10/2015 10:00:00"), fd.parseDateTime("27/10/2015")),
@@ -103,22 +95,11 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("06/11/2015"), ft.parseDateTime("06/11/2015 13:00:00"), ft.parseDateTime("06/11/2015 14:00:00"), fd.parseDateTime("06/11/2015"))
       )
 
-      val pops = helper.schedules(Vector(ap1Prak), Vector(ap1Entries), 1).head
+      val prep = helper.prepare(Vector(ap1Prak), Vector(ap1Entries)).head
 
-      repo add mi
-      repo add ap1
-      repo add semester1
-      repo add ap1Prak
-
-      implicit val evaluation = scheduleService.eval(Vector.empty[ScheduleG], plan.numberOfEntries)
-      implicit val mutate = scheduleService.mut
-      implicit val cross = scheduleService.cross
-      import utils.TypeClasses.instances._
-      import utils.Ops.MonadInstances.intM
-
-      val result = Genesis.measureByTaking[ScheduleG, Conflict, Int](pops, 1)
-
+      val result = scheduleGenesisService.generate(ap1Prak.id, prep._1, prep._2, plan, Vector.empty[ScheduleG])
       val eval = scheduleService.evaluate(result._1.elem, plan.numberOfEntries, Vector.empty[ScheduleG])
+
       eval.conflicts shouldBe empty
       eval.value shouldBe 0
 
@@ -132,14 +113,6 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
     }
 
     "generate a further scheduleG with few populations and generations" in {
-      import bindings.AssignmentPlanBinding.assignmentPlanBinder
-      import bindings.CourseBinding.courseBinder
-      import bindings.DegreeBinding.degreeBinder
-      import bindings.SemesterBinding.semesterBinder
-      import bindings.LabworkBinding.labworkBinder
-      import bindings.ScheduleBinding.scheduleBinder
-      import bindings.GroupBinding.groupBinder
-
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
@@ -148,8 +121,6 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
 
-      val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
-      val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 08:00:00"), ft.parseDateTime("27/10/2015 09:00:00"), fd.parseDateTime("27/10/2015")),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 09:00:00"), ft.parseDateTime("27/10/2015 10:00:00"), fd.parseDateTime("27/10/2015")),
@@ -209,53 +180,30 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("06/11/2015"), ft.parseDateTime("06/11/2015 14:00:00"), ft.parseDateTime("06/11/2015 17:00:00"), fd.parseDateTime("06/11/2015"))
       )
 
-      val pops = helper.schedules(Vector(ap1Prak, ma1Prak), Vector(ap1Entries, ma1Entries), 2)
-      val ap = pops.head.head
-      val ma = pops.last
+      val prep = helper.prepare(Vector(ap1Prak, ma1Prak), Vector(ap1Entries, ma1Entries))
+      val ap = prep.head
+      val ma = prep.last
 
-      repo add mi
-      repo addMany Vector(ap1, ma1)
-      repo add semester1
-      repo addMany Vector(ap1Prak, ma1Prak)
-      repo addMany ap.entries.map(_.group)
-      repo add scheduleService.toSchedule(ap)
+      val comp = scheduleService.populate(1, ap._1, ap._2)
+      val result = scheduleGenesisService.generate(ma1Prak.id, ma._1, ma._2, plan, comp)
+      val eval = scheduleService.evaluate(result._1.elem, plan.numberOfEntries, comp)
 
-      val all = scheduleService.competitive(ma1Prak.id).get.get
-      val app = scheduleService.appointments(ma1Prak.id).get.get
-
-      implicit val evaluation = scheduleService.eval(all, app)
-      implicit val mutate = scheduleService.mut
-      implicit val cross = scheduleService.cross
-      import utils.TypeClasses.instances._
-      import utils.Ops.MonadInstances.intM
-
-      val result = Genesis.measureByTaking[ScheduleG, Conflict, Int](ma, 50)
-
-      val a = scheduleService.evaluate(result._1.elem, app, all)
       println(s"gen ${result._2}")
-      println(s"conflict size ${a.conflicts.size}")
-      println(s"conflict value ${a.value}")
-      a.conflicts shouldBe empty
-      a.value shouldBe 0
+      println(s"conflict size ${eval.conflicts.size}")
+      println(s"conflict value ${eval.value}")
+      eval.conflicts shouldBe empty
+      eval.value shouldBe 0
 
       result._2 should be > 0
       result._1.evaluate.err shouldBe empty
       result._1.evaluate.value shouldBe 0
       result._1.elem.labwork shouldEqual ma1Prak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == app
+        case (_, ss) => ss.size == plan.numberOfEntries
       } shouldBe true
     }
 
     "generate yet another scheduleG with few populations and generations" in {
-      import bindings.AssignmentPlanBinding.assignmentPlanBinder
-      import bindings.CourseBinding.courseBinder
-      import bindings.DegreeBinding.degreeBinder
-      import bindings.SemesterBinding.semesterBinder
-      import bindings.LabworkBinding.labworkBinder
-      import bindings.ScheduleBinding.scheduleBinder
-      import bindings.GroupBinding.groupBinder
-
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val mi = Degree("mi", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
@@ -266,8 +214,6 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
       val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, ma1.id, mi.id, plan)
 
-      val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
-      val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 08:00:00"), ft.parseDateTime("27/10/2015 09:00:00"), fd.parseDateTime("27/10/2015")),
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("27/10/2015"), ft.parseDateTime("27/10/2015 09:00:00"), ft.parseDateTime("27/10/2015 10:00:00"), fd.parseDateTime("27/10/2015")),
@@ -335,50 +281,28 @@ class ScheduleGenesisSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, fd.parseDateTime("06/11/2015"), ft.parseDateTime("06/11/2015 14:00:00"), ft.parseDateTime("06/11/2015 17:00:00"), fd.parseDateTime("06/11/2015"))
       )
 
-      val pops = helper.schedules(Vector(ap1Prak, ma1Prak, gdvkPrak), Vector(ap1Entries, ma1Entries, gdvkEntries), 10)
-      val apS = pops(0).head
-      val maS = pops(1).head
-      val gdvkS = pops.last
+      val prep = helper.prepare(Vector(ap1Prak, ma1Prak, gdvkPrak), Vector(ap1Entries, ma1Entries, gdvkEntries))
+      val apS = prep(0)
+      val maS = prep(1)
+      val gdvkS = prep.last
 
-      repo add mi
-      repo addMany Vector(ap1, ma1, gdvk)
-      repo add semester1
-      repo addMany Vector(ap1Prak, ma1Prak, gdvkPrak)
-      repo addMany apS.entries.map(_.group)
-      repo addMany maS.entries.map(_.group)
-      repo addMany Vector(apS, maS).map(scheduleService.toSchedule)
+      val comp = scheduleService.populate(1, apS._1, apS._2) ++ scheduleService.populate(1, maS._1, maS._2)
+      val result = scheduleGenesisService.generate(gdvk.id, gdvkS._1, gdvkS._2, plan, comp)
+      val eval = scheduleService.evaluate(result._1.elem, plan.numberOfEntries, comp)
 
-      val all = scheduleService.competitive(gdvkPrak.id).get.get
-      val app = scheduleService.appointments(gdvkPrak.id).get.get
-
-      implicit val evaluation = scheduleService.eval(all, app)
-      implicit val mutate = scheduleService.mut
-      implicit val cross = scheduleService.cross
-      import utils.TypeClasses.instances._
-      import utils.Ops.MonadInstances.intM
-
-      val result = Genesis.measureByTaking[ScheduleG, Conflict, Int](gdvkS, 100)
-
-      val a = scheduleService.evaluate(result._1.elem, app, all)
       println(s"gen ${result._2}")
-      println(s"conflict size ${a.conflicts.size}")
-      println(s"conflict value ${a.value}")
-      a.conflicts shouldBe empty
-      a.value shouldBe 0
+      println(s"conflict size ${eval.conflicts.size}")
+      println(s"conflict value ${eval.value}")
+      eval.conflicts shouldBe empty
+      eval.value shouldBe 0
 
       result._2 should be > 0
       result._1.evaluate.err shouldBe empty
       result._1.evaluate.value shouldBe 0
       result._1.elem.labwork shouldEqual gdvkPrak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == app
+        case (_, ss) => ss.size == plan.numberOfEntries
       } shouldBe true
-    }
-  }
-
-  override protected def beforeEach(): Unit = {
-    repo.withConnection { conn =>
-      repo.rdfStore.removeGraph(conn, repo.ns)
     }
   }
 }

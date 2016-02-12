@@ -71,7 +71,8 @@ with TimetableManagementModule
 with TimetableServiceManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
-with BlacklistServiceManagementModule {
+with BlacklistServiceManagementModule
+with ScheduleGenesisServiceManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -136,3 +137,4 @@ with DefaultTimetableServiceManagementModule
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklistServiceManagementModule
+with DefaultScheduleGenesisServiceManagementModule

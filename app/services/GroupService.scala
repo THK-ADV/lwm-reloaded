@@ -23,17 +23,9 @@ trait GroupServiceLike {
   def sortApplicantsFor(labwork: UUID): Option[Vector[UUID]]
 
   def sortApplicantsForMany(labworks: TraversableOnce[UUID]): Future[Option[Map[UUID, Vector[UUID]]]]
-
-  def groupsFor(labwork: UUID): Try[Set[Group]]
 }
 
-class GroupService(private val repository: SesameRepository, private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
-
-  import repository._
-
-  private val lwm = LWMPrefix[Rdf]
-  private val rdf = RDFPrefix[Rdf]
-  private val bindings = Bindings[Rdf](namespace)
+class GroupService(private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
 
   private implicit val exec = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
@@ -56,11 +48,5 @@ class GroupService(private val repository: SesameRepository, private val applica
     }
 
     concurrent.map(_.sequence.map(_.toMap))
-  }
-
-  override def groupsFor(labwork: UUID): Try[Set[Group]] = {
-    import bindings.GroupBinding._
-
-    repository.get[Group].map(f => f.filter(g => g.labwork == labwork))
   }
 }

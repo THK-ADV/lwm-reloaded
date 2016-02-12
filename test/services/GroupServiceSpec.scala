@@ -1,33 +1,21 @@
 package services
 
-import java.util.UUID
-
 import base.TestBaseDefinition
-import models.{Group, Labwork}
+import models.Labwork
 import models.applications.LabworkApplication
 import models.users.User
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
-import store.bind.Bindings
-import store.{SesameRepository, Namespace}
 import utils.PTree._
 
-import scala.util.{Success, Failure, Random}
+import scala.util.Random
 
 class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
-  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val repository = SesameRepository(ns)
-
-  import repository._
-
-  val bindings = Bindings(ns)
-
   val applicationService = mock[LabworkApplicationService]
 
-  val groupService = new GroupService(repository, applicationService)
+  val groupService = new GroupService(applicationService)
 
   "A group service" should {
 
@@ -156,28 +144,6 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
           v(labwork3).forall(alab3.contains) shouldBe true
 
         case None => fail("Future Should contains some result")
-      }
-    }
-
-    "get groups of given labwork" in {
-      import bindings.GroupBinding._
-
-      val labwork = Labwork.randomUUID
-
-      val first = Group("A", labwork, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      val second = Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      val third = Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      val fourth = Group("D", labwork, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-
-      repository.addMany[Group](Set(first, second, third, fourth))
-
-      val result = groupService.groupsFor(labwork)
-
-      result match {
-        case Success(s) =>
-          s shouldBe Set(first, fourth)
-        case Failure(e) =>
-          fail(s"There should be some Groups $e")
       }
     }
   }

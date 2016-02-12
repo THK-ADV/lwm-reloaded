@@ -15,7 +15,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
-import services.{TimetableService, GroupService, RoleService}
+import services.{ScheduleGenesisService, TimetableService, GroupService, RoleService}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.{DefaultLwmApplication, LwmMimeType}

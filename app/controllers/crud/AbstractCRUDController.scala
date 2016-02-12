@@ -24,7 +24,7 @@ trait SesameRdfSerialisation[T <: UniqueEntity] {
 
   def repository: SesameRepository
 
-  def defaultBindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+  val defaultBindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
   implicit def rdfWrites: ToPG[Sesame, T]
 

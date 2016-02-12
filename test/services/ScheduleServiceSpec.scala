@@ -3,213 +3,26 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.schedule.{Timetable, TimetableEntry}
 import models.semester.{Blacklist, Semester}
-import models.{Room, Labwork, Degree, Group, Course, AssignmentPlan, AssignmentEntry}
-import models.schedule.{TimetableEntry, Timetable}
-import models.users.{Student, Employee}
+import models.users.{Employee, Student}
+import models.{AssignmentEntry, AssignmentPlan, Course, Degree, Group, Labwork, Room}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
-import store.{Namespace, SesameRepository}
-import store.bind.Bindings
 
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
   import ScheduleG.dateOrd
 
-  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-  val repo = SesameRepository(ns)
-  import repo._
-  val bindings = Bindings(ns)
-
-  val scheduleService = new ScheduleService(repo)
+  val scheduleService = new ScheduleService
 
   "A ScheduleService " should {
 
-    "should convert from scheduleG to schedule" in {
-      import bindings.GroupBinding.groupBinder
-
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID)
-      )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-
-      val groups = Set(
-        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      )
-
-      repo.addMany(groups)
-
-      val scheduleG = scheduleService.populate(1, timetable, groups).head
-      val result = scheduleService.toSchedule(scheduleG)
-
-      result.id shouldEqual scheduleG.id
-      result.labwork shouldEqual scheduleG.labwork
-      result.entries.toVector.sortBy(_.date).zip(scheduleG.entries.toVector.sortBy(_.date)).foreach {
-        case (se, seg) => se.group shouldEqual seg.group.id
-      }
-    }
-
-    "should convert from schedule to scheduleG" in {
-      import bindings.GroupBinding.groupBinder
-
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID)
-      )
-      val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-
-      val groups = Set(
-        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      )
-
-      repo.addMany(groups)
-
-      val schedule = scheduleService.populate(1, timetable, groups).map(scheduleService.toSchedule).head
-      val result = scheduleService.toScheduleG(schedule)
-
-      result match {
-        case Some(sg) =>
-          sg.id shouldEqual schedule.id
-          sg.labwork shouldEqual schedule.labwork
-          sg.entries.toVector.sortBy(_.date).zip(schedule.entries.toVector.sortBy(_.date)).foreach {
-            case (se, seg) => se.group.id shouldEqual seg.group
-          }
-        case None => fail("Conversion from scheduleG to schedule failed")
-      }
-    }
-
-    "return number of appointments based on labwork" in {
-      import bindings.LabworkBinding.labworkBinder
-
-      val number = 2
-      val assignmentPlan = AssignmentPlan(number, Set.empty[AssignmentEntry])
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan)
-
-      repo.add(labwork)
-
-      val appointments = scheduleService.appointments(labwork.id)
-
-      appointments match {
-        case Success(s) => s match {
-          case Some(app) => app shouldBe number
-          case None => fail("There should be some appointments")
-        }
-        case Failure(e) => fail(s"Unable to retrieve appointments: $e")
-      }
-    }
-
-    "return empty list of scheduleG's when there are no existing schedules to prepare" in {
-      import bindings.CourseBinding.courseBinder
-      import bindings.LabworkBinding.labworkBinder
-      import bindings.SemesterBinding.semesterBinder
-
-      val semester = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-      val course = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-      val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, assignmentPlan)
-
-      repo.add(semester)
-      repo.add(course)
-      repo.add(labwork)
-
-      val existing = scheduleService.competitive(labwork.id)
-
-      existing match {
-        case Success(s) => s shouldBe None
-        case Failure(e) => fail(s"Unable to retrieve existing schedules: $e")
-      }
-    }
-
-    "prepare by retrieving and mapping existing schedules to scheduleG's" in {
-      import bindings.ScheduleBinding.scheduleBinder
-      import bindings.CourseBinding.courseBinder
-      import bindings.LabworkBinding.labworkBinder
-      import bindings.SemesterBinding.semesterBinder
-      import bindings.GroupBinding.groupBinder
-
-      val course1 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val course2 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val course3 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-
-      val semester1 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-      val semester2 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-      val semester3 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-
-      val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-      val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, assignmentPlan)
-      val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID, assignmentPlan)
-      val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID, assignmentPlan)
-
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
-      )
-      val timetable1 = Timetable(labwork1.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-      val timetable2 = Timetable(labwork2.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-      val timetable3 = Timetable(labwork3.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-
-      val groups = Set(
-        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
-      )
-
-      val schedule1 = scheduleService.populate(1, timetable1, groups).head
-      val schedule2 = scheduleService.populate(1, timetable2, groups).head
-      val schedule3 = scheduleService.populate(1, timetable3, groups).head
-
-      repo.addMany(Vector(semester1, semester2, semester3))
-      repo.addMany(Vector(course1, course2, course3))
-      repo.addMany(Vector(labwork1, labwork2, labwork3))
-      repo.addMany(groups.toVector)
-      repo.addMany(Vector(schedule1, schedule2).map(scheduleService.toSchedule))
-
-      val result = scheduleService.competitive(labwork3.id)
-
-      result match {
-        case Success(s) => s match {
-          case Some(ss) =>
-            ss should not be empty
-            ss.size shouldBe 2
-
-            ss.contains(schedule1) shouldBe true
-            ss.contains(schedule2) shouldBe true
-            ss.contains(schedule3) shouldBe false
-
-          case None => fail("There should be some existing list of scheduleG's")
-        }
-        case Failure(e) => fail(s"Unable to retrieve existing schedules: $e")
-      }
-    }
-
     "populate initial schedules once" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val AID = Group.randomUUID
@@ -221,26 +34,22 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), CID)
       )
 
-      val result = scheduleService.populate(1, timetable, groups)
+      val times = 1
+      val result = scheduleService.populate(times, timetable, groups)
 
       result.nonEmpty shouldBe true
+      result.size shouldBe times
       result.foreach(f => f.entries.size shouldBe entries.size)
-      result.foreach(s => s.entries.count(_.group.id == AID) shouldBe 2)
-      result.foreach(s => s.entries.count(_.group.id == BID) shouldBe 2)
-      result.foreach(s => s.entries.count(_.group.id == CID) shouldBe 2)
+      result.foreach(s => s.entries.count(_.group.id == AID) shouldBe entries.size / groups.size)
+      result.foreach(s => s.entries.count(_.group.id == BID) shouldBe entries.size / groups.size)
+      result.foreach(s => s.entries.count(_.group.id == CID) shouldBe entries.size / groups.size)
+
       val gv = groups.toVector.map(_.id)
       result.head.entries.toVector.sortBy(_.date).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size) shouldBe true
     }
 
     "populate initial schedules any times" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val AID = Group.randomUUID
@@ -252,31 +61,19 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), CID)
       )
 
-      val result = scheduleService.populate(5, timetable, groups)
+      val times = 5
+      val result = scheduleService.populate(times, timetable, groups)
 
       result.nonEmpty shouldBe true
-      result.size shouldBe 5
+      result.size shouldBe times
       result.foreach(f => f.entries.size shouldBe entries.size)
-      result.foreach(s => s.entries.count(_.group.id == AID) shouldBe 2)
-      result.foreach(s => s.entries.count(_.group.id == BID) shouldBe 2)
-      result.foreach(s => s.entries.count(_.group.id == CID) shouldBe 2)
+      result.foreach(s => s.entries.count(_.group.id == AID) shouldBe entries.size / groups.size)
+      result.foreach(s => s.entries.count(_.group.id == BID) shouldBe entries.size / groups.size)
+      result.foreach(s => s.entries.count(_.group.id == CID) shouldBe entries.size / groups.size)
     }
 
     "mutate given schedule by swapping two randomly chosen groups" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(9), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(13), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(14), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 12).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
@@ -288,25 +85,14 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       val schedule = scheduleService.populate(1, timetable, groups).head
       val result = (0 until 10).map(_ => scheduleService.mutate(schedule)).toVector
+
       result.foreach(_.entries.toVector.sortBy(_.date).map(e => (e.date, e.group)) should not be schedule.entries.toVector.sortBy(_.date).map(e => (e.date, e.group)))
     }
 
     "mutate given schedule destructively by rearrange contents of groups for one conflict" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(9), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(13), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(14), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 12).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
+
       val sb = Group.randomUUID
       val nb = Group.randomUUID
       val ok1 = Group.randomUUID
@@ -324,9 +110,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val m = g.members.toVector
       val s = Vector(m(1), m(3), m(5))
 
-      val result = scheduleService.mutateDestructive(schedule, Vector(
-        Conflict(ce, s, g)
-      ))
+      val result = scheduleService.mutateDestructive(schedule, Vector(Conflict(ce, s, g)))
 
       result should not be schedule
       result.entries.find(_.group.id == sb).foreach(a => s.foreach(s => a.group.members.find(_ == s) shouldBe None))
@@ -344,21 +128,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "mutate given schedule destructively by rearrange contents of groups for multiple conflicts" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(9), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(13), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(14), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 12).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
+
       val sb1 = Group.randomUUID
       val nb1 = Group.randomUUID
       val sb2 = Group.randomUUID
@@ -404,20 +176,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "successfully cross two schedules" in {
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(4), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(9), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(13), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(14), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(15), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(16), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 12).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
@@ -446,19 +205,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "evaluate an given schedule when there are no other schedules" in {
-      import bindings.LabworkBinding.labworkBinder
+      val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
 
-      val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan)
-
-      val entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(1), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(2), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(3), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(6), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(7), TimetableEntry.randomUUID),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(8), TimetableEntry.randomUUID)
-      )
+      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
       val timetable = Timetable(labwork.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
@@ -466,39 +216,24 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         Group("B", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
         Group("C", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
       )
-
-      repo.add(labwork)
+      val existing = Vector.empty[ScheduleG]
 
       val schedule = scheduleService.populate(1, timetable, groups).head
-      val appointments = scheduleService.appointments(labwork.id).get.get
-      val existing = scheduleService.competitive(labwork.id)
-      val all = if (existing.isSuccess && existing.get.isEmpty) Vector.empty[ScheduleG] else existing.get.get
-
-      val result = scheduleService.evaluate(schedule, appointments, all)
+      val result = scheduleService.evaluate(schedule, plan.numberOfEntries, existing)
 
       result.conflicts shouldBe empty
       result.value shouldBe 0
     }
 
     "evaluate an given schedule when there are some other schedules" in {
-      import bindings.CourseBinding.courseBinder
-      import bindings.SemesterBinding.semesterBinder
-      import bindings.LabworkBinding.labworkBinder
-      import bindings.ScheduleBinding.scheduleBinder
-      import bindings.DegreeBinding.degreeBinder
-      import bindings.GroupBinding.groupBinder
-
       val plan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-
       val mi = Degree("mi", Degree.randomUUID)
-
       val ap1 = Course("ap1", "c1", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", Employee.randomUUID, 1, Course.randomUUID)
-
       val semester1 = Semester("semester1", "start1", "end1", "exam1", Blacklist.empty, Semester.randomUUID)
-
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
+
       val ft = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")
       val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
@@ -581,17 +316,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap = s.head
       val ma = s.last
 
-      repo.add(mi)
-      repo.addMany(Vector(ap1, ma1))
-      repo.add[Semester](semester1)
-      repo.addMany(Vector(ap1Prak, ma1Prak))
-      repo.addMany(ap.entries.map(_.group))
-      repo.add(scheduleService.toSchedule(ap))
-
-      val app = scheduleService.appointments(ma.labwork).get.get
-      val all = scheduleService.competitive(ma.labwork).get.get
-
-      val result = scheduleService.evaluate(ma, app, all)
+      val result = scheduleService.evaluate(ma, plan.numberOfEntries, Vector(ap))
       println(s"conflicts ${result.conflicts.size}")
       println(s"guys ${result.conflicts.map(_.member)}")
       println(s"date ${result.conflicts.map(_.entry.start)}")
@@ -600,12 +325,6 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result.conflicts should not be empty
       result.value should be < 1000
       result.conflicts.size should be <= result.value
-    }
-  }
-
-  override protected def beforeEach(): Unit = {
-    repo.withConnection { conn =>
-      repo.rdfStore.removeGraph(conn, repo.ns)
     }
   }
 }

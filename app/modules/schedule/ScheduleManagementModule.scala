@@ -3,29 +3,41 @@ package modules.schedule
 import controllers.crud.schedule.ScheduleCRUDController
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
-import services.{ScheduleService, ScheduleServiceLike, TimetableService, TimetableServiceLike}
+import services._
 import utils.LwmApplication
 
 trait ScheduleServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: LwmApplication =>
 
-  def scheduleService: ScheduleServiceLike
+  def scheduleService: ScheduleService
 }
 
 trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule =>
+  self: LwmApplication =>
 
-  lazy val scheduleService: ScheduleServiceLike = new ScheduleService(repository)
+  lazy val scheduleService: ScheduleService = new ScheduleService
+}
+
+trait ScheduleGenesisServiceManagementModule {
+  self: LwmApplication =>
+
+  def scheduleGenesisService: ScheduleGenesisServiceLike
+}
+
+trait DefaultScheduleGenesisServiceManagementModule extends ScheduleGenesisServiceManagementModule {
+  self: LwmApplication with ScheduleServiceManagementModule =>
+
+  lazy val scheduleGenesisService: ScheduleGenesisServiceLike = new ScheduleGenesisService(scheduleService)
 }
 
 trait ScheduleManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with TimetableServiceManagementModule =>
+  self: SemanticRepositoryModule =>
 
   def scheduleManagementController: ScheduleCRUDController
 }
 
 trait DefaultScheduleManagementModuleImpl extends ScheduleManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with TimetableServiceManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with ScheduleGenesisServiceManagementModule =>
 
-  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, timetableService)
+  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, scheduleGenesisService)
 }

@@ -6,9 +6,11 @@ import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
 case class AssignmentPlan(numberOfEntries: Int, entries: Set[AssignmentEntry], id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
+
 case class AssignmentPlanProtocol(numberOfEntries: Int, entries: Set[AssignmentEntry])
 
 case class AssignmentEntry(index: Int, types: Set[EntryType], duration: Int = 1, id: UUID = AssignmentEntry.randomUUID) extends UniqueEntity
+
 case class AssignmentEntryProtocol(index: Int, types: Set[EntryType], duration: Int = 1)
 
 case class EntryType(value: String)

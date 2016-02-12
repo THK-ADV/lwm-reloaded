@@ -27,6 +27,7 @@ object LabworkApplicationCRUDController {
 
 //DateTime format is: yyyy-MM-dd'T'HH:mm
 class LabworkApplicationCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] {
+
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[LabworkApplication]): Result = {
     def decode(s: String) = URLDecoder.decode(s, "UTF-8")
 
@@ -63,8 +64,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
   override implicit def writes: Writes[LabworkApplication] = LabworkApplication.writes
 
   override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = id match {
-    case Some(i) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, i)
-    case _ => LabworkApplication(input.labwork, input.applicant, input.friends)
+    case Some(uuid) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, uuid)
+    case None => LabworkApplication(input.labwork, input.applicant, input.friends)
   }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json

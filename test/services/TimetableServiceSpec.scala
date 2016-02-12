@@ -42,23 +42,13 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with global blacklists applied" in {
       val protocol = TimetableProtocol(Labwork.randomUUID, tEntries, fd.parseDateTime("19/10/2015"), Blacklist.empty)
-      val numberOfEntries = 7
-      val aEntries = (0 until numberOfEntries).map {
-        case e if e < 5 =>
-          AssignmentEntry(e, Set.empty[EntryType])
-        case e =>
-          AssignmentEntry(e, Set.empty[EntryType], e - 3)
+      val aEntries = (0 until 7).map {
+        case e if e < 5 => AssignmentEntry(e, Set.empty[EntryType])
+        case e => AssignmentEntry(e, Set.empty[EntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(numberOfEntries, aEntries)
+      val plan = AssignmentPlan(aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
-      val groups = Set(
-        Group("A", protocol.labwork, members),
-        Group("B", protocol.labwork, members),
-        Group("C", protocol.labwork, members),
-        Group("D", protocol.labwork, members),
-        Group("E", protocol.labwork, members),
-        Group("F", protocol.labwork, members)
-      )
+      val groups = (0 until 6).map(n => Group(n.toString, protocol.labwork, members)).toSet
 
       val expectedStart = Vector(
         ft.parseDateTime("19/10/2015 11:00:00"),
@@ -88,18 +78,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with global blacklists applied" in {
       val protocol = TimetableProtocol(Labwork.randomUUID, tEntries, fd.parseDateTime("19/10/2015"), Blacklist.empty)
-      val numberOfEntries = 5
-      val aEntries = (0 until numberOfEntries).map(AssignmentEntry(_, Set.empty[EntryType], 2)).toSet
-      val plan = AssignmentPlan(numberOfEntries, aEntries)
+      val aEntries = (0 until 5).map(AssignmentEntry(_, Set.empty[EntryType], 2)).toSet
+      val plan = AssignmentPlan(aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
-      val groups = Set(
-        Group("A", protocol.labwork, members),
-        Group("B", protocol.labwork, members),
-        Group("C", protocol.labwork, members),
-        Group("D", protocol.labwork, members),
-        Group("E", protocol.labwork, members),
-        Group("F", protocol.labwork, members)
-      )
+      val groups = (0 until 6).map(n => Group(n.toString, protocol.labwork, members)).toSet
 
       val expectedStart = Vector(
         ft.parseDateTime("19/10/2015 11:00:00"),
@@ -135,23 +117,13 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       ), Blacklist.randomUUID)
 
       val protocol = TimetableProtocol(Labwork.randomUUID, tEntries, fd.parseDateTime("19/10/2015"), localBlacklist)
-      val numberOfEntries = 7
-      val aEntries = (0 until numberOfEntries).map {
-        case e if e < 5 =>
-          AssignmentEntry(e, Set.empty[EntryType])
-        case e =>
-          AssignmentEntry(e, Set.empty[EntryType], e - 3)
+      val aEntries = (0 until 7).map {
+        case e if e < 5 => AssignmentEntry(e, Set.empty[EntryType])
+        case e => AssignmentEntry(e, Set.empty[EntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(numberOfEntries, aEntries)
+      val plan = AssignmentPlan(aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
-      val groups = Set(
-        Group("A", protocol.labwork, members),
-        Group("B", protocol.labwork, members),
-        Group("C", protocol.labwork, members),
-        Group("D", protocol.labwork, members),
-        Group("E", protocol.labwork, members),
-        Group("F", protocol.labwork, members)
-      )
+      val groups = (0 until 6).map(n => Group(n.toString, protocol.labwork, members)).toSet
 
       val expectedStart = Vector(
         ft.parseDateTime("19/10/2015 11:00:00"),

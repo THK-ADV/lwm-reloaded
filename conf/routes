@@ -2,162 +2,162 @@
 # This file defines all() application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                                             controllers.HomepageController.index
+GET           /                                           controllers.HomepageController.index
 
 # Degree
-POST          /degrees                                      controllers.crud.DegreeCRUDController.create()
-POST          /degrees/:id                                  controllers.crud.DegreeCRUDController.update(id)
-GET           /degrees                                      controllers.crud.DegreeCRUDController.all()
-GET           /degrees/:id                                  controllers.crud.DegreeCRUDController.get(id)
-DELETE        /degrees/:id                                  controllers.crud.DegreeCRUDController.delete(id)
-HEAD          /degrees                                      controllers.crud.DegreeCRUDController.header
+POST          /degrees                                    controllers.crud.DegreeCRUDController.create()
+POST          /degrees/:id                                controllers.crud.DegreeCRUDController.update(id)
+GET           /degrees                                    controllers.crud.DegreeCRUDController.all()
+GET           /degrees/:id                                controllers.crud.DegreeCRUDController.get(id)
+DELETE        /degrees/:id                                controllers.crud.DegreeCRUDController.delete(id)
+HEAD          /degrees                                    controllers.crud.DegreeCRUDController.header
 
 # Course
-POST          /courses                                      controllers.crud.CourseCRUDController.create()
-POST          /courses/:id                                  controllers.crud.CourseCRUDController.update(id)
-GET           /courses                                      controllers.crud.CourseCRUDController.all()
-GET           /courses/:id                                  controllers.crud.CourseCRUDController.get(id)
-DELETE        /courses/:id                                  controllers.crud.CourseCRUDController.delete(id)
-HEAD          /courses                                      controllers.crud.CourseCRUDController.header
+POST          /courses                                    controllers.crud.CourseCRUDController.create()
+POST          /courses/:id                                controllers.crud.CourseCRUDController.update(id)
+GET           /courses                                    controllers.crud.CourseCRUDController.all()
+GET           /courses/:id                                controllers.crud.CourseCRUDController.get(id)
+DELETE        /courses/:id                                controllers.crud.CourseCRUDController.delete(id)
+HEAD          /courses                                    controllers.crud.CourseCRUDController.header
 
 # Employee
-POST          /employees                                    controllers.crud.user.EmployeeCRUDController.create()
-POST          /employees/:id                                controllers.crud.user.EmployeeCRUDController.update(id)
-GET           /employees                                    controllers.crud.user.EmployeeCRUDController.all()
-GET           /employees/:id                                controllers.crud.user.EmployeeCRUDController.get(id)
-DELETE        /employees/:id                                controllers.crud.user.EmployeeCRUDController.delete(id)
-HEAD          /employees                                    controllers.crud.user.EmployeeCRUDController.header
+POST          /employees                                  controllers.crud.user.EmployeeCRUDController.create()
+POST          /employees/:id                              controllers.crud.user.EmployeeCRUDController.update(id)
+GET           /employees                                  controllers.crud.user.EmployeeCRUDController.all()
+GET           /employees/:id                              controllers.crud.user.EmployeeCRUDController.get(id)
+DELETE        /employees/:id                              controllers.crud.user.EmployeeCRUDController.delete(id)
+HEAD          /employees                                  controllers.crud.user.EmployeeCRUDController.header
 
 # Group
-POST          /groups                                       controllers.crud.GroupCRUDController.create()
-GET           /groups                                       controllers.crud.GroupCRUDController.all()
-GET           /groups/:id                                   controllers.crud.GroupCRUDController.get(id)
-DELETE        /groups/:id                                   controllers.crud.GroupCRUDController.delete(id)
-HEAD          /groups                                       controllers.crud.GroupCRUDController.header
+POST          /groups                                     controllers.crud.GroupCRUDController.create()
+GET           /groups                                     controllers.crud.GroupCRUDController.all()
+GET           /groups/:id                                 controllers.crud.GroupCRUDController.get(id)
+DELETE        /groups/:id                                 controllers.crud.GroupCRUDController.delete(id)
+HEAD          /groups                                     controllers.crud.GroupCRUDController.header
 
 # Groups restricted
-POST          /labworks/:labwork/groups/count               controllers.crud.GroupCRUDController.createWithCount(labwork)
-POST          /labworks/:labwork/groups/range               controllers.crud.GroupCRUDController.createWithRange(labwork)
-POST          /labworks/:labwork/groups/:id                 controllers.crud.GroupCRUDController.updateFrom(labwork, id)
-GET           /labworks/:labwork/groups                     controllers.crud.GroupCRUDController.allFrom(labwork)
-GET           /labworks/:labwork/groups/:id                 controllers.crud.GroupCRUDController.getFrom(labwork, id)
-DELETE        /labworks/:labwork/groups/:id                 controllers.crud.GroupCRUDController.deleteFrom(labwork, id)
+POST          /labworks/:labwork/groups/count             controllers.crud.GroupCRUDController.createWithCount(labwork)
+POST          /labworks/:labwork/groups/range             controllers.crud.GroupCRUDController.createWithRange(labwork)
+POST          /labworks/:labwork/groups/:id               controllers.crud.GroupCRUDController.updateFrom(labwork, id)
+GET           /labworks/:labwork/groups                   controllers.crud.GroupCRUDController.allFrom(labwork)
+GET           /labworks/:labwork/groups/:id               controllers.crud.GroupCRUDController.getFrom(labwork, id)
+DELETE        /labworks/:labwork/groups/:id               controllers.crud.GroupCRUDController.deleteFrom(labwork, id)
 
 # Labwork
-POST          /labworks                                     controllers.crud.LabworkCRUDController.create()
-POST          /labworks/:id                                 controllers.crud.LabworkCRUDController.update(id)
-GET           /labworks                                     controllers.crud.LabworkCRUDController.all()
-GET           /labworks/:id                                 controllers.crud.LabworkCRUDController.get(id)
-DELETE        /labworks/:id                                 controllers.crud.LabworkCRUDController.delete(id)
-HEAD          /labworks                                     controllers.crud.LabworkCRUDController.header
+POST          /labworks                                   controllers.crud.LabworkCRUDController.create()
+POST          /labworks/:id                               controllers.crud.LabworkCRUDController.update(id)
+GET           /labworks                                   controllers.crud.LabworkCRUDController.all()
+GET           /labworks/:id                               controllers.crud.LabworkCRUDController.get(id)
+DELETE        /labworks/:id                               controllers.crud.LabworkCRUDController.delete(id)
+HEAD          /labworks                                   controllers.crud.LabworkCRUDController.header
 
 # Labwork Entry Type
 
-GET           /entryTypes                                   controllers.EntryTypeController.all()
-HEAD          /entryTypes                                   controllers.EntryTypeController.header()
+GET           /entryTypes                                 controllers.EntryTypeController.all()
+HEAD          /entryTypes                                 controllers.EntryTypeController.header()
 
 # Room
-POST          /rooms                                        controllers.crud.RoomCRUDController.create()
-POST          /rooms/:id                                    controllers.crud.RoomCRUDController.update(id)
-GET           /rooms                                        controllers.crud.RoomCRUDController.all()
-GET           /rooms/:id                                    controllers.crud.RoomCRUDController.get(id)
-DELETE        /rooms/:id                                    controllers.crud.RoomCRUDController.delete(id)
-HEAD          /rooms                                        controllers.crud.RoomCRUDController.header
+POST          /rooms                                      controllers.crud.RoomCRUDController.create()
+POST          /rooms/:id                                  controllers.crud.RoomCRUDController.update(id)
+GET           /rooms                                      controllers.crud.RoomCRUDController.all()
+GET           /rooms/:id                                  controllers.crud.RoomCRUDController.get(id)
+DELETE        /rooms/:id                                  controllers.crud.RoomCRUDController.delete(id)
+HEAD          /rooms                                      controllers.crud.RoomCRUDController.header
 
 # Semester
-POST          /semesters                                    controllers.crud.semester.SemesterCRUDController.create()
-POST          /semesters/:id                                controllers.crud.semester.SemesterCRUDController.update(id)
-GET           /semesters                                    controllers.crud.semester.SemesterCRUDController.all()
-GET           /semesters/:id                                controllers.crud.semester.SemesterCRUDController.get(id)
-DELETE        /semesters/:id                                controllers.crud.semester.SemesterCRUDController.delete(id)
-HEAD          /semesters                                    controllers.crud.semester.SemesterCRUDController.header
+POST          /semesters                                  controllers.crud.semester.SemesterCRUDController.create()
+POST          /semesters/:id                              controllers.crud.semester.SemesterCRUDController.update(id)
+GET           /semesters                                  controllers.crud.semester.SemesterCRUDController.all()
+GET           /semesters/:id                              controllers.crud.semester.SemesterCRUDController.get(id)
+DELETE        /semesters/:id                              controllers.crud.semester.SemesterCRUDController.delete(id)
+HEAD          /semesters                                  controllers.crud.semester.SemesterCRUDController.header
 
 # Student
-POST          /students                                     controllers.crud.user.StudentCRUDController.create()
-POST          /students/:id                                 controllers.crud.user.StudentCRUDController.update(id)
-GET           /students                                     controllers.crud.user.StudentCRUDController.all()
-GET           /students/:id                                 controllers.crud.user.StudentCRUDController.get(id)
-DELETE        /students/:id                                 controllers.crud.user.StudentCRUDController.delete(id)
-HEAD          /students                                     controllers.crud.user.StudentCRUDController.header
+POST          /students                                   controllers.crud.user.StudentCRUDController.create()
+POST          /students/:id                               controllers.crud.user.StudentCRUDController.update(id)
+GET           /students                                   controllers.crud.user.StudentCRUDController.all()
+GET           /students/:id                               controllers.crud.user.StudentCRUDController.get(id)
+DELETE        /students/:id                               controllers.crud.user.StudentCRUDController.delete(id)
+HEAD          /students                                   controllers.crud.user.StudentCRUDController.header
 
 #Role
-POST          /roles                                        controllers.crud.security.RoleCRUDController.create()
-POST          /roles/:id                                    controllers.crud.security.RoleCRUDController.update(id)
-GET           /roles/:id                                    controllers.crud.security.RoleCRUDController.get(id)
-GET           /roles                                        controllers.crud.security.RoleCRUDController.all()
-DELETE        /roles/:id                                    controllers.crud.security.RoleCRUDController.delete(id)
-HEAD          /roles                                        controllers.crud.security.RoleCRUDController.header
+POST          /roles                                      controllers.crud.security.RoleCRUDController.create()
+POST          /roles/:id                                  controllers.crud.security.RoleCRUDController.update(id)
+GET           /roles/:id                                  controllers.crud.security.RoleCRUDController.get(id)
+GET           /roles                                      controllers.crud.security.RoleCRUDController.all()
+DELETE        /roles/:id                                  controllers.crud.security.RoleCRUDController.delete(id)
+HEAD          /roles                                      controllers.crud.security.RoleCRUDController.header
 
 # RefRole
-POST          /refRoles                                     controllers.crud.security.RefRoleCRUDController.create()
-POST          /refRoles/:id                                 controllers.crud.security.RefRoleCRUDController.update(id)
-GET           /refRoles                                     controllers.crud.security.RefRoleCRUDController.all()
-GET           /refRoles/:id                                 controllers.crud.security.RefRoleCRUDController.get(id)
-DELETE        /refRoles/:id                                 controllers.crud.security.RefRoleCRUDController.delete(id)
-HEAD          /refRoles                                     controllers.crud.security.RefRoleCRUDController.header
+POST          /refRoles                                   controllers.crud.security.RefRoleCRUDController.create()
+POST          /refRoles/:id                               controllers.crud.security.RefRoleCRUDController.update(id)
+GET           /refRoles                                   controllers.crud.security.RefRoleCRUDController.all()
+GET           /refRoles/:id                               controllers.crud.security.RefRoleCRUDController.get(id)
+DELETE        /refRoles/:id                               controllers.crud.security.RefRoleCRUDController.delete(id)
+HEAD          /refRoles                                   controllers.crud.security.RefRoleCRUDController.header
 
 # Authority
-POST          /authorities                                  controllers.crud.security.AuthorityCRUDController.create()
-POST          /authorities/:id                              controllers.crud.security.AuthorityCRUDController.update(id)
-GET           /authorities                                  controllers.crud.security.AuthorityCRUDController.all()
-GET           /authorities/:id                              controllers.crud.security.AuthorityCRUDController.get(id)
-DELETE        /authorities/:id                              controllers.crud.security.AuthorityCRUDController.delete(id)
-HEAD          /authorities                                  controllers.crud.security.AuthorityCRUDController.header
+POST          /authorities                                controllers.crud.security.AuthorityCRUDController.create()
+POST          /authorities/:id                            controllers.crud.security.AuthorityCRUDController.update(id)
+GET           /authorities                                controllers.crud.security.AuthorityCRUDController.all()
+GET           /authorities/:id                            controllers.crud.security.AuthorityCRUDController.get(id)
+DELETE        /authorities/:id                            controllers.crud.security.AuthorityCRUDController.delete(id)
+HEAD          /authorities                                controllers.crud.security.AuthorityCRUDController.header
 
 # Permission
-GET           /permissions                                  controllers.PermissionController.all()
-HEAD          /permissions                                  controllers.PermissionController.header
+GET           /permissions                                controllers.PermissionController.all()
+HEAD          /permissions                                controllers.PermissionController.header
 
 # LabworkApplications
-POST          /labworkApplications                          controllers.crud.LabworkApplicationCRUDController.create()
-POST          /labworkApplications/:id                      controllers.crud.LabworkApplicationCRUDController.update(id)
-GET           /labworkApplications                          controllers.crud.LabworkApplicationCRUDController.all()
-GET           /labworkApplications/:id                      controllers.crud.LabworkApplicationCRUDController.get(id)
-DELETE        /labworkApplications/:id                      controllers.crud.LabworkApplicationCRUDController.delete(id)
-HEAD          /labworkApplications                          controllers.crud.LabworkApplicationCRUDController.header
+POST          /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.create()
+POST          /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.update(id)
+GET           /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.all()
+GET           /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.get(id)
+DELETE        /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.delete(id)
+HEAD          /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.header
 
 # Schedule
-POST          /schedules                                    controllers.crud.schedule.ScheduleCRUDController.create()
-POST          /schedules/:id                                controllers.crud.schedule.ScheduleCRUDController.update(id)
-GET           /schedules                                    controllers.crud.schedule.ScheduleCRUDController.all()
-GET           /schedules/:id                                controllers.crud.schedule.ScheduleCRUDController.get(id)
-DELETE        /schedules/:id                                controllers.crud.schedule.ScheduleCRUDController.delete(id)
-HEAD          /schedules                                    controllers.crud.schedule.ScheduleCRUDController.header
+POST          /schedules                                  controllers.crud.schedule.ScheduleCRUDController.create()
+POST          /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.update(id)
+GET           /schedules                                  controllers.crud.schedule.ScheduleCRUDController.all()
+GET           /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.get(id)
+DELETE        /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.delete(id)
+HEAD          /schedules                                  controllers.crud.schedule.ScheduleCRUDController.header
 
 # Schedule restricted
-POST          /labworks/:labwork/schedules/timetable        controllers.crud.schedule.ScheduleCRUDController.fromTimetable(labwork)
+POST          /labworks/:labwork/schedules/preview        controllers.crud.schedule.ScheduleCRUDController.preview(labwork)
 
 # Timetable
-POST          /timetables                                   controllers.crud.schedule.TimetableCRUDController.create()
-POST          /timetables/:id                               controllers.crud.schedule.TimetableCRUDController.update(id)
-GET           /timetables                                   controllers.crud.schedule.TimetableCRUDController.all()
-GET           /timetables/:id                               controllers.crud.schedule.TimetableCRUDController.get(id)
-DELETE        /timetables/:id                               controllers.crud.schedule.TimetableCRUDController.delete(id)
-HEAD          /timetables                                   controllers.crud.schedule.TimetableCRUDController.header
+POST          /timetables                                 controllers.crud.schedule.TimetableCRUDController.create()
+POST          /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.update(id)
+GET           /timetables                                 controllers.crud.schedule.TimetableCRUDController.all()
+GET           /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.get(id)
+DELETE        /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.delete(id)
+HEAD          /timetables                                 controllers.crud.schedule.TimetableCRUDController.header
 
 # Timetable restricted
-POST          /labworks/:labwork/timetables                 controllers.crud.schedule.TimetableCRUDController.createFrom(labwork)
-POST          /labworks/:labwork/timetables/:id             controllers.crud.schedule.TimetableCRUDController.updateFrom(labwork, id)
-GET           /labworks/:labwork/timetables                 controllers.crud.schedule.TimetableCRUDController.allFrom(labwork)
-GET           /labworks/:labwork/timetables/:id             controllers.crud.schedule.TimetableCRUDController.getFrom(labwork, id)
-DELETE        /labworks/:labwork/timetables/:id             controllers.crud.schedule.TimetableCRUDController.deleteFrom(labwork, id)
+POST          /labworks/:labwork/timetables               controllers.crud.schedule.TimetableCRUDController.createFrom(labwork)
+POST          /labworks/:labwork/timetables/:id           controllers.crud.schedule.TimetableCRUDController.updateFrom(labwork, id)
+GET           /labworks/:labwork/timetables               controllers.crud.schedule.TimetableCRUDController.allFrom(labwork)
+GET           /labworks/:labwork/timetables/:id           controllers.crud.schedule.TimetableCRUDController.getFrom(labwork, id)
+DELETE        /labworks/:labwork/timetables/:id           controllers.crud.schedule.TimetableCRUDController.deleteFrom(labwork, id)
 
 # Blacklist
-POST          /blacklists                                   controllers.crud.semester.BlacklistCRUDController.create()
-POST          /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.update(id)
-GET           /blacklists                                   controllers.crud.semester.BlacklistCRUDController.all()
-GET           /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.get(id)
-DELETE        /blacklists/:id                               controllers.crud.semester.BlacklistCRUDController.delete(id)
-HEAD          /blacklists                                   controllers.crud.semester.BlacklistCRUDController.header
+POST          /blacklists                                 controllers.crud.semester.BlacklistCRUDController.create()
+POST          /blacklists/:id                             controllers.crud.semester.BlacklistCRUDController.update(id)
+GET           /blacklists                                 controllers.crud.semester.BlacklistCRUDController.all()
+GET           /blacklists/:id                             controllers.crud.semester.BlacklistCRUDController.get(id)
+DELETE        /blacklists/:id                             controllers.crud.semester.BlacklistCRUDController.delete(id)
+HEAD          /blacklists                                 controllers.crud.semester.BlacklistCRUDController.header
 
 # Sessions
-POST          /sessions                                     controllers.SessionController.login
-DELETE        /sessions                                     controllers.SessionController.logout
-HEAD          /sessions                                     controllers.SessionController.header
+POST          /sessions                                   controllers.SessionController.login
+DELETE        /sessions                                   controllers.SessionController.logout
+HEAD          /sessions                                   controllers.SessionController.header
 
 # APIData
-GET           /api/populate                                 controllers.ApiDataController.populate
-GET           /api/added                                    controllers.ApiDataController.getAdded
+GET           /api/populate                               controllers.ApiDataController.populate
+GET           /api/added                                  controllers.ApiDataController.getAdded
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file                                 controllers.Assets.at(path="/public", file)
+GET           /assets/*file                               controllers.Assets.at(path="/public", file)

@@ -16,9 +16,6 @@ import utils.LwmMimeType
 
 import scala.collection.Map
 
-// TODO do we actual need this? flow in ScheduleCRUDController would be like: frontend -> timetableProtocol -> timetableService.applyStuff(timetableProtocol): Timetable -> scheduleService.populate(...)
-// TODO i guess we will never produces and maintain any timetables without schedules. they are only used in combination with schedules
-// TODO consider get and delete, remove create and update
 class TimetableCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable] {
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Result = ???
@@ -52,11 +49,11 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
     case Update => SecureBlock(moduleId, Set(updateTimetable))
     case Get => SecureBlock(moduleId, Set(getTimetable))
     case Delete => SecureBlock(moduleId, Set(deleteTimetable))
-    case _ => NonSecureBlock
+    case _ => PartialSecureBlock(Set(prime))
   }
 
-  def createFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
+  def createFrom(labwork: String) = restrictedContext(labwork)(Create) asyncContentTypedAction { request =>
+    super.create(NonSecureBlock)(request)
   }
 
   def allFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>

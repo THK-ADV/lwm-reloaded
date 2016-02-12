@@ -1,6 +1,8 @@
 package services
 
 import java.util.UUID
+import controllers.crud.JsonSerialisation
+import play.api.libs.json.{Json, Reads, Writes}
 import utils.Ops._
 import models.{Labwork, Group}
 import models.schedule.{ScheduleEntry, Schedule, Timetable}
@@ -15,6 +17,8 @@ import scala.util.Try
 // TODO: refactor out of file
 case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group)
 
+case class Evaluation(value: Int, conflicts: List[Conflict])
+
 case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID) {
 
   override def equals(that: scala.Any): Boolean = that match {
@@ -23,13 +27,6 @@ case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID) {
 
       labwork == l && entries.toVector.sortBy(_.date).zip(e.toVector.sortBy(_.date)).forall(z => z._1 == z._2) && id == i
     case _ => false
-  }
-}
-
-object ScheduleG {
-
-  implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
-    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
   }
 }
 
@@ -42,13 +39,11 @@ case class ScheduleEntryG(start: DateTime, end: DateTime, day: DateTime, date: D
   }
 }
 
-case class Evaluation(value: Int, conflicts: List[Conflict])
+object ScheduleG {
 
-trait ScheduleConverter {
-
-  def toScheduleG(schedule: Schedule): Option[ScheduleG]
-
-  def toSchedule(schedule: ScheduleG): Schedule
+  implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
+    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
+  }
 }
 
 trait ScheduleServiceLike {
@@ -67,14 +62,11 @@ trait ScheduleServiceLike {
 
   def evaluate2(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): utils.Evaluation[Conflict, Int]
 
-  def competitive(labwork: UUID): Try[Option[Vector[ScheduleG]]]
 }
 
-class ScheduleService(private val repository: SesameRepository) extends ScheduleServiceLike with ScheduleConverter { self =>
+class ScheduleService extends ScheduleServiceLike { self => // TODO add timetableService for extrapolating entries in timetable
 
   import ScheduleG.dateOrd
-
-  import repository.namespace
 
   // TODO: refactor this weird functional foo
   def eval(all: Vector[ScheduleG], appts: Int): EvalE[ScheduleG, Conflict, Int] = EvalE.instance[ScheduleG, Conflict, Int](s => evaluate2(s, appts, all))
@@ -194,72 +186,6 @@ class ScheduleService(private val repository: SesameRepository) extends Schedule
     }.unzip
 
     (ScheduleG(left.labwork, crossed._1.toSet, left.id), ScheduleG(right.labwork, crossed._2.toSet, right.id))
-  }
-
-  // TODO: refactor to labworkService
-  def appointments(labwork: UUID): Try[Option[Int]] = {
-    lazy val bindings = Bindings[repository.Rdf](namespace)
-    import bindings.LabworkBinding._
-
-    repository.get[Labwork](Labwork.generateUri(labwork)).map(_ map (_.assignmentPlan.numberOfEntries))
-  }
-
-  private def scheduleFor(labwork: UUID): Try[Option[Vector[Schedule]]] = {
-    lazy val bindings = Bindings[repository.Rdf](repository.namespace)
-    lazy val lwm = LWMPrefix[repository.Rdf]
-
-    import store.sparql.select._
-    import store.sparql.select
-    import bindings.ScheduleBinding._
-    import bindings.ScheduleEntryBinding._
-    import TraverseInstances._
-    import MonadInstances.{tryM, listM}
-
-    lazy val id = Labwork.generateUri(labwork)
-
-    val query = select distinct "schedules" where {
-        ^(s(id), p(lwm.course), v("courseid")) .
-        ^(s(id), p(lwm.semester), v("semester")) .
-        ^(v("course"), p(lwm.id), v("courseid")) .
-        ^(v("course"), p(lwm.semesterIndex), v("semesterIndex")) .
-        ^(v("labwork"), p(lwm.semester), v("semester")) .
-        ^(v("labwork"), p(lwm.course), v("course2id")) .
-        ^(v("course2"), p(lwm.id), v("course2id")) .
-        ^(v("course2"), p(lwm.semesterIndex), v("semesterIndex")) .
-        ^(v("labwork"), p(lwm.id), v("labworkid")) .
-        ^(v("schedules"), p(lwm.labwork), v("labworkid"))
-    }
-
-    repository.query(query)
-    .flatMap(_.get("schedules").peak(_.stringValue()))
-    .map(repository.getMany[Schedule])
-    .sequenceM
-  }
-
-  override def toScheduleG(schedule: Schedule): Option[ScheduleG] = {
-    lazy val bindings = Bindings[repository.Rdf](namespace)
-    import bindings.GroupBinding._
-    import MonadInstances._
-
-    val maybeEntries = sequence(
-      schedule.entries flatMap { entry =>
-         val group = repository.get[Group](Group.generateUri(entry.group)).toOption
-          group.peak(g => ScheduleEntryG(entry.start, entry.end, entry.day, entry.date, entry.room, entry.supervisor, g, entry.id))
-      })
-
-    maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
-  }
-
-  override def toSchedule(schedule: ScheduleG): Schedule = {
-    val entries = schedule.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
-
-    Schedule(schedule.labwork, entries, schedule.id)
-  }
-
-  override def competitive(labwork: UUID): Try[Option[Vector[ScheduleG]]] = {
-    import MonadInstances._
-
-    scheduleFor(labwork).peak(_.flatMap(toScheduleG))
   }
 
   override def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation = {
