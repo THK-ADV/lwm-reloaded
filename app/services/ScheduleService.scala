@@ -15,7 +15,7 @@ import scala.language.higherKinds
 import scala.util.Try
 
 // TODO: refactor out of file
-case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group)
+case class Conflict(entry: ScheduleEntryG, member: Vector[UUID], group: Group) // TODO entry with labwork wwich
 
 case class Evaluation(value: Int, conflicts: List[Conflict])
 
@@ -87,7 +87,7 @@ class ScheduleService extends ScheduleServiceLike { self => // TODO add timetabl
   private def populate(timetable: Timetable, groups: Set[Group]): ScheduleG = {
     import scala.util.Random._
 
-    val entries = timetable.entries.toVector.sortBy(_.date).grouped(groups.size).flatMap(_.zip(shuffle(groups)).map {
+    val entries = timetable.entries.toVector.sortBy(_.date).grouped(groups.size).flatMap(_.zip(shuffle(groups)).map { // TODO employees will also shift when there are more groups than slots for a week. fix this one
       case (t, group) => ScheduleEntryG(t.start, t.end, t.day, t.date, t.room, t.supervisor, group, ScheduleEntry.randomUUID)
     }).toSet
 

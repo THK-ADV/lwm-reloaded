@@ -125,7 +125,7 @@ DELETE        /schedules/:id                              controllers.crud.sched
 HEAD          /schedules                                  controllers.crud.schedule.ScheduleCRUDController.header
 
 # Schedule restricted
-POST          /labworks/:labwork/schedules/preview        controllers.crud.schedule.ScheduleCRUDController.preview(labwork)
+GET           /labworks/:labwork/schedules/preview        controllers.crud.schedule.ScheduleCRUDController.preview(labwork)
 
 # Timetable
 POST          /timetables                                 controllers.crud.schedule.TimetableCRUDController.create()

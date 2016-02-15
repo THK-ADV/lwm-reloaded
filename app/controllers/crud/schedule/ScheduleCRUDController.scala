@@ -104,7 +104,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
   // /labworks/:labwork/schedules/preview
-  def preview(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
+  def preview(labwork: String) = restrictedContext(labwork)(Create) action { implicit request =>
     import utils.Ops._
     import MonadInstances.{tryM, optM}
 
@@ -114,19 +114,22 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     implicit val tcu = defaultBindings.TimetableBinding.classUri
     implicit val lb = defaultBindings.LabworkBinding.labworkBinder
 
-    val labworkId = UUID.fromString(labwork)
-    val uri = Labwork.generateUri(labworkId)(namespace)
+    val id = UUID.fromString(labwork)
+    val uri = Labwork.generateUri(id)(namespace)
 
     val gen = for {
-      groups <- repository.get[Group].map(_.filter(_.labwork == labworkId))
-      timetable <- repository.get[Timetable].map(_.find(_.labwork == labworkId))
+      groups <- repository.get[Group].map(_.filter(_.labwork == id))
+      timetable <- repository.get[Timetable].map(_.find(_.labwork == id))
       plan <- repository.get[Labwork](uri).peak(_.assignmentPlan)
-      comp <- ScheduleCRUDController.competitive(labworkId, repository)
+      comp <- ScheduleCRUDController.competitive(id, repository)
     } yield {
       for {
-        t <- timetable
-        p <- plan
-      } yield scheduleGenesisService.generate(labworkId, t, groups, p, comp)._1
+        t <- timetable if t.entries.nonEmpty
+        p <- plan if p.entries.nonEmpty
+        g <- if (groups.nonEmpty) Some(groups) else None
+      } yield {
+        scheduleGenesisService.generate(id, t, g, p, comp)._1
+      }
     }
 
     gen match {
@@ -137,10 +140,11 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
               val entries = ss.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
               Schedule(ss.elem.labwork, entries, ss.elem.id)
             }
+
             Ok(Json.obj(
               "status" -> "OK",
               "schedule" -> Json.toJson(schedule),
-              "number of conflicts" -> ss.evaluate.err.size
+              "number of conflicts" -> ss.evaluate.err.size // TODO serialize conflicts
             ))
           case None =>
             NotFound(Json.obj(
