@@ -1,17 +1,13 @@
 package services
 
 import base.TestBaseDefinition
+import models._
 import models.schedule.{Timetable, TimetableEntry}
 import models.semester.{Blacklist, Semester}
-import models.users.{Student, Employee}
-import models._
+import models.users.{Employee, Student}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
-import store.bind.Bindings
-import store.{SesameRepository, Namespace}
-import utils.Genesis
-import org.scalatest.mock.MockitoSugar.mock
 
 class ScheduleSpecHelper {
 
@@ -194,7 +190,7 @@ class ScheduleGenesisServiceSpec extends WordSpec with TestBaseDefinition {
       eval.conflicts shouldBe empty
       eval.value shouldBe 0
 
-      result._2 should be > 0
+      result._2 should be >= 0
       result._1.evaluate.err shouldBe empty
       result._1.evaluate.value shouldBe 0
       result._1.elem.labwork shouldEqual ma1Prak.id

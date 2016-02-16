@@ -14,7 +14,7 @@ trait ScheduleGenesisServiceLike {
 class ScheduleGenesisService(private val scheduleService: ScheduleService) extends ScheduleGenesisServiceLike {
 
   override def generate(labwork: UUID, timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
-    val pop = scheduleService.populate(10, timetable, groups)
+    val pop = scheduleService.populate(100, timetable, groups)
 
     implicit val evaluation = scheduleService.eval(competitive, assignmentPlan.numberOfEntries)
     implicit val mutate = scheduleService.mut
@@ -22,6 +22,6 @@ class ScheduleGenesisService(private val scheduleService: ScheduleService) exten
     import utils.TypeClasses.instances._
     import utils.Ops.MonadInstances.intM
 
-    Genesis.measureByTaking[ScheduleG, Conflict, Int](pop, 100)
+    Genesis.measureByTaking[ScheduleG, Conflict, Int](pop, 200)
   }
 }
