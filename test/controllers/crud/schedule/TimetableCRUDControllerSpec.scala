@@ -6,7 +6,7 @@ import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.Labwork
 import models.schedule.{Timetable, TimetableEntry, TimetableProtocol}
 import models.semester.Blacklist
-import org.joda.time.DateTime
+import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, JsValue, Writes}
@@ -27,9 +27,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
   }
 
-  override val entityToFail: Timetable = Timetable(Labwork.randomUUID, Set.empty[TimetableEntry], DateTime.now, Blacklist.empty, Timetable.randomUUID)
+  override val entityToFail: Timetable = Timetable(Labwork.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
 
-  override val entityToPass: Timetable = Timetable(Labwork.randomUUID, Set.empty[TimetableEntry], DateTime.now, Blacklist.empty, Timetable.randomUUID)
+  override val entityToPass: Timetable = Timetable(Labwork.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
 
   override implicit val jsonWrites: Writes[Timetable] = Timetable.writes
 
@@ -37,6 +37,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   import ops._
   import bindings.TimetableBinding.timetableBinder
+  import bindings.jodaLocalDateBinder
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 

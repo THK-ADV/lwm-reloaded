@@ -7,16 +7,15 @@ import models._
 import models.schedule._
 import models.semester.{Blacklist, Semester}
 import models.users.Employee
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.{ScheduleEntryG, ScheduleG, Conflict, ScheduleGenesisService}
+import services.{ScheduleService, ScheduleEntryG, ScheduleG, Conflict}
 import utils.{Evaluation, Gen, LwmMimeType}
 
 import scala.util.{Try, Failure, Success}
@@ -33,9 +32,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
   override def entityTypeName: String = "schedule"
 
-  val scheduleGenesisService = org.scalatest.mock.MockitoSugar.mock[ScheduleGenesisService]
+  val scheduleService = org.scalatest.mock.MockitoSugar.mock[ScheduleService]
 
-  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, namespace, roleService, scheduleGenesisService) {
+  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, namespace, roleService, scheduleService) {
 
     override protected def fromInput(input: ScheduleProtocol, id: Option[UUID]): Schedule = entityToPass
 
@@ -79,20 +78,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val course1 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course2 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course3 = Course("label", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-
       val semester1 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-      val semester2 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-      val semester3 = Semester("name", "start", "end", "exam", Blacklist.empty, Semester.randomUUID)
-
       val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, assignmentPlan)
       val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID, assignmentPlan)
       val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID, assignmentPlan)
-
-      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now.plusDays(n), TimetableEntry.randomUUID)).toSet
-      val timetable1 = Timetable(labwork1.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-      val timetable2 = Timetable(labwork2.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
-      val timetable3 = Timetable(labwork3.id, entries, DateTime.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = (0 until 3).map(n => Group(n.toString, Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
 
@@ -126,15 +116,15 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DateTime.now, DateTime.now, DateTime.now, DateTime.now)
-      ), DateTime.now, Blacklist.empty, Timetable.randomUUID)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -146,7 +136,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(None)
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 
@@ -166,15 +156,15 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DateTime.now, DateTime.now, DateTime.now, DateTime.now)
-      ), DateTime.now, Blacklist.empty, Timetable.randomUUID)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -187,7 +177,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Vector.empty[Schedule]))
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 
@@ -207,21 +197,21 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DateTime.now, DateTime.now, DateTime.now, DateTime.now)
-      ), DateTime.now, Blacklist.empty, Timetable.randomUUID)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List(
           Conflict(
-            ScheduleEntryG(DateTime.now, DateTime.now, DateTime.now, DateTime.now, UUID.randomUUID(), UUID.randomUUID(), groups.head, UUID.randomUUID()),
+            ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), groups.head, UUID.randomUUID()),
             groups.head.members.toVector.take(1),
             groups.head
           )
         ), 1)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -234,7 +224,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Vector.empty[Schedule]))
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 
@@ -251,15 +241,15 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val plan = AssignmentPlan(0, Set.empty[AssignmentEntry])
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DateTime.now, DateTime.now, DateTime.now, DateTime.now)
-      ), DateTime.now, Blacklist.empty, Timetable.randomUUID)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -271,7 +261,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(None)
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 
@@ -289,14 +279,14 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         AssignmentEntry(2, Set.empty[EntryType])
       ))
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
-      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], DateTime.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -308,7 +298,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(None)
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 
@@ -327,14 +317,14 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DateTime.now, DateTime.now, DateTime.now, DateTime.now)
-      ), DateTime.now, Blacklist.empty, Timetable.randomUUID)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -346,7 +336,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(Set.empty[Group])).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(None)
-      when(scheduleGenesisService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
+      when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
 

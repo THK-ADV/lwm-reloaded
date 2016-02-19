@@ -6,6 +6,10 @@ object Prefixes {
 
   class LWMPrefix[Rdf <: RDF](ops: RDFOps[Rdf]) extends PrefixBuilder("lwm", "http://lwm.fh-koeln.de/ns/")(ops) {
 
+    // xsd extensions
+    val localDate = apply("localDate")
+    val localTime = apply("localDate")
+
     // _
     val id = apply("id")
 
@@ -69,7 +73,7 @@ object Prefixes {
     // TimetableEntry, ScheduleEntry
     val supervisor = apply("supervisor")
     val room = apply("room")
-    val day = apply("day")
+    val dayIndex = apply("dayIndex")
     val date = apply("date")
 
     // ScheduleEntry

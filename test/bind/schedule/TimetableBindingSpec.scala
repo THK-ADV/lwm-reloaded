@@ -3,9 +3,9 @@ package bind.schedule
 import base.SesameDbSpec
 import models.semester.Blacklist
 import models.{Room, Labwork, Degree}
-import models.schedule.{TimetableEntry, Timetable}
+import models.schedule.{Weekday, TimetableEntry, Timetable}
 import models.users.Employee
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, LocalTime, DateTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -19,15 +19,16 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   import ops._
   import bindings.uuidBinder
-  import bindings.jodaDateTimeBinder
+  import bindings.jodaLocalDateBinder
+  import bindings.jodaLocalTimeBinder
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
   import bindings.BlacklistBinding.blacklistBinder
 
-  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
-  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, DateTime.now, DateTime.now, DateTime.now, DateTime.now, TimetableEntry.randomUUID)
+  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
+  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
   val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
-  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), DateTime.now, localBlacklist, Timetable.randomUUID)
+  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
   val timetableGraph = (
     URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
       -- lwm.labwork ->- timetable.labwork

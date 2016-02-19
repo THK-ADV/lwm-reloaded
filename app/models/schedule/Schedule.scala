@@ -4,16 +4,16 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, LocalTime, DateTime}
 import play.api.libs.json.{Json, Reads, Writes, Format}
 
 case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID) extends UniqueEntity
 
 case class ScheduleProtocol(labwork: UUID, entries: Set[ScheduleEntry])
 
-case class ScheduleEntry(start: DateTime, end: DateTime, day: DateTime, date: DateTime, room: UUID, supervisor: UUID, group: UUID, id: UUID) extends UniqueEntity
+case class ScheduleEntry(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryProtocol(start: DateTime, end: DateTime, day: DateTime, date: DateTime, room: UUID, supervisor: UUID, group: UUID)
+case class ScheduleEntryProtocol(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID)
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[ScheduleProtocol, Schedule] {
 

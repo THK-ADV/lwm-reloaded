@@ -1,6 +1,6 @@
 package services
 
-import models.schedule.TimetableEntry
+import models.schedule.TimetableDateEntry
 import models.semester.Blacklist
 import org.joda.time.DateTime
 import org.w3.banana.sesame.Sesame
@@ -9,20 +9,21 @@ import store.bind.Bindings
 
 trait BlacklistServiceLike {
 
-  def applyBlacklist(entries: Set[TimetableEntry], localBlacklist: Blacklist): Set[TimetableEntry]
+  def applyBlacklist(entries: Set[TimetableDateEntry], localBlacklist: Blacklist): Set[TimetableDateEntry]
 }
 
 class BlacklistService(private val repository: SesameRepository) extends BlacklistServiceLike {
 
   private val bindings = Bindings[Sesame](repository.namespace)
 
-  override def applyBlacklist(entries: Set[TimetableEntry], localBlacklist: Blacklist): Set[TimetableEntry] = {
+  override def applyBlacklist(entries: Set[TimetableDateEntry], localBlacklist: Blacklist): Set[TimetableDateEntry] = {
     import bindings.BlacklistBinding._
 
     val globalBlacklist = repository.get[Blacklist].getOrElse(Set(Blacklist.empty)).foldLeft(Set.empty[DateTime]) {
       case (set, blacklist) => set ++ blacklist.dates
     }
-    
-    entries.filterNot(e => globalBlacklist.contains(e.date) || localBlacklist.dates.contains(e.start))
+    entries.filterNot(e =>
+      globalBlacklist.exists(g => g.toLocalDate.isEqual(e.date)) || localBlacklist.dates.exists(l => l.toLocalDateTime.isEqual(TimetableDateEntry.toLocalDateTime(e)))
+    )
   }
 }

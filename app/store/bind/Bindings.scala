@@ -4,11 +4,11 @@ import java.util.UUID
 
 import models._
 import models.applications.LabworkApplication
-import models.schedule.{ScheduleEntry, Schedule, TimetableEntry, Timetable}
+import models.schedule._
 import models.security.{Authority, Permission, Role, RefRole}
 import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student}
-import org.joda.time.DateTime
+import org.joda.time.{LocalTime, LocalDate, DateTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
@@ -49,6 +49,34 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override def fromPG(pointed: PointedGraph[Rdf]): Try[DateTime] = {
       pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
         case (stringVal, uri, optLang) => DateTime.parse(stringVal)
+      }
+    }
+  }
+
+  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
+
+    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
+      }
+    }
+  }
+
+  implicit val jodaLocalTimeBinder = new PGBinder[Rdf, LocalTime] {
+
+    // LocalTime.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalTime): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localTime))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalTime.parse(stringVal)
       }
     }
   }
@@ -241,7 +269,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val labwork = property[UUID](lwm.labwork)
     private val entries = set[TimetableEntry](lwm.entries)(TimetableEntryBinding.timetableEntryBinder)
-    private val start = property[DateTime](lwm.start)
+    private val start = property[LocalDate](lwm.start)
     private val blacklist = property[Blacklist](lwm.blacklist)(BlacklistBinding.blacklistBinder)
 
     implicit val timetableBinder = pgbWithId[Timetable](timetable => makeUri(Timetable.generateUri(timetable)))(labwork, entries, start, blacklist, id)(Timetable.apply, Timetable.unapply) withClasses classUri
@@ -254,12 +282,11 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val supervisor = property[UUID](lwm.supervisor)
     private val room = property[UUID](lwm.room)
     private val degree = property[UUID](lwm.degree)
-    private val day = property[DateTime](lwm.day)
-    private val start = property[DateTime](lwm.start)
-    private val end = property[DateTime](lwm.end)
-    private val date = property[DateTime](lwm.date)
+    private val dayIndex = property[Int](lwm.dayIndex)
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
 
-    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, day, start, end, date, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, dayIndex, start, end, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
   }
 
   object ScheduleBinding {
@@ -276,15 +303,14 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.ScheduleEntry
     implicit val classUri = classUrisFor[ScheduleEntry](clazz)
 
-    private val start = property[DateTime](lwm.start)
-    private val end = property[DateTime](lwm.end)
-    private val day = property[DateTime](lwm.day)
-    private val date = property[DateTime](lwm.date)
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
+    private val date = property[LocalDate](lwm.date)
     private val room = property[UUID](lwm.room)
     private val supervisor = property[UUID](lwm.supervisor)
     private val group = property[UUID](lwm.group)
 
-    implicit val scheduleEntryBinder = pgbWithId[ScheduleEntry](scheduleEntry => makeUri(ScheduleEntry.generateUri(scheduleEntry)))(start, end, day, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+    implicit val scheduleEntryBinder = pgbWithId[ScheduleEntry](scheduleEntry => makeUri(ScheduleEntry.generateUri(scheduleEntry)))(start, end, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 
   object BlacklistBinding {

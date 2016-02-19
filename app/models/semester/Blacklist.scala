@@ -6,11 +6,10 @@ import controllers.crud.JsonSerialisation
 import models.{UriGenerator, UniqueEntity}
 import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, Reads, Writes}
-import services.ScheduleG
 
 case class Blacklist(dates: Set[DateTime], id: UUID) extends UniqueEntity {
 
-  import ScheduleG.dateOrd
+  import Blacklist.dateOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case Blacklist(e, i) =>
@@ -24,7 +23,9 @@ case class BlacklistProtocol(dates: Set[DateTime])
 
 object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[BlacklistProtocol, Blacklist] {
 
-  implicit val dateOrd = ScheduleG.dateOrd
+  implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
+    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
+  }
 
   val empty = Blacklist(Set.empty[DateTime], Blacklist.randomUUID)
 

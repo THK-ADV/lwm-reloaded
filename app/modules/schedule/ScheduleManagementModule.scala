@@ -9,25 +9,13 @@ import utils.LwmApplication
 trait ScheduleServiceManagementModule {
   self: LwmApplication =>
 
-  def scheduleService: ScheduleService
+  def scheduleService: ScheduleGenesisServiceLike
 }
 
 trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
-  self: LwmApplication =>
+  self: LwmApplication with TimetableServiceManagementModule =>
 
-  lazy val scheduleService: ScheduleService = new ScheduleService
-}
-
-trait ScheduleGenesisServiceManagementModule {
-  self: LwmApplication =>
-
-  def scheduleGenesisService: ScheduleGenesisServiceLike
-}
-
-trait DefaultScheduleGenesisServiceManagementModule extends ScheduleGenesisServiceManagementModule {
-  self: LwmApplication with ScheduleServiceManagementModule =>
-
-  lazy val scheduleGenesisService: ScheduleGenesisServiceLike = new ScheduleGenesisService(scheduleService)
+  lazy val scheduleService: ScheduleGenesisServiceLike = new ScheduleService(timetableService)
 }
 
 trait ScheduleManagementModule {
@@ -37,7 +25,7 @@ trait ScheduleManagementModule {
 }
 
 trait DefaultScheduleManagementModuleImpl extends ScheduleManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with ScheduleGenesisServiceManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with ScheduleServiceManagementModule =>
 
-  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, scheduleGenesisService)
+  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, scheduleService)
 }

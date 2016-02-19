@@ -73,7 +73,7 @@ object ScheduleCRUDController {
     val maybeEntries = sequence(
       schedule.entries flatMap { entry =>
         val group = repository.get[Group](Group.generateUri(entry.group)(repository.namespace)).toOption
-        group.peak(g => ScheduleEntryG(entry.start, entry.end, entry.day, entry.date, entry.room, entry.supervisor, g, entry.id))
+        group.peak(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
       })
 
     maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
@@ -127,9 +127,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
         t <- timetable if t.entries.nonEmpty
         p <- plan if p.entries.nonEmpty
         g <- if (groups.nonEmpty) Some(groups) else None
-      } yield {
-        scheduleGenesisService.generate(id, t, g, p, comp)._1
-      }
+      } yield scheduleGenesisService.generate(t, g, p, comp)._1
     }
 
     gen match {
@@ -137,7 +135,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
         s match {
           case Some(ss) =>
             val schedule = {
-              val entries = ss.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.day, e.date, e.room, e.supervisor, e.group.id, e.id))
+              val entries = ss.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
               Schedule(ss.elem.labwork, entries, ss.elem.id)
             }
 
