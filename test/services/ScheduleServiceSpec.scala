@@ -4,7 +4,6 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models.schedule.TimetableDateEntry
-import models.schedule.TimetableDateEntry._
 import models.schedule._
 import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student}
@@ -177,6 +176,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result.entries.count(_.group.id == ok1) shouldBe plan.numberOfEntries
       result.entries.count(_.group.id == ok2) shouldBe plan.numberOfEntries
 
+      result.entries.toVector.flatMap(_.group.members).diff(schedule.entries.toVector.flatMap(_.group.members)) shouldBe empty
+      result.entries.toVector.flatMap(_.group.members).forall(a => schedule.entries.toVector.flatMap(_.group.members).count(_ == a) == plan.numberOfEntries) shouldBe true
+
       val gg = result.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
       val gv = groups.toVector.map(_.id)
       gg.foldLeft((true, gg.head)) {
@@ -238,6 +240,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result.entries.count(_.group.id == sb2) shouldBe plan.numberOfEntries
       result.entries.count(_.group.id == ok) shouldBe plan.numberOfEntries
 
+      result.entries.toVector.flatMap(_.group.members).diff(schedule.entries.toVector.flatMap(_.group.members)) shouldBe empty
+      result.entries.toVector.flatMap(_.group.members).forall(a => schedule.entries.toVector.flatMap(_.group.members).count(_ == a) == plan.numberOfEntries) shouldBe true
+
       val gg = result.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
       val gv = groups.toVector.map(_.id)
       gg.foldLeft((true, gg.head)) {
@@ -267,19 +272,16 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       val left = ScheduleG(UUID.randomUUID(), entries._1, UUID.randomUUID())
       val right = ScheduleG(UUID.randomUUID(), entries._2, UUID.randomUUID())
+      val cLeft = Conflict(left.entries.head, left.entries.head.group.members.toVector.take(3), left.entries.head.group)
+      val cRight = Conflict(right.entries.head, right.entries.head.group.members.toVector.take(3), right.entries.head.group)
 
-      val result = scheduleService.crossover(left, right)
-
-      left.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).foreach(println)
-      println("UND")
-      result._1.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).foreach(println)
-      println("==============")
-      right.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).foreach(println)
-      println("UND")
-      result._2.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).foreach(println)
+      val result = scheduleService.crossover((left, List(cLeft)), (right, List(cRight)))
 
       left should not be result._1
       right should not be result._2
+
+      result._1.entries.find(_.group == cLeft.group).forall(a => left.entries.find(_.group == a.group).contains(a)) shouldBe false
+      result._2.entries.find(_.group == cRight.group).forall(a => right.entries.find(_.group == a.group).contains(a)) shouldBe false
 
       result._1.entries.zip(left.entries).count(e => e._1 == e._2) < left.entries.size shouldBe true
       result._2.entries.zip(right.entries).count(e => e._1 == e._2) < right.entries.size shouldBe true

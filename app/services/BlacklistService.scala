@@ -22,6 +22,7 @@ class BlacklistService(private val repository: SesameRepository) extends Blackli
     val globalBlacklist = repository.get[Blacklist].getOrElse(Set(Blacklist.empty)).foldLeft(Set.empty[DateTime]) {
       case (set, blacklist) => set ++ blacklist.dates
     }
+
     entries.filterNot(e =>
       globalBlacklist.exists(g => g.toLocalDate.isEqual(e.date)) || localBlacklist.dates.exists(l => l.toLocalDateTime.isEqual(TimetableDateEntry.toLocalDateTime(e)))
     )

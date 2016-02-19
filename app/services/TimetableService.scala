@@ -46,6 +46,7 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
       case ((e, set), ae) =>
         val skip = groupSize * (ae.duration - 1)
         val remain = e.drop(skip)
+
         (remain.drop(groupSize), set ++ remain.take(groupSize))
     }._2.toSet
   }

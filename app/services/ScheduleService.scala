@@ -1,7 +1,6 @@
 package services
 
 import java.util.UUID
-import models.schedule.TimetableDateEntry._
 import models.{AssignmentPlan, Group}
 import models.schedule._
 import org.joda.time.{LocalDate, LocalTime}
@@ -43,9 +42,7 @@ trait ScheduleServiceLike {
 
   def mutateDestructive(schedule: ScheduleG, conflicts: Vector[Conflict]): ScheduleG
 
-  def crossover(left: ScheduleG, right: ScheduleG): (ScheduleG, ScheduleG)
-
-  def crossover(left: ScheduleG, right: ScheduleG, conflicts: Vector[Conflict]): (ScheduleG, ScheduleG)
+  def crossover(left: (ScheduleG, List[Conflict]), right: (ScheduleG, List[Conflict])): (ScheduleG, ScheduleG) // TODO Vector[Conflict]
 
   def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation
 
@@ -64,7 +61,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
   def mut: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutate(s))
   def mutDest: MutateE[ScheduleG, Conflict, Int] = MutateE.instance[ScheduleG, Conflict, Int]((s, e) => self.mutateDestructive(s, e.err.toVector))
   def cross: CrossE[ScheduleG, Conflict, Int] = CrossE.instance[ScheduleG, Conflict, Int] {
-    case ((s1, _), (s2, _)) => crossover(s1, s2)
+    case ((s1, e1), (s2, e2)) => crossover((s1, e1.err), (s2, e2.err))
   }
 
   // TODO: get rid of that
@@ -154,49 +151,17 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
     }
   }
 
-  override def crossover(left: ScheduleG, right: ScheduleG): (ScheduleG, ScheduleG) = {
-    import scala.util.Random._
-    import TimetableEntry._
-    import TimetableDateEntry._
+  override def crossover(left: (ScheduleG, List[Conflict]), right: (ScheduleG, List[Conflict])): (ScheduleG, ScheduleG) = {
+    (Random.shuffle(left._2), Random.shuffle(right._2)) match {
+      case (h1 :: _, h2 :: _) =>
+        val cl = swapWithin(left._1)(h1.group, randomAvoiding(h1.group)(left._1.entries.map(_.group).toVector))
+        val cr = swapWithin(right._1)(h2.group, randomAvoiding(h2.group)(right._1.entries.map(_.group).toVector))
 
-    def sameDate(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-      left.date.isEqual(right.date) && left.start.isEqual(right.start) && left.end.isEqual(right.end)
+        (cl, cr)
+
+      case _ => (left._1, right._1)
     }
-
-    val size = left.entries.map(_.group).size
-    val pairs = left.entries.toVector.sortBy(toLocalDateTime).zip(right.entries.toVector.sortBy(toLocalDateTime)).grouped(size).toVector
-    val week = nextInt(pairs.size)
-
-    val toCross = shuffle(pairs(week)).take(2).unzip._1
-    val r = pairs(week).unzip._2
-    val l = pairs(week).unzip._1
-    val a = r(l.indexOf(toCross.head))
-    val b = r(l.indexOf(toCross.last))
-
-    val crossover = toCross.zip(Vector(b, a))
-    val rCrossover = toCross.zip(Vector(a, b))
-
-    val crossed = pairs.flatMap {
-      case swap if swap.exists(p => rCrossover.contains(p)) =>
-        val u = swap.unzip
-
-        val l = u._1.map (ss => (ss, crossover.find(cs => sameDate(ss, cs._1)))).foldLeft(Vector[ScheduleEntryG]()) {
-          case (vec, (e, Some((_, withEntry)))) => vec :+ ScheduleEntryG(withEntry.start, withEntry.end, withEntry.date, withEntry.room, withEntry.supervisor, e.group, e.id)
-          case (vec, (e, None)) => vec :+ e
-        }
-
-        val r = u._2.map (ss => (ss, crossover.find(cs => sameDate(cs._2, ss)))).foldLeft(Vector[ScheduleEntryG]()) {
-          case (vec, (e, Some((withEntry, _)))) => vec :+ ScheduleEntryG(withEntry.start, withEntry.end, withEntry.date, withEntry.room, withEntry.supervisor, e.group, e.id)
-          case (vec, (e, None)) => vec :+ e
-        }
-
-        l.zip(r)
-      case ok => ok
-    }.unzip
-
-    (ScheduleG(left.labwork, crossed._1.toSet, left.id), ScheduleG(right.labwork, crossed._2.toSet, right.id))
   }
-
   override def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation = {
     def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
       left.date.isEqual(right.date) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
@@ -219,6 +184,4 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
     Evaluation(conflicts.foldRight(factor)(_.member.size + _) * conflicts.size, conflicts)
   }
-
-  override def crossover(left: ScheduleG, right: ScheduleG, conflicts: Vector[Conflict]): (ScheduleG, ScheduleG) = (left, right)
 }
