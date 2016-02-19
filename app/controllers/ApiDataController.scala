@@ -32,7 +32,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     val authorities = people.map(p => (p, Authority(p.id, Set(RefRole(None, Roles.admin.id))))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
     }
-    val degrees = List(Degree("AI", "Allgemeine Informatik", Degree.randomUUID), Degree("MI", "Medieninformatik", Degree.randomUUID), Degree("TI", "Technische Informatik", Degree.randomUUID), Degree("WI", "Wirtschaftsinformatik", Degree.randomUUID))
+    val degrees = List(Degree("Allgemeine Informatik", "AI", Degree.randomUUID), Degree("Medieninformatik", "MI", Degree.randomUUID), Degree("Technische Informatik", "TI", Degree.randomUUID), Degree("Wirtschaftsinformatik", "WI", Degree.randomUUID))
       .map(repository.add[Degree])
     (rooms ++ roles ++ authorities ++ degrees).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
