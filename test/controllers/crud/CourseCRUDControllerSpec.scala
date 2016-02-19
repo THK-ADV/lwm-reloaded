@@ -9,23 +9,21 @@ import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, Result, AnyContent, Request}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 import scala.util.Success
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
-  override val entityToPass: Course = Course("label to pass", "abbreviation to pass", User.randomUUID, Course.randomUUID)
+  override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", User.randomUUID, Course.randomUUID)
 
   override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
   }
 
-  override val entityToFail: Course = Course("label to fail", "abbreviation to fail", User.randomUUID, Course.randomUUID)
+  override val entityToFail: Course = Course("label to fail", "description to fail", "abbreviation to fail", User.randomUUID, Course.randomUUID)
 
   override implicit val jsonWrites: Writes[Course] = Course.writes
 
@@ -33,13 +31,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override val inputJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
+    "description" -> entityToPass.description,
     "abbreviation" -> entityToPass.abbreviation,
     "lecturer" -> entityToPass.lecturer
   )
 
   override def entityTypeName: String = "course"
 
-  import bindings.CourseBinding._
+  import bindings.CourseBinding.courseBinder
   import ops._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
@@ -48,10 +47,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "return the corresponding course for a given lecturer" in {
       val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
 
-      val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", lecturer.id, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
-      val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", lecturer.id, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -72,10 +71,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "return all corresponding courses for a given lecturer" in {
       val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
 
-      val first = Course("label1", "abbreviation1", lecturer.id, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", lecturer.id, Course.randomUUID)
-      val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", lecturer.id, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", lecturer.id, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -96,10 +95,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "not return courses for a lecturer when there is no match" in {
       val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
 
-      val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
-      val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -121,10 +120,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses when there is an invalid query attribute" in {
-      val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
-      val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -148,10 +147,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "not return courses when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val first = Course("label1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
-      val second = Course("label2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
-      val third = Course("label3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
-      val fourth = Course("label4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
