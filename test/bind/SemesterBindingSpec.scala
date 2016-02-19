@@ -2,6 +2,7 @@ package bind
 
 import base.SesameDbSpec
 import models.Semester
+import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -15,15 +16,17 @@ class SemesterBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](ns)
   import bindings.uuidBinder
-  import bindings.SemesterBinding._
+  import bindings.SemesterBinding.semesterBinder
+  import bindings.jodaLocalDateBinder
 
-  val semester = Semester("name", "startDate", "endDate", "examPeriod", Semester.randomUUID)
+  val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5), Semester.randomUUID)
   val semesterGraph = (
     URI(Semester.generateUri(semester)).a(lwm.Semester)
-      -- lwm.name ->- semester.name
-      -- lwm.startDate ->- semester.startDate
-      -- lwm.endDate ->- semester.endDate
-      -- lwm.examPeriod ->- semester.examPeriod
+      -- lwm.label ->- semester.label
+      -- lwm.abbreviation ->- semester.abbreviation
+      -- lwm.startDate ->- semester.start
+      -- lwm.endDate ->- semester.end
+      -- lwm.examStart ->- semester.examStart
       -- lwm.id ->- semester.id
     ).graph
 

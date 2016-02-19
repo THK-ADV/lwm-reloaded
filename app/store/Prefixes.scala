@@ -6,10 +6,13 @@ object Prefixes {
 
   class LWMPrefix[Rdf <: RDF](ops: RDFOps[Rdf]) extends PrefixBuilder("lwm", "http://lwm.fh-koeln.de/ns/")(ops) {
 
+    // TODO merge this one out of here
+    val localDate = apply("localDate")
+
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room
+    //Labwork, Course, Degree, Group, Room, Semster
     val label = apply("label")
 
     // Labwork, LabworkApplication, Room, Degree
@@ -31,10 +34,9 @@ object Prefixes {
     val enrollment = apply("enrollment")
 
     // Semester
-    val name = apply("name")
     val endDate = apply("endDate")
     val startDate = apply("startDate")
-    val examPeriod = apply("examPeriod")
+    val examStart = apply("examStart")
 
     // AssignmentEntry, AssignmentPlan
     val index = apply("index")
@@ -47,6 +49,7 @@ object Prefixes {
     val lecturer = apply("lecturer")
 
     // RefRole, Role, Authority
+    val name = apply("name")
     val role = apply("role")
     val refroles = apply("refRoles")
     val permissions = apply("permissions")
