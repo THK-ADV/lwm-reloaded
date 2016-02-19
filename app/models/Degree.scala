@@ -5,9 +5,9 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Degree(label: String, description: String, id: UUID) extends UniqueEntity
+case class Degree(label: String, abbreviation: String, id: UUID) extends UniqueEntity
 
-case class DegreeProtocol(label: String, description: String)
+case class DegreeProtocol(label: String, abbreviation: String)
 
 object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol, Degree]{
 

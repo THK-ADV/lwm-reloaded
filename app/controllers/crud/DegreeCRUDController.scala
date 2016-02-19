@@ -27,13 +27,15 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
 
   override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = id match {
-    case Some(uuid) => Degree(input.label, input.description, uuid)
-    case None => Degree(input.label, input.description, Degree.randomUUID)
+    case Some(uuid) => Degree(input.label, input.abbreviation, uuid)
+    case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
-  override protected def duplicate(input: DegreeProtocol, output: Degree): Boolean = input.label == output.label
+  override protected def duplicate(input: DegreeProtocol, output: Degree): Boolean = {
+    input.label == output.label && input.abbreviation == output.abbreviation
+  }
 }

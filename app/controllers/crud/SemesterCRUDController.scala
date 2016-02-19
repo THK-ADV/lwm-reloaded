@@ -4,7 +4,6 @@ import java.util.UUID
 
 import models.security.Permissions._
 import models.{Semester, SemesterProtocol, UriGenerator}
-import org.joda.time.DateTime
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
@@ -39,15 +38,15 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 
     def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
-      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => DateTime.parse(sem.startDate).getYear.toString.equals(year)))
+      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => sem.start.getYear.toString.equals(year)))
     }
 
     def filterByPeriod(period: Seq[String], semesters: Set[Semester]): Result = {
       val byPeriod = period.head match {
         case ss if ss.toLowerCase.equals("ss") =>
-          Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear <= 6))
+          Some(semesters.filter(sem => sem.start.getMonthOfYear <= 6))
         case ws if ws.toLowerCase.equals("ws") =>
-          Some(semesters.filter(sem => DateTime.parse(sem.startDate).getMonthOfYear > 6))
+          Some(semesters.filter(sem => sem.start.getMonthOfYear > 6))
         case _ => None
       }
 
@@ -99,10 +98,8 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   }
 
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
-    case Some(uuid) =>
-      Semester(input.name, input.startDate, input.endDate, input.examPeriod, uuid)
-    case None =>
-      Semester(input.name, input.startDate, input.endDate, input.examPeriod, Semester.randomUUID)
+    case Some(uuid) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, uuid)
+    case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, Semester.randomUUID)
   }
 
 
@@ -113,6 +110,6 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   }
 
   override protected def duplicate(input: SemesterProtocol, output: Semester): Boolean = {
-    input.name == output.name && input.startDate == output.startDate && input.endDate == output.endDate
+    input.label == output.label && input.start.isEqual(output.start ) && input.end.isEqual(output.end)
   }
 }

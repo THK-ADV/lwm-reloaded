@@ -6,7 +6,7 @@ import models._
 import models.applications.LabworkApplication
 import models.security.{Authority, Permission, Role, RefRole}
 import models.users.{Employee, Student}
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
@@ -68,6 +68,20 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[EntryType] = {
       pointed.pointer.as[String].map(EntryType.apply)
+    }
+  }
+
+  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
+
+    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
+      }
     }
   }
 
@@ -187,19 +201,20 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val clazz = lwm.Course
     implicit val classUri = classUrisFor[Course](clazz)
     private val label = property[String](lwm.label)
+    private val description = property[String](lwm.description)
     private val abbreviation = property[String](lwm.abbreviation)
     private val lecturer = property[UUID](lwm.lecturer)
 
-    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, abbreviation, lecturer, id)(Course.apply, Course.unapply) withClasses classUri
+    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, id)(Course.apply, Course.unapply) withClasses classUri
   }
 
   object DegreeBinding {
     val clazz = lwm.Degree
     implicit val classUri = classUrisFor[Degree](clazz)
     private val label = property[String](lwm.label)
-    private val description = property[String](lwm.description)
+    private val abbreviation = property[String](lwm.abbreviation)
 
-    implicit val degreeBinder = pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, description, id)(Degree.apply, Degree.unapply) withClasses classUri
+    implicit val degreeBinder = pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, abbreviation, id)(Degree.apply, Degree.unapply) withClasses classUri
   }
 
   object GroupBinding {
@@ -224,12 +239,13 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object SemesterBinding {
     val clazz = lwm.Semester
     implicit val classUri = classUrisFor[Semester](clazz)
-    private val name = property[String](lwm.name)
-    private val startDate = property[String](lwm.startDate)
-    private val endDate = property[String](lwm.endDate)
-    private val examPeriod = property[String](lwm.examPeriod)
+    private val label = property[String](lwm.label)
+    private val abbreviation = property[String](lwm.abbreviation)
+    private val start = property[LocalDate](lwm.startDate)
+    private val end = property[LocalDate](lwm.endDate)
+    private val examStart = property[LocalDate](lwm.examStart)
 
-    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(name, startDate, endDate, examPeriod, id)(Semester.apply, Semester.unapply) withClasses classUri
+    implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(label, abbreviation, start, end, examStart, id)(Semester.apply, Semester.unapply) withClasses classUri
   }
 }
 
