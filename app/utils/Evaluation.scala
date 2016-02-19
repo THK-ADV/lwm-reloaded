@@ -20,6 +20,7 @@ sealed case class Evaluation[+E, +V](err: List[E], value: V) {
     override def ap[A, B](fa: => Evaluation[E2, A])(f: => Evaluation[E2, (A) => B]): Evaluation[E2, B] = fa ap f
   }
 
+  def add[E2 >: E](e: E2): Evaluation[E2, V] = mapErrWhole(_.+:(e))
   def ap[E2 >: E, V2](E: Evaluation[E2, V => V2]): Evaluation[E2, V2] = E map (_ (value)) mapErrWhole (e => listMonoid.append(e, err))
   def bimap[E2, V2](f: V => V2, g: E => E2): Evaluation[E2, V2] = evaluationV(f(value)) mapErr g
   def map[B](f: V => B): Evaluation[E, B] = evaluation(f(value), err)

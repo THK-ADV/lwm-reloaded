@@ -15,21 +15,27 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import store.SesameRepository
-import utils.Gen
+import utils.{Evaluation, Gen}
 import scala.language.postfixOps
 import scala.util.Random._
 import scala.util.Success
+import utils.Ops.MonoidInstances._
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
-
+  
+  def emptyEval: Evaluation[Conflict, Int] = Evaluation.empty[Conflict, Int]
+  def eval(l: List[Conflict]): Evaluation[Conflict, Int] = Evaluation.evaluationE[Conflict, Int](l)
+  
   def unfold[A, B](a: A)(f: A => Option[(B, A)]): Stream[B] = f(a) match {
     case Some((b, aa)) => Stream.cons(b, unfold(aa)(f))
     case None => Stream.empty
   }
 
-  def alph(amount: Int): Set[String] = {
-    unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27) toSet
+  def alph(amount: Int): Vector[String] = {
+    unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27) toVector
   }
+
+  def population(n: Int): Vector[UUID] = Stream.continually(UUID.randomUUID()) take n toVector
 
   val repo = mock[SesameRepository]
   val blacklistService = new BlacklistService(repo)
@@ -39,10 +45,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
-  def gen(specs: Vector[(Timetable, Set[Group], AssignmentPlan)]): Vector[((Gen[ScheduleG, Conflict, Int], Int), Evaluation)] = {
-    def tryGen(t: Timetable, g: Set[Group], ap: AssignmentPlan, comp: Vector[ScheduleG]): ((Gen[ScheduleG, Conflict, Int], Int), Evaluation) = {
+  def gen(specs: Vector[(Timetable, Set[Group], AssignmentPlan)]): Vector[(Gen[ScheduleG, Conflict, Int], Int)] = {
+    def tryGen(t: Timetable, g: Set[Group], ap: AssignmentPlan, comp: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
       val result = scheduleService.generate(t, g, ap, comp)
-      val eval = scheduleService.evaluate(result._1.elem, ap.numberOfEntries, comp)
 
       /*if (eval.conflicts.isEmpty)
         (result, eval)
@@ -50,14 +55,14 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         tryGen(t, g, ap, comp)
       }*/
 
-      (result, eval)
+      result
     }
 
-    specs.foldLeft((Vector.empty[ScheduleG], Vector.empty[((Gen[ScheduleG, Conflict, Int], Int), Evaluation)])) {
+    specs.foldLeft((Vector.empty[ScheduleG], Vector.empty[(Gen[ScheduleG, Conflict, Int], Int)])) {
       case ((comp, _), (t, g, ap)) =>
         val result = tryGen(t, g, ap, comp)
 
-        (comp ++ Vector(result._1._1.elem), Vector((result._1, result._2)))
+        (comp ++ Vector(result._1.elem), Vector((result._1, result._2)))
     }._2
   }
 
@@ -75,7 +80,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty))
 
       val times = 100
-      val result = scheduleService.populate(times, timetable, plan, groups)
+      val result = scheduleService.population(times, timetable, plan, groups toSet)
       //println(result.head.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size))
       //println(result.last.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size))
 
@@ -117,7 +122,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       }.toSet
       val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
 
-      val result = (0 until 100).map(_ => scheduleService.mutate(schedule)).toVector
+      val result = (0 until 100).map(_ => scheduleService.mutate(schedule, emptyEval)).toVector
 
       /*schedule.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).foreach(println)
       println("=========================")
@@ -132,124 +137,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result.forall(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size)) shouldBe true
     }
 
-    "mutate given schedule destructively by rearrange contents of groups for one conflict" in {
-      import scala.util.Random._
-
-      val sb = Group.randomUUID
-      val nb = Group.randomUUID
-      val ok1 = Group.randomUUID
-      val ok2 = Group.randomUUID
-      val groups = Set(
-        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), sb),
-        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), ok1),
-        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), ok2),
-        Group("D", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), nb)
-      )
-      val plan = AssignmentPlan(8, Set.empty)
-      val entries = (0 until plan.numberOfEntries * groups.size).grouped(groups.size).flatMap(_.zip(groups)).map {
-        case (n, group) =>
-          val date = LocalDate.now.plusWeeks(n)
-          val start = LocalTime.now.withHourOfDay(nextInt(19))
-          val end = start.plusHours(nextInt(3))
-
-          ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID)
-      }.toSet
-      val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
-
-      val ce = schedule.entries.find(_.group.id == sb).get
-      val g = groups.find(_.id == sb).get
-      val m = g.members.toVector
-      val s = Vector(m(1), m(3), m(5))
-
-      val result = scheduleService.mutateDestructive(schedule, Vector(Conflict(ce, s, g)))
-
-      result should not be schedule
-      result.entries.find(_.group.id == sb).foreach(a => s.foreach(s => a.group.members.find(_ == s) shouldBe None))
-      result.entries.find(_.group.id == nb).foreach(a => s.foreach(s => a.group.members.find(_ == s) shouldBe Some(s)))
-      result.entries.find(_.group.id == nb).foreach(_.group.members should not be groups.find(_.id == nb).get.members)
-      result.entries.find(_.group.id == sb).foreach(_.group.members should not be groups.find(_.id == sb).get.members)
-      result.entries.find(_.group.id == ok1).foreach(_.group.members shouldBe groups.find(_.id == ok1).get.members)
-      result.entries.find(_.group.id == ok2).foreach(_.group.members shouldBe groups.find(_.id == ok2).get.members)
-
-      result.entries.count(_.group.id == sb) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == nb) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == ok1) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == ok2) shouldBe plan.numberOfEntries
-
-      result.entries.toVector.flatMap(_.group.members).diff(schedule.entries.toVector.flatMap(_.group.members)) shouldBe empty
-      result.entries.toVector.flatMap(_.group.members).forall(a => schedule.entries.toVector.flatMap(_.group.members).count(_ == a) == plan.numberOfEntries) shouldBe true
-
-      val gg = result.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
-      val gv = groups.toVector.map(_.id)
-      gg.foldLeft((true, gg.head)) {
-        case ((b, rep), l) => (b && l == rep, rep)
-      }._1 shouldBe true
-      result.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size) shouldBe true
-    }
-
-    "mutate given schedule destructively by rearrange contents of groups for multiple conflicts" in {
-      val sb1 = Group.randomUUID
-      val nb1 = Group.randomUUID
-      val sb2 = Group.randomUUID
-      val ok = Group.randomUUID
-      val groups = Set(
-        Group("A", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), sb1),
-        Group("B", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), sb2),
-        Group("C", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), ok),
-        Group("D", Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), nb1)
-      )
-      val plan = AssignmentPlan(8, Set.empty)
-      val entries = (0 until plan.numberOfEntries * groups.size).grouped(groups.size).flatMap(_.zip(groups)).map {
-        case (n, group) =>
-          val date = LocalDate.now.plusWeeks(n)
-          val start = LocalTime.now.withHourOfDay(nextInt(19))
-          val end = start.plusHours(nextInt(3))
-
-          ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID)
-      }.toSet
-      val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
-
-      val ce1 = schedule.
-        entries.find(_.group.id == sb1).get
-      val g1 = groups.find(_.id == sb1).get
-      val m1 = g1.members.toVector
-      val s1 = Vector(m1(1), m1(3), m1(5))
-
-      val ce2 = schedule.entries.find(_.group.id == sb2).get
-      val g2 = groups.find(_.id == sb2).get
-      val m2 = g2.members.toVector
-      val s2 = Vector(m2(2), m2(4))
-
-      val result = scheduleService.mutateDestructive(schedule, Vector(
-        Conflict(ce1, s1, g1),
-        Conflict(ce2, s2, g2)
-      ))
-
-      result should not be schedule
-      result.entries.find(_.group.id == sb1).foreach(a => s1.foreach(s => a.group.members.find(_ == s) shouldBe None))
-      result.entries.find(_.group.id == nb1).foreach(a => s1.foreach(s => a.group.members.find(_ == s) shouldBe Some(s)))
-      result.entries.find(_.group.id == sb2).foreach(a => s2.foreach(s => a.group.members.find(_ == s) shouldBe None))
-
-      result.entries.find(_.group.id == nb1).foreach(_.group.members should not be groups.find(_.id == nb1).get.members)
-      result.entries.find(_.group.id == sb1).foreach(_.group.members should not be groups.find(_.id == sb1).get.members)
-      result.entries.find(_.group.id == sb2).foreach(_.group.members should not be groups.find(_.id == sb2).get.members)
-      result.entries.find(_.group.id == ok).foreach(_.group.members shouldBe groups.find(_.id == ok).get.members)
-
-      result.entries.count(_.group.id == sb1) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == nb1) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == sb2) shouldBe plan.numberOfEntries
-      result.entries.count(_.group.id == ok) shouldBe plan.numberOfEntries
-
-      result.entries.toVector.flatMap(_.group.members).diff(schedule.entries.toVector.flatMap(_.group.members)) shouldBe empty
-      result.entries.toVector.flatMap(_.group.members).forall(a => schedule.entries.toVector.flatMap(_.group.members).count(_ == a) == plan.numberOfEntries) shouldBe true
-
-      val gg = result.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
-      val gv = groups.toVector.map(_.id)
-      gg.foldLeft((true, gg.head)) {
-        case ((b, rep), l) => (b && l == rep, rep)
-      }._1 shouldBe true
-      result.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size) shouldBe true
-    }
+//
 
     "successfully cross two schedules" in {
       import scala.util.Random._
@@ -272,16 +160,18 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       val left = ScheduleG(UUID.randomUUID(), entries._1, UUID.randomUUID())
       val right = ScheduleG(UUID.randomUUID(), entries._2, UUID.randomUUID())
-      val cLeft = Conflict(left.entries.head, left.entries.head.group.members.toVector.take(3), left.entries.head.group)
-      val cRight = Conflict(right.entries.head, right.entries.head.group.members.toVector.take(3), right.entries.head.group)
+      val lgroup = left.entries.head.group
+      val rgroup = right.entries.head.group
+      val eLeft = eval(List(Conflict(left.entries.head, left.entries.head.group.members.toVector.take(3), lgroup)))
+      val eRight = eval(List(Conflict(right.entries.head, right.entries.head.group.members.toVector.take(3), rgroup)))
 
-      val result = scheduleService.crossover((left, List(cLeft)), (right, List(cRight)))
+      val result = scheduleService.crossover((left, eLeft), (right, eRight))
 
       left should not be result._1
       right should not be result._2
 
-      result._1.entries.find(_.group == cLeft.group).forall(a => left.entries.find(_.group == a.group).contains(a)) shouldBe false
-      result._2.entries.find(_.group == cRight.group).forall(a => right.entries.find(_.group == a.group).contains(a)) shouldBe false
+      result._1.entries.find(_.group == lgroup).forall(a => left.entries.find(_.group == a.group).contains(a)) shouldBe false
+      result._2.entries.find(_.group == rgroup).forall(a => right.entries.find(_.group == a.group).contains(a)) shouldBe false
 
       result._1.entries.zip(left.entries).count(e => e._1 == e._2) < left.entries.size shouldBe true
       result._2.entries.zip(right.entries).count(e => e._1 == e._2) < right.entries.size shouldBe true
@@ -302,7 +192,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       }
     }
 
-    "evaluate an given schedule when there are no other schedules" in {
+    "evaluate a given schedule when there are no other schedules" in {
       val planEntries = (0 until 5).map(n => AssignmentEntry(n, Set.empty[EntryType])).toSet
       val plan = AssignmentPlan(planEntries.size, planEntries)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
@@ -316,14 +206,14 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
       val existing = Vector.empty[ScheduleG]
 
-      val schedule = scheduleService.populate(1, timetable, plan, groups).head
-      val result = scheduleService.evaluate(schedule, plan.numberOfEntries, existing)
+      val schedule = scheduleService.population(1, timetable, plan, groups).head
+      val result = scheduleService.evaluation(existing, plan.numberOfEntries)(schedule)
 
-      result.conflicts shouldBe empty
+      result.err shouldBe empty
       result.value shouldBe 0
     }
 
-    "evaluate an given schedule when there are some other schedules" in {
+    "evaluate a given schedule when there are some other schedules" in {
       val planEntries = (0 until 8).map(n => AssignmentEntry(n, Set.empty[EntryType])).toSet
       val plan = AssignmentPlan(planEntries.size, planEntries)
       val mi = Degree("mi", Degree.randomUUID)
@@ -365,7 +255,6 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
-      import scala.util.Random._
       val students = (0 until 300).map(_ => Student.randomUUID).toVector
       val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
@@ -373,20 +262,20 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
       val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
 
-      val ap1Schedule = scheduleService.populate(1, ap1T, plan, ap1G)
-      val ma1Schedule = scheduleService.populate(1, ma1T, plan, ma1G).head
+      val ap1Schedule = scheduleService.population(1, ap1T, plan, ap1G)
+      val ma1Schedule = scheduleService.population(1, ma1T, plan, ma1G).head
 
-      val result = scheduleService.evaluate(ma1Schedule, plan.numberOfEntries, ap1Schedule)
-      println(s"conflicts ${result.conflicts.size}")
-      println(s"guys ${result.conflicts.map(_.member)}")
-      println(s"date ${result.conflicts.map(e => e.entry.date.toLocalDateTime(e.entry.start))}")
+      val result = scheduleService.evaluation(ap1Schedule, plan.numberOfEntries)(ma1Schedule)
+      println(s"conflicts ${result.err.size}")
+      println(s"guys ${result.err.map(_.members)}")
+      println(s"date ${result.err.map(e => e.entry.date.toLocalDateTime(e.entry.start))}")
       println(s"value ${result.value}")
 
-      result.conflicts should not be empty
+      result.err should not be empty
       result.value should be < 1000
-      result.conflicts.size should be <= result.value
-      result.conflicts.forall(c => ma1G.contains(c.group) && c.member.forall(u => ma1G.exists(_.members.contains(u))) && ma1Schedule.entries.contains(c.entry)) shouldBe true
-      result.conflicts.forall(c => ap1G.contains(c.group) && c.member.forall(u => ap1G.exists(_.members.contains(u))) && ap1Schedule.head.entries.contains(c.entry)) shouldBe false
+      result.err.size should be <= result.value
+      result.err.forall(c => ma1G.contains(c.group) && c.members.forall(u => ma1G.exists(_.members.contains(u))) && ma1Schedule.entries.contains(c.entry)) shouldBe true
+      result.err.forall(c => ap1G.contains(c.group) && c.members.forall(u => ap1G.exists(_.members.contains(u))) && ap1Schedule.head.entries.contains(c.entry)) shouldBe false
     }
   }
 
@@ -442,22 +331,20 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         (ap1T, ap1G, ap1Plan)
       )).head
 
-      println(s"gen ${result._1._2}")
-      println(s"conflict size ${result._2.conflicts.size}")
-      println(s"conflict value ${result._2.value}")
-      result._2.conflicts shouldBe empty
-      result._2.value shouldBe 0
+      println(s"gen ${result._2}")
+      println(s"conflict size ${result._1.evaluate.err.size}")
+      println(s"conflict value ${result._1.evaluate.value}")
+      result._1.evaluate.err shouldBe empty
+      result._1.evaluate.value shouldBe 0
 
-      result._1._2 shouldBe 0
-      result._1._1.evaluate.err shouldBe empty
-      result._1._1.evaluate.value shouldBe 0
-      result._1._1.elem.labwork shouldEqual ap1Prak.id
-      result._1._1.elem.entries.groupBy(_.group) forall {
+      result._2 shouldBe 0
+      result._1.elem.labwork shouldEqual ap1Prak.id
+      result._1.elem.entries.groupBy(_.group) forall {
         case (_, ss) => ss.size == ap1Plan.numberOfEntries
       } shouldBe true
     }
 
-    "generate an collision free schedule in few generations even with one existing competitive schedule and more density" in {
+    "generate a collision free schedule in few generations even with one existing competitive schedule and more density" in {
       val ap1Plan = AssignmentPlan(8, Set(
         AssignmentEntry(0, Set.empty[EntryType]),
         AssignmentEntry(1, Set.empty[EntryType]),
@@ -513,7 +400,6 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
-      import scala.util.Random._
       val students = (0 until 200).map(_ => Student.randomUUID).toVector
       val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
@@ -526,19 +412,95 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         (ma1T, ma1G, ma1Plan)
       )).head
 
-      println(s"gen ${result._1._2}")
-      println(s"conflict size ${result._2.conflicts.size}")
-      println(s"conflict value ${result._2.value}")
-      result._2.conflicts shouldBe empty
-      result._2.value shouldBe 0
+      println(s"gen ${result._2}")
+      println(s"conflict size ${result._1.evaluate.err.size}")
+      println(s"conflict value ${result._1.evaluate.value}")
+      result._1.evaluate.err shouldBe empty
+      result._1.evaluate.err.size shouldBe 0
 
-      result._1._2 should be >= 0
-      result._1._1.evaluate.err shouldBe empty
-      result._1._1.evaluate.value shouldBe 0
-      result._1._1.elem.labwork shouldEqual ma1Prak.id
-      result._1._1.elem.entries.groupBy(_.group) forall {
+      result._2 should be >= 0
+      result._1.elem.labwork shouldEqual ma1Prak.id
+      result._1.elem.entries.groupBy(_.group) forall {
         case (_, ss) => ss.size == ma1Plan.numberOfEntries
       } shouldBe true
+    }
+
+    "mutate given schedule destructively by exchanging people between groups" in {
+      val labid = UUID.randomUUID()
+      val groups = alph(10) zip (population(100) grouped 10 toVector) map {
+        case (label, group) => Group(label, labid, group toSet)
+      }
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val schedule = ScheduleG(labid, entries toSet, Schedule.randomUUID)
+      val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
+
+      val newSchedule = scheduleService.mutateDestructive(schedule, ev)
+
+      val theGroup = entries(4).group
+      val theNaughtyOnes = theGroup.members take 2 toVector
+
+      newSchedule.entries find (_.group.id == theGroup.id) match {
+        case Some(entry) =>
+          //should not contain one or the other
+          entry.group.members.contains(theNaughtyOnes.head) && entry.group.members.contains(theNaughtyOnes(1)) shouldBe false
+          //should have one new member
+          (entry.group.members diff (theGroup members)).size shouldBe 1
+
+        case None => fail("Groups should not simply disappear")
+      }
+
+      //The swapped individual should find himself in the sacrifice's former group and vice versa
+      (for {
+        groupThatAcceptedConflict <- newSchedule.entries.map(_.group) find (z => ((z.members intersect theGroup.members).size == 1) && z.id != theGroup.id)
+        groupThatAcceptedConflictBefore <- schedule.entries find (_.group.id == groupThatAcceptedConflict.id)
+        newGroupOfSacrifice <- newSchedule.entries find (_.group.id == theGroup.id)
+      } yield {
+        val sacrifice = newGroupOfSacrifice.group.members.diff(theGroup members).head
+        groupThatAcceptedConflictBefore.group.members contains sacrifice
+      }) match {
+        case Some(b) => b shouldBe true
+        case None => fail("The old group should contain the one that was selected as a swapping sacrifice")
+      }
+    }
+
+    "cross conflicting people destructively with others from different schedules" in {
+      val labid = UUID.randomUUID()
+      val groups = alph(10) zip (population(100) grouped 10 toVector) map {
+        case (label, group) => Group(label, labid, group toSet)
+      }
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def schedule = ScheduleG(labid, entries toSet, Schedule.randomUUID)
+
+      val (schedule1, schedule2) = (schedule, schedule)
+      val (e1, e2) = (schedule1.entries.toVector(3), schedule2.entries.toVector(5))
+
+      val (eval1, eval2) = (Evaluation(List(Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
+        Evaluation(List(Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
+
+
+      val (s1, s2) = scheduleService.crossoverDestructive((schedule1, eval1), (schedule2, eval2))
+
+      s1.entries find (_.group.id == e1.group.id) match {
+        case Some(entry) =>
+          val members = (e1.group.members take 2).toVector
+          //should not contain one or the other
+          entry.group.members.contains(members.head) && entry.group.members.contains(members(1)) shouldBe false
+          //should have one new member
+          (entry.group.members diff e1.group.members).size shouldBe 1
+
+        case None => fail("Groups should not simply disappear")
+      }
+
+      s2.entries find (_.group.id == e2.group.id) match {
+        case Some(entry) =>
+          val members = (e2.group.members take 2).toVector
+          //should not contain one or the other
+          entry.group.members.contains(members.head) && entry.group.members.contains(members(1)) shouldBe false
+          //should have one new member
+          (entry.group.members diff e2.group.members).size shouldBe 1
+
+        case None => fail("Groups should not simply disappear")
+      }
     }
 
     /*"generate yet another collision free schedule in few generations even with two existing competitive schedule and more density" in {

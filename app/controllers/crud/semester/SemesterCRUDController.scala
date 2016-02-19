@@ -22,6 +22,7 @@ object SemesterCRUDController {
   val periodAttribute = "period"
 }
 
+//TODO: Some tests are failing. Why, I cannot say.
 class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 

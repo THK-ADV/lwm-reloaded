@@ -57,7 +57,7 @@ object ScheduleCRUDController {
     }
 
     repository.query(query)
-      .flatMap(_.get("schedules").peak(_.stringValue()))
+      .flatMap(_.get("schedules").peek(_.stringValue()))
       .map(repository.getMany[Schedule])
       .sequenceM
   }
@@ -73,7 +73,7 @@ object ScheduleCRUDController {
     val maybeEntries = sequence(
       schedule.entries flatMap { entry =>
         val group = repository.get[Group](Group.generateUri(entry.group)(repository.namespace)).toOption
-        group.peak(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
+        group.peek(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
       })
 
     maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
@@ -120,7 +120,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     val gen = for {
       groups <- repository.get[Group].map(_.filter(_.labwork == id))
       timetable <- repository.get[Timetable].map(_.find(_.labwork == id))
-      plan <- repository.get[Labwork](uri).peak(_.assignmentPlan)
+      plan <- repository.get[Labwork](uri).peek(_.assignmentPlan)
       comp <- ScheduleCRUDController.competitive(id, repository)
     } yield {
       for {
