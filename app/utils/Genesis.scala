@@ -35,7 +35,10 @@ object Genesis {
                                           o: Ordering[V]) = {
 
     def take2 = (z: GenAcc[A, E, V]) => {
-      (z._1 sortBy (_.evaluate.value) take n, z._2)
+      val aa = z._1 sortBy (_.evaluate.value) take n
+      println(s"Value ${aa map (_.evaluate.value) head} :: Conflict size: ${aa map (_.evaluate.err.size) head}")
+      //(z._1 sortBy (_.evaluate.value) take n, z._2)
+      (aa, z._2)
     }
     lazy val size = pop.size
     (lift[A, E, V] _ andThen evalAccumMeasure(span)(take2 andThen replVar(size)(f)))(pop)
@@ -203,7 +206,10 @@ object Genesis {
                                cross: (Cross[A, E, V], Cross[A, E, V])): GenAcc[A, E, V] => Vector[Gen[A, E, V]] = {
     case (v, l) =>
       val mon: Monoid[V] = implicitly[Monoid[V]]
-      if(f(l)) repl(times)(mon, mut._2, cross._2)(v)
+      if(f(l)) {
+        println("Using the dark ones")
+        repl(times)(mon, mut._2, cross._2)(v)
+      }
       else repl(times)(mon, mut._1, cross._1)(v)
   }
 }

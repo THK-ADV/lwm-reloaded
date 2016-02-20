@@ -23,7 +23,6 @@ case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID) {
   override def equals(that: scala.Any): Boolean = that match {
     case ScheduleG(l, e, i) =>
       import TimetableDateEntry._
-
       labwork == l && entries.toVector.sortBy(toLocalDateTime).zip(e.toVector.sortBy(toLocalDateTime)).forall(z => z._1 == z._2) && id == i
     case _ => false
   }
@@ -40,8 +39,8 @@ case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, roo
 
 trait ScheduleServiceLike {
   def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG]
-  def mutate: Mutation
-  def mutateDestructive: Mutation
+  def mutate: Mutator
+  def mutateDestructive: Mutator
   def crossover: Crossover
   def crossoverDestructive: Crossover
   def evaluation(all: Vector[ScheduleG], appointments: Int): Evaluator
@@ -52,7 +51,7 @@ trait ScheduleGenesisServiceLike {
 }
 
 object ScheduleService {
-  type Mutation = Mutate[ScheduleG, Conflict, Int]
+  type Mutator = Mutate[ScheduleG, Conflict, Int]
   type Crossover = Cross[ScheduleG, Conflict, Int]
   type Evaluator = Eval[ScheduleG, Conflict, Int]
   type Evaluation = utils.Evaluation[Conflict, Int]
@@ -103,15 +102,15 @@ object ScheduleService {
 class ScheduleService(private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike { self =>
 
   override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
-    val pop = population(100, timetable, assignmentPlan, groups)
+    val pop = population(300, timetable, assignmentPlan, groups)
 
     implicit val evalF = evaluation(competitive, assignmentPlan.numberOfEntries)
     implicit val mutateF = (mutate, mutateDestructive)
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
 
-    Genesis.measureByVariation[ScheduleG, Conflict, Int](pop, 200) { elite =>
-      if (elite.size % 10 == 0) elite.take(10).distinct.size == 1 else false
+    Genesis.measureByVariation[ScheduleG, Conflict, Int](pop, 300, 20) { elite =>
+      if (elite.size % 5 == 0) elite.take(5).distinct.size == 1 else false
     }
   }
 
@@ -131,25 +130,21 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
     ScheduleG(timetable.labwork, scheduleEntries, Schedule.randomUUID)
   }
 
-  override def mutate: Mutation = mutation { (s, e) =>
+  override def mutate: Mutator = mutation { (s, e) =>
     implicit val groups = s.entries.toVector.map(_.group)
     val group1 = randomGroup
     val group2 = randomAvoiding(group1)
     replaceWithin(s)(group1, group2)
   }
 
-  override def mutateDestructive: Mutation = mutation { (s, e) =>
+  override def mutateDestructive: Mutator = mutation { (s, e) =>
     implicit val groups = s.entries.map(_.group).toVector
-    e.fold {
+    e.mapErrWhole(shuffle(_)).fold {
       case ((h :: t, _)) =>
         val group = randomAvoiding(h.group)
         val chosenOne = randomOne(h.members)
         val swappedOne = randomOne(group.members.toVector)
-        val (cgroup, sgroup) = (
-          replaceGroup(h.group)(swap(_)(chosenOne, swappedOne)),
-          replaceGroup(group)(swap(_)(swappedOne, chosenOne))
-          )
-        replaceWithin(s)(cgroup, sgroup)
+        exchange(chosenOne, swappedOne, s)
       case ((Nil, _)) => s
     }
   }
@@ -167,7 +162,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
   override def crossoverDestructive: Crossover = cross {
     case ((s1, e1), (s2, e2)) =>
-      def newOne(ev: utils.Evaluation[Conflict, Int], left: ScheduleG, right: ScheduleG): ScheduleG = ev.fold {
+      def newOne(ev: utils.Evaluation[Conflict, Int], left: ScheduleG, right: ScheduleG): ScheduleG = ev.mapErrWhole(shuffle(_)).fold {
         case ((c :: t), _) =>
           val one = randomOne(c.members)
           right.entries.find(e => !e.group.members.contains(one)) match {
@@ -198,31 +193,9 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
       members <- intersection if members.nonEmpty
     } yield Conflict(entry, members.toVector, entry.group)
 
-    conflicts.foldLeft(Evaluation.empty[Conflict, Int]) {
-      case (eval, Some(c)) => eval add c map (_ + c.members.size + factor)
+    conflicts.foldLeft(Evaluation.withValue[Conflict, Int](factor)) {
+      case (eval, Some(c)) => eval add c map (_ + c.members.size)
       case (eval, _) => eval
-    }
+    } map (_ * conflicts.count(_.isDefined))
   }
-//  override def evaluate(schedule: ScheduleG, appointments: Int, all: Vector[ScheduleG]): Evaluation = {
-//    def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-//      left.date.isEqual(right.date) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
-//    }
-//
-//    // /check entries against each already existing schedule
-//    val conflicts = all.flatMap(_.entries).map(a => schedule.entries.find(s => collide(a, s)).map(f => (f, f.group.members.intersect(a.group.members)))).foldLeft(List.empty[Conflict]) {
-//      case (list, Some((ee, m))) if m.nonEmpty =>
-//        val c = Conflict(ee, m.toVector, ee.group)
-//        list :+ c
-//      case (list, _) => list
-//    }
-//
-//    //check integrity of group-appointment relation
-//    val integrity = schedule.entries.groupBy(_.group) forall {
-//      case (_, ss) => ss.size == appointments
-//    }
-//
-//    val factor = if (integrity) 0 else 1000
-//
-//    Evaluation(conflicts.foldRight(factor)(_.members.size + _) * conflicts.size, conflicts)
-//  }
 }

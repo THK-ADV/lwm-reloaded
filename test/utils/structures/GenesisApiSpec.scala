@@ -17,7 +17,7 @@ class GenesisApiSpec extends WordSpec with Matchers {
     }
 
     "apply a genesis function with possibility of early exit" in {
-      implicit val eval = Eval.instance[(Int, Int), Nothing, Int](t => evaluationV(t._2))
+      implicit val eval = Eval.instance[(Int, Int), Nothing, Int](t => withValue(t._2))
       implicit val zero: Zero[Int] = new Zero[Int] {
         override def apply(a: Int): Boolean = a == 4
       }
@@ -32,7 +32,7 @@ class GenesisApiSpec extends WordSpec with Matchers {
       val prop = forAll { (l: List[Int]) =>
         l.nonEmpty ==> {
           val v = l.toVector
-          val lifted = lift[Int, Nothing, Int](v) map (_ assimilate evaluationV)
+          val lifted = lift[Int, Nothing, Int](v) map (_ assimilate withValue)
           val index = util.Random.nextInt(v.size)
           val p = (min: Int) => (cur: Int) => cur <= min + v(index)
           val take = takeWith[Int, Nothing, Int](p)
@@ -67,7 +67,7 @@ class GenesisApiSpec extends WordSpec with Matchers {
 
     "apply a global accumulation function" in {
       import instances.zeroInt
-      implicit val eval = Eval.instance[Int, Nothing, Int](evaluationV)
+      implicit val eval = Eval.instance[Int, Nothing, Int](withValue)
       val data = lift[Int, Nothing, Int](Vector(1, 2, 3, 4))
 
       val best = List(1, 2, 3)
@@ -94,8 +94,8 @@ class GenesisApiSpec extends WordSpec with Matchers {
         case ((i1, e1), (i2, e2)) => (i1, i2)
       }
 
-      val l1 = List(Evaluation.evaluationV(1))
-      val l2 = List(Evaluation.evaluationV(1), Evaluation.evaluationV(2))
+      val l1 = List(Evaluation.withValue(1))
+      val l2 = List(Evaluation.withValue(1), Evaluation.withValue(2))
       val vec = lift[Int, Nothing, Int]((0 to 50).toVector)
 
       val rep1 = replVar[Int, Nothing, Int](10)(_.size % 2 == 0)(intM, (mut1, mut2), (cross1, cross2))((vec, l1))
