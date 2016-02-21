@@ -39,7 +39,6 @@ lazy val semanticDependencies = Seq(
 )
 
 lazy val testDependencies = Seq(
-  "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.scalactic" %% "scalactic" % scalatestVersion % "test",
   "org.scalatestplus" %% "play" % "1.4.0-M3" % "test",
@@ -57,7 +56,7 @@ lazy val lwmDependencies = Seq(
   "com.unboundid" % "unboundid-ldapsdk" % "2.3.6"
 )
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   cache,

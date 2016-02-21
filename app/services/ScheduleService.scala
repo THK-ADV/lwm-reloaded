@@ -15,27 +15,9 @@ import TimetableDateEntry._
 import utils.Ops.FunctorInstances._
 import utils.Ops.MonoidInstances.intM
 
-// TODO: refactor out of file
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
-
-case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID) {
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case ScheduleG(l, e, i) =>
-      import TimetableDateEntry._
-      labwork == l && entries.toVector.sortBy(toLocalDateTime).zip(e.toVector.sortBy(toLocalDateTime)).forall(z => z._1 == z._2) && id == i
-    case _ => false
-  }
-}
-
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID) {
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case ScheduleEntryG(s, e, d, r, su, g, i) =>
-      start.isEqual(s) && end.isEqual(e) && date.isEqual(d) && room == r && su == su && group == g && id == i
-    case _ => false
-  }
-}
+case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID)
+case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID)
 
 trait ScheduleServiceLike {
   def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG]
@@ -109,7 +91,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
 
-    Genesis.measureByVariation[ScheduleG, Conflict, Int](pop, 300, 20) { elite =>
+    Genesis.byVariation[ScheduleG, Conflict, Int](pop, 300, 20) { elite =>
       if (elite.size % 5 == 0) elite.take(5).distinct.size == 1 else false
     }
   }
