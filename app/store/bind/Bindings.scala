@@ -4,9 +4,11 @@ import java.util.UUID
 
 import models._
 import models.applications.LabworkApplication
+import models.schedule._
 import models.security.{Authority, Permission, Role, RefRole}
+import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student}
-import org.joda.time.{LocalDate, DateTime}
+import org.joda.time.{LocalTime, LocalDate, DateTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{PGBinder, RecordBinder}
@@ -51,6 +53,34 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
+  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
+
+    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
+      }
+    }
+  }
+
+  implicit val jodaLocalTimeBinder = new PGBinder[Rdf, LocalTime] {
+
+    // LocalTime.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalTime): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localTime))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalTime.parse(stringVal)
+      }
+    }
+  }
+
   implicit val permissionBinder = new PGBinder[Rdf, Permission] {
     override def toPG(t: Permission): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.value, xsd.string))
@@ -71,20 +101,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
-
-    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
-    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
-      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
-        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
-      }
-    }
-  }
-
   val id = property[UUID](lwm.id)
 
   object LabworkApplicationBinding {
@@ -102,6 +118,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object StudentBinding {
     implicit val clazz = lwm.Student
     implicit val classUri = classUrisFor[Student](clazz)
+
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val registrationId = property[String](lwm.registrationId)
@@ -115,6 +132,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object EmployeeBinding {
     implicit val clazz = lwm.Employee
     implicit val classUri = classUrisFor[Employee](clazz)
+
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val systemId = property[String](lwm.systemId)
@@ -124,7 +142,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RoleBinding {
-
     implicit val clazz = lwm.Role
     implicit val classUri = classUrisFor[Role](clazz)
 
@@ -135,7 +152,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RefRoleBinding {
-    import RoleBinding._
+    import RoleBinding.roleBinder
 
     implicit val clazz = lwm.RefRole
     implicit val classUri = classUrisFor[RefRole](clazz)
@@ -147,13 +164,11 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object AuthorityBinding {
-    import RefRoleBinding._
-
     implicit val clazz = lwm.Authority
     implicit val classUri = classUrisFor[Authority](clazz)
 
     private val privileged = property[UUID](lwm.privileged)
-    private val refroles = set[RefRole](lwm.refroles)
+    private val refroles = set[RefRole](lwm.refroles)(RefRoleBinding.refRoleBinder)
 
     implicit val authorityBinder = pgbWithId[Authority](auth => makeUri(Authority.generateUri(auth)))(privileged, refroles, id)(Authority.apply, Authority.unapply) withClasses classUri
   }
@@ -163,28 +178,25 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val classUri = classUrisFor[AssignmentEntry](clazz)
 
     private val index = property[Int](lwm.index)
+    private val duration = property[Int](lwm.duration)
     private val types = set[EntryType](lwm.types)
 
-    implicit val assignmentEntryBinder = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, types, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
+    implicit val assignmentEntryBinder = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, types, duration, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
   }
 
 
   object AssignmentPlanBinding {
-    import AssignmentEntryBinding._
-
     implicit val clazz = lwm.AssignmentPlan
     implicit val classUri = classUrisFor[AssignmentPlan](clazz)
 
     private val numberOfEntries = property[Int](lwm.numberOfEntries)
-    private val entries = set[AssignmentEntry](lwm.entries)
+    private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryBinding.assignmentEntryBinder)
 
     implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(numberOfEntries, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
   }
 
   object LabworkBinding {
-    import AssignmentPlanBinding._
-
-    val clazz = lwm.Labwork
+    implicit val clazz = lwm.Labwork
     implicit val classUri = classUrisFor[Labwork](clazz)
 
     val label = property[String](lwm.label)
@@ -192,25 +204,28 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val semester = property[UUID](lwm.semester)
     val course = property[UUID](lwm.course)
     val degree = property[UUID](lwm.degree)
-    val assignmentPlan = property[AssignmentPlan](lwm.assignmentPlan)
+    val assignmentPlan = property[AssignmentPlan](lwm.assignmentPlan)(AssignmentPlanBinding.assignmentPlanBinder)
 
     implicit val labworkBinder = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, assignmentPlan, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {
-    val clazz = lwm.Course
+    implicit val clazz = lwm.Course
     implicit val classUri = classUrisFor[Course](clazz)
+
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val abbreviation = property[String](lwm.abbreviation)
     private val lecturer = property[UUID](lwm.lecturer)
+    private val semesterIndex = property[Int](lwm.semesterIndex)
 
-    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, id)(Course.apply, Course.unapply) withClasses classUri
+    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, id)(Course.apply, Course.unapply) withClasses classUri
   }
 
   object DegreeBinding {
-    val clazz = lwm.Degree
+    implicit val clazz = lwm.Degree
     implicit val classUri = classUrisFor[Degree](clazz)
+
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
 
@@ -218,8 +233,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object GroupBinding {
-    val clazz = lwm.Group
+    implicit val clazz = lwm.Group
     implicit val classUri = classUrisFor[Group](clazz)
+
     private val label = property[String](lwm.label)
     private val labwork = property[UUID](lwm.labwork)
     private val members = set[UUID](lwm.members)
@@ -228,8 +244,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RoomBinding {
-    val clazz = lwm.Room
+    implicit val clazz = lwm.Room
     implicit val classUri = classUrisFor[Room](clazz)
+
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
 
@@ -237,15 +254,75 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object SemesterBinding {
-    val clazz = lwm.Semester
+    implicit val clazz = lwm.Semester
     implicit val classUri = classUrisFor[Semester](clazz)
+
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
-    private val start = property[LocalDate](lwm.startDate)
-    private val end = property[LocalDate](lwm.endDate)
+    private val start = property[LocalDate](lwm.start)
+    private val end = property[LocalDate](lwm.end)
     private val examStart = property[LocalDate](lwm.examStart)
 
     implicit val semesterBinder = pgbWithId[Semester](semester => makeUri(Semester.generateUri(semester)))(label, abbreviation, start, end, examStart, id)(Semester.apply, Semester.unapply) withClasses classUri
+  }
+
+  object TimetableBinding {
+    implicit val clazz = lwm.Timetable
+    implicit val classUri = classUrisFor[Timetable](clazz)
+
+    private val labwork = property[UUID](lwm.labwork)
+    private val entries = set[TimetableEntry](lwm.entries)(TimetableEntryBinding.timetableEntryBinder)
+    private val start = property[LocalDate](lwm.start)
+    private val blacklist = property[Blacklist](lwm.blacklist)(BlacklistBinding.blacklistBinder)
+
+    implicit val timetableBinder = pgbWithId[Timetable](timetable => makeUri(Timetable.generateUri(timetable)))(labwork, entries, start, blacklist, id)(Timetable.apply, Timetable.unapply) withClasses classUri
+  }
+
+  object TimetableEntryBinding {
+    implicit val clazz = lwm.TimetableEntry
+    implicit val classUri = classUrisFor[TimetableEntry](clazz)
+
+    private val supervisor = property[UUID](lwm.supervisor)
+    private val room = property[UUID](lwm.room)
+    private val degree = property[UUID](lwm.degree)
+    private val dayIndex = property[Int](lwm.dayIndex)
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
+
+    implicit val timetableEntryBinder = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, dayIndex, start, end, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+  }
+
+  object ScheduleBinding {
+    implicit val clazz = lwm.Schedule
+    implicit val classUri = classUrisFor[Schedule](clazz)
+
+    private val labwork = property[UUID](lwm.labwork)
+    private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryBinding.scheduleEntryBinder)
+
+    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+  }
+
+  object ScheduleEntryBinding {
+    implicit val clazz = lwm.ScheduleEntry
+    implicit val classUri = classUrisFor[ScheduleEntry](clazz)
+
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
+    private val date = property[LocalDate](lwm.date)
+    private val room = property[UUID](lwm.room)
+    private val supervisor = property[UUID](lwm.supervisor)
+    private val group = property[UUID](lwm.group)
+
+    implicit val scheduleEntryBinder = pgbWithId[ScheduleEntry](scheduleEntry => makeUri(ScheduleEntry.generateUri(scheduleEntry)))(start, end, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+  }
+
+  object BlacklistBinding {
+    implicit val clazz = lwm.Blacklist
+    implicit val classUri = classUrisFor[Blacklist](clazz)
+
+    private val dates = set[DateTime](lwm.dates)
+
+    implicit val blacklistBinder = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
   }
 }
 

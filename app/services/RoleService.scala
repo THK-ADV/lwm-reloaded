@@ -4,9 +4,12 @@ import java.util.UUID
 
 import models.Labwork
 import models.security._
+import org.w3.banana.binder.{ClassUrisFor, FromPG}
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
+
+import scala.util.{Failure, Success}
 
 trait RoleServiceLike {
 
@@ -19,22 +22,22 @@ trait RoleServiceLike {
   def authorityFor(userId: String): Option[Authority]
 
   /**
-   * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
+    * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
     *
     * @param checkee restrictions
-   * @param checker to be checked
-   * @return true/false
-   */
+    * @param checker to be checked
+    * @return true/false
+    */
   def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean
 
   /**
-   * Composition between `authorityFor` and `checkWith` functions.
-   * Checks if a particular user is allowed to pass the restrictions defined in `checkee`
-   *
-   * @param checkee restrictions
-   * @param userId User ID
-   * @return true/false
-   */
+    * Composition between `authorityFor` and `checkWith` functions.
+    * Checks if a particular user is allowed to pass the restrictions defined in `checkee`
+    *
+    * @param checkee restrictions
+    * @param userId  User ID
+    * @return true/false
+    */
   def checkFor(checkee: (Option[UUID], Set[Permission]))(userId: String): Boolean = authorityFor(userId) exists (e => checkWith(checkee)(e.refRoles))
 }
 
@@ -63,7 +66,6 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
       authority <- repository.get[Authority](first.stringValue()).toOption.flatten
     } yield authority
   }
-
 
   override def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[RefRole]): Boolean = checkee match {
     case (moduleCont, permissions) =>

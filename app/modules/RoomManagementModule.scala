@@ -1,6 +1,8 @@
 package modules
 
 import controllers.crud.RoomCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 
 trait RoomManagementModule {

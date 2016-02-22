@@ -2,13 +2,16 @@ package services
 
 import java.util.UUID
 import java.util.concurrent.Executors
-
+import utils.Ops.MonadInstances._
+import models.Group
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
+import store.bind.Bindings
 import utils.PTree._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scalaz.StreamT._
 
 trait GroupServiceLike {
@@ -20,17 +23,11 @@ trait GroupServiceLike {
   def sortApplicantsFor(labwork: UUID): Option[Vector[UUID]]
 
   def sortApplicantsForMany(labworks: TraversableOnce[UUID]): Future[Option[Map[UUID, Vector[UUID]]]]
-
 }
 
-class GroupService(private val repository: SesameRepository, private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
+class GroupService(private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
 
-  import repository._
-
-  private val lwm = LWMPrefix[Rdf]
-  private val rdf = RDFPrefix[Rdf]
   private implicit val exec = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
-
 
   override def sortApplicantsFor(labwork: UUID): Option[Vector[UUID]] = {
     applicationService.applicationsFor(labwork) map { v =>

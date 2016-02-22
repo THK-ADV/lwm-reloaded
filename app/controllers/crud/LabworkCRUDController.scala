@@ -19,10 +19,10 @@ object LabworkCRUDController {
   val courseAttribute = "course"
   val degreeAttribute = "degree"
   val semesterAttribute = "semester"
-
 }
 
 class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
+
   override implicit def rdfWrites: ToPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
 
   override implicit def rdfReads: FromPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder

@@ -3,17 +3,11 @@ package services
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import akka.routing.{DefaultResizer, RoundRobinPool}
 import models.Session
-import models.users.{Student, Employee}
-import modules.ResolversModule
-import org.w3.banana.sesame.SesameModule
-import store.{LwmResolvers, Resolvers, SemanticRepository}
-import utils.LDAPService
+import store.Resolvers
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scalaz.effect.IO
 
 trait SessionHandlingService {
 
@@ -106,10 +100,9 @@ object SessionServiceActor {
 class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor with ActorLogging {
 
   import SessionServiceActor._
+  import resolvers._
 
   import scala.concurrent.duration._
-
-  import resolvers._
 
   implicit val dispatcher = context.system.dispatcher
 

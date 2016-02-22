@@ -2,6 +2,7 @@ package bind
 
 import base.SesameDbSpec
 import models._
+import models.semester.Semester
 import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph

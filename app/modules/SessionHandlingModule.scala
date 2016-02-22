@@ -1,10 +1,8 @@
 package modules
 
 import controllers.SessionController
-import play.filters.cors.CORSFilter
-import services.{ActorBasedSessionService, SessionHandlingService}
-import utils.{LDAPService, LDAPServiceImpl}
-
+import modules.store.{ResolversModule, SemanticRepositoryModule}
+import services.{ActorBasedSessionService, LDAPService, LDAPServiceImpl, SessionHandlingService}
 
 trait LDAPModule {
   def ldap: LDAPService

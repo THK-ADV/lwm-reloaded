@@ -1,6 +1,8 @@
 package modules
 
 import controllers.crud.LabworkApplicationCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services.{LabworkApplicationService, LabworkApplicationServiceLike}
 import utils.LwmApplication
 

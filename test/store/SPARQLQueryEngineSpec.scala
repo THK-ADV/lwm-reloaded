@@ -10,6 +10,7 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import utils.Ops._
+import MonadInstances._
 
 
 class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with SesameModule {

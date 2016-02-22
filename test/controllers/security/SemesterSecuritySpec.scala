@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.Semester
 import models.security.{Permissions, RefRole, Authority, Roles}
+import models.semester.Semester
 import org.joda.time.LocalDate
 import org.scalatest.WordSpecLike
 import play.api.http.HeaderNames
@@ -41,7 +41,6 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
       when(roleService.authorityFor(user.toString)).thenReturn(Some(userAuth))
       when(roleService.checkWith((None, Set(Permissions.prime)))(Set(userRefRole))).thenReturn(true)
-
 
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val json = Json.toJson(semester)

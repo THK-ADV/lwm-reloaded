@@ -10,7 +10,6 @@ import play.api.mvc.{Action, Controller}
 import store.SesameRepository
 import store.bind.Bindings
 import scala.util.Random._
-import scalaz.syntax.monad._
 import scala.util.{Failure, Success, Try}
 
 class ApiDataController(val repository: SesameRepository) extends Controller {

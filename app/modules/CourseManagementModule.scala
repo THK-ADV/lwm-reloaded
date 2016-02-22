@@ -1,6 +1,8 @@
 package modules
 
 import controllers.crud.CourseCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services.RoleService
 
 trait CourseManagementModule {
