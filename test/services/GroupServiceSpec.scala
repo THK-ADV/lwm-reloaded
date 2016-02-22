@@ -4,30 +4,18 @@ import base.TestBaseDefinition
 import models.Labwork
 import models.applications.LabworkApplication
 import models.users.User
-import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
-import org.scalatest.time.{Seconds, Span}
-import store.bind.Bindings
-import store.{SesameRepository, Namespace}
 import utils.PTree._
 
 import scala.util.Random
 
 class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
-  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val repository = SesameRepository(ns)
-
-  import repository._
-
-  val bindings = Bindings(ns)
-
   val applicationService = mock[LabworkApplicationService]
 
-  val groupService = new GroupService(repository, applicationService)
+  val groupService = new GroupService(applicationService)
 
   "A group service" should {
 

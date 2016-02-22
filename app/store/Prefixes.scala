@@ -6,8 +6,9 @@ object Prefixes {
 
   class LWMPrefix[Rdf <: RDF](ops: RDFOps[Rdf]) extends PrefixBuilder("lwm", "http://lwm.fh-koeln.de/ns/")(ops) {
 
-    // TODO merge this one out of here
+    // xsd extensions
     val localDate = apply("localDate")
+    val localTime = apply("localDate")
 
     // _
     val id = apply("id")
@@ -15,7 +16,7 @@ object Prefixes {
     //Labwork, Course, Degree, Group, Room, Semster
     val label = apply("label")
 
-    // Labwork, LabworkApplication, Room, Degree
+    // Labwork, LabworkApplication, Room, Degree, TimetableEntry
     val description = apply("description")
     val assignmentPlan = apply("assignmentPlan")
     val semester = apply("semester")
@@ -34,19 +35,24 @@ object Prefixes {
     val enrollment = apply("enrollment")
 
     // Semester
-    val endDate = apply("endDate")
-    val startDate = apply("startDate")
+    val end = apply("start")
+    val start = apply("end")
     val examStart = apply("examStart")
 
-    // AssignmentEntry, AssignmentPlan
+    // AssignmentEntry, AssignmentPlan, Timetable, Schedule
     val index = apply("index")
+    val duration = apply("duration")
     val types = apply("types")
     val entries = apply("entries")
     val numberOfEntries = apply("numberOfEntries")
 
+    // Blacklist
+    val dates = apply("dates")
+
     // Course
     val abbreviation = apply("abbreviation")
     val lecturer = apply("lecturer")
+    val semesterIndex = apply("semesterIndex")
 
     // RefRole, Role, Authority
     val name = apply("name")
@@ -56,9 +62,22 @@ object Prefixes {
     val module = apply("module")
     val privileged = apply("privileged")
 
-    //Group
+    //Group, Timetable, Schedule
     val members = apply("members")
     val labwork = apply("labwork")
+
+    // Timetable
+    val blacklist = apply("blacklist")
+    val buffer = apply("buffer")
+
+    // TimetableEntry, ScheduleEntry
+    val supervisor = apply("supervisor")
+    val room = apply("room")
+    val dayIndex = apply("dayIndex")
+    val date = apply("date")
+
+    // ScheduleEntry
+    val group = apply("group")
 
     // classes
     val Course = apply("Course")
@@ -75,6 +94,11 @@ object Prefixes {
     val AssignmentPlan = apply("AssignmentPlan")
     val AssignmentEntry = apply("AssignmentEntry")
     val LabworkApplication = apply("LabworkApplication")
+    val Timetable = apply("Timetable")
+    val TimetableEntry = apply("TimetableEntry")
+    val Schedule = apply("Schedule")
+    val ScheduleEntry = apply("ScheduleEntry")
+    val Blacklist = apply("Blacklist")
   }
 
   object LWMPrefix {

@@ -3,6 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.applications.LabworkApplication
+import models.semester.Semester
 import models.users.{User, Student}
 import models._
 import org.mockito.Matchers._

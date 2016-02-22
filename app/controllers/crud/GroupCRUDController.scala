@@ -10,7 +10,7 @@ import play.api.mvc.Result
 import services.{GroupServiceLike, RoleService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import security.Permissions._
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Success, Failure, Try}
 
@@ -20,6 +20,7 @@ object GroupCRUDController {
 }
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
+
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   override implicit def rdfWrites: ToPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
@@ -50,10 +51,11 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         else
           Ok(Json.toJson(s)).as(mimeType)
 
-      case Failure(e) => BadRequest(Json.obj(
-        "status" -> "KO",
-        "message" -> e.getMessage
-      ))
+      case Failure(e) =>
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> e.getMessage
+        ))
     }
   }
 
@@ -84,11 +86,13 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
           } yield mapped
 
         processed match {
-          case Some(groups) => Ok(Json.toJson(groups)).as(mimeType)
-          case None => InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> s"Error while creating groups for labwork ${success.labwork}"
-          ))
+          case Some(groups) =>
+            Ok(Json.toJson(groups)).as(mimeType)
+          case None =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+            ))
         }
       }
     )
@@ -115,11 +119,13 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
           } yield mapped
 
         processed match {
-          case Some(groups) => Ok(Json.toJson(groups)).as(mimeType)
-          case None => InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> s"Error while creating groups for labwork ${success.labwork}"
-          ))
+          case Some(groups) =>
+            Ok(Json.toJson(groups)).as(mimeType)
+          case None =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+            ))
         }
       }
     )
@@ -153,12 +159,11 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     case Update => SecureBlock(moduleId, Set(updateGroup))
     case Get => SecureBlock(moduleId, Set(getGroup))
     case Delete => SecureBlock(moduleId, Set(deleteGroup))
-    case _ => NonSecureBlock
+    case _ => PartialSecureBlock(Set(prime))
   }
 
   override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = id match {
     case Some(uuid) => Group(input.label, input.labwork, input.members, uuid)
     case None => Group(input.label, input.labwork, input.members, Group.randomUUID)
   }
-
 }

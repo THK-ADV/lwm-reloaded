@@ -11,6 +11,8 @@ case class RoomProtocol(label: String, description: String)
 
 object Room extends UriGenerator[Room] with JsonSerialisation[RoomProtocol, Room] {
 
+  lazy val default = Room("tbd", "tbd", Room.randomUUID)
+
   override implicit def reads: Reads[RoomProtocol] = Json.reads[RoomProtocol]
 
   override implicit def writes: Writes[Room] = Json.writes[Room]

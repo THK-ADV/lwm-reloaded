@@ -32,8 +32,8 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
   override implicit def writes: Writes[Course] = Course.writes
 
   override protected def fromInput(input: CourseProtocol, id: Option[UUID]): Course = id match {
-    case Some(uuid) => Course(input.label, input.description, input.abbreviation, input.lecturer, uuid)
-    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, Course.randomUUID)
+    case Some(uuid) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, uuid)
+    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json

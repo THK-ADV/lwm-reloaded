@@ -3,7 +3,7 @@ package controllers
 import controllers.crud.{JsonSerialisation, SecureControllerContext, Secured, ContentTyped}
 import models.{EntryType, EntryTypes}
 import models.security.Permissions
-import modules.BaseNamespace
+import modules.store.BaseNamespace
 import play.api.libs.json.{Reads, Writes, Json}
 import play.api.mvc.{Action, Controller}
 import services.RoleService

@@ -1,6 +1,8 @@
 package modules
 
 import controllers.EntryTypeController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait EntryTypeManagementModule {
   self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>

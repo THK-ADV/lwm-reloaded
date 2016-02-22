@@ -1,19 +1,21 @@
 package modules
 
 import controllers.crud.GroupCRUDController
+import modules.security.SecurityManagementModule
+import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services.{GroupServiceLike, GroupService}
 import utils.LwmApplication
 
 trait GroupServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule with LabworkApplicationServiceModule =>
+  self: LwmApplication with LabworkApplicationServiceModule =>
 
   def groupService: GroupServiceLike
 }
 
 trait DefaultGroupServiceManagementModule extends GroupServiceManagementModule {
-  self: LwmApplication with SemanticRepositoryModule with LabworkApplicationServiceModule =>
+  self: LwmApplication with LabworkApplicationServiceModule =>
 
-  lazy val groupService: GroupServiceLike = new GroupService(repository, labworkApplicationService)
+  lazy val groupService: GroupServiceLike = new GroupService(labworkApplicationService)
 }
 
 trait GroupManagementModule {

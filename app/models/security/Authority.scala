@@ -86,6 +86,18 @@ object Permissions {
 
   val deleteGroup = Permission("delete a group")
 
+  val createSchedule = Permission("create schedule from timetable")
+
+  val createTimetable = Permission("create a new timetable")
+
+  val allTimetables = Permission("get all timetables")
+
+  val getTimetable = Permission("get a timetable")
+
+  val updateTimetable = Permission("update a timetable")
+
+  val deleteTimetable = Permission("delete a timetable")
+
   val allValues = Vector(getSemester, allSemesters, createCourse, joinLabwork)
 }
 

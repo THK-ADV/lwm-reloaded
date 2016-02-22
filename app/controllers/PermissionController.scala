@@ -4,7 +4,7 @@ import controllers.crud.{SecureControllerContext, Secured, ContentTyped, JsonSer
 import models.security.Permissions._
 import models.security.Roles._
 import models.security.{Permissions, Permission}
-import modules.BaseNamespace
+import modules.store.BaseNamespace
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import services.RoleService
