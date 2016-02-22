@@ -3,7 +3,7 @@ package services
 import base.TestBaseDefinition
 import models.semester.Blacklist
 import models.schedule.{Weekday, TimetableDateEntry}
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -19,6 +19,10 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
 
   val repo = mock[SesameRepository]
   val blacklistService = new BlacklistService(repo)
+
+  def toDateTime(entry: TimetableDateEntry): DateTime = {
+    entry.date.toDateTime(entry.start)
+  }
 
   "A BlacklistServiceSpec" should {
 

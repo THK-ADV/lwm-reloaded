@@ -89,8 +89,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       result.foldLeft((true, result.head)) {
         case ((b, p), n) =>
-          val prev = p.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size)
-          val next = n.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size)
+          val prev = p.entries.sortBy(toLocalDateTime).map(_.group.label).take(groups.size)
+          val next = n.entries.sortBy(toLocalDateTime).map(_.group.label).take(groups.size)
           (b && prev == next, n)
       }._1 shouldBe false
 
@@ -99,12 +99,12 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         result.forall(_.entries.count(_.group.id == group.id) == plan.numberOfEntries)
       } shouldBe true
 
-      val g = result.map(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
+      val g = result.map(_.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
       val gv = groups.toVector.map(_.id)
       g.forall(vec => vec.foldLeft((true, vec.head)) {
         case ((b, rep), l) => (b && l == rep, rep)
       }._1) shouldBe true
-      result.forall(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size)) shouldBe true
+      result.forall(_.entries.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size)) shouldBe true
     }
 
     "mutate given schedule by swapping two randomly chosen groups" in {
@@ -119,7 +119,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         val end = start.plusHours(nextInt(3))
 
         ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID)
-      }.toSet
+      }.toVector
       val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
 
       val result = (0 until 100).map(_ => scheduleService.mutate(schedule, emptyEval)).toVector
@@ -128,16 +128,14 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       println("=========================")
       result.foreach(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector.foreach(println))*/
 
-      result.foreach(_.entries.toVector.sortBy(toLocalDateTime) should not be schedule.entries.toVector.sortBy(toLocalDateTime))
-      val g = result.map(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
+      result.foreach(_.entries.sortBy(toLocalDateTime) should not be schedule.entries.sortBy(toLocalDateTime))
+      val g = result.map(_.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
       val gv = groups.toVector.map(_.id)
       g.forall(vec => vec.foldLeft((true, vec.head)) {
         case ((b, rep), l) => (b && l == rep, rep)
       }._1) shouldBe true
-      result.forall(_.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size)) shouldBe true
+      result.forall(_.entries.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size)) shouldBe true
     }
-
-//
 
     "successfully cross two schedules" in {
       import scala.util.Random._
@@ -155,7 +153,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
             val end = start.plusHours(nextInt(3))
 
             (ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, n._2, ScheduleEntry.randomUUID), ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID))
-        }).toSet
+        }).toVector
       }.unzip
 
       val left = ScheduleG(UUID.randomUUID(), entries._1, UUID.randomUUID())
@@ -183,12 +181,12 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       rightCount != right.entries.size && rightCount < right.entries.size && rightCount > 0 && rightCount > right.entries.size / 2 shouldBe true
 
       Vector(result._1, result._2).foreach { s =>
-        val gg = s.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
+        val gg = s.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
         val gv = groups.toVector.map(_.id)
         gg.foldLeft((true, gg.head)) {
           case ((b, rep), l) => (b && l == rep, rep)
         }._1 shouldBe true
-        s.entries.toVector.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size) shouldBe true
+        s.entries.sortBy(toLocalDateTime).map(_.group.id).grouped(groups.size).toVector.forall(v1 => v1.forall(gv.contains) && v1.size == gv.size) shouldBe true
       }
     }
 
@@ -284,7 +282,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         case (label, group) => Group(label, labid, group toSet)
       }
       val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
-      val schedule = ScheduleG(labid, entries toSet, Schedule.randomUUID)
+      val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
       val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
 
       val newSchedule = scheduleService.mutateDestructive(schedule, ev)
@@ -323,7 +321,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         case (label, group) => Group(label, labid, group toSet)
       }
       def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
-      def schedule = ScheduleG(labid, entries toSet, Schedule.randomUUID)
+      def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)
       val (e1, e2) = (schedule1.entries.toVector(3), schedule2.entries.toVector(5))

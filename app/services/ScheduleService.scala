@@ -13,12 +13,12 @@ import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
 import TimetableDateEntry._
-import utils.Ops.FunctorInstances._
+import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
-case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID)
+case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
 case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID)
 
 trait ScheduleServiceLike {
@@ -74,7 +74,8 @@ object ScheduleService {
       case x if x.id == left.id => right
       case y if y.id == right.id => left
       case z => z
-    })
+    }
+  )
 
   def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
     left.date.isEqual(right.date) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
@@ -83,7 +84,7 @@ object ScheduleService {
   def exchange(left: UUID, right: UUID, s: ScheduleG) = replaceSchedule(s)(replaceEntry(_)(replaceGroup(_)(swap(_)(left, right))))
 }
 
-class ScheduleService(private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike { self =>
+class ScheduleService(private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
 
   override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val pop = population(300, timetable, assignmentPlan, groups)
@@ -105,24 +106,24 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
   private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], assignmentPlan: AssignmentPlan, groups: Set[Group]): ScheduleG = {
     val sg = shuffle(groups.toVector)
-    val scheduleEntries = entries.toVector.sortBy(toLocalDateTime).grouped(groups.size).toVector.flatMap(_.zip(sg).map {
+    val scheduleEntries = entries.toVector.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(sg).map {
       case (t, group) =>
         val o = TimetableDateEntry.organizer(t, timetable.entries)
         ScheduleEntryG(t.start, t.end, t.date, o.room, o.supervisor, group, ScheduleEntry.randomUUID)
-    }).toSet
+    }).toVector
 
     ScheduleG(timetable.labwork, scheduleEntries, Schedule.randomUUID)
   }
 
   override def mutate: Mutator = mutation { (s, e) =>
-    implicit val groups = s.entries.toVector.map(_.group)
+    implicit val groups = s.entries.map(_.group)
     val group1 = randomGroup
     val group2 = randomAvoiding(group1)
     replaceWithin(s)(group1, group2)
   }
 
   override def mutateDestructive: Mutator = mutation { (s, e) =>
-    implicit val groups = s.entries.map(_.group).toVector
+    implicit val groups = s.entries.map(_.group)
     e.mapErrWhole(shuffle(_)).fold {
       case ((h :: t, _)) =>
         val group = randomAvoiding(h.group)
@@ -137,8 +138,8 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
     case ((s1, e1), (s2, e2)) =>
       (shuffle(e1.err), shuffle(e2.err)) match {
         case (h1 :: _, h2 :: _) =>
-          lazy val rl = replaceWithin(s1)(h1.group, randomAvoiding(h1.group)(s1.entries.map (_.group).toVector))
-          lazy val rr = replaceWithin(s2)(h2.group, randomAvoiding(h2.group)(s2.entries.map (_.group).toVector))
+          lazy val rl = replaceWithin(s1)(h1.group, randomAvoiding(h1.group)(s1.entries.map (_.group)))
+          lazy val rr = replaceWithin(s2)(h2.group, randomAvoiding(h2.group)(s2.entries.map (_.group)))
           (rl, rr)
         case _ => (s1, s2)
       }
@@ -152,7 +153,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
           right.entries.find(e => !e.group.members.contains(one)) match {
             case Some(e) => exchange(one, e.group.members.head, left)
             case None =>
-              val ex = randomGroup(right.entries.map (_.group).toVector).members.head
+              val ex = randomGroup(right.entries.map (_.group)).members.head
               exchange(one, ex, left)
           }
         case ((Nil, _)) => left

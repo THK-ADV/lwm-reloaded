@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
-import org.joda.time.{LocalDate, LocalTime, DateTime}
+import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.json.{Json, Reads, Writes, Format}
 
 case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID) extends UniqueEntity

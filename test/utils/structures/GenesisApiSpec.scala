@@ -78,7 +78,7 @@ class GenesisApiSpec extends WordSpec with Matchers with PropertyChecks {
 
       val l1 = List(Evaluation.withValue(1))
       val l2 = List(Evaluation.withValue(1), Evaluation.withValue(2))
-      val vec = Genesis.lift[Int, Nothing, Int]((0 to 50) toVector)
+      val vec = Genesis.lift[Int, Nothing, Int]((0 to 50).toVector)
 
       val rep1 = Genesis.replicateWith[Int, Nothing, Int](10)(_.size % 2 == 0)(monInt, (mut1, mut2), (cross1, cross2))((vec, l1))
       val rep2 = Genesis.replicateWith[Int, Nothing, Int](10)(_.size % 2 == 0)(monInt, (mut1, mut2), (cross1, cross2))((vec, l2))

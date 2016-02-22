@@ -82,10 +82,6 @@ object TimetableDateEntry {
     entry.date.toLocalDateTime(entry.start)
   }
 
-  def toDateTime(entry: TimetableDateEntry): DateTime = {
-    entry.date.toDateTime(entry.start)
-  }
-
   implicit val localTimeOrd: Ordering[LocalTime] = new Ordering[LocalTime] {
     override def compare(x: LocalTime, y: LocalTime): Int = x.compareTo(y)
   }

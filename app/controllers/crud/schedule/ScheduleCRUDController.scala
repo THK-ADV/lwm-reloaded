@@ -74,9 +74,10 @@ object ScheduleCRUDController {
       schedule.entries flatMap { entry =>
         val group = repository.get[Group](Group.generateUri(entry.group)(repository.namespace)).toOption
         group.peek(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
-      })
+      }
+    )
 
-    maybeEntries map (entries => ScheduleG(schedule.labwork, entries, schedule.id))
+    maybeEntries map (entries => ScheduleG(schedule.labwork, entries.toVector, schedule.id))
   }
 }
 
@@ -135,7 +136,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
         s match {
           case Some(ss) =>
             val schedule = {
-              val entries = ss.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+              val entries = ss.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
               Schedule(ss.elem.labwork, entries, ss.elem.id)
             }
 

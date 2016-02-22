@@ -56,6 +56,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     "entries" -> entityToPass.entries
   )
 
+  val emptyVector = Vector.empty[ScheduleEntryG]
+  
   "A ScheduleCRUDController also" should {
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
@@ -120,11 +122,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -160,11 +162,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -201,7 +203,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List(
           Conflict(
             ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), groups.head, UUID.randomUUID()),
@@ -211,7 +213,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         ), 1)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -245,11 +247,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -282,11 +284,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
@@ -320,11 +322,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val gen = Gen[ScheduleG, Conflict, Int](
-        ScheduleG(labwork.id, Set.empty[ScheduleEntryG], Schedule.randomUUID),
+        ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id))
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
