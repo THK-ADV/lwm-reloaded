@@ -39,6 +39,7 @@ lazy val semanticDependencies = Seq(
 )
 
 lazy val testDependencies = Seq(
+  "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "org.scalactic" %% "scalactic" % scalatestVersion % "test",
   "org.scalatestplus" %% "play" % "1.4.0-M3" % "test",

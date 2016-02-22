@@ -1,19 +1,21 @@
 package services
 
 import java.util.UUID
+
 import models.{AssignmentPlan, Group}
 import models.schedule._
 import org.joda.time.{LocalDate, LocalTime}
-import utils.{Genesis, Gen}
+import utils.{Gen, Genesis}
 import utils.TypeClasses._
+
 import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
-import utils.Evaluation
 import TimetableDateEntry._
 import utils.Ops.FunctorInstances._
 import utils.Ops.MonoidInstances.intM
+import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
 case class ScheduleG(labwork: UUID, entries: Set[ScheduleEntryG], id: UUID)
@@ -144,7 +146,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
   override def crossoverDestructive: Crossover = cross {
     case ((s1, e1), (s2, e2)) =>
-      def newOne(ev: utils.Evaluation[Conflict, Int], left: ScheduleG, right: ScheduleG): ScheduleG = ev.mapErrWhole(shuffle(_)).fold {
+      def newOne(ev: Evaluation, left: ScheduleG, right: ScheduleG): ScheduleG = ev.mapErrWhole(shuffle(_)).fold {
         case ((c :: t), _) =>
           val one = randomOne(c.members)
           right.entries.find(e => !e.group.members.contains(one)) match {
@@ -175,7 +177,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
       members <- intersection if members.nonEmpty
     } yield Conflict(entry, members.toVector, entry.group)
 
-    conflicts.foldLeft(Evaluation.withValue[Conflict, Int](factor)) {
+    conflicts.foldLeft(withValue[Conflict, Int](factor)) {
       case (eval, Some(c)) => eval add c map (_ + c.members.size)
       case (eval, _) => eval
     } map (_ * conflicts.count(_.isDefined))
