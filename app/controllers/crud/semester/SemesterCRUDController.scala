@@ -6,11 +6,14 @@ import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
 import models.semester.{Semester, SemesterProtocol}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
+import store.Prefixes.LWMPrefix
+import store.sparql.{select, Clause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -21,7 +24,6 @@ object SemesterCRUDController {
   val periodAttribute = "period"
 }
 
-//TODO: Some tests are failing. Why, I cannot say.
 class SemesterCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
@@ -112,7 +114,22 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
     case _ => PartialSecureBlock(Set(prime))
   }
 
-  override protected def duplicate(input: SemesterProtocol, output: Semester): Boolean = {
-    input.label == output.label && input.start.isEqual(output.start ) && input.end.isEqual(output.end)
+  override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
+    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+    import store.sparql.select
+    import store.sparql.select._
+
+    (select ("id") where {
+      ^(v("s"), p(rdf.`type`), s(prefixes.Semester)) .
+        ^(v("s"), p(prefixes.label), o(input.label)) .
+        ^(v("s"), p(prefixes.start), o(input.start)) .
+        ^(v("s"), p(prefixes.end), o(input.end)) .
+        ^(v("s"), p(prefixes.id), v("id"))
+    }, v("id"))
+  }
+
+  override protected def compareModel(input: SemesterProtocol, output: Semester): Boolean = {
+    input.label == output.label && input.start.isEqual(output.start) && input.end.isEqual(output.end) && input.examStart.isEqual(output.examStart)
   }
 }

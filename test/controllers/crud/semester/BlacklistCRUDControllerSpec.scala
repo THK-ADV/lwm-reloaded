@@ -8,6 +8,7 @@ import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
+import store.SesameRepository
 import utils.LwmMimeType
 
 class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist] {
@@ -26,8 +27,6 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
-
-    override protected def duplicate(input: BlacklistProtocol, output: Blacklist): Boolean = true
   }
 
   override val entityToFail: Blacklist = Blacklist(dates, Blacklist.randomUUID)
@@ -42,5 +41,9 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override val inputJson: JsValue = Json.obj(
     "dates" -> entityToPass.dates
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "dates" -> (entityToPass.dates + DateTime.now)
   )
 }

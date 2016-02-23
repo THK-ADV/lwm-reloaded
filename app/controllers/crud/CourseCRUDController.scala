@@ -2,18 +2,24 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.users.{User, Employee}
 import models.{Course, CourseProtocol, UriGenerator}
+import org.openrdf.model.Value
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
+import store.Prefixes.LWMPrefix
+import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
-
+import store.sparql.select
+import store.sparql.select._
 object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
@@ -63,7 +69,19 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     }
   }
 
-  override protected def duplicate(input: CourseProtocol, output: Course): Boolean = {
-    input.label == output.label && input.abbreviation == output.abbreviation
+  override protected def existsQuery(input: CourseProtocol): (SelectClause, Var) = {
+    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    (select ("id") where {
+      ^(v("s"), p(rdf.`type`), s(prefixes.Course)) .
+        ^(v("s"), p(prefixes.label), o(input.label)) .
+        ^(v("s"), p(prefixes.description), o(input.description)) .
+        ^(v("s"), p(prefixes.id), v("id"))
+    }, v("id"))
+  }
+
+  override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
+    input.label == output.label && input.description == output.description
   }
 }

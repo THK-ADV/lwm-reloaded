@@ -5,6 +5,7 @@ import java.util.UUID
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
+import org.mockito.{Matchers, Mockito}
 import org.mockito.Mockito._
 import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
@@ -48,6 +49,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   val inputJson: JsValue
 
+  val updateJson: JsValue
+
   implicit def jsonWrites: Writes[O]
 
   def namespace: Namespace = Namespace("http://testNamespace/")
@@ -63,6 +66,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
+      when(repository.query(anyObject())).thenReturn(None)
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
@@ -76,27 +80,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
       status(result) shouldBe CREATED
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entityToPass)
-    }
-
-    s"handle this model issue when creating a new $entityTypeName which already exists" in {
-      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass)))
-
-      val request = FakeRequest(
-        POST,
-        s"/${entityTypeName}s",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        inputJson
-      )
-      val result = controller.create()(request)
-
-      status(result) shouldBe ACCEPTED
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "model already exists",
-        "id" -> entityToPass.id
-      )
+      contentAsJson(result) shouldEqual Json.toJson(entityToPass)
     }
 
     s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
@@ -114,6 +98,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"not create a new $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant create $entityTypeName for some reason"
+      when(repository.query(anyObject())).thenReturn(None)
       when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
@@ -266,7 +251,42 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully update an existing $entityTypeName" in {
+      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
+
+      val request = FakeRequest(
+        PUT,
+        s"/${entityTypeName}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        updateJson
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
+    }
+
+    s"create instead of update an existing $entityTypeName when resource does not exists" in {
+      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(None))
+      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
+
+      val request = FakeRequest(
+        PUT,
+        s"/${entityTypeName}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        updateJson
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(entityToPass)
+    }
+
+    s"not update an existing $entityTypeName when a duplicate arise" in {
+      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         PUT,
@@ -276,20 +296,25 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entityToPass)
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
+      )
     }
 
     s"not update an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant update the desired $entityTypeName for some reason"
+      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         PUT,
         s"/${entityTypeName}s/${entityToFail.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        inputJson
+        updateJson
       )
       val result = controller.update(entityToFail.id.toString)(request)
 
@@ -299,23 +324,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
         "status" -> "KO",
         "errors" -> errorMessage
       )
-    }
-
-    s"not update but create a new $entityTypeName when its not found" in {
-      when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(None))
-      when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
-
-      val request = FakeRequest(
-        PUT,
-        s"/${entityTypeName}s/${entityToPass.id}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        inputJson
-      )
-      val result = controller.update(UUID.randomUUID().toString)(request)
-
-      status(result) shouldBe CREATED
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
     s"not update an existing $entityTypeName with invalid json data" in {

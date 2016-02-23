@@ -36,4 +36,8 @@ class RefRoleCRUDController(val repository: SesameRepository, val namespace: Nam
   override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Result = ???
+
+  override protected def compareModel(input: RefRoleProtocol, output: RefRole): Boolean = {
+    input.role == output.role && input.module == output.module
+  }
 }

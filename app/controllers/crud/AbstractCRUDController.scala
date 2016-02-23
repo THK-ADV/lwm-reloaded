@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.security.Permission
-import models.{UniqueEntity, UriGenerator}
+import models.{UriGenerator, UniqueEntity}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -47,8 +47,30 @@ trait Filterable[O] {
 
 trait ModelConverter[I, O] {
   protected def fromInput(input: I, id: Option[UUID] = None): O
+}
 
-  protected def duplicate(input: I, output: O): Boolean = false
+trait Consistent[I, O] {
+  import store.sparql.select._
+  import store.sparql.{NoneClause, Clause, SelectClause}
+
+  protected def compareModel(input: I, output: O): Boolean
+
+  protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
+
+  def exists(input: I)(repository: SesameRepository): Option[UUID] = {
+    val (clause, key) = existsQuery(input)
+
+    clause match {
+      case select@SelectClause(_, _) =>
+        for {
+          map <- repository.query(select)
+          list <- map.get(key.v)
+          value <- list.headOption
+        } yield UUID.fromString(value.stringValue())
+
+      case _ => None
+    }
+  }
 }
 
 trait ContentTyped {
@@ -137,7 +159,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with BaseNamespace
   with ContentTyped
   with Secured
-  with SecureControllerContext {
+  with SecureControllerContext
+  with Consistent[I, O] {
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = securedContext contentTypedAction { implicit request =>
@@ -149,33 +172,25 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         ))
       },
       success => {
-        repository.get[O] match { // TODO consider finding existing elements by dedicated query instead of getting all and filtering after
-          case Success(s) =>
-              s.find(e => duplicate(success, e)) match {
-                case Some(ss) =>
-                  Accepted(Json.obj(
-                    "status" -> "KO",
-                    "message" -> s"model already exists",
-                    "id" -> ss.id
-                  ))
-                case None =>
-                  val model = fromInput(success)
-
-                  repository.add[O](model) match {
-                    case Success(graph) =>
-                      Created(Json.toJson(model)).as(mimeType)
-                    case Failure(e) =>
-                      InternalServerError(Json.obj(
-                        "status" -> "KO",
-                        "errors" -> e.getMessage
-                      ))
-                    }
-                  }
-          case Failure(e) =>
-            InternalServerError(Json.obj(
+        exists(success)(repository) match {
+          case Some(id) =>
+            Accepted(Json.obj(
               "status" -> "KO",
-              "errors" -> e.getMessage
+              "message" -> "model already exists",
+              "id" -> id.toString
             ))
+          case None =>
+            val model = fromInput(success)
+
+            repository.add[O](model) match {
+              case Success(graph) =>
+                Created(Json.toJson(model)).as(mimeType)
+              case Failure(e) =>
+                InternalServerError(Json.obj(
+                  "status" -> "KO",
+                  "errors" -> e.getMessage
+                ))
+            }
         }
       }
     )
@@ -234,29 +249,44 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         repository.get[O](uri) match {
           case Success(s) =>
             s match {
-              case Some(ss) =>
-                val existingModel = fromInput(success, Some(ss.id))
+              case Some(entity) if compareModel(success, entity) =>
+                  Accepted(Json.obj(
+                    "status" -> "KO",
+                    "message" -> "model already exists",
+                    "id" -> id.toString
+                  ))
+              case Some(entity) =>
+                val updated = fromInput(success, Some(entity.id))
 
-                repository.update[O, UriGenerator[O]](existingModel) match {
+                repository.update[O, UriGenerator[O]](updated) match {
                   case Success(graph) =>
-                    Ok(Json.toJson(existingModel)).as(mimeType)
+                    Ok(Json.toJson(updated)).as(mimeType)
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
                       "errors" -> e.getMessage
                     ))
                 }
-              case None => // TODO consider calling create function instead of reimplementing
-                val newModel = fromInput(success)
-
-                repository.add[O](newModel) match {
-                  case Success(graph) =>
-                    Created(Json.toJson(newModel)).as(mimeType)
-                  case Failure(e) =>
-                    InternalServerError(Json.obj(
+              case None =>
+                exists(success)(repository) match {
+                  case Some(duplicate) =>
+                    Accepted(Json.obj(
                       "status" -> "KO",
-                      "errors" -> e.getMessage
+                      "message" -> "model already exists",
+                      "id" -> duplicate.toString
                     ))
+                  case None =>
+                    val model = fromInput(success)
+
+                    repository.add[O](model) match {
+                      case Success(graph) =>
+                        Created(Json.toJson(model)).as(mimeType)
+                      case Failure(e) =>
+                        InternalServerError(Json.obj(
+                          "status" -> "KO",
+                          "errors" -> e.getMessage
+                        ))
+                    }
                 }
             }
           case Failure(e) =>

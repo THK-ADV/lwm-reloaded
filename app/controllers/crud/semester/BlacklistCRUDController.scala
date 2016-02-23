@@ -46,4 +46,8 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
   override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
     case _ => PartialSecureBlock(Set(prime))
   }
+
+  override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
+    input.dates == output.dates
+  }
 }

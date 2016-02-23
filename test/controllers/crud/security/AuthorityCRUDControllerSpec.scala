@@ -9,6 +9,7 @@ import models.users.User
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import store.SesameRepository
 import utils.LwmMimeType
 
 class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
@@ -17,8 +18,6 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
 
   override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = entityToPass
-
-    override protected def duplicate(input: AuthorityProtocol, output: Authority): Boolean = true
   }
 
   override val entityToFail: Authority = Authority(
@@ -44,5 +43,10 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
   override val inputJson: JsValue = Json.obj(
     "user" -> entityToPass.user,
     "refRoles" -> entityToPass.refRoles
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "user" -> entityToPass.user,
+    "refRoles" -> (entityToPass.refRoles + RefRole(Some(UUID.randomUUID()), Roles.employee.id))
   )
 }

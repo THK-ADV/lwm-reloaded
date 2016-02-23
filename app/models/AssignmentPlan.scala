@@ -30,6 +30,8 @@ object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisatio
   override implicit def writes: Writes[AssignmentPlan] = Json.writes[AssignmentPlan]
 
   implicit def format: Format[AssignmentPlan] = Json.format[AssignmentPlan]
+
+  implicit def formatProtocol: Format[AssignmentPlanProtocol] = Json.format[AssignmentPlanProtocol]
 }
 
 object AssignmentEntry extends UriGenerator[AssignmentEntry] with JsonSerialisation[AssignmentEntryProtocol, AssignmentEntry] {

@@ -315,6 +315,23 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       schedule.labwork shouldBe newSchedule.labwork
     }
 
+    "not change the size of the groups or create duplicates after a destructive mutation" in {
+      val labid = UUID.randomUUID()
+      val groups = alph(10) zip (population(100) grouped 10 toVector) map {
+        case (label, group) => Group(label, labid, group toSet)
+      }
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
+      val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
+
+      val newSchedule = scheduleService.mutateDestructive(schedule, ev)
+
+      schedule.entries map (_ group) sortBy (_.label) zip (newSchedule.entries map (_ group) sortBy (_ label)) foreach {
+        case ((pgroup, cgroup)) =>
+          pgroup.members.size shouldBe cgroup.members.size
+      }
+    }
+
     "cross conflicting people destructively with others from different schedules" in {
       val labid = UUID.randomUUID()
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
@@ -356,6 +373,34 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       schedule1.labwork shouldBe s1.labwork
       schedule2.labwork shouldBe s2.labwork
+    }
+
+    "not change the size of the groups or create duplicates after a destructive crossover" in {
+      val labid = UUID.randomUUID()
+      val groups = alph(10) zip (population(100) grouped 10 toVector) map {
+        case (label, group) => Group(label, labid, group toSet)
+      }
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
+
+      val (schedule1, schedule2) = (schedule, schedule)
+      val (e1, e2) = (schedule1.entries.toVector(3), schedule2.entries.toVector(5))
+
+      val (eval1, eval2) = (Evaluation(List(Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
+        Evaluation(List(Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
+
+
+      val (s1, s2) = scheduleService.crossoverDestructive((schedule1, eval1), (schedule2, eval2))
+
+      schedule1.entries map (_ group) sortBy (_ label) zip (s1.entries map (_ group) sortBy (_ label)) foreach {
+        case ((pgroup, cgroup)) =>
+          pgroup.members.size shouldBe cgroup.members.size
+      }
+
+      schedule2.entries map (_ group) sortBy (_ label) zip (s2.entries map (_ group) sortBy (_ label)) foreach {
+        case ((pgroup, cgroup)) =>
+          pgroup.members.size shouldBe cgroup.members.size
+      }
     }
   }
 

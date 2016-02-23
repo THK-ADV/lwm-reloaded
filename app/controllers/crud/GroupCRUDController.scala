@@ -166,4 +166,8 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     case Some(uuid) => Group(input.label, input.labwork, input.members, uuid)
     case None => Group(input.label, input.labwork, input.members, Group.randomUUID)
   }
+
+  override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
+    input.label == output.label && input.labwork == output.labwork && input.members == output.members
+  }
 }

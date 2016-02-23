@@ -10,6 +10,7 @@ import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, JsValue, Writes}
+import store.SesameRepository
 import utils.LwmMimeType
 
 class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable] {
@@ -25,8 +26,6 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
-
-    override protected def duplicate(input: TimetableProtocol, output: Timetable): Boolean = true
   }
 
   override val entityToFail: Timetable = Timetable(Labwork.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -47,6 +46,13 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     "labwork" -> entityToPass.labwork,
     "entries" -> entityToPass.entries,
     "start" -> entityToPass.start,
+    "localBlacklist" -> entityToPass.localBlacklist
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "labwork" -> entityToPass.labwork,
+    "entries" -> entityToPass.entries,
+    "start" -> entityToPass.start.plusWeeks(1),
     "localBlacklist" -> entityToPass.localBlacklist
   )
 }

@@ -33,4 +33,8 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
    override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Student]): Result = ???
 
    override val mimeType: LwmMimeType = LwmMimeType.studentV1Json
+
+   override protected def compareModel(input: StudentProtocol, output: Student): Boolean = {
+      input.systemId == output.systemId && input.email == output.email && input.firstname == output.firstname && input.lastname == output.lastname && input.registrationId == output.registrationId
+   }
 }
