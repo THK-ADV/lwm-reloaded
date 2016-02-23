@@ -13,12 +13,14 @@ import org.w3.banana.sesame.Sesame
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
+import store.SesameRepository
 import utils.LwmMimeType
 import play.api.test.Helpers._
 import scala.util.{Success, Failure, Try}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
   override val entityToPass: Group = Group("label to pass", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
+
   override val controller: GroupCRUDController = new GroupCRUDController(repository, namespace, roleService, groupService) {
 
     override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
@@ -30,16 +32,24 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = entityToPass
-
-    override protected def duplicate(input: GroupProtocol, output: Group): Boolean = true
   }
+
   override val entityToFail: Group = Group("label to fail", Labwork.randomUUID, Set(Student.randomUUID), Group.randomUUID)
+
   override implicit val jsonWrites: Writes[Group] = Group.writes
+
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
+
   override val inputJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
     "labwork" -> entityToPass.labwork,
     "members" -> entityToPass.members
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "label" -> s"${entityToPass.label} updated",
+    "labwork" -> entityToPass.labwork,
+    "members" -> (entityToPass.members + Student.randomUUID)
   )
 
   override def entityTypeName: String = "group"

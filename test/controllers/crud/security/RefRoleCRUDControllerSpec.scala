@@ -8,6 +8,7 @@ import models.security.{RefRole, RefRoleProtocol, Role}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import store.SesameRepository
 import utils.LwmMimeType
 
 class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole] {
@@ -18,8 +19,6 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleCRUDController(repository, namespace, roleService) {
     override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = entityToPass
-
-    override protected def duplicate(input: RefRoleProtocol, output: RefRole): Boolean = true
   }
 
   override val entityToFail: RefRole = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
@@ -35,5 +34,10 @@ class RefRoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtoc
   override val inputJson: JsValue = Json.obj(
     "module" -> entityToPass.module,
     "role" -> entityToPass.role
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "module" -> entityToPass.module,
+    "role" -> UUID.randomUUID()
   )
 }

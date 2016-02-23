@@ -33,4 +33,8 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
    override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Employee]): Result = ???
 
    override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
+
+   override protected def compareModel(input: EmployeeProtocol, output: Employee): Boolean = {
+      input.systemId == output.systemId && input.email == output.email && input.firstname == output.firstname && input.lastname == output.lastname
+   }
 }

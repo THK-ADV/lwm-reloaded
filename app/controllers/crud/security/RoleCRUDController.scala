@@ -37,4 +37,8 @@ class RoleCRUDController(val repository: SesameRepository, val namespace: Namesp
   }
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Role]): Result = ???
+
+  override protected def compareModel(input: RoleProtocol, output: Role): Boolean = {
+    input.name == output.name && input.permissions == output.permissions
+  }
 }

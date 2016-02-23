@@ -16,6 +16,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.{ScheduleService, ScheduleEntryG, ScheduleG, Conflict}
+import store.SesameRepository
 import utils.{Evaluation, Gen, LwmMimeType}
 
 import scala.util.{Try, Failure, Success}
@@ -45,8 +46,6 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
-
-    override protected def duplicate(input: ScheduleProtocol, output: Schedule): Boolean = true
   }
 
   override implicit val jsonWrites: Writes[Schedule] = Schedule.writes
@@ -56,6 +55,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   override val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
     "entries" -> entityToPass.entries
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "labwork" -> entityToPass.labwork,
+    "entries" -> (entityToPass.entries + ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()))
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]

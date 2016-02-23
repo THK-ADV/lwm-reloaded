@@ -11,7 +11,20 @@ case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID) extend
 
 case class ScheduleProtocol(labwork: UUID, entries: Set[ScheduleEntry])
 
-case class ScheduleEntry(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID, id: UUID) extends UniqueEntity
+case class ScheduleEntry(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID, id: UUID) extends UniqueEntity {
+
+  override def equals(that: scala.Any): Boolean = that match {
+    case ScheduleEntry(s, e, d, r, su, g, i) =>
+        s.isEqual(start) &&
+        e.isEqual(end) &&
+        d.isEqual(date) &&
+        r == room &&
+        su == supervisor &&
+        g == group &&
+        i == id
+    case _ => false
+  }
+}
 
 case class ScheduleEntryProtocol(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID)
 

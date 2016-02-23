@@ -13,6 +13,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import play.api.mvc.{Action, Result, AnyContent, Request}
 import play.api.test.FakeRequest
+import store.SesameRepository
 import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 import play.api.test.Helpers._
@@ -31,21 +32,30 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   import ops._
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
+
   override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = entityToPass
-
-    override protected def duplicate(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = true
   }
 
   override val entityToFail: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+
   override val entityToPass: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
+
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
+
   override val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
     "applicant" -> entityToPass.applicant,
     "friends" -> entityToPass.friends
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "labwork" -> entityToPass.labwork,
+    "applicant" -> entityToPass.applicant,
+    "friends" -> (entityToPass.friends + Student.randomUUID + Student.randomUUID)
   )
 
   override def entityTypeName: String = "labworkApplication"

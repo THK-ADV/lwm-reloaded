@@ -3,12 +3,16 @@ package controllers.crud
 import java.util.UUID
 
 import models.security.Permission
-import models.{Labwork, LabworkProtocol, UriGenerator}
+import models.{AssignmentPlan, Labwork, LabworkProtocol, UriGenerator}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
+import store.Prefixes.LWMPrefix
+import store.sparql.select._
+import store.sparql.{select, Clause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import scala.collection.Map
@@ -35,9 +39,13 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
-  override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = id match {
-    case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, uuid)
-    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, Labwork.randomUUID)
+  override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = {
+    val plan = AssignmentPlan(input.assignmentPlan.numberOfEntries, input.assignmentPlan.entries, AssignmentPlan.randomUUID)
+
+    id match {
+      case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, plan, uuid)
+      case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, plan, Labwork.randomUUID)
+    }
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
@@ -68,7 +76,20 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
     }
   }
 
-  override protected def duplicate(input: LabworkProtocol, output: Labwork): Boolean = {
+  override protected def existsQuery(input: LabworkProtocol): (Clause, select.Var) = {
+    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    (select ("id") where {
+      ^(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
+        ^(v("s"), p(prefixes.semester), o(input.semester)) .
+        ^(v("s"), p(prefixes.course), o(input.course)) .
+        ^(v("s"), p(prefixes.degree), o(input.degree)) .
+        ^(v("s"), p(prefixes.id), v("id"))
+    }, v("id"))
+  }
+
+  override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
     input.semester == output.semester && input.course == output.course && input.degree == output.degree
   }
 }

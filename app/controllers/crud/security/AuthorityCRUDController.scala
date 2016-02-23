@@ -37,4 +37,8 @@ class AuthorityCRUDController(val repository: SesameRepository, val namespace: N
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Result = ???
+
+  override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = {
+    input.user == output.user && input.refRoles == output.refRoles
+  }
 }

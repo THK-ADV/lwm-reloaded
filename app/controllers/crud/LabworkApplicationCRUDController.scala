@@ -77,4 +77,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
   override implicit def uriGenerator: UriGenerator[LabworkApplication] = LabworkApplication
 
   override implicit def rdfWrites: ToPG[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationBinding.labworkApplicationBinder
+
+  override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = {
+    input.applicant == output.applicant && input.labwork == output.labwork && input.friends == output.friends
+  }
 }

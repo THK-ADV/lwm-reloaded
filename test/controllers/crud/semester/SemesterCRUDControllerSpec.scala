@@ -6,12 +6,14 @@ import org.joda.time.LocalDate
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.semester.{SemesterProtocol, Semester}
 import org.joda.time.DateTime
+import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
+import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.test.FakeRequest
+import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 
@@ -46,12 +48,20 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     "examStart" -> entityToPass.examStart
   )
 
+  override val updateJson: JsValue = Json.obj(
+    "label" -> s"${entityToPass.label} updated",
+    "abbreviation" -> s"${entityToPass.abbreviation} updated",
+    "start" -> entityToPass.start.plusWeeks(1),
+    "end" -> entityToPass.end.plusWeeks(1),
+    "examStart" -> entityToPass.examStart.plusWeeks(1)
+  )
+
   import bindings.SemesterBinding.semesterBinder
   import ops._
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
-  "A SemesterCRUDController also" should {
+  "A SemesterCRUDController also " should {
 
     "successfully return all semesters for a year" in {
       val semesterWithDate = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
@@ -249,6 +259,51 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "errors" -> errorMessage
+      )
+    }
+
+    s"handle this model issue when creating a new $entityTypeName which already exists" in {
+      when(repository.query(anyObject())).thenReturn(Some(Map(
+        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+      )))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}s",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
+      )
+      val result = controller.create()(request)
+
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
+      )
+    }
+
+    s"neither create or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
+      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(None))
+      when(repository.query(Matchers.anyObject())).thenReturn(Some(Map(
+        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+      )))
+
+      val request = FakeRequest(
+        PUT,
+        s"/${entityTypeName}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        updateJson
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
       )
     }
   }

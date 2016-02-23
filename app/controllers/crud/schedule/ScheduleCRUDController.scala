@@ -167,4 +167,9 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     case Create => SecureBlock(moduleId, Set(createSchedule)) // TODO to adjust
     case _ => PartialSecureBlock(Set(prime))
   }
+
+  override protected def compareModel(input: ScheduleProtocol, output: Schedule): Boolean = {
+    input.labwork == output.labwork && input.entries == output.entries
+  }
+
 }

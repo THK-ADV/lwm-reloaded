@@ -7,6 +7,7 @@ import models.security.{Permission, Role, RoleProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
+import store.SesameRepository
 import utils.LwmMimeType
 
 class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] {
@@ -17,8 +18,6 @@ class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Ro
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: RoleProtocol, id: Option[UUID]): Role = entityToPass
-
-    override protected def duplicate(input: RoleProtocol, output: Role): Boolean = true
   }
 
   override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)
@@ -34,5 +33,10 @@ class RoleCRUDControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Ro
   override val inputJson: JsValue = Json.obj(
     "name" -> entityToPass.name,
     "permissions" -> entityToPass.permissions
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "name" -> entityToPass.name,
+    "permissions" -> (entityToPass.permissions + Permission(""))
   )
 }

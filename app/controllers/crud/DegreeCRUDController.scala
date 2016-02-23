@@ -3,11 +3,14 @@ package controllers.crud
 import java.util.UUID
 
 import models.{Degree, DegreeProtocol, UriGenerator}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
+import store.Prefixes.LWMPrefix
+import store.sparql.{select, Clause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -35,7 +38,21 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
-  override protected def duplicate(input: DegreeProtocol, output: Degree): Boolean = {
+  override protected def existsQuery(input: DegreeProtocol): (Clause, select.Var) = {
+    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+    import store.sparql.select
+    import store.sparql.select._
+
+    (select ("id") where {
+      ^(v("s"), p(rdf.`type`), s(prefixes.Degree)) .
+        ^(v("s"), p(prefixes.label), o(input.label)) .
+        ^(v("s"), p(prefixes.abbreviation), o(input.abbreviation)).
+        ^(v("s"), p(prefixes.id), v("id"))
+    }, v("id"))
+  }
+
+  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
     input.label == output.label && input.abbreviation == output.abbreviation
   }
 }

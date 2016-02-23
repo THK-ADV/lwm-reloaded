@@ -71,4 +71,8 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(Delete) asyncAction { request =>
     super.delete(id, NonSecureBlock)(request)
   }
+
+  override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
+    input.labwork == output.labwork && input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
+  }
 }

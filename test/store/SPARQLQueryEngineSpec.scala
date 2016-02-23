@@ -18,7 +18,6 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition with Sesame
   implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
   val bindings = Bindings[Sesame](ns)
-  val lwm = LWMPrefix[Sesame]
 
   lazy val repo = SesameRepository(ns)
 
