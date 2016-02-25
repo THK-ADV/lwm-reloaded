@@ -16,15 +16,50 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.{ScheduleService, ScheduleEntryG, ScheduleG, Conflict}
-import store.SesameRepository
 import utils.{Evaluation, Gen, LwmMimeType}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success}
 
 class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProtocol, Schedule] {
-  override val entityToFail: Schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
 
-  override val entityToPass: Schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+
+  val roomToPass = Room("room to pass", "desc to pass")
+  val roomToFail = Room("room to fail", "desc to fail")
+
+  val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", Employee.randomUUID)
+  val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+
+  val groupToPass = Group("group to pass", labworkToPass.id, Set(UUID.randomUUID(), UUID.randomUUID()))
+  val groupToFail = Group("group to fail", labworkToFail.id, Set(UUID.randomUUID(), UUID.randomUUID()))
+
+  val entriesToPass = (0 until 10).map (n =>
+    ScheduleEntry(
+      LocalTime.now.plusHours(n),
+      LocalTime.now.plusHours(n),
+      LocalDate.now.plusWeeks(n),
+      roomToPass.id,
+      supervisorToPass.id,
+      groupToPass.id,
+      ScheduleEntry.randomUUID
+    )
+  ).toSet
+  val entriesToFail = (0 until 10).map (n =>
+    ScheduleEntry(
+      LocalTime.now.plusHours(n),
+      LocalTime.now.plusHours(n),
+      LocalDate.now.plusWeeks(n),
+      roomToFail.id,
+      supervisorToFail.id,
+      groupToFail.id,
+      ScheduleEntry.randomUUID
+    )
+  ).toSet
+
+  override val entityToFail: Schedule = Schedule(labworkToFail.id, entriesToFail, Schedule.randomUUID)
+
+  override val entityToPass: Schedule = Schedule(labworkToPass.id, entriesToPass, Schedule.randomUUID)
 
   import ops._
   import bindings.ScheduleBinding.scheduleBinder
@@ -59,7 +94,26 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
   override val updateJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
-    "entries" -> (entityToPass.entries + ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()))
+    "entries" -> (
+      entityToPass.entries +
+        ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      )
+  )
+
+  private def toScheduleEntryAtom(entries: Set[ScheduleEntry])(room: Room, supervisor: Employee, group: Group): Set[ScheduleEntryAtom] = {
+    entries.map(e => ScheduleEntryAtom(e.start, e.end, e.date, room, supervisor, group, e.id))
+  }
+
+  val atomizedEntityToPass = ScheduleAtom(
+    labworkToPass,
+    toScheduleEntryAtom(entriesToPass)(roomToPass, supervisorToPass, groupToPass),
+    entityToPass.id
+  )
+
+  val atomizedEntityToFail = ScheduleAtom(
+    labworkToFail,
+    toScheduleEntryAtom(entriesToFail)(roomToFail, supervisorToFail, groupToFail),
+    entityToFail.id
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]
@@ -376,6 +430,127 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "errors" -> exception.getMessage
+      )
+    }
+
+    s"successfully get a single $entityTypeName atomized" in {
+      import Schedule.atomicWrites
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(Some(labworkToPass))).
+      when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(Vector(roomToPass))).
+      doReturn(Success(Vector(supervisorToPass))).
+      doReturn(Success(Vector(groupToPass))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
+    }
+
+    s"not get a single $entityTypeName atomized when one of the atomic models is not found" in {
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(None)).
+      when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(Vector(roomToPass))).
+      doReturn(Success(Vector(supervisorToPass))).
+      doReturn(Success(Vector(groupToPass))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
+    }
+
+    s"not get a single $entityTypeName atomized when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(Some(labworkToPass))).
+      when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(Vector(roomToPass))).
+      doReturn(Failure(new Exception(errorMessage))).
+      doReturn(Success(Vector(groupToPass))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+      import Schedule._
+
+      val schedules = Set(entityToPass, entityToFail)
+
+      when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(schedules))
+      doReturn(Success(Vector(labworkToPass, labworkToFail))).
+      doReturn(Success(Vector(roomToPass))).
+      doReturn(Success(Vector(roomToFail))).
+      doReturn(Success(Vector(supervisorToPass))).
+      doReturn(Success(Vector(supervisorToFail))).
+      doReturn(Success(Vector(groupToPass))).
+      doReturn(Success(Vector(groupToFail))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+    }
+
+    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+      val schedules = Set(entityToPass, entityToFail)
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(schedules))
+      doReturn(Failure(new Exception(errorMessage))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
       )
     }
   }

@@ -16,7 +16,9 @@ HEAD          /degrees                                    controllers.crud.Degre
 POST          /courses                                    controllers.crud.CourseCRUDController.create()
 PUT           /courses/:id                                controllers.crud.CourseCRUDController.update(id)
 GET           /courses                                    controllers.crud.CourseCRUDController.all()
+GET           /atomic/courses                             controllers.crud.CourseCRUDController.allAtomic()
 GET           /courses/:id                                controllers.crud.CourseCRUDController.get(id)
+GET           /atomic/courses/:id                         controllers.crud.CourseCRUDController.getAtomic(id)
 DELETE        /courses/:id                                controllers.crud.CourseCRUDController.delete(id)
 HEAD          /courses                                    controllers.crud.CourseCRUDController.header
 
@@ -31,7 +33,9 @@ HEAD          /employees                                  controllers.crud.user.
 # Group
 POST          /groups                                     controllers.crud.GroupCRUDController.create()
 GET           /groups                                     controllers.crud.GroupCRUDController.all()
+GET           /atomic/groups                              controllers.crud.GroupCRUDController.allAtomic()
 GET           /groups/:id                                 controllers.crud.GroupCRUDController.get(id)
+GET           /atomic/groups/:id                          controllers.crud.GroupCRUDController.getAtomic(id)
 DELETE        /groups/:id                                 controllers.crud.GroupCRUDController.delete(id)
 HEAD          /groups                                     controllers.crud.GroupCRUDController.header
 
@@ -47,7 +51,9 @@ DELETE        /labworks/:labwork/groups/:id               controllers.crud.Group
 POST          /labworks                                   controllers.crud.LabworkCRUDController.create()
 PUT           /labworks/:id                               controllers.crud.LabworkCRUDController.update(id)
 GET           /labworks                                   controllers.crud.LabworkCRUDController.all()
+GET           /atomic/labworks                            controllers.crud.LabworkCRUDController.allAtomic()
 GET           /labworks/:id                               controllers.crud.LabworkCRUDController.get(id)
+GET           /atomic/labworks/:id                        controllers.crud.LabworkCRUDController.getAtomic(id)
 DELETE        /labworks/:id                               controllers.crud.LabworkCRUDController.delete(id)
 HEAD          /labworks                                   controllers.crud.LabworkCRUDController.header
 
@@ -76,7 +82,9 @@ HEAD          /semesters                                  controllers.crud.semes
 POST          /students                                   controllers.crud.user.StudentCRUDController.create()
 PUT           /students/:id                               controllers.crud.user.StudentCRUDController.update(id)
 GET           /students                                   controllers.crud.user.StudentCRUDController.all()
+GET           /atomic/students                            controllers.crud.user.StudentCRUDController.allAtomic()
 GET           /students/:id                               controllers.crud.user.StudentCRUDController.get(id)
+GET           /atomic/students/:id                        controllers.crud.user.StudentCRUDController.getAtomic(id)
 DELETE        /students/:id                               controllers.crud.user.StudentCRUDController.delete(id)
 HEAD          /students                                   controllers.crud.user.StudentCRUDController.header
 
@@ -112,7 +120,9 @@ HEAD          /permissions                                controllers.Permission
 POST          /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.create()
 PUT           /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.update(id)
 GET           /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.all()
+GET           /atomic/labworkApplications                controllers.crud.LabworkApplicationCRUDController.allAtomic()
 GET           /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.get(id)
+GET           /atomic/labworkApplications/:id             controllers.crud.LabworkApplicationCRUDController.getAtomic(id)
 DELETE        /labworkApplications/:id                    controllers.crud.LabworkApplicationCRUDController.delete(id)
 HEAD          /labworkApplications                        controllers.crud.LabworkApplicationCRUDController.header
 
@@ -120,7 +130,9 @@ HEAD          /labworkApplications                        controllers.crud.Labwo
 POST          /schedules                                  controllers.crud.schedule.ScheduleCRUDController.create()
 PUT           /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.update(id)
 GET           /schedules                                  controllers.crud.schedule.ScheduleCRUDController.all()
+GET           /atomic/schedules                           controllers.crud.schedule.ScheduleCRUDController.allAtomic()
 GET           /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.get(id)
+GET           /atomic/schedules/:id                       controllers.crud.schedule.ScheduleCRUDController.getAtomic(id)
 DELETE        /schedules/:id                              controllers.crud.schedule.ScheduleCRUDController.delete(id)
 HEAD          /schedules                                  controllers.crud.schedule.ScheduleCRUDController.header
 
@@ -131,7 +143,9 @@ GET           /labworks/:labwork/schedules/preview        controllers.crud.sched
 POST          /timetables                                 controllers.crud.schedule.TimetableCRUDController.create()
 PUT           /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.update(id)
 GET           /timetables                                 controllers.crud.schedule.TimetableCRUDController.all()
+GET           /atomic/timetables                          controllers.crud.schedule.TimetableCRUDController.allAtomic()
 GET           /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.get(id)
+GET           /atomic/timetables/:id                      controllers.crud.schedule.TimetableCRUDController.getAtomic(id)
 DELETE        /timetables/:id                             controllers.crud.schedule.TimetableCRUDController.delete(id)
 HEAD          /timetables                                 controllers.crud.schedule.TimetableCRUDController.header
 

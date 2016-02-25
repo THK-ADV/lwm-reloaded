@@ -23,6 +23,8 @@ object EntryTypes {
 object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlanProtocol, AssignmentPlan] {
   import AssignmentEntry._
 
+  val empty = AssignmentPlan(0, Set.empty[AssignmentEntry])
+
   override def base: String = "assignmentPlans"
 
   override implicit def reads: Reads[AssignmentPlanProtocol] = Json.reads[AssignmentPlanProtocol]

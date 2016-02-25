@@ -9,7 +9,7 @@ import models.semester.{Semester, SemesterProtocol}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.Prefixes.LWMPrefix
@@ -18,6 +18,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.util.{Failure, Success, Try}
 
 object SemesterCRUDController {
   val yearAttribute = "year"
@@ -39,7 +40,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]): Result = {
+  /*override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]): Result = {
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 
     def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
@@ -100,7 +101,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
           "message" -> "query attribute not found"
         ))
     }
-  }
+  }*/
 
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
     case Some(uuid) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, uuid)
@@ -131,5 +132,34 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override protected def compareModel(input: SemesterProtocol, output: Semester): Boolean = {
     input.label == output.label && input.start.isEqual(output.start) && input.end.isEqual(output.end) && input.examStart.isEqual(output.examStart)
+  }
+
+  override protected def atomize(output: Semester): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+  override protected def atomizeMany(output: Set[Semester]): Try[JsValue] = Success(Json.toJson(output))
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
+    val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
+
+    def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
+      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => sem.start.getYear.toString.equals(year)))
+    }
+
+    def filterByPeriod(period: Seq[String], semesters: Set[Semester]): Try[Set[Semester]] = {
+      period.head match {
+        case ss if ss.toLowerCase.equals("ss") =>
+          Success(semesters.filter(sem => sem.start.getMonthOfYear <= 6))
+        case ws if ws.toLowerCase.equals("ws") =>
+          Success(semesters.filter(sem => sem.start.getMonthOfYear > 6))
+        case _ => Failure(new Throwable("Unknown attribute"))
+      }
+    }
+
+    attributes match {
+      case List(Some(years), None) => Success(filterByYears(years, all))
+      case List(Some(years), Some(period)) => filterByPeriod(period, filterByYears(years, all))
+      case List(None, Some(period)) => filterByPeriod(period, all)
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
   }
 }

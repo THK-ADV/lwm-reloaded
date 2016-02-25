@@ -119,12 +119,9 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       )
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Semester])
     }
 
     "not return semesters for a year when there is an exception" in {
@@ -165,7 +162,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "message" -> "query attribute not found"
+        "message" -> "Unknown attribute"
       )
     }
 
@@ -231,11 +228,11 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       )
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "message" -> "No such element..."
+        "message" -> "Unknown attribute"
       )
     }
 

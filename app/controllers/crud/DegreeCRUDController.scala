@@ -6,8 +6,7 @@ import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Reads, Writes}
-import play.api.mvc.Result
+import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import services.RoleService
 import store.Prefixes.LWMPrefix
 import store.sparql.{select, Clause}
@@ -15,6 +14,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.util.{Success, Try}
 
 class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
   override implicit def reads: Reads[DegreeProtocol] = Degree.reads
@@ -33,8 +33,6 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
     case Some(uuid) => Degree(input.label, input.abbreviation, uuid)
     case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
-
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Result = ???
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
@@ -55,4 +53,10 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
     input.label == output.label && input.abbreviation == output.abbreviation
   }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)
+
+  override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+  override protected def atomizeMany(output: Set[Degree]): Try[JsValue] = Success(Json.toJson(output))
 }

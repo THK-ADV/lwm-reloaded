@@ -120,7 +120,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
       repo add student
 
-      val explicitStudent = repo get Student.generateUri(student)
+      val explicitStudent = repo.get[Student](Student.generateUri(student))
 
       explicitStudent match {
         case Success(Some(s)) =>

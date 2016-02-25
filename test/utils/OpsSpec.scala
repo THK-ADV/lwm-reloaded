@@ -40,8 +40,8 @@ class OpsSpec extends WordSpec with TestBaseDefinition with PropertyChecks {
           val nested1 = List(o1)
           val nested2 = Try(o1)
 
-          nested1 flatPeek(i => o2 map ((_, i))) shouldEqual List(o2 flatMap (s => o1 map (i => (s, i))))
-          nested2 flatPeek(i => o2 map ((_, i))) shouldEqual Try(o2 flatMap (s => o1 map (i => (s, i))))
+          nested1 mergePeek(i => o2 map ((_, i))) shouldEqual List(o2 flatMap (s => o1 map (i => (s, i))))
+          nested2 mergePeek(i => o2 map ((_, i))) shouldEqual Try(o2 flatMap (s => o1 map (i => (s, i))))
         }
       }
 

@@ -17,7 +17,7 @@ import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
   self: BaseNamespace =>
@@ -42,11 +42,15 @@ trait JsonSerialisation[I, O] {
 }
 
 trait Filterable[O] {
-  def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[O]): Result
+  protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[O]): Try[Set[O]]
 }
 
 trait ModelConverter[I, O] {
   protected def fromInput(input: I, id: Option[UUID] = None): O
+
+  protected def atomize(output: O): Try[Option[JsValue]]
+
+  protected def atomizeMany(output: Set[O]): Try[JsValue]
 }
 
 trait Consistent[I, O] {
@@ -219,6 +223,33 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
     }
   }
 
+  // GET /Ts/:id with deserialisation
+  def getAtomic(id: String, securedContext: SecureContext = contextFrom(Get)) = securedContext action { implicit request =>
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{tryM, optM}
+    import utils.Ops.TraverseInstances._
+
+    val uri = s"$namespace${request.uri}".replace("/atomic", "")
+
+    repository.get[O](uri).flatPeek(atomize) match {
+      case Success(s) =>
+        s match {
+          case Some(json) =>
+            Ok(json).as(mimeType)
+          case None =>
+            NotFound(Json.obj(
+              "status" -> "KO",
+              "message" -> "No such element..."
+            ))
+        }
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
+    }
+  }
+
   // GET /ts with optional queries
   def all(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
     repository.get[O] match {
@@ -226,7 +257,42 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         if (request.queryString.isEmpty)
           Ok(Json.toJson(s)).as(mimeType)
         else
-          getWithFilter(request.queryString)(s)
+          getWithFilter(request.queryString)(s) match {
+            case Success(filtered) =>
+                Ok(Json.toJson(filtered)).as(mimeType)
+            case Failure(e) =>
+              ServiceUnavailable(Json.obj(
+                "status" -> "KO",
+                "message" -> e.getMessage
+              ))
+          }
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
+    }
+  }
+
+  // GET /ts with optional queries and deserialisation
+  def allAtomic(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
+    def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
+      case Success(json) =>
+        Ok(json).as(mimeType)
+      case Failure(e) =>
+        failure(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      ))
+    }
+
+    repository.get[O] match {
+      case Success(os) =>
+        if (request.queryString.isEmpty)
+          handle(atomizeMany(os))(InternalServerError(_))
+        else (getWithFilter(request.queryString)(_))
+            .andThen(_.flatMap(atomizeMany))
+            .andThen(handle(_)(ServiceUnavailable(_)))(os)
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",

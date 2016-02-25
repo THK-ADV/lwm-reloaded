@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.users.{Employee, User}
-import models.{Course, CourseProtocol}
+import models.{CourseAtom, Course, CourseProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -15,17 +15,39 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 
-import scala.util.Success
+import scala.util.{Failure, Success}
+
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
-  override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", User.randomUUID, 1, Course.randomUUID)
+  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", Employee.randomUUID)
+  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+
+  override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1, Course.randomUUID)
 
   override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
   }
 
-  override val entityToFail: Course = Course("label to fail", "description to fail", "abbreviation to fail", User.randomUUID, 1, Course.randomUUID)
+  override val entityToFail: Course = Course("label to fail", "description to fail", "abbreviation to fail", lecturerToFail.id, 1, Course.randomUUID)
+
+  val atomizedEntityToPass = CourseAtom(
+    entityToPass.label,
+    entityToPass.description,
+    entityToPass.abbreviation,
+    lecturerToPass,
+    entityToPass.semesterIndex,
+    entityToPass.id
+  )
+
+  val atomizedEntityToFail = CourseAtom(
+    entityToFail.label,
+    entityToFail.description,
+    entityToFail.abbreviation,
+    lecturerToFail,
+    entityToFail.semesterIndex,
+    entityToFail.id
+  )
 
   override implicit val jsonWrites: Writes[Course] = Course.writes
 
@@ -122,12 +144,9 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Course])
     }
 
     "not return courses when there is an invalid query attribute" in {
@@ -147,7 +166,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
@@ -174,7 +193,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val result = controller.asInstanceOf[CourseCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
@@ -224,6 +243,105 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
         "status" -> "KO",
         "message" -> "model already exists",
         "id" -> entityToPass.id
+      )
+    }
+
+    s"successfully get a single $entityTypeName atomized" in {
+      import Course.atomicWrites
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(Some(lecturerToPass))).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
+    }
+
+    s"not get a single $entityTypeName atomized when lecturer is not found" in {
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(None)).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
+    }
+
+    s"not get a single $entityTypeName atomized when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Failure(new Exception(errorMessage))).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+      import Course.atomicWrites
+
+      val courses = Set(entityToPass, entityToFail)
+      val lecturers = Vector(lecturerToPass, lecturerToFail)
+
+      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Success(lecturers))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+    }
+
+    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+      val courses = Set(entityToPass, entityToFail)
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
       )
     }
   }

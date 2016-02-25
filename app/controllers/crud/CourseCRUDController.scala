@@ -2,14 +2,12 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.users.{User, Employee}
-import models.{Course, CourseProtocol, UriGenerator}
-import org.openrdf.model.Value
+import models.users.Employee
+import models.{CourseAtom, Course, CourseProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Reads, Writes}
-import play.api.mvc.Result
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.RoleService
 import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
@@ -17,9 +15,10 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 import store.sparql.select
 import store.sparql.select._
+
 object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
@@ -42,30 +41,45 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
   }
 
+  override protected def atomize(output: Course): Try[Option[JsValue]] = {
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{tryM, optM}
+    import defaultBindings.EmployeeBinding.employeeBinder
+    import Course.atomicWrites
+
+    repository.get[Employee](Employee.generateUri(output.lecturer)(namespace)).peek { employee =>
+      val atom = CourseAtom(output.label, output.description, output.abbreviation, employee, output.semesterIndex, output.id)
+      Json.toJson(atom)
+    }
+  }
+
+  override protected def atomizeMany(output: Set[Course]): Try[JsValue] = {
+    import defaultBindings.EmployeeBinding.employeeBinder
+    import Course.atomicWrites
+
+    (for {
+      employees <- repository.getMany[Employee](output.map(c => Employee.generateUri(c.lecturer)(namespace)))
+    } yield {
+      output.foldLeft(Set.empty[CourseAtom]) { (newSet, c) =>
+        employees.find(_.id == c.lecturer) match {
+          case Some(employee) =>
+            val atom = CourseAtom(c.label, c.description, c.abbreviation, employee, c.semesterIndex, c.id)
+            newSet + atom
+          case None =>
+            newSet
+        }
+      }
+    }).map(s => Json.toJson(s))
+  }
+
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Result = {
+  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Try[Set[Course]] = {
     import CourseCRUDController._
 
-    val filtered = queryString.foldRight(Try[Set[Course]](courses)) {
+    queryString.foldRight(Try[Set[Course]](courses)) {
       case ((`lecturerAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.lecturer == p)))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
-    }
-
-    filtered match {
-      case Success(s) =>
-        if (s.isEmpty)
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-        else
-          Ok(Json.toJson(s)).as(mimeType)
-
-      case Failure(e) => BadRequest(Json.obj(
-        "status" -> "KO",
-        "message" -> e.getMessage
-      ))
     }
   }
 

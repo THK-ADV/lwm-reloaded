@@ -7,13 +7,14 @@ import models.UriGenerator
 import models.security.{Authority, AuthorityProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.util.{Success, Try}
 
 class AuthorityCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority] {
 
@@ -36,9 +37,13 @@ class AuthorityCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Result = ???
-
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = {
     input.user == output.user && input.refRoles == output.refRoles
   }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = Success(all)
+
+  override protected def atomize(output: Authority): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+  override protected def atomizeMany(output: Set[Authority]): Try[JsValue] = Success(Json.toJson(output))
 }
