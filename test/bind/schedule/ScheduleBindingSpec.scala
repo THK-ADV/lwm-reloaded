@@ -18,14 +18,13 @@ class ScheduleBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.ScheduleBinding.scheduleBinder
   import bindings.ScheduleEntryBinding.scheduleEntryBinder
+  import bindings.uuidRefBinder
 
   val schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
-  val scheduleGraph = (
-    URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
-      -- lwm.labwork ->- schedule.labwork
-      -- lwm.entries ->- schedule.entries
-      -- lwm.id ->- schedule.id
-    ).graph
+  val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
+    .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.entries).->-(schedule.entries)
+    .--(lwm.id).->-(schedule.id).graph
 
   "A ScheduleBindingSpec" should {
     "return a RDF graph representation of a schedule" in {

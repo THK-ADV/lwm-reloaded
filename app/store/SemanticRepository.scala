@@ -150,9 +150,8 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[PointedGraph[Rdf]] = {
     val connection = repo.getConnection
     val entityUri = idGenerator.generateUri(entity)
-
     val result = (for {
-      graph <- delete(entityUri)
+      graph <- deleteDirect(entityUri)
     } yield add(entity)).flatten
 
     connection.close()
@@ -170,7 +169,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     Try(pg)
   }
 
-  override def delete(id: String): Try[Rdf#Graph] = {
+  override def delete(id: String): Try[Rdf#Graph] = { //URI
     val connection = repo.getConnection
     val uri = makeUri(id)
 
@@ -182,6 +181,17 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     connection.commit()
     connection.close()
 
+    g
+  }
+
+  def deleteDirect(id: String): Try[Rdf#Graph] = withConnection { connection =>
+    val uri = makeUri(id)
+
+    val g = rdfStore.getGraph(connection, ns) map { graph =>
+      rdfStore.removeTriples(connection, ns, graph.triples filter (_.getSubject == uri))
+      graph
+    }
+    connection.commit()
     g
   }
 

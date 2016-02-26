@@ -3,6 +3,7 @@ package models.applications
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
+import models.users.{Student, StudentProtocol}
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
