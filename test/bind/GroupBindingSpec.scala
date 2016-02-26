@@ -16,16 +16,15 @@ class GroupBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](ns)
   import bindings.GroupBinding._
+  import bindings.uuidRefBinder
   import bindings.uuidBinder
 
   val group = Group("Label", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID), Group.randomUUID)
-  val groupGraph = (
-    URI(Group.generateUri(group)).a(lwm.Group)
-      -- lwm.label ->- group.label
-      -- lwm.labwork ->- group.labwork
-      -- lwm.members ->- group.members
-      -- lwm.id ->- group.id
-    ).graph
+  val groupGraph = URI(Group.generateUri(group)).a(lwm.Group)
+    .--(lwm.label).->-(group.label)
+    .--(lwm.labwork).->-(group.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.members).->-(group.members)(ops, uuidRefBinder(Student.splitter))
+    .--(lwm.id).->-(group.id).graph
 
   "A GroupBindingSpec" should {
     "return a RDF graph representation of a group" in {

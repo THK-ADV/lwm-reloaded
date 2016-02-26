@@ -16,14 +16,14 @@ import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.RoleService
-import store.{Resolvers, Namespace, SesameRepository}
+import store.{Namespace, Resolvers, SesameRepository}
 import utils.LWMActions.{SecureAction, SecureContentTypedAction}
-import utils.{LwmMimeType, DefaultLwmApplication}
+import utils.{DefaultLwmApplication, LwmMimeType}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 import org.mockito.Matchers._
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
@@ -65,26 +65,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   "A secured action" should {
 
-    "apply a simple permission checking function" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority.empty))
-
-      val action1 = SecureAction()(_ => true) { req => Results.Ok("Passed") }
-      val action2 = SecureAction()(_ => false) {req => Results.Ok("Passed")}
-
-      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
-
-      val result1 = call(action1, request)
-      val result2 = call(action2, request)
-
-      status(result1) should be(OK)
-      status(result2) should be(UNAUTHORIZED)
-      contentAsString(result1) should be("Passed")
-      contentAsJson(result2) should be(failedResponse)
-    }
-
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole1), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole1))).thenReturn(true)
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole1.id), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole1.id))).thenReturn(Success(true))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -99,8 +82,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole2))).thenReturn(false)
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole2.id))).thenReturn(Success(false))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -115,8 +98,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module2UserRole2), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module2UserRole2))).thenReturn(false)
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module2UserRole2.id), UUID.randomUUID())))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module2UserRole2.id))).thenReturn(Success(false))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -133,10 +116,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "parse content types securely" in new WithDepsApplication {
       implicit val mimeType = LwmMimeType.loginV1Json
 
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2), UUID.randomUUID())))
-      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(true)
+      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())))
+      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(Success(true))
 
-      val action = SecureContentTypedAction()(_ => true) {
+      val action = SecureContentTypedAction()(_ => Success(true)) {
         request =>
           request.body.validate[Login].fold(
             seq => {

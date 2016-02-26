@@ -19,7 +19,7 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](repo.namespace)
 
   import bindings.LabworkApplicationBinding._
-  import bindings.{uuidBinder, jodaDateTimeBinder}
+  import bindings.{uuidBinder, uuidRefBinder, jodaDateTimeBinder}
 
   val student = Student.randomUUID
   val friend1 = Student.randomUUID
@@ -27,14 +27,12 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
   val friend3 = Student.randomUUID
   val application = LabworkApplication(Labwork.randomUUID, student, Set(friend1, friend2))
 
-  val applicationGraph = (
-    URI(LabworkApplication.generateUri(application)).a(lwm.LabworkApplication)
-      -- lwm.labwork ->- application.labwork
-      -- lwm.applicant ->- application.applicant
-      -- lwm.timestamp ->- application.timestamp
-      -- lwm.friends ->- application.friends
-      -- lwm.id ->- application.id
-    ).graph
+  val applicationGraph = URI(LabworkApplication.generateUri(application)).a(lwm.LabworkApplication)
+    .--(lwm.labwork).->-(application.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.applicant).->-(application.applicant)(ops, uuidRefBinder(Student.splitter))
+    .--(lwm.timestamp).->-(application.timestamp)
+    .--(lwm.friends).->-(application.friends)(ops, uuidRefBinder(Student.splitter))
+    .--(lwm.id).->-(application.id).graph
 
   "A LabworkApplicationBinding" should {
     "return a RDF graph representation of a labwork application" in {

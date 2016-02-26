@@ -24,19 +24,18 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
   import bindings.BlacklistBinding.blacklistBinder
+  import bindings.uuidRefBinder
 
   val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
   val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
   val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
-  val timetableGraph = (
-    URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
-      -- lwm.labwork ->- timetable.labwork
-      -- lwm.entries ->- timetable.entries
-      -- lwm.start ->- timetable.start
-      -- lwm.blacklist ->- timetable.localBlacklist
-      -- lwm.id ->- timetable.id
-    ).graph
+  val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
+    .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.entries).->-(timetable.entries)
+    .--(lwm.start).->-(timetable.start)
+    .--(lwm.blacklist).->-(timetable.localBlacklist)
+    .--(lwm.id).->-(timetable.id).graph
 
   "A TimetableBindingSpec" should {
     "return a RDF graph representation of a timetable" in {

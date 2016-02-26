@@ -18,6 +18,7 @@ class RefRoleBindingSpec extends SesameDbSpec {
   import bindings.RefRoleBinding._
   import bindings.uuidBinder
   import bindings.RoleBinding._
+  import bindings.uuidRefBinder
 
   val refRoleWithCourse = RefRole(
     Some(Course.randomUUID),
@@ -31,19 +32,15 @@ class RefRoleBindingSpec extends SesameDbSpec {
     RefRole.randomUUID
   )
 
-  val refRoleGraphWithCourse = (
-    URI(RefRole.generateUri(refRoleWithCourse)).a(lwm.RefRole)
-      -- lwm.module ->- refRoleWithCourse.module
-      -- lwm.role->- refRoleWithCourse.role
-      -- lwm.id->- refRoleWithCourse.id
-    ).graph
+  val refRoleGraphWithCourse = URI(RefRole.generateUri(refRoleWithCourse)).a(lwm.RefRole)
+    .--(lwm.module).->-(refRoleWithCourse.module)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.role).->-(refRoleWithCourse.role)(ops, uuidRefBinder(Role.splitter))
+    .--(lwm.id).->-(refRoleWithCourse.id).graph
 
-  val refRoleGraphWithoutCourse = (
-    URI(RefRole.generateUri(refRoleWithoutCourse)).a(lwm.RefRole)
-      -- lwm.module ->- refRoleWithoutCourse.module
-      -- lwm.role->- refRoleWithoutCourse.role
-      -- lwm.id->- refRoleWithoutCourse.id
-    ).graph
+  val refRoleGraphWithoutCourse = URI(RefRole.generateUri(refRoleWithoutCourse)).a(lwm.RefRole)
+    .--(lwm.module).->-(refRoleWithoutCourse.module)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.role).->-(refRoleWithoutCourse.role)(ops, uuidRefBinder(Role.splitter))
+    .--(lwm.id).->-(refRoleWithoutCourse.id).graph
 
   "A RefRoleBindingSpec" should {
     "return a RDF graph representation of a refRole" in {

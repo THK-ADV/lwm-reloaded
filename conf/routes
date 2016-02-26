@@ -85,7 +85,7 @@ POST          /roles                                      controllers.crud.secur
 PUT           /roles/:id                                  controllers.crud.security.RoleCRUDController.update(id)
 GET           /roles/:id                                  controllers.crud.security.RoleCRUDController.get(id)
 GET           /roles                                      controllers.crud.security.RoleCRUDController.all()
-DELETE        /roles/:id                                  controllers.crud.security.RoleCRUDController.delete(id)
+#DELETE        /roles/:id                                  controllers.crud.security.RoleCRUDController.delete(id)
 HEAD          /roles                                      controllers.crud.security.RoleCRUDController.header
 
 # RefRole
@@ -159,6 +159,7 @@ HEAD          /sessions                                   controllers.SessionCon
 # APIData
 GET           /api/populate                               controllers.ApiDataController.populate
 GET           /api/added                                  controllers.ApiDataController.getAdded
+GET           /api/doshit                                 controllers.ApiDataController.deleteShit
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                               controllers.Assets.at(path="/public", file)

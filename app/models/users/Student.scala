@@ -16,5 +16,7 @@ object Student extends UriGenerator[Student] with JsonSerialisation[StudentProto
 
   override implicit def writes: Writes[Student] = Json.writes[Student]
 
+  implicit def writesProt: Writes[StudentProtocol] = Json.writes[StudentProtocol]
+
   override def base: String = "students"
 }

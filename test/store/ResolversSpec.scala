@@ -8,10 +8,12 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import services.RoleService
-import models.security.{Roles, Role, Authority}
+import models.security.{RefRole, Roles}
+import utils.Ops._
+import utils.Ops.MonadInstances._
+import utils.Ops.TraverseInstances._
 
 import scala.util.{Failure, Success}
-import scalaz.FingerTree
 
 class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
@@ -22,9 +24,9 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   import bindings.StudentBinding._
   import bindings.AuthorityBinding._
-  import bindings.RoleBinding._
   import bindings.permissionBinder
   import bindings.EmployeeBinding._
+  import bindings.RefRoleBinding._
 
   val repo = SesameRepository(ns)
 
@@ -55,7 +57,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       }
     }
 
-    "return None when username is not found" in {
+    "return `None` when username is not found" in {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
@@ -73,38 +75,43 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
-      repo.add[Role](Roles.student)
-      repo.add[Role](Roles.user)
+      val refrole1 = RefRole(None, Roles.user.id)
+      val refrole2 = RefRole(None, Roles.student.id)
+
+      repo.add[RefRole](refrole1)
+      repo.add[RefRole](refrole2)
 
       resolver.missingUserData(student1)
       resolver.missingUserData(employee)
 
       val studentResult = repo.get[Student](Student.generateUri(student1)(repo.namespace)).toOption.flatten
       val studentAuth = roleService.authorityFor(student1.id.toString)
+      val studentRefRoles = studentAuth flatMap (auth => repo.getMany[RefRole](auth.refRoles map RefRole.generateUri).toOption)
 
       val employeeResult = repo.get[Employee](Employee.generateUri(employee)(repo.namespace)).toOption.flatten
       val employeeAuth = roleService.authorityFor(employee.id.toString)
+      val employeeRefRoles = employeeAuth flatMap (auth => repo.getMany[RefRole](auth.refRoles map RefRole.generateUri).toOption)
 
-      (studentResult, studentAuth) match {
-        case (Some(student), Some(auth)) =>
+      (studentResult, studentAuth, studentRefRoles) match {
+        case (Some(student), Some(auth), Some(refRoles)) =>
           student shouldBe student1
           auth.user shouldBe student1.id
-          auth.refRoles.exists(_.role == Roles.student.id) shouldBe true
+          refRoles.exists(_.role == Roles.student.id) shouldBe true
           auth.refRoles.size shouldBe 1
-        case (None, _) => fail("Could not retrieve student")
-
-        case (_, None) => fail("Authority either not created or not found")
+        case (None, _, _) => fail("Could not retrieve student")
+        case (_, None, _) => fail("Authority either not created or not found")
+        case (_, _, None) => fail("RefRoles either not created or not found")
       }
 
-      (employeeResult, employeeAuth) match {
-        case (Some(emp), Some(auth)) =>
+      (employeeResult, employeeAuth, employeeRefRoles) match {
+        case (Some(emp), Some(auth), Some(refRoles)) =>
           emp shouldBe employee
           auth.user shouldBe employee.id
-          auth.refRoles.exists(_.role == Roles.user.id) shouldBe true
+          refRoles.exists(_.role == Roles.user.id) shouldBe true
           auth.refRoles.size shouldBe 1
-        case (None, _) => fail("Could not retrieve user")
-
-        case (_, None) => fail("Authority either not created or not found")
+        case (None, _, _) => fail("Could not retrieve user")
+        case (_, None, _) => fail("Authority either not created or not found")
+        case (_, _, None) => fail("RefRoles either not created or not found")
       }
     }
 
@@ -124,6 +131,31 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
           s shouldBe None
           repo.size shouldBe 0
       }
+    }
+
+    "stop and alert back when no appropriate `RefRole` was found" in {
+      import bindings.EmployeeBinding._
+      import ops._
+      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
+
+      val refrole1 = RefRole(None, Roles.user.id)
+
+      repo.add[RefRole](refrole1)
+
+      resolver.missingUserData(student1) match {
+        case Success(_) => fail("Should've not found an appropriate `RefRole`")
+        case Failure(e) =>
+        e.getMessage shouldBe "No appropriate RefRole found while resolving user"
+      }
+
+      resolver.missingUserData(employee) match {
+        case Success(g) =>
+          val demployee = g.as[Employee]
+          demployee shouldBe Success(employee)
+        case Failure(_) => fail("Should've found an appropriate `RefRole`")
+      }
+
     }
   }
 

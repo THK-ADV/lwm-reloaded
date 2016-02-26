@@ -1,9 +1,9 @@
 package bind.security
 
 import base.SesameDbSpec
-import models.{Degree, Course}
-import models.security.{Authority, Permission, Role, RefRole}
-import models.users.Student
+import models.{Course, Degree}
+import models.security.{Authority, Permission, RefRole, Role}
+import models.users.{Student, User}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -21,6 +21,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
   import bindings.RefRoleBinding._
   import bindings.AuthorityBinding._
   import bindings.uuidBinder
+  import bindings.uuidRefBinder
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID,Student.randomUUID)
 
@@ -36,15 +37,13 @@ class AuthorityBindingSpec extends SesameDbSpec {
     RefRole.randomUUID
   )
 
-  val authWith = Authority(student.id, Set(authorityForCourse1, authorityForCourse2), Authority.randomUUID)
-  val authWithout = Authority(student.id, Set.empty[RefRole], Authority.randomUUID)
+  val authWith = Authority(student.id, Set(authorityForCourse1.id, authorityForCourse2.id), Authority.randomUUID)
+  val authWithout = Authority(student.id, Set.empty, Authority.randomUUID)
 
-  val authorityGraph = (
-    URI(Authority.generateUri(authWith)).a(lwm.Authority)
-      -- lwm.id ->- authWith.id
-      -- lwm.privileged ->- authWith.user
-      -- lwm.refroles ->- authWith.refRoles
-    ).graph
+  val authorityGraph = URI(Authority.generateUri(authWith)).a(lwm.Authority)
+    .--(lwm.id).->-(authWith.id)
+    .--(lwm.privileged).->-(authWith.user)(ops, uuidRefBinder(User.splitter))
+    .--(lwm.refroles).->-(authWith.refRoles)(ops, uuidRefBinder(RefRole.splitter)).graph
 
   "An authority" should {
     "return a RDF graph representation of an Authority" in {
