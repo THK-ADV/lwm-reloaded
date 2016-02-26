@@ -218,7 +218,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
+      when(repository.deleteCascading(anyString())).thenReturn(Success(true))
 
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
@@ -234,7 +234,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"not delete an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
-      when(repository.delete(anyString())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.deleteCascading(anyString())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         DELETE,
@@ -361,7 +361,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    repository.withConnection { conn =>
+    repository.connection { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

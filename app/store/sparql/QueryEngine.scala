@@ -16,6 +16,7 @@ trait Query[A] {
 
   /**
    * Analogous to the `selectOperation` but as an ASK query.
+ *
    * @return Boolean result of the ask operation
    */
   def askOperation: QueryOperation[Boolean]
@@ -24,11 +25,12 @@ trait Query[A] {
    * Provider of a `RepositoryConnection`.
    * This is used as a closure in relation with `QueryOperation`s, in order to capture
    * a connection for late evaluation.
+ *
    * @param f Consumer function
    * @tparam B Result type of `f`
    * @return Result of `f`
    */
-  def withConnection[B](f: RepositoryConnection => B): B
+  def connection[B](f: RepositoryConnection => B): B
 }
 
 //TODO: Add an algebra for a query result
@@ -61,7 +63,7 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
   override def selectOperation: QueryOperation[Vector[BindingSet]] = {
     QueryOperation(s =>
       parseSelect(s).flatMap { q =>
-        withConnection { connection =>
+        connection { connection =>
           executeSelect(connection, q, Map())
         }
       }.toOption)
@@ -69,7 +71,7 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
 
   override def askOperation: QueryOperation[Boolean] = {
     QueryOperation(s => parseAsk(s).flatMap { q =>
-      withConnection { connection =>
+      connection { connection =>
         executeAsk(connection, q, Map())
       }
     }.toOption)
@@ -84,6 +86,7 @@ trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
    * `query(queryString).flatMap(f)`
    *
    * A helper function directly integrating the SPARQL-DSL.
+ *
    * @param clause SelectClause to be run
    * @return QueryOperation Monad encapsulating the result as a `Map[String, Value]`
    */

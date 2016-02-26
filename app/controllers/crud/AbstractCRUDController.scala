@@ -302,12 +302,11 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
     val uri = s"$namespace${request.uri}"
 
-    import collection.JavaConversions._
-    repository.delete(uri) match {
+    repository.deleteCascading(uri) match {
       case Success(s) =>
         Ok(Json.obj(
           "status" -> "OK",
-          "id" -> s.subjects().iterator().toVector.mkString(" ")
+          "deleted" -> s
         ))
       case Failure(e) =>
         InternalServerError(Json.obj(

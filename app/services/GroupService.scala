@@ -20,9 +20,8 @@ trait GroupServiceLike {
 
   def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
 
+  //THIS MUST NEVER BE A SET. ORDERING IS CRUCIAL!
   def sortApplicantsFor(labwork: UUID): Option[Vector[UUID]]
-
-  def sortApplicantsForMany(labworks: TraversableOnce[UUID]): Future[Option[Map[UUID, Vector[UUID]]]]
 }
 
 class GroupService(private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
@@ -34,19 +33,5 @@ class GroupService(private val applicationService: LabworkApplicationServiceLike
       val nodes = v map (app => (app.applicant, app.friends.toList))
       sortWithPairs(nodes)
     }
-  }
-
-  override def sortApplicantsForMany(labworks: TraversableOnce[UUID]): Future[Option[Map[UUID, Vector[UUID]]]] = {
-    import utils.Ops._
-    val concurrent = Future.traverse(labworks) { labwork =>
-      Future {
-        for {
-          application <- applicationService.applicationsFor(labwork)
-          paired = application map (app => (app.applicant, app.friends.toList))
-        } yield (labwork, sortWithPairs(paired))
-      }
-    }
-
-    concurrent.map(_.sequence.map(_.toMap))
   }
 }

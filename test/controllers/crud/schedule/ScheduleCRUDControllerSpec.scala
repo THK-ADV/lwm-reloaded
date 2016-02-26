@@ -99,7 +99,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val third = Schedule(labwork3.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
 
       when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
-      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Vector(first, second)))
+      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set(first, second)))
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
 
       val result = ScheduleCRUDController.competitive(labwork3.id, repository)
@@ -184,7 +184,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
-      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Vector.empty[Schedule]))
+      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
@@ -231,7 +231,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
       when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
-      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Vector.empty[Schedule]))
+      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)

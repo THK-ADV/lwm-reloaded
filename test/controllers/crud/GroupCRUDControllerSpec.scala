@@ -211,12 +211,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       implicit val groupProtWrites = Json.writes[GroupCountProtocol]
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Vector.empty[PointedGraph[Sesame]]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
       val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
 
@@ -255,12 +255,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       implicit val groupProtWrites = Json.writes[GroupRangeProtocol]
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Vector.empty[PointedGraph[Sesame]]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
       val json = Json.toJson(GroupRangeProtocol(labwork, min, max))
 
@@ -325,7 +325,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       )
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)

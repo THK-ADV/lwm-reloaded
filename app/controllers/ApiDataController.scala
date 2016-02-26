@@ -29,7 +29,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   def deleteShit() = Action { request =>
     val uri = s"${repository.namespace}/students/$uuid"
     println(uri)
-    repository.delete(uri) match {
+    repository.deleteCascading(uri) match {
       case Success(s) => Ok("YAY")
       case Failure(_) => InternalServerError("Du AFFE")
     }

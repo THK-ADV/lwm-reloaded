@@ -1,9 +1,11 @@
 package store
 
 import java.io.File
+
 import utils.Ops._
 import utils.Ops.MonadInstances._
 import models.{UniqueEntity, UriGenerator}
+import org.openrdf.model.URI
 import org.openrdf.repository.RepositoryConnection
 import org.openrdf.repository.sail.SailRepository
 import org.openrdf.sail.memory.MemoryStore
@@ -11,8 +13,8 @@ import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
 import store.sparql.SPARQLQueryEngine
-
 import scala.concurrent.duration._
+import scala.language.{higherKinds, postfixOps}
 import scala.util.Try
 
 
@@ -22,7 +24,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def ns: Rdf#URI
 
-  def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Rdf, T]): Try[Vector[PointedGraph[Rdf]]]
+  def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Rdf, T]): Try[Set[PointedGraph[Rdf]]]
 
   def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]]
 
@@ -32,11 +34,11 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def get[T <: UniqueEntity](id: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]]
 
-  //TODO: Rebuild with the same datastructure getMany(f: F[_]): F[_]
-  def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Vector[T]]
+  def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]]
 
-  // TODO: consider return type
-  def delete(id: String): Try[Rdf#Graph]
+  def deleteCascading(id: String): Try[Boolean]
+
+  def deleteSimple(id: String): Try[Boolean]
 
   def contains(id: String): Boolean
 
@@ -75,124 +77,85 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Sesame, T]): Try[Vector[T]] = {
-    val connection = repo.getConnection
-
-    val ts = ids.map { uri =>
-      val url = makeUri(uri)
-      rdfStore.getGraph(connection, ns) flatMap { graph =>
-        PointedGraph[Rdf](url, graph).as[T]
-      }
-    }.sequence
-
-    connection.close()
-    ts map (_.toVector)
+  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Sesame, T]): Try[Set[PointedGraph[Sesame]]] = commited {
+    connection =>
+      (entities map { entity =>
+        val pointedGraph = entity.toPG
+        rdfStore.appendToGraph(connection, ns, pointedGraph.graph) map (_ => pointedGraph)
+      }).sequence map (_.toSet)
   }
 
-  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Sesame, T]): Try[Vector[PointedGraph[Sesame]]] = {
-    val connection = repo.getConnection
-    val graphs = entities.map (_.toPG).toVector
-
-    val ts = graphs.map { pointed =>
-        rdfStore.appendToGraph(connection, ns, pointed.graph)
-      }.sequence
-
-    //this might not really be a good idea, since we don't know if any of our many updates have failed or not
-    connection.commit()
-    connection.close()
-    ts map (_ => graphs)
+  override def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Sesame, T]): Try[Set[T]] = connection {
+    connection =>
+      (ids map { uri =>
+        val url = makeUri(uri)
+        rdfStore.getGraph(connection, ns) flatMap (PointedGraph[Rdf](url, _).as[T])
+      }).sequence map (_.toSet)
   }
 
   override def close() = {
     repo.shutDown()
   }
 
-  override def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]] = {
-    val connection = repo.getConnection
-    val ts = rdfStore.getGraph(connection, ns).map { graph =>
-      classUri.classes.toList.flatMap { clazz =>
-        graph.getAllInstancesOf(clazz).toList.map(_.as[T])
-      }.filter(_.isSuccess).map(_.get).toSet
-    }
-
-    connection.close()
-
-    ts
+  override def get[T <: UniqueEntity](implicit serialiser: FromPG[Rdf, T], classUri: ClassUrisFor[Rdf, T]): Try[Set[T]] = connection {
+    connection =>
+      rdfStore.getGraph(connection, ns) flatMap { graph =>
+        (classUri.classes flatMap {
+          graph.getAllInstancesOf(_) map (_.as[T])
+        } filter(_.isSuccess)).sequence map (_ toSet)
+      }
   }
 
-  override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
-    val connection = repo.getConnection
+  override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = connection { connection =>
     val url = makeUri(uri)
 
-    val ts = rdfStore.getGraph(connection, ns).map { graph =>
-      PointedGraph[Rdf](url, graph).as[T].toOption
+    rdfStore.getGraph(connection, ns) map {
+      PointedGraph[Rdf](url, _).as[T].toOption
     }
-
-    connection.close()
-
-    ts
   }
 
-  def graph = {
-    val connection = repo.getConnection
-    val g = rdfStore.getGraph(connection, ns)
-    connection.close()
-    g
+  def graph = connection(rdfStore.getGraph(_, ns))
+
+  def size: Int = connection {
+    rdfStore.getGraph(_, ns).map(_.size()).getOrElse(0)
   }
 
-  def size: Int = {
-    val connection = repo.getConnection
-    val s = rdfStore.getGraph(connection, ns).map(_.size()).getOrElse(0)
-    connection.close()
-    s
-  }
-
-  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[PointedGraph[Rdf]] = {
-    val connection = repo.getConnection
+  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)
+                                                              (implicit serialiser: ToPG[Sesame, T], idGenerator: G): Try[PointedGraph[Rdf]] = commited { connection =>
     val entityUri = idGenerator.generateUri(entity)
-    val result = (for {
-      graph <- deleteDirect(entityUri)
-    } yield add(entity)).flatten
-
-    connection.close()
-    result
+    for {
+      _ <- deleteSimple(entityUri)
+      entityGraph <- add(entity)
+    } yield entityGraph
   }
 
-  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = {
+  override def add[T <: UniqueEntity](entity: T)(implicit serialiser: ToPG[Rdf, T]): Try[PointedGraph[Rdf]] = commited { connection =>
+    for {
+      pointedGraph <- Try(entity.toPG)
+      graph = pointedGraph.graph
+      _ <- rdfStore.appendToGraph(connection, ns, graph)
+    } yield pointedGraph
+  }
+
+  override def deleteCascading(id: String): Try[Boolean] = delete(id)((triple, uri) => triple.getSubject == uri || triple.getObject == uri)
+
+  override def deleteSimple(id: String): Try[Boolean] = delete(id)((triple, uri) => triple.getSubject == uri)
+
+  private def delete(id: String)(p: (Sesame#Triple, URI) => Boolean): Try[Boolean] = commited { connection =>
+    for {
+      graph <- rdfStore.getGraph(connection, ns)
+      uri = makeUri(id)
+      triples = graph.triples.filter(p(_, uri))
+      _ <- rdfStore.removeTriples(connection, ns, triples)
+    } yield true
+  }
+
+  private def commited[A](f: RepositoryConnection => A): A = {
     val connection = repo.getConnection
-    val pg = entity.toPG
-    val g = pg.graph
-    rdfStore.appendToGraph(connection, ns, g)
-
+    val res = f(connection)
     connection.commit()
     connection.close()
-    Try(pg)
-  }
-
-  override def delete(id: String): Try[Rdf#Graph] = { //URI
-    val connection = repo.getConnection
-    val uri = makeUri(id)
-
-    val g = rdfStore.getGraph(connection, ns).map { graph =>
-      rdfStore.removeTriples(connection, ns, graph.triples.filter(t => t.getSubject == uri || t.getObject == uri))
-      graph
-    }
-
-    connection.commit()
-    connection.close()
-
-    g
-  }
-
-  def deleteDirect(id: String): Try[Rdf#Graph] = withConnection { connection =>
-    val uri = makeUri(id)
-
-    val g = rdfStore.getGraph(connection, ns) map { graph =>
-      rdfStore.removeTriples(connection, ns, graph.triples filter (_.getSubject == uri))
-      graph
-    }
-    connection.commit()
-    g
+    res
   }
 
   override def contains(id: String): Boolean = {
@@ -204,7 +167,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   }
 
   //Side-effect
-  override def withConnection[A](f: (RepositoryConnection) => A): A = {
+  override def connection[A](f: (RepositoryConnection) => A): A = {
     val conn = repo.getConnection
     val res = f(conn)
     conn.close()

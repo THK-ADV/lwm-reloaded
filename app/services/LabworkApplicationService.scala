@@ -13,7 +13,7 @@ import store.sparql.select._
 
 trait LabworkApplicationServiceLike {
 
-  def applicationsFor(labwork: UUID): Option[Vector[LabworkApplication]]
+  def applicationsFor(labwork: UUID): Option[Set[LabworkApplication]]
 
 }
 
@@ -27,7 +27,7 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
 
   import bindings.LabworkApplicationBinding._
 
-  override def applicationsFor(labwork: UUID): Option[Vector[LabworkApplication]] = {
+  override def applicationsFor(labwork: UUID): Option[Set[LabworkApplication]] = {
     val laburi = Labwork.generateUri(labwork)
     val result = repository.query {
       select("id", "timestamp") where {

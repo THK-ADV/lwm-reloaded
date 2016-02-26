@@ -21,14 +21,14 @@ import scala.util.{Success, Failure, Try}
 
 object ScheduleCRUDController {
 
-  def competitive(labwork: UUID, repository: SesameRepository): Try[Vector[ScheduleG]] = {
+  def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
     scheduleFor(labwork, repository).map {
       case Some(s) => s.flatMap(ss => toScheduleG(ss, repository))
-      case None => Vector.empty[ScheduleG]
+      case None => Set.empty[ScheduleG]
     }
   }
 
-  private def scheduleFor(labwork: UUID, repository: SesameRepository): Try[Option[Vector[Schedule]]] = {
+  private def scheduleFor(labwork: UUID, repository: SesameRepository): Try[Option[Set[Schedule]]] = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     val bindings = Bindings[repository.Rdf](repository.namespace)
 
@@ -128,7 +128,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
         t <- timetable if t.entries.nonEmpty
         p <- plan if p.entries.nonEmpty
         g <- if (groups.nonEmpty) Some(groups) else None
-      } yield scheduleGenesisService.generate(t, g, p, comp)._1
+      } yield scheduleGenesisService.generate(t, g, p, comp.toVector)._1
     }
 
     gen match {

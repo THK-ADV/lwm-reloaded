@@ -126,10 +126,10 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork.id)
 
       resApplications match {
-        case Some(v) =>
-          v.size shouldBe applications.size
-          v.forall(applications.contains) shouldBe true
-          applications.sortBy(_.timestamp).map(_.applicant) shouldBe v.map(_.applicant)
+        case Some(set) =>
+          set.size shouldBe applications.size
+          set.forall(applications.contains) shouldBe true
+          applications.sortBy(_.timestamp).map(_.applicant).toSet shouldBe set.map(_.applicant)
         case None => fail("LabworkApplicaitons should exist")
       }
     }
