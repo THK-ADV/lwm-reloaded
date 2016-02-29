@@ -22,13 +22,13 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
 
   override val entityToFail: Authority = Authority(
     User.randomUUID,
-    Set(RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)),
+    Set(RefRole.randomUUID),
     Authority.randomUUID
   )
 
   override val entityToPass: Authority = Authority(
     User.randomUUID,
-    Set(RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)),
+    Set(RefRole.randomUUID),
     Authority.randomUUID
   )
 
@@ -47,6 +47,6 @@ class AuthorityCRUDControllerSpec extends AbstractCRUDControllerSpec[AuthorityPr
 
   override val updateJson: JsValue = Json.obj(
     "user" -> entityToPass.user,
-    "refRoles" -> (entityToPass.refRoles + RefRole(Some(UUID.randomUUID()), Roles.employee.id))
+    "refRoles" -> (entityToPass.refRoles + RefRole.randomUUID)
   )
 }

@@ -1,16 +1,19 @@
 package controllers
 
-import models.{Course, Degree, Room}
-import models.security.{Authority, RefRole, Role, Roles}
+import java.util.UUID
+
+import models.{Course, Degree, Labwork, Room}
+import models.security._
 import models.security.Roles._
 import models.semester.Semester
-import models.users.{Employee, User}
+import models.users.{Employee, Student, StudentProtocol, User}
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
 import store.SesameRepository
 import store.bind.Bindings
+
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
@@ -21,8 +24,28 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   private val bindings = Bindings(repository.namespace)
   implicit def toLocalDate(s: String): LocalDate = LocalDate.parse(s)
 
+  val uuid = UUID.randomUUID
+
+  val refrole1 = RefRole(None, admin.id)
+  val refrole2 = RefRole(None, employee.id)
+
+  def deleteShit() = Action { request =>
+    val uri = s"${repository.namespace}/students/$uuid"
+    println(uri)
+    repository.delete(uri) match {
+      case Success(s) => Ok("YAY")
+      case Failure(_) => InternalServerError("Du AFFE")
+    }
+  }
+
   def populate = Action { request =>
-    (rooms(10) ++ roles ++ authorities ++ degrees ++ semesters ++ courses).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
+    (rooms(10) ++
+      roles ++
+      authorities ++
+      degrees ++
+      semesters ++
+      courses ++
+      refroles).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
         case Failure(e) => Failure(e)
@@ -41,6 +64,8 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.DegreeBinding
     import bindings.SemesterBinding
     import bindings.CourseBinding
+    import bindings.RefRoleBinding
+    import bindings.StudentBinding
     (for {
       roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
       rooms <- repository.get[Room](RoomBinding.roomBinder, RoomBinding.classUri)
@@ -49,12 +74,14 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       degrees <- repository.get[Degree](DegreeBinding.degreeBinder, DegreeBinding.classUri)
       semesters <- repository.get[Semester](SemesterBinding.semesterBinder, SemesterBinding.classUri)
       courses <- repository.get[Course](CourseBinding.courseBinder, CourseBinding.classUri)
+      refrole <- repository.get[RefRole](RefRoleBinding.refRoleBinder, RefRoleBinding.classUri)
     } yield {
       List(
         Json.toJson(roles),
+        Json.toJson(refrole),
+        Json.toJson(auths),
         Json.toJson(rooms),
         Json.toJson(people),
-        Json.toJson(auths),
         Json.toJson(degrees),
         Json.toJson(semesters),
         Json.toJson(courses)
@@ -65,6 +92,13 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     }
   }
 
+
+  val studentList = List(Student("mi1111", "Hans", "Muruk", "", "11992200", UUID.randomUUID(), uuid))
+
+  val studentProts = studentList map { s =>
+    StudentProtocol(s.systemId, s.lastname, s.firstname, s.email, s.registrationId)
+  }
+
   def rooms(n: Int) = {
     import bindings.RoomBinding._
     def roomgen(n: Int) = Stream.continually(Room(s"R ${nextInt(3)}.${nextInt(9)}${nextInt(9)}${nextInt(9)}", "Desc")).take(n) ++ List(Room("H32-LC", "H32-LC Desc"), Room("H32-BG", "H32-BG Desc"), Room("H32-HA", "H32-HA Desc"))
@@ -73,8 +107,8 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def roles = {
     import bindings.RoleBinding._
-    List(admin, student, employee, user) map repository.add[Role]
-  }
+    List(admin /*student, employee, user*/) map repository.add[Role]
+}
 
   def people = List(Employee("ai1818", "Wurst", "Hans", "", Employee.randomUUID))
 
@@ -82,9 +116,14 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.AuthorityBinding._
     import bindings.EmployeeBinding._
 
-    people.map(p => (p, Authority(p.id, Set(RefRole(None, Roles.admin.id))))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
+    people.map(p => (p, Authority(p.id, Set(refrole1.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
     }
+  }
+
+  def refroles = {
+    import bindings.RefRoleBinding._
+    List(refrole1) map repository.add[RefRole]
   }
 
   def degrees = {

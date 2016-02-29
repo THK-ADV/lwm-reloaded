@@ -5,16 +5,17 @@ import akka.pattern.ask
 import akka.util.Timeout
 import base.TestBaseDefinition
 import models.Degree
-import models.security.{Roles, Role}
+import models.security.{RefRole, Role, Roles}
 import models.users.Student
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import services.{LDAPService, SessionServiceActor}
-import services.SessionServiceActor.{AuthenticationSuccess, AuthenticationFailure}
+import services.SessionServiceActor.{AuthenticationFailure, AuthenticationSuccess}
 import store.bind.Bindings
 import store.{LwmResolvers, Namespace, SesameRepository}
+
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -57,7 +58,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
       result match {
         case a: AuthenticationFailure =>
-          a.message shouldBe "No role found while resolving user"
+          a.message shouldBe "No appropriate RefRole found while resolving user"
         case _ => fail("Should not return a success")
       }
     }
@@ -65,11 +66,14 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     "create a session when a user is authorized and contains entries" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.attributes(anyString())).thenReturn(Future.successful(user))
-      import bindings.RoleBinding._
+      import bindings.RefRoleBinding._
       import bindings.permissionBinder
 
-      repository.add[Role](Roles.student)
-      repository.add[Role](Roles.admin)
+      val refrole1 = RefRole(None, Roles.admin.id)
+      val refrole2 = RefRole(None, Roles.student.id)
+
+      repository.add(refrole1)
+      repository.add(refrole2)
 
       val future = actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")
       val result = Await.result(future, timeout.duration)

@@ -23,6 +23,7 @@ class LabworkBindingSpec extends SesameDbSpec {
   import bindings.AssignmentEntryBinding._
   import bindings.uuidBinder
   import bindings.entryTypeBinder
+  import bindings.uuidRefBinder
 
   val mandatoryT = EntryType("Mandatory")
   val optionalT = EntryType("Optional")
@@ -33,16 +34,14 @@ class LabworkBindingSpec extends SesameDbSpec {
   ))
 
   val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan, Labwork.randomUUID)
-  val labworkGraph = (
-    URI(Labwork.generateUri(labwork)).a(lwm.Labwork)
-      -- lwm.label ->- labwork.label
-      -- lwm.description ->- labwork.description
-      -- lwm.semester ->- labwork.semester
-      -- lwm.course ->- labwork.course
-      -- lwm.degree ->- labwork.degree
-      -- lwm.assignmentPlan ->- labwork.assignmentPlan
-      -- lwm.id ->- labwork.id
-    ).graph
+  val labworkGraph = URI(Labwork.generateUri(labwork)).a(lwm.Labwork)
+    .--(lwm.label).->-(labwork.label)
+    .--(lwm.description).->-(labwork.description)
+    .--(lwm.semester).->-(labwork.semester)(ops, uuidRefBinder(Semester.splitter))
+    .--(lwm.course).->-(labwork.course)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(Degree.splitter))
+    .--(lwm.assignmentPlan).->-(labwork.assignmentPlan)
+    .--(lwm.id).->-(labwork.id).graph
 
   "A LabworkBinding" should {
     "return a RDF graph representation of a labwork" in {

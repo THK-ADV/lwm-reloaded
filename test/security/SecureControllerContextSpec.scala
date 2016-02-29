@@ -3,13 +3,17 @@ package security
 import base.TestBaseDefinition
 import controllers.crud.{ContentTyped, SecureControllerContext, Secured}
 import models.security.Permission
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.WordSpec
-import org.scalatest.mock.MockitoSugar._
+import org.scalatest.mock.MockitoSugar.mock
 import play.api.mvc.Controller
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.RoleService
 import utils.LwmMimeType
+
+import scala.util.Success
 
 class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {
   self =>
@@ -39,6 +43,7 @@ class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {
   "A SecureControllerContext" should {
 
     "use default context block, if none other is provided" in {
+      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(Success(false))
 
       val fakeRequest = FakeRequest("GET", "/")
 

@@ -17,9 +17,9 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
  * @param id Unique id of the `Authority`
  */
 
-case class Authority(user: UUID, refRoles: Set[RefRole], id: UUID = Authority.randomUUID) extends UniqueEntity
+case class Authority(user: UUID, refRoles: Set[UUID], id: UUID = Authority.randomUUID) extends UniqueEntity
 
-case class AuthorityProtocol(user: UUID, refRoles: Set[RefRole])
+case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
 
 /**
  * Structure binding a particular module to a particular `Role`(or set of permissions).
@@ -117,7 +117,6 @@ object Roles {
   val employee = Role("employee", Set(allSemesters))
 
   val student = Role("student", Set(getSemester, joinLabwork))
-
 }
 
 object Permission extends JsonSerialisation[Permission, Permission] {
@@ -152,7 +151,7 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
 
-  def empty = Authority(UUID.randomUUID(), Set.empty[RefRole], UUID.randomUUID())
+  def empty = Authority(UUID.randomUUID(), Set.empty, UUID.randomUUID())
 
   override def base: String = "authorities"
 

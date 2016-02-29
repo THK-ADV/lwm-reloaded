@@ -49,6 +49,15 @@ object Ops { self =>
   }
 
   object TraverseInstances {
+      implicit val travT: Traverse[Try] = new Traverse[Try] {
+        override def traverseImpl[G[_], A, B](fa: Try[A])(f: (A) => G[B])(implicit ap: Applicative[G]): G[Try[B]] = {
+          fa match {
+            case util.Success(a) => ap.map(f(a))(Try(_))
+            case util.Failure(e) => ap.point(Try(throw e))
+          }
+        }
+      }
+
       implicit val travO: Traverse[Option] = new Traverse[Option] {
         override def traverseImpl[G[_], A, B](fa: Option[A])(f: (A) => G[B])(implicit ap: Applicative[G]): G[Option[B]] = {
           fa.fold (ap.point(Option.empty[B])) { a =>
@@ -76,9 +85,17 @@ object Ops { self =>
     import scalaz.syntax.monad._
     F map (_ map f)
   }
-  def flatPeek[F[_]: Functor, G[_]: Monad, A, B](F: F[G[A]])(f: A => G[B]): F[G[B]] = {
+  def mergePeek[F[_]: Functor, G[_]: Monad, A, B](F: F[G[A]])(f: A => G[B]): F[G[B]] = {
     import scalaz.syntax.monad._
     F map (_ flatMap f)
+  }
+  def flatPeek[F[_], G[_], A, B](F: F[G[A]])(f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = {
+    import scalaz.syntax.monad._
+    F flatMap { G =>
+      (G flatMap { a =>
+        f(a).sequenceM
+      }).sequenceM
+    }
   }
 
   def bipeek[F[_]: Applicative, G[_]: Applicative, A, B, C](F1: F[G[A]], F2: F[G[B]])(f: (A, B) => C): F[G[C]] = {
@@ -95,8 +112,9 @@ object Ops { self =>
   implicit class MOps[F[_], G[_], A](F: F[G[A]]) {
     def sequenceM(implicit T: Traverse[F], A: Applicative[G]) = self.sequenceM(F)
     def peek[B](f: A => B)(implicit F1: Functor[F], F2: Functor[G]): F[G[B]] = self.peek(F)(f)
-    def flatPeek[B](f: A => G[B])(implicit F1: Functor[F], M: Monad[G]): F[G[B]] = self.flatPeek(F)(f)
+    def mergePeek[B](f: A => G[B])(implicit F1: Functor[F], M: Monad[G]): F[G[B]] = self.mergePeek(F)(f)
     def bipeek[B, C](F2: F[G[B]])(f: (A, B) => C)(implicit A1: Applicative[F], A2: Applicative[G]): F[G[C]] = self.bipeek(F, F2)(f)
+    def flatPeek[B](f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = self.flatPeek(F)(f)
   }
 }
 
