@@ -117,13 +117,14 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
 
       def resolve(auth: Boolean): Future[Session] = if (auth) {
         username(user) match {
-          case Some(userId) => Future.successful {
+          case Success(Some(userId)) => Future.successful {
             Session(user.toLowerCase, userId)
           }
-          case _ => ldap.attributes(user).map(missingUserData).flatMap {
+          case Success(_) => ldap.attributes(user).map(missingUserData).flatMap {
             case Success(_) => resolve(auth)
             case Failure(t) => Future.failed(t)
           }
+          case Failure(e) => Future.failed(e)
         }
       }
 

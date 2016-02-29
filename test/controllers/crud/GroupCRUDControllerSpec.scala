@@ -213,7 +213,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
@@ -257,7 +257,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
@@ -290,10 +290,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork"
+        "errors" -> s"Error while creating groups for labwork $labwork: Predicate does not hold for Vector()"
       )
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(None)
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(Vector.empty[UUID]))
 
       implicit val groupProtWrites = Json.writes[GroupCountProtocol]
       val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
@@ -321,13 +321,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork"
+        "errors" -> s"Error while creating groups for labwork $labwork: could not add to graph"
       )
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))

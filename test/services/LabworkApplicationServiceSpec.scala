@@ -6,10 +6,14 @@ import models.applications.LabworkApplication
 import models.semester.Semester
 import models.users.User
 import org.joda.time.DateTime
+import org.openrdf.model.Value
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.SesameModule
-import store.{SesameRepository, Namespace}
+import store.{Namespace, SesameRepository}
 import store.bind.Bindings
+import store.sparql.select._
+
+import scala.util.{Failure, Success}
 
 class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
@@ -53,10 +57,11 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork.id)
 
       resApplications match {
-        case Some(v) =>
+        case Success(v) if v.nonEmpty=>
           v.size shouldBe applications.size
           v.forall(applications.contains) shouldBe true
-        case None => fail("LabworkApplicaitons should exist")
+        case Success(v) => fail("LabworkApplications should exist")
+        case Failure(e) => fail(s"failed while retrieving data ${e.getMessage}")
       }
     }
 
@@ -85,11 +90,12 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork2.id)
 
       resApplications match {
-        case Some(v) =>
+        case Success(v) if v.nonEmpty =>
           v.size shouldBe applicationList2.size
           v.forall(applicationList2.contains) shouldBe true
           v.forall(applicationList1.contains) shouldBe false
-        case None => fail("LabworkApplicaitons should exist")
+        case Success(v) => fail("LabworkApplicaitons should exist")
+        case Failure(e) => fail(s"failed while retrieving data ${e.getMessage}")
       }
 
     }
@@ -102,8 +108,9 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork.id)
 
       resApplications match {
-        case Some(v) => fail("Should not return any LabworkApplication")
-        case None =>
+        case Success(v) if v.nonEmpty => fail("Should not return any LabworkApplication")
+        case Success(v) =>
+        case Failure(e) => fail(s"failed while retrieving data ${e.getMessage}")
       }
     }
 
@@ -126,11 +133,12 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork.id)
 
       resApplications match {
-        case Some(set) =>
+        case Success(set) if set.nonEmpty =>
           set.size shouldBe applications.size
           set.forall(applications.contains) shouldBe true
           applications.sortBy(_.timestamp).map(_.applicant).toSet shouldBe set.map(_.applicant)
-        case None => fail("LabworkApplicaitons should exist")
+        case Success(set) => fail("LabworkApplicaitons should exist")
+        case Failure(e) => fail(s"failed while retrieving data ${e.getMessage}")
       }
     }
   }

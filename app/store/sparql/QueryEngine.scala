@@ -1,107 +1,69 @@
 package store.sparql
 
 import org.openrdf.model.Value
-import org.openrdf.query.BindingSet
+import org.openrdf.query.parser.ParsedTupleQuery
 import org.openrdf.repository.RepositoryConnection
-import org.w3.banana.sesame.SesameModule
+import org.w3.banana.sesame.{Sesame, SesameModule}
+import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
+import scalaz.{Functor, Monad, Traverse, ~>}
 
-trait Query[A] {
-  self: SesameModule =>
-  /**
-   * Initiates a SELECT `QueryOperation` that automatically checks the validity of the input SELECT query.
-   *
-   * @return QueryOperation[A] Monad encapsulation of what actions should be done with the query result
-   */
-  def selectOperation: QueryOperation[A]
 
-  /**
-   * Analogous to the `selectOperation` but as an ASK query.
- *
-   * @return Boolean result of the ask operation
-   */
-  def askOperation: QueryOperation[Boolean]
-
-  /**
-   * Provider of a `RepositoryConnection`.
-   * This is used as a closure in relation with `QueryOperation`s, in order to capture
-   * a connection for late evaluation.
- *
-   * @param f Consumer function
-   * @tparam B Result type of `f`
-   * @return Result of `f`
-   */
-  def connection[B](f: RepositoryConnection => B): B
+sealed trait QueryExecutor[A] {
+  def parse(s: A): Try[Sesame#SelectQuery]
+  def execute(query: Sesame#SelectQuery): Try[Map[String, List[Value]]]
 }
 
-//TODO: Add an algebra for a query result
-//Assume that results are generally bundled in key-value pair collections, because their amount is a priori unknown
-//As a collection, it is then possible to write a combinator that simply extracts values based on an identifier
-//Thus, a manipulation like the following should be possible. `result.at("foo").at("bar")` -> get values for "foo" and "bar"
-
-case class QueryOperation[A](action: String => Option[A]) {
-
-  def <>(q: String): Option[A] = run(q)
-
-  def run: String => Option[A] = q => action(q)
-
-  def map[B](f: A => B): QueryOperation[B] = flatMap(a => new QueryOperation[B](q => run(q) map f))
-
-  def flatMap[B](f: A => QueryOperation[B]) = new QueryOperation[B](q => run(q).flatMap(a => f(a) run q)) //not so stack-safe
-
-}
-
-trait QueryEngine[A] extends Query[A] {
-  self: SesameModule =>
-}
-
-trait SPARQLQueryEngine extends QueryEngine[Vector[BindingSet]] {
-  self: SesameModule =>
-
-  import rdfStore._
-  import sparqlOps._
-
-  override def selectOperation: QueryOperation[Vector[BindingSet]] = {
-    QueryOperation(s =>
-      parseSelect(s).flatMap { q =>
-        connection { connection =>
-          executeSelect(connection, q, Map())
-        }
-      }.toOption)
+sealed trait QueryEngine[F[_], A] {
+  def run: Try[F[A]] = this match {
+    case Transitional(t) => t
+    case a@Initial(_) => Failure(new Throwable("Query cannot be run at this stage. Try selecting specific elements from the Map and then running it."))
   }
+}
 
-  override def askOperation: QueryOperation[Boolean] = {
-    QueryOperation(s => parseAsk(s).flatMap { q =>
-      connection { connection =>
-        executeAsk(connection, q, Map())
-      }
-    }.toOption)
+case class Transitional[F[_], A](T: Try[F[A]]) extends QueryEngine[F, A] {
+  import utils.Ops._
+  import utils.Ops.MonadInstances.tryM
+  import utils.Ops.TraverseInstances.travT
+
+  def map[B](f: A => B)(implicit F: Functor[F]): Transitional[F, B] = Transitional(T map (FF => F.map(FF)(f)))
+  def flatMap[G[_], B](f: A => F[B])(implicit M: Monad[F]): Transitional[F, B] = Transitional(T map (FF => M.bind(FF)(f)))
+
+  def changeTo[G[_], B](f: A => G[B])(implicit M: Monad[G], NT: F ~> G): Transitional[G, B] = transform(NT andThen (M.bind(_)(f)))
+  def transform[G[_], B](f: F[A] => G[B]): Transitional[G, B] = Transitional(T map f)
+
+  def request[G[_], B](f: A => Try[G[B]])(implicit M: Monad[G], T: Traverse[G], NT: F ~> G): Transitional[G, B] = {
+    requestAll(F => M.bind(NT(F))(a => f(a).sequenceM).sequenceM)
   }
+  def requestAll[G[_], B](f: F[A] => Try[G[B]]): Transitional[G, B] = Transitional(T flatMap f)
+}
 
-  /**
-   * Inverts the right-associativity of a QueryOperation, to a left-associativity. (lazy -> eager)
-   *
-   * This means that the following:
-   * `QueryOperation.flatMap(f) <> queryString`
-   * is inverted to:
-   * `query(queryString).flatMap(f)`
-   *
-   * A helper function directly integrating the SPARQL-DSL.
- *
-   * @param clause SelectClause to be run
-   * @return QueryOperation Monad encapsulating the result as a `Map[String, Value]`
-   */
+case class Initial[F[_], A](z: SelectClause)(implicit qe: QueryExecutor[SelectClause]) extends QueryEngine[F, A] {
+  def select[G[_], B](f: Map[String, List[Value]] => G[B]): Transitional[G, B] = Transitional(qe.parse(z) flatMap qe.execute flatMap (f andThen Success.apply))
+}
 
-  def query(clause: SelectClause) = {
-    import scala.collection.JavaConversions._
-    selectOperation.map { v =>
-      v.foldRight(Map[String, List[Value]]()){ (l1, r1) =>
-        l1.getBindingNames.toVector.foldRight(r1) { (l2, r2) =>
-          r2.get(l2) match {
-            case Some(vl) => r2.updated(l2, vl :+ l1.getValue(l2))
-            case None => r2 + (l2 -> List(l1.getValue(l2)))
+trait SPARQLQueryEngine { self: SesameModule =>
+  def connection[A](f: RepositoryConnection => A): A
+
+  private implicit val qe: QueryExecutor[SelectClause] = new QueryExecutor[SelectClause] {
+    import self.rdfStore.sparqlEngineSyntax._
+
+    override def execute(query: ParsedTupleQuery): Try[Map[String, List[Value]]] = connection { conn =>
+      conn.executeSelect(query) map { solutions =>
+        import scala.collection.JavaConversions._
+        solutions.foldRight(Map[String, List[Value]]()){ (l1, r1) =>
+          l1.getBindingNames.toVector.foldRight(r1) { (l2, r2) =>
+            r2.get(l2) match {
+              case Some(vl) => r2.updated(l2, vl :+ l1.getValue(l2))
+              case None => r2 + (l2 -> List(l1.getValue(l2)))
+            }
           }
         }
       }
-    } <> clause.run
+    }
+
+    override def parse(s: SelectClause): Try[ParsedTupleQuery] = self.sparqlOps.parseSelect(s.run)
   }
+
+  def prepareQuery[F[_], A](s: SelectClause): Initial[F, A] = Initial[F, A](s)
 }

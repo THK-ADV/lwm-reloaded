@@ -12,6 +12,8 @@ import org.w3.banana.sesame.SesameModule
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 
+import scala.util.Success
+
 class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
@@ -119,10 +121,10 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       val result3 = roleService.authorityFor(student3.id.toString)
 
       (result1, result2, result3) match {
-        case (Some(r1), Some(r2), None) =>
+        case (Success(Some(r1)), Success(Some(r2)), Success(None)) =>
           r1 shouldBe authority1
           r2 shouldBe authority2
-        case _ => fail("No")
+        case _ => fail("Should have found two of the authorities")
       }
     }
   }

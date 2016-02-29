@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.security.Permission
-import models.{UriGenerator, UniqueEntity}
+import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -14,17 +14,18 @@ import store.SesameRepository
 import store.bind.Bindings
 import utils.LWMActions._
 import utils.LwmMimeType
-
+import utils.Ops.MonadInstances.optM
+import utils.Ops.NaturalTrasformations._
 import scala.collection.Map
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
   self: BaseNamespace =>
 
-  def repository: SesameRepository
-
   val defaultBindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+
+  def repository: SesameRepository
 
   implicit def rdfWrites: ToPG[Sesame, T]
 
@@ -50,27 +51,28 @@ trait ModelConverter[I, O] {
 }
 
 trait Consistent[I, O] {
+
   import store.sparql.select._
   import store.sparql.{NoneClause, Clause, SelectClause}
 
-  protected def compareModel(input: I, output: O): Boolean
-
-  protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
-
-  def exists(input: I)(repository: SesameRepository): Option[UUID] = {
+  def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
     val (clause, key) = existsQuery(input)
 
     clause match {
       case select@SelectClause(_, _) =>
-        for {
-          map <- repository.query(select)
-          list <- map.get(key.v)
-          value <- list.headOption
-        } yield UUID.fromString(value.stringValue())
+        repository.prepareQuery(select).
+          select(_.get(key.v)).
+          changeTo(_.headOption).
+          map(value => UUID.fromString(value.stringValue())).
+          run
 
-      case _ => None
+      case _ => Success(None)
     }
   }
+
+  protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
+
+  protected def compareModel(input: I, output: O): Boolean
 }
 
 trait ContentTyped {
@@ -103,13 +105,13 @@ trait SecureControllerContext {
     case _ => NonSecureBlock
   }
 
-  trait SecureContext {
+  sealed trait Rule
 
-    def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
-      case PartialSecureBlock(set) => restricted(None, set)
-      case NonSecureBlock => simple()
-    }
+  case class SecureBlock(restrictionRef: String, set: Set[Permission]) extends SecureContext
+
+  case class PartialSecureBlock(s: Set[Permission]) extends SecureContext
+
+  trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
       restricted = (opt, perms) => SecureAction((opt, perms))(block),
@@ -130,15 +132,15 @@ trait SecureControllerContext {
       restricted = (opt, perms) => SecureContentTypedAction.async((opt, perms))(block),
       simple = ContentTypedAction.async(block)
     )
+
+    def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
+      case PartialSecureBlock(set) => restricted(None, set)
+      case NonSecureBlock => simple()
+    }
   }
 
-  case class SecureBlock(restrictionRef: String, set: Set[Permission]) extends SecureContext
-
-  case class PartialSecureBlock(s: Set[Permission]) extends SecureContext
-
   case object NonSecureBlock extends SecureContext
-
-  sealed trait Rule
 
   case object Create extends Rule
 
@@ -149,6 +151,7 @@ trait SecureControllerContext {
   case object Get extends Rule
 
   case object Update extends Rule
+
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
@@ -171,28 +174,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
           "errors" -> JsError.toJson(errors)
         ))
       },
-      success => {
-        exists(success)(repository) match {
-          case Some(id) =>
-            Accepted(Json.obj(
-              "status" -> "KO",
-              "message" -> "model already exists",
-              "id" -> id.toString
-            ))
-          case None =>
-            val model = fromInput(success)
-
-            repository.add[O](model) match {
-              case Success(graph) =>
-                Created(Json.toJson(model)).as(mimeType)
-              case Failure(e) =>
-                InternalServerError(Json.obj(
-                  "status" -> "KO",
-                  "errors" -> e.getMessage
-                ))
-            }
-        }
-      }
+      success => handleExistance(success)
     )
   }
 
@@ -250,11 +232,11 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
           case Success(s) =>
             s match {
               case Some(entity) if compareModel(success, entity) =>
-                  Accepted(Json.obj(
-                    "status" -> "KO",
-                    "message" -> "model already exists",
-                    "id" -> id.toString
-                  ))
+                Accepted(Json.obj(
+                  "status" -> "KO",
+                  "message" -> "model already exists",
+                  "id" -> id.toString
+                ))
               case Some(entity) =>
                 val updated = fromInput(success, Some(entity.id))
 
@@ -267,28 +249,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
                       "errors" -> e.getMessage
                     ))
                 }
-              case None =>
-                exists(success)(repository) match {
-                  case Some(duplicate) =>
-                    Accepted(Json.obj(
-                      "status" -> "KO",
-                      "message" -> "model already exists",
-                      "id" -> duplicate.toString
-                    ))
-                  case None =>
-                    val model = fromInput(success)
-
-                    repository.add[O](model) match {
-                      case Success(graph) =>
-                        Created(Json.toJson(model)).as(mimeType)
-                      case Failure(e) =>
-                        InternalServerError(Json.obj(
-                          "status" -> "KO",
-                          "errors" -> e.getMessage
-                        ))
-                    }
-                }
+              case None => handleExistance(success)
             }
+
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -297,6 +260,32 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         }
       }
     )
+  }
+
+  private def handleExistance(input: I): Result = exists(input)(repository) match {
+    case Success(Some(duplicate)) =>
+      Accepted(Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> duplicate.toString
+      ))
+    case Success(None) =>
+      val model = fromInput(input)
+
+      repository.add[O](model) match {
+        case Success(graph) =>
+          Created(Json.toJson(model)).as(mimeType)
+        case Failure(e) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          ))
+      }
+    case Failure(e) =>
+      InternalServerError(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      ))
   }
 
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>

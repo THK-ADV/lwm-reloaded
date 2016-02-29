@@ -9,7 +9,7 @@ import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
 import utils.PTree._
 
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
@@ -49,14 +49,14 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
         LabworkApplication(labworkUUID, users(5), Set(users(4))),
         LabworkApplication(labworkUUID, users(6), Set.empty)
       )
-      when(applicationService.applicationsFor(labworkUUID)).thenReturn(Some(applications))
+      when(applicationService.applicationsFor(labworkUUID)).thenReturn(Success(applications))
 
       val sorted = groupService.sortApplicantsFor(labworkUUID)
       val directlySorted = sortWithPairs(Random.shuffle(applications).map(z => (z.applicant, z.friends.toList)))
 
       sorted match {
-        case Some(v) => v.last shouldBe directlySorted.last
-        case None => fail("Should've returned and sorted applicants")
+        case Success(v) => v.last shouldBe directlySorted.last
+        case Failure(e) => fail(s"Should've returned and sorted applicants: ${e.getMessage}")
       }
     }
 

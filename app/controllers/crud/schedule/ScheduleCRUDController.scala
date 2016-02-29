@@ -4,8 +4,9 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import models._
-import models.schedule.{ScheduleEntry, Timetable, Schedule, ScheduleProtocol}
+import models.schedule.{Schedule, ScheduleEntry, ScheduleProtocol, Timetable}
 import models.security.Permissions._
+import org.openrdf.model.Value
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
@@ -17,18 +18,17 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object ScheduleCRUDController {
 
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
-    scheduleFor(labwork, repository).map {
-      case Some(s) => s.flatMap(ss => toScheduleG(ss, repository))
-      case None => Set.empty[ScheduleG]
+    scheduleFor(labwork, repository) map { set =>
+      set.flatMap(schedule => toScheduleG(schedule, repository))
     }
   }
 
-  private def scheduleFor(labwork: UUID, repository: SesameRepository): Try[Option[Set[Schedule]]] = {
+  def scheduleFor(labwork: UUID, repository: SesameRepository): Try[Set[Schedule]] = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     val bindings = Bindings[repository.Rdf](repository.namespace)
 
@@ -36,7 +36,6 @@ object ScheduleCRUDController {
     import store.sparql.select
     import bindings.ScheduleBinding._
     import bindings.ScheduleEntryBinding._
-
     import utils.Ops._
     import TraverseInstances._
     import MonadInstances.{tryM, listM}
@@ -44,22 +43,24 @@ object ScheduleCRUDController {
     lazy val id = Labwork.generateUri(labwork)(repository.namespace)
 
     val query = select distinct "schedules" where {
-      ^(s(id), p(lwm.course), v("courseid")) .
-        ^(s(id), p(lwm.semester), v("semester")) .
-        ^(v("course"), p(lwm.id), v("courseid")) .
-        ^(v("course"), p(lwm.semesterIndex), v("semesterIndex")) .
-        ^(v("labwork"), p(lwm.semester), v("semester")) .
-        ^(v("labwork"), p(lwm.course), v("course2id")) .
-        ^(v("course2"), p(lwm.id), v("course2id")) .
-        ^(v("course2"), p(lwm.semesterIndex), v("semesterIndex")) .
-        ^(v("labwork"), p(lwm.id), v("labworkid")) .
+      ^(s(id), p(lwm.course), v("courseid")).
+        ^(s(id), p(lwm.semester), v("semester")).
+        ^(v("course"), p(lwm.id), v("courseid")).
+        ^(v("course"), p(lwm.semesterIndex), v("semesterIndex")).
+        ^(v("labwork"), p(lwm.semester), v("semester")).
+        ^(v("labwork"), p(lwm.course), v("course2id")).
+        ^(v("course2"), p(lwm.id), v("course2id")).
+        ^(v("course2"), p(lwm.semesterIndex), v("semesterIndex")).
+        ^(v("labwork"), p(lwm.id), v("labworkid")).
         ^(v("schedules"), p(lwm.labwork), v("labworkid"))
     }
 
-    repository.query(query)
-      .flatMap(_.get("schedules").peek(_.stringValue()))
-      .map(repository.getMany[Schedule])
-      .sequenceM
+      repository.prepareQuery(query).
+      select(_.get("schedules")).
+      transform(_.fold(List.empty[Value])(identity)).
+      map(_.stringValue()).
+      requestAll(repository.getMany[Schedule]).
+      run
   }
 
   private def toScheduleG(schedule: Schedule, repository: SesameRepository): Option[ScheduleG] = {
@@ -70,12 +71,12 @@ object ScheduleCRUDController {
     import utils.Ops._
     import MonadInstances._
 
-    val maybeEntries = sequence(
-      schedule.entries flatMap { entry =>
+    val maybeEntries =
+      (schedule.entries flatMap { entry =>
         val group = repository.get[Group](Group.generateUri(entry.group)(repository.namespace)).toOption
         group.peek(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
-      }
-    )
+      }).sequence
+
 
     maybeEntries map (entries => ScheduleG(schedule.labwork, entries.toVector, schedule.id))
   }

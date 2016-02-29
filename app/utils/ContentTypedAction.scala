@@ -3,7 +3,7 @@ package utils
 import java.util.UUID
 
 import controllers.SessionController
-import models.security.{Authority, Permission, RefRole, Role}
+import models.security.{Authority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import services.RoleServiceLike
@@ -12,6 +12,8 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 object LWMActions {
+
+  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
 
   object ContentTypedAction {
 
@@ -66,8 +68,6 @@ object LWMActions {
 
   }
 
-  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
-
 }
 
 
@@ -85,7 +85,7 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
           "message" -> "Insufficient permissions for given action"
         )))
       case Failure(e) =>
-        Some(Results.Unauthorized(Json.obj(
+        Some(Results.InternalServerError(Json.obj(
           "status" -> "KO",
           "message" -> e.getMessage
         )))
@@ -94,16 +94,35 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
 }
 
 
-
 case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthRequest] {
 
   override def invokeBlock[A](request: Request[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
     def f = block compose (AuthRequest.apply[A] _).curried(request)
 
-    (for {
-      userId <- request.session.get(SessionController.userId)
-      authority <- roleService.authorityFor(userId)
-    } yield f(authority)) getOrElse f(Authority.empty)
+    request.session.get(SessionController.userId) match {
+      case Some(id) =>
+        roleService.authorityFor(id) match {
+          case Success(optAuth) if optAuth.isDefined => f(optAuth.get)
+          case Success(_) => Future.successful {
+            Results.Unauthorized(Json.obj(
+              "status" -> "KO",
+              "message" -> s"No authority found for $id"
+            ))
+          }
+          case Failure(e) => Future.successful {
+            Results.InternalServerError(Json.obj(
+              "status" -> "KO",
+              "message" -> s"${e.getMessage}"
+            ))
+          }
+        }
+      case None => Future.successful {
+        Results.Unauthorized(Json.obj(
+          "status" -> "KO",
+          "message" -> s"No user-id present in session"
+        ))
+      }
+    }
   }
 }
 

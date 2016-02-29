@@ -77,21 +77,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
         val processed =
           for {
-            people <- groupService.sortApplicantsFor(success.labwork)
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
             groupSize = size(success.min, success.max, people.size)
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped).toOption
+            _ <- repository.addMany[Group](mapped)
           } yield mapped
 
         processed match {
-          case Some(groups) =>
+          case Success(groups) =>
             Ok(Json.toJson(groups)).as(mimeType)
-          case None =>
+          case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
             ))
         }
       }
@@ -110,21 +110,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
       success => {
         val processed =
           for {
-            people <- groupService.sortApplicantsFor(success.labwork)
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
             groupSize = (people.size / success.count) + 1
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped).toOption
+            _ <- repository.addMany[Group](mapped)
           } yield mapped
 
         processed match {
-          case Some(groups) =>
+          case Success(groups) =>
             Ok(Json.toJson(groups)).as(mimeType)
-          case None =>
+          case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
             ))
         }
       }

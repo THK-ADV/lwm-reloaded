@@ -10,16 +10,19 @@ import models.users.Employee
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.openrdf.model.Value
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.{ScheduleService, ScheduleEntryG, ScheduleG, Conflict}
+import services.{Conflict, ScheduleEntryG, ScheduleG, ScheduleService}
 import store.SesameRepository
+import store.sparql.{Initial, QueryExecutor, SelectClause}
 import utils.{Evaluation, Gen, LwmMimeType}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
+import org.scalatest.mock.MockitoSugar.mock
 
 class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProtocol, Schedule] {
   override val entityToFail: Schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
@@ -63,7 +66,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]
-  
+
   "A ScheduleCRUDController also" should {
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
@@ -72,7 +75,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
       val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, assignmentPlan)
 
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
 
       val result = ScheduleCRUDController.competitive(labwork.id, repository)
 
@@ -98,7 +101,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val second = Schedule(labwork2.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
       val third = Schedule(labwork3.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
 
-      when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set(first, second)))
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
 
@@ -143,7 +147,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
@@ -183,7 +187,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -230,7 +235,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(Some(Map("schedules" -> List.empty)))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -268,7 +274,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
@@ -305,7 +311,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
@@ -343,7 +349,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       doReturn(Success(Set.empty[Group])).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
@@ -367,7 +373,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val exception = new Exception("Oops, something went wrong")
       doReturn(Failure(exception)).doReturn(Failure(exception)).when(repository).get(anyObject(), anyObject())
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Failure(exception))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
 
       val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.toString)(request)
 
