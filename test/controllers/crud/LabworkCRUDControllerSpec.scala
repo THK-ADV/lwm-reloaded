@@ -16,6 +16,7 @@ import utils.LwmMimeType
 import play.api.test.Helpers._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import store.sparql.{Initial, QueryExecutor, SelectClause}
 
 import scala.util.{Failure, Success}
 
@@ -482,7 +483,8 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
-      when(repository.query(anyObject())).thenReturn(Some(Map(
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
         "id" -> List(factory.createLiteral(entityToPass.id.toString))
       )))
 
@@ -503,9 +505,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       )
     }
 
-    s"neither create or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
+    s"neither create n'or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(None))
-      when(repository.query(Matchers.anyObject())).thenReturn(Some(Map(
+      when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
         "id" -> List(factory.createLiteral(entityToPass.id.toString))
       )))
 
@@ -592,9 +595,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       import Labwork.atomicWrites
 
       val labworks = Set(entityToPass, entityToFail)
-      val semesters = Vector(semesterToPass, semesterToFail)
-      val courses = Vector(courseToPass, courseToFail)
-      val degrees = Vector(degreeToPass, degreeToFail)
+      val semesters = Set(semesterToPass, semesterToFail)
+      val courses = Set(courseToPass, courseToFail)
+      val degrees = Set(degreeToPass, degreeToFail)
 
       when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
       doReturn(Success(semesters)).

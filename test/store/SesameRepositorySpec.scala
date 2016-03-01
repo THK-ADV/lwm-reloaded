@@ -77,7 +77,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
 
       val repoSize = repo.size
-      val graph = repo delete Student.generateUri(student)
+      val graph = repo deleteCascading Student.generateUri(student)
 
       graph match {
         case Success(s) =>
@@ -106,7 +106,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
         case _ => fail("repo could not retrieve given entity")
       }
 
-      repo.delete(RefRole.generateUri(refrole1))
+      repo.deleteCascading(RefRole.generateUri(refrole1))
 
       repo.get[Authority](Authority.generateUri(auth)) match {
         case Success(Some(auth2)) =>
@@ -135,7 +135,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           app.friends.isEmpty shouldBe true
         case _ => fail("repo could not retrieve given entity")
       }
-      repo.deleteDirect(Labwork.generateUri(lab))
+      repo.deleteSimple(Labwork.generateUri(lab))
 
       repo.get[LabworkApplication](LabworkApplication.generateUri(application.id)) match {
         case Success(Some(app)) =>
@@ -159,7 +159,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       repo.add(student)
       repo.contains(studentUri) shouldBe true
 
-      repo.delete(studentUri)
+      repo.deleteCascading(studentUri)
       repo.contains(studentUri) shouldBe false
 
       repo should have size 0

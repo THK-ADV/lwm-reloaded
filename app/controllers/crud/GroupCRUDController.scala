@@ -52,21 +52,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
         val processed =
           for {
-            people <- groupService.sortApplicantsFor(success.labwork)
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
             groupSize = size(success.min, success.max, people.size)
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped).toOption
+            _ <- repository.addMany[Group](mapped)
           } yield mapped
 
         processed match {
-          case Some(groups) =>
+          case Success(groups) =>
             Ok(Json.toJson(groups)).as(mimeType)
-          case None =>
+          case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
             ))
         }
       }
@@ -85,21 +85,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
       success => {
         val processed =
           for {
-            people <- groupService.sortApplicantsFor(success.labwork)
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
             groupSize = (people.size / success.count) + 1
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped).toOption
+            _ <- repository.addMany[Group](mapped)
           } yield mapped
 
         processed match {
-          case Some(groups) =>
+          case Success(groups) =>
             Ok(Json.toJson(groups)).as(mimeType)
-          case None =>
+          case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}"
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
             ))
         }
       }
@@ -165,7 +165,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
       students <- repository.getMany[Student](output.members.map(id => Student.generateUri(id)(namespace)))
     } yield {
       labwork.map { l =>
-        val atom = GroupAtom(output.label, l, students.toSet, output.id)
+        val atom = GroupAtom(output.label, l, students, output.id)
         Json.toJson(atom)
       }
     }
@@ -185,8 +185,8 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
       output.foldLeft(Set.empty[GroupAtom]) { (newSet, g) =>
         (for {
           l <- labworks.find(_.id == g.labwork)
-          ss <- students.find(_.map(_.id).toSet == g.members)
-        } yield GroupAtom(g.label, l, ss.toSet, g.id)) match {
+          ss <- students.find(_.map(_.id) == g.members)
+        } yield GroupAtom(g.label, l, ss, g.id)) match {
           case Some(atom) => newSet + atom
           case None => newSet
         }

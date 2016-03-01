@@ -11,6 +11,7 @@ import store.bind.Bindings
 import utils.Ops._
 import utils.Ops.MonadInstances._
 import utils.Ops.TraverseInstances._
+
 import scala.util.{Success, Try}
 
 trait RoleServiceLike {
@@ -21,7 +22,7 @@ trait RoleServiceLike {
     * @param userId User ID
    * @return User's possible authority
    */
-  def authorityFor(userId: String): Option[Authority]
+  def authorityFor(userId: String): Try[Option[Authority]]
 
   /**
     * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
@@ -30,7 +31,7 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[UUID]): Try[Boolean]
+  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Authority): Try[Boolean]
 }
 
 class RoleService(repository: SesameRepository) extends RoleServiceLike {
@@ -41,32 +42,34 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
   private val bindings = Bindings[Rdf](namespace)
 
 
-  override def authorityFor(userId: String): Option[Authority] = {
+  override def authorityFor(userId: String): Try[Option[Authority]] = {
     import store.sparql.select
     import store.sparql.select._
     import bindings.AuthorityBinding._
     import bindings.RefRoleBinding._
+    import utils.Ops.NaturalTrasformations._
+
     val useruri = User.generateUri(UUID.fromString(userId))
-    val result = repository.query {
+    val result = repository.prepareQuery {
       select("auth") where {
         ^(v("auth"), p(lwm.privileged), s(useruri))
       }
-    }.flatMap(_.get("auth"))
+    }
 
-    for {
-      values <- result
-      first <- values.headOption
-      authority <- repository.get[Authority](first.stringValue()).toOption.flatten
-    } yield authority
+    result.
+      select(_.get("auth")).
+      changeTo(_.headOption).
+      request(uri => repository.get[Authority](uri.stringValue())).
+      run
   }
 
-  override def checkWith(whatToCheck: (Option[UUID], Set[Permission]))(checkWith: Set[UUID]): Try[Boolean] = whatToCheck match {
+  override def checkWith(whatToCheck: (Option[UUID], Set[Permission]))(checkWith: Authority): Try[Boolean] = whatToCheck match {
     case (optLab, permissions) =>
       import bindings.RefRoleBinding._
       import bindings.RoleBinding._
       import bindings.LabworkBinding._
 
-      repository.getMany[RefRole](checkWith map RefRole.generateUri) flatMap { refRoles =>
+      repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri) flatMap { refRoles =>
         if(refRoles.exists(_.role == Roles.admin.id)) Success(true)
         else for {
             optCourse <- Try(optLab).flatPeek (lab => repository.get[Labwork](Labwork.generateUri(lab))).peek(_.course)(tryM, optM)

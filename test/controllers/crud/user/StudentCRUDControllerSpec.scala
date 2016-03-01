@@ -160,7 +160,7 @@ class StudentCRUDControllerSpec extends AbstractCRUDControllerSpec[StudentProtoc
       import Student.atomicWrites
 
       val students = Set(entityToPass, entityToFail)
-      val degrees = Vector(degreeToPass, degreeToFail)
+      val degrees = Set(degreeToPass, degreeToFail)
 
       when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
       when(repository.getMany[Degree](anyObject())(anyObject())).thenReturn(Success(degrees))

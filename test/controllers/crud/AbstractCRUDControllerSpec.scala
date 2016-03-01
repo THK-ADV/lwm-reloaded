@@ -1,12 +1,10 @@
 package controllers.crud
 
-import java.util.UUID
-
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
-import org.mockito.{Matchers, Mockito}
 import org.mockito.Mockito._
+import org.openrdf.model.Value
 import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
@@ -18,8 +16,9 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
-import services.{TimetableService, GroupService, RoleService}
+import services.{GroupService, RoleService, TimetableService}
 import store.bind.Bindings
+import store.sparql.{Initial, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.{DefaultLwmApplication, LwmMimeType}
 
@@ -32,8 +31,9 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   val roleService = mock[RoleService]
   val groupService = mock[GroupService]
   val timetableService = mock[TimetableService]
-
+  val qe = mock[QueryExecutor[SelectClause]]
   val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+  val query = Initial[Nothing, Nothing](store.sparql.select(""))(qe)
 
   def pointedGraph: PointedGraph[Rdf]
 
@@ -64,9 +64,12 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }.application
   })
 
+  when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+  when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
   s"A ${entityTypeName}CRUDController " should {
     s"successfully create a new $entityTypeName" in {
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
@@ -98,7 +101,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"not create a new $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant create $entityTypeName for some reason"
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
       when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
 
@@ -218,7 +221,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.delete(anyString())).thenReturn(Success(pointedGraph.graph))
+      when(repository.deleteCascading(anyString())).thenReturn(Success(true))
 
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
@@ -234,7 +237,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"not delete an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
-      when(repository.delete(anyString())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.deleteCascading(anyString())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         DELETE,
@@ -269,7 +272,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"create instead of update an existing $entityTypeName when resource does not exists" in {
       when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(None))
-      when(repository.query(anyObject())).thenReturn(None)
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
 
       val request = FakeRequest(
@@ -361,7 +364,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    repository.withConnection { conn =>
+    repository.connection { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

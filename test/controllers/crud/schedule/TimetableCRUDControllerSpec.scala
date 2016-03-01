@@ -126,9 +126,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       doReturn(Success(Some(labworkToPass))).
       when(repository).get(anyObject())(anyObject())
 
-      doReturn(Success(Vector(roomToPass))).
-      doReturn(Success(Vector(supervisorToPass))).
-      doReturn(Success(Vector(degreeToPass))).
+      doReturn(Success(Set(roomToPass))).
+      doReturn(Success(Set(supervisorToPass))).
+      doReturn(Success(Set(degreeToPass))).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -147,9 +147,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       doReturn(Success(None)).
       when(repository).get(anyObject())(anyObject())
 
-      doReturn(Success(Vector(roomToPass))).
-      doReturn(Success(Vector(supervisorToPass))).
-      doReturn(Success(Vector(degreeToPass))).
+      doReturn(Success(Set(roomToPass))).
+      doReturn(Success(Set(supervisorToPass))).
+      doReturn(Success(Set(degreeToPass))).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -173,9 +173,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       doReturn(Success(Some(labworkToPass))).
       when(repository).get(anyObject())(anyObject())
 
-      doReturn(Success(Vector(roomToPass))).
+      doReturn(Success(Set(roomToPass))).
       doReturn(Failure(new Exception(errorMessage))).
-      doReturn(Success(Vector(degreeToPass))).
+      doReturn(Success(Set(degreeToPass))).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -198,13 +198,13 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val timetables = Set(entityToPass, entityToFail)
 
       when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(timetables))
-      doReturn(Success(Vector(labworkToPass, labworkToFail))).
-      doReturn(Success(Vector(roomToPass))).
-      doReturn(Success(Vector(roomToFail))).
-      doReturn(Success(Vector(supervisorToPass))).
-      doReturn(Success(Vector(supervisorToFail))).
-      doReturn(Success(Vector(degreeToPass))).
-      doReturn(Success(Vector(degreeToFail))).
+      doReturn(Success(Set(labworkToPass, labworkToFail))).
+      doReturn(Success(Set(roomToPass))).
+      doReturn(Success(Set(roomToFail))).
+      doReturn(Success(Set(supervisorToPass))).
+      doReturn(Success(Set(supervisorToFail))).
+      doReturn(Success(Set(degreeToPass))).
+      doReturn(Success(Set(degreeToFail))).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(

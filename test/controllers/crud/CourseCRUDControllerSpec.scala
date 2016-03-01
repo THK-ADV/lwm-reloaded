@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.users.{Employee, User}
-import models.{CourseAtom, Course, CourseProtocol}
+import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -15,7 +15,7 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
@@ -202,7 +202,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
-      when(repository.query(anyObject())).thenReturn(Some(Map(
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
         "id" -> List(factory.createLiteral(entityToPass.id.toString))
       )))
 
@@ -225,7 +226,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
     s"neither create or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
       when(repository.get[Course](anyObject())(anyObject())).thenReturn(Success(None))
-      when(repository.query(Matchers.anyObject())).thenReturn(Some(Map(
+      when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
         "id" -> List(factory.createLiteral(entityToPass.id.toString))
       )))
 
@@ -308,7 +310,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       import Course.atomicWrites
 
       val courses = Set(entityToPass, entityToFail)
-      val lecturers = Vector(lecturerToPass, lecturerToFail)
+      val lecturers = Set(lecturerToPass, lecturerToFail)
 
       when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
       when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Success(lecturers))

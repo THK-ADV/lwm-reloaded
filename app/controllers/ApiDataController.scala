@@ -4,7 +4,6 @@ import models.{Course, Degree, Labwork, Room}
 import models._
 import models.applications.LabworkApplication
 import models.security.{Authority, RefRole, Role}
-import models.security.Roles._
 import models.semester.Semester
 import models.users.{Student, Employee}
 import org.joda.time.LocalDate
@@ -13,11 +12,10 @@ import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
 import store.SesameRepository
 import store.bind.Bindings
-
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
-
+import models.security.Roles._
 
 class ApiDataController(val repository: SesameRepository) extends Controller {
   import repository.ops
@@ -150,6 +148,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       case Failure(e) => InternalServerError(e.getMessage)
     }
   }
+
   def rooms(n: Int) = {
     import bindings.RoomBinding._
     def roomgen(n: Int) = Stream.continually(Room(s"R ${nextInt(3)}.${nextInt(9)}${nextInt(9)}${nextInt(9)}", "Desc")).take(n) ++ List(Room("H32-LC", "H32-LC Desc"), Room("H32-BG", "H32-BG Desc"), Room("H32-HA", "H32-HA Desc"))
@@ -158,7 +157,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def roles = {
     import bindings.RoleBinding._
-    List(admin /*student, employee, user*/) map repository.add[Role]
+    List(admin, student, employee) map repository.add[Role]
 }
 
   def people = List(Employee("ai1818", "Wurst", "Hans", "", Employee.randomUUID))

@@ -80,7 +80,7 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
         l <- labwork
         app <- applicant
       } yield {
-        val atom = LabworkApplicationAtom(l, app, friends.toSet, output.timestamp, output.id)
+        val atom = LabworkApplicationAtom(l, app, friends, output.timestamp, output.id)
         Json.toJson(atom)
       }
     }
@@ -102,8 +102,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
         (for {
           l <- labworks.find(_.id == lapp.labwork)
           app <- applicants.find(_.id == lapp.applicant)
-          f <- friends.find(_.map(_.id).toSet == lapp.friends)
-        } yield LabworkApplicationAtom(l, app, f.toSet, lapp.timestamp, lapp.id)) match {
+          f <- friends.find(_.map(_.id) == lapp.friends)
+        } yield LabworkApplicationAtom(l, app, f, lapp.timestamp, lapp.id)) match {
           case Some(atom) => newSet + atom
           case None => newSet
         }

@@ -105,17 +105,8 @@ object Roles {
 
   import Permissions._
 
-  val adminRole = "admin"
-  val userRole = "user"
-  val employeeRole = "employee"
-  val studentRole = "student"
-
   val admin = Role("admin", Set(prime))
-
-  val user = Role("user", Set(joinLabwork))
-
   val employee = Role("employee", Set(allSemesters))
-
   val student = Role("student", Set(getSemester, joinLabwork))
 }
 

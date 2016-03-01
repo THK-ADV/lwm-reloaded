@@ -12,6 +12,8 @@ import org.w3.banana.sesame.SesameModule
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 
+import scala.util.Success
+
 class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
@@ -45,6 +47,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
   val bindings = Bindings(ns)
 
+  def authority(refRoles: Set[RefRole]): Authority = Authority(UUID.randomUUID(), refRoles map (_.id))
 
   def roleService = new RoleService(repository)
 
@@ -65,12 +68,12 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       repository.add(noneModule1Role2)
       repository.add(adminRefRole)
 
-      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole2.id))
-      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole1.id, module2UserRole2.id))
-      val result3 = roleService.checkWith((None, role1.permissions))(Set(module1UserRole1.id, noneModule1Role1.id, module2UserRole2.id))
-      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(adminRefRole.id))
-      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(Set(module1UserRole1.id))
-      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(Set(adminRefRole.id))
+      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole2)))
+      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole1, module2UserRole2)))
+      val result3 = roleService.checkWith((None, role1.permissions))(authority(Set(module1UserRole1, noneModule1Role1, module2UserRole2)))
+      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(adminRefRole)))
+      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(authority(Set(module1UserRole1)))
+      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(authority(Set(adminRefRole)))
 
       for {
         r1 <- result1
@@ -119,10 +122,10 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       val result3 = roleService.authorityFor(student3.id.toString)
 
       (result1, result2, result3) match {
-        case (Some(r1), Some(r2), None) =>
+        case (Success(Some(r1)), Success(Some(r2)), Success(None)) =>
           r1 shouldBe authority1
           r2 shouldBe authority2
-        case _ => fail("No")
+        case _ => fail("Should have found two of the authorities")
       }
     }
   }

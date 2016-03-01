@@ -3,7 +3,7 @@ package utils
 import java.util.UUID
 
 import controllers.SessionController
-import models.security.{Authority, Permission, RefRole, Role}
+import models.security.{Authority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import services.RoleServiceLike
@@ -29,7 +29,7 @@ object LWMActions {
 
     def apply(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(block)
+        roleService.checkWith(ps)(userAuth))(roleService)(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
@@ -38,7 +38,7 @@ object LWMActions {
 
     def async(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(block)
+        roleService.checkWith(ps)(userAuth))(roleService).async(block)
     }
 
 
@@ -52,7 +52,7 @@ object LWMActions {
 
     def apply(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
+        roleService.checkWith(ps)(userAuth))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
@@ -61,13 +61,12 @@ object LWMActions {
 
     def async(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
+        roleService.checkWith(ps)(userAuth))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
   }
 
   final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
-
 }
 
 
@@ -85,7 +84,7 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
           "message" -> "Insufficient permissions for given action"
         )))
       case Failure(e) =>
-        Some(Results.Unauthorized(Json.obj(
+        Some(Results.InternalServerError(Json.obj(
           "status" -> "KO",
           "message" -> e.getMessage
         )))
@@ -94,16 +93,35 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
 }
 
 
-
 case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthRequest] {
 
   override def invokeBlock[A](request: Request[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
     def f = block compose (AuthRequest.apply[A] _).curried(request)
 
-    (for {
-      userId <- request.session.get(SessionController.userId)
-      authority <- roleService.authorityFor(userId)
-    } yield f(authority)) getOrElse f(Authority.empty)
+    request.session.get(SessionController.userId) match {
+      case Some(id) =>
+        roleService.authorityFor(id) match {
+          case Success(optAuth) if optAuth.isDefined => f(optAuth.get)
+          case Success(_) => Future.successful {
+            Results.Unauthorized(Json.obj(
+              "status" -> "KO",
+              "message" -> s"No authority found for $id"
+            ))
+          }
+          case Failure(e) => Future.successful {
+            Results.InternalServerError(Json.obj(
+              "status" -> "KO",
+              "message" -> s"${e.getMessage}"
+            ))
+          }
+        }
+      case None => Future.successful {
+        Results.Unauthorized(Json.obj(
+          "status" -> "KO",
+          "message" -> s"No user-id present in session"
+        ))
+      }
+    }
   }
 }
 

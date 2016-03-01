@@ -2,7 +2,7 @@ package utils
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 import scala.util.Try
 import scalaz._
 
@@ -65,6 +65,12 @@ object Ops { self =>
           }
         }
      }
+  }
+
+  object NaturalTrasformations {
+    implicit def identity[F[_]]: F ~> F = new (F ~> F) {
+      override def apply[A](fa: F[A]): F[A] = fa
+    }
   }
 
   //optimized sequence for traversables

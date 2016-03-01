@@ -223,12 +223,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       implicit val groupProtWrites = Json.writes[GroupCountProtocol]
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Vector.empty[PointedGraph[Sesame]]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
       val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
 
@@ -267,12 +267,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       implicit val groupProtWrites = Json.writes[GroupRangeProtocol]
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Vector.empty[PointedGraph[Sesame]]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
       val json = Json.toJson(GroupRangeProtocol(labwork, min, max))
 
@@ -302,10 +302,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork"
+        "errors" -> s"Error while creating groups for labwork $labwork: Predicate does not hold for Vector()"
       )
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(None)
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(Vector.empty[UUID]))
 
       implicit val groupProtWrites = Json.writes[GroupCountProtocol]
       val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
@@ -333,13 +333,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork"
+        "errors" -> s"Error while creating groups for labwork $labwork: could not add to graph"
       )
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
-      val concreteApplications = applications(labwork).take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      when(groupService.sortApplicantsFor(labwork)).thenReturn(Some(concreteApplicationIds))
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
@@ -366,7 +366,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       doReturn(Success(Some(entityToPass))).
       doReturn(Success(Some(labworkToPass))).
       when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass.toVector))
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
         GET,
@@ -383,7 +383,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       doReturn(Success(Some(entityToPass))).
       doReturn(Success(None)).
       when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass.toVector))
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
         GET,
@@ -405,7 +405,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       doReturn(Success(Some(entityToPass))).
       doReturn(Failure(new Exception(errorMessage))).
       when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass.toVector))
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
         GET,
@@ -425,12 +425,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       import Group.atomicWrites
 
       val groups = Set(entityToPass, entityToFail)
-      val labworks = Vector(labworkToPass, labworkToFail)
+      val labworks = Set(labworkToPass, labworkToFail)
 
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
       doReturn(Success(labworks)).
-      doReturn(Success(studentsToPass.toVector)).
-      doReturn(Success(studentsToFail.toVector)).
+      doReturn(Success(studentsToPass)).
+      doReturn(Success(studentsToFail)).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(

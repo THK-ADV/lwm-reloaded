@@ -89,7 +89,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
 
   override protected def beforeEach(): Unit = {
-    repository.withConnection { conn =>
+    repository.connection { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

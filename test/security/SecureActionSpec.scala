@@ -25,7 +25,7 @@ import org.mockito.Matchers._
 
 import scala.util.{Failure, Success, Try}
 
-
+//TODO: Add another test checking if the propagation is stopped when authorities cannot be found and such
 class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   implicit val roleService = mock[RoleService]
@@ -51,10 +51,12 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "message" -> "Insufficient permissions for given action"
   )
 
+  def authority(refRoles: Set[RefRole]): Authority = Authority(UUID.randomUUID(), refRoles map (_.id))
+
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
       override def resolver: Resolvers = new Resolvers {
-        override def username(systemId: String): Option[UUID] = Some(userId)
+        override def username(systemId: String): Try[Option[UUID]] = Success(Some(userId))
 
         override type R = Nothing
 
@@ -66,8 +68,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   "A secured action" should {
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole1.id), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole1.id))).thenReturn(Success(true))
+      val auth = Authority(userId, Set(module1UserRole1.id))
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(true))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -82,8 +85,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module1UserRole2.id))).thenReturn(Success(false))
+      val auth = Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(false))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -98,8 +102,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module2UserRole2.id), UUID.randomUUID())))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(Set(module2UserRole2.id))).thenReturn(Success(false))
+      val auth = Authority(userId, Set(module2UserRole2.id), UUID.randomUUID())
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(false))
 
       val action = SecureAction((Some(module1), sufficientPermissions)) {
         req => Results.Ok("Passed")
@@ -116,7 +121,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "parse content types securely" in new WithDepsApplication {
       implicit val mimeType = LwmMimeType.loginV1Json
 
-      when(roleService.authorityFor(anyString())).thenReturn(Some(Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())))
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(Authority(userId, Set(module1UserRole2.id), UUID.randomUUID()))))
       when(roleService.checkWith(anyObject())(anyObject())).thenReturn(Success(true))
 
       val action = SecureContentTypedAction()(_ => Success(true)) {
