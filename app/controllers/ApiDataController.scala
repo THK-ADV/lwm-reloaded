@@ -1,16 +1,9 @@
 package controllers
 
-import java.util.UUID
-import models.{Course, Degree, Labwork, Room}
-import models.security._
-import models.security.Roles._
-import models.semester.Semester
-import models.users.{Employee, Student, StudentProtocol, User}
 import models.{Course, Degree, Labwork, Room}
 import models._
 import models.applications.LabworkApplication
 import models.security.{Authority, RefRole, Role}
-import models.security.Roles._
 import models.semester.Semester
 import models.users.{Student, Employee}
 import org.joda.time.LocalDate
@@ -22,7 +15,7 @@ import store.bind.Bindings
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
-
+import models.security.Roles._
 
 class ApiDataController(val repository: SesameRepository) extends Controller {
   import repository.ops
@@ -164,7 +157,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def roles = {
     import bindings.RoleBinding._
-    List(admin /*student, employee, user*/) map repository.add[Role]
+    List(admin, student, employee) map repository.add[Role]
 }
 
   def people = List(Employee("ai1818", "Wurst", "Hans", "", Employee.randomUUID))
@@ -180,7 +173,6 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def refroles = {
     import bindings.RefRoleBinding._
-
     List(
       refrole1,
       refrole2,

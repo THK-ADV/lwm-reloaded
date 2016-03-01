@@ -61,7 +61,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
     "Block invocations when user not an admin" in new FakeApplication() {
       val user = UUID.randomUUID()
-      val userRefRole = RefRole(None, Roles.user.id)
+      val userRefRole = RefRole(None, Roles.employee.id)
       val userAuth = Authority(user, Set(userRefRole.id))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))

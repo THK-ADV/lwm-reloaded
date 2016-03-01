@@ -105,23 +105,8 @@ object Roles {
 
   import Permissions._
 
-  val uuid = "a653319f-bc25-4abf-b9ae-26b99b157d28"
-
-  val adminRole = "admin"
-  val userRole = "user"
-  val employeeRole = "employee"
-  val studentRole = "student"
-
-  val admin = Role("admin", Set(prime), UUID.fromString(uuid))
-
-  val refrole1 = RefRole(None, admin.id)
-
-  val user = Role("user", Set(joinLabwork))
-
+  val admin = Role("admin", Set(prime))
   val employee = Role("employee", Set(allSemesters))
-
-  val refrole2 = RefRole(None, employee.id)
-
   val student = Role("student", Set(getSemester, joinLabwork))
 }
 
