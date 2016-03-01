@@ -3,8 +3,8 @@ package models.applications
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.users.{Student, StudentProtocol}
-import models.{UniqueEntity, UriGenerator}
+import models.users.Student
+import models.{Labwork, UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 
@@ -18,10 +18,15 @@ case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID]
 
 case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
 
+case class LabworkApplicationAtom(labwork: Labwork, applicant: Student, friends: Set[Student], timestamp: DateTime, id: UUID)
+
 object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSerialisation[LabworkApplicationProtocol, LabworkApplication] {
+
   override def base: String = "labworkApplications"
 
   override implicit def reads: Reads[LabworkApplicationProtocol] = Json.reads[LabworkApplicationProtocol]
 
   override implicit def writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
+
+  implicit def atomicWrites: Writes[LabworkApplicationAtom] = Json.writes[LabworkApplicationAtom]
 }

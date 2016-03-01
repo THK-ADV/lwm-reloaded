@@ -7,7 +7,8 @@ class HomepageController extends Controller {
 
   def index = Action {
     Ok(Json.obj(
-      "status" -> JsString("OK")
+      "status" -> "OK",
+      "message" -> "it works"
     ))
   }
 

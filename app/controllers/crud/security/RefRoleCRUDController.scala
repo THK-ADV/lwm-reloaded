@@ -7,13 +7,14 @@ import models.UriGenerator
 import models.security.{RefRole, RefRoleProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import play.api.mvc.Result
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.util.{Success, Try}
 
 class RefRoleCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
   override implicit def reads: Reads[RefRoleProtocol] = RefRole.reads
@@ -35,9 +36,13 @@ class RefRoleCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Result = ???
-
   override protected def compareModel(input: RefRoleProtocol, output: RefRole): Boolean = {
     input.role == output.role && input.module == output.module
   }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Try[Set[RefRole]] = Success(all)
+
+  override protected def atomize(output: RefRole): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+  override protected def atomizeMany(output: Set[RefRole]): Try[JsValue] = Success(Json.toJson(output))
 }
