@@ -76,7 +76,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
-      val refrole1 = RefRole(None, Roles.user.id)
+      val refrole1 = RefRole(None, Roles.employee.id)
       val refrole2 = RefRole(None, Roles.student.id)
 
       repo.add[RefRole](refrole1)
@@ -109,7 +109,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
         case (Success(Some(emp)), Success(Some(auth)), Success(refRoles)) =>
           emp shouldBe employee
           auth.user shouldBe employee.id
-          refRoles.exists(_.role == Roles.user.id) shouldBe true
+          refRoles.exists(_.role == Roles.employee.id) shouldBe true
           auth.refRoles.size shouldBe 1
         case (Failure(_), _, _) => fail("Could not retrieve user")
         case (_, Failure(_), _) => fail("Authority either not created or not found")
@@ -143,7 +143,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
-      val refrole1 = RefRole(None, Roles.user.id)
+      val refrole1 = RefRole(None, Roles.employee.id)
 
       repo.add[RefRole](refrole1)
 

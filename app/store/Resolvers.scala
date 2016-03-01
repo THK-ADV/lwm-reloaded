@@ -66,7 +66,7 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
 
     v match {
       case s: Student => f(s)(_.role == Roles.student.id)(bindings.StudentBinding.studentBinder)
-      case e: Employee => f(e)(_.role == Roles.user.id)(bindings.EmployeeBinding.employeeBinder)
+      case e: Employee => f(e)(_.role == Roles.employee.id)(bindings.EmployeeBinding.employeeBinder)
     }
   }
 

@@ -47,6 +47,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
   val bindings = Bindings(ns)
 
+  def authority(refRoles: Set[RefRole]): Authority = Authority(UUID.randomUUID(), refRoles map (_.id))
 
   def roleService = new RoleService(repository)
 
@@ -67,12 +68,12 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       repository.add(noneModule1Role2)
       repository.add(adminRefRole)
 
-      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole2.id))
-      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(module1UserRole1.id, module2UserRole2.id))
-      val result3 = roleService.checkWith((None, role1.permissions))(Set(module1UserRole1.id, noneModule1Role1.id, module2UserRole2.id))
-      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(Set(adminRefRole.id))
-      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(Set(module1UserRole1.id))
-      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(Set(adminRefRole.id))
+      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole2)))
+      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole1, module2UserRole2)))
+      val result3 = roleService.checkWith((None, role1.permissions))(authority(Set(module1UserRole1, noneModule1Role1, module2UserRole2)))
+      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(adminRefRole)))
+      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(authority(Set(module1UserRole1)))
+      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(authority(Set(adminRefRole)))
 
       for {
         r1 <- result1

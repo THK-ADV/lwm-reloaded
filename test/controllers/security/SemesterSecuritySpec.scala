@@ -42,7 +42,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       val userAuth = Authority(user, Set(userRefRole.id))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
-      when(roleService.checkWith((None, Set(Permissions.prime)))(Set(userRefRole.id))).thenReturn(Success(true))
+      when(roleService.checkWith((None, Set(Permissions.prime)))(userAuth)).thenReturn(Success(true))
 
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val json = Json.toJson(semester)
@@ -65,7 +65,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       val userAuth = Authority(user, Set(userRefRole.id))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
-      when(roleService.checkWith((None, Set(Permissions.prime)))(Set(userRefRole.id))).thenReturn(Success(false))
+      when(roleService.checkWith((None, Set(Permissions.prime)))(userAuth)).thenReturn(Success(false))
 
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val json = Json.toJson(semester)
@@ -88,7 +88,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       val userAuth = Authority(user, Set(userRefRole.id))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
-      when(roleService.checkWith((None, Set(Permissions.allSemesters)))(Set(userRefRole.id))).thenReturn(Success(true))
+      when(roleService.checkWith((None, Set(Permissions.allSemesters)))(userAuth)).thenReturn(Success(true))
       val request = FakeRequest(
         "GET",
         "/semesters"
@@ -105,7 +105,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
       val userAuth = Authority(user, Set(userRefRole.id))
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
-      when(roleService.checkWith((None, Set(Permissions.allSemesters)))(Set(userRefRole.id))).thenReturn(Success(false))
+      when(roleService.checkWith((None, Set(Permissions.allSemesters)))(userAuth)).thenReturn(Success(false))
       val request = FakeRequest(
         "GET",
         "/semesters"

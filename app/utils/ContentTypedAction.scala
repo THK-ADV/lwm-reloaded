@@ -31,7 +31,7 @@ object LWMActions {
 
     def apply(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(block)
+        roleService.checkWith(ps)(userAuth))(roleService)(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
@@ -40,7 +40,7 @@ object LWMActions {
 
     def async(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(block)
+        roleService.checkWith(ps)(userAuth))(roleService).async(block)
     }
 
 
@@ -54,7 +54,7 @@ object LWMActions {
 
     def apply(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
+        roleService.checkWith(ps)(userAuth))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
@@ -63,7 +63,7 @@ object LWMActions {
 
     def async(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth.refRoles))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
+        roleService.checkWith(ps)(userAuth))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
   }

@@ -32,7 +32,7 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Set[UUID]): Try[Boolean]
+  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Authority): Try[Boolean]
 }
 
 class RoleService(repository: SesameRepository) extends RoleServiceLike {
@@ -64,13 +64,13 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
       run
   }
 
-  override def checkWith(whatToCheck: (Option[UUID], Set[Permission]))(checkWith: Set[UUID]): Try[Boolean] = whatToCheck match {
+  override def checkWith(whatToCheck: (Option[UUID], Set[Permission]))(checkWith: Authority): Try[Boolean] = whatToCheck match {
     case (optLab, permissions) =>
       import bindings.RefRoleBinding._
       import bindings.RoleBinding._
       import bindings.LabworkBinding._
 
-      repository.getMany[RefRole](checkWith map RefRole.generateUri) flatMap { refRoles =>
+      repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri) flatMap { refRoles =>
         if(refRoles.exists(_.role == Roles.admin.id)) Success(true)
         else for {
             optCourse <- Try(optLab).flatPeek (lab => repository.get[Labwork](Labwork.generateUri(lab))).peek(_.course)(tryM, optM)
