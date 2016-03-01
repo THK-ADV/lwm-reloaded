@@ -4,33 +4,38 @@ import java.net.URLEncoder
 import java.util.UUID
 
 import models._
-import models.applications.{LabworkApplication, LabworkApplicationProtocol}
+import models.applications.{LabworkApplicationAtom, LabworkApplication, LabworkApplicationProtocol}
 import models.semester.Semester
 import models.users.Student
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
-import play.api.mvc.{Action, Result, AnyContent, Request}
 import play.api.test.FakeRequest
-import store.SesameRepository
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 import play.api.test.Helpers._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import LabworkApplicationCRUDController._
 
-import scala.concurrent.Future
-import scala.util.{Try, Success}
+import scala.util.{Failure, Success, Try}
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication] {
 
-  import bindings.LabworkApplicationBinding._
-  import bindings.uuidBinder
-  import bindings.jodaDateTimeBinder
-  import ops._
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
 
+  val applicantToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
+  val applicantToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID(), Student.randomUUID)
+
+  val friendsToPass = Set(
+    Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID),
+    Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
+  )
+  val friendsToFail = Set(
+    Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID),
+    Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
+  )
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
   override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, namespace, roleService) {
@@ -38,13 +43,18 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = entityToPass
   }
 
-  override val entityToFail: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
+  override val entityToFail: LabworkApplication = LabworkApplication(labworkToFail.id, applicantToFail.id, friendsToFail.map(_.id))
 
-  override val entityToPass: LabworkApplication = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
-
-  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
+  override val entityToPass: LabworkApplication = LabworkApplication(labworkToPass.id, applicantToPass.id, friendsToPass.map(_.id))
 
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
+
+  import bindings.LabworkApplicationBinding._
+  import bindings.uuidBinder
+  import bindings.jodaDateTimeBinder
+  import ops._
+
+  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
@@ -57,6 +67,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     "applicant" -> entityToPass.applicant,
     "friends" -> (entityToPass.friends + Student.randomUUID + Student.randomUUID)
   )
+
+  val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
+  val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
+
+  val emptyLabworkApps = Set.empty[LabworkApplication]
 
   override def entityTypeName: String = "labworkApplication"
 
@@ -86,7 +101,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+      contentAsJson(result) shouldBe Json.toJson(Set(first))
     }
   }
 
@@ -112,11 +127,10 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
   }
 
   "not return applications for a labwork when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
     val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
     val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
@@ -136,16 +150,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
   }
 
   "not return applications when there is an invalid query attribute" in {
-    val expectedMessage = s"""{"status":"KO","message":"Unknown attribute"}"""
-    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
-
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
     val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -162,17 +172,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe BAD_REQUEST
+    status(result) shouldBe SERVICE_UNAVAILABLE
     contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    contentAsJson(result) shouldBe Json.obj(
+      "status" -> "KO",
+      "message" -> "Unknown attribute"
+    )
   }
 
   "not return applications when there is an invalid query parameter value" in {
     val invalidParameter = "invalidParameterValue"
-    val expectedErrorMessage = s"""{"status":"KO","message":"Invalid UUID string: $invalidParameter"}"""
-
-    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -190,9 +199,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe BAD_REQUEST
+    status(result) shouldBe SERVICE_UNAVAILABLE
     contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedErrorMessage
+    contentAsJson(result) shouldBe Json.obj(
+      "status" -> "KO",
+      "message" -> s"Invalid UUID string: $invalidParameter"
+    )
   }
 
   "return the corresponding application for a given applicant" in {
@@ -216,7 +228,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first))
   }
   "return all corresponding applications for a given applicant" in {
     val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
@@ -239,11 +251,10 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
   }
 
   "not return applications for an applicant when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
     val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -262,9 +273,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
   }
 
   "return the corresponding application for a given friend" in {
@@ -288,7 +299,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first))
   }
   "return all corresponding applications for a given friend" in {
     val friend = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
@@ -311,11 +322,10 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
   }
 
   "not return applications for a friend  when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
     val friend = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -334,9 +344,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
   }
 
   "return the corresponding application for a given date" in {
@@ -360,17 +370,17 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first))
   }
 
   "return all corresponding applications for a given date" in {
-    val time = DateTime.now
-    val tthen = DateTime.now.plusDays(2)
+    val now = DateTime.now
+    val tThen = now.plusDays(2)
 
-    val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), time)
-    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tthen)
-    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), time)
-    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tthen)
+    val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
+    val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tThen)
+    val third = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
+    val fourth = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), tThen)
 
     val applications = Set(first, second, third, fourth)
 
@@ -378,7 +388,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val request = FakeRequest(
       GET,
-      s"/${entityTypeName}s?$dateAttribute=${time.toString("yyyy-MM-dd")}"
+      s"/${entityTypeName}s?$dateAttribute=${now.toString("yyyy-MM-dd")}"
     )
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
@@ -386,11 +396,10 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
   }
 
   "not return applications for a date when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
     val time = DateTime.now.plusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -409,16 +418,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
   }
 
 
   "return the corresponding application for a given dateTime range" in {
     val now = DateTime.now
-    val shortly = DateTime.now.plusDays(1)
-    val after = DateTime.now.plusDays(2)
+    val shortly = now.plusDays(1)
+    val after = now.plusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), after)
@@ -437,13 +446,13 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first))
   }
 
   "return all corresponding applications for a given dateTime range" in {
     val now = DateTime.now
-    val shortly = DateTime.now.plusDays(1)
-    val after = DateTime.now.plusDays(2)
+    val shortly = now.plusDays(1)
+    val after = now.plusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), after)
@@ -464,12 +473,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
   }
 
   "not return applications for a dateTime range when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
-    val now = DateTime.now.plusDays(2)
+    val time = DateTime.now.plusDays(2)
     val shortly = DateTime.now.plusDays(3)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -483,19 +491,19 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val request = FakeRequest(
       GET,
-      s"/${entityTypeName}s?$minTime=${encode(now.toString("yyyy-MM-dd'T'HH:mm"))}&$maxTime=${encode(shortly.toString("yyyy-MM-dd'T'HH:mm"))}"
+      s"/${entityTypeName}s?$minTime=${encode(time.toString("yyyy-MM-dd'T'HH:mm"))}&$maxTime=${encode(shortly.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
     val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
 
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsString(result) shouldBe expectedMessage
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
   }
 
   "return the corresponding application for a given min or max time bound" in {
     val now = DateTime.now
-    val before = DateTime.now.minusDays(2)
+    val before = now.minusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
@@ -520,16 +528,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result1) shouldBe OK
     contentType(result1) shouldBe Some[String](mimeType)
-    contentAsString(result1) shouldBe Json.toJson(Set(first)).toString
+    contentAsJson(result1) shouldBe Json.toJson(Set(first))
 
     status(result2) shouldBe OK
     contentType(result2) shouldBe Some[String](mimeType)
-    contentAsString(result2) shouldBe Json.toJson(Set(second, third, fourth)).toString
+    contentAsJson(result2) shouldBe Json.toJson(Set(second, third, fourth))
   }
 
   "return all corresponding applications for a given min or max time bound" in {
     val now = DateTime.now
-    val before = DateTime.now.minusDays(2)
+    val before = now.minusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), now)
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
@@ -556,17 +564,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     status(result1) shouldBe OK
     contentType(result1) shouldBe Some[String](mimeType)
-    contentAsString(result1) shouldBe Json.toJson(Set(first, third)).toString
+    contentAsJson(result1) shouldBe Json.toJson(Set(first, third))
 
     status(result2) shouldBe OK
     contentType(result2) shouldBe Some[String](mimeType)
-    contentAsString(result2) shouldBe Json.toJson(Set(second, fourth)).toString
+    contentAsJson(result2) shouldBe Json.toJson(Set(second, fourth))
   }
 
   "not return applications for a min or max bound when there is no match" in {
-    val expectedMessage = s"""{"status":"KO","message":"No such element..."}"""
     val now = DateTime.now
-    val before = DateTime.now.minusDays(2)
+    val before = now.minusDays(2)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID), before)
@@ -590,12 +597,124 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val result1 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request1)
     val result2 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request2)
 
-    status(result1) shouldBe NOT_FOUND
-    contentType(result1) shouldBe Some("application/json")
-    contentAsString(result1) shouldBe expectedMessage
+    status(result1) shouldBe OK
+    contentType(result1) shouldBe Some[String](mimeType)
+    contentAsJson(result1) shouldBe Json.toJson(emptyLabworkApps)
 
-    status(result2) shouldBe NOT_FOUND
-    contentType(result2) shouldBe Some("application/json")
-    contentAsString(result2) shouldBe expectedMessage
+    status(result2) shouldBe OK
+    contentType(result2) shouldBe Some[String](mimeType)
+    contentAsJson(result2) shouldBe Json.toJson(emptyLabworkApps)
+  }
+
+  s"successfully get a single $entityTypeName atomized" in {
+    import LabworkApplication.atomicWrites
+
+    doReturn(Success(Some(entityToPass))).
+    doReturn(Success(Some(labworkToPass))).
+    doReturn(Success(Some(applicantToPass))).
+    when(repository).get(anyObject())(anyObject())
+    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
+
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s/${entityToPass.id}"
+    )
+    val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
+  }
+
+  s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
+    doReturn(Success(Some(entityToPass))).
+    doReturn(Success(Some(labworkToPass))).
+    doReturn(Success(None)).
+    when(repository).get(anyObject())(anyObject())
+    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
+
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s/${entityToPass.id}"
+    )
+    val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+    status(result) shouldBe NOT_FOUND
+    contentType(result) shouldBe Some("application/json")
+    contentAsJson(result) shouldBe Json.obj(
+      "status" -> "KO",
+      "message" -> "No such element..."
+    )
+  }
+
+  s"not get a single $entityTypeName atomized when there is an exception" in {
+    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+    doReturn(Success(Some(entityToPass))).
+    doReturn(Success(Some(labworkToPass))).
+    doReturn(Failure(new Exception(errorMessage))).
+    when(repository).get(anyObject())(anyObject())
+    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
+
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s/${entityToPass.id}"
+    )
+    val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+    status(result) shouldBe INTERNAL_SERVER_ERROR
+    contentType(result) shouldBe Some("application/json")
+    contentAsJson(result) shouldBe Json.obj(
+      "status" -> "KO",
+      "errors" -> errorMessage
+    )
+  }
+
+  s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+    import LabworkApplication.atomicWrites
+
+    val labworkApplications = Set(entityToPass, entityToFail)
+
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
+    doReturn(Success(Set(labworkToPass, labworkToFail))).
+    doReturn(Success(Set(applicantToPass, applicantToFail))).
+    doReturn(Success(friendsToPass)).
+    doReturn(Success(friendsToFail)).
+    when(repository).getMany(anyObject())(anyObject())
+
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s"
+    )
+    val result = controller.allAtomic()(request)
+
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some[String](mimeType)
+    contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+  }
+
+  s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+    val labworkApplications = Set(entityToPass, entityToFail)
+    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
+    doReturn(Success(Set(labworkToPass, labworkToFail))).
+    doReturn(Success(Set(applicantToPass, applicantToFail))).
+    doReturn(Failure(new Exception(errorMessage))).
+    doReturn(Success(friendsToFail)).
+    when(repository).getMany(anyObject())(anyObject())
+
+    val request = FakeRequest(
+      GET,
+      s"/${entityTypeName}s"
+    )
+    val result = controller.allAtomic()(request)
+
+    status(result) shouldBe INTERNAL_SERVER_ERROR
+    contentType(result) shouldBe Some("application/json")
+    contentAsJson(result) shouldBe Json.obj(
+      "status" -> "KO",
+      "errors" -> errorMessage
+    )
   }
 }

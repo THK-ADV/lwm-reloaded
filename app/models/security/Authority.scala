@@ -123,7 +123,6 @@ object Roles {
   val refrole2 = RefRole(None, employee.id)
 
   val student = Role("student", Set(getSemester, joinLabwork))
-
 }
 
 object Permission extends JsonSerialisation[Permission, Permission] {

@@ -18,19 +18,28 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import store.sparql.{Initial, QueryExecutor, SelectClause}
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtocol, Labwork] {
-  override val entityToPass: Labwork =
-    Labwork(
-      "label to pass",
-      "description to pass",
-      Semester.randomUUID,
-      Course.randomUUID,
-      Degree.randomUUID,
-      AssignmentPlan(1, Set(AssignmentEntry(0, Set(EntryType("entry to pass"))))),
-      Labwork.randomUUID
-    )
+
+  val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+  val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", Employee.randomUUID, 1, Course.randomUUID)
+  val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", Employee.randomUUID, 1, Course.randomUUID)
+
+  val degreeToPass = Degree("label to pass", "abbrev to pass", Degree.randomUUID)
+  val degreeToFail = Degree("label to fail", "abbrev to fail", Degree.randomUUID)
+
+  override val entityToPass: Labwork = Labwork(
+    "label to pass",
+    "description to pass",
+    semesterToPass.id,
+    courseToPass.id,
+    degreeToPass.id,
+    AssignmentPlan(1, Set(AssignmentEntry(0, Set(EntryType("entry to pass"))))),
+    Labwork.randomUUID
+  )
 
   override def entityTypeName: String = "labwork"
 
@@ -39,16 +48,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = entityToPass
   }
 
-  override val entityToFail: Labwork =
-    Labwork(
-      "label to fail",
-      "description to fail",
-      Semester.randomUUID,
-      Course.randomUUID,
-      Degree.randomUUID,
-      AssignmentPlan(1, Set(AssignmentEntry(0, Set(EntryType("entry to fail"))))),
-      Labwork.randomUUID
-    )
+  override val entityToFail: Labwork = Labwork(
+    "label to fail",
+    "description to fail",
+    semesterToFail.id,
+    courseToFail.id,
+    degreeToFail.id,
+    AssignmentPlan(1, Set(AssignmentEntry(0, Set(EntryType("entry to fail"))))),
+    Labwork.randomUUID
+  )
 
   override implicit val jsonWrites: Writes[Labwork] = Labwork.writes
 
@@ -70,6 +78,26 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "course" -> entityToPass.course,
     "degree" -> entityToPass.degree,
     "assignmentPlan" -> entityToPass.assignmentPlan
+  )
+
+  val atomizedEntityToPass = LabworkAtom(
+    entityToPass.label,
+    entityToPass.description,
+    semesterToPass,
+    courseToPass,
+    degreeToPass,
+    entityToPass.assignmentPlan,
+    entityToPass.id
+  )
+
+  val atomizedEntityToFail = LabworkAtom(
+    entityToFail.label,
+    entityToFail.description,
+    semesterToFail,
+    courseToFail,
+    degreeToFail,
+    entityToFail.assignmentPlan,
+    entityToFail.id
   )
 
   import bindings.LabworkBinding.labworkBinder
@@ -146,12 +174,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
     }
 
     "not return labworks when there is an invalid query attribute" in {
@@ -173,7 +198,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
@@ -201,7 +226,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
 
-      status(result) shouldBe BAD_REQUEST
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
@@ -279,12 +304,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
     }
 
     "return the corresponding labwork for a given semester" in {
@@ -354,12 +376,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
 
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
     }
 
     "return all corresponding labworks for a given course and degree" in {
@@ -507,6 +526,115 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         "status" -> "KO",
         "message" -> "model already exists",
         "id" -> entityToPass.id
+      )
+    }
+
+    s"successfully get a single $entityTypeName atomized" in {
+      import Labwork.atomicWrites
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(Some(semesterToPass))).
+      doReturn(Success(Some(courseToPass))).
+      doReturn(Success(Some(degreeToPass))).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
+    }
+
+    s"not get a single $entityTypeName atomized when one of the atomic models is not found" in {
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Success(None)).
+      doReturn(Success(Some(courseToPass))).
+      doReturn(Success(Some(degreeToPass))).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
+    }
+
+    s"not get a single $entityTypeName atomized when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      doReturn(Success(Some(entityToPass))).
+      doReturn(Failure(new Exception(errorMessage))).
+      when(repository).get(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+      import Labwork.atomicWrites
+
+      val labworks = Set(entityToPass, entityToFail)
+      val semesters = Set(semesterToPass, semesterToFail)
+      val courses = Set(courseToPass, courseToFail)
+      val degrees = Set(degreeToPass, degreeToFail)
+
+      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
+      doReturn(Success(semesters)).
+      doReturn(Success(courses)).
+      doReturn(Success(degrees)).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+    }
+
+    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+      val labworks = Set(entityToPass, entityToFail)
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
+      doReturn(Failure(new Exception(errorMessage))).
+      when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
       )
     }
   }

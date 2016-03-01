@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.semester.Blacklist
 import models.users.Employee
-import models.{Room, UriGenerator, UniqueEntity}
+import models._
 import org.joda.time.{DateTime, LocalDateTime, LocalTime, LocalDate}
 import play.api.libs.json.{Format, Writes, Json, Reads}
 import services.ScheduleEntryG
@@ -21,6 +21,8 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDa
 
 case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Blacklist = Blacklist.empty)
 
+case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Blacklist, id: UUID)
+
 case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime, id: UUID = TimetableEntry.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
@@ -30,20 +32,25 @@ case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: 
   }
 }
 
-case class TimetableEntryProtocol(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime, id: UUID)
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime)
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable] {
+  import TimetableEntry.atomicFormat
 
   override def base: String = "timetables"
 
   override implicit def reads: Reads[TimetableProtocol] = Json.reads[TimetableProtocol]
 
   override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
+
+  implicit def atomicWrites: Writes[TimetableAtom] = Json.writes[TimetableAtom]
+
+  implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom](atomicWrites)
 }
 
-object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntryProtocol, TimetableEntry] {
+object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntry, TimetableEntry] {
 
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
@@ -53,9 +60,15 @@ object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisatio
 
   override def base: String = "timetableEntries"
 
-  override implicit def reads: Reads[TimetableEntryProtocol] = Json.reads[TimetableEntryProtocol]
+  override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
+
+  implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
+
+  implicit def atomicWrites: Writes[TimetableEntryAtom] = Json.writes[TimetableEntryAtom]
+
+  implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom](atomicWrites)
 }
 
 object TimetableDateEntry {

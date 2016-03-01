@@ -8,13 +8,13 @@ import models.security.Permissions._
 import models.semester.{Blacklist, BlacklistProtocol}
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Reads, Writes}
-import play.api.mvc.Result
+import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
+import scala.util.{Success, Try}
 
 class BlacklistCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[BlacklistProtocol, Blacklist] {
 
@@ -32,8 +32,6 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Result = ???
-
   override protected def fromInput(input: BlacklistProtocol, id: Option[UUID]): Blacklist = id match {
     case Some(uuid) => Blacklist(input.dates, uuid)
     case None => Blacklist(input.dates, Blacklist.randomUUID)
@@ -50,4 +48,10 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
   override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
     input.dates == output.dates
   }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)
+
+  override protected def atomize(output: Blacklist): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+  override protected def atomizeMany(output: Set[Blacklist]): Try[JsValue] = Success(Json.toJson(output))
 }

@@ -2,13 +2,12 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.security.Permission
-import models.{AssignmentPlan, Labwork, LabworkProtocol, UriGenerator}
+import models._
+import models.semester.Semester
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Reads, Writes}
-import play.api.mvc.Result
+import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import services.RoleService
 import store.Prefixes.LWMPrefix
 import store.sparql.select._
@@ -16,7 +15,7 @@ import store.sparql.{select, Clause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import scala.collection.Map
-import scala.util.{Try, Failure, Success}
+import scala.util.{Try, Failure}
 import LabworkCRUDController._
 
 object LabworkCRUDController {
@@ -50,32 +49,6 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(labworks: Set[Labwork]): Result = {
-    val filtered = queryString.foldRight(Try[Set[Labwork]](labworks)) {
-      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
-      case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
-      case ((`semesterAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
-      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
-    }
-
-    filtered match {
-      case Success(s) =>
-        if (s.isEmpty)
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-        else
-          Ok(Json.toJson(s)).as(mimeType)
-
-      case Failure(e) =>
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "message" -> e.getMessage
-        ))
-    }
-  }
-
   override protected def existsQuery(input: LabworkProtocol): (Clause, select.Var) = {
     lazy val prefixes = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
@@ -91,5 +64,60 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
     input.semester == output.semester && input.course == output.course && input.degree == output.degree
+  }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
+    queryString.foldRight(Try[Set[Labwork]](all)) {
+      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
+      case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
+      case ((`semesterAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def atomize(output: Labwork): Try[Option[JsValue]] = {
+    import defaultBindings.SemesterBinding.semesterBinder
+    import defaultBindings.DegreeBinding.degreeBinder
+    import defaultBindings.CourseBinding.courseBinder
+    import Labwork.atomicWrites
+
+    for {
+      semester <- repository.get[Semester](Semester.generateUri(output.semester)(namespace))
+      course <- repository.get[Course](Course.generateUri(output.course)(namespace))
+      degree <- repository.get[Degree](Degree.generateUri(output.degree)(namespace))
+    } yield {
+      for {
+        s <- semester
+        c <- course
+        d <- degree
+      } yield {
+        val atom = LabworkAtom(output.label, output.description, s, c, d, output.assignmentPlan, output.id)
+        Json.toJson(atom)
+      }
+    }
+  }
+
+  override protected def atomizeMany(output: Set[Labwork]): Try[JsValue] = {
+    import defaultBindings.SemesterBinding.semesterBinder
+    import defaultBindings.DegreeBinding.degreeBinder
+    import defaultBindings.CourseBinding.courseBinder
+    import Labwork.atomicWrites
+
+    (for {
+      semesters <- repository.getMany[Semester](output.map(l => Semester.generateUri(l.semester)(namespace)))
+      courses <- repository.getMany[Course](output.map(l => Course.generateUri(l.course)(namespace)))
+      degrees <- repository.getMany[Degree](output.map(l => Degree.generateUri(l.degree)(namespace)))
+    } yield {
+      output.foldLeft(Set.empty[LabworkAtom]) { (newSet, labwork) =>
+        (for {
+          s <- semesters.find(_.id == labwork.semester)
+          c <- courses.find(_.id == labwork.course)
+          d <- degrees.find(_.id == labwork.degree)
+        } yield LabworkAtom(labwork.label, labwork.description, s, c, d, labwork.assignmentPlan, labwork.id)) match {
+          case Some(atom) => newSet + atom
+          case None => newSet
+        }
+      }
+    }).map(s => Json.toJson(s))
   }
 }

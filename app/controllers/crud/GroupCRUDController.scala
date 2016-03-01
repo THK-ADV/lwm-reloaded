@@ -3,6 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models._
+import models.users.Student
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -32,32 +33,6 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   override implicit def reads: Reads[GroupProtocol] = Group.reads
 
   override implicit def writes: Writes[Group] = Group.writes
-
-  override def getWithFilter(queryString: Map[String, Seq[String]])(groups: Set[Group]): Result = {
-    import GroupCRUDController._
-
-    val filtered = queryString.foldRight(Try[Set[Group]](groups)) {
-      case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
-      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
-    }
-
-    filtered match {
-      case Success(s) =>
-        if (s.isEmpty)
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-        else
-          Ok(Json.toJson(s)).as(mimeType)
-
-      case Failure(e) =>
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "message" -> e.getMessage
-        ))
-    }
-  }
 
   //TODO: Repair information inconsistency
   // POST /labworks/id/groups/range
@@ -169,5 +144,53 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
     input.label == output.label && input.labwork == output.labwork && input.members == output.members
+  }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {
+    import GroupCRUDController._
+
+    queryString.foldRight(Try[Set[Group]](all)) {
+      case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def atomize(output: Group): Try[Option[JsValue]] = {
+    import defaultBindings.LabworkBinding._
+    import defaultBindings.StudentBinding._
+    import Group.atomicWrites
+
+    for {
+      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
+      students <- repository.getMany[Student](output.members.map(id => Student.generateUri(id)(namespace)))
+    } yield {
+      labwork.map { l =>
+        val atom = GroupAtom(output.label, l, students, output.id)
+        Json.toJson(atom)
+      }
+    }
+  }
+
+  override protected def atomizeMany(output: Set[Group]): Try[JsValue] = {
+    import defaultBindings.LabworkBinding._
+    import defaultBindings.StudentBinding._
+    import Group.atomicWrites
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+
+    (for {
+      labworks <- repository.getMany[Labwork](output.map(g => Labwork.generateUri(g.labwork)(namespace)))
+      students <- output.map(g => repository.getMany[Student](g.members.map(id => Student.generateUri(id)(namespace)))).sequence
+    } yield {
+      output.foldLeft(Set.empty[GroupAtom]) { (newSet, g) =>
+        (for {
+          l <- labworks.find(_.id == g.labwork)
+          ss <- students.find(_.map(_.id) == g.members)
+        } yield GroupAtom(g.label, l, ss, g.id)) match {
+          case Some(atom) => newSet + atom
+          case None => newSet
+        }
+      }
+    }).map(s => Json.toJson(s))
   }
 }

@@ -89,6 +89,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
       when(roleService.checkWith((None, Set(Permissions.allSemesters)))(userAuth)).thenReturn(Success(true))
+
       val request = FakeRequest(
         "GET",
         "/semesters"
@@ -106,6 +107,7 @@ class SemesterSecuritySpec extends WordSpecLike with TestBaseDefinition {
 
       when(roleService.authorityFor(user.toString)).thenReturn(Success(Some(userAuth)))
       when(roleService.checkWith((None, Set(Permissions.allSemesters)))(userAuth)).thenReturn(Success(false))
+
       val request = FakeRequest(
         "GET",
         "/semesters"

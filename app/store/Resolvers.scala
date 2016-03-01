@@ -4,7 +4,6 @@ import java.util.UUID
 
 import models.security.{Authority, RefRole, Roles}
 import models.users.{Employee, Student, User}
-import org.openrdf.model.Value
 import org.w3.banana.PointedGraph
 import org.w3.banana.binder.ToPG
 import org.w3.banana.sesame.{Sesame, SesameModule}

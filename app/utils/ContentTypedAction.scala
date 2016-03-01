@@ -13,8 +13,6 @@ import scala.util.{Failure, Success, Try}
 
 object LWMActions {
 
-  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
-
   object ContentTypedAction {
 
     def apply(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType): Action[JsValue] = Action(LwmBodyParser.parseWith(mimeType))(block)
@@ -68,6 +66,7 @@ object LWMActions {
 
   }
 
+  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
 }
 
 

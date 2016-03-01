@@ -87,21 +87,20 @@ object Ops { self =>
 
   def sequenceM[F[_], M[_], A](F: F[M[A]])(implicit T: Traverse[F], A: Applicative[M]): M[F[A]] = T.sequence(F)
 
+  def flatPeek[F[_], G[_], A, B](F: F[G[A]])(f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = {
+    MF.bind[G[A], G[B]](F) { G =>
+      sequenceM(MG.bind(G)(a => sequenceM(f(a))))
+    }
+  }
+
   def peek[F[_]: Functor, G[_]: Functor, A, B](F: F[G[A]])(f: A => B): F[G[B]] = {
     import scalaz.syntax.monad._
     F map (_ map f)
   }
+
   def mergePeek[F[_]: Functor, G[_]: Monad, A, B](F: F[G[A]])(f: A => G[B]): F[G[B]] = {
     import scalaz.syntax.monad._
     F map (_ flatMap f)
-  }
-  def flatPeek[F[_], G[_], A, B](F: F[G[A]])(f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = {
-    import scalaz.syntax.monad._
-    F flatMap { G =>
-      (G flatMap { a =>
-        f(a).sequenceM
-      }).sequenceM
-    }
   }
 
   def bipeek[F[_]: Applicative, G[_]: Applicative, A, B, C](F1: F[G[A]], F2: F[G[B]])(f: (A, B) => C): F[G[C]] = {

@@ -5,7 +5,6 @@ import java.util.UUID
 import models.Labwork
 import models.security._
 import models.users.User
-import org.openrdf.model.Value
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings

@@ -35,8 +35,8 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
     val laburi = Labwork.generateUri(labwork)
     val result = repository.prepareQuery {
       select("s", "timestamp") where {
-        ^(v("s"), p(lwm.labwork), s(laburi)) .
-          ^(v("s"), p(rdf.`type`), s(lwm.LabworkApplication)) .
+        ^(v("s"), p(lwm.labwork), s(laburi)).
+          ^(v("s"), p(rdf.`type`), s(lwm.LabworkApplication)).
           ^(v("s"), p(lwm.timestamp), v("timestamp"))
       }
     }
