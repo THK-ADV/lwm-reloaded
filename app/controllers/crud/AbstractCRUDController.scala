@@ -184,8 +184,35 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
           "errors" -> JsError.toJson(errors)
         ))
       },
-      success => handleExistance(success)
-    )
+      success => handleExistance(success) { output =>
+        repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+      })
+  }
+
+  def createAtomic(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { implicit request =>
+    request.body.validate[I].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => handleExistance(success) { output =>
+        repository add[O] output flatMap { _ =>
+          for {
+            _ <- repository.add[O](output)
+            atomized <- atomize(output)
+          } yield atomized match {
+            case Some(json) =>
+              Created(Json.toJson(output)).as(mimeType)
+            case None =>
+              NotFound(Json.obj(
+                "status" -> "KO",
+                "message" -> "No such element..."
+              ))
+          }
+        }
+      })
   }
 
   // GET /Ts/:id
@@ -321,7 +348,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
                       "errors" -> e.getMessage
                     ))
                 }
-              case None => handleExistance(success)
+              case None => handleExistance(success) { output =>
+                repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+              }
             }
 
           case Failure(e) =>
@@ -334,7 +363,68 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
     )
   }
 
-  private def handleExistance(input: I): Result = exists(input)(repository) match {
+  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
+    val uri = s"$namespace${request.uri}"
+
+    request.body.validate[I].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => {
+        repository.get[O](uri) match {
+          case Success(s) =>
+            s match {
+              case Some(entity) if compareModel(success, entity) =>
+                Accepted(Json.obj(
+                  "status" -> "KO",
+                  "message" -> "model already exists",
+                  "id" -> id.toString
+                ))
+              case Some(entity) =>
+                val updated = fromInput(success, Some(entity.id))
+
+                repository.update[O, UriGenerator[O]](updated) match {
+                  case Success(graph) =>
+                    Ok(Json.toJson(updated)).as(mimeType)
+                  case Failure(e) =>
+                    InternalServerError(Json.obj(
+                      "status" -> "KO",
+                      "errors" -> e.getMessage
+                    ))
+                }
+              case None => handleExistance(success) { output =>
+                repository add[O] output flatMap { _ =>
+                  for {
+                    _ <- repository.add[O](output)
+                    atomized <- atomize(output)
+                  } yield atomized match {
+                    case Some(json) =>
+                      Created(Json.toJson(output)).as(mimeType)
+                    case None =>
+                      NotFound(Json.obj(
+                        "status" -> "KO",
+                        "message" -> "No such element..."
+                      ))
+                  }
+                }
+              }
+            }
+
+          case Failure(e) =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> e.getMessage
+            ))
+        }
+      }
+    )
+  }
+
+
+  protected def handleExistance(input: I)(f: O => Try[Result]) = exists(input)(repository) match {
     case Success(Some(duplicate)) =>
       Accepted(Json.obj(
         "status" -> "KO",
@@ -343,10 +433,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
       ))
     case Success(None) =>
       val model = fromInput(input)
-
-      repository.add[O](model) match {
-        case Success(graph) =>
-          Created(Json.toJson(model)).as(mimeType)
+      f(model) match {
+        case Success(result) => result
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
@@ -359,6 +447,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         "errors" -> e.getMessage
       ))
   }
+
 
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
     val uri = s"$namespace${request.uri}"

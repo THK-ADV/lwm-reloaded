@@ -57,9 +57,20 @@ case class RefRoleAtom(module: Option[Course], role: Role, id: UUID)
  * @param name Name or label of the `Role`
  * @param permissions The unary permissions of that `Role`
  */
+
 case class Role(name: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
 
 case class RoleProtocol(name: String, permissions: Set[Permission])
+
+object Roles {
+  lazy val Admin = "Administrator"
+  lazy val Employee = "Mitarbeiter"
+  lazy val Student = "Student"
+  lazy val CourseEmployee = "Modulmitarbeiter"
+  lazy val Assistant = "Hilfskraft"
+  lazy val CourseManager = "Modulverantwortlicher"
+  lazy val RightsManager = "Rechteverantwortlicher"
+}
 
 /**
  * A unary permission.

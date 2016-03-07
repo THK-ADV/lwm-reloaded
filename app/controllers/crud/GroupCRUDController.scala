@@ -37,6 +37,11 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     super.update(group, NonSecureBlock)(newRequest)
   }
 
+  def updateAtomicFrom(course: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.updateAtomic(group, NonSecureBlock)(newRequest)
+  }
+
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     super.all(NonSecureBlock)(request)
   }
@@ -119,6 +124,75 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         processed match {
           case Success(groups) =>
             Ok(Json.toJson(groups)).as(mimeType)
+          case Failure(e) =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
+            ))
+        }
+      }
+    )
+  }
+
+  def createAtomicWithRange(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    request.body.validate[GroupRangeProtocol].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => {
+        def size(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
+          if (prev % s < curr % s) curr
+          else prev
+        }) + 1
+
+        val processed =
+          for {
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
+            groupSize = size(success.min, success.max, people.size)
+            grouped = people.grouped(groupSize).toList
+            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
+            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
+            _ <- repository.addMany[Group](mapped)
+          } yield mapped
+
+        processed flatMap (groups => atomizeMany(groups.toSet)) match {
+          case Success(json) =>
+            Created(json).as(mimeType)
+          case Failure(e) =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
+            ))
+        }
+      }
+    )
+  }
+
+  def createAtomicWithCount(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    request.body.validate[GroupCountProtocol].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => {
+        val processed =
+          for {
+            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
+            groupSize = (people.size / success.count) + 1
+            grouped = people.grouped(groupSize).toList
+            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
+            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
+            _ <- repository.addMany[Group](mapped)
+          } yield mapped
+
+        processed flatMap (groups => atomizeMany(groups.toSet)) match {
+          case Success(json) =>
+            Created(json).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",

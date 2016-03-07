@@ -1,8 +1,9 @@
 package controllers.crud.schedule
 
 import java.util.UUID
+
 import controllers.crud.AbstractCRUDController
-import models.{UriGenerator, Labwork, Group, Room}
+import models.{schedule => _, _}
 import models.schedule.{Schedule, ScheduleEntry, ScheduleProtocol, Timetable}
 import org.openrdf.model.Value
 import models.schedule._
@@ -16,6 +17,7 @@ import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
@@ -113,6 +115,15 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     super.update(schedule, NonSecureBlock)(newRequest)
   }
 
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
+  def updateAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.updateAtomic(schedule, NonSecureBlock)(newRequest)
+  }
+
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     super.all(NonSecureBlock)(request)
   }
@@ -136,7 +147,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     super.delete(schedule, NonSecureBlock)(newRequest)
   }
 
-  def preview(course: String) = restrictedContext(course)(Create) action { implicit request =>
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import utils.Ops._
     import MonadInstances.{tryM, optM}
 
@@ -146,7 +157,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     implicit val tcu = defaultBindings.TimetableBinding.classUri
     implicit val lb = defaultBindings.LabworkBinding.labworkBinder
 
-    val id = UUID.fromString(course)
+    val id = UUID.fromString(labwork)
     val uri = Labwork.generateUri(id)(namespace)
 
     val gen = for {

@@ -6,7 +6,9 @@ GET           /                                             controllers.Homepage
 
 # Degree
 POST          /degrees                                      controllers.crud.DegreeCRUDController.create()
+POST          /atomic/degrees                               controllers.crud.CourseCRUDController.createAtomic()
 PUT           /degrees/:id                                  controllers.crud.DegreeCRUDController.update(id)
+PUT           /atomic/degrees/:id                           controllers.crud.DegreeCRUDController.updateAtomic(id)
 GET           /degrees                                      controllers.crud.DegreeCRUDController.all()
 GET           /degrees/:id                                  controllers.crud.DegreeCRUDController.get(id)
 DELETE        /degrees/:id                                  controllers.crud.DegreeCRUDController.delete(id)
@@ -14,7 +16,11 @@ HEAD          /degrees                                      controllers.crud.Deg
 
 # Course
 POST          /courses                                      controllers.crud.CourseCRUDController.create()
+POST          /atomic/courses                               controllers.crud.CourseCRUDController.createAtomic()
+POST          /coursesWithRights                            controllers.crud.CourseCRUDController.createWithRights()
+POST          /atomic/coursesWithRights                     controllers.crud.CourseCRUDController.createAtomicWithRights()
 PUT           /courses/:id                                  controllers.crud.CourseCRUDController.updateFrom(id)
+PUT           /atomic/courses/:id                           controllers.crud.CourseCRUDController.updateAtomicFrom(id)
 GET           /courses                                      controllers.crud.CourseCRUDController.all()
 GET           /atomic/courses                               controllers.crud.CourseCRUDController.allAtomic()
 GET           /courses/:id                                  controllers.crud.CourseCRUDController.get(id)
@@ -36,9 +42,12 @@ GET           /atomic/groups/:id                            controllers.crud.Gro
 HEAD          /groups                                       controllers.crud.GroupCRUDController.header
 
 # Groups restricted; how about /courses/:course/labworks/:labwork/.. ??
+POST          /courses/:course/atomic/groups/count          controllers.crud.GroupCRUDController.createAtomicWithCount(course)
+POST          /courses/:course/atomic/groups/range          controllers.crud.GroupCRUDController.createAtomicWithRange(course)
 POST          /courses/:course/groups/count                 controllers.crud.GroupCRUDController.createWithCount(course)
 POST          /courses/:course/groups/range                 controllers.crud.GroupCRUDController.createWithRange(course)
 PUT           /courses/:course/groups/:id                   controllers.crud.GroupCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/groups/:id            controllers.crud.GroupCRUDController.updateAtomicFrom(course, id)
 GET           /courses/:course/groups                       controllers.crud.GroupCRUDController.allFrom(course)
 GET           /courses/:course/atomic/groups                controllers.crud.GroupCRUDController.allAtomicFrom(course)
 GET           /courses/:course/groups/:id                   controllers.crud.GroupCRUDController.getFrom(course, id)
@@ -52,6 +61,7 @@ HEAD          /labworks                                     controllers.crud.Lab
 
 # Labwork restricted
 POST          /courses/:course/labworks                     controllers.crud.LabworkCRUDController.createFrom(course)
+POST          /courses/:course/atomic/labworks              controllers.crud.LabworkCRUDController.createAtomicFrom(course)
 PUT           /courses/:course/labworks/:id                 controllers.crud.LabworkCRUDController.updateFrom(course, id)
 GET           /courses/:course/labworks                     controllers.crud.LabworkCRUDController.allFrom(course)
 GET           /courses/:course/atomic/labworks              controllers.crud.LabworkCRUDController.allAtomicFrom(course)
@@ -82,6 +92,7 @@ HEAD          /semesters                                    controllers.crud.sem
 
 # Student
 POST          /students                                     controllers.crud.user.StudentCRUDController.create()
+POST          /atomic/students                              controllers.crud.user.StudentCRUDController.createAtomic()
 PUT           /students/:id                                 controllers.crud.user.StudentCRUDController.update(id)
 GET           /students                                     controllers.crud.user.StudentCRUDController.all()
 GET           /atomic/students                              controllers.crud.user.StudentCRUDController.allAtomic()
@@ -100,7 +111,9 @@ HEAD          /roles                                        controllers.security
 
 # RefRole
 POST          /refRoles                                     controllers.security.RefRoleController.create()
+POST          /atomic/refRoles                              controllers.security.RefRoleController.createAtomic()
 PUT           /refRoles/:id                                 controllers.security.RefRoleController.update(id)
+PUT           /atomic/refRoles/:id                          controllers.security.RefRoleController.updateAtomic(id)
 GET           /refRoles                                     controllers.security.RefRoleController.all()
 GET           /atomic/refRoles                              controllers.security.RefRoleController.allAtomic()
 GET           /refRoles/:id                                 controllers.security.RefRoleController.get(id)
@@ -110,7 +123,9 @@ HEAD          /refRoles                                     controllers.security
 
 # Authority
 POST          /authorities                                  controllers.security.AuthorityController.create()
+POST          /atomic/authorities                           controllers.security.AuthorityController.createAtomic()
 PUT           /authorities/:id                              controllers.security.AuthorityController.update(id)
+PUT           /atomic/authorities/:id                       controllers.security.AuthorityController.updateAtomic(id)
 GET           /authorities                                  controllers.security.AuthorityController.all()
 GET           /atomic/authorities                           controllers.security.AuthorityController.allAtomic()
 GET           /authorities/:id                              controllers.security.AuthorityController.get(id)
@@ -124,7 +139,9 @@ HEAD          /permissions                                  controllers.security
 
 # LabworkApplications
 POST          /labworkApplications                          controllers.crud.LabworkApplicationCRUDController.create()
+POST          /atomic/labworkApplications                   controllers.crud.LabworkApplicationCRUDController.createAtomic()
 PUT           /labworkApplications/:id                      controllers.crud.LabworkApplicationCRUDController.update(id)
+PUT           /atomic/labworkApplications/:id               controllers.crud.LabworkApplicationCRUDController.updateAtomic(id)
 GET           /labworkApplications                          controllers.crud.LabworkApplicationCRUDController.all()
 GET           /atomic/labworkApplications                   controllers.crud.LabworkApplicationCRUDController.allAtomic()
 GET           /labworkApplications/:id                      controllers.crud.LabworkApplicationCRUDController.get(id)
@@ -137,12 +154,14 @@ HEAD          /schedules                                    controllers.crud.sch
 
 # Schedule restricted
 POST          /courses/:course/schedules                    controllers.crud.schedule.ScheduleCRUDController.createFrom(course)
+POST          /courses/:course/atomic/schedules             controllers.crud.schedule.ScheduleCRUDController.createAtomicFrom(course)
 PUT           /courses/:course/schedules/:id                controllers.crud.schedule.ScheduleCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/schedules/:id         controllers.crud.schedule.ScheduleCRUDController.updateAtomicFrom(course, id)
 GET           /courses/:course/schedules                    controllers.crud.schedule.ScheduleCRUDController.allFrom(course)
 GET           /courses/:course/atomic/schedules             controllers.crud.schedule.ScheduleCRUDController.allAtomicFrom(course)
 GET           /courses/:course/schedules/:id                controllers.crud.schedule.ScheduleCRUDController.getFrom(course, id)
 GET           /courses/:course/atomic/schedules/:id         controllers.crud.schedule.ScheduleCRUDController.getAtomicFrom(course, id)
-GET           /courses/:course/schedulePreview              controllers.crud.schedule.ScheduleCRUDController.preview(course)
+GET           /courses/:c/labworks/:l/schedules/preview     controllers.crud.schedule.ScheduleCRUDController.preview(c, l)
 DELETE        /courses/:course/schedules/:id                controllers.crud.schedule.ScheduleCRUDController.deleteFrom(course, id)
 
 # Timetable
@@ -150,7 +169,9 @@ HEAD          /timetables                                   controllers.crud.sch
 
 # Timetable restricted
 POST          /courses/:course/timetables                   controllers.crud.schedule.TimetableCRUDController.createFrom(course)
+POST          /courses/:course/atomic/timetables            controllers.crud.schedule.TimetableCRUDController.createAtomicFrom(course)
 PUT           /courses/:course/timetables/:id               controllers.crud.schedule.TimetableCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/timetables/:id        controllers.crud.schedule.TimetableCRUDController.updateAtomicFrom(course, id)
 GET           /courses/:course/timetables                   controllers.crud.schedule.TimetableCRUDController.allFrom(course)
 GET           /courses/:course/atomic/timetables            controllers.crud.schedule.TimetableCRUDController.allAtomicFrom(course)
 GET           /courses/:course/timetables/:id               controllers.crud.schedule.TimetableCRUDController.getFrom(course, id)

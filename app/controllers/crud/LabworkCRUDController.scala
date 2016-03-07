@@ -139,6 +139,10 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
     super.create(NonSecureBlock)(request)
   }
 
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
   def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
     val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
     super.update(labwork, NonSecureBlock)(newRequest)

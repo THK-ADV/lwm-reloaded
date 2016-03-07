@@ -129,6 +129,15 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
     super.update(timetable, NonSecureBlock)(newRequest)
   }
 
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
+  def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.updateAtomic(timetable, NonSecureBlock)(newRequest)
+  }
+
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     super.all(NonSecureBlock)(request)
   }

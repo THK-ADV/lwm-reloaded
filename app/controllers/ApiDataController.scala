@@ -1,42 +1,44 @@
 package controllers
 
-import models.{AssignmentEntry, Labwork, Course, Degree, AssignmentPlan, EntryType, Room}
+import models.{AssignmentEntry, AssignmentPlan, Course, Degree, EntryType, Labwork, Room}
 import models.applications.LabworkApplication
-import models.security.{Authority, RefRole, Role}
+import models.security.{Authority, RefRole, Role, Roles}
+import models.security.Roles._
 import models.security.Permissions._
 import models.semester.Semester
-import models.users.{Student, Employee}
+import models.users.{Employee, Student}
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
 import store.SesameRepository
 import store.bind.Bindings
+
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
 object ApiDataController {
-  val mvRole = Role("Modulverantwortlicher",
+  val mvRole = Role(CourseManager,
     labwork.all ++ schedule.all ++ timetable.all ++ group.all + course.update
   )
-  val maRole = Role("Modulmitarbeiter",
+  val maRole = Role(CourseEmployee,
     Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) + group.get
   )
-  val assistantRole = Role("Hilfskraft",
+  val assistantRole = Role(Assistant,
     Set(schedule.get, timetable.get)
   )
 
-  val rvRole = Role("Rechteverantwortlicher", authority.all ++ refRole.all ++ role.all)
-  val studentRole = Role("Student",
+  val rvRole = Role(RightsManager, authority.all ++ refRole.all ++ role.all)
+  val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
       semester.get + group.get + user.get
   )
-  val employeeRole = Role("Mitarbeiter",
+  val employeeRole = Role(Roles.Employee,
     room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) + labworkApplication.getAll ++ entryType.all
   )
-  val adminRole = Role("Admin", Set(prime))
+  val adminRole = Role(Admin, Set(prime))
 }
 
 class ApiDataController(val repository: SesameRepository) extends Controller {
