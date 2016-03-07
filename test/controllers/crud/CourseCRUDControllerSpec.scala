@@ -2,6 +2,7 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.{Role, Roles}
 import models.users.{Employee, User}
 import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers
