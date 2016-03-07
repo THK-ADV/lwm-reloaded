@@ -1,7 +1,7 @@
 package controllers.crud
 
 import java.util.UUID
-import models.security.Permission
+import models.security.{Permissions, Permission}
 import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -98,21 +98,17 @@ trait Secured {
 trait SecureControllerContext {
   self: Secured with ContentTyped =>
 
-  //to be specialized
-  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => NonSecureBlock
-  }
-
-  //to be specialized
-  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => NonSecureBlock
-  }
-
   sealed trait Rule
 
-  case class SecureBlock(restrictionRef: String, set: Set[Permission]) extends SecureContext
+  case object Create extends Rule
 
-  case class PartialSecureBlock(s: Set[Permission]) extends SecureContext
+  case object Delete extends Rule
+
+  case object GetAll extends Rule
+
+  case object Get extends Rule
+
+  case object Update extends Rule
 
   trait SecureContext {
 
@@ -136,25 +132,36 @@ trait SecureControllerContext {
       simple = ContentTypedAction.async(block)
     )
 
-    def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
-      case PartialSecureBlock(set) => restricted(None, set)
+    def apply[A](restricted: (Option[UUID], Permission) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, permission) => restricted(Some(UUID.fromString(id)), permission)
+      case PartialSecureBlock(permission) => restricted(None, permission)
       case NonSecureBlock => simple()
     }
   }
 
+  case class SecureBlock(restrictionRef: String, permission: Permission) extends SecureContext
+
+  case class PartialSecureBlock(permission: Permission) extends SecureContext
+
   case object NonSecureBlock extends SecureContext
 
-  case object Create extends Rule
+  //to be specialized
+  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
 
-  case object Delete extends Rule
+  //to be specialized
+  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+}
 
-  case object All extends Rule
+object AbstractCRUDController {
 
-  case object Get extends Rule
-
-  case object Update extends Rule
-
+  def rebaseUri[A](request: Request[A], uri: String): Request[A] = {
+    val headers = request.copy(request.id, request.tags, uri)
+    Request(headers, request.body)
+  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
@@ -232,7 +239,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // GET /ts with optional queries
-  def all(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
+  def all(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { implicit request =>
     repository.get[O] match {
       case Success(s) =>
         if (request.queryString.isEmpty)
@@ -256,7 +263,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // GET /ts with optional queries and deserialisation
-  def allAtomic(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
+  def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { implicit request =>
     def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
       case Success(json) =>
         Ok(json).as(mimeType)

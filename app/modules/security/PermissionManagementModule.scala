@@ -1,6 +1,6 @@
 package modules.security
 
-import controllers.PermissionController
+import controllers.security.PermissionController
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait PermissionManagementModule {

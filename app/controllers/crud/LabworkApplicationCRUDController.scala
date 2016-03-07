@@ -9,13 +9,13 @@ import org.joda.time.DateTime
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
-import play.api.mvc.Result
+import models.security.Permissions._
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import LabworkApplicationCRUDController._
 import scala.collection.Map
-import scala.util.{Try, Failure, Success}
+import scala.util.{Try, Failure}
 
 object LabworkApplicationCRUDController {
   val labworkAttribute = "labwork"
@@ -109,5 +109,13 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
         }
       }
     }).map(s => Json.toJson(s))
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Create => PartialSecureBlock(labworkApplication.create)
+    case Update => PartialSecureBlock(labworkApplication.update)
+    case Delete => PartialSecureBlock(labworkApplication.delete)
+    case Get => PartialSecureBlock(labworkApplication.get)
+    case GetAll => PartialSecureBlock(labworkApplication.getAll)
   }
 }

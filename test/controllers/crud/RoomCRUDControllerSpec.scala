@@ -5,7 +5,7 @@ import java.util.UUID
 import models.{Room, RoomProtocol}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.mockito.{Matchers, Mockito}
+import org.mockito.Matchers
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.http.HeaderNames
@@ -24,6 +24,10 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
   override val controller: AbstractCRUDController[RoomProtocol, Room] = new RoomCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = entityToPass
+
+    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case _ => NonSecureBlock
+    }
   }
 
   override val entityToFail: Room = Room("label to fail", "description to fail", Room.randomUUID)

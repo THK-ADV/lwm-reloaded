@@ -3,7 +3,8 @@ package models.security
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.{UniqueEntity, UriGenerator}
+import models.users.{Student, Employee, User}
+import models.{Course, UniqueEntity, UriGenerator}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
 /**
@@ -17,9 +18,14 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
  * @param id Unique id of the `Authority`
  */
 
+
 case class Authority(user: UUID, refRoles: Set[UUID], id: UUID = Authority.randomUUID) extends UniqueEntity
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
+
+case class AuthorityEmployeeAtom(user: Employee, refRoles: Set[RefRole], id: UUID)
+
+case class AuthorityStudentAtom(user: Student, refRoles: Set[RefRole], id: UUID)
 
 /**
  * Structure binding a particular module to a particular `Role`(or set of permissions).
@@ -33,14 +39,15 @@ case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
  * Directly integrating them in the `RefRole` graph would mean that, upon deletion,
  * the `Role`s themselves would also be deleted.
  *
- *
- * @param module Referenced course/module
+  * @param module Referenced course/module
  * @param role Reference to `Role` Instance of that course/module
  * @param id Unique id of the `RefRole`
  */
 case class RefRole(module: Option[UUID] = None, role: UUID, id: UUID = RefRole.randomUUID) extends UniqueEntity
 
 case class RefRoleProtocol(module: Option[UUID] = None, role: UUID)
+
+case class RefRoleAtom(module: Option[Course], role: Role, id: UUID)
 
 /**
  * Structure abstracting over a set of unary `Permission`s.
@@ -62,52 +69,6 @@ case class RoleProtocol(name: String, permissions: Set[Permission])
 
 case class Permission(value: String) {
   override def toString: String = value
-}
-
-object Permissions {
-
-  val prime = Permission("Prime")
-
-  val getSemester = Permission("get an existing semester")
-
-  val allSemesters = Permission("get all semesters")
-
-  val createCourse = Permission("create a new course")
-
-  val joinLabwork = Permission("join an existing labwork")
-
-  val createGroup = Permission("create a new group")
-
-  val allGroups = Permission("get all groups")
-
-  val getGroup = Permission("get a group")
-
-  val updateGroup = Permission("update a group")
-
-  val deleteGroup = Permission("delete a group")
-
-  val createSchedule = Permission("create schedule from timetable")
-
-  val createTimetable = Permission("create a new timetable")
-
-  val allTimetables = Permission("get all timetables")
-
-  val getTimetable = Permission("get a timetable")
-
-  val updateTimetable = Permission("update a timetable")
-
-  val deleteTimetable = Permission("delete a timetable")
-
-  val allValues = Vector(getSemester, allSemesters, createCourse, joinLabwork)
-}
-
-object Roles {
-
-  import Permissions._
-
-  val admin = Role("admin", Set(prime))
-  val employee = Role("employee", Set(allSemesters))
-  val student = Role("student", Set(getSemester, joinLabwork))
 }
 
 object Permission extends JsonSerialisation[Permission, Permission] {
@@ -138,6 +99,8 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
   override implicit def reads: Reads[RefRoleProtocol] = Json.reads[RefRoleProtocol]
 
   override implicit def writes: Writes[RefRole] = Json.writes[RefRole]
+
+  implicit def atomicWrites: Writes[RefRoleAtom] = Json.writes[RefRoleAtom]
 }
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
@@ -149,4 +112,8 @@ object Authority extends UriGenerator[Authority] with JsonSerialisation[Authorit
   override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
 
   override implicit def writes: Writes[Authority] = Json.writes[Authority]
+
+  implicit def atomicEmployeeWrites: Writes[AuthorityEmployeeAtom] = Json.writes[AuthorityEmployeeAtom]
+
+  implicit def atomicStudentWrites: Writes[AuthorityStudentAtom] = Json.writes[AuthorityStudentAtom]
 }

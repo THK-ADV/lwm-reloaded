@@ -2,6 +2,7 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.Permissions._
 import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -59,4 +60,10 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def atomizeMany(output: Set[Degree]): Try[JsValue] = Success(Json.toJson(output))
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(degree.get)
+    case GetAll => PartialSecureBlock(degree.getAll)
+    case _ => PartialSecureBlock(prime)
+  }
 }

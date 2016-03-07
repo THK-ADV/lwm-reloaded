@@ -11,7 +11,7 @@ import play.api.libs.json.{Json, JsValue, Reads, Writes}
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Success, Try}
 
@@ -72,5 +72,11 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
             }
          }
       }).map(s => Json.toJson(s))
+   }
+
+   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case Get => PartialSecureBlock(user.get)
+      case GetAll => PartialSecureBlock(user.getAll)
+      case _ => PartialSecureBlock(god)
    }
 }

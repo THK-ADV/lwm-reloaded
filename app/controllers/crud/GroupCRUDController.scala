@@ -7,7 +7,6 @@ import models.users.Student
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.Result
 import services.{GroupServiceLike, RoleService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -16,7 +15,6 @@ import scala.collection.Map
 import scala.util.{Success, Failure, Try}
 
 object GroupCRUDController {
-
   val labworkAttribute = "labwork"
 }
 
@@ -34,9 +32,35 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override implicit def writes: Writes[Group] = Group.writes
 
-  //TODO: Repair information inconsistency
-  // POST /labworks/id/groups/range
-  def createWithRange(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
+  def updateFrom(course: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.update(group, NonSecureBlock)(newRequest)
+  }
+
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.all(NonSecureBlock)(request)
+  }
+
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.allAtomic(NonSecureBlock)(request)
+  }
+
+  def getFrom(course: String, group: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.get(group, NonSecureBlock)(newRequest)
+  }
+
+  def getAtomicFrom(course: String, group: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.getAtomic(group, NonSecureBlock)(newRequest)
+  }
+
+  def deleteFrom(course: String, group: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.delete(group, NonSecureBlock)(newRequest)
+  }
+
+  def createWithRange(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     request.body.validate[GroupRangeProtocol].fold(
       errors => {
         BadRequest(Json.obj(
@@ -73,8 +97,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     )
   }
 
-  // POST /labworks/id/groups/count
-  def createWithCount(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
+  def createWithCount(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     request.body.validate[GroupCountProtocol].fold(
       errors => {
         BadRequest(Json.obj(
@@ -107,35 +130,6 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
-
-  def allFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
-  }
-
-  def updateFrom(labwork: String, id: String) = restrictedContext(labwork)(Update) asyncContentTypedAction { request =>
-    super.update(id, NonSecureBlock)(request)
-  }
-
-  def getFrom(labwork: String, id: String) = restrictedContext(labwork)(Get) asyncAction { request =>
-    super.get(id, NonSecureBlock)(request)
-  }
-
-  def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(Delete) asyncAction { request =>
-    super.delete(id, NonSecureBlock)(request)
-  }
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(moduleId, Set(createGroup))
-    case All => SecureBlock(moduleId, Set(allGroups))
-    case Update => SecureBlock(moduleId, Set(updateGroup))
-    case Get => SecureBlock(moduleId, Set(getGroup))
-    case Delete => SecureBlock(moduleId, Set(deleteGroup))
-    case _ => PartialSecureBlock(Set(prime))
-  }
 
   override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = id match {
     case Some(uuid) => Group(input.label, input.labwork, input.members, uuid)
@@ -192,5 +186,18 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         }
       }
     }).map(s => Json.toJson(s))
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(group.get)
+    case _ => PartialSecureBlock(god)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, group.create)
+    case Update => SecureBlock(restrictionId, group.update)
+    case Delete => SecureBlock(restrictionId, group.delete)
+    case Get => SecureBlock(restrictionId, group.get)
+    case GetAll => SecureBlock(restrictionId, group.getAll)
   }
 }

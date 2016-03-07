@@ -8,7 +8,7 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import services.RoleService
-import models.security.{RefRole, Roles}
+import models.security.{Permissions, Role, RefRole}
 import utils.Ops._
 import utils.Ops.MonadInstances._
 import utils.Ops.TraverseInstances._
@@ -27,6 +27,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
   import bindings.permissionBinder
   import bindings.EmployeeBinding._
   import bindings.RefRoleBinding._
+  import bindings.RoleBinding._
 
   val repo = SesameRepository(ns)
 
@@ -76,8 +77,14 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
-      val refrole1 = RefRole(None, Roles.employee.id)
-      val refrole2 = RefRole(None, Roles.student.id)
+      val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
+      val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
+
+      val refrole1 = RefRole(None, studentRole.id)
+      val refrole2 = RefRole(None, employeeRole.id)
+
+      repo.add[Role](studentRole)
+      repo.add[Role](employeeRole)
 
       repo.add[RefRole](refrole1)
       repo.add[RefRole](refrole2)
@@ -97,7 +104,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
         case (Success(Some(student)), Success(Some(auth)), Success(refRoles)) =>
           student shouldBe student1
           auth.user shouldBe student1.id
-          refRoles.exists(_.role == Roles.student.id) shouldBe true
+          refRoles.exists(_.role == studentRole.id) shouldBe true
           auth.refRoles.size shouldBe 1
         case (Failure(_), _, _) => fail("Could not retrieve student")
         case (_, Failure(_), _) => fail("Authority either not created or not found")
@@ -109,7 +116,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
         case (Success(Some(emp)), Success(Some(auth)), Success(refRoles)) =>
           emp shouldBe employee
           auth.user shouldBe employee.id
-          refRoles.exists(_.role == Roles.employee.id) shouldBe true
+          refRoles.exists(_.role == employeeRole.id) shouldBe true
           auth.refRoles.size shouldBe 1
         case (Failure(_), _, _) => fail("Could not retrieve user")
         case (_, Failure(_), _) => fail("Authority either not created or not found")
@@ -143,21 +150,23 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
 
-      val refrole1 = RefRole(None, Roles.employee.id)
+      val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
+      val refrole1 = RefRole(None, employeeRole.id)
 
+      repo.add[Role](employeeRole)
       repo.add[RefRole](refrole1)
 
       resolver.missingUserData(student1) match {
-        case Success(_) => fail("Should've not found an appropriate `RefRole`")
+        case Success(_) => fail("Should've not found an appropriate `RefRole` or Role")
         case Failure(e) =>
-        e.getMessage shouldBe "No appropriate RefRole found while resolving user"
+        e.getMessage shouldBe "No appropriate RefRole or Role found while resolving user"
       }
 
       resolver.missingUserData(employee) match {
         case Success(g) =>
           val demployee = g.as[Employee]
           demployee shouldBe Success(employee)
-        case Failure(_) => fail("Should've found an appropriate `RefRole`")
+        case Failure(_) => fail("Should've found an appropriate `RefRole` or Role")
       }
 
     }

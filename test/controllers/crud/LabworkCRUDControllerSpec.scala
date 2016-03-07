@@ -46,6 +46,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   override val controller: AbstractCRUDController[LabworkProtocol, Labwork] = new LabworkCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = entityToPass
+
+    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case _ => NonSecureBlock
+    }
   }
 
   override val entityToFail: Labwork = Labwork(

@@ -10,7 +10,6 @@ import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
-import play.api.mvc.Result
 import services.RoleService
 import store.Prefixes.LWMPrefix
 import store.sparql.{select, Clause}
@@ -40,79 +39,9 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
-  /*override def getWithFilter(queryString: Map[String, Seq[String]])(semesters: Set[Semester]): Result = {
-    val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
-
-    def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
-      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => sem.start.getYear.toString.equals(year)))
-    }
-
-    def filterByPeriod(period: Seq[String], semesters: Set[Semester]): Result = {
-      val byPeriod = period.head match {
-        case ss if ss.toLowerCase.equals("ss") =>
-          Some(semesters.filter(sem => sem.start.getMonthOfYear <= 6))
-        case ws if ws.toLowerCase.equals("ws") =>
-          Some(semesters.filter(sem => sem.start.getMonthOfYear > 6))
-        case _ => None
-      }
-
-      byPeriod match {
-        case Some(sem) =>
-          Ok(Json.toJson(sem)).as(mimeType)
-        case None =>
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-      }
-    }
-
-    attributes match {
-      case List(Some(years), None) =>
-        val byYears = filterByYears(years, semesters)
-
-        if (byYears.isEmpty) {
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-        } else {
-          Ok(Json.toJson(byYears)).as(mimeType)
-        }
-
-      case List(Some(years), Some(period)) =>
-        val byYears = filterByYears(years, semesters)
-
-        if (byYears.isEmpty) {
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-        } else {
-          filterByPeriod(period, byYears)
-        }
-
-      case List(None, Some(period)) =>
-        filterByPeriod(period, semesters)
-
-      case _ =>
-        ServiceUnavailable(Json.obj(
-          "status" -> "KO",
-          "message" -> "query attribute not found"
-        ))
-    }
-  }*/
-
   override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
     case Some(uuid) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, uuid)
     case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, Semester.randomUUID)
-  }
-
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case All => PartialSecureBlock(Set(allSemesters))
-    case Get => PartialSecureBlock(Set(getSemester))
-    case _ => PartialSecureBlock(Set(prime))
   }
 
   override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
@@ -161,5 +90,11 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
       case List(None, Some(period)) => filterByPeriod(period, all)
       case _ => Failure(new Throwable("Unknown attribute"))
     }
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(semester.get)
+    case GetAll => PartialSecureBlock(semester.getAll)
+    case _ => PartialSecureBlock(prime)
   }
 }

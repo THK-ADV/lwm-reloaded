@@ -1,14 +1,14 @@
 package modules.security
 
-import controllers.crud.security.RoleCRUDController
+import controllers.security.RoleController
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 
 trait RoleManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule =>
-  def roleManagementController: RoleCRUDController
+  def roleManagementController: RoleController
 }
 
 trait DefaultRoleManagementModule extends RoleManagementModule {
   self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
-  override def roleManagementController: RoleCRUDController = new RoleCRUDController(repository, namespace, roleService)
+  override def roleManagementController: RoleController = new RoleController(repository, namespace, roleService)
 }

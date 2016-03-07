@@ -15,8 +15,7 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {
-  self =>
+class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {self =>
 
   implicit val roleService = mock[RoleService]
   val controller = new MockController(roleService)
@@ -30,12 +29,12 @@ class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {
       actualContent(NonSecureBlock)(request)
     }
 
-    def actualContent(context: SecureContext = contextFrom(All)) = context action { request =>
+    def actualContent(context: SecureContext = contextFrom(GetAll)) = context action { request =>
       Ok("delegated")
     }
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-      case All => PartialSecureBlock(Set(permission))
+      case GetAll => PartialSecureBlock(permission)
       case _ => NonSecureBlock
     }
   }

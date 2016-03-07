@@ -1,16 +1,14 @@
-package controllers
+package controllers.security
 
 import base.TestBaseDefinition
 import models.security.Permissions
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, Result, AnyContent, Request}
+import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.RoleService
 import store.{Namespace, SesameRepository}
-import utils.LWMActions.ContentTypedAction
 import utils.LwmMimeType
 
 class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
@@ -28,7 +26,7 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
 
   "A PermissionControllerSpec " should {
     "return all permissions" in {
-      val permissions = Permissions.allValues
+      val permissions = Permissions.all
 
       val request = FakeRequest(
         GET,

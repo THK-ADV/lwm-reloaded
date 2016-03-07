@@ -13,7 +13,7 @@ import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Failure, Try}
 import store.sparql.select
@@ -95,7 +95,22 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     }, v("id"))
   }
 
+  def updateFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    super.update(course, NonSecureBlock)(request)
+  }
+
   override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
     input.label == output.label && input.description == output.description
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(course.get)
+    case GetAll => PartialSecureBlock(course.getAll)
+    case _ => PartialSecureBlock(prime)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Update => SecureBlock(restrictionId, course.update)
+    case _ => PartialSecureBlock(god)
   }
 }

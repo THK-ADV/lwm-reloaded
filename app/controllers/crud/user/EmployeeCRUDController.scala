@@ -4,6 +4,7 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
+import models.security.Permissions._
 import models.users.{Employee, EmployeeProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -45,4 +46,10 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
    override protected def atomize(output: Employee): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
    override protected def atomizeMany(output: Set[Employee]): Try[JsValue] = Success(Json.toJson(output))
+
+   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case Get => PartialSecureBlock(user.get)
+      case GetAll => PartialSecureBlock(user.getAll)
+      case _ => PartialSecureBlock(god)
+   }
 }
