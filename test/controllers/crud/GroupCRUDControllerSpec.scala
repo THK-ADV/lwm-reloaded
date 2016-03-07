@@ -217,6 +217,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
     "create groups given some arbitrary group size" in {
       val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
       val groupSize = 12
       val applicantsAmount = 100
 
@@ -234,14 +235,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/labworks/$labwork/groups/count",
+        s"/${entityTypeName}s/$course/groups/count",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
 
       val result = controller.createWithCount(labwork.toString)(fakeRequest)
 
-      status(result) shouldBe OK
+      status(result) shouldBe CREATED
 
       val resultValue = contentAsJson(result).as[JsArray]
       val deserialised = resultValue.value map (_.as[Group])
@@ -254,6 +255,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "create groups given some arbitrary group range" in {
+      val course = Course.randomUUID
       val labwork = Labwork.randomUUID
       val min = 12
       val max = 20
@@ -278,13 +280,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/labworks/$labwork/groups/range",
+        s"/${entityTypeName}s/$course/groups/range",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
 
       val result = controller.createWithRange(labwork.toString)(fakeRequest)
-      status(result) shouldBe OK
+      status(result) shouldBe CREATED
 
       val resultValue = contentAsJson(result).as[JsArray]
       val deserialised = resultValue.value map (_.as[Group])
@@ -298,6 +300,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
     "stop creating groups when no applications have been found" in {
       val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
       val groupSize = 12
 
       val expectedResult = Json.obj(
@@ -312,7 +315,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/labworks/$labwork/groups/count",
+        s"/${entityTypeName}s/$course/groups/count",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )
@@ -325,6 +328,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
     "stop creating groups when models cannot be added to database" in {
       val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
       val min = 12
       val max = 20
       val applicantsAmount = 100
@@ -349,7 +353,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/labworks/$labwork/groups/range",
+        s"/${entityTypeName}s/$course/groups/range",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         json
       )

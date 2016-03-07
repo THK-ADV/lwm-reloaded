@@ -11,11 +11,18 @@ import services.{GroupServiceLike, RoleService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+import play.api.mvc.Result
+
 import scala.collection.Map
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object GroupCRUDController {
   val labworkAttribute = "labwork"
+
+  def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
+    if (prev % s < curr % s) curr
+    else prev
+  }) + 1
 }
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
@@ -65,114 +72,35 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     super.delete(group, NonSecureBlock)(newRequest)
   }
 
-  def createWithRange(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupRangeProtocol].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        def size(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
-          if (prev % s < curr % s) curr
-          else prev
-        }) + 1
-
-        val processed =
-          for {
-            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = size(success.min, success.max, people.size)
-            grouped = people.grouped(groupSize).toList
-            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped)
-          } yield mapped
-
-        processed match {
-          case Success(groups) =>
-            Ok(Json.toJson(groups)).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
-      }
-    )
+  def createWithRange(course: String) = groupBy[GroupRangeProtocol](course) { (people, rangeProt) =>
+      GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)
+  } { groups =>
+      Success(Created(Json.toJson(groups)).as(mimeType))
   }
 
-  def createWithCount(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupCountProtocol].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        val processed =
-          for {
-            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = (people.size / success.count) + 1
-            grouped = people.grouped(groupSize).toList
-            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped)
-          } yield mapped
-
-        processed match {
-          case Success(groups) =>
-            Ok(Json.toJson(groups)).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
-      }
-    )
+  def createWithCount(course: String) = groupBy[GroupCountProtocol](course) { (people, countProt) =>
+    (people.size / countProt.count) + 1
+  } { groups =>
+      Success(Created(Json.toJson(groups)).as(mimeType))
   }
 
-  def createAtomicWithRange(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupRangeProtocol].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        def size(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
-          if (prev % s < curr % s) curr
-          else prev
-        }) + 1
-
-        val processed =
-          for {
-            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = size(success.min, success.max, people.size)
-            grouped = people.grouped(groupSize).toList
-            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped)
-          } yield mapped
-
-        processed flatMap (groups => atomizeMany(groups.toSet)) match {
-          case Success(json) =>
-            Created(json).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
-      }
-    )
+  def createAtomicWithRange(course: String) = groupBy[GroupRangeProtocol](course) { (people, rangeProt) =>
+    GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)
+  } { groups =>
+      atomizeMany (groups.toSet) map (Created(_).as(mimeType))
   }
 
-  def createAtomicWithCount(course: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupCountProtocol].fold(
+  def createAtomicWithCount(course: String) = groupBy[GroupCountProtocol](course) { (people, countProt) =>
+    (people.size / countProt.count) + 1
+  } { groups =>
+      atomizeMany (groups.toSet) map (Created(_).as(mimeType))
+  }
+
+  private def groupBy[T <: GroupConstraints](course: String)
+                     (f: (Vector[UUID], T) => Int)
+                     (g: List[Group] => Try[Result])
+                     (implicit reads: Reads[T]) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    request.body.validate[T].fold(
       errors => {
         BadRequest(Json.obj(
           "status" -> "KO",
@@ -183,22 +111,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         val processed =
           for {
             people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = (people.size / success.count) + 1
+            groupSize = f(people, success)
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
             _ <- repository.addMany[Group](mapped)
           } yield mapped
 
-        processed flatMap (groups => atomizeMany(groups.toSet)) match {
-          case Success(json) =>
-            Created(json).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
+          processed flatMap g match {
+            case Success(result) => result
+            case Failure(e) =>
+              InternalServerError(Json.obj(
+                "status" -> "KO",
+                "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
+              ))
+          }
       }
     )
   }

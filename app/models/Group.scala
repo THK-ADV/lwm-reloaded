@@ -12,11 +12,11 @@ case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
 case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], id: UUID)
 
-sealed abstract class GroupConstraints(labwork: UUID)
+sealed abstract class GroupConstraints(val labwork: UUID)
 
-case class GroupRangeProtocol(labwork: UUID, min: Int, max: Int) extends GroupConstraints(labwork)
+case class GroupRangeProtocol(override val labwork: UUID, min: Int, max: Int) extends GroupConstraints(labwork)
 
-case class GroupCountProtocol(labwork: UUID, count: Int) extends GroupConstraints(labwork)
+case class GroupCountProtocol(override val labwork: UUID, count: Int) extends GroupConstraints(labwork)
 
 object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group] {
 

@@ -2,7 +2,7 @@ package store
 
 import java.util.UUID
 
-import models.security.{Role, Authority, RefRole}
+import models.security.{Authority, RefRole, Role, Roles}
 import models.users.{Employee, Student, User}
 import org.w3.banana.PointedGraph
 import org.w3.banana.binder.ToPG
@@ -13,6 +13,7 @@ import store.sparql.select
 import store.sparql.select._
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
+
 import scala.util.{Failure, Try}
 
 trait Resolvers {
@@ -70,8 +71,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
       } yield user
 
     v match {
-      case s: Student => f(s)(_.name == "Student")(bindings.StudentBinding.studentBinder)
-      case e: Employee => f(e)(_.name == "Mitarbeiter")(bindings.EmployeeBinding.employeeBinder)
+      case s: Student => f(s)(_.name == Roles.Student)(bindings.StudentBinding.studentBinder)
+      case e: Employee => f(e)(_.name == Roles.Employee)(bindings.EmployeeBinding.employeeBinder)
     }
   }
 

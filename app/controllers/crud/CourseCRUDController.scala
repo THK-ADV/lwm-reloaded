@@ -16,8 +16,9 @@ import utils.LwmMimeType
 import models.security.Permissions._
 import models.security.{Authority, RefRole, Role}
 import models.security.Roles._
+import play.api.mvc.Result
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 import store.sparql.select
 import store.sparql.select._
 
@@ -105,34 +106,23 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     super.updateAtomic(course, NonSecureBlock)(request)
   }
 
-  def createWithRights(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
-    request.body.validate[CourseProtocol].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => handleExistance(success) { model =>
-        import defaultBindings.CourseBinding._
-        import defaultBindings.RoleBinding
-        import defaultBindings.RefRoleBinding._
-        import defaultBindings.AuthorityBinding._
-          for {
-            allRoles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
-            properRoles = allRoles filter (role => (role.name == CourseManager) && (role.name == CourseEmployee) && (role.name == Assistant)) if properRoles.nonEmpty
-            authrole = allRoles filter (_.name == RightsManager) if authrole.nonEmpty
-            refroles = properRoles map (role => RefRole(Some(model.id), role.id))
-            authority = Authority(model.lecturer, (refroles ++ authrole) map (_.id))
-            _ <- repository.add[Course](model)
-            _ <- repository.addMany[RefRole](refroles)
-            _ <- repository.add[Authority](authority)
-          } yield Created(Json.toJson(model)).as(mimeType)
-        }
-      )
+  def createWithRights(secureContext: SecureContext = contextFrom(Create)) = withRights(secureContext) { course =>
+      Success(Created(Json.toJson(course)).as(mimeType))
   }
 
-  def createAtomicWithRights(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
+  def createAtomicWithRights(secureContext: SecureContext = contextFrom(Create)) = withRights(secureContext) { course =>
+    atomize(course) map {
+      case Some(json) =>
+        Created(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+    }
+  }
+
+  private def withRights(secureContext: SecureContext)(f: Course => Try[Result]) = secureContext contentTypedAction { request =>
     request.body.validate[CourseProtocol].fold(
       errors => {
         BadRequest(Json.obj(
@@ -140,30 +130,22 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
           "errors" -> JsError.toJson(errors)
         ))
       },
-      success => handleExistance(success) { model =>
+      success => existenceOf(success) { model =>
         import defaultBindings.CourseBinding._
         import defaultBindings.RoleBinding
         import defaultBindings.RefRoleBinding._
         import defaultBindings.AuthorityBinding._
         for {
-          allRoles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
-          properRoles = allRoles filter (role => (role.name == CourseManager) && (role.name == CourseEmployee) && (role.name == Assistant)) if properRoles.nonEmpty
-          authrole = allRoles filter (_.name == RightsManager) if authrole.nonEmpty
+          allRoles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri) if allRoles.nonEmpty
+          properRoles = allRoles filter (role => (role.name == CourseManager) || (role.name == CourseEmployee) || (role.name == Assistant))
+          authrole = allRoles filter (_.name == RightsManager)
           refroles = properRoles map (role => RefRole(Some(model.id), role.id))
           authority = Authority(model.lecturer, (refroles ++ authrole) map (_.id))
           _ <- repository.add[Course](model)
           _ <- repository.addMany[RefRole](refroles)
           _ <- repository.add[Authority](authority)
-          atomized <- atomize(model)
-        } yield atomized match {
-          case Some(json) =>
-            Created(json).as(mimeType)
-          case None =>
-            NotFound(Json.obj(
-              "status" -> "KO",
-              "message" -> "No such element..."
-            ))
-        }
+          result <- f(model)
+        } yield result
       }
     )
   }
