@@ -358,15 +358,20 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
-      val roles = Set(role(Roles.RightsManager))
-      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("emoty"))
+      val roles = Set(role(Roles.RightsManager), role(Roles.CourseEmployee), role(Roles.CourseManager), role(Roles.CourseAssistant))
+      val refrole = RefRole(None, roles.head.id)
+      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
+      val auth = Authority.empty
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
       when(repository.get[Role](anyObject(), anyObject())).thenReturn(Success(roles))
+      when(roleService.authorityFor(anyObject())).thenReturn(Success(Some(auth)))
+      when(repository.get[RefRole](anyObject())(anyObject())).thenReturn(Success(Some(refrole)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
       when(repository.addMany[RefRole](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
-      when(repository.add[Authority](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(dummyGraph))
 
       val request = FakeRequest(
         POST,
@@ -375,7 +380,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
         Json.toJson(course)
       )
 
-      val result = controller.createWithRights()(request)
+      val result = controller.createWithRoles()(request)
 
       status(result) shouldBe CREATED
       contentType(result) shouldBe Some(mimeType.value)
@@ -388,7 +393,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
       val roles = Set.empty[Role]
-      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("emoty"))
+      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
@@ -401,7 +406,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
         Json.toJson(course)
       )
 
-      val result = controller.createWithRights()(request)
+      val result = controller.createWithRoles()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

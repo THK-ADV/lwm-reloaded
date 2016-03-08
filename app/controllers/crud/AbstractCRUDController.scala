@@ -182,20 +182,15 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 
   // POST /Ts with deserialisation
   def createAtomic(secureContext: SecureContext = contextFrom(Create)) = createWith(secureContext) { output =>
-    repository add[O] output flatMap { _ =>
-      for {
-        _ <- repository.add[O](output)
-        atomized <- atomize(output)
-      } yield atomized match {
+    repository.add[O](output).flatMap(_ => atomize(output)).map {
         case Some(json) =>
-          Created(Json.toJson(output)).as(mimeType)
+          Created(json).as(mimeType)
         case None =>
           NotFound(Json.obj(
             "status" -> "KO",
             "message" -> "No such element..."
           ))
       }
-    }
   }
 
   // GET /Ts/:id
@@ -300,27 +295,36 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // PUT /Ts/:id
-  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = updateWith(id, secureContext) { output =>
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = updateWith(id, secureContext)
+  { output => Success(Ok(Json.toJson(output)).as(mimeType)) }
+  { output =>
     repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
   }
 
   // PUT /Ts/:id with deserialisation
-  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = updateWith(id, securedContext) { output =>
-    repository add[O] output flatMap { _ =>
-      for {
-        _ <- repository.add[O](output)
-        atomized <- atomize(output)
-      } yield atomized match {
-        case Some(json) =>
-          Created(Json.toJson(output)).as(mimeType)
-        case None =>
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-      }
+  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = updateWith(id, securedContext)
+  { output =>
+    atomize(output).map {
+      case Some(json) =>
+        Ok(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+    }
+  } { output =>
+    repository.add[O](output).flatMap(_ => atomize(output)).map {
+      case Some(json) =>
+        Created(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
     }
   }
+
 
   private def createWith(securedContext: SecureContext)
                         (f: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
@@ -336,8 +340,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   private def updateWith(id: String, securedContext: SecureContext)
-                (f: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
-    val uri = s"$namespace${request.uri}"
+                (updatef: O => Try[Result])
+                (addf: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
+    val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
 
     request.body.validate[I].fold(
       errors => {
@@ -359,16 +364,15 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
               case Some(entity) =>
                 val updated = fromInput(success, Some(entity.id))
 
-                repository.update[O, UriGenerator[O]](updated) match {
-                  case Success(graph) =>
-                    Ok(Json.toJson(updated)).as(mimeType)
+                repository.update[O, UriGenerator[O]](updated).flatMap(_ => updatef(updated)) match {
+                  case Success(result) => result
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
                       "errors" -> e.getMessage
                     ))
                 }
-              case None => existenceOf(success)(f)
+              case None => existenceOf(success)(addf)
             }
           case Failure(e) =>
             InternalServerError(Json.obj(

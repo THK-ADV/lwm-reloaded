@@ -67,7 +67,7 @@ object Roles {
   lazy val Employee = "Mitarbeiter"
   lazy val Student = "Student"
   lazy val CourseEmployee = "Modulmitarbeiter"
-  lazy val Assistant = "Hilfskraft"
+  lazy val CourseAssistant = "Hilfskraft"
   lazy val CourseManager = "Modulverantwortlicher"
   lazy val RightsManager = "Rechteverantwortlicher"
 }

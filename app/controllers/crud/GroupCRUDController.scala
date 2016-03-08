@@ -72,29 +72,21 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     super.delete(group, NonSecureBlock)(newRequest)
   }
 
-  def createWithRange(course: String) = groupBy[GroupRangeProtocol](course) { (people, rangeProt) =>
-      GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)
-  } { groups =>
-      Success(Created(Json.toJson(groups)).as(mimeType))
-  }
+  def createWithRange(course: String) = groupBy[GroupRangeProtocol](course)
+    { (people, rangeProt) => GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size) }
+    { groups => Success(Created(Json.toJson(groups)).as(mimeType)) }
 
-  def createWithCount(course: String) = groupBy[GroupCountProtocol](course) { (people, countProt) =>
-    (people.size / countProt.count) + 1
-  } { groups =>
-      Success(Created(Json.toJson(groups)).as(mimeType))
-  }
+  def createWithCount(course: String) = groupBy[GroupCountProtocol](course)
+    { (people, countProt) => (people.size / countProt.count) + 1 }
+    { groups => Success(Created(Json.toJson(groups)).as(mimeType)) }
 
-  def createAtomicWithRange(course: String) = groupBy[GroupRangeProtocol](course) { (people, rangeProt) =>
-    GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)
-  } { groups =>
-      atomizeMany (groups.toSet) map (Created(_).as(mimeType))
-  }
+  def createAtomicWithRange(course: String) = groupBy[GroupRangeProtocol](course)
+    { (people, rangeProt) => GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)}
+    { groups => atomizeMany (groups.toSet) map (Created(_).as(mimeType)) }
 
-  def createAtomicWithCount(course: String) = groupBy[GroupCountProtocol](course) { (people, countProt) =>
-    (people.size / countProt.count) + 1
-  } { groups =>
-      atomizeMany (groups.toSet) map (Created(_).as(mimeType))
-  }
+  def createAtomicWithCount(course: String) = groupBy[GroupCountProtocol](course)
+    { (people, countProt) => (people.size / countProt.count) + 1 }
+    { groups => atomizeMany (groups.toSet) map (Created(_).as(mimeType)) }
 
   private def groupBy[T <: GroupConstraints](course: String)
                      (f: (Vector[UUID], T) => Int)

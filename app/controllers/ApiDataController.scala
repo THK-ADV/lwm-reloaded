@@ -25,7 +25,7 @@ object ApiDataController {
   val maRole = Role(CourseEmployee,
     Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) + group.get
   )
-  val assistantRole = Role(Assistant,
+  val assistantRole = Role(CourseAssistant,
     Set(schedule.get, timetable.get)
   )
 
