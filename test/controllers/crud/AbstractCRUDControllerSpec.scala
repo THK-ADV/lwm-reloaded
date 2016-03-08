@@ -269,7 +269,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
-    s"not update an existing $entityTypeName when a duplicate arise" in {
+    s"not update an existing $entityTypeName when a duplicate occur" in {
       when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(

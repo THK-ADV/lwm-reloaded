@@ -37,7 +37,7 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
-   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.label == output.label
+   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.description == output.description
 
    override protected def existsQuery(input: RoomProtocol): (Clause, select.Var) = {
       lazy val prefixes = LWMPrefix[repository.Rdf]

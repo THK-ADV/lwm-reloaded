@@ -37,10 +37,6 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
 
-   override protected def compareModel(input: EmployeeProtocol, output: Employee): Boolean = {
-      input.systemId == output.systemId && input.email == output.email && input.firstname == output.firstname && input.lastname == output.lastname
-   }
-
    override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Employee]): Try[Set[Employee]] = Success(all)
 
    override protected def atomize(output: Employee): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
@@ -51,5 +47,9 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
       case Get => PartialSecureBlock(user.get)
       case GetAll => PartialSecureBlock(user.getAll)
       case _ => PartialSecureBlock(god)
+   }
+
+   override protected def compareModel(input: EmployeeProtocol, output: Employee): Boolean = {
+      input.firstname == output.firstname && input.lastname == input.lastname && input.email == output.email
    }
 }

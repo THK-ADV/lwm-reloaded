@@ -68,9 +68,7 @@ class AuthorityController(val repository: SesameRepository, val namespace: Names
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = {
-    input.user == output.user && input.refRoles == output.refRoles
-  }
+  override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = Success(all)
 }

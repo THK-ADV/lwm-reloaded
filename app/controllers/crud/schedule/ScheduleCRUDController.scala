@@ -201,9 +201,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     }
   }
 
-  override protected def compareModel(input: ScheduleProtocol, output: Schedule): Boolean = {
-    input.labwork == output.labwork && input.entries == output.entries
-  }
+  override protected def compareModel(input: ScheduleProtocol, output: Schedule): Boolean = input.entries == output.entries
 
   override protected def atomize(output: Schedule): Try[Option[JsValue]] = {
     import defaultBindings.LabworkBinding._

@@ -130,7 +130,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
-    input.label == output.label && input.labwork == output.labwork && input.members == output.members
+    input.label == output.label && input.members == output.members
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {

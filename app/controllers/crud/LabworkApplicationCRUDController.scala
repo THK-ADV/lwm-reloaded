@@ -48,9 +48,7 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
 
   override implicit def rdfWrites: ToPG[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationBinding.labworkApplicationBinder
 
-  override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = {
-    input.applicant == output.applicant && input.labwork == output.labwork && input.friends == output.friends
-  }
+  override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = input.friends == output.friends
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[LabworkApplication]): Try[Set[LabworkApplication]] = {
     def decode(s: String) = URLDecoder.decode(s, "UTF-8")

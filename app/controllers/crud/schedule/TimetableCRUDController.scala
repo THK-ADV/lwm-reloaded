@@ -39,7 +39,7 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.labwork == output.labwork && input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
+    input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = Success(all)

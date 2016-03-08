@@ -60,7 +60,7 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   }
 
   override protected def compareModel(input: SemesterProtocol, output: Semester): Boolean = {
-    input.label == output.label && input.start.isEqual(output.start) && input.end.isEqual(output.end) && input.examStart.isEqual(output.examStart)
+    input.abbreviation == output.abbreviation && input.examStart.isEqual(output.examStart)
   }
 
   override protected def atomize(output: Semester): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))

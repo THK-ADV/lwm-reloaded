@@ -37,10 +37,6 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override val mimeType: LwmMimeType = LwmMimeType.studentV1Json
 
-   override protected def compareModel(input: StudentProtocol, output: Student): Boolean = {
-      input.systemId == output.systemId && input.email == output.email && input.firstname == output.firstname && input.lastname == output.lastname && input.registrationId == output.registrationId
-   }
-
    override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Student]): Try[Set[Student]] = Success(all)
 
    override protected def atomize(output: Student): Try[Option[JsValue]] = {
@@ -78,5 +74,9 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
       case Get => PartialSecureBlock(user.get)
       case GetAll => PartialSecureBlock(user.getAll)
       case _ => PartialSecureBlock(god)
+   }
+
+   override protected def compareModel(input: StudentProtocol, output: Student): Boolean = {
+      input.firstname == output.firstname && input.lastname == input.lastname && input.email == output.email
    }
 }

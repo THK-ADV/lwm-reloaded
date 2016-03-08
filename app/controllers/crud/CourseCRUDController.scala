@@ -93,7 +93,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     (select ("id") where {
       ^(v("s"), p(rdf.`type`), s(prefixes.Course)) .
         ^(v("s"), p(prefixes.label), o(input.label)) .
-        ^(v("s"), p(prefixes.description), o(input.description)) .
+        ^(v("s"), p(prefixes.lecturer), s(Employee.generateUri(input.lecturer)(namespace))) .
         ^(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
@@ -179,7 +179,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
   }
 
   override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
-    input.label == output.label && input.description == output.description
+    input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

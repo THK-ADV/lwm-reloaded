@@ -77,7 +77,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   override val updateJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
-    "description" -> entityToPass.description,
+    "description" -> (entityToPass.description + "updated"),
     "semester" -> UUID.randomUUID(),
     "course" -> entityToPass.course,
     "degree" -> entityToPass.degree,
