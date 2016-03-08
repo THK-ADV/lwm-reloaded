@@ -13,7 +13,7 @@ import store.sparql.select._
 import store.sparql.{select, Clause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Success, Try}
 
@@ -37,7 +37,7 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
-   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.label == output.label
+   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.description == output.description
 
    override protected def existsQuery(input: RoomProtocol): (Clause, select.Var) = {
       lazy val prefixes = LWMPrefix[repository.Rdf]
@@ -55,4 +55,10 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
    override protected def atomize(output: Room): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
    override protected def atomizeMany(output: Set[Room]): Try[JsValue] = Success(Json.toJson(output))
+
+   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case Get => PartialSecureBlock(room.get)
+      case GetAll => PartialSecureBlock(room.getAll)
+      case _ => PartialSecureBlock(prime)
+   }
 }

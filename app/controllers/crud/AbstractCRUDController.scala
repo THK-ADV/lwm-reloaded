@@ -1,7 +1,7 @@
 package controllers.crud
 
 import java.util.UUID
-import models.security.Permission
+import models.security.{Permissions, Permission}
 import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -98,21 +98,17 @@ trait Secured {
 trait SecureControllerContext {
   self: Secured with ContentTyped =>
 
-  //to be specialized
-  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => NonSecureBlock
-  }
-
-  //to be specialized
-  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => NonSecureBlock
-  }
-
   sealed trait Rule
 
-  case class SecureBlock(restrictionRef: String, set: Set[Permission]) extends SecureContext
+  case object Create extends Rule
 
-  case class PartialSecureBlock(s: Set[Permission]) extends SecureContext
+  case object Delete extends Rule
+
+  case object GetAll extends Rule
+
+  case object Get extends Rule
+
+  case object Update extends Rule
 
   trait SecureContext {
 
@@ -136,25 +132,36 @@ trait SecureControllerContext {
       simple = ContentTypedAction.async(block)
     )
 
-    def apply[A](restricted: (Option[UUID], Set[Permission]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, set) => restricted(Some(UUID.fromString(id)), set)
-      case PartialSecureBlock(set) => restricted(None, set)
+    def apply[A](restricted: (Option[UUID], Permission) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, permission) => restricted(Some(UUID.fromString(id)), permission)
+      case PartialSecureBlock(permission) => restricted(None, permission)
       case NonSecureBlock => simple()
     }
   }
 
+  case class SecureBlock(restrictionRef: String, permission: Permission) extends SecureContext
+
+  case class PartialSecureBlock(permission: Permission) extends SecureContext
+
   case object NonSecureBlock extends SecureContext
 
-  case object Create extends Rule
+  //to be specialized
+  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
 
-  case object Delete extends Rule
+  //to be specialized
+  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+}
 
-  case object All extends Rule
+object AbstractCRUDController {
 
-  case object Get extends Rule
-
-  case object Update extends Rule
-
+  def rebaseUri[A](request: Request[A], uri: String): Request[A] = {
+    val headers = request.copy(request.id, request.tags, uri)
+    Request(headers, request.body)
+  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
@@ -169,16 +176,21 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with Consistent[I, O] {
 
   // POST /Ts
-  def create(securedContext: SecureContext = contextFrom(Create)) = securedContext contentTypedAction { implicit request =>
-    request.body.validate[I].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => handleExistance(success)
-    )
+  def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>
+    repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+  }
+
+  // POST /Ts with deserialisation
+  def createAtomic(secureContext: SecureContext = contextFrom(Create)) = createWith(secureContext) { output =>
+    repository.add[O](output).flatMap(_ => atomize(output)).map {
+        case Some(json) =>
+          Created(json).as(mimeType)
+        case None =>
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+      }
   }
 
   // GET /Ts/:id
@@ -232,7 +244,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // GET /ts with optional queries
-  def all(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
+  def all(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { implicit request =>
     repository.get[O] match {
       case Success(s) =>
         if (request.queryString.isEmpty)
@@ -256,7 +268,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // GET /ts with optional queries and deserialisation
-  def allAtomic(securedContext: SecureContext = contextFrom(All)) = securedContext action { implicit request =>
+  def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { implicit request =>
     def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
       case Success(json) =>
         Ok(json).as(mimeType)
@@ -282,8 +294,55 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
     }
   }
 
-  def update(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { implicit request =>
-    val uri = s"$namespace${request.uri}"
+  // PUT /Ts/:id
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = updateWith(id, secureContext)
+  { output => Success(Ok(Json.toJson(output)).as(mimeType)) }
+  { output =>
+    repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+  }
+
+  // PUT /Ts/:id with deserialisation
+  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = updateWith(id, securedContext)
+  { output =>
+    atomize(output).map {
+      case Some(json) =>
+        Ok(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+    }
+  } { output =>
+    repository.add[O](output).flatMap(_ => atomize(output)).map {
+      case Some(json) =>
+        Created(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+    }
+  }
+
+
+  private def createWith(securedContext: SecureContext)
+                        (f: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
+    request.body.validate[I].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => existenceOf(success)(f)
+    )
+  }
+
+  private def updateWith(id: String, securedContext: SecureContext)
+                (updatef: O => Try[Result])
+                (addf: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
+    val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
 
     request.body.validate[I].fold(
       errors => {
@@ -305,18 +364,16 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
               case Some(entity) =>
                 val updated = fromInput(success, Some(entity.id))
 
-                repository.update[O, UriGenerator[O]](updated) match {
-                  case Success(graph) =>
-                    Ok(Json.toJson(updated)).as(mimeType)
+                repository.update[O, UriGenerator[O]](updated).flatMap(_ => updatef(updated)) match {
+                  case Success(result) => result
                   case Failure(e) =>
                     InternalServerError(Json.obj(
                       "status" -> "KO",
                       "errors" -> e.getMessage
                     ))
                 }
-              case None => handleExistance(success)
+              case None => existenceOf(success)(addf)
             }
-
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
@@ -327,7 +384,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
     )
   }
 
-  private def handleExistance(input: I): Result = exists(input)(repository) match {
+  protected def existenceOf(input: I)(f: O => Try[Result]) = exists(input)(repository) match {
     case Success(Some(duplicate)) =>
       Accepted(Json.obj(
         "status" -> "KO",
@@ -336,10 +393,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
       ))
     case Success(None) =>
       val model = fromInput(input)
-
-      repository.add[O](model) match {
-        case Success(graph) =>
-          Created(Json.toJson(model)).as(mimeType)
+      f(model) match {
+        case Success(result) => result
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
@@ -352,6 +407,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         "errors" -> e.getMessage
       ))
   }
+
 
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
     val uri = s"$namespace${request.uri}"

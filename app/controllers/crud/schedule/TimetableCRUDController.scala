@@ -38,41 +38,8 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
     case None => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(moduleId, Set(createTimetable))
-    case All => SecureBlock(moduleId, Set(allTimetables))
-    case Update => SecureBlock(moduleId, Set(updateTimetable))
-    case Get => SecureBlock(moduleId, Set(getTimetable))
-    case Delete => SecureBlock(moduleId, Set(deleteTimetable))
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  def createFrom(labwork: String) = restrictedContext(labwork)(Create) asyncContentTypedAction { request =>
-    super.create(NonSecureBlock)(request)
-  }
-
-  def allFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
-  }
-
-  def updateFrom(labwork: String, id: String) = restrictedContext(labwork)(Update) asyncContentTypedAction { request =>
-    super.update(id, NonSecureBlock)(request)
-  }
-
-  def getFrom(labwork: String, id: String) = restrictedContext(labwork)(Get) asyncAction { request =>
-    super.get(id, NonSecureBlock)(request)
-  }
-
-  def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(Delete) asyncAction { request =>
-    super.delete(id, NonSecureBlock)(request)
-  }
-
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.labwork == output.labwork && input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
+    input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = Success(all)
@@ -143,6 +110,54 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
         }
       }
     }).map(s => Json.toJson(s)(Timetable.setAtomicWrites))
+  }
 
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, timetable.create)
+    case Get => SecureBlock(restrictionId, timetable.get)
+    case GetAll => SecureBlock(restrictionId, timetable.getAll)
+    case Update => SecureBlock(restrictionId, timetable.update)
+    case Delete => SecureBlock(restrictionId, timetable.delete)
+  }
+
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.create(NonSecureBlock)(request)
+  }
+
+  def updateFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.update(timetable, NonSecureBlock)(newRequest)
+  }
+
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
+  def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.updateAtomic(timetable, NonSecureBlock)(newRequest)
+  }
+
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.all(NonSecureBlock)(request)
+  }
+
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.allAtomic(NonSecureBlock)(request)
+  }
+
+  def getFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.get(timetable, NonSecureBlock)(newRequest)
+  }
+
+  def getAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.getAtomic(timetable, NonSecureBlock)(newRequest)
+  }
+
+  def deleteFrom(course: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
+    super.delete(timetable, NonSecureBlock)(newRequest)
   }
 }

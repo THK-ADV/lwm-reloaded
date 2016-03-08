@@ -1,30 +1,57 @@
 package controllers
 
-import models.{Course, Degree, Labwork, Room}
-import models._
+import models.{AssignmentEntry, AssignmentPlan, Course, Degree, EntryType, Labwork, Room}
 import models.applications.LabworkApplication
-import models.security.{Authority, RefRole, Role}
+import models.security.{Authority, RefRole, Role, Roles}
+import models.security.Roles._
+import models.security.Permissions._
 import models.semester.Semester
-import models.users.{Student, Employee}
+import models.users.{Employee, Student}
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
 import store.SesameRepository
 import store.bind.Bindings
+
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
-import models.security.Roles._
+
+object ApiDataController {
+  val mvRole = Role(CourseManager,
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all + course.update
+  )
+  val maRole = Role(CourseEmployee,
+    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) + group.get
+  )
+  val assistantRole = Role(CourseAssistant,
+    Set(schedule.get, timetable.get)
+  )
+
+  val rvRole = Role(RightsManager, authority.all ++ refRole.all ++ role.all)
+  val studentRole = Role(Roles.Student,
+    Set(room.get, degree.get, course.get, labwork.get) ++
+      Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
+      semester.get + group.get + user.get
+  )
+  val employeeRole = Role(Roles.Employee,
+    room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) + labworkApplication.getAll ++ entryType.all
+  )
+  val adminRole = Role(Admin, Set(prime))
+}
 
 class ApiDataController(val repository: SesameRepository) extends Controller {
   import repository.ops
+  import ApiDataController._
+
   private val bindings = Bindings(repository.namespace)
   implicit def toLocalDate(s: String): LocalDate = LocalDate.parse(s)
 
-  val refrole1 = RefRole(None, admin.id)
-  val refrole2 = RefRole(None, employee.id)
-  val refrole3 = RefRole(None, student.id)
+  val adminRefRole = RefRole(None, adminRole.id)
+  val employeeRefRole = RefRole(None, employeeRole.id)
+  val studentRefRole = RefRole(None, studentRole.id)
+  val rvRefRole = RefRole(None, rvRole.id)
 
   val konen = Employee.randomUUID
   val leopold = Employee.randomUUID
@@ -92,7 +119,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       courses ++
       refroles ++
       labworks ++
-      students ++
+      students ++ foo ++
       lApps).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
@@ -157,7 +184,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def roles = {
     import bindings.RoleBinding._
-    List(admin, student, employee) map repository.add[Role]
+    List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
   def people = List(Employee("ai1818", "Wurst", "Hans", "", Employee.randomUUID))
@@ -166,7 +193,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.AuthorityBinding._
     import bindings.EmployeeBinding._
 
-    people.map(p => (p, Authority(p.id, Set(refrole1.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
+    people.map(p => (p, Authority(p.id, Set(adminRefRole.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
     }
   }
@@ -174,9 +201,10 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   def refroles = {
     import bindings.RefRoleBinding._
     List(
-      refrole1,
-      refrole2,
-      refrole3
+      adminRefRole,
+      employeeRefRole,
+      studentRefRole,
+      rvRefRole
     ).map(repository.add[RefRole])
   }
 
@@ -270,5 +298,13 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       LabworkApplication(ap1MiPrak, uweStudent, Set(christianStudent)),
       LabworkApplication(ap1MiPrak, christianStudent, Set(uweStudent))
     ).map(repository.add[LabworkApplication])
+  }
+
+  def foo = {
+    import bindings.RefRoleBinding._
+
+    List(
+      RefRole(Some(ap2Kohls), mvRole.id)
+    ).map(repository.add[RefRole])
   }
 }

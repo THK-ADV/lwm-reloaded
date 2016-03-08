@@ -37,14 +37,6 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
     case None => Blacklist(input.dates, Blacklist.randomUUID)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
   override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
     input.dates == output.dates
   }
@@ -54,4 +46,9 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
   override protected def atomize(output: Blacklist): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def atomizeMany(output: Set[Blacklist]): Try[JsValue] = Success(Json.toJson(output))
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(blacklist.get)
+    case _ => PartialSecureBlock(prime)
+  }
 }

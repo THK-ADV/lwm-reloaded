@@ -31,7 +31,7 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkWith(checkee: (Option[UUID], Set[Permission]))(checker: Authority): Try[Boolean]
+  def checkWith(checkee: (Option[UUID], Permission))(checker: Authority): Try[Boolean]
 }
 
 class RoleService(repository: SesameRepository) extends RoleServiceLike {
@@ -63,19 +63,23 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
       run
   }
 
-  override def checkWith(whatToCheck: (Option[UUID], Set[Permission]))(checkWith: Authority): Try[Boolean] = whatToCheck match {
-    case (optLab, permissions) =>
+  override def checkWith(whatToCheck: (Option[UUID], Permission))(checkWith: Authority): Try[Boolean] = whatToCheck match {
+    case (optCourse, permission) if permission == Permissions.god => Success(false)
+    case (optCourse, permission) =>
       import bindings.RefRoleBinding._
-      import bindings.RoleBinding._
+      import bindings.RoleBinding
       import bindings.LabworkBinding._
 
-      repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri) flatMap { refRoles =>
-        if(refRoles.exists(_.role == Roles.admin.id)) Success(true)
+      (for {
+        roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
+        admin = roles.filter(_.name == Roles.Admin)
+        refRoles <- repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri)
+      } yield {
+        if(refRoles.exists(refrole => admin.exists(_.id == refrole.role))) Success(true)
         else for {
-            optCourse <- Try(optLab).flatPeek (lab => repository.get[Labwork](Labwork.generateUri(lab))).peek(_.course)(tryM, optM)
-            optRef = refRoles.find(_.module == optCourse)
-            optRole <- Try(optRef) flatPeek (ref => repository.get[Role](Role.generateUri(ref.role)))
-          } yield optRole exists (role => permissions forall role.permissions.contains)
-      }
+          optRef <- Try(refRoles.filter(_.module == optCourse))
+          optRole <- Try(optRef) flatMap (ref => repository.getMany[Role](ref.map(rr => Role.generateUri(rr.role)))(RoleBinding.roleBinder))
+        } yield optRole.exists(_.permissions.contains(permission))
+      }).flatten
   }
 }

@@ -1,12 +1,12 @@
 package controllers.crud.schedule
 
 import java.util.UUID
+
 import controllers.crud.AbstractCRUDController
-import models._
+import models.{schedule => _, _}
 import models.schedule.{Schedule, ScheduleEntry, ScheduleProtocol, Timetable}
 import org.openrdf.model.Value
 import models.schedule._
-import models.security.Permissions._
 import models.users.Employee
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -16,6 +16,7 @@ import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+import models.security.Permissions._
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -105,8 +106,48 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Schedule]): Try[Set[Schedule]] = Success(all)
 
-  // /labworks/:labwork/schedules/preview
-  def preview(labwork: String) = restrictedContext(labwork)(Create) action { implicit request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.create(NonSecureBlock)(request)
+  }
+
+  def updateFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.update(schedule, NonSecureBlock)(newRequest)
+  }
+
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
+  def updateAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.updateAtomic(schedule, NonSecureBlock)(newRequest)
+  }
+
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.all(NonSecureBlock)(request)
+  }
+
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.allAtomic(NonSecureBlock)(request)
+  }
+
+  def getFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.get(schedule, NonSecureBlock)(newRequest)
+  }
+
+  def getAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.getAtomic(schedule, NonSecureBlock)(newRequest)
+  }
+
+  def deleteFrom(course: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
+    super.delete(schedule, NonSecureBlock)(newRequest)
+  }
+
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import utils.Ops._
     import MonadInstances.{tryM, optM}
 
@@ -160,18 +201,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
     }
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime)) // TODO to adjust
-  }
-
-  override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(moduleId, Set(createSchedule)) // TODO to adjust
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  override protected def compareModel(input: ScheduleProtocol, output: Schedule): Boolean = {
-    input.labwork == output.labwork && input.entries == output.entries
-  }
+  override protected def compareModel(input: ScheduleProtocol, output: Schedule): Boolean = input.entries == output.entries
 
   override protected def atomize(output: Schedule): Try[Option[JsValue]] = {
     import defaultBindings.LabworkBinding._
@@ -239,5 +269,13 @@ class ScheduleCRUDController(val repository: SesameRepository, val namespace: Na
         }
       }
     }).map(s => Json.toJson(s)(Schedule.setAtomicWrites))
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, schedule.create)
+    case Get => SecureBlock(restrictionId, schedule.get)
+    case GetAll => SecureBlock(restrictionId, schedule.getAll)
+    case Update => SecureBlock(restrictionId, schedule.update)
+    case Delete => SecureBlock(restrictionId, schedule.delete)
   }
 }

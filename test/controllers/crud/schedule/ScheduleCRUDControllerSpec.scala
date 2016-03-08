@@ -200,7 +200,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -242,7 +242,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -290,7 +290,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -327,7 +327,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -364,7 +364,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -402,7 +402,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -413,6 +413,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when db errors occur" in {
+      val course = Course.randomUUID
       val labwork = Labwork.randomUUID
 
       val request = FakeRequest(
@@ -425,7 +426,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Failure(exception))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].preview(course.toString, labwork.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

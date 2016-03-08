@@ -1,14 +1,12 @@
-package controllers
+package controllers.security
 
-import controllers.crud.{SecureControllerContext, Secured, ContentTyped, JsonSerialisation}
-import models.security.Permissions._
-import models.security.Roles._
-import models.security.{Permissions, Permission}
+import controllers.crud.{ContentTyped, JsonSerialisation, SecureControllerContext, Secured}
+import models.security.{Permission, Permissions}
 import modules.store.BaseNamespace
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import services.RoleService
-import store.{SesameRepository, Namespace}
+import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 class PermissionController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
@@ -17,14 +15,15 @@ class PermissionController(val repository: SesameRepository, val namespace: Name
   with Secured
   with SecureControllerContext
   with ContentTyped {
+
   override implicit val mimeType: LwmMimeType = LwmMimeType.permissionV1Json
 
   override implicit def reads: Reads[Permission] = Permission.reads
 
   override implicit def writes: Writes[Permission] = Permission.writes
 
-  def all(secureContext: SecureContext = contextFrom(All)) = secureContext action { implicit request =>
-    Ok(Json.toJson(Permissions.allValues)).as(mimeType)
+  def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
+    Ok(Json.toJson(Permissions.all)).as(mimeType)
   }
 
   def header = Action { implicit request =>
@@ -32,6 +31,7 @@ class PermissionController(val repository: SesameRepository, val namespace: Name
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(Permissions.prime))
+    case GetAll => PartialSecureBlock(Permissions.prime)
+    case _ => PartialSecureBlock(Permissions.god)
   }
 }

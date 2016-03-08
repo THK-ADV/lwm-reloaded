@@ -22,6 +22,10 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
   override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = entityToPass
+
+    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case _ => NonSecureBlock
+    }
   }
 
   override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail", Degree.randomUUID)

@@ -7,17 +7,22 @@ import models.users.Student
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.Result
 import services.{GroupServiceLike, RoleService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+import play.api.mvc.Result
+
 import scala.collection.Map
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object GroupCRUDController {
-
   val labworkAttribute = "labwork"
+
+  def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
+    if (prev % s < curr % s) curr
+    else prev
+  }) + 1
 }
 
 class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
@@ -34,48 +39,60 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override implicit def writes: Writes[Group] = Group.writes
 
-  //TODO: Repair information inconsistency
-  // POST /labworks/id/groups/range
-  def createWithRange(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupRangeProtocol].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        def size(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
-          if (prev % s < curr % s) curr
-          else prev
-        }) + 1
-
-        val processed =
-          for {
-            people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = size(success.min, success.max, people.size)
-            grouped = people.grouped(groupSize).toList
-            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-            mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
-            _ <- repository.addMany[Group](mapped)
-          } yield mapped
-
-        processed match {
-          case Success(groups) =>
-            Ok(Json.toJson(groups)).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
-      }
-    )
+  def updateFrom(course: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.update(group, NonSecureBlock)(newRequest)
   }
 
-  // POST /labworks/id/groups/count
-  def createWithCount(labwork: String) = restrictedContext(labwork)(Create) contentTypedAction { implicit request =>
-    request.body.validate[GroupCountProtocol].fold(
+  def updateAtomicFrom(course: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.updateAtomic(group, NonSecureBlock)(newRequest)
+  }
+
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.all(NonSecureBlock)(request)
+  }
+
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.allAtomic(NonSecureBlock)(request)
+  }
+
+  def getFrom(course: String, group: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.get(group, NonSecureBlock)(newRequest)
+  }
+
+  def getAtomicFrom(course: String, group: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.getAtomic(group, NonSecureBlock)(newRequest)
+  }
+
+  def deleteFrom(course: String, group: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase(UUID.fromString(group)))
+    super.delete(group, NonSecureBlock)(newRequest)
+  }
+
+  def createWithRange(course: String) = groupBy[GroupRangeProtocol](course)
+    { (people, rangeProt) => GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size) }
+    { groups => Success(Created(Json.toJson(groups)).as(mimeType)) }
+
+  def createWithCount(course: String) = groupBy[GroupCountProtocol](course)
+    { (people, countProt) => (people.size / countProt.count) + 1 }
+    { groups => Success(Created(Json.toJson(groups)).as(mimeType)) }
+
+  def createAtomicWithRange(course: String) = groupBy[GroupRangeProtocol](course)
+    { (people, rangeProt) => GroupCRUDController.range(rangeProt.min, rangeProt.max, people.size)}
+    { groups => atomizeMany (groups.toSet) map (Created(_).as(mimeType)) }
+
+  def createAtomicWithCount(course: String) = groupBy[GroupCountProtocol](course)
+    { (people, countProt) => (people.size / countProt.count) + 1 }
+    { groups => atomizeMany (groups.toSet) map (Created(_).as(mimeType)) }
+
+  private def groupBy[T <: GroupConstraints](course: String)
+                     (f: (Vector[UUID], T) => Int)
+                     (g: List[Group] => Try[Result])
+                     (implicit reads: Reads[T]) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    request.body.validate[T].fold(
       errors => {
         BadRequest(Json.obj(
           "status" -> "KO",
@@ -86,56 +103,26 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         val processed =
           for {
             people <- groupService.sortApplicantsFor(success.labwork) if people.nonEmpty
-            groupSize = (people.size / success.count) + 1
+            groupSize = f(people, success)
             grouped = people.grouped(groupSize).toList
             zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
             mapped = zipped map (t => Group(t._1, success.labwork, t._2.toSet))
             _ <- repository.addMany[Group](mapped)
           } yield mapped
 
-        processed match {
-          case Success(groups) =>
-            Ok(Json.toJson(groups)).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
-            ))
-        }
+          processed flatMap g match {
+            case Success(result) => result
+            case Failure(e) =>
+              InternalServerError(Json.obj(
+                "status" -> "KO",
+                "errors" -> s"Error while creating groups for labwork ${success.labwork}: ${e.getMessage}"
+              ))
+          }
       }
     )
   }
 
   override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
-
-  def allFrom(labwork: String) = restrictedContext(labwork)(All) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
-  }
-
-  def updateFrom(labwork: String, id: String) = restrictedContext(labwork)(Update) asyncContentTypedAction { request =>
-    super.update(id, NonSecureBlock)(request)
-  }
-
-  def getFrom(labwork: String, id: String) = restrictedContext(labwork)(Get) asyncAction { request =>
-    super.get(id, NonSecureBlock)(request)
-  }
-
-  def deleteFrom(labwork: String, id: String) = restrictedContext(labwork)(Delete) asyncAction { request =>
-    super.delete(id, NonSecureBlock)(request)
-  }
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(prime))
-  }
-
-  override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(moduleId, Set(createGroup))
-    case All => SecureBlock(moduleId, Set(allGroups))
-    case Update => SecureBlock(moduleId, Set(updateGroup))
-    case Get => SecureBlock(moduleId, Set(getGroup))
-    case Delete => SecureBlock(moduleId, Set(deleteGroup))
-    case _ => PartialSecureBlock(Set(prime))
-  }
 
   override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = id match {
     case Some(uuid) => Group(input.label, input.labwork, input.members, uuid)
@@ -143,7 +130,7 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
-    input.label == output.label && input.labwork == output.labwork && input.members == output.members
+    input.label == output.label && input.members == output.members
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {
@@ -192,5 +179,18 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
         }
       }
     }).map(s => Json.toJson(s))
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(group.get)
+    case _ => PartialSecureBlock(god)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, group.create)
+    case Update => SecureBlock(restrictionId, group.update)
+    case Delete => SecureBlock(restrictionId, group.delete)
+    case Get => SecureBlock(restrictionId, group.get)
+    case GetAll => SecureBlock(restrictionId, group.getAll)
   }
 }

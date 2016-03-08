@@ -1,6 +1,7 @@
 package controllers.crud
 
 import base.TestBaseDefinition
+import controllers.crud.schedule.{ScheduleCRUDController, TimetableCRUDController}
 import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -57,13 +58,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def fgrammar(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
 
-  class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
-    override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override lazy val roleService: RoleService = self.roleService
-
-    }.application
-  })
-
   when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
   when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
@@ -84,19 +78,6 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       status(result) shouldBe CREATED
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldEqual Json.toJson(entityToPass)
-    }
-
-    s"not create a new $entityTypeName when there is an invalid mimeType" in new FakeApplication {
-      val result = route(FakeRequest(
-        POST,
-        s"/${fgrammar(entityTypeName)}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> "application/json")),
-        inputJson
-      )).get
-
-      status(result) shouldBe UNSUPPORTED_MEDIA_TYPE
-      contentType(result) shouldBe Some("text/html")
-      contentAsString(result) should include (s"Expecting ${mimeType.value} body")
     }
 
     s"not create a new $entityTypeName when there is an exception" in {
@@ -288,7 +269,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
-    s"not update an existing $entityTypeName when a duplicate arise" in {
+    s"not update an existing $entityTypeName when a duplicate occur" in {
       when(repository.get[O](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(

@@ -10,6 +10,7 @@ import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.LwmMimeType._
+import models.security.Permissions._
 
 class EntryTypeController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
 with JsonSerialisation[EntryType, EntryType]
@@ -17,13 +18,14 @@ with ContentTyped
 with BaseNamespace
 with Secured
 with SecureControllerContext {
+
   override implicit def reads: Reads[EntryType] = EntryType.reads
 
   override implicit def writes: Writes[EntryType] = EntryType.writes
 
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
-  def all(secureContext: SecureContext = contextFrom(All)) = secureContext action { implicit request =>
+  def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
     Ok(Json.toJson(EntryTypes.types)).as(mimeType)
   }
 
@@ -32,6 +34,7 @@ with SecureControllerContext {
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Set(Permissions.prime))
+    case GetAll => PartialSecureBlock(entryType.getAll)
+    case _ => PartialSecureBlock(Permissions.god)
   }
 }

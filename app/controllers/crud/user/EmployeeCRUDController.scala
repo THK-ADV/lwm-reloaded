@@ -4,6 +4,7 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
+import models.security.Permissions._
 import models.users.{Employee, EmployeeProtocol}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -36,13 +37,19 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override val mimeType: LwmMimeType = LwmMimeType.employeeV1Json
 
-   override protected def compareModel(input: EmployeeProtocol, output: Employee): Boolean = {
-      input.systemId == output.systemId && input.email == output.email && input.firstname == output.firstname && input.lastname == output.lastname
-   }
-
    override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Employee]): Try[Set[Employee]] = Success(all)
 
    override protected def atomize(output: Employee): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
    override protected def atomizeMany(output: Set[Employee]): Try[JsValue] = Success(Json.toJson(output))
+
+   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case Get => PartialSecureBlock(user.get)
+      case GetAll => PartialSecureBlock(user.getAll)
+      case _ => PartialSecureBlock(god)
+   }
+
+   override protected def compareModel(input: EmployeeProtocol, output: Employee): Boolean = {
+      input.firstname == output.firstname && input.lastname == input.lastname && input.email == output.email
+   }
 }

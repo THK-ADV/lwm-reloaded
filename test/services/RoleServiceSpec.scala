@@ -27,7 +27,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
-  val role3 = Roles.admin
+  val role3 = Role("Admin", Set(Permissions.prime))
 
   val roles = Vector(role1, role2, role3)
 
@@ -37,7 +37,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   val module1UserRole1 = RefRole(Some(module1), role1.id)
   val module1UserRole2 = RefRole(Some(module1), role2.id)
   val module2UserRole2 = RefRole(Some(module2), role2.id)
-  val adminRefRole = RefRole(None, Roles.admin.id)
+  val adminRefRole = RefRole(None, role3.id)
 
   def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.module, roles.find(_.id == r.role).get.permissions)
 
@@ -57,6 +57,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       import bindings.RoleBinding._
       import bindings.LabworkBinding._
       import bindings.RefRoleBinding._
+      import util.Random.nextInt
 
       repository.addMany(roles)
       repository.add(lab1)
@@ -68,12 +69,15 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       repository.add(noneModule1Role2)
       repository.add(adminRefRole)
 
-      val result1 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole2)))
-      val result2 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(module1UserRole1, module2UserRole2)))
-      val result3 = roleService.checkWith((None, role1.permissions))(authority(Set(module1UserRole1, noneModule1Role1, module2UserRole2)))
-      val result4 = roleService.checkWith((Some(lab1.id), role1.permissions))(authority(Set(adminRefRole)))
-      val result5 = roleService.checkWith((Some(lab2.id), role2.permissions))(authority(Set(module1UserRole1)))
-      val result6 = roleService.checkWith((Some(UUID.randomUUID()), role1.permissions))(authority(Set(adminRefRole)))
+      val perm1 = role1.permissions.toVector
+      val perm2 = role2.permissions.toVector
+
+      val result1 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(authority(Set(module1UserRole2)))
+      val result2 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(authority(Set(module1UserRole1, module2UserRole2)))
+      val result3 = roleService.checkWith((None, perm1(nextInt(perm1.size))))(authority(Set(module1UserRole1, noneModule1Role1, module2UserRole2)))
+      val result4 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(authority(Set(adminRefRole)))
+      val result5 = roleService.checkWith((Some(module2), perm2(nextInt(perm2.size))))(authority(Set(module1UserRole1)))
+      val result6 = roleService.checkWith((Some(UUID.randomUUID()), perm1(nextInt(perm1.size))))(authority(Set(adminRefRole)))
 
       for {
         r1 <- result1

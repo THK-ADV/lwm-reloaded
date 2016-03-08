@@ -2,7 +2,7 @@ package store
 
 import java.util.UUID
 
-import models.security.{Authority, RefRole, Roles}
+import models.security.{Authority, RefRole, Role, Roles}
 import models.users.{Employee, Student, User}
 import org.w3.banana.PointedGraph
 import org.w3.banana.binder.ToPG
@@ -13,6 +13,7 @@ import store.sparql.select
 import store.sparql.select._
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
+
 import scala.util.{Failure, Try}
 
 trait Resolvers {
@@ -47,25 +48,31 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   }
 
   override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = {
-    import bindings.RefRoleBinding._
-    def f[Z <: User](entity: Z)(p: RefRole => Boolean)(implicit serialiser: ToPG[Sesame, Z]): Try[PointedGraph[Sesame]] =
+    import bindings.RefRoleBinding.{refRoleBinder, classUri => refRoleClassUri}
+    import bindings.RoleBinding.{roleBinder, classUri => roleClassUri}
+
+    def f[Z <: User](entity: Z)(p: Role => Boolean)(implicit serialiser: ToPG[Sesame, Z]): Try[PointedGraph[Sesame]] =
       for {
-        refroles <- repository.get[RefRole]
-        filtered = refroles.find(p)
-        user <- filtered match {
+        roles <- repository.get[Role](roleBinder, roleClassUri)
+        refroles <- repository.get[RefRole](refRoleBinder, refRoleClassUri)
+        refrole = for {
+          role <- roles.find(p)
+          refrole <- refroles.find(_.role == role.id)
+        } yield refrole
+        user <- refrole match {
           case Some(refRole) =>
             import bindings.AuthorityBinding._
             for {
               user <- repository.add[Z](entity)(serialiser)
               _ <- repository.add[Authority](Authority(v.id, Set(refRole.id)))
             } yield user
-          case _ => Failure(new Throwable("No appropriate RefRole found while resolving user"))
+          case _ => Failure(new Throwable("No appropriate RefRole or Role found while resolving user"))
         }
       } yield user
 
     v match {
-      case s: Student => f(s)(_.role == Roles.student.id)(bindings.StudentBinding.studentBinder)
-      case e: Employee => f(e)(_.role == Roles.employee.id)(bindings.EmployeeBinding.employeeBinder)
+      case s: Student => f(s)(_.name == Roles.Student)(bindings.StudentBinding.studentBinder)
+      case e: Employee => f(e)(_.name == Roles.Employee)(bindings.EmployeeBinding.employeeBinder)
     }
   }
 

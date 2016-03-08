@@ -17,6 +17,7 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Try, Failure}
 import LabworkCRUDController._
+import models.security.Permissions._
 
 object LabworkCRUDController {
   val courseAttribute = "course"
@@ -55,15 +56,15 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
     (select ("id") where {
       ^(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
-        ^(v("s"), p(prefixes.semester), o(input.semester)) .
-        ^(v("s"), p(prefixes.course), o(input.course)) .
-        ^(v("s"), p(prefixes.degree), o(input.degree)) .
+        ^(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
+        ^(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
+        ^(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
         ^(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
-    input.semester == output.semester && input.course == output.course && input.degree == output.degree
+    input.label == output.label && input.description == output.description && input.assignmentPlan.entries == output.assignmentPlan.entries
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
@@ -119,5 +120,54 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
         }
       }
     }).map(s => Json.toJson(s))
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(labwork.get)
+    case _ => PartialSecureBlock(god)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, labwork.create)
+    case GetAll => SecureBlock(restrictionId, labwork.getAll)
+    case Update => SecureBlock(restrictionId, labwork.update)
+    case Get => SecureBlock(restrictionId, labwork.get)
+    case Delete => PartialSecureBlock(prime)
+  }
+
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.create(NonSecureBlock)(request)
+  }
+
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    super.createAtomic(NonSecureBlock)(request)
+  }
+
+  def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
+    super.update(labwork, NonSecureBlock)(newRequest)
+  }
+
+  def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
+    super.delete(labwork, NonSecureBlock)(newRequest)
+  }
+
+  def getFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
+    super.get(labwork, NonSecureBlock)(newRequest)
+  }
+
+  def getAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { request =>
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
+    super.getAtomic(labwork, NonSecureBlock)(newRequest)
+  }
+
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.all(NonSecureBlock)(request)
+  }
+
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    super.allAtomic(NonSecureBlock)(request)
   }
 }

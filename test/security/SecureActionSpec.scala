@@ -69,10 +69,11 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
       val auth = Authority(userId, Set(module1UserRole1.id))
-      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(true))
 
-      val action = SecureAction((Some(module1), sufficientPermissions)) {
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(true))
+
+      val action = SecureAction((Some(module1), sufficientPermissions.head)) {
         req => Results.Ok("Passed")
       }
 
@@ -80,16 +81,17 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
       val result = call(action, request)
 
-      status(result) should be(OK)
-      contentAsString(result) should be("Passed")
+      status(result) shouldBe OK
+      contentAsString(result) shouldBe "Passed"
     }
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
       val auth = Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())
-      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(false))
 
-      val action = SecureAction((Some(module1), sufficientPermissions)) {
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
+
+      val action = SecureAction((Some(module1), sufficientPermissions.head)) {
         req => Results.Ok("Passed")
       }
 
@@ -97,16 +99,17 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
       val result = call(action, request)
 
-      status(result) should be(UNAUTHORIZED)
-      contentAsJson(result) should be(failedResponse)
+      status(result) shouldBe UNAUTHORIZED
+      contentAsJson(result) shouldBe failedResponse
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
       val auth = Authority(userId, Set(module2UserRole2.id), UUID.randomUUID())
-      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions))(auth)).thenReturn(Success(false))
 
-      val action = SecureAction((Some(module1), sufficientPermissions)) {
+      when(roleService.authorityFor(anyString())).thenReturn(Success(Some(auth)))
+      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
+
+      val action = SecureAction((Some(module1), sufficientPermissions.head)) {
         req => Results.Ok("Passed")
       }
 
@@ -114,8 +117,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
       val result = call(action, request)
 
-      status(result) should be(UNAUTHORIZED)
-      contentAsJson(result) should be(failedResponse)
+      status(result) shouldBe UNAUTHORIZED
+      contentAsJson(result) shouldBe failedResponse
     }
 
     "parse content types securely" in new WithDepsApplication {
@@ -148,8 +151,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
       val result = call(action, request)
 
-      status(result) should be(OK)
-      contentAsString(result) should be("Passed")
+      status(result) shouldBe OK
+      contentAsString(result) shouldBe "Passed"
     }
   }
 }

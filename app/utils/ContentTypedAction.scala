@@ -27,21 +27,17 @@ object LWMActions {
       securedAction(predicate)(roleService)(block)
     }
 
-    def apply(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth))(roleService)(block)
+    def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService)(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
       securedAction(predicate)(roleService).async(block)
     }
 
-    def async(ps: (Option[UUID], Set[Permission]))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth))(roleService).async(block)
+    def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService).async(block)
     }
-
-
   }
 
   object SecureContentTypedAction {
@@ -50,28 +46,23 @@ object LWMActions {
       securedAction(predicate)(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def apply(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
+    def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async()(predicate: Authority => Try[Boolean])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
       securedAction(predicate)(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async(ps: (Option[UUID], Set[Permission]))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth =>
-        roleService.checkWith(ps)(userAuth))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
+    def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
     }
-
   }
 
   final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
 }
 
-
 case class AuthRequest[A](private val unwrapped: Request[A], authority: Authority) extends WrappedRequest[A](unwrapped)
-
 
 case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[AuthRequest] {
 
@@ -91,7 +82,6 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
     }
   }
 }
-
 
 case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthRequest] {
 

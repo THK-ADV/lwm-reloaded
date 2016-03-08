@@ -2,11 +2,13 @@ package controllers.crud
 
 import java.util.UUID
 
+import models.security.{Authority, RefRole, Role, Roles}
 import models.users.{Employee, User}
 import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.openrdf.model.Value
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.http.HeaderNames
@@ -24,9 +26,13 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1, Course.randomUUID)
 
-  override val controller: AbstractCRUDController[CourseProtocol, Course] = new CourseCRUDController(repository, namespace, roleService) {
+  override val controller: CourseCRUDController = new CourseCRUDController(repository, namespace, roleService) {
 
     override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
+
+    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+      case _ => NonSecureBlock
+    }
   }
 
   override val entityToFail: Course = Course("label to fail", "description to fail", "abbreviation to fail", lecturerToFail.id, 1, Course.randomUUID)
@@ -345,6 +351,65 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
         "status" -> "KO",
         "errors" -> errorMessage
       )
+    }
+
+    "create a course whilst also creating its respective security models" in {
+      def role(r: String) = Role(r, Set.empty)
+
+      implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
+      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+      val roles = Set(role(Roles.RightsManager), role(Roles.CourseEmployee), role(Roles.CourseManager), role(Roles.CourseAssistant))
+      val refrole = RefRole(None, roles.head.id)
+      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
+      val auth = Authority.empty
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
+      when(repository.get[Role](anyObject(), anyObject())).thenReturn(Success(roles))
+      when(roleService.authorityFor(anyObject())).thenReturn(Success(Some(auth)))
+      when(repository.get[RefRole](anyObject())(anyObject())).thenReturn(Success(Some(refrole)))
+      when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
+      when(repository.addMany[RefRole](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(dummyGraph))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}sWithRights",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson(course)
+      )
+
+      val result = controller.createWithRoles()(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some(mimeType.value)
+    }
+
+
+    "stop the creation when the appropriate roles haven't been found" in {
+      def role(r: String) = Role(r, Set.empty)
+
+      implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
+      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+      val roles = Set.empty[Role]
+      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      when(repository.get[Role](anyObject(), anyObject())).thenReturn(Success(roles))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}sWithRights",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson(course)
+      )
+
+      val result = controller.createWithRoles()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
     }
   }
 }

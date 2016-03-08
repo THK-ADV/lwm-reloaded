@@ -47,7 +47,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
   private[store] def reset(): Try[Unit]
 }
 
-object SesameRepository {
+object  SesameRepository {
 
   def apply(folder: File, syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(Some(folder), syncInterval, baseNS)
 

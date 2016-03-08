@@ -11,7 +11,7 @@ import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
-
+import security.Permissions
 import scala.util.{Failure, Success}
 
 class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -92,8 +92,11 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       import bindings.RefRoleBinding._
 
       val user = UUID.randomUUID()
-      val refrole1 = RefRole(None, Roles.employee.id)
-      val refrole2 = RefRole(Some(UUID.randomUUID()), Roles.student.id)
+      val employeeRole = Role("Employee", Permissions.course.all)
+      val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
+
+      val refrole1 = RefRole(None, employeeRole.id)
+      val refrole2 = RefRole(Some(UUID.randomUUID()), studentRole.id)
       val auth = Authority(user, Set(refrole1.id, refrole2.id))
 
       repo.addMany[RefRole](List(refrole1, refrole2))
