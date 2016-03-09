@@ -18,7 +18,9 @@ import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
+
 case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
+
 case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID)
 
 trait ScheduleServiceLike {
@@ -89,7 +91,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
   override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val pop = population(300, timetable, assignmentPlan, groups)
 
-    implicit val evalF = evaluation(competitive, assignmentPlan.numberOfEntries)
+    implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
     implicit val mutateF = (mutate, mutateDestructive)
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._

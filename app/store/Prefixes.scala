@@ -1,5 +1,6 @@
 package store
 
+import models.AssignmentEntryType
 import org.w3.banana.{RDF, RDFOps}
 
 object Prefixes {
@@ -13,7 +14,7 @@ object Prefixes {
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room, Semster
+    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry
     val label = apply("label")
 
     // Labwork, LabworkApplication, Room, Degree, TimetableEntry
@@ -44,7 +45,13 @@ object Prefixes {
     val duration = apply("duration")
     val types = apply("types")
     val entries = apply("entries")
-    val numberOfEntries = apply("numberOfEntries")
+    val attendance = apply("attendance")
+    val mandatory = apply("mandatory")
+
+    // AssignmentPlanEntry
+    val entryType = apply("entryType")
+    val bool = apply("bool")
+    val int = apply("int")
 
     // Blacklist
     val dates = apply("dates")
@@ -93,6 +100,7 @@ object Prefixes {
     val Authority = apply("Authority")
     val AssignmentPlan = apply("AssignmentPlan")
     val AssignmentEntry = apply("AssignmentEntry")
+    val AssignmentEntryType = apply("AssignmentEntryType")
     val LabworkApplication = apply("LabworkApplication")
     val Timetable = apply("Timetable")
     val TimetableEntry = apply("TimetableEntry")

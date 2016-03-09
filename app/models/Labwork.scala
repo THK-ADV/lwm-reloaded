@@ -8,7 +8,7 @@ import play.api.libs.json.{Json, Reads, Writes}
 
 case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan, id: UUID = Labwork.randomUUID) extends UniqueEntity
 
-case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlanProtocol)
+case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan)
 
 case class LabworkAtom(label: String, description: String, semester: Semester, course: Course, degree: Degree, assignmentPlan: AssignmentPlan, id: UUID)
 

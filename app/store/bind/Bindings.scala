@@ -67,7 +67,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
-
     // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
     override def toPG(t: LocalDate): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
@@ -81,7 +80,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   implicit val jodaLocalTimeBinder = new PGBinder[Rdf, LocalTime] {
-
     // LocalTime.toString formats to ISO8601 (yyyy-MM-dd)
     override def toPG(t: LocalTime): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.toString(), lwm.localTime))
@@ -101,16 +99,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[Permission] = {
       pointed.pointer.as[String].map(Permission.apply)
-    }
-  }
-
-  implicit val entryTypeBinder = new PGBinder[Rdf, EntryType] {
-    override def toPG(t: EntryType): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.value, xsd.string))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[EntryType] = {
-      pointed.pointer.as[String].map(EntryType.apply)
     }
   }
 
@@ -187,26 +175,39 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val authorityBinder = pgbWithId[Authority](auth => makeUri(Authority.generateUri(auth)))(privileged, refroles, id)(Authority.apply, Authority.unapply) withClasses classUri
   }
 
+  object AssignmentEntryTypeBinding {
+    implicit val clazz = lwm.AssignmentEntryType
+    implicit val classUri = classUrisFor[AssignmentEntryType](clazz)
+
+    private val entryType = property[String](lwm.entryType)
+    private val bool = property[Boolean](lwm.bool)
+    private val int = property[Int](lwm.int)
+
+    implicit val assignmentEntryTypeBinder = pgbWithId[AssignmentEntryType](aEntryType => makeUri(AssignmentEntryType.generateUri(aEntryType)))(entryType, bool, int, id)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
+  }
+
+
   object AssignmentEntryBinding {
     implicit val clazz = lwm.AssignmentEntry
     implicit val classUri = classUrisFor[AssignmentEntry](clazz)
 
     private val index = property[Int](lwm.index)
+    private val label = property[String](lwm.label)
     private val duration = property[Int](lwm.duration)
-    private val types = set[EntryType](lwm.types)
+    private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
 
-    implicit val assignmentEntryBinder = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, types, duration, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
+    implicit val assignmentEntryBinder = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, label, types, duration, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
   }
-
 
   object AssignmentPlanBinding {
     implicit val clazz = lwm.AssignmentPlan
     implicit val classUri = classUrisFor[AssignmentPlan](clazz)
 
-    private val numberOfEntries = property[Int](lwm.numberOfEntries)
+    private val attendance = property[Int](lwm.attendance)
+    private val mandatory = property[Int](lwm.mandatory)
     private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryBinding.assignmentEntryBinder)
 
-    implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(numberOfEntries, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
+    implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(attendance, mandatory, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
   }
 
   object LabworkBinding {
@@ -252,7 +253,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val label = property[String](lwm.label)
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
-    private val members = set[UUID](lwm.members)((uuidRefBinder(Student.splitter)))
+    private val members = set[UUID](lwm.members)(uuidRefBinder(Student.splitter))
 
     implicit val groupBinder = pgbWithId[Group](group => makeUri(Group.generateUri(group)))(label, labwork, members, id)(Group.apply, Group.unapply) withClasses classUri
   }

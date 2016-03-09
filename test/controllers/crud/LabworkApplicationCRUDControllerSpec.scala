@@ -84,8 +84,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   "A LabworkApplicationCRUDControllerSpec" should {
 
     "return the corresponding labworkApplication for a given labwork" in {
-      val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
 
       val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
       val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -110,8 +109,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "return all corresponding applications for a given labwork" in {
-    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
 
     val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -135,8 +133,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "not return applications for a labwork when there is no match" in {
-    val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan, Labwork.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))

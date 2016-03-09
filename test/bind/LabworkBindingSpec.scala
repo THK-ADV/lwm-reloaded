@@ -1,13 +1,13 @@
 package bind
 
 import base.SesameDbSpec
-import models._
+import models.{AssignmentPlan, AssignmentEntry, Labwork, Course, Degree}
 import models.semester.Semester
 import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-
+import models.AssignmentEntryType._
 import scala.util.{Failure, Success}
 
 class LabworkBindingSpec extends SesameDbSpec {
@@ -21,16 +21,13 @@ class LabworkBindingSpec extends SesameDbSpec {
   import bindings.LabworkBinding._
   import bindings.AssignmentPlanBinding._
   import bindings.AssignmentEntryBinding._
+  import bindings.AssignmentEntryTypeBinding._
   import bindings.uuidBinder
-  import bindings.entryTypeBinder
   import bindings.uuidRefBinder
 
-  val mandatoryT = EntryType("Mandatory")
-  val optionalT = EntryType("Optional")
-
-  val assignmentPlan = AssignmentPlan(2, Set(
-    AssignmentEntry(0, Set(mandatoryT, optionalT)),
-    AssignmentEntry(1, Set(optionalT))
+  val assignmentPlan = AssignmentPlan(2, 2, Set(
+    AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
+    AssignmentEntry(1, "label 2", Set(Attendance, Bonus))
   ))
 
   val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, assignmentPlan, Labwork.randomUUID)

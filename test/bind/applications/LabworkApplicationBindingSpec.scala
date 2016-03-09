@@ -4,7 +4,6 @@ import base.SesameDbSpec
 import models.Labwork
 import models.applications.LabworkApplication
 import models.users.Student
-import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.bind.Bindings

@@ -2,6 +2,9 @@ package controllers.crud.schedule
 
 import java.util.UUID
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import models.Attendance
+import models.Bonus
+import models.Certificate
 import models._
 import models.schedule._
 import models.semester.{Blacklist, Semester}
@@ -116,14 +119,18 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]
+  val emptyPlan = AssignmentPlan.empty
+  val assignmentPlan = AssignmentPlan(2, 2, Set(
+    AssignmentEntry(0, "label 1", Set(AssignmentEntryType.Attendance, AssignmentEntryType.Certificate)),
+    AssignmentEntry(1, "label 2", Set(AssignmentEntryType.Attendance, AssignmentEntryType.Bonus))
+  ))
 
   "A ScheduleCRUDController also" should {
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
       val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val course = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-      val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, assignmentPlan)
+      val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, emptyPlan)
 
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
 
@@ -140,10 +147,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val course2 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course3 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val assignmentPlan = AssignmentPlan(2, Set.empty[AssignmentEntry])
-      val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, assignmentPlan)
-      val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID, assignmentPlan)
-      val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID, assignmentPlan)
+      val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, emptyPlan)
+      val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID, emptyPlan)
+      val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID, emptyPlan)
 
       val groups = (0 until 3).map(n => Group(n.toString, Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
 
@@ -172,11 +178,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully when there are no competitive schedules" in {
-      val plan = AssignmentPlan(2, Set(
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType])
-      ))
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -212,11 +214,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully although there are competitive schedules" in {
-      val plan = AssignmentPlan(2, Set(
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType])
-      ))
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -254,11 +252,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully where conflicts are found" in {
-      val plan = AssignmentPlan(2, Set(
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType])
-      ))
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -302,8 +296,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when assignment plan is empty" in {
-      val plan = AssignmentPlan(0, Set.empty[AssignmentEntry])
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), emptyPlan)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -338,11 +331,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when timetable is empty" in {
-      val plan = AssignmentPlan(2, Set(
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType])
-      ))
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
       val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
@@ -375,11 +364,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when groups are empty" in {
-      val plan = AssignmentPlan(2, Set(
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType])
-      ))
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)

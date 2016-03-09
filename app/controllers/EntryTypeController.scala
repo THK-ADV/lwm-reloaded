@@ -1,10 +1,10 @@
 package controllers
 
-import controllers.crud.{JsonSerialisation, SecureControllerContext, Secured, ContentTyped}
-import models.{EntryType, EntryTypes}
+import controllers.crud.{SecureControllerContext, Secured, ContentTyped}
+import models.AssignmentEntryType
 import models.security.Permissions
 import modules.store.BaseNamespace
-import play.api.libs.json.{Reads, Writes, Json}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import services.RoleService
 import store.{Namespace, SesameRepository}
@@ -13,20 +13,17 @@ import utils.LwmMimeType._
 import models.security.Permissions._
 
 class EntryTypeController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
-with JsonSerialisation[EntryType, EntryType]
 with ContentTyped
 with BaseNamespace
 with Secured
 with SecureControllerContext {
 
-  override implicit def reads: Reads[EntryType] = EntryType.reads
-
-  override implicit def writes: Writes[EntryType] = EntryType.writes
-
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
-    Ok(Json.toJson(EntryTypes.types)).as(mimeType)
+    import AssignmentEntryType._
+
+    Ok(Json.toJson(AssignmentEntryType.all)).as(mimeType)
   }
 
   def header() = Action { implicit request =>

@@ -3,56 +3,60 @@ package models
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 
-case class AssignmentPlan(numberOfEntries: Int, entries: Set[AssignmentEntry], id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
+case class AssignmentPlan(attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
 
-case class AssignmentPlanProtocol(numberOfEntries: Int, entries: Set[AssignmentEntry])
+case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntryType], duration: Int = 1, id: UUID = AssignmentEntry.randomUUID) extends UniqueEntity
 
-case class AssignmentEntry(index: Int, types: Set[EntryType], duration: Int = 1, id: UUID = AssignmentEntry.randomUUID) extends UniqueEntity
+case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = AssignmentEntryType.randomUUID) extends UniqueEntity
 
-case class AssignmentEntryProtocol(index: Int, types: Set[EntryType], duration: Int = 1)
+sealed trait EntryType
 
-case class EntryType(value: String)
+case class Attendance(present: Boolean = false) extends EntryType
 
-object EntryTypes {
+case class Certificate(done: Boolean = false) extends EntryType
 
-  val types = Vector()
-}
+case class Bonus(points: Int = 0) extends EntryType
 
-object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlanProtocol, AssignmentPlan] {
-  import AssignmentEntry._
+case class Supplement(done: Boolean = false) extends EntryType
 
-  val empty = AssignmentPlan(0, Set.empty[AssignmentEntry])
+object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlan, AssignmentPlan] {
 
-  override def base: String = "assignmentPlans"
+  val empty = AssignmentPlan(0, 0, Set.empty[AssignmentEntry])
 
-  override implicit def reads: Reads[AssignmentPlanProtocol] = Json.reads[AssignmentPlanProtocol]
+  override implicit def reads: Reads[AssignmentPlan] = Json.reads[AssignmentPlan]
 
   override implicit def writes: Writes[AssignmentPlan] = Json.writes[AssignmentPlan]
 
   implicit def format: Format[AssignmentPlan] = Json.format[AssignmentPlan]
 
-  implicit def formatProtocol: Format[AssignmentPlanProtocol] = Json.format[AssignmentPlanProtocol]
+  override def base: String = "assignmentPlans"
 }
 
-object AssignmentEntry extends UriGenerator[AssignmentEntry] with JsonSerialisation[AssignmentEntryProtocol, AssignmentEntry] {
-  import EntryType._
+object AssignmentEntry extends UriGenerator[AssignmentEntry] with JsonSerialisation[AssignmentEntry, AssignmentEntry] {
 
-  override def base: String = "assignmentEntries"
-
-  override implicit def reads: Reads[AssignmentEntryProtocol] = Json.reads[AssignmentEntryProtocol]
+  override implicit def reads: Reads[AssignmentEntry] = Json.reads[AssignmentEntry]
 
   override implicit def writes: Writes[AssignmentEntry] = Json.writes[AssignmentEntry]
 
   implicit def format: Format[AssignmentEntry] = Json.format[AssignmentEntry]
+
+  override def base: String = "assignmentEntries"
 }
 
-object EntryType extends JsonSerialisation[EntryType, EntryType] {
+object AssignmentEntryType extends UriGenerator[AssignmentEntryType] with JsonSerialisation[AssignmentEntryType, AssignmentEntryType] {
 
-  implicit def format: Format[EntryType] = Json.format[EntryType]
+  lazy val Attendance = AssignmentEntryType("Anwesenheitspflichtig")
+  lazy val Certificate = AssignmentEntryType("Testat")
+  lazy val Bonus = AssignmentEntryType("Bonus")
+  lazy val Supplement = AssignmentEntryType("Zusatzleistung")
 
-  override implicit def reads: Reads[EntryType] = Json.reads[EntryType]
+  lazy val all = List(Attendance, Certificate, Bonus, Supplement)
 
-  override implicit def writes: Writes[EntryType] = Json.writes[EntryType]
+  override implicit def reads: Reads[AssignmentEntryType] = Json.reads[AssignmentEntryType]
+
+  override implicit def writes: Writes[AssignmentEntryType] = Json.writes[AssignmentEntryType]
+
+  override def base: String = "assignmentEntryTypes"
 }

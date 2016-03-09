@@ -83,8 +83,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   "A GroupCRUDController also" should {
 
     "return the corresponding group for a given labwork" in {
-      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", labwork.id, Set.empty[UUID])
@@ -108,8 +107,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "return all corresponding groups for a given labwork" in {
-      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -133,8 +131,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "not return groups for a labwork when there is no match" in {
-      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -158,8 +155,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "not return groups when there is an invalid query attribute" in {
-      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -188,8 +184,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "not return groups when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val plan = AssignmentPlan(1, Set.empty[AssignmentEntry], AssignmentPlan.randomUUID)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])

@@ -1,12 +1,12 @@
 package bind
 
 import base.SesameDbSpec
-import models._
+import models.{AssignmentPlan, AssignmentEntry, AssignmentEntryType}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
 import store.bind.Bindings
-
+import models.AssignmentEntryType._
 import scala.util.{Failure, Success}
 
 class AssignmentPlanBindingSpec extends SesameDbSpec {
@@ -17,22 +17,20 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](ns)
   import bindings.AssignmentPlanBinding._
   import bindings.AssignmentEntryBinding._
+  import bindings.AssignmentEntryTypeBinding._
   import bindings.uuidBinder
-  import bindings.entryTypeBinder
 
-  val mandatoryT = EntryType("Mandatory")
-  val optionalT = EntryType("Optional")
-
-  val assignmentPlan = AssignmentPlan(2, Set(
-    AssignmentEntry(0, Set(mandatoryT, optionalT)),
-    AssignmentEntry(1, Set(optionalT))
+  val assignmentPlan = AssignmentPlan(2, 2, Set(
+    AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
+    AssignmentEntry(1, "label 2", Set(Attendance, Bonus))
   ))
 
-  val assignmentEntry = AssignmentEntry(0, Set(mandatoryT, optionalT))
+  val assignmentEntry = assignmentPlan.entries.head
 
   val assignmentPlanGraph = (
     URI(AssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
-      -- lwm.numberOfEntries ->- assignmentPlan.numberOfEntries
+      -- lwm.attendance ->- assignmentPlan.attendance
+      -- lwm.mandatory ->- assignmentPlan.mandatory
       -- lwm.entries ->- assignmentPlan.entries
       -- lwm.id ->- assignmentPlan.id
     ).graph
@@ -40,6 +38,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   val assignmentEntryGraph = (
     URI(AssignmentEntry.generateUri(assignmentEntry)).a(lwm.AssignmentEntry)
       -- lwm.index ->- assignmentEntry.index
+      -- lwm.label ->- assignmentEntry.label
       -- lwm.types ->- assignmentEntry.types
       -- lwm.duration ->- assignmentEntry.duration
       -- lwm.id ->- assignmentEntry.id

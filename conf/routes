@@ -195,6 +195,8 @@ HEAD          /sessions                                        controllers.Sessi
 # APIData
 GET           /api/populate                                    controllers.ApiDataController.populate
 GET           /api/added                                       controllers.ApiDataController.getAdded
+GET           /api/aps                                         controllers.ApiDataController.aps
+GET           /api/apAp                                        controllers.ApiDataController.apAp
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                    controllers.Assets.at(path="/public", file)

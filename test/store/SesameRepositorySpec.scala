@@ -124,8 +124,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       import bindings.LabworkBinding._
 
       val applicant = UUID.randomUUID()
-      val plan = AssignmentPlan(0, Set.empty[AssignmentEntry])
-      val lab = Labwork("Labwork", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val lab = Labwork("Labwork", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
       val application = LabworkApplication(lab.id, applicant, Set.empty)
 
       repo.add(lab)

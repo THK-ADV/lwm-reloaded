@@ -1,7 +1,7 @@
 package controllers
 
 import base.TestBaseDefinition
-import models.{EntryType, EntryTypes}
+import models.{AssignmentEntryType, AssignmentEntryType$}
 import org.scalatest.WordSpec
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Request, Result}
@@ -14,7 +14,7 @@ import utils.{LwmMimeType, DefaultLwmApplication}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
-import EntryType._
+import AssignmentEntryType._
 import play.api.test.Helpers._
 import utils.LWMActions.ContentTypedAction
 
@@ -35,7 +35,7 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
   "An EntryTypeController" should {
 
     "return all EntryTypes" in {
-      val expectedEntryType = EntryTypes.types
+      val expectedEntryType = AssignmentEntryType.all
 
       val request = FakeRequest(
         GET,

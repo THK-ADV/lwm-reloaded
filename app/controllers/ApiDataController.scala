@@ -1,10 +1,9 @@
 package controllers
 
-import models.{AssignmentEntry, AssignmentPlan, Course, Degree, EntryType, Labwork, Room}
+import models._
 import models.applications.LabworkApplication
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
-import models.security.Permissions._
 import models.semester.Semester
 import models.users.{Employee, Student}
 import org.joda.time.LocalDate
@@ -19,6 +18,7 @@ import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
 object ApiDataController {
+  import models.security.Permissions._
   val mvRole = Role(CourseManager,
     labwork.all ++ schedule.all ++ timetable.all ++ group.all + course.update
   )
@@ -84,29 +84,49 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val christianStudent = Student.randomUUID
 
   val ap1Plan = {
+    import models.AssignmentEntryType._
+
     val amount = 8
-    val entries = (0 until amount).map(n => AssignmentEntry(n, Set(EntryType("mandatory")))).toSet
-    AssignmentPlan(amount, entries)
+    val entries = Set(
+      AssignmentEntry(0, "Einführung", Set(Attendance)),
+      AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
+      AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
+      AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
+      AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
+      AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
+      AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
+      AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
+
+    )
+    AssignmentPlan(amount, amount - 1, entries)
   }
   val ap2Plan = {
-    val amount = 8
-    val entries = (0 until amount).map(n => AssignmentEntry(n, Set(EntryType("mandatory")))).toSet
-    AssignmentPlan(amount, entries)
+    import models.AssignmentEntryType._
+
+    val amount = 6
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
+    AssignmentPlan(amount, amount, entries)
   }
   val ma1Plan = {
+    import models.AssignmentEntryType._
+
     val amount = 4
-    val entries = (0 until amount).map(n => AssignmentEntry(n, Set(EntryType("mandatory")))).toSet
-    AssignmentPlan(amount, entries)
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
+    AssignmentPlan(amount, amount, entries)
   }
   val ma2Plan = {
+    import models.AssignmentEntryType._
+
     val amount = 4
-    val entries = (0 until amount).map(n => AssignmentEntry(n, Set(EntryType("mandatory")))).toSet
-    AssignmentPlan(amount, entries)
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
+    AssignmentPlan(amount, amount, entries)
   }
   val cgaPlan = {
+    import models.AssignmentEntryType._
+
     val amount = 6
-    val entries = (0 until amount).map(n => AssignmentEntry(n, Set(EntryType("mandatory")))).toSet
-    AssignmentPlan(amount, entries)
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Certificate))).toSet
+    AssignmentPlan(amount, amount, entries)
   }
 
   def populate = Action { request =>
@@ -129,6 +149,23 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       case Success(g) => Ok("Graph created")
       case Failure(e) => InternalServerError(e.getMessage)
     }
+  }
+
+  def aps = Action { request =>
+    import bindings.AssignmentPlanBinding._
+    import AssignmentPlan._
+
+    repository.get[AssignmentPlan](assignmentPlanBinder, classUri) match {
+      case Success(ap) => Ok(Json.toJson(ap))
+      case Failure(e) => InternalServerError(e.getMessage)
+    }
+  }
+
+  def apAp = Action { request =>
+    import AssignmentPlan._
+    import AssignmentEntryType._
+
+    Ok(Json.toJson(ap1Plan))
   }
 
   def getAdded = Action { request =>

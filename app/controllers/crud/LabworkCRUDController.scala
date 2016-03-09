@@ -39,13 +39,9 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
-  override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = {
-    val plan = AssignmentPlan(input.assignmentPlan.numberOfEntries, input.assignmentPlan.entries, AssignmentPlan.randomUUID)
-
-    id match {
-      case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, plan, uuid)
-      case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, plan, Labwork.randomUUID)
-    }
+  override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = id match {
+    case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, uuid)
+    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, Labwork.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
