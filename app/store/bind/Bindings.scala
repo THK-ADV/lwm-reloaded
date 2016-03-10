@@ -7,7 +7,7 @@ import models.applications.LabworkApplication
 import models.schedule._
 import models.security._
 import models.semester.{Blacklist, Semester}
-import models.users.{Employee, Student, StudentProtocol, User}
+import models.users.{Employee, Student, User}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
@@ -104,6 +104,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
+
   implicit val entryTypeBinder = new PGBinder[Rdf, EntryType] {
     override def toPG(t: EntryType): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.value, xsd.string))
@@ -115,6 +116,25 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   val id = property[UUID](lwm.id)
+
+  object UserBinding {
+    val clazz = lwm.User
+    val classUri = classUrisFor[User](clazz)
+
+    implicit val userBinder: PGBinder[Rdf, User] = new PGBinder[Rdf, User] {
+      import StudentBinding._
+      import EmployeeBinding._
+
+      override def fromPG(pointed: PointedGraph[Rdf]): Try[User] = {
+        studentBinder.fromPG(pointed) orElse employeeBinder.fromPG(pointed)
+      }
+
+      override def toPG(t: User): PointedGraph[Rdf] = t match {
+        case s: Student => s.toPG(studentBinder)
+        case e: Employee => e.toPG(employeeBinder)
+      }
+    }
+  }
 
   object LabworkApplicationBinding {
     implicit val clazz = lwm.LabworkApplication
@@ -140,7 +160,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val enrollment = property[UUID](lwm.enrollment)(uuidRefBinder(Degree.splitter))
     private val email = property[String](lwm.email)
 
-    implicit val studentBinder = pgbWithId[Student](student => makeUri(Student.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, id)(Student.apply, Student.unapply) withClasses classUri
+    implicit val studentBinder: PGBinder[Rdf, Student] = pgbWithId[Student](student => makeUri(Student.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, id)(Student.apply, Student.unapply) withClasses classUri
   }
 
   object EmployeeBinding {
@@ -151,8 +171,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val firstname = property[String](lwm.firstname)
     private val systemId = property[String](lwm.systemId)
     private val email = property[String](lwm.email)
+    private val status = property[String](lwm.status)
 
-    implicit val employeeBinder = pgbWithId[Employee](employee => makeUri(Employee.generateUri(employee)))(systemId, lastname, firstname, email, id)(Employee.apply, Employee.unapply) withClasses classUri
+    implicit val employeeBinder: PGBinder[Rdf, Employee] = pgbWithId[Employee](employee => makeUri(Employee.generateUri(employee)))(systemId, lastname, firstname, email, status, id)(Employee.apply, Employee.unapply) withClasses classUri
   }
 
   object RoleBinding {

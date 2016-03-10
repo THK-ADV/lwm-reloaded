@@ -187,7 +187,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
-  def people = List(Employee("ai1818", "Wurst", "Hans", "", Employee.randomUUID))
+  def people = List(Employee("ai1818", "Wurst", "Hans", "", "employee", Employee.randomUUID))
 
   def authorities = {
     import bindings.AuthorityBinding._
@@ -246,12 +246,12 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.EmployeeBinding._
 
     List(
-      Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", konen),
-      Employee("leopold", "leopold", "edda", "edda.leopold@fh-koeln.de", leopold),
-      Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", schmitter),
-      Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", victor),
-      Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", eisemann),
-      Employee("kohls", "kohls", "christian", "christian.kohls@fh-koeln.de", kohls)
+      Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", konen),
+      Employee("leopold", "leopold", "edda", "edda.leopold@fh-koeln.de", "lecturer", leopold),
+      Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", "lecturer", schmitter),
+      Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", "lecturer", victor),
+      Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", "lecturer", eisemann),
+      Employee("kohls", "kohls", "christian", "christian.kohls@fh-koeln.de", "lecturer", kohls)
     ).map(repository.add[Employee])
   }
 

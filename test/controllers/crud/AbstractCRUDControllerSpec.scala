@@ -1,7 +1,6 @@
 package controllers.crud
 
 import base.TestBaseDefinition
-import controllers.crud.schedule.{ScheduleCRUDController, TimetableCRUDController}
 import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -11,17 +10,15 @@ import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.{Sesame, SesameModule}
-import play.api.ApplicationLoader.Context
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
-import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
-import play.api.{Application, ApplicationLoader}
+import play.api.test.{FakeHeaders, FakeRequest}
 import services.{GroupService, RoleService, TimetableService}
 import store.bind.Bindings
 import store.sparql.{Initial, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
-import utils.{DefaultLwmApplication, LwmMimeType}
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 

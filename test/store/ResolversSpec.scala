@@ -75,7 +75,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
     "resolve a student, employee and their authorities when non-existent" in {
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", "status", Employee.randomUUID)
 
       val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
       val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
@@ -148,7 +148,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       import bindings.EmployeeBinding._
       import ops._
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", "status", Employee.randomUUID)
 
       val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
       val refrole1 = RefRole(None, employeeRole.id)

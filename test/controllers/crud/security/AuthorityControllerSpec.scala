@@ -30,7 +30,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   }
 
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
-  val employeeToFail =  Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+  val employeeToFail =  Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail", Employee.randomUUID)
 
   val refRolesToPass = Set(
     RefRole(None, UUID.randomUUID()),

@@ -17,13 +17,14 @@ class EmployeeBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.EmployeeBinding._
 
-  val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", Employee.randomUUID)
+  val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", "employee", Employee.randomUUID)
   val employeeGraph = (
     URI(Employee.generateUri(employee)).a(lwm.Employee)
       -- lwm.systemId ->- employee.systemId
       -- lwm.lastname ->- employee.lastname
       -- lwm.firstname ->- employee.firstname
       -- lwm.email ->- employee.email
+      -- lwm.status ->- employee.status
       -- lwm.id ->- employee.id
     ).graph
 

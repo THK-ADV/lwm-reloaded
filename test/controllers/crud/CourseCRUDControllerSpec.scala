@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.security.{Authority, RefRole, Role, Roles}
-import models.users.{Employee, User}
+import models.users.Employee
 import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
@@ -16,13 +16,12 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
-
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
-  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", Employee.randomUUID)
-  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass", Employee.randomUUID)
+  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail", Employee.randomUUID)
 
   override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1, Course.randomUUID)
 
@@ -84,7 +83,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   "A CourseCRUDControllerSpec also " should {
     "return the corresponding course for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status", Employee.randomUUID)
 
       val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
       val second = Course("label2", "desc2", "abbreviation2", lecturer.id, 1, Course.randomUUID)
@@ -108,7 +107,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "return all corresponding courses for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status", Employee.randomUUID)
 
       val first = Course("label1", "desc1", "abbreviation1", lecturer.id, 1, Course.randomUUID)
       val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)
@@ -132,7 +131,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses for a lecturer when there is no match" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status", Employee.randomUUID)
 
       val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
       val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)

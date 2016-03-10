@@ -54,13 +54,12 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
 
       val request = FakeRequest(
         GET,
-        s"/students"
+        "/students"
       ).withSession(SessionController.userId -> FakeEmployee.toString)
 
       val result = route(request).get
 
-      status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Student])
+      status(result) shouldBe NOT_FOUND
     }
 
     "Allow non restricted context invocations when student wants to get a single student" in new FakeApplication() {
@@ -85,34 +84,6 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         GET,
         s"/students"
       ).withSession(SessionController.userId -> FakeStudent.toString)
-
-      val result = route(request).get
-
-      status(result) shouldBe UNAUTHORIZED
-    }
-
-    "Block non restricted context invocations when admin wants to delete a student" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, god))(FakeAdminAuth)).thenReturn(Success(false))
-
-      val request = FakeRequest(
-        DELETE,
-        s"/students/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
-
-      val result = route(request).get
-
-      status(result) shouldBe UNAUTHORIZED
-    }
-
-    "Block non restricted context invocations when employee wants to delete a student" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
-      when(roleService.checkWith((None, god))(FakeEmployeeAuth)).thenReturn(Success(false))
-
-      val request = FakeRequest(
-        DELETE,
-        s"/students/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
 
       val result = route(request).get
 

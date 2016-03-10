@@ -6,7 +6,6 @@ import modules.schedule._
 import modules.security._
 import modules.semester._
 import modules.store._
-import modules.user.{DefaultEmployeeManagementModuleImpl, EmployeeManagementModule, DefaultStudentManagementModuleImpl, StudentManagementModule}
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router
@@ -44,13 +43,11 @@ with HomepageModule
 with SemanticRepositoryModule
 with DegreeManagementModule
 with CourseManagementModule
-with EmployeeManagementModule
 with GroupServiceManagementModule
 with GroupManagementModule
 with LabworkManagementModule
 with RoomManagementModule
 with SemesterManagementModule
-with StudentManagementModule
 with SessionRepositoryModule
 with SecurityManagementModule
 with RoleManagementModule
@@ -71,7 +68,8 @@ with TimetableManagementModule
 with TimetableServiceManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
-with BlacklistServiceManagementModule {
+with BlacklistServiceManagementModule
+with UserManagementModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
@@ -79,13 +77,11 @@ with BlacklistServiceManagementModule {
     homepageController,
     degreeManagementController,
     courseManagementController,
-    employeeManagementController,
     groupManagementController,
     labworkManagementController,
     entryTypeController,
     roomManagementController,
     semesterManagementController,
-    studentManagementController,
     roleManagementController,
     refRoleManagementController,
     authorityManagementController,
@@ -95,6 +91,7 @@ with BlacklistServiceManagementModule {
     timetableManagementController,
     blacklistManagementController,
     sessionController,
+    userController,
     apiDataController,
     assetsController
   )
@@ -107,13 +104,11 @@ with DefaultSemanticRepositoryModuleImpl
 with DefaultHomepageModuleImpl
 with DefaultDegreeManagementModuleImpl
 with DefaultCourseManagementModuleImpl
-with DefaultEmployeeManagementModuleImpl
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
 with DefaultRoomManagementModuleImpl
 with DefaultSemesterManagementModuleImpl
-with DefaultStudentManagementModuleImpl
 with LDAPModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
@@ -135,3 +130,4 @@ with DefaultTimetableServiceManagementModule
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklistServiceManagementModule
+with DefaultUserManagementModule

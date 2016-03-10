@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models.users.Employee
 import models.{Course, CourseAtom, CourseProtocol, UriGenerator}
-import org.w3.banana.{PointedGraph, RDFPrefix}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._

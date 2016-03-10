@@ -28,14 +28,6 @@ GET           /atomic/courses/:id                              controllers.crud.
 DELETE        /courses/:id                                     controllers.crud.CourseCRUDController.delete(id)
 HEAD          /courses                                         controllers.crud.CourseCRUDController.header
 
-# Employee
-POST          /employees                                       controllers.crud.user.EmployeeCRUDController.create()
-PUT           /employees/:id                                   controllers.crud.user.EmployeeCRUDController.update(id)
-GET           /employees                                       controllers.crud.user.EmployeeCRUDController.all()
-GET           /employees/:id                                   controllers.crud.user.EmployeeCRUDController.get(id)
-DELETE        /employees/:id                                   controllers.crud.user.EmployeeCRUDController.delete(id)
-HEAD          /employees                                       controllers.crud.user.EmployeeCRUDController.header
-
 # Group
 GET           /groups/:id                                      controllers.crud.GroupCRUDController.get(id)
 GET           /atomic/groups/:id                               controllers.crud.GroupCRUDController.getAtomic(id)
@@ -89,17 +81,6 @@ GET           /semesters                                       controllers.crud.
 GET           /semesters/:id                                   controllers.crud.semester.SemesterCRUDController.get(id)
 DELETE        /semesters/:id                                   controllers.crud.semester.SemesterCRUDController.delete(id)
 HEAD          /semesters                                       controllers.crud.semester.SemesterCRUDController.header
-
-# Student
-POST          /students                                        controllers.crud.user.StudentCRUDController.create()
-POST          /atomic/students                                 controllers.crud.user.StudentCRUDController.createAtomic()
-PUT           /students/:id                                    controllers.crud.user.StudentCRUDController.update(id)
-GET           /students                                        controllers.crud.user.StudentCRUDController.all()
-GET           /atomic/students                                 controllers.crud.user.StudentCRUDController.allAtomic()
-GET           /students/:id                                    controllers.crud.user.StudentCRUDController.get(id)
-GET           /atomic/students/:id                             controllers.crud.user.StudentCRUDController.getAtomic(id)
-DELETE        /students/:id                                    controllers.crud.user.StudentCRUDController.delete(id)
-HEAD          /students                                        controllers.crud.user.StudentCRUDController.header
 
 #Role
 POST          /roles                                           controllers.security.RoleController.create()
@@ -191,6 +172,18 @@ POST          /sessions                                        controllers.Sessi
 GET           /sessions                                        controllers.SessionController.valid
 DELETE        /sessions                                        controllers.SessionController.logout
 HEAD          /sessions                                        controllers.SessionController.header
+
+# Users
+GET            /users                                          controllers.UserController.all()
+GET            /users/:id                                      controllers.UserController.get(id)
+GET            /atomic/users                                   controllers.UserController.allAtomic()
+GET            /atomic/users/:id                               controllers.UserController.getAtomic(id)
+GET            /students                                       controllers.UserController.allStudents()
+GET            /atomic/students                                controllers.UserController.allAtomicStudents()
+GET            /students/:id                                   controllers.UserController.student(id)
+GET            /atomic/students/:id                            controllers.UserController.studentAtomic(id)
+GET            /employees                                      controllers.UserController.allEmployees()
+GET            /employees/:id                                  controllers.UserController.employee(id)
 
 # APIData
 GET           /api/populate                                    controllers.ApiDataController.populate
