@@ -74,44 +74,6 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
     }
   }
 
-  override protected def atomizeMany(output: Set[Timetable]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.RoomBinding._
-    import defaultBindings.EmployeeBinding._
-    import defaultBindings.DegreeBinding._
-    import Timetable._
-    import TimetableEntry._
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(s => Labwork.generateUri(s.labwork)(namespace)))
-      rooms <- output.map(s => repository.getMany[Room](s.entries.map(e => Room.generateUri(e.room)(namespace)))).sequence
-      supervisors <- output.map(s => repository.getMany[Employee](s.entries.map(e => Employee.generateUri(e.supervisor)(namespace)))).sequence
-      degrees <- output.map(s => repository.getMany[Degree](s.entries.map(e => Degree.generateUri(e.degree)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[TimetableAtom]) { (set, t) =>
-        labworks.find(_.id == t.labwork) match {
-          case Some(l) =>
-            val entries = t.entries.foldLeft(Set.empty[TimetableEntryAtom]) { (setE, e) =>
-              (for {
-                r <- rooms.flatten.find(_.id == e.room)
-                s <- supervisors.flatten.find(_.id == e.supervisor)
-                d <- degrees.flatten.find(_.id == e.degree)
-              } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end, e.id)) match {
-                case Some(entryAtom) => setE + entryAtom
-                case None => setE
-              }
-            }
-
-            val atom = TimetableAtom(l, entries, t.start, t.localBlacklist, t.id)
-            set + atom
-          case None => set
-        }
-      }
-    }).map(s => Json.toJson(s)(Timetable.setAtomicWrites))
-  }
-
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, timetable.create)
     case Get => SecureBlock(restrictionId, timetable.get)

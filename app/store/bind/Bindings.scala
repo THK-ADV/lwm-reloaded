@@ -183,7 +183,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val name = property[String](lwm.name)
     private val permissions = set[Permission](lwm.permissions)
 
-    implicit val roleBinder = pgbWithId[Role](role => makeUri(Role.generateUri(role)))(name, permissions, id)(Role.apply, Role.unapply) withClasses classUri
+    implicit val roleBinder: PGBinder[Rdf, Role] = pgbWithId[Role](role => makeUri(Role.generateUri(role)))(name, permissions, id)(Role.apply, Role.unapply) withClasses classUri
   }
 
   object RefRoleBinding {
@@ -195,7 +195,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val module = optional[UUID](lwm.module)(uuidRefBinder(Course.splitter))
     private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
 
-    implicit val refRoleBinder = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
+    implicit val refRoleBinder: PGBinder[Rdf, RefRole] = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
   }
 
   object AuthorityBinding {
@@ -254,7 +254,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val lecturer = property[UUID](lwm.lecturer)(uuidRefBinder(Employee.splitter))
     private val semesterIndex = property[Int](lwm.semesterIndex)
 
-    implicit val courseBinder = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, id)(Course.apply, Course.unapply) withClasses classUri
+    implicit val courseBinder: PGBinder[Rdf, Course] = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, id)(Course.apply, Course.unapply) withClasses classUri
   }
 
   object DegreeBinding {

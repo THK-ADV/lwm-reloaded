@@ -84,31 +84,6 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
     }
   }
 
-  override protected def atomizeMany(output: Set[LabworkApplication]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.StudentBinding.studentBinder
-    import LabworkApplication.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(lapp => Labwork.generateUri(lapp.labwork)(namespace)))
-      applicants <- repository.getMany[Student](output.map(lapp => Student.generateUri(lapp.applicant)(namespace)))
-      friends <- output.map(lapp => repository.getMany[Student](lapp.friends.map(id => Student.generateUri(id)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[LabworkApplicationAtom]) { (newSet, lapp) =>
-        (for {
-          l <- labworks.find(_.id == lapp.labwork)
-          app <- applicants.find(_.id == lapp.applicant)
-          f <- friends.find(_.map(_.id) == lapp.friends)
-        } yield LabworkApplicationAtom(l, app, f, lapp.timestamp, lapp.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
-  }
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(labworkApplication.create)
     case Update => PartialSecureBlock(labworkApplication.update)

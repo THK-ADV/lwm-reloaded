@@ -98,30 +98,6 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
     }
   }
 
-  override protected def atomizeMany(output: Set[Labwork]): Try[JsValue] = {
-    import defaultBindings.SemesterBinding.semesterBinder
-    import defaultBindings.DegreeBinding.degreeBinder
-    import defaultBindings.CourseBinding.courseBinder
-    import Labwork.atomicWrites
-
-    (for {
-      semesters <- repository.getMany[Semester](output.map(l => Semester.generateUri(l.semester)(namespace)))
-      courses <- repository.getMany[Course](output.map(l => Course.generateUri(l.course)(namespace)))
-      degrees <- repository.getMany[Degree](output.map(l => Degree.generateUri(l.degree)(namespace)))
-    } yield {
-      output.foldLeft(Set.empty[LabworkAtom]) { (newSet, labwork) =>
-        (for {
-          s <- semesters.find(_.id == labwork.semester)
-          c <- courses.find(_.id == labwork.course)
-          d <- degrees.find(_.id == labwork.degree)
-        } yield LabworkAtom(labwork.label, labwork.description, s, c, d, labwork.assignmentPlan, labwork.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
-  }
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(labwork.get)
     case _ => PartialSecureBlock(god)

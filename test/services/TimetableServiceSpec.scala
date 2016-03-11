@@ -73,7 +73,6 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case ((bool, vec), e) =>
           (bool && e.head.isEqual(vec.head.toLocalDateTime), vec.tail)
       }._1 shouldBe true
-      sortedResult.map(_.toDateTime.toString(fdt)).grouped(groups.size).foreach(println)
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with global blacklists applied" in {
@@ -103,7 +102,6 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case ((bool, vec), e) =>
           (bool && e.head.isEqual(vec.head.toLocalDateTime), vec.tail)
       }._1 shouldBe true
-      sortedResult.map(_.toDateTime.toString(fdt)).grouped(groups.size).foreach(println)
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with local and global blacklists applied" in {
@@ -148,7 +146,6 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case ((bool, vec), e) =>
           (bool && e.head.isEqual(vec.head.toLocalDateTime), vec.tail)
       }._1 shouldBe true
-      sortedResult.map(_.toDateTime.toString(fdt)).grouped(groups.size).foreach(println)
     }
   }
 }

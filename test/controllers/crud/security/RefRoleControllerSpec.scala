@@ -157,8 +157,12 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val refRoles = Set(entityToPass, entityToFail)
 
       when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
-      when(repository.getMany[Role](anyObject())(anyObject())).thenReturn(Success(Set(roleToPass, roleToFail)))
-      doReturn(Success(Some(courseToPass))).doReturn(Success(None)).when(repository).get[Course](anyObject())(anyObject())
+
+      doReturn(Success(Some(roleToPass))).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(roleToFail))).
+        doReturn(Success(None)).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -176,8 +180,10 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
-      when(repository.getMany[Role](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-      doReturn(Success(Some(courseToPass))).doReturn(Success(None)).when(repository).get[Course](anyObject())(anyObject())
+
+      doReturn(Success(Some(roleToPass))).
+        doReturn(Failure(new Exception(errorMessage))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

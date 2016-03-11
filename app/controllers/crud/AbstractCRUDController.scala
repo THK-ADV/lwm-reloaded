@@ -46,11 +46,19 @@ trait Filterable[O] {
 }
 
 trait ModelConverter[I, O] {
+  import utils.Ops._
+  import utils.Ops.MonadInstances._
+
   protected def fromInput(input: I, id: Option[UUID] = None): O
 
   protected def atomize(output: O): Try[Option[JsValue]]
 
-  protected def atomizeMany(output: Set[O]): Try[JsValue]
+  protected def atomizeMany(output: Set[O]): Try[JsValue] = output.foldLeft(Try(Option(JsArray()))) { (T, model) =>
+    T.bipeek(atomize(model))(_ :+ _)
+  } map {
+    case Some(jsArray) => jsArray
+    case None => JsArray()
+  }
 }
 
 trait Consistent[I, O] {

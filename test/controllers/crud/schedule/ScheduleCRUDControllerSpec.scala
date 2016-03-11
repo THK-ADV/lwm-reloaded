@@ -515,14 +515,18 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val schedules = Set(entityToPass, entityToFail)
 
       when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(schedules))
-      doReturn(Success(Set(labworkToPass, labworkToFail))).
+
+      doReturn(Success(Some(labworkToPass))).
+        doReturn(Success(Some(labworkToFail))).
+        when(repository).get(anyObject())(anyObject())
+
       doReturn(Success(Set(roomToPass))).
-      doReturn(Success(Set(roomToFail))).
-      doReturn(Success(Set(supervisorToPass))).
-      doReturn(Success(Set(supervisorToFail))).
-      doReturn(Success(Set(groupToPass))).
-      doReturn(Success(Set(groupToFail))).
-      when(repository).getMany(anyObject())(anyObject())
+        doReturn(Success(Set(supervisorToPass))).
+        doReturn(Success(Set(groupToPass))).
+        doReturn(Success(Set(roomToFail))).
+        doReturn(Success(Set(supervisorToFail))).
+        doReturn(Success(Set(groupToFail))).
+        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

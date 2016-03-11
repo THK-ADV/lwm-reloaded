@@ -226,8 +226,6 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
     case _ => PartialSecureBlock(Permissions.god)
   }
 
-  override protected def atomizeMany(output: Set[User]): Try[JsValue] = gatomize(output)
-
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]): Try[Set[User]] = withFilter(queryString)(all)
 
 }

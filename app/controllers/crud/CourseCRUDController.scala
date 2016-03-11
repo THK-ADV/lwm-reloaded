@@ -56,25 +56,6 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     }
   }
 
-  override protected def atomizeMany(output: Set[Course]): Try[JsValue] = {
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import Course.atomicWrites
-
-    (for {
-      employees <- repository.getMany[Employee](output.map(c => Employee.generateUri(c.lecturer)(namespace)))
-    } yield {
-      output.foldLeft(Set.empty[CourseAtom]) { (newSet, c) =>
-        employees.find(_.id == c.lecturer) match {
-          case Some(employee) =>
-            val atom = CourseAtom(c.label, c.description, c.abbreviation, employee, c.semesterIndex, c.id)
-            newSet + atom
-          case None =>
-            newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
-  }
-
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Try[Set[Course]] = {

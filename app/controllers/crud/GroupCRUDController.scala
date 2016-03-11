@@ -158,29 +158,6 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
     }
   }
 
-  override protected def atomizeMany(output: Set[Group]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.StudentBinding._
-    import Group.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(g => Labwork.generateUri(g.labwork)(namespace)))
-      students <- output.map(g => repository.getMany[Student](g.members.map(id => Student.generateUri(id)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[GroupAtom]) { (newSet, g) =>
-        (for {
-          l <- labworks.find(_.id == g.labwork)
-          ss <- students.find(_.map(_.id) == g.members)
-        } yield GroupAtom(g.label, l, ss, g.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
-  }
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(group.get)
     case _ => PartialSecureBlock(god)

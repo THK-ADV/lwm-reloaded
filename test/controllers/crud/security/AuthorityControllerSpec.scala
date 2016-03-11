@@ -10,10 +10,12 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
+import Permissions._
+import models.Course
 
 import scala.util.{Failure, Success}
 
@@ -30,16 +32,40 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   }
 
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
-  val employeeToFail =  Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail", Employee.randomUUID)
+  val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail", Employee.randomUUID)
+
+  val refRoleIdToPass1 = RefRole.randomUUID
+  val refRoleIdToPass2 = RefRole.randomUUID
+  val refRoleIdToFail1 = RefRole.randomUUID
+  val refRoleIdToFail2 = RefRole.randomUUID
+
+  val courseToPass = Course("Course2", "Description", "Abbrev", UUID.randomUUID(), 0, Course.randomUUID)
+  val courseToFail = Course("Course1", "Description", "Abbrev", UUID.randomUUID(), 0, Course.randomUUID)
+
+  val role1 = Role("role1", Set(user.get, user.getAll))
+  val role2 = Role("role2", Set(course.get, course.create, course.getAll))
+  val role3 = Role("role3", Set(degree.get, degree.getAll))
+  val role4 = Role("role4", Set(authority.get, authority.getAll))
+
+  val refRolesAtomicToPass = Set(
+    RefRoleAtom(None, role1, refRoleIdToPass1),
+    RefRoleAtom(Some(courseToPass), role2, refRoleIdToPass2)
+  )
+
+  val refRolesAtomicToFail = Set(
+    RefRoleAtom(None, role3, refRoleIdToFail1),
+    RefRoleAtom(Some(courseToFail), role4, refRoleIdToFail2)
+  )
 
   val refRolesToPass = Set(
-    RefRole(None, UUID.randomUUID()),
-    RefRole(Some(UUID.randomUUID()), UUID.randomUUID())
+    RefRole(None, role1.id, refRoleIdToPass1),
+    RefRole(Some(courseToPass.id), role2.id, refRoleIdToPass2)
   )
   val refRolesToFail = Set(
-    RefRole(None, UUID.randomUUID()),
-    RefRole(Some(UUID.randomUUID()), UUID.randomUUID())
+    RefRole(None, role3.id, refRoleIdToFail1),
+    RefRole(Some(courseToFail.id), role4.id, refRoleIdToFail2)
   )
+
 
   override val entityToFail: Authority = Authority(
     employeeToFail.id,
@@ -53,20 +79,21 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     Authority.randomUUID
   )
 
-  val atomizedEntityToPass = AuthorityStudentAtom(
+  val atomizedEntityToPass = AuthorityAtom(
     studentToPass,
-    refRolesToPass,
+    refRolesAtomicToPass,
     entityToPass.id
   )
 
-  val atomizedEntityToFail = AuthorityEmployeeAtom(
+  val atomizedEntityToFail = AuthorityAtom(
     employeeToFail,
-    refRolesToFail,
+    refRolesAtomicToFail,
     entityToFail.id
   )
 
   import ops._
   import bindings.AuthorityBinding.authorityBinder
+
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override implicit val jsonWrites: Writes[Authority] = Authority.writes
@@ -85,11 +112,13 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
   "A AuthorityControllerSpec " should {
     s"successfully get a single student authority atomized" in {
-      import Authority.atomicStudentWrites
+      import Authority.writesAtomic
 
       doReturn(Success(Some(entityToPass))).
-        doReturn(Success(None)).
         doReturn(Success(Some(studentToPass))).
+        doReturn(Success(Some(role1))).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(role2))).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToPass))
@@ -106,11 +135,13 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
 
     s"successfully get a single employee authority atomized" in {
-      import Authority.atomicEmployeeWrites
+      import Authority.writesAtomic
 
       doReturn(Success(Some(entityToFail))).
         doReturn(Success(Some(employeeToFail))).
-        doReturn(Success(None)).
+        doReturn(Success(Some(role3))).
+        doReturn(Success(Some(courseToFail))).
+        doReturn(Success(Some(role4))).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToFail))
@@ -153,7 +184,6 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Failure(new Exception(errorMessage))).
-        doReturn(Success(None)).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToPass))
@@ -173,32 +203,49 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
   }
 
-  /*s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
-    import Course.atomicWrites
+  s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+    import Authority._
 
-    val courses = Set(entityToPass, entityToFail)
-    val lecturers = Set(lecturerToPass, lecturerToFail)
+    val authorities = Set(entityToPass, entityToFail)
 
-    when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-    when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Success(lecturers))
+    when(repository.get[Authority](anyObject(), anyObject())).thenReturn(Success(authorities))
+
+    doReturn(Success(Some(studentToPass))).
+      doReturn(Success(Some(role1))).
+      doReturn(Success(Some(courseToPass))).
+      doReturn(Success(Some(role2))).
+      doReturn(Success(Some(employeeToFail))).
+      doReturn(Success(Some(role3))).
+      doReturn(Success(Some(courseToFail))).
+      doReturn(Success(Some(role4))).
+      when(repository).get(anyObject())(anyObject())
+
+    doReturn(Success(refRolesToPass)).
+      doReturn(Success(refRolesToFail)).
+      when(repository).getMany(anyObject())(anyObject())
 
     val request = FakeRequest(
       GET,
       s"/${entityTypeName}s"
     )
     val result = controller.allAtomic()(request)
+    val jsVals = Set(Json.toJson(atomizedEntityToPass), Json.toJson(atomizedEntityToFail))
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+    contentAsJson(result).asInstanceOf[JsArray].value foreach { entity =>
+      jsVals contains entity shouldBe true
+    }
   }
 
   s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
-    val courses = Set(entityToPass, entityToFail)
+    val authorities = Set(entityToPass, entityToFail)
     val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-    when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-    when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+    doReturn(Failure(new Exception(errorMessage))).
+      when(repository).get(anyObject())(anyObject())
+
+    when(repository.getMany[Authority](anyObject())(anyObject())).thenReturn(Success(authorities))
 
     val request = FakeRequest(
       GET,
@@ -212,5 +259,5 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       "status" -> "KO",
       "errors" -> errorMessage
     )
-  }*/
+  }
 }

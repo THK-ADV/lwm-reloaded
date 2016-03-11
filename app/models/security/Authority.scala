@@ -3,9 +3,9 @@ package models.security
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.users.{Student, Employee, User}
+import models.users.{Employee, Student, User}
 import models.{Course, UniqueEntity, UriGenerator}
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 
 /**
  * Structure linking a user to his/her respective authority in the system.
@@ -23,9 +23,7 @@ case class Authority(user: UUID, refRoles: Set[UUID], id: UUID = Authority.rando
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
 
-case class AuthorityEmployeeAtom(user: Employee, refRoles: Set[RefRole], id: UUID)
-
-case class AuthorityStudentAtom(user: Student, refRoles: Set[RefRole], id: UUID)
+case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID)
 
 /**
  * Structure binding a particular module to a particular `Role`(or set of permissions).
@@ -74,7 +72,7 @@ object Roles {
 
 /**
  * A unary permission.
- * 
+ *
  * @param value Raw permission label
  */
 
@@ -115,6 +113,7 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
 }
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {
+  import RefRole._
 
   def empty = Authority(UUID.randomUUID(), Set.empty, UUID.randomUUID())
 
@@ -124,7 +123,17 @@ object Authority extends UriGenerator[Authority] with JsonSerialisation[Authorit
 
   override implicit def writes: Writes[Authority] = Json.writes[Authority]
 
-  implicit def atomicEmployeeWrites: Writes[AuthorityEmployeeAtom] = Json.writes[AuthorityEmployeeAtom]
-
-  implicit def atomicStudentWrites: Writes[AuthorityStudentAtom] = Json.writes[AuthorityStudentAtom]
+  implicit def writesAtomic: Writes[AuthorityAtom] = new Writes[AuthorityAtom] {
+    override def writes(o: AuthorityAtom): JsValue = {
+      def toJson(userjs: JsValue): JsValue = Json.obj(
+        "user" -> userjs,
+        "refRoles" -> JsArray((o.refRoles map (Json.toJson(_))).toSeq),
+        "id" -> s"${o.id}"
+      )
+      o.user match {
+        case student: Student => toJson(Json.toJson(student))
+        case employee: Employee => toJson(Json.toJson(employee))
+      }
+    }
+  }
 }

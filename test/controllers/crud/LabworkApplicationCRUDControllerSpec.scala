@@ -614,9 +614,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     import LabworkApplication.atomicWrites
 
     doReturn(Success(Some(entityToPass))).
-    doReturn(Success(Some(labworkToPass))).
-    doReturn(Success(Some(applicantToPass))).
-    when(repository).get(anyObject())(anyObject())
+      doReturn(Success(Some(labworkToPass))).
+      doReturn(Success(Some(applicantToPass))).
+      when(repository).get(anyObject())(anyObject())
     when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
 
     val request = FakeRequest(
@@ -632,9 +632,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
   s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
     doReturn(Success(Some(entityToPass))).
-    doReturn(Success(Some(labworkToPass))).
-    doReturn(Success(None)).
-    when(repository).get(anyObject())(anyObject())
+      doReturn(Success(Some(labworkToPass))).
+      doReturn(Success(None)).
+      when(repository).get(anyObject())(anyObject())
     when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
 
     val request = FakeRequest(
@@ -655,9 +655,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
     doReturn(Success(Some(entityToPass))).
-    doReturn(Success(Some(labworkToPass))).
-    doReturn(Failure(new Exception(errorMessage))).
-    when(repository).get(anyObject())(anyObject())
+      doReturn(Success(Some(labworkToPass))).
+      doReturn(Failure(new Exception(errorMessage))).
+      when(repository).get(anyObject())(anyObject())
     when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
 
     val request = FakeRequest(
@@ -680,11 +680,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val labworkApplications = Set(entityToPass, entityToFail)
 
     when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
-    doReturn(Success(Set(labworkToPass, labworkToFail))).
-    doReturn(Success(Set(applicantToPass, applicantToFail))).
+
+    doReturn(Success(Some(labworkToPass))).
+      doReturn(Success(Some(applicantToPass))).
+      doReturn(Success(Some(labworkToFail))).
+      doReturn(Success(Some(applicantToFail))).
+      when(repository).get(anyObject())(anyObject())
+
     doReturn(Success(friendsToPass)).
-    doReturn(Success(friendsToFail)).
-    when(repository).getMany(anyObject())(anyObject())
+      doReturn(Success(friendsToFail)).
+      when(repository).getMany(anyObject())(anyObject())
 
     val request = FakeRequest(
       GET,
@@ -702,11 +707,16 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
     when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
-    doReturn(Success(Set(labworkToPass, labworkToFail))).
-    doReturn(Success(Set(applicantToPass, applicantToFail))).
+
+    doReturn(Success(Some(labworkToPass))).
+      doReturn(Success(Some(applicantToPass))).
+      doReturn(Success(Some(labworkToFail))).
+      doReturn(Success(Some(applicantToFail))).
+      when(repository).get(anyObject())(anyObject())
+
     doReturn(Failure(new Exception(errorMessage))).
-    doReturn(Success(friendsToFail)).
-    when(repository).getMany(anyObject())(anyObject())
+      doReturn(Success(friendsToFail)).
+      when(repository).getMany(anyObject())(anyObject())
 
     val request = FakeRequest(
       GET,

@@ -432,10 +432,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val labworks = Set(labworkToPass, labworkToFail)
 
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
-      doReturn(Success(labworks)).
+
+      doReturn(Success(Some(labworkToPass))).
+        doReturn(Success(Some(labworkToFail))).
+        when(repository).get(anyObject())(anyObject())
+
       doReturn(Success(studentsToPass)).
-      doReturn(Success(studentsToFail)).
-      when(repository).getMany(anyObject())(anyObject())
+        doReturn(Success(studentsToFail)).
+        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -454,8 +458,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
       doReturn(Failure(new Exception(errorMessage))).
-      doReturn(Success(studentsToPass)).
-      doReturn(Success(studentsToFail)).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(

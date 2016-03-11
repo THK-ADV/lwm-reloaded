@@ -110,7 +110,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A LabworkCRUDControllerSpec also " should {
-    
+
     "return the corresponding labwork for a given course" in {
       val course = Course("label", "desc", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val plan = AssignmentPlan(1, Set(AssignmentEntry(1, Set(EntryType("type")))))
@@ -537,10 +537,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       import Labwork.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(semesterToPass))).
-      doReturn(Success(Some(courseToPass))).
-      doReturn(Success(Some(degreeToPass))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(Some(semesterToPass))).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(degreeToPass))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -555,10 +555,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     s"not get a single $entityTypeName atomized when one of the atomic models is not found" in {
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(None)).
-      doReturn(Success(Some(courseToPass))).
-      doReturn(Success(Some(degreeToPass))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(None)).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(degreeToPass))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -578,8 +578,8 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Failure(new Exception(errorMessage))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -604,10 +604,14 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       val degrees = Set(degreeToPass, degreeToFail)
 
       when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
-      doReturn(Success(semesters)).
-      doReturn(Success(courses)).
-      doReturn(Success(degrees)).
-      when(repository).getMany(anyObject())(anyObject())
+
+      doReturn(Success(Some(semesterToPass))).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(degreeToPass))).
+        doReturn(Success(Some(semesterToFail))).
+        doReturn(Success(Some(courseToFail))).
+        doReturn(Success(Some(degreeToFail))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -626,7 +630,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
       doReturn(Failure(new Exception(errorMessage))).
-      when(repository).getMany(anyObject())(anyObject())
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

@@ -315,10 +315,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       import Course.atomicWrites
 
       val courses = Set(entityToPass, entityToFail)
-      val lecturers = Set(lecturerToPass, lecturerToFail)
 
       when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Success(lecturers))
+
+      doReturn(Success(Some(lecturerToPass))).doReturn(Success(Some(lecturerToFail))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -336,7 +336,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      doReturn(Failure(new Exception(errorMessage))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
