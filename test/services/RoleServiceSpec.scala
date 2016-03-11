@@ -22,8 +22,8 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   val module1 = UUID.randomUUID()
   val module2 = UUID.randomUUID()
 
-  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID, AssignmentPlan.empty)
-  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID, AssignmentPlan.empty)
+  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID)
+  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID)
 
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)

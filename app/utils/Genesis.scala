@@ -148,6 +148,4 @@ object TypeClasses {
       override def apply(a: A): Boolean = f(a)
     }
   }
-
 }
-

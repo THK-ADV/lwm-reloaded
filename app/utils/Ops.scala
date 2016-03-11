@@ -46,6 +46,12 @@ object Ops { self =>
 
       override def point[A](a: => A): Try[A] = Try(a)
     }
+
+    implicit val setM: Monad[Set] = new Monad[Set] {
+      override def bind[A, B](fa: Set[A])(f: (A) => Set[B]): Set[B] = fa flatMap f
+
+      override def point[A](a: => A): Set[A] = Set(a)
+    }
   }
 
   object TraverseInstances {
@@ -65,6 +71,16 @@ object Ops { self =>
           }
         }
      }
+
+      implicit val travS: Traverse[Set] = new Traverse[Set] {
+        override def traverseImpl[G[_], A, B](fa: Set[A])(f: (A) => G[B])(implicit ap: Applicative[G]): G[Set[B]] = fa match {
+          case set if set.nonEmpty =>
+            fa.map(f).foldLeft(ap.point(Set.empty[B])) { (gs, gb) =>
+              ap.apply2(gs, gb)(_ + _)
+            }
+          case _ => ap.point(Set.empty[B])
+        }
+      }
   }
 
   object NaturalTrasformations {

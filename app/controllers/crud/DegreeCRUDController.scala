@@ -30,8 +30,8 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
 
-  override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = id match {
-    case Some(uuid) => Degree(input.label, input.abbreviation, uuid)
+  override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
+    case Some(degree) => Degree(input.label, input.abbreviation, degree.id)
     case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
 

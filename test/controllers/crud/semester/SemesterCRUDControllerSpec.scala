@@ -29,11 +29,11 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace, roleService) {
 
+    override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = entityToPass
+
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
-
-    override protected def fromInput(input: SemesterProtocol, id: Option[UUID]) = entityToPass
   }
 
   override implicit val jsonWrites: Writes[Semester] = Semester.writes

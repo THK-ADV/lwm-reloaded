@@ -14,7 +14,7 @@ object Prefixes {
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry
+    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry
     val label = apply("label")
 
     // Labwork, LabworkApplication, Room, Degree, TimetableEntry
@@ -35,12 +35,12 @@ object Prefixes {
     val systemId = apply("systemId")
     val enrollment = apply("enrollment")
 
-    // Semester
+    // Semester, ReportCardEntry
     val end = apply("start")
     val start = apply("end")
     val examStart = apply("examStart")
 
-    // AssignmentEntry, AssignmentPlan, Timetable, Schedule
+    // AssignmentEntry, AssignmentPlan, Timetable, Schedule, ReportCardEntry
     val index = apply("index")
     val duration = apply("duration")
     val types = apply("types")
@@ -69,7 +69,7 @@ object Prefixes {
     val module = apply("module")
     val privileged = apply("privileged")
 
-    //Group, Timetable, Schedule
+    //Group, Timetable, Schedule, ReportCard
     val members = apply("members")
     val labwork = apply("labwork")
 
@@ -77,7 +77,7 @@ object Prefixes {
     val blacklist = apply("blacklist")
     val buffer = apply("buffer")
 
-    // TimetableEntry, ScheduleEntry
+    // TimetableEntry, ScheduleEntry, ReportCardEntry
     val supervisor = apply("supervisor")
     val room = apply("room")
     val dayIndex = apply("dayIndex")
@@ -85,6 +85,12 @@ object Prefixes {
 
     // ScheduleEntry
     val group = apply("group")
+
+    // Schedule
+    val published = apply("published")
+
+    // ReportCard
+    val student = apply("student")
 
     // classes
     val Course = apply("Course")
@@ -107,6 +113,8 @@ object Prefixes {
     val Schedule = apply("Schedule")
     val ScheduleEntry = apply("ScheduleEntry")
     val Blacklist = apply("Blacklist")
+    val ReportCard = apply("ReportCard")
+    val ReportCardEntry = apply("ReportCardEntry")
   }
 
   object LWMPrefix {

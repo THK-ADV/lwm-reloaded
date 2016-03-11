@@ -186,7 +186,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val assignmentEntryTypeBinder = pgbWithId[AssignmentEntryType](aEntryType => makeUri(AssignmentEntryType.generateUri(aEntryType)))(entryType, bool, int, id)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
   }
 
-
   object AssignmentEntryBinding {
     implicit val clazz = lwm.AssignmentEntry
     implicit val classUri = classUrisFor[AssignmentEntry](clazz)
@@ -203,11 +202,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.AssignmentPlan
     implicit val classUri = classUrisFor[AssignmentPlan](clazz)
 
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val attendance = property[Int](lwm.attendance)
     private val mandatory = property[Int](lwm.mandatory)
     private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryBinding.assignmentEntryBinder)
 
-    implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(attendance, mandatory, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
+    implicit val assignmentPlanBinder = pgbWithId[AssignmentPlan](aPlan => makeUri(AssignmentPlan.generateUri(aPlan)))(labwork, attendance, mandatory, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUri
   }
 
   object LabworkBinding {
@@ -219,9 +219,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
     val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
-    val assignmentPlan = property[AssignmentPlan](lwm.assignmentPlan)(AssignmentPlanBinding.assignmentPlanBinder)
 
-    implicit val labworkBinder = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, assignmentPlan, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    implicit val labworkBinder = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {
@@ -313,8 +312,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryBinding.scheduleEntryBinder)
+    private val published = property[Boolean](lwm.published)
 
-    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+    implicit val scheduleBinder = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, published, id)(Schedule.apply, Schedule.unapply) withClasses classUri
   }
 
   object ScheduleEntryBinding {
@@ -338,6 +338,32 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val dates = set[DateTime](lwm.dates)
 
     implicit val blacklistBinder = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
+  }
+
+  object ReportCardBinding {
+    implicit val clazz = lwm.ReportCard
+    implicit val classUri = classUrisFor[ReportCard](clazz)
+
+    private val student = property[UUID](lwm.student)(uuidRefBinder(Student.splitter))
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
+    private val entries = set[ReportCardEntry](lwm.entries)(ReportCardEntryBinding.reportCardEntryBinding)
+
+    implicit val reportCardBinder = pgbWithId[ReportCard](reportCard => makeUri(ReportCard.generateUri(reportCard)))(student, labwork, entries, id)(ReportCard.apply, ReportCard.unapply) withClasses classUri
+  }
+
+  object ReportCardEntryBinding {
+    implicit val clazz = lwm.ReportCardEntry
+    implicit val classUri = classUrisFor[ReportCardEntry](clazz)
+
+    private val index = property[Int](lwm.index)
+    private val label = property[String](lwm.label)
+    private val date = property[LocalDate](lwm.date)
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
+    private val room = property[UUID](lwm.room)
+    private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
+
+    implicit val reportCardEntryBinding = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(index, label, date, start, end, room, types, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
   }
 }
 

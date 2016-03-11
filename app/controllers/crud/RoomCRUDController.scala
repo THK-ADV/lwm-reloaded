@@ -30,8 +30,8 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override implicit def writes: Writes[Room] = Room.writes
 
-   override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
-      case Some(uuid) => Room(input.label, input.description, uuid)
+   override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = existing match {
+      case Some(room) => Room(input.label, input.description, room.id)
       case None => Room(input.label, input.description, Room.randomUUID)
    }
 

@@ -31,8 +31,8 @@ class AuthorityController(val repository: SesameRepository, val namespace: Names
 
   override implicit def writes: Writes[Authority] = Authority.writes
 
-  override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = id match {
-    case Some(uuid) => Authority(input.user, input.refRoles, uuid)
+  override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = existing match {
+    case Some(authority) => Authority(input.user, input.refRoles, authority.id)
     case None => Authority(input.user, input.refRoles, Authority.randomUUID)
   }
 

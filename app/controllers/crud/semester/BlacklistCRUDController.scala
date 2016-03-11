@@ -32,8 +32,8 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
-  override protected def fromInput(input: BlacklistProtocol, id: Option[UUID]): Blacklist = id match {
-    case Some(uuid) => Blacklist(input.dates, uuid)
+  override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
+    case Some(blacklist) => Blacklist(input.dates, blacklist.id)
     case None => Blacklist(input.dates, Blacklist.randomUUID)
   }
 

@@ -1,14 +1,11 @@
 package controllers.crud.semester
 
-import java.util.UUID
-
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.semester.{Blacklist, BlacklistProtocol}
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
-import store.SesameRepository
 import utils.LwmMimeType
 
 class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist] {
@@ -22,7 +19,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override val controller: AbstractCRUDController[BlacklistProtocol, Blacklist] = new BlacklistCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: BlacklistProtocol, id: Option[UUID]): Blacklist = entityToPass
+    override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

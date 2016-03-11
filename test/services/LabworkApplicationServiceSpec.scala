@@ -33,7 +33,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
   "An application service" should {
 
     "return applications for a given labwork" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, emptyPlan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val applications = List(
         LabworkApplication(labwork.id, User.randomUUID, Set.empty),
         LabworkApplication(labwork.id, User.randomUUID, Set.empty),
@@ -57,8 +57,8 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return only the applications of a specific labwork, even though more are present" in {
-      val labwork1 = Labwork("label1", "description1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, emptyPlan)
-      val labwork2 = Labwork("label2", "description2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, emptyPlan)
+      val labwork1 = Labwork("label1", "description1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val labwork2 = Labwork("label2", "description2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val applicationList1 = List(
         LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
         LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
@@ -92,7 +92,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return None when no applications are found" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, emptyPlan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       repository.add[Labwork](labwork)
 
@@ -106,7 +106,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return applications for a given labwork ordered by timestamp" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, emptyPlan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val applications = List(
         LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now()),
         LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusDays(1)),

@@ -30,8 +30,8 @@ class EmployeeCRUDController(val repository: SesameRepository, val namespace: Na
 
    override implicit def writes: Writes[Employee] = Employee.writes
 
-   override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = id match {
-      case Some(uuid) => Employee(input.systemId, input.lastname, input.firstname, input.email, uuid)
+   override protected def fromInput(input: EmployeeProtocol, existing: Option[Employee]): Employee = existing match {
+      case Some(employee) => Employee(input.systemId, input.lastname, input.firstname, input.email, employee.id)
       case None => Employee(input.systemId, input.lastname, input.firstname, input.email, Employee.randomUUID)
    }
 

@@ -18,6 +18,8 @@ import scala.util.{Failure, Success, Try}
 
 object GroupCRUDController {
   val labworkAttribute = "labwork"
+  val studentAttribute = "student"
+  val labelAttribute = "label"
 
   def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
     if (prev % s < curr % s) curr
@@ -50,11 +52,13 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase)
+    super.all(NonSecureBlock)(newRequest)
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.allAtomic(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Group.generateBase)
+    super.allAtomic(NonSecureBlock)(newRequest)
   }
 
   def getFrom(course: String, group: String) = restrictedContext(course)(Get) asyncAction { request =>
@@ -124,8 +128,8 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
   override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
 
-  override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = id match {
-    case Some(uuid) => Group(input.label, input.labwork, input.members, uuid)
+  override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = existing match {
+    case Some(group) => Group(input.label, input.labwork, input.members, group.id)
     case None => Group(input.label, input.labwork, input.members, Group.randomUUID)
   }
 
@@ -138,6 +142,8 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
     queryString.foldRight(Try[Set[Group]](all)) {
       case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
+      case ((`studentAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.members.contains(p))))
+      case ((`labelAttribute`, v), t) => t.map(_.filter(_.label == v.head))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }

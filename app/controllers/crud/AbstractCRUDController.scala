@@ -46,7 +46,7 @@ trait Filterable[O] {
 }
 
 trait ModelConverter[I, O] {
-  protected def fromInput(input: I, id: Option[UUID] = None): O
+  protected def fromInput(input: I, existing: Option[O] = None): O
 
   protected def atomize(output: O): Try[Option[JsValue]]
 
@@ -362,7 +362,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
                   "id" -> id.toString
                 ))
               case Some(entity) =>
-                val updated = fromInput(success, Some(entity.id))
+                val updated = fromInput(success, Some(entity))
 
                 repository.update[O, UriGenerator[O]](updated).flatMap(_ => updatef(updated)) match {
                   case Success(result) => result

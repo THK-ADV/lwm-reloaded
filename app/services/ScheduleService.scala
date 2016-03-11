@@ -18,9 +18,7 @@ import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
-
 case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-
 case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID)
 
 trait ScheduleServiceLike {
@@ -103,10 +101,10 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
   override def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG] = {
     val entries = timetableService.extrapolateEntries(timetable, assignmentPlan, groups)
-    (0 until times).map(_ => populate(timetable, entries, assignmentPlan, groups)).toVector
+    (0 until times).map(_ => populate(timetable, entries, groups)).toVector
   }
 
-  private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], assignmentPlan: AssignmentPlan, groups: Set[Group]): ScheduleG = {
+  private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
     val sg = shuffle(groups.toVector)
     val scheduleEntries = entries.toVector.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(sg).map {
       case (t, group) =>

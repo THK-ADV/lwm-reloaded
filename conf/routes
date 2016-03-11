@@ -2,201 +2,224 @@
 # This file defines all() application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                                                controllers.HomepageController.index
+GET           /                                                            controllers.HomepageController.index
 
 # Degree
-POST          /degrees                                         controllers.crud.DegreeCRUDController.create()
-POST          /atomic/degrees                                  controllers.crud.CourseCRUDController.createAtomic()
-PUT           /degrees/:id                                     controllers.crud.DegreeCRUDController.update(id)
-PUT           /atomic/degrees/:id                              controllers.crud.DegreeCRUDController.updateAtomic(id)
-GET           /degrees                                         controllers.crud.DegreeCRUDController.all()
-GET           /degrees/:id                                     controllers.crud.DegreeCRUDController.get(id)
-DELETE        /degrees/:id                                     controllers.crud.DegreeCRUDController.delete(id)
-HEAD          /degrees                                         controllers.crud.DegreeCRUDController.header
+POST          /degrees                                                     controllers.crud.DegreeCRUDController.create()
+POST          /atomic/degrees                                              controllers.crud.CourseCRUDController.createAtomic()
+PUT           /degrees/:id                                                 controllers.crud.DegreeCRUDController.update(id)
+PUT           /atomic/degrees/:id                                          controllers.crud.DegreeCRUDController.updateAtomic(id)
+GET           /degrees                                                     controllers.crud.DegreeCRUDController.all()
+GET           /degrees/:id                                                 controllers.crud.DegreeCRUDController.get(id)
+DELETE        /degrees/:id                                                 controllers.crud.DegreeCRUDController.delete(id)
+HEAD          /degrees                                                     controllers.crud.DegreeCRUDController.header
 
 # Course
-POST          /courses                                         controllers.crud.CourseCRUDController.create()
-POST          /atomic/courses                                  controllers.crud.CourseCRUDController.createAtomic()
-POST          /courses/roles                                   controllers.crud.CourseCRUDController.createWithRoles()
-POST          /atomic/courses/roles                            controllers.crud.CourseCRUDController.createAtomicWithRoles()
-PUT           /courses/:id                                     controllers.crud.CourseCRUDController.updateFrom(id)
-PUT           /atomic/courses/:id                              controllers.crud.CourseCRUDController.updateAtomicFrom(id)
-GET           /courses                                         controllers.crud.CourseCRUDController.all()
-GET           /atomic/courses                                  controllers.crud.CourseCRUDController.allAtomic()
-GET           /courses/:id                                     controllers.crud.CourseCRUDController.get(id)
-GET           /atomic/courses/:id                              controllers.crud.CourseCRUDController.getAtomic(id)
-DELETE        /courses/:id                                     controllers.crud.CourseCRUDController.delete(id)
-HEAD          /courses                                         controllers.crud.CourseCRUDController.header
+POST          /courses                                                     controllers.crud.CourseCRUDController.create()
+POST          /atomic/courses                                              controllers.crud.CourseCRUDController.createAtomic()
+POST          /courses/roles                                               controllers.crud.CourseCRUDController.createWithRoles()
+POST          /atomic/courses/roles                                        controllers.crud.CourseCRUDController.createAtomicWithRoles()
+PUT           /courses/:id                                                 controllers.crud.CourseCRUDController.updateFrom(id)
+PUT           /atomic/courses/:id                                          controllers.crud.CourseCRUDController.updateAtomicFrom(id)
+GET           /courses                                                     controllers.crud.CourseCRUDController.all()
+GET           /atomic/courses                                              controllers.crud.CourseCRUDController.allAtomic()
+GET           /courses/:id                                                 controllers.crud.CourseCRUDController.get(id)
+GET           /atomic/courses/:id                                          controllers.crud.CourseCRUDController.getAtomic(id)
+DELETE        /courses/:id                                                 controllers.crud.CourseCRUDController.delete(id)
+HEAD          /courses                                                     controllers.crud.CourseCRUDController.header
 
 # Employee
-POST          /employees                                       controllers.crud.user.EmployeeCRUDController.create()
-PUT           /employees/:id                                   controllers.crud.user.EmployeeCRUDController.update(id)
-GET           /employees                                       controllers.crud.user.EmployeeCRUDController.all()
-GET           /employees/:id                                   controllers.crud.user.EmployeeCRUDController.get(id)
-DELETE        /employees/:id                                   controllers.crud.user.EmployeeCRUDController.delete(id)
-HEAD          /employees                                       controllers.crud.user.EmployeeCRUDController.header
+POST          /employees                                                   controllers.crud.user.EmployeeCRUDController.create()
+PUT           /employees/:id                                               controllers.crud.user.EmployeeCRUDController.update(id)
+GET           /employees                                                   controllers.crud.user.EmployeeCRUDController.all()
+GET           /employees/:id                                               controllers.crud.user.EmployeeCRUDController.get(id)
+DELETE        /employees/:id                                               controllers.crud.user.EmployeeCRUDController.delete(id)
+HEAD          /employees                                                   controllers.crud.user.EmployeeCRUDController.header
 
 # Group
-GET           /groups/:id                                      controllers.crud.GroupCRUDController.get(id)
-GET           /atomic/groups/:id                               controllers.crud.GroupCRUDController.getAtomic(id)
-HEAD          /groups                                          controllers.crud.GroupCRUDController.header
+GET           /groups/:id                                                  controllers.crud.GroupCRUDController.get(id)
+GET           /atomic/groups/:id                                           controllers.crud.GroupCRUDController.getAtomic(id)
+HEAD          /groups                                                      controllers.crud.GroupCRUDController.header
 
 # Groups restricted; how about /courses/:course/labworks/:labwork/.. ??
-POST          /courses/:course/atomic/groups/count             controllers.crud.GroupCRUDController.createAtomicWithCount(course)
-POST          /courses/:course/atomic/groups/range             controllers.crud.GroupCRUDController.createAtomicWithRange(course)
-POST          /courses/:course/groups/count                    controllers.crud.GroupCRUDController.createWithCount(course)
-POST          /courses/:course/groups/range                    controllers.crud.GroupCRUDController.createWithRange(course)
-PUT           /courses/:course/groups/:id                      controllers.crud.GroupCRUDController.updateFrom(course, id)
-PUT           /courses/:course/atomic/groups/:id               controllers.crud.GroupCRUDController.updateAtomicFrom(course, id)
-GET           /courses/:course/groups                          controllers.crud.GroupCRUDController.allFrom(course)
-GET           /courses/:course/atomic/groups                   controllers.crud.GroupCRUDController.allAtomicFrom(course)
-GET           /courses/:course/groups/:id                      controllers.crud.GroupCRUDController.getFrom(course, id)
-GET           /courses/:course/atomic/groups/:id               controllers.crud.GroupCRUDController.getAtomicFrom(course, id)
-DELETE        /courses/:course/groups/:id                      controllers.crud.GroupCRUDController.deleteFrom(course, id)
+POST          /courses/:course/atomic/groups/count                         controllers.crud.GroupCRUDController.createAtomicWithCount(course)
+POST          /courses/:course/atomic/groups/range                         controllers.crud.GroupCRUDController.createAtomicWithRange(course)
+POST          /courses/:course/groups/count                                controllers.crud.GroupCRUDController.createWithCount(course)
+POST          /courses/:course/groups/range                                controllers.crud.GroupCRUDController.createWithRange(course)
+PUT           /courses/:course/groups/:id                                  controllers.crud.GroupCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/groups/:id                           controllers.crud.GroupCRUDController.updateAtomicFrom(course, id)
+GET           /courses/:course/groups                                      controllers.crud.GroupCRUDController.allFrom(course)
+GET           /courses/:course/atomic/groups                               controllers.crud.GroupCRUDController.allAtomicFrom(course)
+GET           /courses/:course/groups/:id                                  controllers.crud.GroupCRUDController.getFrom(course, id)
+GET           /courses/:course/atomic/groups/:id                           controllers.crud.GroupCRUDController.getAtomicFrom(course, id)
+DELETE        /courses/:course/groups/:id                                  controllers.crud.GroupCRUDController.deleteFrom(course, id)
 
 # Labwork
-GET           /labworks/:id                                    controllers.crud.LabworkCRUDController.get(id)
-GET           /atomic/labworks/:id                             controllers.crud.LabworkCRUDController.getAtomic(id)
-HEAD          /labworks                                        controllers.crud.LabworkCRUDController.header
+GET           /labworks/:id                                                controllers.crud.LabworkCRUDController.get(id)
+GET           /atomic/labworks/:id                                         controllers.crud.LabworkCRUDController.getAtomic(id)
+HEAD          /labworks                                                    controllers.crud.LabworkCRUDController.header
 
 # Labwork restricted
-POST          /courses/:course/labworks                        controllers.crud.LabworkCRUDController.createFrom(course)
-POST          /courses/:course/atomic/labworks                 controllers.crud.LabworkCRUDController.createAtomicFrom(course)
-PUT           /courses/:course/labworks/:id                    controllers.crud.LabworkCRUDController.updateFrom(course, id)
-GET           /courses/:course/labworks                        controllers.crud.LabworkCRUDController.allFrom(course)
-GET           /courses/:course/atomic/labworks                 controllers.crud.LabworkCRUDController.allAtomicFrom(course)
-GET           /courses/:course/labworks/:id                    controllers.crud.LabworkCRUDController.getFrom(course, id)
-GET           /courses/:course/atomic/labworks/:id             controllers.crud.LabworkCRUDController.getAtomicFrom(course, id)
-DELETE        /courses/:course/labworks/:id                    controllers.crud.LabworkCRUDController.deleteFrom(course, id)
+POST          /courses/:course/labworks                                    controllers.crud.LabworkCRUDController.createFrom(course)
+POST          /courses/:course/atomic/labworks                             controllers.crud.LabworkCRUDController.createAtomicFrom(course)
+PUT           /courses/:course/labworks/:id                                controllers.crud.LabworkCRUDController.updateFrom(course, id)
+GET           /courses/:course/labworks                                    controllers.crud.LabworkCRUDController.allFrom(course)
+GET           /courses/:course/atomic/labworks                             controllers.crud.LabworkCRUDController.allAtomicFrom(course)
+GET           /courses/:course/labworks/:id                                controllers.crud.LabworkCRUDController.getFrom(course, id)
+GET           /courses/:course/atomic/labworks/:id                         controllers.crud.LabworkCRUDController.getAtomicFrom(course, id)
+DELETE        /courses/:course/labworks/:id                                controllers.crud.LabworkCRUDController.deleteFrom(course, id)
 
 # Labwork Entry Type
 
-GET           /entryTypes                                      controllers.EntryTypeController.all()
-HEAD          /entryTypes                                      controllers.EntryTypeController.header()
+GET           /entryTypes                                                  controllers.EntryTypeController.all()
+HEAD          /entryTypes                                                  controllers.EntryTypeController.header()
 
 # Room
-POST          /rooms                                           controllers.crud.RoomCRUDController.create()
-PUT           /rooms/:id                                       controllers.crud.RoomCRUDController.update(id)
-GET           /rooms                                           controllers.crud.RoomCRUDController.all()
-GET           /rooms/:id                                       controllers.crud.RoomCRUDController.get(id)
-DELETE        /rooms/:id                                       controllers.crud.RoomCRUDController.delete(id)
-HEAD          /rooms                                           controllers.crud.RoomCRUDController.header
+POST          /rooms                                                       controllers.crud.RoomCRUDController.create()
+PUT           /rooms/:id                                                   controllers.crud.RoomCRUDController.update(id)
+GET           /rooms                                                       controllers.crud.RoomCRUDController.all()
+GET           /rooms/:id                                                   controllers.crud.RoomCRUDController.get(id)
+DELETE        /rooms/:id                                                   controllers.crud.RoomCRUDController.delete(id)
+HEAD          /rooms                                                       controllers.crud.RoomCRUDController.header
 
 # Semester
-POST          /semesters                                       controllers.crud.semester.SemesterCRUDController.create()
-PUT           /semesters/:id                                   controllers.crud.semester.SemesterCRUDController.update(id)
-GET           /semesters                                       controllers.crud.semester.SemesterCRUDController.all()
-GET           /semesters/:id                                   controllers.crud.semester.SemesterCRUDController.get(id)
-DELETE        /semesters/:id                                   controllers.crud.semester.SemesterCRUDController.delete(id)
-HEAD          /semesters                                       controllers.crud.semester.SemesterCRUDController.header
+POST          /semesters                                                   controllers.crud.semester.SemesterCRUDController.create()
+PUT           /semesters/:id                                               controllers.crud.semester.SemesterCRUDController.update(id)
+GET           /semesters                                                   controllers.crud.semester.SemesterCRUDController.all()
+GET           /semesters/:id                                               controllers.crud.semester.SemesterCRUDController.get(id)
+DELETE        /semesters/:id                                               controllers.crud.semester.SemesterCRUDController.delete(id)
+HEAD          /semesters                                                   controllers.crud.semester.SemesterCRUDController.header
 
 # Student
-POST          /students                                        controllers.crud.user.StudentCRUDController.create()
-POST          /atomic/students                                 controllers.crud.user.StudentCRUDController.createAtomic()
-PUT           /students/:id                                    controllers.crud.user.StudentCRUDController.update(id)
-GET           /students                                        controllers.crud.user.StudentCRUDController.all()
-GET           /atomic/students                                 controllers.crud.user.StudentCRUDController.allAtomic()
-GET           /students/:id                                    controllers.crud.user.StudentCRUDController.get(id)
-GET           /atomic/students/:id                             controllers.crud.user.StudentCRUDController.getAtomic(id)
-DELETE        /students/:id                                    controllers.crud.user.StudentCRUDController.delete(id)
-HEAD          /students                                        controllers.crud.user.StudentCRUDController.header
+POST          /students                                                    controllers.crud.user.StudentCRUDController.create()
+POST          /atomic/students                                             controllers.crud.user.StudentCRUDController.createAtomic()
+PUT           /students/:id                                                controllers.crud.user.StudentCRUDController.update(id)
+GET           /students                                                    controllers.crud.user.StudentCRUDController.all()
+GET           /atomic/students                                             controllers.crud.user.StudentCRUDController.allAtomic()
+GET           /students/:id                                                controllers.crud.user.StudentCRUDController.get(id)
+GET           /atomic/students/:id                                         controllers.crud.user.StudentCRUDController.getAtomic(id)
+DELETE        /students/:id                                                controllers.crud.user.StudentCRUDController.delete(id)
+HEAD          /students                                                    controllers.crud.user.StudentCRUDController.header
 
 #Role
-POST          /roles                                           controllers.security.RoleController.create()
-PUT           /roles/:id                                       controllers.security.RoleController.update(id)
-GET           /roles/:id                                       controllers.security.RoleController.get(id)
-GET           /roles                                           controllers.security.RoleController.all()
-DELETE        /roles/:id                                       controllers.security.RoleController.delete(id)
-HEAD          /roles                                           controllers.security.RoleController.header
+POST          /roles                                                       controllers.security.RoleController.create()
+PUT           /roles/:id                                                   controllers.security.RoleController.update(id)
+GET           /roles/:id                                                   controllers.security.RoleController.get(id)
+GET           /roles                                                       controllers.security.RoleController.all()
+DELETE        /roles/:id                                                   controllers.security.RoleController.delete(id)
+HEAD          /roles                                                       controllers.security.RoleController.header
 
 # RefRole
-POST          /refRoles                                        controllers.security.RefRoleController.create()
-POST          /atomic/refRoles                                 controllers.security.RefRoleController.createAtomic()
-PUT           /refRoles/:id                                    controllers.security.RefRoleController.update(id)
-PUT           /atomic/refRoles/:id                             controllers.security.RefRoleController.updateAtomic(id)
-GET           /refRoles                                        controllers.security.RefRoleController.all()
-GET           /atomic/refRoles                                 controllers.security.RefRoleController.allAtomic()
-GET           /refRoles/:id                                    controllers.security.RefRoleController.get(id)
-GET           /atomic/refRoles/:id                             controllers.security.RefRoleController.getAtomic(id)
-DELETE        /refRoles/:id                                    controllers.security.RefRoleController.delete(id)
-HEAD          /refRoles                                        controllers.security.RefRoleController.header
+POST          /refRoles                                                    controllers.security.RefRoleController.create()
+POST          /atomic/refRoles                                             controllers.security.RefRoleController.createAtomic()
+PUT           /refRoles/:id                                                controllers.security.RefRoleController.update(id)
+PUT           /atomic/refRoles/:id                                         controllers.security.RefRoleController.updateAtomic(id)
+GET           /refRoles                                                    controllers.security.RefRoleController.all()
+GET           /atomic/refRoles                                             controllers.security.RefRoleController.allAtomic()
+GET           /refRoles/:id                                                controllers.security.RefRoleController.get(id)
+GET           /atomic/refRoles/:id                                         controllers.security.RefRoleController.getAtomic(id)
+DELETE        /refRoles/:id                                                controllers.security.RefRoleController.delete(id)
+HEAD          /refRoles                                                    controllers.security.RefRoleController.header
 
 # Authority
-POST          /authorities                                     controllers.security.AuthorityController.create()
-POST          /atomic/authorities                              controllers.security.AuthorityController.createAtomic()
-PUT           /authorities/:id                                 controllers.security.AuthorityController.update(id)
-PUT           /atomic/authorities/:id                          controllers.security.AuthorityController.updateAtomic(id)
-GET           /authorities                                     controllers.security.AuthorityController.all()
-GET           /atomic/authorities                              controllers.security.AuthorityController.allAtomic()
-GET           /authorities/:id                                 controllers.security.AuthorityController.get(id)
-GET           /atomic/authorities/:id                          controllers.security.AuthorityController.getAtomic(id)
-DELETE        /authorities/:id                                 controllers.security.AuthorityController.delete(id)
-HEAD          /authorities                                     controllers.security.AuthorityController.header
+POST          /authorities                                                 controllers.security.AuthorityController.create()
+POST          /atomic/authorities                                          controllers.security.AuthorityController.createAtomic()
+PUT           /authorities/:id                                             controllers.security.AuthorityController.update(id)
+PUT           /atomic/authorities/:id                                      controllers.security.AuthorityController.updateAtomic(id)
+GET           /authorities                                                 controllers.security.AuthorityController.all()
+GET           /atomic/authorities                                          controllers.security.AuthorityController.allAtomic()
+GET           /authorities/:id                                             controllers.security.AuthorityController.get(id)
+GET           /atomic/authorities/:id                                      controllers.security.AuthorityController.getAtomic(id)
+DELETE        /authorities/:id                                             controllers.security.AuthorityController.delete(id)
+HEAD          /authorities                                                 controllers.security.AuthorityController.header
 
 # Permission
-GET           /permissions                                     controllers.security.PermissionController.all()
-HEAD          /permissions                                     controllers.security.PermissionController.header
+GET           /permissions                                                 controllers.security.PermissionController.all()
+HEAD          /permissions                                                 controllers.security.PermissionController.header
 
 # LabworkApplications
-POST          /labworkApplications                             controllers.crud.LabworkApplicationCRUDController.create()
-POST          /atomic/labworkApplications                      controllers.crud.LabworkApplicationCRUDController.createAtomic()
-PUT           /labworkApplications/:id                         controllers.crud.LabworkApplicationCRUDController.update(id)
-PUT           /atomic/labworkApplications/:id                  controllers.crud.LabworkApplicationCRUDController.updateAtomic(id)
-GET           /labworkApplications                             controllers.crud.LabworkApplicationCRUDController.all()
-GET           /atomic/labworkApplications                      controllers.crud.LabworkApplicationCRUDController.allAtomic()
-GET           /labworkApplications/:id                         controllers.crud.LabworkApplicationCRUDController.get(id)
-GET           /atomic/labworkApplications/:id                  controllers.crud.LabworkApplicationCRUDController.getAtomic(id)
-DELETE        /labworkApplications/:id                         controllers.crud.LabworkApplicationCRUDController.delete(id)
-HEAD          /labworkApplications                             controllers.crud.LabworkApplicationCRUDController.header
+POST          /labworkApplications                                         controllers.crud.LabworkApplicationCRUDController.create()
+POST          /atomic/labworkApplications                                  controllers.crud.LabworkApplicationCRUDController.createAtomic()
+PUT           /labworkApplications/:id                                     controllers.crud.LabworkApplicationCRUDController.update(id)
+PUT           /atomic/labworkApplications/:id                              controllers.crud.LabworkApplicationCRUDController.updateAtomic(id)
+GET           /labworkApplications                                         controllers.crud.LabworkApplicationCRUDController.all()
+GET           /atomic/labworkApplications                                  controllers.crud.LabworkApplicationCRUDController.allAtomic()
+GET           /labworkApplications/:id                                     controllers.crud.LabworkApplicationCRUDController.get(id)
+GET           /atomic/labworkApplications/:id                              controllers.crud.LabworkApplicationCRUDController.getAtomic(id)
+DELETE        /labworkApplications/:id                                     controllers.crud.LabworkApplicationCRUDController.delete(id)
+HEAD          /labworkApplications                                         controllers.crud.LabworkApplicationCRUDController.header
 
 # Schedule
-HEAD          /schedules                                       controllers.crud.schedule.ScheduleCRUDController.header
+HEAD          /schedules                                                   controllers.crud.schedule.ScheduleCRUDController.header
 
 # Schedule restricted
-POST          /courses/:course/schedules                       controllers.crud.schedule.ScheduleCRUDController.createFrom(course)
-POST          /courses/:course/atomic/schedules                controllers.crud.schedule.ScheduleCRUDController.createAtomicFrom(course)
-PUT           /courses/:course/schedules/:id                   controllers.crud.schedule.ScheduleCRUDController.updateFrom(course, id)
-PUT           /courses/:course/atomic/schedules/:id            controllers.crud.schedule.ScheduleCRUDController.updateAtomicFrom(course, id)
-GET           /courses/:course/schedules                       controllers.crud.schedule.ScheduleCRUDController.allFrom(course)
-GET           /courses/:course/atomic/schedules                controllers.crud.schedule.ScheduleCRUDController.allAtomicFrom(course)
-GET           /courses/:course/schedules/:id                   controllers.crud.schedule.ScheduleCRUDController.getFrom(course, id)
-GET           /courses/:course/atomic/schedules/:id            controllers.crud.schedule.ScheduleCRUDController.getAtomicFrom(course, id)
-GET           /courses/:c/labworks/:l/schedules/preview        controllers.crud.schedule.ScheduleCRUDController.preview(c, l)
-DELETE        /courses/:course/schedules/:id                   controllers.crud.schedule.ScheduleCRUDController.deleteFrom(course, id)
+POST          /courses/:course/schedules                                   controllers.crud.schedule.ScheduleCRUDController.createFrom(course)
+POST          /courses/:course/atomic/schedules                            controllers.crud.schedule.ScheduleCRUDController.createAtomicFrom(course)
+PUT           /courses/:course/schedules/:schedule/publish                 controllers.crud.schedule.ScheduleCRUDController.publish(course, schedule)
+PUT           /courses/:course/schedules/:id                               controllers.crud.schedule.ScheduleCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/schedules/:id                        controllers.crud.schedule.ScheduleCRUDController.updateAtomicFrom(course, id)
+GET           /courses/:course/schedules                                   controllers.crud.schedule.ScheduleCRUDController.allFrom(course)
+GET           /courses/:course/atomic/schedules                            controllers.crud.schedule.ScheduleCRUDController.allAtomicFrom(course)
+GET           /courses/:course/schedules/:id                               controllers.crud.schedule.ScheduleCRUDController.getFrom(course, id)
+GET           /courses/:course/atomic/schedules/:id                        controllers.crud.schedule.ScheduleCRUDController.getAtomicFrom(course, id)
+GET           /courses/:c/labworks/:l/schedules/preview                    controllers.crud.schedule.ScheduleCRUDController.previewFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/schedules/preview             controllers.crud.schedule.ScheduleCRUDController.previewAtomicFrom(c, l)
+DELETE        /courses/:course/schedules/:id                               controllers.crud.schedule.ScheduleCRUDController.deleteFrom(course, id)
 
 # Timetable
-HEAD          /timetables                                      controllers.crud.schedule.TimetableCRUDController.header
+HEAD          /timetables                                                  controllers.crud.schedule.TimetableCRUDController.header
 
 # Timetable restricted
-POST          /courses/:course/timetables                      controllers.crud.schedule.TimetableCRUDController.createFrom(course)
-POST          /courses/:course/atomic/timetables               controllers.crud.schedule.TimetableCRUDController.createAtomicFrom(course)
-PUT           /courses/:course/timetables/:id                  controllers.crud.schedule.TimetableCRUDController.updateFrom(course, id)
-PUT           /courses/:course/atomic/timetables/:id           controllers.crud.schedule.TimetableCRUDController.updateAtomicFrom(course, id)
-GET           /courses/:course/timetables                      controllers.crud.schedule.TimetableCRUDController.allFrom(course)
-GET           /courses/:course/atomic/timetables               controllers.crud.schedule.TimetableCRUDController.allAtomicFrom(course)
-GET           /courses/:course/timetables/:id                  controllers.crud.schedule.TimetableCRUDController.getFrom(course, id)
-GET           /courses/:course/atomic/timetables/:id           controllers.crud.schedule.TimetableCRUDController.getAtomicFrom(course, id)
-DELETE        /courses/:course/timetables/:id                  controllers.crud.schedule.TimetableCRUDController.deleteFrom(course, id)
+POST          /courses/:course/timetables                                  controllers.crud.schedule.TimetableCRUDController.createFrom(course)
+POST          /courses/:course/atomic/timetables                           controllers.crud.schedule.TimetableCRUDController.createAtomicFrom(course)
+PUT           /courses/:course/timetables/:id                              controllers.crud.schedule.TimetableCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/timetables/:id                       controllers.crud.schedule.TimetableCRUDController.updateAtomicFrom(course, id)
+GET           /courses/:course/timetables                                  controllers.crud.schedule.TimetableCRUDController.allFrom(course)
+GET           /courses/:course/atomic/timetables                           controllers.crud.schedule.TimetableCRUDController.allAtomicFrom(course)
+GET           /courses/:course/timetables/:id                              controllers.crud.schedule.TimetableCRUDController.getFrom(course, id)
+GET           /courses/:course/atomic/timetables/:id                       controllers.crud.schedule.TimetableCRUDController.getAtomicFrom(course, id)
+DELETE        /courses/:course/timetables/:id                              controllers.crud.schedule.TimetableCRUDController.deleteFrom(course, id)
 
 # Blacklist
-POST          /blacklists                                      controllers.crud.semester.BlacklistCRUDController.create()
-PUT           /blacklists/:id                                  controllers.crud.semester.BlacklistCRUDController.update(id)
-GET           /blacklists                                      controllers.crud.semester.BlacklistCRUDController.all()
-GET           /blacklists/:id                                  controllers.crud.semester.BlacklistCRUDController.get(id)
-DELETE        /blacklists/:id                                  controllers.crud.semester.BlacklistCRUDController.delete(id)
-HEAD          /blacklists                                      controllers.crud.semester.BlacklistCRUDController.header
+POST          /blacklists                                                  controllers.crud.semester.BlacklistCRUDController.create()
+PUT           /blacklists/:id                                              controllers.crud.semester.BlacklistCRUDController.update(id)
+GET           /blacklists                                                  controllers.crud.semester.BlacklistCRUDController.all()
+GET           /blacklists/:id                                              controllers.crud.semester.BlacklistCRUDController.get(id)
+DELETE        /blacklists/:id                                              controllers.crud.semester.BlacklistCRUDController.delete(id)
+HEAD          /blacklists                                                  controllers.crud.semester.BlacklistCRUDController.header
+
+# ReportCard
+POST          /reportCards                                                 controllers.ReportCardController.create()
+PUT           /reportCards/:id                                             controllers.ReportCardController.update(id)
+GET           /reportCards                                                 controllers.ReportCardController.all()
+GET           /reportCards/:id                                             controllers.ReportCardController.get(id)
+DELETE        /reportCards/:id                                             controllers.ReportCardController.delete(id)
+HEAD          /reportCards                                                 controllers.ReportCardController.header
+
+# ReportCard restricted
+PUT           /courses/:course/reportCards/:id                             controllers.ReportCardController.updateFrom(course, id)
+PUT           /courses/:course/reportCards/:card/entries/:cardEntry        controllers.ReportCardController.updateReportCardEntry(course, card, cardEntry)
+GET           /courses/:course/reportCards                                 controllers.ReportCardController.allFrom(course)
+GET           /courses/:course/reportCards/:id                             controllers.ReportCardController.getFrom(course, id)
+
+# AssignmentPlan
+POST          /courses/:course/assignmentPlans                             controllers.crud.AssignmentPlanCRUDController.createFrom(course)
+PUT           /courses/:course/assignmentPlans/:id                         controllers.crud.AssignmentPlanCRUDController.updateFrom(course, id)
+GET           /courses/:course/assignmentPlans                             controllers.crud.AssignmentPlanCRUDController.allFrom(course)
+GET           /courses/:course/assignmentPlans/:id                         controllers.crud.AssignmentPlanCRUDController.getFrom(course, id)
+DELETE        /courses/:course/assignmentPlans/:id                         controllers.crud.AssignmentPlanCRUDController.deleteFrom(course, id)
+HEAD          /assignmentPlans                                             controllers.crud.AssignmentPlanCRUDController.header
 
 # Sessions
-POST          /sessions                                        controllers.SessionController.login
-GET           /sessions                                        controllers.SessionController.valid
-DELETE        /sessions                                        controllers.SessionController.logout
-HEAD          /sessions                                        controllers.SessionController.header
+POST          /sessions                                                    controllers.SessionController.login
+GET           /sessions                                                    controllers.SessionController.valid
+DELETE        /sessions                                                    controllers.SessionController.logout
+HEAD          /sessions                                                    controllers.SessionController.header
 
 # APIData
-GET           /api/populate                                    controllers.ApiDataController.populate
-GET           /api/added                                       controllers.ApiDataController.getAdded
-GET           /api/aps                                         controllers.ApiDataController.aps
-GET           /api/apAp                                        controllers.ApiDataController.apAp
+GET           /api/populate                                                controllers.ApiDataController.populate
+GET           /api/added                                                   controllers.ApiDataController.getAdded
+GET           /api/reportCard/:user                                        controllers.ApiDataController.reportCard(user)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file                                    controllers.Assets.at(path="/public", file)
+GET           /assets/*file                                                controllers.Assets.at(path="/public", file)

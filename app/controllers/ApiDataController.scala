@@ -1,12 +1,16 @@
 package controllers
 
+import java.util.UUID
+
 import models._
 import models.applications.LabworkApplication
+import models.schedule.{Weekday, TimetableEntry, Timetable}
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
-import models.semester.Semester
+import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student}
-import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.{LocalTime, LocalDate}
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
@@ -19,21 +23,22 @@ import scala.util.{Failure, Success, Try}
 
 object ApiDataController {
   import models.security.Permissions._
+
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all + course.update
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ reportCard.all ++ assignmentPlan.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) + group.get
+    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++ reportCard.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, timetable.get)
+    Set(schedule.get, timetable.get) ++ reportCard.all
   )
 
   val rvRole = Role(RightsManager, authority.all ++ refRole.all ++ role.all)
   val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
-      semester.get + group.get + user.get
+      semester.get + group.get + user.get + reportCard.get
   )
   val employeeRole = Role(Roles.Employee,
     room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) + labworkApplication.getAll ++ entryType.all
@@ -77,56 +82,32 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val cgaEisemann = Course.randomUUID
 
   val ap1MiPrak = Labwork.randomUUID
+  val ap1WiPrak = Labwork.randomUUID
+  val ap1TiPrak = Labwork.randomUUID
+  val ap1AiPrak = Labwork.randomUUID
+  val ap2WiPrak = Labwork.randomUUID
+  val ap2TiPrak = Labwork.randomUUID
+  val ap2AiPrak = Labwork.randomUUID
+  val ap2MiPrak = Labwork.randomUUID
+  val ma1WiPrak = Labwork.randomUUID
+  val ma1AiPrak = Labwork.randomUUID
+  val ma1TiPrak = Labwork.randomUUID
+  val ma1MiPrak = Labwork.randomUUID
+  val ma2AiPrak = Labwork.randomUUID
+  val ma2MiPrak = Labwork.randomUUID
+  val ma2TiPrak = Labwork.randomUUID
+  val cgaMiPrak = Labwork.randomUUID
 
   val alexStudent = Student.randomUUID
   val uweStudent = Student.randomUUID
   val robertStudent = Student.randomUUID
   val christianStudent = Student.randomUUID
 
-  val ap1Plan = {
-    import models.AssignmentEntryType._
-
-    val amount = 8
-    val entries = Set(
-      AssignmentEntry(0, "Einführung", Set(Attendance)),
-      AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
-      AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
-      AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
-      AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
-      AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
-      AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
-      AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
-
-    )
-    AssignmentPlan(amount, amount - 1, entries)
-  }
-  val ap2Plan = {
-    import models.AssignmentEntryType._
-
-    val amount = 6
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
-    AssignmentPlan(amount, amount, entries)
-  }
-  val ma1Plan = {
-    import models.AssignmentEntryType._
-
-    val amount = 4
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
-    AssignmentPlan(amount, amount, entries)
-  }
-  val ma2Plan = {
-    import models.AssignmentEntryType._
-
-    val amount = 4
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
-    AssignmentPlan(amount, amount, entries)
-  }
-  val cgaPlan = {
-    import models.AssignmentEntryType._
-
-    val amount = 6
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Certificate))).toSet
-    AssignmentPlan(amount, amount, entries)
+  val randomStudents = {
+    val degrees = Vector(ai, mi, ti, wi)
+    (0 until 400).map(n =>
+      Student(n.toString, n.toString, n.toString, n.toString, n.toString, degrees(nextInt(degrees.size)), Student.randomUUID)
+    ).toList
   }
 
   def populate = Action { request =>
@@ -139,7 +120,10 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       courses ++
       refroles ++
       labworks ++
-      students ++ foo ++
+      students ++
+      plans ++
+      timetables ++
+      blacklists ++
       lApps).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
@@ -151,21 +135,24 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     }
   }
 
-  def aps = Action { request =>
-    import bindings.AssignmentPlanBinding._
-    import AssignmentPlan._
+  def reportCard(user: String) = Action { request =>
+    import bindings.ReportCardBinding._
+    import models.AssignmentEntryType._
 
-    repository.get[AssignmentPlan](assignmentPlanBinder, classUri) match {
-      case Success(ap) => Ok(Json.toJson(ap))
-      case Failure(e) => InternalServerError(e.getMessage)
+    val entries = (0 until 5).map { n =>
+      val start = LocalTime.now.plusHours(n)
+      ReportCardEntry(n, n.toString, LocalDate.now, start, start.plusHours(1), UUID.randomUUID(), Set(AssignmentEntryType.Attendance).map(fromProtocol))
+    }.toSet
+    val card = ReportCard(UUID.fromString(user), ap1MiPrak, entries)
+
+    repository.add[ReportCard](card) match {
+      case Success(_) => Ok(Json.obj(
+        "status" -> "Ok"
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "error" -> e.getMessage
+      ))
     }
-  }
-
-  def apAp = Action { request =>
-    import AssignmentPlan._
-    import AssignmentEntryType._
-
-    Ok(Json.toJson(ap1Plan))
   }
 
   def getAdded = Action { request =>
@@ -296,45 +283,146 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.LabworkBinding._
 
     List(
-      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, ap1Plan),
-      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, ap1Plan),
-      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, ap1Plan, ap1MiPrak),
-      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, ap1Plan),
-      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, ap2Plan),
-      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, ap2Plan),
-      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, ap2Plan),
-      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, ap2Plan),
-      Labwork("ma1 wi", "leopold", ws1516, ma1Leopold, wi, ma1Plan),
-      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, ma1Plan),
-      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, ma1Plan),
-      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, ma1Plan),
-      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, ma2Plan),
-      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, ma2Plan),
-      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, ma2Plan),
-      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, cgaPlan)
+      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, ap1WiPrak),
+      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, ap1AiPrak),
+      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, ap1MiPrak),
+      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, ap1TiPrak),
+      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, ap2WiPrak),
+      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, ap2AiPrak),
+      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, ap2MiPrak),
+      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, ap2TiPrak),
+      Labwork("ma1 wi", "leopold", ws1516, ma1Leopold, wi, ma1WiPrak),
+      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, ma1AiPrak),
+      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, ma1MiPrak),
+      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, ma1TiPrak),
+      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, ma2AiPrak),
+      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, ma2MiPrak),
+      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, ma2TiPrak),
+      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, cgaMiPrak)
     ).map(repository.add[Labwork])
   }
 
   def students = {
     import bindings.StudentBinding._
+    import scala.util.Random._
 
-    List(
+    (List(
       Student("gmId dobrynin", "alex", "dobrynin", "dobrynin@gm.th-koeln.de", "111111", mi, alexStudent),
       Student("gmId muesse", "uwe", "muesse", "muesse@gm.th-koeln.de", "222222", mi, uweStudent),
       Student("gmId avram", "robert", "avram", "avram@gm.th-koeln.de", "333333", mi, robertStudent),
       Student("gmId hahn", "christian", "hahn", "hahn@gm.th-koeln.de", "444444", mi, christianStudent)
-    ).map(repository.add[Student])
+    ) ++ randomStudents).map(repository.add[Student])
   }
 
   def lApps = {
     import bindings.LabworkApplicationBinding._
+    import scala.util.Random._
 
-    List(
+    val ap1Praks = Vector(ap1MiPrak, ap1AiPrak, ap1TiPrak, ap1WiPrak)
+    val ma1Praks = Vector(ma1MiPrak, ma1AiPrak, ma1TiPrak, ma1WiPrak)
+    val ap1Apps = randomStudents.map(s => LabworkApplication(ap1Praks(nextInt(ap1Praks.size)), s.id, Set.empty))
+    val ma1Apps = randomStudents.map(s => LabworkApplication(ma1Praks(nextInt(ma1Praks.size)), s.id, Set.empty))
+
+    (List(
       LabworkApplication(ap1MiPrak, alexStudent, Set(robertStudent)),
       LabworkApplication(ap1MiPrak, robertStudent, Set(alexStudent)),
       LabworkApplication(ap1MiPrak, uweStudent, Set(christianStudent)),
       LabworkApplication(ap1MiPrak, christianStudent, Set(uweStudent))
-    ).map(repository.add[LabworkApplication])
+    ) ++ ap1Apps ++ ma1Apps).map(repository.add[LabworkApplication])
+  }
+
+  def plans = {
+    import models.AssignmentEntryType._
+    import bindings.AssignmentPlanBinding._
+
+    def ap1Plan(labwork: UUID): AssignmentPlan = {
+      val amount = 8
+      val entries = Set(
+        AssignmentEntry(0, "Einführung", Set(Attendance).map(fromProtocol)),
+        AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate).map(fromProtocol)),
+        AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate).map(fromProtocol)),
+        AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus).map(fromProtocol)),
+        AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate).map(fromProtocol)),
+        AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate).map(fromProtocol)),
+        AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol)),
+        AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol))
+
+      )
+      AssignmentPlan(labwork, amount, amount - 1, entries)
+    }
+    def genPlan(labwork: UUID, amount: Int): AssignmentPlan = {
+      import scala.util.Random._
+
+      val types = all.toVector
+      val random = shuffle(types).take(nextInt(types.size)).toSet
+
+      val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", random.map(fromProtocol))).toSet
+      AssignmentPlan(labwork, amount, amount, entries)
+    }
+
+    (List(ap1WiPrak, ap1MiPrak, ap1TiPrak, ap1AiPrak).map(ap1Plan) ++
+    List(ap2WiPrak, ap2MiPrak, ap2TiPrak, ap2AiPrak).map(genPlan(_, 6)) ++
+    List(ma1WiPrak, ma1MiPrak, ma1TiPrak, ma1AiPrak).map(genPlan(_, 4)) ++
+    List(ma2MiPrak, ma2TiPrak, ma2AiPrak).map(genPlan(_, 4)) ++
+    List(cgaMiPrak).map(genPlan(_, 6))).map(repository.add[AssignmentPlan])
+  }
+
+  def timetables = {
+    import bindings.TimetableBinding._
+
+    val ft = DateTimeFormat.forPattern("HH:mm:ss")
+    val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
+
+    val ap1MiEntries = Set(
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+    )
+    val ma1MiEntries = Set(
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(Employee.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+    )
+
+    List(
+      Timetable(ap1MiPrak, ap1MiEntries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID),
+      Timetable(ma1MiPrak, ma1MiEntries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
+    ).map(repository.add[Timetable])
+  }
+
+  def blacklists = {
+    import bindings.BlacklistBinding._
+
+    val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
+
+    val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
+    val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
+
+    List(
+      Blacklist(profileWeek, Blacklist.randomUUID),
+      Blacklist(christmas, Blacklist.randomUUID)
+    ).map(repository.add[Blacklist])
   }
 
   def foo = {

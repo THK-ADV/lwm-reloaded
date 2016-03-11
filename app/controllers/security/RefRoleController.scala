@@ -28,8 +28,8 @@ class RefRoleController(val repository: SesameRepository, val namespace: Namespa
 
   override implicit def rdfWrites: ToPG[Sesame, RefRole] = defaultBindings.RefRoleBinding.refRoleBinder
 
-  override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = id match {
-    case Some(uuid) => RefRole(input.module, input.role, uuid)
+  override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = existing match {
+    case Some(refRole) => RefRole(input.module, input.role, refRole.id)
     case None => RefRole(input.module, input.role, RefRole.randomUUID)
   }
 

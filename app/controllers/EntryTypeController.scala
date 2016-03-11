@@ -21,7 +21,7 @@ with SecureControllerContext {
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
-    import AssignmentEntryType._
+    import AssignmentEntryType.protocolWrites
 
     Ok(Json.toJson(AssignmentEntryType.all)).as(mimeType)
   }

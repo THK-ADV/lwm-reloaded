@@ -33,8 +33,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
 
   override implicit def writes: Writes[LabworkApplication] = LabworkApplication.writes
 
-  override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = id match {
-    case Some(uuid) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, uuid)
+  override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = existing match {
+    case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, lapp.id)
     case None => LabworkApplication(input.labwork, input.applicant, input.friends)
   }
 

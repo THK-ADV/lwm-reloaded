@@ -22,8 +22,8 @@ import scala.util.{Failure, Success, Try}
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication] {
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val applicantToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID(), Student.randomUUID)
   val applicantToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID(), Student.randomUUID)
@@ -40,7 +40,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
   override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = entityToPass
+    override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -84,7 +84,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   "A LabworkApplicationCRUDControllerSpec" should {
 
     "return the corresponding labworkApplication for a given labwork" in {
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
+      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, Labwork.randomUUID)
 
       val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
       val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -109,7 +109,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "return all corresponding applications for a given labwork" in {
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, Labwork.randomUUID)
 
     val first = LabworkApplication(labwork.id, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
@@ -133,7 +133,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "not return applications for a labwork when there is no match" in {
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty, Labwork.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, Labwork.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, Student.randomUUID, Set(Student.randomUUID))

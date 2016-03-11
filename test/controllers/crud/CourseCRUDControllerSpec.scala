@@ -28,7 +28,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override val controller: CourseCRUDController = new CourseCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
+    override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

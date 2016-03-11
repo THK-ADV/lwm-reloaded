@@ -23,7 +23,7 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
 
   override val controller: AbstractCRUDController[RoomProtocol, Room] = new RoomCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = entityToPass
+    override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

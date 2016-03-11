@@ -1,7 +1,9 @@
 package bind
 
+import java.util.UUID
+
 import base.SesameDbSpec
-import models.{AssignmentPlan, AssignmentEntry, AssignmentEntryType}
+import models.{Labwork, AssignmentPlan, AssignmentEntry, AssignmentEntryType}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -19,16 +21,18 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   import bindings.AssignmentEntryBinding._
   import bindings.AssignmentEntryTypeBinding._
   import bindings.uuidBinder
+  import bindings.uuidRefBinder
 
-  val assignmentPlan = AssignmentPlan(2, 2, Set(
-    AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
-    AssignmentEntry(1, "label 2", Set(Attendance, Bonus))
+  val assignmentPlan = AssignmentPlan(UUID.randomUUID(), 2, 2, Set(
+    AssignmentEntry(0, "label 1", Set(Attendance, Certificate).map(fromProtocol)),
+    AssignmentEntry(1, "label 2", Set(Attendance, Bonus).map(fromProtocol))
   ))
 
   val assignmentEntry = assignmentPlan.entries.head
 
   val assignmentPlanGraph = (
     URI(AssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
+      .--(lwm.labwork).->-(assignmentPlan.labwork)(ops, uuidRefBinder(Labwork.splitter))
       -- lwm.attendance ->- assignmentPlan.attendance
       -- lwm.mandatory ->- assignmentPlan.mandatory
       -- lwm.entries ->- assignmentPlan.entries
@@ -79,7 +83,4 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
       }
     }
   }
-
-
-
 }

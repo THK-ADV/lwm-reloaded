@@ -19,8 +19,8 @@ import scala.util.{Success, Failure, Try}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val studentsToPass = Set(
     Student("systemId1 to pass", "last name 1 to pass", "first name 1 to pass", "email1 to pass", "regId1 to pass", UUID.randomUUID(), Student.randomUUID),
@@ -35,6 +35,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override val controller: GroupCRUDController = new GroupCRUDController(repository, namespace, roleService, groupService) {
 
+    override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = entityToPass
+
     override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
@@ -42,8 +44,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
-
-    override protected def fromInput(input: GroupProtocol, id: Option[UUID]): Group = entityToPass
   }
 
   override val entityToFail: Group = Group("label to fail", labworkToFail.id, studentsToFail.map(_.id), Group.randomUUID)
@@ -83,7 +83,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   "A GroupCRUDController also" should {
 
     "return the corresponding group for a given labwork" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", labwork.id, Set.empty[UUID])
@@ -107,7 +107,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "return all corresponding groups for a given labwork" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -130,8 +130,56 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       contentAsJson(result) shouldBe Json.toJson(Set(third, fourth))
     }
 
+    "return all corresponding groups for a given student" in {
+      val student = Student.randomUUID
+
+      val first = Group("first", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID, Student.randomUUID))
+      val second = Group("second", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+      val third = Group("third", Labwork.randomUUID, Set(student, Student.randomUUID))
+      val fourth = Group("fourth", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.studentAttribute}=$student"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(third))
+    }
+
+    "return all corresponding groups for a given group label" in {
+      val label = "fourth"
+
+      val first = Group("first", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID, Student.randomUUID))
+      val second = Group("second", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+      val third = Group("third", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+      val fourth = Group("fourth", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+
+      val groups = Set(first, second, third, fourth)
+
+      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labelAttribute}=$label"
+      )
+
+      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
+    }
+
     "not return groups for a labwork when there is no match" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -155,7 +203,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "not return groups when there is an invalid query attribute" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
@@ -184,7 +232,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "not return groups when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, AssignmentPlan.empty)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
 
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])

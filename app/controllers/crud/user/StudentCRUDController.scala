@@ -28,9 +28,9 @@ class StudentCRUDController(val repository: SesameRepository, val namespace: Nam
 
    override implicit def writes: Writes[Student] = Student.writes
 
-   override protected def fromInput(input: StudentProtocol, id: Option[UUID]): Student = id match {
-      case Some(uuid) =>
-         Student(input.systemId, input.lastname, input.firstname, input.email, input.registrationId, input.enrollment, uuid)
+   override protected def fromInput(input: StudentProtocol, existing: Option[Student]): Student = existing match {
+      case Some(student) =>
+         Student(input.systemId, input.lastname, input.firstname, input.email, input.registrationId, input.enrollment, student.id)
       case None =>
          Student(input.systemId, input.lastname, input.firstname, input.email, input.registrationId, input.enrollment, Student.randomUUID)
    }

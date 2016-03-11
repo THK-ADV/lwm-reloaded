@@ -17,7 +17,7 @@ class EmployeeCRUDControllerSpec extends AbstractCRUDControllerSpec[EmployeeProt
 
   override val controller: AbstractCRUDController[EmployeeProtocol, Employee] = new EmployeeCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: EmployeeProtocol, id: Option[UUID]): Employee = entityToPass
+    override protected def fromInput(input: EmployeeProtocol, existing: Option[Employee]): Employee = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

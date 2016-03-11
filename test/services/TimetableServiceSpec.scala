@@ -47,7 +47,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
         case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(aEntries.size, aEntries.size, aEntries)
+      val plan = AssignmentPlan(timetable.labwork, aEntries.size, aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
       val groups = (0 until 6).map(n => Group(n.toString, timetable.labwork, members)).toSet
 
@@ -79,7 +79,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with global blacklists applied" in {
       val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Blacklist.empty, Timetable.randomUUID)
       val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
-      val plan = AssignmentPlan(aEntries.size, aEntries.size, aEntries)
+      val plan = AssignmentPlan(timetable.labwork, aEntries.size, aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
       val groups = (0 until 6).map(n => Group(n.toString, timetable.labwork, members)).toSet
 
@@ -121,7 +121,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
         case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(aEntries.size, aEntries.size, aEntries)
+      val plan = AssignmentPlan(timetable.labwork, aEntries.size, aEntries.size, aEntries)
       val members = (0 until 20).map(_ => Student.randomUUID).toSet
       val groups = (0 until 6).map(n => Group(n.toString, timetable.labwork, members)).toSet
 

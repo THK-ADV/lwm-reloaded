@@ -39,9 +39,9 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
 
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
-  override protected def fromInput(input: LabworkProtocol, id: Option[UUID]): Labwork = id match {
-    case Some(uuid) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, uuid)
-    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.assignmentPlan, Labwork.randomUUID)
+  override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
+    case Some(labwork) => Labwork(input.label, input.description, input.semester, input.course, input.degree, labwork.id)
+    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, Labwork.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
@@ -60,7 +60,7 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
   }
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
-    input.label == output.label && input.description == output.description && input.assignmentPlan.entries == output.assignmentPlan.entries
+    input.label == output.label && input.description == output.description
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
@@ -88,7 +88,7 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
         c <- course
         d <- degree
       } yield {
-        val atom = LabworkAtom(output.label, output.description, s, c, d, output.assignmentPlan, output.id)
+        val atom = LabworkAtom(output.label, output.description, s, c, d, output.id)
         Json.toJson(atom)
       }
     }
@@ -110,7 +110,7 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
           s <- semesters.find(_.id == labwork.semester)
           c <- courses.find(_.id == labwork.course)
           d <- degrees.find(_.id == labwork.degree)
-        } yield LabworkAtom(labwork.label, labwork.description, s, c, d, labwork.assignmentPlan, labwork.id)) match {
+        } yield LabworkAtom(labwork.label, labwork.description, s, c, d, labwork.id)) match {
           case Some(atom) => newSet + atom
           case None => newSet
         }
@@ -132,11 +132,13 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    super.create(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
+    super.create(NonSecureBlock)(newRequest)
   }
 
   def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    super.createAtomic(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
+    super.createAtomic(NonSecureBlock)(newRequest)
   }
 
   def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
@@ -160,10 +162,12 @@ class LabworkCRUDController(val repository: SesameRepository, val namespace: Nam
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
+    super.all(NonSecureBlock)(newRequest)
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.allAtomic(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
+    super.allAtomic(NonSecureBlock)(newRequest)
   }
 }

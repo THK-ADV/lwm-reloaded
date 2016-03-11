@@ -34,11 +34,9 @@ object ScheduleServiceSpec {
     unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27) toVector
   }
 
-  def assignmentPlan(amount: Int): AssignmentPlan = {
-    import models.AssignmentEntryType._
-
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set(Attendance))).toSet
-    AssignmentPlan(amount, amount, entries)
+  def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set.empty, duration)).toSet
+    AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
   }
 
   def population(n: Int): Vector[UUID] = Stream.continually(UUID.randomUUID()) take n toVector
@@ -56,13 +54,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
   def gen(specs: Vector[(Timetable, Set[Group], AssignmentPlan)]): Vector[(Gen[ScheduleG, Conflict, Int], Int)] = {
-    def tryGen(t: Timetable, g: Set[Group], ap: AssignmentPlan, comp: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
-      scheduleService.generate(t, g, ap, comp)
-    }
-
     specs.foldLeft((Vector.empty[ScheduleG], Vector.empty[(Gen[ScheduleG, Conflict, Int], Int)])) {
       case ((comp, _), (t, g, ap)) =>
-        val result = tryGen(t, g, ap, comp)
+        val result = scheduleService.generate(t, g, ap, comp)
 
         (comp ++ Vector(result._1.elem), Vector((result._1, result._2)))
     }._2
@@ -193,7 +187,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are no other schedules" in {
       val plan = assignmentPlan(5)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(labwork.id, entries, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
 
@@ -217,8 +211,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -410,7 +404,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
 
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -461,13 +455,13 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate a schedule with minimal or no collisions considering one existing competitive schedule and more density" in {
       val ap1Plan = assignmentPlan(8)
-      val ma1Plan = assignmentPlan(4)
+      val ma1Plan = assignmentPlan(4, 2)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, ma1Plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -529,16 +523,16 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate a schedule with minimal or no conflicts considering two existing competitive schedules and more density" in {
       val ap1Plan = assignmentPlan(8)
-      val ma1Plan = assignmentPlan(4)
+      val ma1Plan = assignmentPlan(4, 2)
       val gdvkPlan = assignmentPlan(4)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
       val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val gdvk = Course("gdvk", "c3", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, ma1Plan)
-      val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, gdvk.id, mi.id, gdvkPlan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
+      val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, gdvk.id, mi.id)
 
       val ap1Entries = Set(
         TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),

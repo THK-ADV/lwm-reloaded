@@ -39,8 +39,8 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def writes: Writes[Course] = Course.writes
 
-  override protected def fromInput(input: CourseProtocol, id: Option[UUID]): Course = id match {
-    case Some(uuid) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, uuid)
+  override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = existing match {
+    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, course.id)
     case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
   }
 
@@ -122,8 +122,6 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     }
   }
 
-  // create mv, ma and hk refrole for given course
-  // assign mv and rv refrole to lecturer's authority
   private def withRoles(secureContext: SecureContext)(f: Course => Try[Result]) = secureContext contentTypedAction { request =>
     request.body.validate[CourseProtocol].fold(
       errors => {

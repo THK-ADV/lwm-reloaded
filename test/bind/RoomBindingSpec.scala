@@ -41,6 +41,5 @@ class RoomBindingSpec extends SesameDbSpec {
           fail(s"Unable to deserialise room graph: $e")
       }
     }
-
-    }
+  }
 }

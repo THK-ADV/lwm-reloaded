@@ -22,7 +22,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   override def entityTypeName: String = "authority"
 
   override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityController(repository, namespace, roleService) {
-    override protected def fromInput(input: AuthorityProtocol, id: Option[UUID]): Authority = entityToPass
+
+    override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

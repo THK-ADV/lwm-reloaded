@@ -20,10 +20,11 @@ class ScheduleBindingSpec extends SesameDbSpec {
   import bindings.ScheduleEntryBinding.scheduleEntryBinder
   import bindings.uuidRefBinder
 
-  val schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry], Schedule.randomUUID)
+  val schedule = Schedule(Labwork.randomUUID, Set.empty[ScheduleEntry])
   val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
     .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.entries).->-(schedule.entries)
+    .--(lwm.published).->-(schedule.published)
     .--(lwm.id).->-(schedule.id).graph
 
   "A ScheduleBindingSpec" should {

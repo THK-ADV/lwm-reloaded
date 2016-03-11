@@ -2,9 +2,6 @@ package controllers.crud.schedule
 
 import java.util.UUID
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
-import models.Attendance
-import models.Bonus
-import models.Certificate
 import models._
 import models.schedule._
 import models.semester.{Blacklist, Semester}
@@ -17,15 +14,15 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.{ScheduleService, ScheduleEntryG, ScheduleG, Conflict}
+import services._
 import utils.{Evaluation, Gen, LwmMimeType}
 
 import scala.util.{Failure, Success}
 
 class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProtocol, Schedule] {
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AssignmentPlan.empty)
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val roomToPass = Room("room to pass", "desc to pass")
   val roomToFail = Room("room to fail", "desc to fail")
@@ -59,9 +56,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     )
   ).toSet
 
-  override val entityToFail: Schedule = Schedule(labworkToFail.id, entriesToFail, Schedule.randomUUID)
+  override val entityToFail: Schedule = Schedule(labworkToFail.id, entriesToFail)
 
-  override val entityToPass: Schedule = Schedule(labworkToPass.id, entriesToPass, Schedule.randomUUID)
+  override val entityToPass: Schedule = Schedule(labworkToPass.id, entriesToPass)
 
   import ops._
   import bindings.ScheduleBinding.scheduleBinder
@@ -71,10 +68,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   override def entityTypeName: String = "schedule"
 
   val scheduleService = org.scalatest.mock.MockitoSugar.mock[ScheduleService]
+  val reportCardService = org.scalatest.mock.MockitoSugar.mock[ReportCardService]
 
-  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, namespace, roleService, scheduleService) {
+  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, namespace, roleService, scheduleService, reportCardService) {
 
-    override protected def fromInput(input: ScheduleProtocol, id: Option[UUID]): Schedule = entityToPass
+    override protected def fromInput(input: ScheduleProtocol, existing: Option[Schedule]): Schedule = entityToPass
 
     override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -91,7 +89,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
   override val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
-    "entries" -> entityToPass.entries
+    "entries" -> entityToPass.entries,
+    "published" -> entityToPass.published
   )
 
   override val updateJson: JsValue = Json.obj(
@@ -99,7 +98,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     "entries" -> (
       entityToPass.entries +
         ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-      )
+      ),
+    "published" -> true
   )
 
   private def toScheduleEntryAtom(entries: Set[ScheduleEntry])(room: Room, supervisor: Employee, group: Group): Set[ScheduleEntryAtom] = {
@@ -109,28 +109,25 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   val atomizedEntityToPass = ScheduleAtom(
     labworkToPass,
     toScheduleEntryAtom(entriesToPass)(roomToPass, supervisorToPass, groupToPass),
+    entityToPass.published,
     entityToPass.id
   )
 
   val atomizedEntityToFail = ScheduleAtom(
     labworkToFail,
     toScheduleEntryAtom(entriesToFail)(roomToFail, supervisorToFail, groupToFail),
+    entityToPass.published,
     entityToFail.id
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]
-  val emptyPlan = AssignmentPlan.empty
-  val assignmentPlan = AssignmentPlan(2, 2, Set(
-    AssignmentEntry(0, "label 1", Set(AssignmentEntryType.Attendance, AssignmentEntryType.Certificate)),
-    AssignmentEntry(1, "label 2", Set(AssignmentEntryType.Attendance, AssignmentEntryType.Bonus))
-  ))
 
   "A ScheduleCRUDController also" should {
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
       val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val course = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID, emptyPlan)
+      val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID)
 
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
 
@@ -147,15 +144,15 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val course2 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val course3 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID, emptyPlan)
-      val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID, emptyPlan)
-      val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID, emptyPlan)
+      val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID)
+      val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID)
+      val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID)
 
       val groups = (0 until 3).map(n => Group(n.toString, Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
 
-      val first = Schedule(labwork1.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
-      val second = Schedule(labwork2.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
-      val third = Schedule(labwork3.id, Set.empty[ScheduleEntry], Schedule.randomUUID)
+      val first = Schedule(labwork1.id, Set.empty[ScheduleEntry])
+      val second = Schedule(labwork2.id, Set.empty[ScheduleEntry])
+      val third = Schedule(labwork3.id, Set.empty[ScheduleEntry])
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
@@ -169,7 +166,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
           s should not be empty
           s.size shouldBe 2
 
-          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], sg.id))
+          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], published = false, sg.id))
           schedules.contains(first) shouldBe true
           schedules.contains(second) shouldBe true
           schedules.contains(third) shouldBe false
@@ -178,7 +175,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully when there are no competitive schedules" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -189,7 +187,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -197,12 +195,11 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -214,7 +211,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully although there are competitive schedules" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -225,7 +223,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -233,14 +231,13 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -252,7 +249,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "preview a schedule successfully where conflicts are found" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -269,7 +267,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -277,14 +275,13 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -296,7 +293,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when assignment plan is empty" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), emptyPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -305,22 +302,17 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
-      val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
-      }
 
       val request = FakeRequest(
         GET,
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(AssignmentPlan.empty))).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -331,29 +323,25 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when timetable is empty" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
-      val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
-      }
 
       val request = FakeRequest(
         GET,
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -364,7 +352,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "not preview a schedule when groups are empty" in {
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignmentPlan)
+      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
@@ -372,22 +361,17 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
-      val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
-      }
 
       val request = FakeRequest(
         GET,
         s"/labworks/${labwork.id}/${entityTypeName}s/preview"
       )
 
-      doReturn(Success(Set.empty[Group])).doReturn(Success(Set(timetable))).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+      doReturn(Success(Set.empty[Group])).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(labwork.course.toString, labwork.id.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(labwork.course.toString, labwork.id.toString)(request)
 
       status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
@@ -407,11 +391,10 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       )
 
       val exception = new Exception("Oops, something went wrong")
-      doReturn(Failure(exception)).doReturn(Failure(exception)).when(repository).get(anyObject(), anyObject())
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Failure(exception))
+      doReturn(Failure(exception)).doReturn(Failure(exception)).doReturn(Success(Set(AssignmentPlan.empty))).when(repository).get(anyObject(), anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
 
-      val result = controller.asInstanceOf[ScheduleCRUDController].preview(course.toString, labwork.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].previewFrom(course.toString, labwork.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
@@ -533,6 +516,88 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         s"/${entityTypeName}s"
       )
       val result = controller.allAtomic()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    "successfully publish a schedule and create dedicated report cards" in {
+      val courseId = Course.randomUUID
+      val scheduleId = Schedule.randomUUID
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(
+        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      ))
+      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set(pointedGraph)))
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+      )
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "OK",
+        "message" -> "Published"
+      )
+    }
+
+    "fail publishing a schedule when there are no students for report cards" in {
+      val courseId = Course.randomUUID
+      val scheduleId = Schedule.randomUUID
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(
+        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      ))
+      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+      )
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "Error while creating report cards"
+      )
+    }
+
+    "fail publishing a schedule when there is a exception" in {
+      val courseId = Course.randomUUID
+      val scheduleId = Schedule.randomUUID
+      val errorMessage = "Oops, something went wrong"
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(
+        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      ))
+      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+      )
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
