@@ -8,10 +8,8 @@ import scala.language.implicitConversions
 case class LwmMimeType(value: String)
 
 object LwmMimeType {
-
+  val userV1Json = LwmMimeType("application/vnd.fhk.user.V1+json")
   val loginV1Json = LwmMimeType("application/vnd.fhk.login.V1+json")
-  val studentV1Json = LwmMimeType("application/vnd.fhk.student.V1+json")
-  val employeeV1Json = LwmMimeType("application/vnd.fhk.employee.V1+json")
   val courseV1Json = LwmMimeType("application/vnd.fhk.course.V1+json")
   val degreeV1Json = LwmMimeType("application/vnd.fhk.degree.V1+json")
   val groupV1Json = LwmMimeType("application/vnd.fhk.group.V1+json")
@@ -37,11 +35,8 @@ object LwmContentTypes extends ContentTypes {
 
   import play.api.mvc.Codec
 
+
   def loginV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.loginV1Json)
-
-  def studentV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.studentV1Json)
-
-  def employeeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.employeeV1Json)
 
   def courseV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.courseV1Json)
 
@@ -54,6 +49,8 @@ object LwmContentTypes extends ContentTypes {
   def roomV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.roomV1Json)
 
   def semesterV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.semesterV1Json)
+
+  def userV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.userV1Json)
 
   def refRoleV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.refRoleV1Json)
 
@@ -80,8 +77,7 @@ object LwmContentTypes extends ContentTypes {
 
 object LwmAccepts {
   val LoginV1Accept = Accepting(LwmMimeType.loginV1Json)
-  val StudentV1Accept = Accepting(LwmMimeType.studentV1Json)
-  val EmployeeV1Accept = Accepting(LwmMimeType.employeeV1Json)
+  val UserV1Accept = Accepting(LwmMimeType.userV1Json)
   val CourseV1Accept = Accepting(LwmMimeType.courseV1Json)
   val DegreeV1Accept = Accepting(LwmMimeType.degreeV1Json)
   val GroupV1Accept = Accepting(LwmMimeType.groupV1Json)

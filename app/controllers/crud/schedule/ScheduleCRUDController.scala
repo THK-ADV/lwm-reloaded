@@ -7,7 +7,7 @@ import models.{schedule => _, _}
 import models.schedule.{Schedule, ScheduleEntry, ScheduleProtocol, Timetable}
 import org.openrdf.model.Value
 import models.schedule._
-import models.users.Employee
+import models.users.{User, Employee}
 import org.w3.banana.{RDFPrefix, PointedGraph}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -309,7 +309,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
     for {
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
       rooms <- repository.getMany[Room](output.entries.map(e => Room.generateUri(e.room)(namespace)))
-      supervisors <- repository.getMany[Employee](output.entries.map(e => Employee.generateUri(e.supervisor)(namespace)))
+      supervisors <- repository.getMany[Employee](output.entries.map(e => User.generateUri(e.supervisor)(namespace)))
       groups <- repository.getMany[Group](output.entries.map(e => Group.generateUri(e.group)(namespace)))
     } yield {
       labwork.map { l =>
@@ -326,44 +326,6 @@ class ScheduleCRUDController(val repository: SesameRepository,
         Json.toJson(ScheduleAtom(l, entries, output.published, output.id))(Schedule.atomicWrites)
       }
     }
-  }
-
-  override protected def atomizeMany(output: Set[Schedule]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.RoomBinding.roomBinder
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import defaultBindings.GroupBinding.groupBinder
-    import Schedule._
-    import ScheduleEntry._
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(s => Labwork.generateUri(s.labwork)(namespace)))
-      rooms <- output.map(s => repository.getMany[Room](s.entries.map(e => Room.generateUri(e.room)(namespace)))).sequence
-      supervisors <- output.map(s => repository.getMany[Employee](s.entries.map(e => Employee.generateUri(e.supervisor)(namespace)))).sequence
-      groups <- output.map(s => repository.getMany[Group](s.entries.map(e => Group.generateUri(e.group)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[ScheduleAtom]) { (set, schedule) =>
-        labworks.find(_.id == schedule.labwork) match {
-          case Some(l) =>
-            val entries = schedule.entries.foldLeft(Set.empty[ScheduleEntryAtom]) { (setE, e) =>
-              (for {
-                r <- rooms.flatten.find(_.id == e.room)
-                s <- supervisors.flatten.find(_.id == e.supervisor)
-                g <- groups.flatten.find(_.id == e.group)
-              } yield ScheduleEntryAtom(e.start, e.end, e.date, r, s, g, e.id)) match {
-                case Some(entryAtom) => setE + entryAtom
-                case None => setE
-              }
-            }
-
-            val atom = ScheduleAtom(l, entries, schedule.published, schedule.id)
-            set + atom
-          case None => set
-        }
-      }
-    }).map(s => Json.toJson(s)(Schedule.setAtomicWrites))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

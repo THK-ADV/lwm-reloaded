@@ -46,11 +46,20 @@ trait Filterable[O] {
 }
 
 trait ModelConverter[I, O] {
+
   protected def fromInput(input: I, existing: Option[O] = None): O
+
+  import utils.Ops._
+  import utils.Ops.MonadInstances._
 
   protected def atomize(output: O): Try[Option[JsValue]]
 
-  protected def atomizeMany(output: Set[O]): Try[JsValue]
+  final def atomizeMany(output: Set[O]): Try[JsValue] = output.foldLeft(Try(Option(JsArray()))) { (T, model) =>
+    T.bipeek(atomize(model))(_ :+ _)
+  } map {
+    case Some(jsArray) => jsArray
+    case None => JsArray()
+  }
 }
 
 trait Consistent[I, O] {
@@ -58,7 +67,7 @@ trait Consistent[I, O] {
   import store.sparql.select._
   import store.sparql.{NoneClause, Clause, SelectClause}
 
-  def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
+  final def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
     val (clause, key) = existsQuery(input)
 
     clause match {

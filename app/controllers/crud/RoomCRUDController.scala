@@ -54,8 +54,6 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override protected def atomize(output: Room): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-   override protected def atomizeMany(output: Set[Room]): Try[JsValue] = Success(Json.toJson(output))
-
    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case Get => PartialSecureBlock(room.get)
       case GetAll => PartialSecureBlock(room.getAll)

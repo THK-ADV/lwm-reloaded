@@ -34,8 +34,6 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val namespa
 
   override protected def atomize(output: AssignmentPlan): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[AssignmentPlan]): Try[JsValue] = Success(Json.toJson(output))
-
   // TODO REFACTOR, CONSIDER FILTER(SAME_X).FLATMAP
   override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = {
     def zip(left: AssignmentPlanProtocol, right: AssignmentPlan) = {

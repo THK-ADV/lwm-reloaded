@@ -45,8 +45,6 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
 
   override protected def atomize(output: Blacklist): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[Blacklist]): Try[JsValue] = Success(Json.toJson(output))
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(blacklist.get)
     case _ => PartialSecureBlock(prime)

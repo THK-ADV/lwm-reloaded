@@ -23,7 +23,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.uuidRefBinder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID,Student.randomUUID)
+  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
 
   val authorityForCourse1 = RefRole(
     Some(Course.randomUUID),

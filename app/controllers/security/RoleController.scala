@@ -43,8 +43,6 @@ class RoleController(val repository: SesameRepository, val namespace: Namespace,
 
   override protected def atomize(output: Role): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[Role]): Try[JsValue] = Success(Json.toJson(output))
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(role.get)
     case GetAll => PartialSecureBlock(role.getAll)

@@ -23,12 +23,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val studentsToPass = Set(
-    Student("systemId1 to pass", "last name 1 to pass", "first name 1 to pass", "email1 to pass", "regId1 to pass", UUID.randomUUID(), Student.randomUUID),
-    Student("systemId2 to pass", "last name 2 to pass", "first name 2 to pass", "email2 to pass", "regId2 to pass", UUID.randomUUID(), Student.randomUUID)
+    Student("systemId1 to pass", "last name 1 to pass", "first name 1 to pass", "email1 to pass", "regId1 to pass", UUID.randomUUID()),
+    Student("systemId2 to pass", "last name 2 to pass", "first name 2 to pass", "email2 to pass", "regId2 to pass", UUID.randomUUID())
   )
   val studentsToFail = Set(
-    Student("systemId1 to fail", "last name 1 to fail", "first name 1 to fail", "email1 to fail", "regId1 to fail", UUID.randomUUID(), Student.randomUUID),
-    Student("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID(), Student.randomUUID)
+    Student("systemId1 to fail", "last name 1 to fail", "first name 1 to fail", "email1 to fail", "regId1 to fail", UUID.randomUUID()),
+    Student("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID())
   )
 
   override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id), Group.randomUUID)
@@ -61,7 +61,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   override val updateJson: JsValue = Json.obj(
     "label" -> s"${entityToPass.label} updated",
     "labwork" -> entityToPass.labwork,
-    "members" -> (entityToPass.members + Student.randomUUID)
+    "members" -> (entityToPass.members + User.randomUUID)
   )
 
   val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.id)
@@ -131,12 +131,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "return all corresponding groups for a given student" in {
-      val student = Student.randomUUID
+      val student = User.randomUUID
 
-      val first = Group("first", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID, Student.randomUUID))
-      val second = Group("second", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
-      val third = Group("third", Labwork.randomUUID, Set(student, Student.randomUUID))
-      val fourth = Group("fourth", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+      val first = Group("first", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID))
+      val second = Group("second", Labwork.randomUUID, Set(User.randomUUID))
+      val third = Group("third", Labwork.randomUUID, Set(student))
+      val fourth = Group("fourth", Labwork.randomUUID, Set(User.randomUUID))
 
       val groups = Set(first, second, third, fourth)
 
@@ -157,10 +157,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "return all corresponding groups for a given group label" in {
       val label = "fourth"
 
-      val first = Group("first", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID, Student.randomUUID))
-      val second = Group("second", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
-      val third = Group("third", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
-      val fourth = Group("fourth", Labwork.randomUUID, Set(Student.randomUUID, Student.randomUUID))
+      val first = Group("first", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID))
+      val second = Group("second", Labwork.randomUUID, Set(User.randomUUID))
+      val third = Group("third", Labwork.randomUUID, Set(User.randomUUID))
+      val fourth = Group("fourth", Labwork.randomUUID, Set(User.randomUUID))
 
       val groups = Set(first, second, third, fourth)
 
@@ -475,10 +475,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val labworks = Set(labworkToPass, labworkToFail)
 
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
-      doReturn(Success(labworks)).
+
+      doReturn(Success(Some(labworkToPass))).
+        doReturn(Success(Some(labworkToFail))).
+        when(repository).get(anyObject())(anyObject())
+
       doReturn(Success(studentsToPass)).
-      doReturn(Success(studentsToFail)).
-      when(repository).getMany(anyObject())(anyObject())
+        doReturn(Success(studentsToFail)).
+        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -497,8 +501,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
       doReturn(Failure(new Exception(errorMessage))).
-      doReturn(Success(studentsToPass)).
-      doReturn(Success(studentsToFail)).
       when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(

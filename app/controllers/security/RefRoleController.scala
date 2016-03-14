@@ -15,6 +15,7 @@ import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Success, Try}
 
+
 class RefRoleController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
   override implicit def reads: Reads[RefRoleProtocol] = RefRole.reads
 
@@ -55,29 +56,6 @@ class RefRoleController(val repository: SesameRepository, val namespace: Namespa
         Json.toJson(atom)
       }
     }
-  }
-
-  override protected def atomizeMany(output: Set[RefRole]): Try[JsValue] = {
-    import defaultBindings.RoleBinding.roleBinder
-    import defaultBindings.CourseBinding.courseBinder
-    import RefRole.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      roles <- repository.getMany[Role](output.map(o => Role.generateUri(o.role)(namespace)))
-      courses <- output.map(o => o.module.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[RefRoleAtom]) { (newSet, refRole) =>
-        (for {
-          r <- roles.find(_.id == refRole.role)
-          c <- courses.find(_.map(_.id) == refRole.module)
-        } yield RefRoleAtom(c, r, refRole.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

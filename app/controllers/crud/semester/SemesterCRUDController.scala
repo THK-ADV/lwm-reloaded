@@ -65,8 +65,6 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override protected def atomize(output: Semester): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[Semester]): Try[JsValue] = Success(Json.toJson(output))
-
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
 

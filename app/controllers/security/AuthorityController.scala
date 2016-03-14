@@ -3,17 +3,19 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud._
-import models.UriGenerator
+import models.{Course, UriGenerator}
 import models.security.Permissions._
 import models.security._
-import models.users.{Student, Employee, User}
+import models.users.User
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import utils.Ops._
+import utils.Ops.MonadInstances.{tryM, optM}
+import utils.Ops.TraverseInstances._
 import scala.collection.Map
 import scala.util.{Success, Try}
 
@@ -39,27 +41,33 @@ class AuthorityController(val repository: SesameRepository, val namespace: Names
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override protected def atomize(output: Authority): Try[Option[JsValue]] = {
-    // TODO unify somehow
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import defaultBindings.StudentBinding.studentBinder
-    import defaultBindings.RefRoleBinding.refRoleBinder
-    import Authority.atomicEmployeeWrites
-    import Authority.atomicStudentWrites
+    import defaultBindings.UserBinding._
+    import models.security.Authority._
+    import defaultBindings.RefRoleBinding._
 
+    implicit val ns = repository.namespace
     for {
-      employee <- repository.get[Employee](Employee.generateUri(output.user)(namespace))
-      student <- repository.get[Student](Student.generateUri(output.user)(namespace))
-      refRoles <- repository.getMany[RefRole](output.refRoles.map(id => RefRole.generateUri(id)(namespace)))
-    } yield {
-      (employee, student) match {
-        case (Some(e), None) => Some(Json.toJson(AuthorityEmployeeAtom(e, refRoles, output.id)))
-        case (None, Some(s)) => Some(Json.toJson(AuthorityStudentAtom(s, refRoles, output.id)))
-        case _ => None
-      }
+      maybeUser <- repository.get[User](User.generateUri(output.id))
+      refroles <- repository.getMany[RefRole](output.refRoles map RefRole.generateUri)
+      atomicRefRoles <- atomRefs(refroles)
+    } yield maybeUser map { user =>
+        Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
     }
   }
 
-  override protected def atomizeMany(output: Set[Authority]): Try[JsValue] = Success(Json.toJson(output))
+  import defaultBindings.CourseBinding._
+  import defaultBindings.RoleBinding._
+
+  def atomRefs(s: Set[RefRole]): Try[Set[RefRoleAtom]] = s.foldLeft(Try(Set.empty[RefRoleAtom])) { (T, ref) =>
+    for {
+      course <- Try(ref.module).flatPeek(course => repository.get[Course](Course.generateUri(course)(repository.namespace)))
+      maybeRole <- repository.get[Role](Role.generateUri(ref.role)(repository.namespace))
+      set <- T
+    } yield maybeRole match {
+      case Some(role) => set + RefRoleAtom(course, role, ref.id)
+      case None => set
+    }
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Update => PartialSecureBlock(authority.update)

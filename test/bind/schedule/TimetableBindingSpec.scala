@@ -3,8 +3,8 @@ package bind.schedule
 import base.SesameDbSpec
 import models.semester.Blacklist
 import models.{Room, Labwork, Degree}
-import models.schedule.{Weekday, TimetableEntry, Timetable}
-import models.users.Employee
+import models.schedule.{TimetableEntry, Timetable}
+import models.users.User
 import org.joda.time.{LocalDate, LocalTime, DateTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -26,8 +26,8 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.BlacklistBinding.blacklistBinder
   import bindings.uuidRefBinder
 
-  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
-  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
+  val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
+  val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
   val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)

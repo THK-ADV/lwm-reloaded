@@ -3,7 +3,7 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.users.Student
+import models.users.{User, Student}
 import models._
 import org.joda.time.{LocalTime, LocalDate}
 import org.w3.banana.PointedGraph
@@ -31,7 +31,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
   val reportCardGraph = (
     URI(ReportCard.generateUri(reportCard)).a(lwm.ReportCard)
-      .--(lwm.student).->-(reportCard.student)(ops, uuidRefBinder(Student.splitter))
+      .--(lwm.student).->-(reportCard.student)(ops, uuidRefBinder(User.splitter))
       .--(lwm.labwork).->-(reportCard.labwork)(ops, uuidRefBinder(Labwork.splitter))
       -- lwm.entries ->- reportCard.entries
       -- lwm.id ->- reportCard.id

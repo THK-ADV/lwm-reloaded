@@ -24,7 +24,7 @@ class CourseBindingSpec extends SesameDbSpec {
     .--(lwm.label).->-(course.label)
     .--(lwm.description).->-(course.description)
     .--(lwm.abbreviation).->-(course.abbreviation)
-    .--(lwm.lecturer).->-(course.lecturer)(ops, uuidRefBinder(Employee.splitter))
+    .--(lwm.lecturer).->-(course.lecturer)(ops, uuidRefBinder(User.splitter))
     .--(lwm.semesterIndex).->-(course.semesterIndex)
     .--(lwm.id).->-(course.id).graph
 

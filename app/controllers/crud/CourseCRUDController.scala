@@ -2,9 +2,9 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.users.Employee
+import models.users.{User, Employee}
 import models.{Course, CourseAtom, CourseProtocol, UriGenerator}
-import org.w3.banana.{PointedGraph, RDFPrefix}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -50,29 +50,10 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     import defaultBindings.EmployeeBinding.employeeBinder
     import Course.atomicWrites
 
-    repository.get[Employee](Employee.generateUri(output.lecturer)(namespace)).peek { employee =>
+    repository.get[Employee](User.generateUri(output.lecturer)(namespace)).peek { employee =>
       val atom = CourseAtom(output.label, output.description, output.abbreviation, employee, output.semesterIndex, output.id)
       Json.toJson(atom)
     }
-  }
-
-  override protected def atomizeMany(output: Set[Course]): Try[JsValue] = {
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import Course.atomicWrites
-
-    (for {
-      employees <- repository.getMany[Employee](output.map(c => Employee.generateUri(c.lecturer)(namespace)))
-    } yield {
-      output.foldLeft(Set.empty[CourseAtom]) { (newSet, c) =>
-        employees.find(_.id == c.lecturer) match {
-          case Some(employee) =>
-            val atom = CourseAtom(c.label, c.description, c.abbreviation, employee, c.semesterIndex, c.id)
-            newSet + atom
-          case None =>
-            newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
@@ -93,7 +74,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
     (select ("id") where {
       ^(v("s"), p(rdf.`type`), s(prefixes.Course)) .
         ^(v("s"), p(prefixes.label), o(input.label)) .
-        ^(v("s"), p(prefixes.lecturer), s(Employee.generateUri(input.lecturer)(namespace))) .
+        ^(v("s"), p(prefixes.lecturer), s(User.generateUri(input.lecturer)(namespace))) .
         ^(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
@@ -107,7 +88,7 @@ class CourseCRUDController(val repository: SesameRepository, val namespace: Name
   }
 
   def createWithRoles(secureContext: SecureContext = contextFrom(Create)) = withRoles(secureContext) { course =>
-      Success(Created(Json.toJson(course)).as(mimeType))
+    Success(Created(Json.toJson(course)).as(mimeType))
   }
 
   def createAtomicWithRoles(secureContext: SecureContext = contextFrom(Create)) = withRoles(secureContext) { course =>

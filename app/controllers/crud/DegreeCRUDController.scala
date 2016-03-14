@@ -59,8 +59,6 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[Degree]): Try[JsValue] = Success(Json.toJson(output))
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)
     case GetAll => PartialSecureBlock(degree.getAll)

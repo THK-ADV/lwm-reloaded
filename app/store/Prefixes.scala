@@ -34,6 +34,7 @@ object Prefixes {
     val registrationId = apply("registrationId")
     val systemId = apply("systemId")
     val enrollment = apply("enrollment")
+    val status = apply("status")
 
     // Semester, ReportCardEntry
     val end = apply("start")
@@ -93,6 +94,7 @@ object Prefixes {
     val student = apply("student")
 
     // classes
+    val User = apply("User")
     val Course = apply("Course")
     val Degree = apply("Degree")
     val Employee = apply("Employee")

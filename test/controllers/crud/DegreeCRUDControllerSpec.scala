@@ -1,7 +1,5 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.{Degree, DegreeProtocol}
 import org.mockito.{Matchers, Mockito}
 import org.mockito.Matchers.anyObject

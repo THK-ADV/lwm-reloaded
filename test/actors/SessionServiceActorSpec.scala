@@ -31,7 +31,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 
-  val user = Student("mi1111", "Last", "First", "Email", "111111", Degree.randomUUID, Student.randomUUID)
+  val user = Student("mi1111", "Last", "First", "Email", "111111", Degree.randomUUID)
   val actorRef = system.actorOf(SessionServiceActor.props(ldap, resolver))
 
   "A SessionServiceActor" should {

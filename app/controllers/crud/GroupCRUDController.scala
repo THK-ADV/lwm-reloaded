@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models._
-import models.users.Student
+import models.users.{User, Student}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -155,36 +155,13 @@ class GroupCRUDController(val repository: SesameRepository, val namespace: Names
 
     for {
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      students <- repository.getMany[Student](output.members.map(id => Student.generateUri(id)(namespace)))
+      students <- repository.getMany[Student](output.members.map(id => User.generateUri(id)(namespace)))
     } yield {
       labwork.map { l =>
         val atom = GroupAtom(output.label, l, students, output.id)
         Json.toJson(atom)
       }
     }
-  }
-
-  override protected def atomizeMany(output: Set[Group]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.StudentBinding._
-    import Group.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(g => Labwork.generateUri(g.labwork)(namespace)))
-      students <- output.map(g => repository.getMany[Student](g.members.map(id => Student.generateUri(id)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[GroupAtom]) { (newSet, g) =>
-        (for {
-          l <- labworks.find(_.id == g.labwork)
-          ss <- students.find(_.map(_.id) == g.members)
-        } yield GroupAtom(g.label, l, ss, g.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

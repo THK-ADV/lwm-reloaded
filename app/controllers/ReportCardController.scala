@@ -30,8 +30,6 @@ class ReportCardController(val repository: SesameRepository, val namespace: Name
 
   override protected def atomize(output: ReportCard): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  override protected def atomizeMany(output: Set[ReportCard]): Try[JsValue] = Success(Json.toJson(output))
-
   override implicit def writes: Writes[ReportCard] = ReportCard.writes
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

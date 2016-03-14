@@ -5,7 +5,7 @@ import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models._
 import models.schedule._
 import models.semester.{Blacklist, Semester}
-import models.users.Employee
+import models.users.{User, Employee}
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -27,8 +27,8 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   val roomToPass = Room("room to pass", "desc to pass")
   val roomToFail = Room("room to fail", "desc to fail")
 
-  val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", Employee.randomUUID)
-  val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+  val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "stauts to fail")
 
   val groupToPass = Group("group to pass", labworkToPass.id, Set(UUID.randomUUID(), UUID.randomUUID()))
   val groupToFail = Group("group to fail", labworkToFail.id, Set(UUID.randomUUID(), UUID.randomUUID()))
@@ -126,7 +126,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
       val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val course = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
+      val course = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
       val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID)
 
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
@@ -140,9 +140,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     }
 
     "return scheduleG's when there are competitive schedules" in {
-      val course1 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val course2 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
-      val course3 = Course("label", "desc", "abbreviation", Employee.randomUUID, 1, Course.randomUUID)
+      val course1 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
+      val course2 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
+      val course3 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID)
       val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID)
@@ -483,14 +483,18 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val schedules = Set(entityToPass, entityToFail)
 
       when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(schedules))
-      doReturn(Success(Set(labworkToPass, labworkToFail))).
+
+      doReturn(Success(Some(labworkToPass))).
+        doReturn(Success(Some(labworkToFail))).
+        when(repository).get(anyObject())(anyObject())
+
       doReturn(Success(Set(roomToPass))).
-      doReturn(Success(Set(roomToFail))).
-      doReturn(Success(Set(supervisorToPass))).
-      doReturn(Success(Set(supervisorToFail))).
-      doReturn(Success(Set(groupToPass))).
-      doReturn(Success(Set(groupToFail))).
-      when(repository).getMany(anyObject())(anyObject())
+        doReturn(Success(Set(supervisorToPass))).
+        doReturn(Success(Set(groupToPass))).
+        doReturn(Success(Set(roomToFail))).
+        doReturn(Success(Set(supervisorToFail))).
+        doReturn(Success(Set(groupToFail))).
+        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
