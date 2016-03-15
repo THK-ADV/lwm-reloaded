@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.users.Employee
-import models.{Degree, Room, AssignmentPlan, Labwork}
+import models.{Degree, Room, Labwork}
 import models.schedule._
 import models.semester.Blacklist
 import org.joda.time.{LocalTime, LocalDate}
@@ -15,7 +15,6 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import store.SesameRepository
 import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
@@ -99,7 +98,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   )
 
   private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: Room, supervisor: Employee, degree: Degree): Set[TimetableEntryAtom] = {
-    entries.map(e => TimetableEntryAtom(supervisor, room, degree, e.dayIndex, e.start, e.end, e.id))
+    entries.map(e => TimetableEntryAtom(supervisor, room, degree, e.dayIndex, e.start, e.end))
   }
 
   val atomizedEntityToPass = TimetableAtom(

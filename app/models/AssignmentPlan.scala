@@ -7,30 +7,15 @@ import play.api.libs.json._
 
 case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
 
-case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntryType], duration: Int = 1, id: UUID = AssignmentEntry.randomUUID) extends UniqueEntity
+case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry])
 
-case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = AssignmentEntryType.randomUUID) extends UniqueEntity
+case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntryType], duration: Int = 1)
 
-case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntryProtocol])
-
-case class AssignmentEntryProtocol(index: Int, label: String, types: Set[AssignmentEntryTypeProtocol], duration: Int = 1)
-
-case class AssignmentEntryTypeProtocol(entryType: String, bool: Boolean = false, int: Int = 0)
+case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
 
 case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID)
 
-object AssignmentFormats {
-
-  implicit def entryTypeProtocolFormat = Json.format[AssignmentEntryTypeProtocol]
-
-  implicit def entryProtocolFormat = Json.format[AssignmentEntryProtocol]
-
-  implicit def planProtocolFormat = Json.format[AssignmentPlanProtocol]
-}
-
 object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlanProtocol, AssignmentPlan] {
-
-  import AssignmentFormats._
 
   lazy val empty = AssignmentPlan(UUID.randomUUID(), 0, 0, Set.empty[AssignmentEntry])
 
@@ -41,47 +26,23 @@ object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisatio
   override def base: String = "assignmentPlans"
 }
 
-object AssignmentEntry extends UriGenerator[AssignmentEntry] with JsonSerialisation[AssignmentEntryProtocol, AssignmentEntry] {
+object AssignmentEntry extends JsonSerialisation[AssignmentEntry, AssignmentEntry] {
 
-  import AssignmentFormats._
-
-  def toProtocol(entry: AssignmentEntry): AssignmentEntryProtocol = {
-    AssignmentEntryProtocol(entry.index, entry.label, entry.types.map(AssignmentEntryType.toProtocol), entry.duration)
-  }
-
-  override implicit def reads: Reads[AssignmentEntryProtocol] = Json.reads[AssignmentEntryProtocol]
+  override implicit def reads: Reads[AssignmentEntry] = Json.reads[AssignmentEntry]
 
   override implicit def writes: Writes[AssignmentEntry] = Json.writes[AssignmentEntry]
-
-  override def base: String = "assignmentEntries"
 }
 
-object AssignmentEntryType extends UriGenerator[AssignmentEntryType] with JsonSerialisation[AssignmentEntryProtocol, AssignmentEntryType] {
+object AssignmentEntryType extends JsonSerialisation[AssignmentEntryType, AssignmentEntryType] {
 
-  import AssignmentFormats._
-
-  val Attendance = AssignmentEntryTypeProtocol("Anwesenheitspflichtig")
-  val Certificate = AssignmentEntryTypeProtocol("Testat")
-  val Bonus = AssignmentEntryTypeProtocol("Bonus")
-  val Supplement = AssignmentEntryTypeProtocol("Zusatzleistung")
+  val Attendance = AssignmentEntryType("Anwesenheitspflichtig")
+  val Certificate = AssignmentEntryType("Testat")
+  val Bonus = AssignmentEntryType("Bonus")
+  val Supplement = AssignmentEntryType("Zusatzleistung")
 
   lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
 
-  def fromProtocol(protocol: AssignmentEntryTypeProtocol): AssignmentEntryType = {
-    AssignmentEntryType(protocol.entryType, protocol.bool, protocol.int, AssignmentEntryType.randomUUID)
-  }
-
-  def toProtocol(entry: AssignmentEntryType): AssignmentEntryTypeProtocol = {
-    AssignmentEntryTypeProtocol(entry.entryType, entry.bool, entry.int)
-  }
-
-  override implicit def reads: Reads[AssignmentEntryProtocol] = Json.reads[AssignmentEntryProtocol]
+  override implicit def reads: Reads[AssignmentEntryType] = Json.reads[AssignmentEntryType]
 
   override implicit def writes: Writes[AssignmentEntryType] = Json.writes[AssignmentEntryType]
-
-  implicit def protocolWrites = Json.writes[AssignmentEntryTypeProtocol]
-
-  implicit def entryReads = Json.reads[AssignmentEntryType]
-
-  override def base: String = "assignmentEntryTypes"
 }

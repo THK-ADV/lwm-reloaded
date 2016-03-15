@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.AssignmentEntryType._
-import models.{AssignmentEntryType, ReportCardEntry, ReportCard}
+import models.{ReportCardEntryType, AssignmentEntryType, ReportCardEntry, ReportCard}
 import org.joda.time.{LocalTime, LocalDate}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -29,7 +29,7 @@ class ReportCardControllerSpec extends AbstractCRUDControllerSpec[ReportCard, Re
   }
 
   val entries = (0 until 5).map( n =>
-    ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), AssignmentEntryType.all.toSet.map(fromProtocol))
+    ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
   ).toSet
 
   override val entityToFail: ReportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)

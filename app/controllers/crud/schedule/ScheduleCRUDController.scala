@@ -8,7 +8,7 @@ import models.schedule.{Schedule, ScheduleEntry, ScheduleProtocol, Timetable}
 import org.openrdf.model.Value
 import models.schedule._
 import models.users.{User, Employee}
-import org.w3.banana.{RDFPrefix, PointedGraph}
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
@@ -77,7 +77,7 @@ object ScheduleCRUDController {
     val maybeEntries =
       (schedule.entries flatMap { entry =>
         val group = repository.get[Group](Group.generateUri(entry.group)(repository.namespace)).toOption
-        group.peek(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g, entry.id))
+        group.peek(g => ScheduleEntryG(entry.start, entry.end, entry.date, entry.room, entry.supervisor, g))
       }).sequence
 
 
@@ -85,7 +85,7 @@ object ScheduleCRUDController {
   }
 
   private def toSchedule(scheduleG: ScheduleG): Schedule = {
-    val entries = scheduleG.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
+    val entries = scheduleG.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
     Schedule(scheduleG.labwork, entries, published = false, scheduleG.id)
   }
 }
@@ -318,7 +318,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
             r <- rooms.find(_.id == e.room)
             s <- supervisors.find(_.id == e.supervisor)
             g <- groups.find(_.id == e.group)
-          } yield ScheduleEntryAtom(e.start, e.end, e.date, r, s, g, e.id)) match {
+          } yield ScheduleEntryAtom(e.start, e.end, e.date, r, s, g)) match {
             case Some(atom) => newSet + atom
             case None => newSet
           }

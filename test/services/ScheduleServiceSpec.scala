@@ -35,7 +35,7 @@ object ScheduleServiceSpec {
   }
 
   def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "foo", Set.empty, duration)).toSet
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "label", Set.empty, duration)).toSet
     AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
   }
 
@@ -113,7 +113,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group, ScheduleEntry.randomUUID)
+        ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group)
       }.toVector
       val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
 
@@ -147,7 +147,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
             val start = LocalTime.now.withHourOfDay(nextInt(19))
             val end = start.plusHours(nextInt(3))
 
-            (ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, n._2, ScheduleEntry.randomUUID), ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group, ScheduleEntry.randomUUID))
+            (ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, n._2), ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group))
         }).toVector
       }.unzip
 
@@ -274,7 +274,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
       val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
 
@@ -313,7 +313,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
       val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
 
@@ -330,7 +330,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)
@@ -373,7 +373,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)

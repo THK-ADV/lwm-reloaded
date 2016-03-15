@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.{AssignmentEntryType, UriGenerator, ReportCard}
+import models.{ReportCardEntryType, AssignmentEntryType, UriGenerator, ReportCard}
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -45,10 +45,10 @@ class ReportCardController(val repository: SesameRepository, val namespace: Name
   }
 
   def updateReportCardEntry(course: String, card: String, cardEntry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    import AssignmentEntryType._
-    import defaultBindings.AssignmentEntryTypeBinding.assignmentEntryTypeBinder
+    import ReportCardEntryType._
+    import defaultBindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
 
-    request.body.validate[AssignmentEntryType].fold(
+    request.body.validate[ReportCardEntryType].fold(
       errors => {
         BadRequest(Json.obj(
           "status" -> "KO",
@@ -56,7 +56,7 @@ class ReportCardController(val repository: SesameRepository, val namespace: Name
         ))
       },
       success => {
-        repository.update(success)(assignmentEntryTypeBinder, AssignmentEntryType) match {
+        repository.update(success)(reportCardEntryTypeBinding, ReportCardEntryType) match {
           case Success(s) =>
             Ok(Json.obj(
               "reportCardId" -> card,
