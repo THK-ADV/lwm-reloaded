@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models.semester.Blacklist
 import models.users.Employee
 import models._
-import org.joda.time.{DateTime, LocalDateTime, LocalTime, LocalDate}
+import org.joda.time.{LocalDateTime, LocalTime, LocalDate}
 import play.api.libs.json.{Format, Writes, Json, Reads}
 import services.ScheduleEntryG
 
@@ -32,6 +32,8 @@ case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: 
   }
 }
 
+case class TimetableEntryProtocol(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime)
+
 case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime, id: UUID)
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime)
@@ -50,17 +52,25 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom](atomicWrites)
 }
 
-object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntry, TimetableEntry] {
+object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntryProtocol, TimetableEntry] {
 
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
   implicit val timeOrd = TimetableDateEntry.localTimeOrd
 
+  def fromProtocol(protocol: TimetableEntryProtocol): TimetableEntry = {
+    TimetableEntry(protocol.supervisor, protocol.room, protocol.degree, protocol.dayIndex, protocol.start, protocol.end, TimetableEntry.randomUUID)
+  }
+
+  def toProtocol(entry: TimetableEntry): TimetableEntryProtocol = {
+    TimetableEntryProtocol(entry.supervisor, entry.room, entry.degree, entry.dayIndex, entry.start, entry.end)
+  }
+
   implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
 
   override def base: String = "timetableEntries"
 
-  override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
+  override implicit def reads: Reads[TimetableEntryProtocol] = Json.reads[TimetableEntryProtocol]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 

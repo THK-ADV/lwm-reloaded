@@ -346,7 +346,6 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
         AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate).map(fromProtocol)),
         AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol)),
         AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol))
-
       )
       AssignmentPlan(labwork, amount, amount - 1, entries)
     }

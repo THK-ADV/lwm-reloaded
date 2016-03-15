@@ -43,9 +43,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val namespa
     }
 
     def fromEntryInput(input: AssignmentEntryProtocol, existing: Option[AssignmentEntry]): AssignmentEntry = {
-      def sameType(l: AssignmentEntryType, r: AssignmentEntryTypeProtocol) = {
-        l.entryType == r.entryType && l.bool == r.bool && l.int == r.int
-      }
+      def sameType(l: AssignmentEntryType, r: AssignmentEntryTypeProtocol) = l.entryType == r.entryType
 
       existing match {
         case Some(e) =>

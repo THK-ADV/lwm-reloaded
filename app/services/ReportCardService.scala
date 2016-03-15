@@ -1,8 +1,12 @@
 package services
 
+import java.util.UUID
+
 import models.schedule.TimetableDateEntry
-import models.{AssignmentEntryType, ReportCardEntry, ReportCard, AssignmentPlan}
+import models._
 import scala.util.{Failure, Success, Try}
+
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
 object ReportCardService {
 
@@ -15,7 +19,7 @@ trait ReportCardServiceLike {
 
   def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Try[Set[ReportCard]]
 
-  def evaluate(assignmentPlan: AssignmentPlan, reportCards: Set[ReportCard]): Unit
+  def evaluate(assignmentPlan: AssignmentPlan, reportCard: ReportCard): Set[ReportCardEvaluation]
 }
 
 class ReportCardService extends ReportCardServiceLike {
@@ -40,5 +44,22 @@ class ReportCardService extends ReportCardServiceLike {
     }
   }
 
-  override def evaluate(assignmentPlan: AssignmentPlan, reportCards: Set[ReportCard]): Unit = ???
+  override def evaluate(assignmentPlan: AssignmentPlan, reportCard: ReportCard): Set[ReportCardEvaluation] = {
+    val entries = reportCard.entries flatMap (_.entryTypes)
+
+    def folder(protocol: AssignmentEntryTypeProtocol)(f: Set[AssignmentEntryType] => (Boolean, Int)): ReportCardEvaluation = {
+      val (boolRes, intRes) = f(entries.filter(_.entryType == protocol.entryType))
+      ReportCardEvaluation(reportCard.student, reportCard.labwork, protocol.entryType, boolRes, intRes)
+    }
+
+    import AssignmentEntryType._
+    import utils.Ops.TravOps
+
+    Set(
+      folder(Attendance)(e => (e.count(_.bool) >= assignmentPlan.attendance, 0)),
+      folder(Certificate)(e => (e.count(_.bool) >= assignmentPlan.mandatory, 0)),
+      folder(Bonus)(e => (true, e.foldMap(0, _.int)(_ + _))),
+      folder(Supplement)(e => (e.foldMap(true, _.bool)(_ && _), 0))
+    )
+  }
 }

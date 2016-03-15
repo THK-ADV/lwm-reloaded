@@ -3,10 +3,10 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.AssignmentEntryType._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
-
 import scala.util.{Failure, Success}
 
 object ReportCardServiceSpec {
@@ -64,6 +64,17 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
   val reportCardService = new ReportCardService
 
+  val planEntries = Set(
+    AssignmentEntry(0, "Einführung", Set(Attendance).map(fromProtocol)),
+    AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate).map(fromProtocol)),
+    AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate).map(fromProtocol)),
+    AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus).map(fromProtocol)),
+    AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate).map(fromProtocol)),
+    AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate).map(fromProtocol)),
+    AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol)),
+    AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement).map(fromProtocol))
+  )
+
   "A ReportCardServiceSpec " should {
 
     "successfully return report cards for given schedule" in {
@@ -115,6 +126,120 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           e.getMessage shouldBe expectedError.getMessage
         case _ =>
           fail("report cards should be empty when there are no students")
+      }
+    }
+
+    "pass a student's report card when everything is fine" in {
+      val bonusPoints = 10
+      val cardEntries = planEntries.map { e =>
+        val types = e.types.map {
+          case att if att.entryType == Attendance.entryType => AssignmentEntryType(att.entryType, !(e.index == 0), 0)
+          case cert if cert.entryType == Certificate.entryType => AssignmentEntryType(cert.entryType, bool = true, 0)
+          case bonus if bonus.entryType == Bonus.entryType => AssignmentEntryType(bonus.entryType, bool = false, bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => AssignmentEntryType(supp.entryType, bool = true, 0)
+        }
+
+        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+      }
+      val types = planEntries.flatMap(_.types)
+      val attendance = types.count(_.entryType == Attendance.entryType)
+      val mandatory = types.count(_.entryType == Certificate.entryType)
+
+      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries)
+      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries)
+
+      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+
+      result.size shouldBe AssignmentEntryType.all.size
+      result.forall(_.bool)
+      result.forall(_.int == bonusPoints)
+    }
+
+    "pass a student's report card even when he barley performed" in {
+      val cardEntries = planEntries.map { e =>
+        val types = e.types.map {
+          case att if att.entryType == Attendance.entryType => AssignmentEntryType(att.entryType, !(e.index == 0 || e.index == 1), 0)
+          case cert if cert.entryType == Certificate.entryType => AssignmentEntryType(cert.entryType, !(e.index == 1 || e.index == 2 || e.index == 7), 0)
+          case bonus if bonus.entryType == Bonus.entryType => AssignmentEntryType(bonus.entryType, bool = false, 0)
+          case supp if supp.entryType == Supplement.entryType => AssignmentEntryType(supp.entryType, bool = true, 0)
+        }
+
+        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+      }
+      val types = planEntries.flatMap(_.types)
+      val attendance = types.count(_.entryType == Attendance.entryType)
+      val mandatory = types.count(_.entryType == Certificate.entryType)
+
+      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 2, mandatory - 3, planEntries)
+      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries)
+
+      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+
+      result.size shouldBe AssignmentEntryType.all.size
+      result.foreach {
+        case att if att.label == Attendance.entryType => att.bool shouldBe true
+        case cert if cert.label == Certificate.entryType => cert.bool shouldBe true
+        case bonus if bonus.label == Bonus.entryType => bonus.int shouldBe 0
+        case supp if supp.label == Supplement.entryType => supp.bool shouldBe true
+      }
+    }
+
+    "deny a student's report card when some mandatory certificates are missing" in {
+      val bonusPoints = 5
+      val cardEntries = planEntries.map { e =>
+        val types = e.types.map {
+          case att if att.entryType == Attendance.entryType => AssignmentEntryType(att.entryType, bool = true, 0)
+          case cert if cert.entryType == Certificate.entryType => AssignmentEntryType(cert.entryType, !(e.index == 2 || e.index == 5), 0)
+          case bonus if bonus.entryType == Bonus.entryType => AssignmentEntryType(bonus.entryType, bool = false, bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => AssignmentEntryType(supp.entryType, bool = true, 0)
+        }
+
+        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+      }
+      val types = planEntries.flatMap(_.types)
+      val attendance = types.count(_.entryType == Attendance.entryType)
+      val mandatory = types.count(_.entryType == Certificate.entryType)
+
+      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries)
+      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries)
+
+      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+
+      result.size shouldBe AssignmentEntryType.all.size
+      result.foreach {
+        case att if att.label == Attendance.entryType => att.bool shouldBe true
+        case cert if cert.label == Certificate.entryType => cert.bool shouldBe false
+        case bonus if bonus.label == Bonus.entryType => bonus.int shouldBe bonusPoints
+        case supp if supp.label == Supplement.entryType => supp.bool shouldBe true
+      }
+    }
+
+    "deny a student's report card when a supplement is missing" in {
+      val cardEntries = planEntries.map { e =>
+        val types = e.types.map {
+          case att if att.entryType == Attendance.entryType => AssignmentEntryType(att.entryType, bool = true, 0)
+          case cert if cert.entryType == Certificate.entryType => AssignmentEntryType(cert.entryType, bool = true, 0)
+          case bonus if bonus.entryType == Bonus.entryType => AssignmentEntryType(bonus.entryType, bool = false, 0)
+          case supp if supp.entryType == Supplement.entryType => AssignmentEntryType(supp.entryType, !(e.index == 7), 0)
+        }
+
+        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+      }
+      val types = planEntries.flatMap(_.types)
+      val attendance = types.count(_.entryType == Attendance.entryType)
+      val mandatory = types.count(_.entryType == Certificate.entryType)
+
+      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries)
+      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries)
+
+      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+
+      result.size shouldBe AssignmentEntryType.all.size
+      result.foreach {
+        case att if att.label == Attendance.entryType => att.bool shouldBe true
+        case cert if cert.label == Certificate.entryType => cert.bool shouldBe true
+        case bonus if bonus.label == Bonus.entryType => bonus.int shouldBe 0
+        case supp if supp.label == Supplement.entryType => supp.bool shouldBe false
       }
     }
   }

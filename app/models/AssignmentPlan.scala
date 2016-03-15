@@ -65,7 +65,7 @@ object AssignmentEntryType extends UriGenerator[AssignmentEntryType] with JsonSe
   val Bonus = AssignmentEntryTypeProtocol("Bonus")
   val Supplement = AssignmentEntryTypeProtocol("Zusatzleistung")
 
-  lazy val all = List(Attendance, Certificate, Bonus, Supplement)
+  lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
 
   def fromProtocol(protocol: AssignmentEntryTypeProtocol): AssignmentEntryType = {
     AssignmentEntryType(protocol.entryType, protocol.bool, protocol.int, AssignmentEntryType.randomUUID)

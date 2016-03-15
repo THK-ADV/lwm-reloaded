@@ -39,6 +39,7 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
+    import TimetableEntry.toProtocol
     input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
   }
 

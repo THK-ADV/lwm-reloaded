@@ -11,7 +11,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import utils.LwmMimeType
 
-class ReportControllerSpec extends AbstractCRUDControllerSpec[ReportCard, ReportCard] {
+class ReportCardControllerSpec extends AbstractCRUDControllerSpec[ReportCard, ReportCard] {
 
   override def entityTypeName: String = "reportCard"
 

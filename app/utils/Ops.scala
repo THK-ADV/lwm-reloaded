@@ -126,6 +126,10 @@ object Ops { self =>
     }
   }
 
+  implicit class TravOps[A, F[X] <: TraversableOnce[X]](Z: F[A]) {
+    def foldMap[B](b: B, f: A => B)(g: (B, B) => B): B = Z.foldLeft(b)((b, a) => g(b, f(a)))
+  }
+
   implicit class SeqOps[F[+_], A, M[X] <: TraversableOnce[X]](z: M[F[A]]) {
     def sequence(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = self.sequence[F, A, M](z)
   }
