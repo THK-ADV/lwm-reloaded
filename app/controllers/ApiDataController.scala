@@ -124,6 +124,8 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       plans ++
       timetables ++
       blacklists ++
+      defaultRoom ++
+      defaultEmployee ++
       lApps).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
@@ -373,35 +375,35 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
     val ap1MiEntries = Set(
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(victor, Room.default.id, ap1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
     )
     val ma1MiEntries = Set(
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-      TimetableEntry(User.randomUUID, Room.randomUUID, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+      TimetableEntry(konen, Room.default.id, ma1MiPrak, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
     )
 
     List(
@@ -422,6 +424,18 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       Blacklist(profileWeek, Blacklist.randomUUID),
       Blacklist(christmas, Blacklist.randomUUID)
     ).map(repository.add[Blacklist])
+  }
+  
+  def defaultRoom = {
+    import bindings.RoomBinding._
+    
+    List(Room.default).map(repository.add[Room])
+  }
+  
+  def defaultEmployee = {
+    import bindings.EmployeeBinding._
+    
+    List(Employee.default).map(repository.add[Employee])
   }
 
   def foo = {

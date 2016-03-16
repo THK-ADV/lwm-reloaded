@@ -1,22 +1,26 @@
 package controllers
 
-import java.util.UUID
-
-import controllers.crud.AbstractCRUDController
-import models.{ReportCardEntryType, AssignmentEntryType, UriGenerator, ReportCard}
+import controllers.crud._
+import models.{ReportCardEntryType, UriGenerator, ReportCard}
+import modules.store.BaseNamespace
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import services.RoleService
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+import play.api.mvc._
 import models.security.Permissions._
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
-class ReportCardController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[ReportCard, ReportCard] {
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCard]): Try[Set[ReportCard]] = Success(all)
+class ReportCardController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
+  with BaseNamespace
+  with JsonSerialisation[ReportCard, ReportCard]
+  with SesameRdfSerialisation[ReportCard]
+  with Atomic[ReportCard]
+  with ContentTyped
+  with Secured
+  with SecureControllerContext {
 
   override implicit def rdfReads: FromPG[Sesame, ReportCard] = defaultBindings.ReportCardBinding.reportCardBinder
 
@@ -30,21 +34,20 @@ class ReportCardController(val repository: SesameRepository, val namespace: Name
 
   override protected def atomize(output: ReportCard): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
+  override implicit def reads: Reads[ReportCard] = ReportCard.reads
+
   override implicit def writes: Writes[ReportCard] = ReportCard.writes
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(reportCard.get)
     case _ => PartialSecureBlock(god)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case GetAll => SecureBlock(restrictionId, reportCard.getAll)
-    case Get => SecureBlock(restrictionId, reportCard.get)
     case Update => SecureBlock(restrictionId, reportCard.update)
     case _ => PartialSecureBlock(god)
   }
 
-  def updateReportCardEntry(course: String, card: String, cardEntry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+  def updateReportCardEntryType(course: String, card: String, cardEntry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     import ReportCardEntryType._
     import defaultBindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
 
@@ -72,25 +75,4 @@ class ReportCardController(val repository: SesameRepository, val namespace: Name
       }
     )
   }
-
-  def getFrom(course: String, reportCard: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, ReportCard.generateBase(UUID.fromString(reportCard)))
-    super.get(reportCard, NonSecureBlock)(newRequest)
-  }
-
-  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, ReportCard.generateBase)
-    super.all(NonSecureBlock)(newRequest)
-  }
-
-  def updateFrom(course: String, reportCard: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, ReportCard.generateBase(UUID.fromString(reportCard)))
-    super.update(reportCard, NonSecureBlock)(newRequest)
-  }
-
-  override implicit def reads: Reads[ReportCard] = ReportCard.reads
-
-  override protected def fromInput(input: ReportCard, existing: Option[ReportCard]): ReportCard = input
-
-  override protected def compareModel(input: ReportCard, output: ReportCard): Boolean = input.entries == output.entries
 }

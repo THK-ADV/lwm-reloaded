@@ -273,7 +273,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
       }.
       flatMap(t => ScheduleCRUDController.toScheduleG(t._1, repository).map((_, t._2))).
       transform(opt => opt.map(t => Set(t)).getOrElse(Set.empty[(ScheduleG, AssignmentPlan)])).
-      request(t => reportCardService.reportCards(t._1, t._2)).
+      flatMap(t => reportCardService.reportCards(t._1, t._2)).
       requestAll(reports => repository.addMany[ReportCard](reports)).
       run
 

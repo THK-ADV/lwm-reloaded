@@ -57,7 +57,7 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
   Filterable[User] with
   ContentTyped with
   BaseNamespace with
-  ModelConverter[User, User] {
+  Atomic[User] {
 
   lazy val bindings = Bindings[repository.Rdf](namespace)
 
@@ -224,6 +224,4 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]): Try[Set[User]] = withFilter(queryString)(all)
-
-  override protected def fromInput(input: User, existing: Option[User]): User = input
 }

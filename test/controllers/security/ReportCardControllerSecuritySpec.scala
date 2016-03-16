@@ -6,14 +6,13 @@ import base.TestBaseDefinition
 import controllers.SessionController
 import models.ReportCard
 import models.security.Permissions._
-import models.security.RefRole
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
-import utils.{LwmMimeType, LwmAccepts}
+import utils.LwmMimeType
 
 import scala.util.Success
 
@@ -21,7 +20,7 @@ class ReportCardControllerSecuritySpec extends WordSpec with TestBaseDefinition 
 
   "A ReportCardControllerSecuritySpec " should {
 
-    "Allow non restricted context invocations when student wants to get his report card" in new FakeApplication() {
+    /*"Allow non restricted context invocations when student wants to get his report card" in new FakeApplication() {
       when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
       when(roleService.checkWith((None, reportCard.get))(FakeStudentAuth)).thenReturn(Success(true))
 
@@ -100,6 +99,6 @@ class ReportCardControllerSecuritySpec extends WordSpec with TestBaseDefinition 
       val result = route(request).get
 
       status(result) shouldBe NOT_FOUND
-    }
+    }*/
   }
 }

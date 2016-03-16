@@ -90,48 +90,25 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val assignmentPlan = plan(amount)
       val scheduleG = schedule(amount, assignmentPlan.entries.size)
 
-      val result = reportCardService.reportCards(scheduleG, assignmentPlan)
+      val cards = reportCardService.reportCards(scheduleG, assignmentPlan)
 
-      result match {
-        case Success(cards) =>
-          cards.nonEmpty shouldBe true
-          cards.forall(_.entries.size == assignmentPlan.entries.size) shouldBe true
-          cards.forall(c => c.entries.size == scheduleG.entries.count(_.group.members.contains(c.student))) shouldBe true
+      cards.nonEmpty shouldBe true
+      cards.forall(_.entries.size == assignmentPlan.entries.size) shouldBe true
+      cards.forall(c => c.entries.size == scheduleG.entries.count(_.group.members.contains(c.student))) shouldBe true
 
-          cards.forall( c =>
-            c.entries.flatMap(_.entryTypes.map(_.id)).size == assignmentPlan.entries.toVector.flatMap(_.types).size
-          ) shouldBe true
+      cards.forall( c =>
+        c.entries.flatMap(_.entryTypes.map(_.id)).size == assignmentPlan.entries.toVector.flatMap(_.types).size
+      ) shouldBe true
 
-          cards.forall { c =>
-            val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
-            val appointments = scheduleG.entries.filter(_.group.members.contains(c.student)).sortBy(toLocalDateTime)
-            val studentApps = c.entries.toVector.sortBy(_.index)
+      cards.forall { c =>
+        val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
+        val appointments = scheduleG.entries.filter(_.group.members.contains(c.student)).sortBy(toLocalDateTime)
+        val studentApps = c.entries.toVector.sortBy(_.index)
 
-            (assignments, appointments, studentApps).zipped.forall {
-              case (ass, app, s) => integer(ass, app, s)
-            }
-          } shouldBe true
-        case Failure(e) =>
-          fail("error while creating report cards", e)
-      }
-    }
-
-    "fail when there are no students" in {
-      import ReportCardServiceSpec._
-
-      val amount = 8
-      val assignmentPlan = plan(amount)
-      val scheduleG = schedule(amount, assignmentPlan.entries.size, emptyMembers = true)
-      val expectedError = new Throwable(s"No students found while creating report cards for ${scheduleG.id}")
-
-      val result = reportCardService.reportCards(scheduleG, assignmentPlan)
-
-      result match {
-        case Failure(e) =>
-          e.getMessage shouldBe expectedError.getMessage
-        case _ =>
-          fail("report cards should be empty when there are no students")
-      }
+        (assignments, appointments, studentApps).zipped.forall {
+          case (ass, app, s) => integer(ass, app, s)
+        }
+      } shouldBe true
     }
 
     "pass a student's report card when everything is fine" in {

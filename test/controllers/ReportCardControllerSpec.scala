@@ -2,22 +2,33 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
-import models.AssignmentEntryType._
-import models.{ReportCardEntryType, AssignmentEntryType, ReportCardEntry, ReportCard}
+import base.TestBaseDefinition
+import models.{ReportCardEntryType, ReportCardEntry, ReportCard}
 import org.joda.time.{LocalTime, LocalDate}
+import org.openrdf.model.impl.ValueFactoryImpl
+import org.scalatest.WordSpec
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Writes, JsValue}
+import play.api.http._
+import play.api.libs.json.{JsError, Json}
+import play.api.test.{FakeHeaders, FakeRequest}
+import services.RoleService
+import store.{Namespace, SesameRepository}
+import org.mockito.Mockito._
+import org.mockito.Matchers._
+import org.scalatest.mock.MockitoSugar.mock
+import play.api.test.Helpers._
 import utils.LwmMimeType
 
-class ReportCardControllerSpec extends AbstractCRUDControllerSpec[ReportCard, ReportCard] {
+import scala.util.{Failure, Success}
 
-  override def entityTypeName: String = "reportCard"
+class ReportCardControllerSpec extends WordSpec with TestBaseDefinition{
 
-  override val controller: AbstractCRUDController[ReportCard, ReportCard] = new ReportCardController(repository, namespace, roleService) {
+  val repository = mock[SesameRepository]
+  val roleService = mock[RoleService]
+  val namespace = Namespace("http://lwm.gm.th-koeln.de")
+  val factory = ValueFactoryImpl.getInstance()
 
-    override protected def fromInput(input: ReportCard, existing: Option[ReportCard]): ReportCard = entityToPass
+  val reportCardController: ReportCardController = new ReportCardController(repository, namespace, roleService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -28,33 +39,92 @@ class ReportCardControllerSpec extends AbstractCRUDControllerSpec[ReportCard, Re
     }
   }
 
-  val entries = (0 until 5).map( n =>
-    ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
-  ).toSet
+  val reportCard = {
+    val entries = (0 until 5).map( n =>
+      ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
+    ).toSet
 
-  override val entityToFail: ReportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
+    ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
+  }
 
-  override val entityToPass: ReportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
+  "A ReportCardControllerSpec " should {
 
-  override implicit val jsonWrites: Writes[ReportCard] = ReportCard.writes
+    "successfully update a report card entry type" in {
+      import ReportCardEntryType._
 
-  override val mimeType: LwmMimeType = LwmMimeType.reportCardV1Json
+      val entry = reportCard.entries.head
+      val entryType = entry.entryTypes.head
+      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
+      val course = UUID.randomUUID()
 
-  import ops._
-  import bindings.ReportCardBinding._
-  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
 
-  override val updateJson: JsValue = Json.obj(
-    "student" -> entityToPass.student,
-    "labwork" -> entityToPass.labwork,
-    "entries" -> entityToPass.entries.drop(2),
-    "id" -> entityToPass.id
-  )
+      val request = FakeRequest(
+        PUT,
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardV1Json)),
+        Json.toJson(toUpdate)
+      )
 
-  override val inputJson: JsValue = Json.obj(
-    "student" -> entityToPass.student,
-    "labwork" -> entityToPass.labwork,
-    "entries" -> entityToPass.entries,
-    "id" -> entityToPass.id
-  )
+      val result = reportCardController.updateReportCardEntryType(course.toString, reportCard.id.toString, entry.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "reportCardId" -> reportCard.id,
+        "reportCardEntryId" -> entry.id,
+        "assignmentEntryType" -> Json.toJson(toUpdate)
+      )
+    }
+
+    "not update a report card entry type with invalid json data" in {
+      val entry = reportCard.entries.head
+      val entryType = entry.entryTypes.head
+      val course = UUID.randomUUID()
+
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
+
+      val brokenJson = Json.obj(
+        "entryType" -> entryType.entryType,
+        "id" -> entryType.id
+      )
+      val request = FakeRequest(
+        PUT,
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardV1Json)),
+        brokenJson
+      )
+
+      val result = reportCardController.updateReportCardEntryType(course.toString, reportCard.id.toString, entry.id.toString)(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some("application/json")
+    }
+
+    "not update a report card entry type when there is an exception" in {
+      val entry = reportCard.entries.head
+      val entryType = entry.entryTypes.head
+      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
+      val course = UUID.randomUUID()
+      val errorMessage = "Oops, something went wrong"
+
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+
+      val request = FakeRequest(
+        PUT,
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardV1Json)),
+        Json.toJson(toUpdate)
+      )
+
+      val result = reportCardController.updateReportCardEntryType(course.toString, reportCard.id.toString, entry.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+  }
 }
