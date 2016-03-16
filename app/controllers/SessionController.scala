@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.ContentTyped
+import controllers.crud.{ContentTyped, SessionChecking}
 import models.{Login, Session}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
@@ -18,7 +18,7 @@ object SessionController {
   val userId = "user-id"
 }
 
-class SessionController(sessionRepository: SessionHandlingService) extends Controller with ContentTyped {
+class SessionController(val sessionService: SessionHandlingService) extends Controller with SessionChecking with ContentTyped {
 
   implicit override val mimeType: LwmMimeType = LwmMimeType.loginV1Json
 
@@ -33,7 +33,7 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
         )))
       },
       success => {
-        sessionRepository.newSession(success.username, success.password).map {
+        sessionService.newSession(success.username, success.password).map {
           case s: Session =>
             Ok.withSession(
               SessionController.sessionId -> s.id.toString,
@@ -54,7 +54,7 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
   def logout = Action.async { implicit request =>
     request.session.get(SessionController.sessionId) match {
       case Some(id) =>
-        sessionRepository.deleteSession(UUID.fromString(id)).map { result =>
+        sessionService.deleteSession(UUID.fromString(id)).map { result =>
           if (result) Ok.withNewSession else BadRequest
         }
       case None =>
@@ -69,7 +69,7 @@ class SessionController(sessionRepository: SessionHandlingService) extends Contr
   def valid = Action.async { implicit request =>
     request.session.get(SessionController.sessionId) match {
       case Some(id) =>
-        sessionRepository.isValid(UUID.fromString(id)).map( result =>
+        sessionService.isValid(UUID.fromString(id)).map( result =>
           if (result) Ok else Unauthorized
         )
       case None =>

@@ -6,17 +6,20 @@ import base.TestBaseDefinition
 import controllers.SessionController
 import models.security.Permissions._
 import models.users.Student
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
-import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition { 
 
   "A StudentControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when user is an admin" in new FakeApplication() {
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
@@ -59,7 +62,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
 
       val result = route(request).get
 
-      status(result) shouldBe NOT_FOUND
+      status(result) shouldBe OK
     }
 
     "Allow non restricted context invocations when student wants to get a single student" in new FakeApplication() {

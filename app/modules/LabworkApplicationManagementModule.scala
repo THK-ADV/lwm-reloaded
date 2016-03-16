@@ -17,11 +17,11 @@ trait DefaultLabworkApplicationServiceModule extends LabworkApplicationServiceMo
 }
 
 trait LabworkApplicationManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
   def labworkApplicationController: LabworkApplicationCRUDController
 }
 
 trait DefaultLabworkApplicationManagementModule extends LabworkApplicationManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
-  override lazy val labworkApplicationController: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, namespace, roleService)
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
+  override lazy val labworkApplicationController: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService)
 }

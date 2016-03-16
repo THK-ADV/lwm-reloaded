@@ -91,6 +91,7 @@ object ScheduleCRUDController {
 }
 
 class ScheduleCRUDController(val repository: SesameRepository,
+                             val sessionService: SessionHandlingService,
                              val namespace: Namespace,
                              val roleService: RoleService,
                              val scheduleGenesisService: ScheduleGenesisServiceLike,

@@ -3,15 +3,15 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{ReportCardEntryType, ReportCardEntry, ReportCard}
-import org.joda.time.{LocalTime, LocalDate}
+import models.{ReportCard, ReportCardEntry, ReportCardEntryType}
+import org.joda.time.{LocalDate, LocalTime}
 import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.w3.banana.PointedGraph
 import play.api.http._
 import play.api.libs.json.{JsError, Json}
 import play.api.test.{FakeHeaders, FakeRequest}
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -26,9 +26,10 @@ class ReportCardControllerSpec extends WordSpec with TestBaseDefinition{
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
   val namespace = Namespace("http://lwm.gm.th-koeln.de")
+  val sessionService = mock[SessionHandlingService]
   val factory = ValueFactoryImpl.getInstance()
 
-  val reportCardController: ReportCardController = new ReportCardController(repository, namespace, roleService) {
+  val reportCardController: ReportCardController = new ReportCardController(repository, sessionService, namespace, roleService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

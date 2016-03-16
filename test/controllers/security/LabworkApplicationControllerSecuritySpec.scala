@@ -6,6 +6,7 @@ import base.TestBaseDefinition
 import controllers.SessionController
 import models.applications.LabworkApplication
 import models.security.Permissions._
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
@@ -14,12 +15,15 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 
+import scala.concurrent.Future
 import scala.util.Success
 
 
 class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition { 
   
   "A LabworkApplicationControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all labwork applications" in new FakeApplication() {
       import LabworkApplication.writes

@@ -4,19 +4,20 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import models.{Course, UriGenerator}
-import models.security.{RefRoleAtom, Role, RefRole, RefRoleProtocol}
+import models.security.{RefRole, RefRoleAtom, RefRoleProtocol, Role}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
-import services.RoleService
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+
 import scala.collection.Map
 import scala.util.{Success, Try}
 
 
-class RefRoleController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
+class RefRoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
   override implicit def reads: Reads[RefRoleProtocol] = RefRole.reads
 
   override implicit def writes: Writes[RefRole] = RefRole.writes
@@ -48,14 +49,12 @@ class RefRoleController(val repository: SesameRepository, val namespace: Namespa
     for {
       role <- repository.get[Role](Role.generateUri(output.role)(namespace))
       course <- output.module.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))
-    } yield {
-      for  {
+    } yield for {
         r <- role
       } yield {
         val atom = RefRoleAtom(course, r, output.id)
         Json.toJson(atom)
       }
-    }
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

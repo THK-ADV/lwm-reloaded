@@ -7,15 +7,16 @@ import models.semester.Semester
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
-import services.RoleService
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.select._
-import store.sparql.{select, Clause}
+import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+
 import scala.collection.Map
-import scala.util.{Try, Failure}
+import scala.util.{Failure, Try}
 import LabworkCRUDController._
 import models.security.Permissions._
 
@@ -25,7 +26,7 @@ object LabworkCRUDController {
   val semesterAttribute = "semester"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
+class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
 
   override implicit def rdfWrites: ToPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
 

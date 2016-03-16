@@ -68,7 +68,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   val scheduleService = org.scalatest.mock.MockitoSugar.mock[ScheduleService]
   val reportCardService = org.scalatest.mock.MockitoSugar.mock[ReportCardService]
 
-  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, namespace, roleService, scheduleService, reportCardService) {
+  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, sessionService, namespace, roleService, scheduleService, reportCardService) {
 
     override protected def fromInput(input: ScheduleProtocol, existing: Option[Schedule]): Schedule = entityToPass
 

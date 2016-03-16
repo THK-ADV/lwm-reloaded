@@ -19,13 +19,13 @@ trait DefaultReportCardServiceManagementModule extends ReportCardServiceManageme
 }
 
 trait ReportCardManagementModule {
-  self: SemanticRepositoryModule  =>
+  self: SemanticRepositoryModule with SessionRepositoryModule =>
 
   def reportCardManagementController: ReportCardController
 }
 
 trait DefaultReportCardManagementModuleImpl extends ReportCardManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
 
-  lazy val reportCardManagementController: ReportCardController = new ReportCardController(repository, namespace, roleService)
+  lazy val reportCardManagementController: ReportCardController = new ReportCardController(repository, sessionService, namespace, roleService)
 }

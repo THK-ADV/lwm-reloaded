@@ -6,12 +6,13 @@ import base.TestBaseDefinition
 import models._
 import models.applications.LabworkApplication
 import models.security._
-import models.users.{User, Student}
+import models.users.{Employee, Student, User}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import security.Permissions
+
 import scala.util.{Failure, Success}
 
 class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -30,12 +31,13 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
   lazy val repo = SesameRepository(ns)
 
   "Sesame Repository" should {
+
     "add an entity" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val g = repo.add(student)
 
-      val expectedGraph = URI(User.generateUri(student)).a(lwm.Student)
+      val expectedGraph = URI(User.generateUri(student)).a(lwm.User)
         .--(lwm.systemId).->-(student.systemId)
         .--(lwm.firstname).->-(student.firstname)
         .--(lwm.lastname).->-(student.lastname)
@@ -70,6 +72,27 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
             students.contains(student) shouldBe true
           }
         case _ => fail("Addition not successful")
+      }
+    }
+
+    "add polymorphic entities" in {
+      import bindings.UserBinding._
+
+      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+
+      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+
+      val users: Vector[User] = Vector(student1, student2, student3, employee1, employee2, employee3)
+
+      repo.addMany[User](users)
+
+      repo.get[User](userBinder, classUri) match {
+        case Success(s) => users forall s.contains shouldBe true
+        case Failure(e) => fail(s"Retrieval not successful: $e")
       }
     }
 
@@ -202,6 +225,28 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       }
     }
 
+    "get a polymorphic entity" in {
+      import bindings.StudentBinding._
+      import bindings.UserBinding._
+
+      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+
+      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+
+      val users: Vector[User] = Vector(student1, student2, student3, employee1, employee2, employee3)
+
+      repo.addMany[User](users)
+
+      repo.get[Student](User.generateUri(student1.id)) match {
+        case Success(Some(student)) => println(student)
+        case _ => fail(s"Retrieval not successful")
+      }
+    }
+
     "simultaneously get many entities" in {
       val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
@@ -227,7 +272,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
       val g = repo.add(student)
 
-      val expectedGraph = URI(User.generateUri(student)).a(lwm.Student)
+      val expectedGraph = URI(User.generateUri(student)).a(lwm.User)
         .--(lwm.systemId).->-(student.systemId)
         .--(lwm.firstname).->-(student.firstname)
         .--(lwm.lastname).->-(student.lastname)
@@ -236,7 +281,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
         .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
         .--(lwm.id).->-(student.id).graph
 
-      val expectedGraphUpdated = URI(User.generateUri(studentUpdated)).a(lwm.Student)
+      val expectedGraphUpdated = URI(User.generateUri(studentUpdated)).a(lwm.User)
         .--(lwm.systemId).->-(studentUpdated.systemId)
         .--(lwm.firstname).->-(studentUpdated.firstname)
         .--(lwm.lastname).->-(studentUpdated.lastname)

@@ -8,9 +8,9 @@ import play.api.mvc.{Action, AnyContent, Request, Result}
 import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.{FakeRequest, WithApplicationLoader}
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
-import utils.{LwmMimeType, DefaultLwmApplication}
+import utils.{DefaultLwmApplication, LwmMimeType}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
@@ -22,11 +22,12 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
   self =>
 
   val roleService = mock[RoleService]
+  val sessionService = mock[SessionHandlingService]
   val repository = mock[SesameRepository]
   val ns = mock[Namespace]
   val mimeType = LwmMimeType.entryTypeV1Json
 
-  val controller = new EntryTypeController(repository, ns, roleService) {
+  val controller = new EntryTypeController(repository, sessionService, ns, roleService) {
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }

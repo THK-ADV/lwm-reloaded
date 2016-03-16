@@ -2,20 +2,22 @@ package controllers.crud
 
 import java.net.URLDecoder
 import java.util.UUID
-import models.users.{User, Student}
+
+import models.users.{Student, User}
 import models.{Labwork, UriGenerator}
-import models.applications.{LabworkApplicationAtom, LabworkApplication, LabworkApplicationProtocol}
+import models.applications.{LabworkApplication, LabworkApplicationAtom, LabworkApplicationProtocol}
 import org.joda.time.DateTime
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import models.security.Permissions._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import LabworkApplicationCRUDController._
+
 import scala.collection.Map
-import scala.util.{Try, Failure}
+import scala.util.{Failure, Try}
 
 object LabworkApplicationCRUDController {
   val labworkAttribute = "labwork"
@@ -27,7 +29,7 @@ object LabworkApplicationCRUDController {
 }
 
 //DateTime format is: yyyy-MM-dd'T'HH:mm
-class LabworkApplicationCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] {
+class LabworkApplicationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] {
 
   override implicit def reads: Reads[LabworkApplicationProtocol] = LabworkApplication.reads
 

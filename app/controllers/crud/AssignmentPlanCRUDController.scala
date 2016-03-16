@@ -4,12 +4,13 @@ import java.util.UUID
 
 import models._
 import models.security.Permissions
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
-import services.RoleService
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
@@ -17,7 +18,7 @@ object AssignmentPlanCRUDController {
   val labworkAttribute = "labwork"
 }
 
-class AssignmentPlanCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] {
+class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] {
 
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries

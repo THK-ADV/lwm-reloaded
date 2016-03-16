@@ -1,7 +1,6 @@
 package controllers.crud.schedule
 
 import java.util.UUID
-
 import controllers.crud.AbstractCRUDController
 import models.semester.{BlacklistProtocol, Blacklist}
 import models.users.{User, Employee}
@@ -10,15 +9,15 @@ import models.schedule._
 import models.security.Permissions._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
-import services.RoleService
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class TimetableCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable] {
+class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable] {
 
   override implicit def reads: Reads[TimetableProtocol] = Timetable.reads
 

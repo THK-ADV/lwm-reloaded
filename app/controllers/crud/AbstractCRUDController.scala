@@ -1,23 +1,25 @@
 package controllers.crud
 
 import java.util.UUID
-import models.security.{Permissions, Permission}
+
+import models.security.{Permission, Permissions}
 import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
 import utils.LWMActions._
 import utils.LwmMimeType
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
+
 import scala.collection.Map
 import scala.concurrent.Future
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait SesameRdfSerialisation[T <: UniqueEntity] {
   self: BaseNamespace =>
@@ -63,6 +65,10 @@ trait Atomic[O] {
   }
 }
 
+trait SessionChecking {
+  implicit val sessionService: SessionHandlingService
+}
+
 trait Consistent[I, O] {
 
   import store.sparql.select._
@@ -106,7 +112,7 @@ trait Secured {
   *
   */
 trait SecureControllerContext {
-  self: Secured with ContentTyped =>
+  self: Secured with SessionChecking with ContentTyped =>
 
   sealed trait Rule
 
@@ -182,6 +188,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with BaseNamespace
   with ContentTyped
   with Secured
+  with SessionChecking
   with SecureControllerContext
   with Consistent[I, O]
   with Atomic[O] {

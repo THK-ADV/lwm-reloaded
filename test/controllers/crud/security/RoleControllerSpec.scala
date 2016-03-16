@@ -16,7 +16,7 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] 
   import bindings.RoleBinding._
   override def entityTypeName: String = "role"
 
-  override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = entityToPass
 

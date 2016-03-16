@@ -7,17 +7,17 @@ import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
-import services.RoleService
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.sparql.{select, Clause}
+import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class DegreeCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
+class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
   override implicit def reads: Reads[DegreeProtocol] = Degree.reads
 
   override implicit def writes: Writes[Degree] = Degree.writes

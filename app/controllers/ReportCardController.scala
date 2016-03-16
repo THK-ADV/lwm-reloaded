@@ -6,20 +6,21 @@ import modules.store.BaseNamespace
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import play.api.mvc._
 import models.security.Permissions._
 import scala.util.{Failure, Success, Try}
 
-class ReportCardController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
+class ReportCardController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
   with BaseNamespace
   with JsonSerialisation[ReportCard, ReportCard]
   with SesameRdfSerialisation[ReportCard]
   with Atomic[ReportCard]
   with ContentTyped
   with Secured
+  with SessionChecking
   with SecureControllerContext {
 
   override implicit def rdfReads: FromPG[Sesame, ReportCard] = defaultBindings.ReportCardBinding.reportCardBinder

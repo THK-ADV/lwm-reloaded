@@ -12,7 +12,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
 
   override def entityTypeName: String = "assignmentPlan"
 
-  override val controller: AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] = new AssignmentPlanCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] = new AssignmentPlanCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

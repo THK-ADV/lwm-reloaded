@@ -7,7 +7,7 @@ import org.scalatest.mock.MockitoSugar
 import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.WithApplicationLoader
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import utils.DefaultLwmApplication
 
 trait FakeAuthority {
@@ -40,10 +40,12 @@ trait FakeAuthority {
 trait SecurityBaseDefinition extends FakeAuthority { self =>
 
   val roleService = MockitoSugar.mock[RoleService]
+  val sessionService = MockitoSugar.mock[SessionHandlingService]
 
   class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
       override lazy val roleService: RoleService = self.roleService
+      override def sessionService: SessionHandlingService = self.sessionService
     }.application
   })
 }

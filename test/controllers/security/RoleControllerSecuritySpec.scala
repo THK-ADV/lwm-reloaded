@@ -15,14 +15,18 @@ import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
 import services.RoleService
-import utils.{LwmMimeType, DefaultLwmApplication}
+import utils.{DefaultLwmApplication, LwmMimeType}
 import models.security.Permissions._
+import org.mockito.Matchers
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition {
 
   "A RoleControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to update a role" in new FakeApplication() {
       import models.security.Permission.writes

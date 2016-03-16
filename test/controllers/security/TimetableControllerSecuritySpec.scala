@@ -8,6 +8,7 @@ import models.schedule.{Timetable, TimetableEntry}
 import models.security.Permissions._
 import models.semester.Blacklist
 import org.joda.time.LocalDate
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
@@ -16,11 +17,14 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition {
   
   "A TimetableControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a timetable" in new FakeApplication() {
       import Timetable.writes

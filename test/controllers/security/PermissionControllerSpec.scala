@@ -2,22 +2,27 @@ package controllers.security
 
 import base.TestBaseDefinition
 import models.security.Permissions
+import org.mockito.Matchers
+import org.mockito.Mockito.{mock => _, _}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+
+import scala.concurrent.Future
 
 class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
 
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
+  val sessionService = mock[SessionHandlingService]
   val namespace = Namespace("http://testNamespace/")
 
-  val controller = new PermissionController(repository, namespace, roleService) {
+  val controller = new PermissionController(repository, sessionService, namespace, roleService) {
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
@@ -25,6 +30,9 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
   val mimeType = LwmMimeType.permissionV1Json
 
   "A PermissionControllerSpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
+
     "return all permissions" in {
       val permissions = Permissions.all
 

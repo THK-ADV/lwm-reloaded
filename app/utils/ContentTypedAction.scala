@@ -1,17 +1,19 @@
 package utils
 
 import java.util.UUID
+import java.util.concurrent.Executors
 
 import controllers.SessionController
 import models.security.{Authority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import services.RoleServiceLike
-
-import scala.concurrent.Future
+import services.{RoleServiceLike, SessionHandlingService}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object LWMActions {
+
+  implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   object ContentTypedAction {
 
@@ -23,46 +25,84 @@ object LWMActions {
 
   object SecureAction {
 
-    def apply()(predicate: Authority => Try[Boolean])(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService)(block)
+    def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService, sessionService)(block)
     }
 
-    def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService)(block)
-    }
-
-    def async()(predicate: Authority => Try[Boolean])(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService).async(block)
-    }
-
-    def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService).async(block)
+    def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth)).async(block)
     }
   }
 
   object SecureContentTypedAction {
 
-    def apply()(predicate: Authority => Try[Boolean])(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService)(LwmBodyParser.parseWith(mimeType))(block)
+    def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService)(LwmBodyParser.parseWith(mimeType))(block)
-    }
-
-    def async()(predicate: Authority => Try[Boolean])(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(predicate)(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
-    }
-
-    def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike) = {
-      securedAction(userAuth => roleService.checkWith(ps)(userAuth))(roleService).async(LwmBodyParser.parseWith(mimeType))(block)
+    def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+      securedAction(userAuth => roleService.checkWith(ps)(userAuth)).async(LwmBodyParser.parseWith(mimeType))(block)
     }
   }
 
-  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike) = Allowed(roleService) andThen Permitted(predicate)
+  final private def securedAction(predicate: Authority => Try[Boolean])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+    Allowed(sessionService) andThen Authorized(roleService) andThen Permitted(predicate)
+  }
 }
 
 case class AuthRequest[A](private val unwrapped: Request[A], authority: Authority) extends WrappedRequest[A](unwrapped)
+case class IdRequest[A](private val unwrapped: Request[A], userId: UUID) extends WrappedRequest[A](unwrapped)
+
+case class Allowed(sessionService: SessionHandlingService) extends ActionBuilder[IdRequest] {
+  import LWMActions.actionExecutionContext
+
+  override def invokeBlock[A](request: Request[A], block: (IdRequest[A]) => Future[Result]): Future[Result] = {
+    request.session.get(SessionController.userId) match {
+      case Some(sid) =>
+        val uuid = UUID.fromString(sid)
+        sessionService.isValid(uuid) flatMap { valid =>
+          if(valid) block(IdRequest(request, uuid))
+          else Future.successful {
+            Results.Unauthorized(Json.obj(
+              "status" -> "KO",
+              "message" -> "Session invalid or non-existent"
+            ))
+          }
+        }
+      case None =>
+        Future.successful {
+          Results.Unauthorized(Json.obj(
+            "status" -> "KO",
+            "message" -> "No user-id found in session"
+          ))
+        }
+    }
+  }
+}
+
+case class Authorized(roleServiceLike: RoleServiceLike) extends ActionFunction[IdRequest, AuthRequest] {
+  override def invokeBlock[A](request: IdRequest[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
+    def f = block compose (AuthRequest.apply[A] _).curried(request)
+
+    roleServiceLike.authorityFor(request.userId.toString) match {
+      case Success(Some(auth)) => f(auth)
+      case Success(_) =>
+        Future.successful {
+          Results.Unauthorized(Json.obj(
+            "status" -> "KO",
+            "message" -> s"No authority found for ${request.userId}"
+          ))
+        }
+      case Failure(e) =>
+        Future.successful {
+          Results.InternalServerError(Json.obj(
+            "status" -> "KO",
+            "message" -> s"${e.getMessage}"
+          ))
+        }
+    }
+  }
+}
 
 case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[AuthRequest] {
 
@@ -82,37 +122,3 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
     }
   }
 }
-
-case class Allowed(roleService: RoleServiceLike) extends ActionBuilder[AuthRequest] {
-
-  override def invokeBlock[A](request: Request[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
-    def f = block compose (AuthRequest.apply[A] _).curried(request)
-
-    request.session.get(SessionController.userId) match {
-      case Some(id) =>
-        roleService.authorityFor(id) match {
-          case Success(optAuth) if optAuth.isDefined => f(optAuth.get)
-          case Success(_) => Future.successful {
-            Results.Unauthorized(Json.obj(
-              "status" -> "KO",
-              "message" -> s"No authority found for $id"
-            ))
-          }
-          case Failure(e) => Future.successful {
-            Results.InternalServerError(Json.obj(
-              "status" -> "KO",
-              "message" -> s"${e.getMessage}"
-            ))
-          }
-        }
-      case None => Future.successful {
-        Results.Unauthorized(Json.obj(
-          "status" -> "KO",
-          "message" -> s"No user-id present in session"
-        ))
-      }
-    }
-  }
-}
-
-

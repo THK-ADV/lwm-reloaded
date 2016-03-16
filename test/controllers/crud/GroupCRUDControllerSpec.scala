@@ -33,7 +33,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id), Group.randomUUID)
 
-  override val controller: GroupCRUDController = new GroupCRUDController(repository, namespace, roleService, groupService) {
+  override val controller: GroupCRUDController = new GroupCRUDController(repository, sessionService, namespace, roleService, groupService) {
 
     override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = entityToPass
 

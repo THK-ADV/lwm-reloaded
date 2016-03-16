@@ -17,7 +17,7 @@ import scala.util.Success
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree] {
   override val entityToPass: Degree = Degree("label to pass", "abbreviation to pass", Degree.randomUUID)
 
-  override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = entityToPass
 

@@ -1,7 +1,7 @@
 package security
 
 import base.TestBaseDefinition
-import controllers.crud.{ContentTyped, SecureControllerContext, Secured}
+import controllers.crud.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
 import models.security.Permission
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -10,7 +10,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import play.api.mvc.Controller
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import utils.LwmMimeType
 
 import scala.util.Success
@@ -18,11 +18,12 @@ import scala.util.Success
 class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {self =>
 
   implicit val roleService = mock[RoleService]
-  val controller = new MockController(roleService)
+  implicit val sessionService = mock[SessionHandlingService]
+  val controller = new MockController(roleService, sessionService)
 
   val permission = Permission("permission")
 
-  case class MockController(roleService: RoleService) extends Controller with SecureControllerContext with Secured with ContentTyped {
+  case class MockController(roleService: RoleService, sessionService: SessionHandlingService) extends Controller with SecureControllerContext with Secured with SessionChecking with ContentTyped {
     override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json //not relevant
 
     def delegation = contextFrom(Create) asyncAction { request =>

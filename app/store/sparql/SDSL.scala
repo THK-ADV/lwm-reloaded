@@ -57,7 +57,7 @@ trait ConsClause extends Clause {
 
 //--- The current algebra
 case class SelectClause(v: Vector[Properties#Var] = Vector.empty[Properties#Var], tail: Clause = NoneClause) extends ConsClause {
-  override def append(c: Clause): Clause = SelectClause(v, tail append c)
+  override def append(c: Clause): SelectClause = SelectClause(v, tail append c)
 }
 
 case class DistinctClause(v: Vector[Properties#Var], tail: Clause = NoneClause) extends ConsClause {
@@ -115,27 +115,24 @@ case class AskClause(body: Clause, tail: Clause = NoneClause) extends ConsClause
 trait SelectOperation extends Clauses with Properties {
   def apply(args: String*) = SelectClause((args map v).toVector)
 
-  def distinct(args: String*) = asSelect(SelectClause() append DistinctClause((args map v).toVector))
+  def distinct(args: String*) = SelectClause() append DistinctClause((args map v).toVector)
 
-  def * = asSelect(SelectClause() append EverythingClause())
-
-  private def asSelect: Clause => SelectClause = c => c.asInstanceOf[SelectClause]
+  def * = SelectClause() append EverythingClause()
 
   implicit class SelectOps(select: SelectClause) {
-    def where(nc: Clause) = asSelect(select append WhereClause(nc))
+    def where(nc: Clause) = select append WhereClause(nc)
 
-    def orderby(elm: String = "") = asSelect {
-      select append {
+    def orderby(elm: String = "") = select append {
         if (elm == "") OrderByClause()
         else OrderByClause(Some(v(elm)))
       }
-    }
 
-    def groupby(elm: String) = asSelect(select append GroupByClause(v(elm)))
 
-    def asc(elm: String) = asSelect(select append AscendingClause(v(elm)))
+    def groupby(elm: String) = select append GroupByClause(v(elm))
 
-    def desc(elm: String) = asSelect(select append DescendingClause(v(elm)))
+    def asc(elm: String) = select append AscendingClause(v(elm))
+
+    def desc(elm: String) = select append DescendingClause(v(elm))
   }
 
 }
@@ -154,11 +151,11 @@ trait AskOperation extends Clauses with Properties {
  * mixin this trait.
  */
 trait Clauses {
-  def ^[A <: Properties#Property](s: A, p: A, o: A): StatementClause[A] = StatementClause((s, p, o))
+  def ^(s: Properties#Property, p: Properties#Property, o: Properties#Property): StatementClause[Properties#Property] = StatementClause((s, p, o))
 
   implicit class ClauseOps(c: Clause) {
 
-    def ^[A <: Properties#Property](s: A, p: A, o: A) = c append StatementClause((s, p, o))
+    def ^(s: Properties#Property, p: Properties#Property, o: Properties#Property) = c append StatementClause((s, p, o))
 
     def filter(v: String) = c append FilterClause(v)
 
@@ -216,7 +213,8 @@ trait Properties {
    * as a subject with the following representation: <`subject`>
    *
    * It normalises based on the `String` representation of the input value `A`
-   * @tparam A input value
+    *
+    * @tparam A input value
    * @return Resource
    */
   def s[A]: A => Res = s => Res(s.toString)
@@ -226,7 +224,8 @@ trait Properties {
    * as a predicate with the following representation: <`predicate`>
    *
    * It normalises based on the `String` representation of the input value `A`
-   * @tparam A input value
+    *
+    * @tparam A input value
    * @return Resource
    */
   def p[A]: A => Res = s => Res(s.toString)
@@ -238,7 +237,8 @@ trait Properties {
    *
    * It is viewed semantically as either a subject or an object (with the following
    * representation: "`object`")
-   * @tparam A input value
+    *
+    * @tparam A input value
    * @return Resource or Literal
    */
   def o[A]: A => Property = s => if (s.toString.contains("http")) Res(s.toString) else Lit(s.toString)
@@ -248,7 +248,8 @@ trait Properties {
    * variable with the following representation: ?`variable`
    *
    * It normalises based on the `String` representation of the input value `A`
-   * @tparam A input value
+    *
+    * @tparam A input value
    * @return Variable
    */
   def v[A]: A => Var = s => Var(s.toString)

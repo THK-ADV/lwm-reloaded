@@ -2,13 +2,13 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.users.{User, Employee}
+import models.users.{Employee, User}
 import models.{Course, CourseAtom, CourseProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
@@ -17,6 +17,7 @@ import models.security.Permissions._
 import models.security.{Authority, RefRole, Role}
 import models.security.Roles._
 import play.api.mvc.Result
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import store.sparql.select
@@ -26,7 +27,7 @@ object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
 
-class CourseCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course] {
+class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course] {
   override implicit def rdfWrites: ToPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
 
   override implicit def rdfReads: FromPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
