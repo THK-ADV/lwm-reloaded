@@ -3,11 +3,11 @@ package controllers.crud
 import java.util.UUID
 
 import models._
-import models.users.{User, Student}
+import models.users.{Student, User}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import services.{GroupServiceLike, RoleService}
+import services.{GroupServiceLike, RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
@@ -27,7 +27,7 @@ object GroupCRUDController {
   }) + 1
 }
 
-class GroupCRUDController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
+class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group] {
 
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 

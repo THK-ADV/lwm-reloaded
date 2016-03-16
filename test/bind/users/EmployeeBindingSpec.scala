@@ -19,7 +19,7 @@ class EmployeeBindingSpec extends SesameDbSpec {
 
   val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", "employee")
   val employeeGraph = (
-    URI(User.generateUri(employee)).a(lwm.Employee)
+    URI(User.generateUri(employee)).a(lwm.User)
       -- lwm.systemId ->- employee.systemId
       -- lwm.lastname ->- employee.lastname
       -- lwm.firstname ->- employee.firstname

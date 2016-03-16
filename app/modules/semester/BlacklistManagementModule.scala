@@ -1,6 +1,7 @@
 package modules.semester
 
 import controllers.crud.semester.BlacklistCRUDController
+import modules.SessionRepositoryModule
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services.{BlacklistService, BlacklistServiceLike}
@@ -19,15 +20,15 @@ trait DefaultBlacklistServiceManagementModule extends BlacklistServiceManagement
 }
 
 trait BlacklistManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
 
   def blacklistManagementController: BlacklistCRUDController
 }
 
 trait DefaultBlacklistManagementModuleImpl extends BlacklistManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
 
-  lazy val blacklistManagementController: BlacklistCRUDController = new BlacklistCRUDController(repository, namespace, roleService)
+  lazy val blacklistManagementController: BlacklistCRUDController = new BlacklistCRUDController(repository, sessionService, namespace, roleService)
 }
 
 

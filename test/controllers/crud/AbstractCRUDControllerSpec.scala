@@ -14,7 +14,7 @@ import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
-import services.{GroupService, RoleService, TimetableService}
+import services.{GroupService, RoleService, SessionHandlingService, TimetableService}
 import store.bind.Bindings
 import store.sparql.{Initial, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
@@ -29,6 +29,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   val roleService = mock[RoleService]
   val groupService = mock[GroupService]
   val timetableService = mock[TimetableService]
+  val sessionService = mock[SessionHandlingService]
   val qe = mock[QueryExecutor[SelectClause]]
   val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
   val query = Initial[Nothing, Nothing](store.sparql.select(""))(qe)

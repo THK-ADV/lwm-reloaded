@@ -1,18 +1,19 @@
 package controllers.security
 
-import controllers.crud.{ContentTyped, JsonSerialisation, SecureControllerContext, Secured}
+import controllers.crud._
 import models.security.{Permission, Permissions}
 import modules.store.BaseNamespace
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-class PermissionController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
+class PermissionController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
   with JsonSerialisation[Permission, Permission]
   with BaseNamespace
   with Secured
+  with SessionChecking
   with SecureControllerContext
   with ContentTyped {
 

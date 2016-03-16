@@ -10,7 +10,7 @@ import models.users.{Employee, Student, StudentAtom, User}
 import modules.store.BaseNamespace
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request, Result}
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -50,16 +50,17 @@ object UserController {
   lazy val statusAttribute = "status"
 }
 
-class UserController(val roleService: RoleService, val repository: SesameRepository, val namespace: Namespace) extends
+class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
   Controller with
   Secured with
+  SessionChecking with
   SecureControllerContext with
   Filterable[User] with
   ContentTyped with
   BaseNamespace with
   ModelConverter[User, User] {
 
-  lazy val bindings = Bindings[repository.Rdf](namespace)
+  val bindings = Bindings[repository.Rdf](namespace)
 
   import bindings.UserBinding
   import bindings.StudentBinding
@@ -67,19 +68,18 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
 
 
   def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
-    val uri = s"$namespace${request.uri}"
-    repository.get[Student](id)(StudentBinding.studentBinder)
+    val uri = s"$namespace${request.uri}".replace("students", "users")
+    repository.get[Student](uri)(StudentBinding.studentBinder)
   } (a => Ok(Json.toJson(a)).as(mimeType))
 
   def studentAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
-    val uri = s"$namespace${request.uri}".replace("/atomic", "")
-
+    val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
     repository.get[Student](uri)(StudentBinding.studentBinder) flatPeek atomize
   } (Ok(_).as(mimeType))
 
   def employee(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
-    val uri = s"$namespace${request.uri}"
-    repository.get[Employee](id)(EmployeeBinding.employeeBinder)
+    val uri = s"$namespace${request.uri}".replace("employees", "users")
+    repository.get[Employee](uri)(EmployeeBinding.employeeBinder)
   } (a => Ok(Json.toJson(a)).as(mimeType))
 
   def allEmployees(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
@@ -109,7 +109,7 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
 
   def get(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}"
-    repository.get[User](id)(UserBinding.userBinder)
+    repository.get[User](uri)(UserBinding.userBinder)
   } (a => Ok(toJson(a)).as(mimeType))
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = {
@@ -127,8 +127,7 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
   } (Ok(_).as(mimeType))
 
   def allAtomic(secureContext: SecureContext = contextFrom(GetAll)) = gets(secureContext) { request =>
-    repository.get[User](UserBinding.userBinder, UserBinding.classUri) map {
-      case set if set.nonEmpty =>
+    repository.get[User](UserBinding.userBinder, UserBinding.classUri) map { set =>
         if(request.queryString.isEmpty) handle(atomizeMany(set))(InternalServerError(_))
         else {
           val makeResult =
@@ -136,11 +135,6 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
 
           makeResult(set)
         }
-      case set =>
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        ))
     }
   }
 
@@ -177,8 +171,7 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
   }
 
   private def many[A <: User](secureContext: SecureContext)(f: Request[AnyContent] => Try[Set[A]])(g: Set[A] => Result) = gets(secureContext) { request =>
-    f(request) map {
-      case set if set.nonEmpty =>
+    f(request) map { set =>
         if(request.queryString.isEmpty) g(set)
         else withFilter(request.queryString)(set) match {
           case Success(filtered) => g(filtered)
@@ -188,11 +181,6 @@ class UserController(val roleService: RoleService, val repository: SesameReposit
               "message" -> e.getMessage
             ))
         }
-      case set =>
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        ))
     }
   }
   private def jsonify[A <: User](set: Set[A])(f: A => Try[Option[JsValue]]) = manyToJson(repository)(set, f)

@@ -14,12 +14,16 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import models.security.Permissions._
+import org.mockito.Matchers
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class RefRoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition {
 
   "A RefRoleControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all refroles" in new FakeApplication() {
       import RefRole.writes

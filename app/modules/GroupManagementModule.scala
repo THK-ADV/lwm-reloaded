@@ -19,13 +19,13 @@ trait DefaultGroupServiceManagementModule extends GroupServiceManagementModule {
 }
 
 trait GroupManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with GroupServiceManagementModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with GroupServiceManagementModule with SessionRepositoryModule =>
 
   def groupManagementController: GroupCRUDController
 }
 
 trait DefaultGroupManagementModuleImpl extends GroupManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with GroupServiceManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with GroupServiceManagementModule with SessionRepositoryModule =>
 
-  lazy val groupManagementController: GroupCRUDController = new GroupCRUDController(repository, namespace, roleService, groupService)
+  lazy val groupManagementController: GroupCRUDController = new GroupCRUDController(repository, sessionService, namespace, roleService, groupService)
 }

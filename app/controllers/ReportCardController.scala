@@ -3,18 +3,19 @@ package controllers
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.{AssignmentEntryType, UriGenerator, ReportCard}
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import models.{AssignmentEntryType, ReportCard, UriGenerator}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
-class ReportCardController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[ReportCard, ReportCard] {
+class ReportCardController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[ReportCard, ReportCard] {
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCard]): Try[Set[ReportCard]] = Success(all)
 

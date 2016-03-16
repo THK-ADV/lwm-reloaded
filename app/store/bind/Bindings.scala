@@ -11,7 +11,7 @@ import models.users.{Employee, Student, User}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
-import org.w3.banana.binder.{PGBinder, RecordBinder}
+import org.w3.banana.binder.{ClassUrisFor, PGBinder, RecordBinder}
 import services.TimetableServiceLike
 import store.Namespace
 import store.Prefixes.LWMPrefix
@@ -106,7 +106,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   object UserBinding {
     val clazz = lwm.User
-    val classUri = classUrisFor[User](clazz)
+    val classUri: ClassUrisFor[Rdf, User] = classUrisFor[User](clazz)
 
     implicit val userBinder: PGBinder[Rdf, User] = new PGBinder[Rdf, User] {
       import StudentBinding._
@@ -136,8 +136,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object StudentBinding {
-    implicit val clazz = lwm.Student
-    implicit val classUri = classUrisFor[Student](clazz)
+    implicit val clazz = lwm.User
+    implicit val classUri: ClassUrisFor[Rdf, Student] = classUrisFor[Student](clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -150,8 +150,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object EmployeeBinding {
-    implicit val clazz = lwm.Employee
-    implicit val classUri = classUrisFor[Employee](clazz)
+    implicit val clazz = lwm.User
+    implicit val classUri: ClassUrisFor[Rdf, Employee] = classUrisFor[Employee](clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)

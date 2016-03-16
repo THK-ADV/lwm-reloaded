@@ -7,19 +7,23 @@ import controllers.SessionController
 import models.ReportCard
 import models.security.Permissions._
 import models.security.RefRole
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
-import utils.{LwmMimeType, LwmAccepts}
+import utils.{LwmAccepts, LwmMimeType}
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class ReportCardControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition  {
 
   "A ReportCardControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when student wants to get his report card" in new FakeApplication() {
       when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))

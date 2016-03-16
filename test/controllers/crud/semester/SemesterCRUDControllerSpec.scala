@@ -27,7 +27,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = entityToPass
 

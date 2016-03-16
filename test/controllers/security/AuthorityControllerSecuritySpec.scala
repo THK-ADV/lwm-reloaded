@@ -5,6 +5,7 @@ import java.util.UUID
 import base.TestBaseDefinition
 import controllers.SessionController
 import models.security.Permissions._
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
@@ -13,11 +14,14 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition {
 
   "A AuthorityControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to update an authority" in new FakeApplication() {
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))

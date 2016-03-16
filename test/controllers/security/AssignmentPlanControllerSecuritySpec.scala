@@ -6,6 +6,7 @@ import base.TestBaseDefinition
 import controllers.SessionController
 import models.AssignmentPlan
 import models.security.Permissions._
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
@@ -14,11 +15,14 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 
+import scala.concurrent.Future
 import scala.util.Success
 
 class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition {
 
   "A AssignmentPlanControllerSecuritySpec " should {
+
+    when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Block any non restricted context invocations even when user is admin because route is not found" in new FakeApplication() {
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))

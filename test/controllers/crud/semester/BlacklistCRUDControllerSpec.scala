@@ -17,7 +17,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override def entityTypeName: String = "blacklist"
 
-  override val controller: AbstractCRUDController[BlacklistProtocol, Blacklist] = new BlacklistCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[BlacklistProtocol, Blacklist] = new BlacklistCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = entityToPass
 

@@ -38,7 +38,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   )
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
-  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = entityToPass
 

@@ -13,7 +13,7 @@ import play.api.test.FakeRequest
 import play.api.http.HttpVerbs
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.test.Helpers._
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import Student._
@@ -25,10 +25,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
   val ns = Namespace("http://lwm.gm.th-koeln.de")
   val repo = mock[SesameRepository]
   val roleService = mock[RoleService]
+  val sessionService = mock[SessionHandlingService]
 
   val bindings = Bindings[repo.Rdf](ns)
 
-  val controller: UserController = new UserController(roleService, repo, ns) {
+  val controller: UserController = new UserController(roleService, sessionService, repo, ns) {
     //to be specialized
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

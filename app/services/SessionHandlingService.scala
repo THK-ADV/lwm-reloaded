@@ -73,11 +73,9 @@ object SessionServiceActor {
 
   private[services] case object RemovalSuccessful extends RemovalResponse
 
-
-  private[services] case class ValidationRequest(id: UUID)
-
   case class SessionRequest(user: String, password: String)
 
+  private[services] case class ValidationRequest(id: UUID)
 
   private[services] sealed trait ValidationResponse
 
@@ -85,9 +83,7 @@ object SessionServiceActor {
 
   private[services] case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
 
-
   private[SessionServiceActor] case object Update
-
 
   private[services] trait AuthenticationResponse
 

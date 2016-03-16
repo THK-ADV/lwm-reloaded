@@ -25,7 +25,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
   import bindings.RefRoleBinding._
   override def entityTypeName: String = "refRole"
 
-  override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = entityToPass
 

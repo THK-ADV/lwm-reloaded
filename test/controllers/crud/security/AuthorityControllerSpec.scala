@@ -8,7 +8,7 @@ import models.security._
 import models.users.{Employee, Student}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.w3.banana.PointedGraph
+import org.w3.banana.{PointedGraph, RDFPrefix}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.FakeRequest
@@ -16,6 +16,10 @@ import play.api.test.Helpers._
 import utils.LwmMimeType
 import Permissions._
 import models.Course
+import org.openrdf.model.Value
+import store.Prefixes.LWMPrefix
+import store.{Namespace, SesameRepository}
+import utils.Ops.MonadInstances._
 
 import scala.util.{Failure, Success}
 
@@ -23,7 +27,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
   override def entityTypeName: String = "authority"
 
-  override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = entityToPass
 
@@ -260,5 +264,100 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       "status" -> "KO",
       "errors" -> errorMessage
     )
+  }
+
+  "filter through nested levels of graphs" in {
+    import bindings.AuthorityBinding._
+    import bindings.RefRoleBinding._
+
+    val realRepo = SesameRepository(namespace)
+    val lwm = LWMPrefix[realRepo.Rdf](realRepo.rdfOps, realRepo.rdfOps)
+
+    val localController = new AuthorityController(realRepo, sessionService, namespace, roleService) {
+      override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+        case _ => NonSecureBlock
+      }
+      override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+        case _ => NonSecureBlock
+      }
+    }
+
+    val role1 = UUID.randomUUID()
+    val role2 = UUID.randomUUID()
+
+    val user1 = UUID.randomUUID()
+    val user2 = UUID.randomUUID()
+    val user3 = UUID.randomUUID()
+
+    val course1 = UUID.randomUUID()
+    val course2 = UUID.randomUUID()
+
+    val refrole1 = RefRole(Some(course1), role1)
+    val refrole2 = RefRole(None, role2)
+    val refrole3 = RefRole(Some(course2), role1)
+
+    val auth1 = Authority(user1, Set(refrole1.id, refrole2.id))
+    val auth2 = Authority(user2, Set(refrole2.id))
+    val auth3 = Authority(user3, Set(refrole1.id, refrole3.id))
+
+    realRepo.addMany[RefRole](List(refrole1, refrole2))
+    realRepo.addMany[Authority](List(auth1, auth2, auth3))
+
+    val requestWithCourse = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?course=$course2"
+    )
+
+    val requestWithCourseAndRole = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?course=$course1&role=$role1"
+    )
+
+    val requestWithUser = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?user=$user3"
+    )
+
+    val requestManyCourses = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?course=$course2&course=$course1"
+    )
+
+    val requestManyCoursesAndRole = FakeRequest(
+      GET,
+      s"/${entityTypeName}s?course=$course2&course=$course1&role=$role1"
+    )
+
+    val result1 = localController.all()(requestWithCourse)
+    val result2 = localController.all()(requestWithCourseAndRole)
+    val result3 = localController.all()(requestWithUser)
+    val result4 = localController.all()(requestManyCourses)
+    val result5 = localController.all()(requestManyCoursesAndRole)
+
+    val expected1 = List(Json.toJson(auth2))
+    val expected2 = List(Json.toJson(auth1), Json.toJson(auth3))
+    val expected3 = List(Json.toJson(auth3))
+    val expected4 = List(Json.toJson(auth1), Json.toJson(auth3))
+    val expected5 = List(Json.toJson(auth3))
+
+    contentAsJson(result1).asInstanceOf[JsArray].value foreach { auth =>
+      expected1 contains auth shouldBe true
+    }
+
+    contentAsJson(result2).asInstanceOf[JsArray].value foreach { auth =>
+      expected2 contains auth shouldBe true
+    }
+
+    contentAsJson(result3).asInstanceOf[JsArray].value foreach { auth =>
+     expected3 contains auth shouldBe true
+    }
+
+    contentAsJson(result4).asInstanceOf[JsArray].value foreach { auth =>
+      expected4 contains auth shouldBe true
+    }
+
+    contentAsJson(result5).asInstanceOf[JsArray].value foreach { auth =>
+      expected5 contains auth shouldBe true
+    }
   }
 }

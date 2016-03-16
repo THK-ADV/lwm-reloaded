@@ -15,7 +15,7 @@ class ReportControllerSpec extends AbstractCRUDControllerSpec[ReportCard, Report
 
   override def entityTypeName: String = "reportCard"
 
-  override val controller: AbstractCRUDController[ReportCard, ReportCard] = new ReportCardController(repository, namespace, roleService) {
+  override val controller: AbstractCRUDController[ReportCard, ReportCard] = new ReportCardController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: ReportCard, existing: Option[ReportCard]): ReportCard = entityToPass
 

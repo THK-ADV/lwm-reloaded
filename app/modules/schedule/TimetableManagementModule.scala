@@ -1,6 +1,7 @@
 package modules.schedule
 
 import controllers.crud.schedule.TimetableCRUDController
+import modules.SessionRepositoryModule
 import modules.security.SecurityManagementModule
 import modules.semester.BlacklistServiceManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
@@ -20,13 +21,13 @@ trait DefaultTimetableServiceManagementModule extends TimetableServiceManagement
 }
 
 trait TimetableManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
 
   def timetableManagementController: TimetableCRUDController
 }
 
 trait DefaultTimetableManagementModuleImpl extends TimetableManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
 
-  lazy val timetableManagementController: TimetableCRUDController = new TimetableCRUDController(repository, namespace, roleService)
+  lazy val timetableManagementController: TimetableCRUDController = new TimetableCRUDController(repository, sessionService, namespace, roleService)
 }

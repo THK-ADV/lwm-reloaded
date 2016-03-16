@@ -1,21 +1,22 @@
 package controllers
 
-import controllers.crud.{SecureControllerContext, Secured, ContentTyped}
+import controllers.crud.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
 import models.AssignmentEntryType
 import models.security.Permissions
 import modules.store.BaseNamespace
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
-import services.RoleService
+import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.LwmMimeType._
 import models.security.Permissions._
 
-class EntryTypeController(val repository: SesameRepository, val namespace: Namespace, val roleService: RoleService) extends Controller
+class EntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
 with ContentTyped
 with BaseNamespace
 with Secured
+with SessionChecking
 with SecureControllerContext {
 
   override implicit val mimeType: LwmMimeType = entryTypeV1Json

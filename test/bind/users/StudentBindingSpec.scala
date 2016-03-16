@@ -23,7 +23,7 @@ class StudentBindingSpec extends SesameDbSpec {
   import bindings.uuidRefBinder
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
-  val studentGraph = URI(User.generateUri(student)).a(lwm.Student)
+  val studentGraph = URI(User.generateUri(student)).a(lwm.User)
     .--(lwm.systemId).->-(student.systemId)
     .--(lwm.lastname).->-(student.lastname)
     .--(lwm.firstname).->-(student.firstname)
