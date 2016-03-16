@@ -1,7 +1,7 @@
 package bind.users
 
 import base.SesameDbSpec
-import models.users.Employee
+import models.users.{User, Employee}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
@@ -17,13 +17,14 @@ class EmployeeBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.EmployeeBinding._
 
-  val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", Employee.randomUUID)
+  val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", "employee")
   val employeeGraph = (
-    URI(Employee.generateUri(employee)).a(lwm.Employee)
+    URI(User.generateUri(employee)).a(lwm.Employee)
       -- lwm.systemId ->- employee.systemId
       -- lwm.lastname ->- employee.lastname
       -- lwm.firstname ->- employee.firstname
       -- lwm.email ->- employee.email
+      -- lwm.status ->- employee.status
       -- lwm.id ->- employee.id
     ).graph
 
@@ -35,7 +36,7 @@ class EmployeeBindingSpec extends SesameDbSpec {
     }
 
     "return an employee based on a RDF graph representation" in {
-      val expectedEmployee = PointedGraph[Rdf](URI(Employee.generateUri(employee)), employeeGraph).as[Employee]
+      val expectedEmployee = PointedGraph[Rdf](URI(User.generateUri(employee)), employeeGraph).as[Employee]
 
       expectedEmployee match {
         case Success(s) =>

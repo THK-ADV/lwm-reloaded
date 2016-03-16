@@ -46,11 +46,21 @@ trait Filterable[O] {
 }
 
 trait ModelConverter[I, O] {
-  protected def fromInput(input: I, id: Option[UUID] = None): O
+  protected def fromInput(input: I, existing: Option[O] = None): O
+}
+
+trait Atomic[O] {
+  import utils.Ops._
+  import utils.Ops.MonadInstances._
 
   protected def atomize(output: O): Try[Option[JsValue]]
 
-  protected def atomizeMany(output: Set[O]): Try[JsValue]
+  final def atomizeMany(output: Set[O]): Try[JsValue] = output.foldLeft(Try(Option(JsArray()))) { (T, model) =>
+    T.bipeek(atomize(model))(_ :+ _)
+  } map {
+    case Some(jsArray) => jsArray
+    case None => JsArray()
+  }
 }
 
 trait Consistent[I, O] {
@@ -58,7 +68,7 @@ trait Consistent[I, O] {
   import store.sparql.select._
   import store.sparql.{NoneClause, Clause, SelectClause}
 
-  def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
+  final def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
     val (clause, key) = existsQuery(input)
 
     clause match {
@@ -173,7 +183,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with ContentTyped
   with Secured
   with SecureControllerContext
-  with Consistent[I, O] {
+  with Consistent[I, O]
+  with Atomic[O] {
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>
@@ -362,7 +373,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
                   "id" -> id.toString
                 ))
               case Some(entity) =>
-                val updated = fromInput(success, Some(entity.id))
+                val updated = fromInput(success, Some(entity))
 
                 repository.update[O, UriGenerator[O]](updated).flatMap(_ => updatef(updated)) match {
                   case Success(result) => result

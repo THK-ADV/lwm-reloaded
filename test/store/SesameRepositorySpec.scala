@@ -6,7 +6,7 @@ import base.TestBaseDefinition
 import models._
 import models.applications.LabworkApplication
 import models.security._
-import models.users.Student
+import models.users.{User, Student}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -31,11 +31,11 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
   "Sesame Repository" should {
     "add an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val g = repo.add(student)
 
-      val expectedGraph = URI(Student.generateUri(student)).a(lwm.Student)
+      val expectedGraph = URI(User.generateUri(student)).a(lwm.Student)
         .--(lwm.systemId).->-(student.systemId)
         .--(lwm.firstname).->-(student.firstname)
         .--(lwm.lastname).->-(student.lastname)
@@ -53,10 +53,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "simultaneously add many entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
@@ -74,14 +74,14 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "delete an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val repoSize = repo.size
-      val graph = repo deleteCascading Student.generateUri(student)
+      val graph = repo deleteCascading User.generateUri(student)
 
       graph match {
         case Success(s) =>
-          repo get Student.generateUri(student) map (o => o.isEmpty shouldBe true)
+          repo get User.generateUri(student) map (o => o.isEmpty shouldBe true)
         case Failure(e) =>
           fail("repo could not delete the given entity")
       }
@@ -124,8 +124,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       import bindings.LabworkBinding._
 
       val applicant = UUID.randomUUID()
-      val plan = AssignmentPlan(0, Set.empty[AssignmentEntry])
-      val lab = Labwork("Labwork", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), plan)
+      val lab = Labwork("Labwork", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val application = LabworkApplication(lab.id, applicant, Set.empty)
 
       repo.add(lab)
@@ -156,8 +155,8 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "delete entities" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val studentUri = Student.generateUri(student)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val studentUri = User.generateUri(student)
 
       repo.add(student)
       repo.contains(studentUri) shouldBe true
@@ -169,10 +168,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "get list of entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -188,10 +187,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "get an explicit entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       repo add student
 
-      val explicitStudent = repo.get[Student](Student.generateUri(student))
+      val explicitStudent = repo.get[Student](User.generateUri(student))
 
       explicitStudent match {
         case Success(Some(s)) =>
@@ -204,15 +203,15 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "simultaneously get many entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
       repo.addMany(students)
-      val g = repo.getMany[Student](students.map(Student.generateUri))
+      val g = repo.getMany[Student](students.map(User.generateUri))
 
       g match {
         case Success(s) =>
@@ -223,12 +222,12 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "update an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       val g = repo.add(student)
 
-      val expectedGraph = URI(Student.generateUri(student)).a(lwm.Student)
+      val expectedGraph = URI(User.generateUri(student)).a(lwm.Student)
         .--(lwm.systemId).->-(student.systemId)
         .--(lwm.firstname).->-(student.firstname)
         .--(lwm.lastname).->-(student.lastname)
@@ -237,7 +236,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
         .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
         .--(lwm.id).->-(student.id).graph
 
-      val expectedGraphUpdated = URI(Student.generateUri(studentUpdated)).a(lwm.Student)
+      val expectedGraphUpdated = URI(User.generateUri(studentUpdated)).a(lwm.Student)
         .--(lwm.systemId).->-(studentUpdated.systemId)
         .--(lwm.firstname).->-(studentUpdated.firstname)
         .--(lwm.lastname).->-(studentUpdated.lastname)
@@ -250,8 +249,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
         case Success(graph) =>
           graph.graph.isIsomorphicWith(expectedGraph) shouldBe true
 
-          implicit val generator = Student
-          val updated = repo.update(studentUpdated)
+          implicit val generator = User
+          import bindings.UserBinding._
+
+          val updated = repo.update[User, UriGenerator[User]](studentUpdated)
           updated match {
             case Success(pointedGraph) =>
               pointedGraph.graph.isIsomorphicWith(expectedGraphUpdated) shouldBe true
@@ -293,13 +294,13 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "contains an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID)
 
       repo add student
 
-      val didContainStudent = repo contains Student.generateUri(student)
-      val didContainAnotherStudent = repo contains Student.generateUri(anotherStudent)
+      val didContainStudent = repo contains User.generateUri(student)
+      val didContainAnotherStudent = repo contains User.generateUri(anotherStudent)
 
       didContainStudent shouldBe true
       didContainAnotherStudent shouldBe false

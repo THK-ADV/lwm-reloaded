@@ -2,7 +2,7 @@ package bind.users
 
 import base.SesameDbSpec
 import models.Degree
-import models.users.Student
+import models.users.{User, Student}
 import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
@@ -22,8 +22,8 @@ class StudentBindingSpec extends SesameDbSpec {
   import bindings.uuidBinder
   import bindings.uuidRefBinder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-  val studentGraph = URI(Student.generateUri(student)).a(lwm.Student)
+  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
+  val studentGraph = URI(User.generateUri(student)).a(lwm.Student)
     .--(lwm.systemId).->-(student.systemId)
     .--(lwm.lastname).->-(student.lastname)
     .--(lwm.firstname).->-(student.firstname)
@@ -40,7 +40,7 @@ class StudentBindingSpec extends SesameDbSpec {
     }
 
     "return a student based on a RDF graph representation" in {
-      val expectedStudent = PointedGraph[Rdf](URI(Student.generateUri(student)), studentGraph).as[Student]
+      val expectedStudent = PointedGraph[Rdf](URI(User.generateUri(student)), studentGraph).as[Student]
 
       expectedStudent match {
         case Success(s) =>

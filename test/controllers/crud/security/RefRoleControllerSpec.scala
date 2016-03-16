@@ -6,7 +6,7 @@ import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import controllers.security.RefRoleController
 import models.Course
 import models.security._
-import models.users.Employee
+import models.users.User
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -27,14 +27,14 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: RefRoleProtocol, id: Option[UUID]): RefRole = entityToPass
+    override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
   }
 
-  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", Employee.randomUUID, 1, Course.randomUUID)
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", User.randomUUID, 1, Course.randomUUID)
   val roleToPass = Role("role to pass", labwork.all)
   val roleToFail = Role("role to fail", course.all)
 
@@ -157,8 +157,12 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val refRoles = Set(entityToPass, entityToFail)
 
       when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
-      when(repository.getMany[Role](anyObject())(anyObject())).thenReturn(Success(Set(roleToPass, roleToFail)))
-      doReturn(Success(Some(courseToPass))).doReturn(Success(None)).when(repository).get[Course](anyObject())(anyObject())
+
+      doReturn(Success(Some(roleToPass))).
+        doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(roleToFail))).
+        doReturn(Success(None)).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -176,8 +180,10 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
-      when(repository.getMany[Role](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-      doReturn(Success(Some(courseToPass))).doReturn(Success(None)).when(repository).get[Course](anyObject())(anyObject())
+
+      doReturn(Success(Some(roleToPass))).
+        doReturn(Failure(new Exception(errorMessage))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

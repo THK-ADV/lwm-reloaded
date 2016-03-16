@@ -6,7 +6,7 @@ import base.TestBaseDefinition
 import models.schedule.TimetableDateEntry
 import models.schedule._
 import models.semester.{Blacklist, Semester}
-import models.users.{Employee, Student}
+import models.users.{User, Employee, Student}
 import models._
 import org.joda.time.{LocalTime, LocalDate}
 import org.joda.time.format.DateTimeFormat
@@ -21,11 +21,10 @@ import scala.util.Random._
 import scala.util.Success
 import utils.Ops.MonoidInstances._
 
-class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
-  
+object ScheduleServiceSpec {
   def emptyEval: Evaluation[Conflict, Int] = Evaluation.empty[Conflict, Int]
   def eval(l: List[Conflict]): Evaluation[Conflict, Int] = Evaluation.withError[Conflict, Int](l)
-  
+
   def unfold[A, B](a: A)(f: A => Option[(B, A)]): Stream[B] = f(a) match {
     case Some((b, aa)) => Stream.cons(b, unfold(aa)(f))
     case None => Stream.empty
@@ -35,8 +34,17 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27) toVector
   }
 
-  def population(n: Int): Vector[UUID] = Stream.continually(UUID.randomUUID()) take n toVector
+  def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
+    val entries = (0 until amount).map(n => AssignmentEntry(n, "label", Set.empty, duration)).toSet
+    AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
+  }
 
+  def population(n: Int): Vector[UUID] = Stream.continually(UUID.randomUUID()) take n toVector
+}
+
+class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
+  import ScheduleServiceSpec._
+  
   val repo = mock[SesameRepository]
   val blacklistService = new BlacklistService(repo)
   val timetableService = new TimetableService(blacklistService)
@@ -46,21 +54,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
   def gen(specs: Vector[(Timetable, Set[Group], AssignmentPlan)]): Vector[(Gen[ScheduleG, Conflict, Int], Int)] = {
-    def tryGen(t: Timetable, g: Set[Group], ap: AssignmentPlan, comp: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
-      val result = scheduleService.generate(t, g, ap, comp)
-
-      /*if (eval.conflicts.isEmpty)
-        (result, eval)
-      else {
-        tryGen(t, g, ap, comp)
-      }*/
-
-      result
-    }
-
     specs.foldLeft((Vector.empty[ScheduleG], Vector.empty[(Gen[ScheduleG, Conflict, Int], Int)])) {
       case ((comp, _), (t, g, ap)) =>
-        val result = tryGen(t, g, ap, comp)
+        val result = scheduleService.generate(t, g, ap, comp)
 
         (comp ++ Vector(result._1.elem), Vector((result._1, result._2)))
     }._2
@@ -73,10 +69,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     import TimetableDateEntry._
 
     "populate initial schedules any times" in {
-      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
+      val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val planEntries = (0 until 5).map(n => AssignmentEntry(n, Set.empty)).toSet
-      val plan = AssignmentPlan(planEntries.size, planEntries)
+      val plan = assignmentPlan(5)
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty))
 
       val times = 100
@@ -94,9 +89,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
           (b && prev == next, n)
       }._1 shouldBe false
 
-      result.foreach(f => f.entries.size shouldBe plan.numberOfEntries * groups.size)
+      result.foreach(f => f.entries.size shouldBe plan.entries.size * groups.size)
       groups.forall { group =>
-        result.forall(_.entries.count(_.group.id == group.id) == plan.numberOfEntries)
+        result.forall(_.entries.count(_.group.id == group.id) == plan.entries.size)
       } shouldBe true
 
       val g = result.map(_.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
@@ -110,15 +105,15 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "mutate given schedule by swapping two randomly chosen groups" in {
       import scala.util.Random._
 
-      val plan = AssignmentPlan(8, Set.empty)
+      val plan = assignmentPlan(8)
       val groups = alph(8).map(Group(_, UUID.randomUUID(), Set.empty))
-      val entries = (0 until plan.numberOfEntries * groups.size).grouped(groups.size).flatMap(_.zip(groups)).map {
+      val entries = (0 until plan.entries.size * groups.size).grouped(groups.size).flatMap(_.zip(groups)).map {
         case (n, group) =>
         val date = LocalDate.now.plusWeeks(n)
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID)
+        ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group)
       }.toVector
       val schedule = ScheduleG(UUID.randomUUID(), entries, UUID.randomUUID())
 
@@ -140,19 +135,19 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "successfully cross two schedules" in {
       import scala.util.Random._
 
-      val plan = AssignmentPlan(8, Set.empty)
+      val plan = assignmentPlan(8)
       val groups = alph(8).map(Group(_, UUID.randomUUID(), Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)))
       val g1 = shuffle(groups.toVector)
       val g2 = shuffle(groups.toVector)
 
       val entries = {
-        (0 until plan.numberOfEntries * groups.size).grouped(groups.size).flatMap(_.zip(g1).zip(g2).map {
+        (0 until plan.entries.size * groups.size).grouped(groups.size).flatMap(_.zip(g1).zip(g2).map {
           case (n, group) =>
             val date = LocalDate.now.plusWeeks(n._1)
             val start = LocalTime.now.withHourOfDay(nextInt(19))
             val end = start.plusHours(nextInt(3))
 
-            (ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, n._2, ScheduleEntry.randomUUID), ScheduleEntryG(start, end, date, Room.randomUUID, Employee.randomUUID, group, ScheduleEntry.randomUUID))
+            (ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, n._2), ScheduleEntryG(start, end, date, Room.randomUUID, User.randomUUID, group))
         }).toVector
       }.unzip
 
@@ -191,10 +186,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "evaluate a given schedule when there are no other schedules" in {
-      val planEntries = (0 until 5).map(n => AssignmentEntry(n, Set.empty[EntryType])).toSet
-      val plan = AssignmentPlan(planEntries.size, planEntries)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, plan)
-      val entries = (0 until 6).map(n => TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
+      val plan = assignmentPlan(5)
+      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(labwork.id, entries, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
 
       val groups = Set(
@@ -205,55 +199,54 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val existing = Vector.empty[ScheduleG]
 
       val schedule = scheduleService.population(1, timetable, plan, groups).head
-      val result = scheduleService.evaluation(existing, plan.numberOfEntries)(schedule)
+      val result = scheduleService.evaluation(existing, plan.entries.size)(schedule)
 
       result.err shouldBe empty
       result.value shouldBe 0
     }
 
     "evaluate a given schedule when there are some other schedules" in {
-      val planEntries = (0 until 8).map(n => AssignmentEntry(n, Set.empty[EntryType])).toSet
-      val plan = AssignmentPlan(planEntries.size, planEntries)
+      val plan = assignmentPlan(8)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
       val ap1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
-      val students = (0 until 300).map(_ => Student.randomUUID).toVector
+      val students = (0 until 300).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
 
@@ -263,7 +256,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1Schedule = scheduleService.population(1, ap1T, plan, ap1G)
       val ma1Schedule = scheduleService.population(1, ma1T, plan, ma1G).head
 
-      val result = scheduleService.evaluation(ap1Schedule, plan.numberOfEntries)(ma1Schedule)
+      val result = scheduleService.evaluation(ap1Schedule, plan.entries.size)(ma1Schedule)
 //      println(s"conflicts ${result.err.size}")
 //      println(s"guys ${result.err.map(_.members)}")
 //      println(s"date ${result.err.map(e => e.entry.date.toLocalDateTime(e.entry.start))}")
@@ -281,7 +274,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
       val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
 
@@ -320,7 +313,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      val entries = groups map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       val schedule = ScheduleG(labid, entries, Schedule.randomUUID)
       val ev = eval(List(Conflict(entries(4), entries(4).group.members take 2 toVector, entries(4).group)))
 
@@ -337,7 +330,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)
@@ -380,7 +373,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
         case (label, group) => Group(label, labid, group toSet)
       }
-      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _, UUID.randomUUID()))
+      def entries = shuffle(groups) map (ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, Room.randomUUID, UUID.randomUUID(), _))
       def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)
@@ -407,47 +400,38 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   "A ScheduleGenesisService" should {
 
     "generate an initial collision free schedule instantly" in {
-      val ap1Plan = AssignmentPlan(8, Set(
-        AssignmentEntry(0, Set.empty[EntryType]),
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType]),
-        AssignmentEntry(3, Set.empty[EntryType]),
-        AssignmentEntry(4, Set.empty[EntryType]),
-        AssignmentEntry(5, Set.empty[EntryType]),
-        AssignmentEntry(6, Set.empty[EntryType]),
-        AssignmentEntry(7, Set.empty[EntryType])
-      ))
+      val ap1Plan = assignmentPlan(8)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
 
       val ap1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
 
       import scala.util.Random._
-      val students = (0 until 200).map(_ => Student.randomUUID).toVector
+      val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(200).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
 
       val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
@@ -465,67 +449,53 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result._2 shouldBe 0
       result._1.elem.labwork shouldEqual ap1Prak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == ap1Plan.numberOfEntries
+        case (_, ss) => ss.size == ap1Plan.entries.size
       } shouldBe true
     }
 
     "generate a schedule with minimal or no collisions considering one existing competitive schedule and more density" in {
-      val ap1Plan = AssignmentPlan(8, Set(
-        AssignmentEntry(0, Set.empty[EntryType]),
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType]),
-        AssignmentEntry(3, Set.empty[EntryType]),
-        AssignmentEntry(4, Set.empty[EntryType]),
-        AssignmentEntry(5, Set.empty[EntryType]),
-        AssignmentEntry(6, Set.empty[EntryType]),
-        AssignmentEntry(7, Set.empty[EntryType])
-      ))
-      val ma1Plan = AssignmentPlan(4, Set(
-        AssignmentEntry(0, Set.empty[EntryType], 2),
-        AssignmentEntry(1, Set.empty[EntryType], 2),
-        AssignmentEntry(2, Set.empty[EntryType], 2),
-        AssignmentEntry(3, Set.empty[EntryType], 2)
-      ))
+      val ap1Plan = assignmentPlan(8)
+      val ma1Plan = assignmentPlan(4, 2)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, ma1Plan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
       val ap1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
-      val students = (0 until 200).map(_ => Student.randomUUID).toVector
+      val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
 
@@ -546,81 +516,62 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result._2 should be >= 0
       result._1.elem.labwork shouldEqual ma1Prak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == ma1Plan.numberOfEntries
+        case (_, ss) => ss.size == ma1Plan.entries.size
       } shouldBe true
     }
 
 
     "generate a schedule with minimal or no conflicts considering two existing competitive schedules and more density" in {
-      val ap1Plan = AssignmentPlan(8, Set(
-        AssignmentEntry(0, Set.empty[EntryType]),
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType]),
-        AssignmentEntry(3, Set.empty[EntryType]),
-        AssignmentEntry(4, Set.empty[EntryType]),
-        AssignmentEntry(5, Set.empty[EntryType]),
-        AssignmentEntry(6, Set.empty[EntryType]),
-        AssignmentEntry(7, Set.empty[EntryType])
-      ))
-      val ma1Plan = AssignmentPlan(4, Set(
-        AssignmentEntry(0, Set.empty[EntryType], 2),
-        AssignmentEntry(1, Set.empty[EntryType], 2),
-        AssignmentEntry(2, Set.empty[EntryType], 2),
-        AssignmentEntry(3, Set.empty[EntryType], 2)
-      ))
-      val gdvkPlan = AssignmentPlan(4, Set(
-        AssignmentEntry(0, Set.empty[EntryType]),
-        AssignmentEntry(1, Set.empty[EntryType]),
-        AssignmentEntry(2, Set.empty[EntryType]),
-        AssignmentEntry(3, Set.empty[EntryType])
-      ))
+      val ap1Plan = assignmentPlan(8)
+      val ma1Plan = assignmentPlan(4, 2)
+      val gdvkPlan = assignmentPlan(4)
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val gdvk = Course("gdvk", "c3", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val gdvk = Course("gdvk", "c3", "abbrev", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, ma1Plan)
-      val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, gdvk.id, mi.id, gdvkPlan)
+      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
+      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
+      val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, gdvk.id, mi.id)
 
       val ap1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
       val gdvkEntries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
-      val students = (0 until 200).map(_ => Student.randomUUID).toVector
+      val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
       val gdvkG = shuffle(students).take(150).grouped(30).map(s => Group("", gdvkPrak.id, s.toSet, Group.randomUUID)).toSet
@@ -644,7 +595,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result._1.evaluate.err.size <= 2 shouldBe true
       result._1.elem.labwork shouldEqual gdvkPrak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == gdvkPlan.numberOfEntries
+        case (_, ss) => ss.size == gdvkPlan.entries.size
       } shouldBe true
     }
 
@@ -681,10 +632,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         AssignmentEntry(5, Set.empty[EntryType])
       ))
       val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val gdvk = Course("gdvk", "c3", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
-      val another = Course("another", "c4", "abbrev", Employee.randomUUID, 1, Course.randomUUID)
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val gdvk = Course("gdvk", "c3", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val another = Course("another", "c4", "abbrev", User.randomUUID, 1, Course.randomUUID)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id, ap1Plan)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id, ma1Plan)
@@ -692,50 +643,50 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val anotherPrak = Labwork("anotherPrak", "desc4", semester1.id, another.id, mi.id, anotherPlan)
 
       val ap1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
       val gdvkEntries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
       val anotherEntries = Set(
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("28/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("28/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Employee.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00"))
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("28/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("28/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(User.randomUUID, Room.randomUUID, mi.id, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00"))
       )
 
-      val students = (0 until 300).map(_ => Student.randomUUID).toVector
+      val students = (0 until 300).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(280).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(280).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
       val gdvkG = shuffle(students).take(270).grouped(30).map(s => Group("", gdvkPrak.id, s.toSet, Group.randomUUID)).toSet
@@ -763,7 +714,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       result._1.evaluate.err.size <= 2 shouldBe true
       result._1.elem.labwork shouldEqual anotherPrak.id
       result._1.elem.entries.groupBy(_.group) forall {
-        case (_, ss) => ss.size == anotherPlan.numberOfEntries
+        case (_, ss) => ss.size == anotherplan.entries.size
       } shouldBe true
     }*/
   }

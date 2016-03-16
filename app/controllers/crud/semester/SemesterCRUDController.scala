@@ -39,8 +39,8 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
 
   override implicit def writes: Writes[Semester] = Semester.writes
 
-  override protected def fromInput(input: SemesterProtocol, id: Option[UUID]): Semester = id match {
-    case Some(uuid) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, uuid)
+  override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = existing match {
+    case Some(semester) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.id)
     case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, Semester.randomUUID)
   }
 
@@ -64,8 +64,6 @@ class SemesterCRUDController(val repository: SesameRepository, val namespace: Na
   }
 
   override protected def atomize(output: Semester): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-  override protected def atomizeMany(output: Set[Semester]): Try[JsValue] = Success(Json.toJson(output))
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))

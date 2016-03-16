@@ -1,6 +1,7 @@
 package modules.schedule
 
 import controllers.crud.schedule.ScheduleCRUDController
+import modules.ReportCardServiceManagementModule
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services._
@@ -25,7 +26,7 @@ trait ScheduleManagementModule {
 }
 
 trait DefaultScheduleManagementModuleImpl extends ScheduleManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with ScheduleServiceManagementModule =>
+  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with ScheduleServiceManagementModule with ReportCardServiceManagementModule =>
 
-  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, scheduleService)
+  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, namespace, roleService, scheduleService, reportCardService)
 }

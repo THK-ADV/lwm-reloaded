@@ -32,8 +32,8 @@ class RoleController(val repository: SesameRepository, val namespace: Namespace,
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
-  override protected def fromInput(input: RoleProtocol, id: Option[UUID]): Role = id match {
-    case Some(uuid) => Role(input.name, input.permissions, uuid)
+  override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = existing match {
+    case Some(role) => Role(input.name, input.permissions, role.id)
     case None => Role(input.name, input.permissions)
   }
 
@@ -42,8 +42,6 @@ class RoleController(val repository: SesameRepository, val namespace: Namespace,
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Role]): Try[Set[Role]] = Success(all)
 
   override protected def atomize(output: Role): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-  override protected def atomizeMany(output: Set[Role]): Try[JsValue] = Success(Json.toJson(output))
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(role.get)

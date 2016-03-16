@@ -1,5 +1,6 @@
 package store
 
+import models.AssignmentEntryType
 import org.w3.banana.{RDF, RDFOps}
 
 object Prefixes {
@@ -13,7 +14,7 @@ object Prefixes {
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room, Semster
+    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry
     val label = apply("label")
 
     // Labwork, LabworkApplication, Room, Degree, TimetableEntry
@@ -33,18 +34,25 @@ object Prefixes {
     val registrationId = apply("registrationId")
     val systemId = apply("systemId")
     val enrollment = apply("enrollment")
+    val status = apply("status")
 
-    // Semester
+    // Semester, ReportCardEntry
     val end = apply("start")
     val start = apply("end")
     val examStart = apply("examStart")
 
-    // AssignmentEntry, AssignmentPlan, Timetable, Schedule
+    // AssignmentEntry, AssignmentPlan, Timetable, Schedule, ReportCardEntry
     val index = apply("index")
     val duration = apply("duration")
     val types = apply("types")
     val entries = apply("entries")
-    val numberOfEntries = apply("numberOfEntries")
+    val attendance = apply("attendance")
+    val mandatory = apply("mandatory")
+
+    // AssignmentPlanEntry
+    val entryType = apply("entryType")
+    val bool = apply("bool")
+    val int = apply("int")
 
     // Blacklist
     val dates = apply("dates")
@@ -62,7 +70,7 @@ object Prefixes {
     val module = apply("module")
     val privileged = apply("privileged")
 
-    //Group, Timetable, Schedule
+    //Group, Timetable, Schedule, ReportCard
     val members = apply("members")
     val labwork = apply("labwork")
 
@@ -70,7 +78,7 @@ object Prefixes {
     val blacklist = apply("blacklist")
     val buffer = apply("buffer")
 
-    // TimetableEntry, ScheduleEntry
+    // TimetableEntry, ScheduleEntry, ReportCardEntry
     val supervisor = apply("supervisor")
     val room = apply("room")
     val dayIndex = apply("dayIndex")
@@ -79,7 +87,14 @@ object Prefixes {
     // ScheduleEntry
     val group = apply("group")
 
+    // Schedule
+    val published = apply("published")
+
+    // ReportCard
+    val student = apply("student")
+
     // classes
+    val User = apply("User")
     val Course = apply("Course")
     val Degree = apply("Degree")
     val Employee = apply("Employee")
@@ -93,12 +108,16 @@ object Prefixes {
     val Authority = apply("Authority")
     val AssignmentPlan = apply("AssignmentPlan")
     val AssignmentEntry = apply("AssignmentEntry")
+    val AssignmentEntryType = apply("AssignmentEntryType")
     val LabworkApplication = apply("LabworkApplication")
     val Timetable = apply("Timetable")
     val TimetableEntry = apply("TimetableEntry")
     val Schedule = apply("Schedule")
     val ScheduleEntry = apply("ScheduleEntry")
     val Blacklist = apply("Blacklist")
+    val ReportCard = apply("ReportCard")
+    val ReportCardEntry = apply("ReportCardEntry")
+    val ReportCardEntryType = apply("ReportCardEntryType")
   }
 
   object LWMPrefix {

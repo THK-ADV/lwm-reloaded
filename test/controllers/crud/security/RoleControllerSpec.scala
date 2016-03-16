@@ -18,7 +18,7 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] 
 
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: RoleProtocol, id: Option[UUID]): Role = entityToPass
+    override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

@@ -27,7 +27,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkWith((Some(FakeCourse), schedule.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry], UUID.randomUUID())
+        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
       )
 
       val request = FakeRequest(
@@ -49,7 +49,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkWith((Some(FakeCourse), schedule.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry], UUID.randomUUID())
+        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
       )
 
       val request = FakeRequest(
@@ -130,7 +130,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkWith((Some(FakeCourse), schedule.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry], UUID.randomUUID())
+        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
       )
 
       val request = FakeRequest(

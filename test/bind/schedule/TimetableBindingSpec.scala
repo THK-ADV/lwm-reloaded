@@ -3,8 +3,8 @@ package bind.schedule
 import base.SesameDbSpec
 import models.semester.Blacklist
 import models.{Room, Labwork, Degree}
-import models.schedule.{Weekday, TimetableEntry, Timetable}
-import models.users.Employee
+import models.schedule.{TimetableEntry, Timetable}
+import models.users.User
 import org.joda.time.{LocalDate, LocalTime, DateTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -26,10 +26,11 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.BlacklistBinding.blacklistBinder
   import bindings.uuidRefBinder
 
-  val timetableEntry1 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
-  val timetableEntry2 = TimetableEntry(Employee.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now, TimetableEntry.randomUUID)
+  val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
+  val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)
   val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
+
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
     .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.entries).->-(timetable.entries)
@@ -37,11 +38,20 @@ class TimetableBindingSpec extends SesameDbSpec {
     .--(lwm.blacklist).->-(timetable.localBlacklist)
     .--(lwm.id).->-(timetable.id).graph
 
-  "A TimetableBindingSpec" should {
-    "return a RDF graph representation of a timetable" in {
-      val graph = timetable.toPG.graph
+  val timetableEntryGraph = URI("#").a(lwm.TimetableEntry)
+    .--(lwm.supervisor).->-(timetableEntry1.supervisor)(ops, uuidRefBinder(User.splitter))
+    .--(lwm.room).->-(timetableEntry1.room)(ops, uuidRefBinder(Room.splitter))
+    .--(lwm.degree).->-(timetableEntry1.degree)(ops, uuidRefBinder(Degree.splitter))
+    .--(lwm.dayIndex).->-(timetableEntry1.dayIndex)
+    .--(lwm.start).->-(timetableEntry1.start)
+    .--(lwm.end).->-(timetableEntry1.end).graph
 
-      graph isIsomorphicWith timetableGraph shouldBe true
+  "A TimetableBindingSpec" should {
+
+    "successfully serialise a timetable" in {
+      val t = timetableBinder.fromPG(timetable.toPG)
+
+      t shouldBe Success(timetable)
     }
 
     "return a timetable based on a RDF graph representation" in {
@@ -50,6 +60,23 @@ class TimetableBindingSpec extends SesameDbSpec {
       expectedTimetable match {
         case Success(s) =>
           s shouldEqual timetable
+        case Failure(e) =>
+          fail(s"Unable to deserialise timetable graph: $e")
+      }
+    }
+
+    "successfully serialise a timetable entry" in {
+      val te = timetableEntryBinder.fromPG(timetableEntry1.toPG)
+
+      te shouldBe Success(timetableEntry1)
+    }
+
+    "return a timetable entry based on a RDF graph representation" in {
+      val expectedTimetableEntry = PointedGraph[Rdf](URI("#"), timetableEntryGraph).as[TimetableEntry]
+
+      expectedTimetableEntry match {
+        case Success(s) =>
+          s shouldEqual timetableEntry1
         case Failure(e) =>
           fail(s"Unable to deserialise timetable graph: $e")
       }

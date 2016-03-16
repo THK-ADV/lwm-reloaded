@@ -1,12 +1,14 @@
 package bind
 
+import java.util.UUID
+
 import base.SesameDbSpec
-import models._
+import models.{Labwork, AssignmentPlan, AssignmentEntry, AssignmentEntryType}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
 import store.bind.Bindings
-
+import models.AssignmentEntryType._
 import scala.util.{Failure, Success}
 
 class AssignmentPlanBindingSpec extends SesameDbSpec {
@@ -17,45 +19,46 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](ns)
   import bindings.AssignmentPlanBinding._
   import bindings.AssignmentEntryBinding._
+  import bindings.AssignmentEntryTypeBinding._
   import bindings.uuidBinder
-  import bindings.entryTypeBinder
+  import bindings.uuidRefBinder
 
-  val mandatoryT = EntryType("Mandatory")
-  val optionalT = EntryType("Optional")
-
-  val assignmentPlan = AssignmentPlan(2, Set(
-    AssignmentEntry(0, Set(mandatoryT, optionalT)),
-    AssignmentEntry(1, Set(optionalT))
+  val assignmentPlan = AssignmentPlan(UUID.randomUUID(), 2, 2, Set(
+    AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
+    AssignmentEntry(1, "label 2", Set(Attendance, Bonus))
   ))
 
-  val assignmentEntry = AssignmentEntry(0, Set(mandatoryT, optionalT))
+  val assignmentEntry = assignmentPlan.entries.head
 
   val assignmentPlanGraph = (
     URI(AssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
-      -- lwm.numberOfEntries ->- assignmentPlan.numberOfEntries
+      .--(lwm.labwork).->-(assignmentPlan.labwork)(ops, uuidRefBinder(Labwork.splitter))
+      -- lwm.attendance ->- assignmentPlan.attendance
+      -- lwm.mandatory ->- assignmentPlan.mandatory
       -- lwm.entries ->- assignmentPlan.entries
       -- lwm.id ->- assignmentPlan.id
     ).graph
 
   val assignmentEntryGraph = (
-    URI(AssignmentEntry.generateUri(assignmentEntry)).a(lwm.AssignmentEntry)
+    URI("#").a(lwm.AssignmentEntry)
       -- lwm.index ->- assignmentEntry.index
+      -- lwm.label ->- assignmentEntry.label
       -- lwm.types ->- assignmentEntry.types
       -- lwm.duration ->- assignmentEntry.duration
-      -- lwm.id ->- assignmentEntry.id
     ).graph
 
   "An AssignmentPlanBinding" should {
-    "return a RDF graph representation of an assignmentPlan" in {
-      val graph = assignmentPlan.toPG.graph
 
-      graph isIsomorphicWith assignmentPlanGraph shouldBe true
+    "successfully serialise an assignmentPlan" in {
+      val plan = assignmentPlanBinder.fromPG(assignmentPlan.toPG)
+
+      plan shouldBe Success(assignmentPlan)
     }
 
-    "return a RDF graph representation of an assignmentEntry" in {
-      val graph = assignmentEntry.toPG.graph
+    "successfully serialise an assignmentEntry" in {
+      val entry = assignmentEntryBinder.fromPG(assignmentEntry.toPG)
 
-      graph isIsomorphicWith assignmentEntryGraph shouldBe true
+      entry shouldBe Success(assignmentEntry)
     }
 
     "return an assignmentPlan based on a RDF representation" in {
@@ -70,7 +73,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
     }
 
     "return an assignmentEntry based on a RDF representation" in {
-      val expectedAssignmentEntry = PointedGraph[Rdf](URI(AssignmentEntry.generateUri(assignmentEntry)), assignmentEntryGraph).as[AssignmentEntry]
+      val expectedAssignmentEntry = PointedGraph[Rdf](URI("#"), assignmentEntryGraph).as[AssignmentEntry]
 
       expectedAssignmentEntry match {
         case Success(s) =>
@@ -80,7 +83,4 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
       }
     }
   }
-
-
-
 }

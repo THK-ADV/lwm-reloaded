@@ -30,8 +30,8 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
 
    override implicit def writes: Writes[Room] = Room.writes
 
-   override protected def fromInput(input: RoomProtocol, id: Option[UUID]): Room = id match {
-      case Some(uuid) => Room(input.label, input.description, uuid)
+   override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = existing match {
+      case Some(room) => Room(input.label, input.description, room.id)
       case None => Room(input.label, input.description, Room.randomUUID)
    }
 
@@ -53,8 +53,6 @@ class RoomCRUDController(val repository: SesameRepository, val namespace: Namesp
    override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Try[Set[Room]] = Success(all)
 
    override protected def atomize(output: Room): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-   override protected def atomizeMany(output: Set[Room]): Try[JsValue] = Success(Json.toJson(output))
 
    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case Get => PartialSecureBlock(room.get)

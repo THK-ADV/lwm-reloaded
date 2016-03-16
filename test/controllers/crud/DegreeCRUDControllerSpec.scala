@@ -1,7 +1,5 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.{Degree, DegreeProtocol}
 import org.mockito.{Matchers, Mockito}
 import org.mockito.Matchers.anyObject
@@ -21,7 +19,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
 
   override val controller: AbstractCRUDController[DegreeProtocol, Degree] = new DegreeCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = entityToPass
+    override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

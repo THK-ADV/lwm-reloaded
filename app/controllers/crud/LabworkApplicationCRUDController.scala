@@ -2,7 +2,7 @@ package controllers.crud
 
 import java.net.URLDecoder
 import java.util.UUID
-import models.users.Student
+import models.users.{User, Student}
 import models.{Labwork, UriGenerator}
 import models.applications.{LabworkApplicationAtom, LabworkApplication, LabworkApplicationProtocol}
 import org.joda.time.DateTime
@@ -33,8 +33,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
 
   override implicit def writes: Writes[LabworkApplication] = LabworkApplication.writes
 
-  override protected def fromInput(input: LabworkApplicationProtocol, id: Option[UUID]): LabworkApplication = id match {
-    case Some(uuid) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, uuid)
+  override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = existing match {
+    case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, DateTime.now, lapp.id)
     case None => LabworkApplication(input.labwork, input.applicant, input.friends)
   }
 
@@ -71,8 +71,8 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
 
     for {
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      applicant <- repository.get[Student](Student.generateUri(output.applicant)(namespace))
-      friends <- repository.getMany[Student](output.friends.map(id => Student.generateUri(id)(namespace)))
+      applicant <- repository.get[Student](User.generateUri(output.applicant)(namespace))
+      friends <- repository.getMany[Student](output.friends.map(id => User.generateUri(id)(namespace)))
     } yield {
       for {
         l <- labwork
@@ -82,31 +82,6 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val nam
         Json.toJson(atom)
       }
     }
-  }
-
-  override protected def atomizeMany(output: Set[LabworkApplication]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.StudentBinding.studentBinder
-    import LabworkApplication.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(lapp => Labwork.generateUri(lapp.labwork)(namespace)))
-      applicants <- repository.getMany[Student](output.map(lapp => Student.generateUri(lapp.applicant)(namespace)))
-      friends <- output.map(lapp => repository.getMany[Student](lapp.friends.map(id => Student.generateUri(id)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[LabworkApplicationAtom]) { (newSet, lapp) =>
-        (for {
-          l <- labworks.find(_.id == lapp.labwork)
-          app <- applicants.find(_.id == lapp.applicant)
-          f <- friends.find(_.map(_.id) == lapp.friends)
-        } yield LabworkApplicationAtom(l, app, f, lapp.timestamp, lapp.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-    }).map(s => Json.toJson(s))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

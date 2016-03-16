@@ -22,8 +22,8 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   val module1 = UUID.randomUUID()
   val module2 = UUID.randomUUID()
 
-  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID, AssignmentPlan(0, Set.empty))
-  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID, AssignmentPlan(0, Set.empty))
+  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID)
+  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID)
 
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
@@ -103,9 +103,9 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       import bindings.StudentBinding._
       import bindings.RefRoleBinding._
 
-      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
       val authority1 = Authority(student1.id, Set(module1UserRole1.id, module2UserRole2.id))
       val authority2 = Authority(student2.id, Set(module2UserRole2.id, noneModule1Role1.id))

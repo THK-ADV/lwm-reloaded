@@ -30,8 +30,8 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
 
   override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
 
-  override protected def fromInput(input: DegreeProtocol, id: Option[UUID]): Degree = id match {
-    case Some(uuid) => Degree(input.label, input.abbreviation, uuid)
+  override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
+    case Some(degree) => Degree(input.label, input.abbreviation, degree.id)
     case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
 
@@ -58,8 +58,6 @@ class DegreeCRUDController(val repository: SesameRepository, val namespace: Name
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)
 
   override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-  override protected def atomizeMany(output: Set[Degree]): Try[JsValue] = Success(Json.toJson(output))
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)

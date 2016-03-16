@@ -17,7 +17,7 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
   }
 
   private def extrapolateByWeeks(weeks: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Set[TimetableDateEntry] = {
-    val appointments = assignmentPlan.numberOfEntries * groups.size
+    val appointments = assignmentPlan.entries.size * groups.size
     val schemaWeek = TimetableDateEntry.unravel(timetable.entries, timetable.start)
 
     val extrapolated = (0 until weeks).foldLeft((schemaWeek, Set.empty[TimetableDateEntry])) {

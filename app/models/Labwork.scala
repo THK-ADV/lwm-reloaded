@@ -6,14 +6,13 @@ import controllers.crud.JsonSerialisation
 import models.semester.Semester
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlan, id: UUID = Labwork.randomUUID) extends UniqueEntity
+case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, id: UUID = Labwork.randomUUID) extends UniqueEntity
 
-case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, assignmentPlan: AssignmentPlanProtocol)
+case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID)
 
-case class LabworkAtom(label: String, description: String, semester: Semester, course: Course, degree: Degree, assignmentPlan: AssignmentPlan, id: UUID)
+case class LabworkAtom(label: String, description: String, semester: Semester, course: Course, degree: Degree, id: UUID)
 
 object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork] {
-  import AssignmentPlan._
 
   override implicit def reads: Reads[LabworkProtocol] = Json.reads[LabworkProtocol]
 

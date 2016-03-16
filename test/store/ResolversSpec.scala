@@ -2,7 +2,7 @@ package store
 
 import base.TestBaseDefinition
 import models.Degree
-import models.users.{Employee, Student}
+import models.users.{User, Employee, Student}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -36,9 +36,9 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   "A UsernameResolverSpec " should {
     "resolve a given username properly" in {
-      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
       val previousSize = repo.size
 
@@ -60,9 +60,9 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "return `None` when username is not found" in {
-      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -74,8 +74,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "resolve a student, employee and their authorities when non-existent" in {
-      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
+      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", "status")
 
       val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
       val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
@@ -92,11 +92,11 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       resolver.missingUserData(student1)
       resolver.missingUserData(employee)
 
-      val studentResult = repo.get[Student](Student.generateUri(student1)(repo.namespace))
+      val studentResult = repo.get[Student](User.generateUri(student1)(repo.namespace))
       val studentAuth = roleService.authorityFor(student1.id.toString)
       val studentRefRoles = studentAuth flatMap (auth => repo.getMany[RefRole](auth.get.refRoles map RefRole.generateUri))
 
-      val employeeResult = repo.get[Employee](Employee.generateUri(employee)(repo.namespace))
+      val employeeResult = repo.get[Employee](User.generateUri(employee)(repo.namespace))
       val employeeAuth = roleService.authorityFor(employee.id.toString)
       val employeeRefRoles = employeeAuth flatMap (auth => repo.getMany[RefRole](auth.get.refRoles map RefRole.generateUri))
 
@@ -126,11 +126,11 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "stop trying to resolve somebody when other dependencies fail" in {
-      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
+      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
       resolver.missingUserData(student1)
 
-      val result = repo.get[Student](Student.generateUri(student1)(repo.namespace))
+      val result = repo.get[Student](User.generateUri(student1)(repo.namespace))
       val possibleAuthority = roleService.authorityFor(student1.id.toString)
 
 
@@ -147,8 +147,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "stop and alert back when no appropriate `RefRole` was found" in {
       import bindings.EmployeeBinding._
       import ops._
-      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID, Student.randomUUID)
-      val employee = Employee("system id", "last name", "first name", "email", Employee.randomUUID)
+      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val employee = Employee("system id", "last name", "first name", "email", "status")
 
       val employeeRole = Role("Mitarbeiter", Set(Permissions.course.create, Permissions.timetable.create))
       val refrole1 = RefRole(None, employeeRole.id)

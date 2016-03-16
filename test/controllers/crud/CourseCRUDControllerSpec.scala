@@ -3,7 +3,7 @@ package controllers.crud
 import java.util.UUID
 
 import models.security.{Authority, RefRole, Role, Roles}
-import models.users.{Employee, User}
+import models.users.{User, Employee}
 import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
@@ -16,19 +16,18 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
-
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
 
-  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", Employee.randomUUID)
-  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", Employee.randomUUID)
+  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1, Course.randomUUID)
 
   override val controller: CourseCRUDController = new CourseCRUDController(repository, namespace, roleService) {
 
-    override protected def fromInput(input: CourseProtocol, id: Option[UUID]) = entityToPass
+    override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -84,12 +83,12 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   "A CourseCRUDControllerSpec also " should {
     "return the corresponding course for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
 
-      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1, Course.randomUUID)
       val second = Course("label2", "desc2", "abbreviation2", lecturer.id, 1, Course.randomUUID)
-      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, 1, Course.randomUUID)
-      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, 1, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -108,12 +107,12 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "return all corresponding courses for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
 
       val first = Course("label1", "desc1", "abbreviation1", lecturer.id, 1, Course.randomUUID)
-      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1, Course.randomUUID)
       val third = Course("label3", "desc3", "abbreviation3", lecturer.id, 1, Course.randomUUID)
-      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, 1, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -132,12 +131,12 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses for a lecturer when there is no match" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", Employee.randomUUID)
+      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
 
-      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
-      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)
-      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, 1, Course.randomUUID)
-      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, 1, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -156,10 +155,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses when there is an invalid query attribute" in {
-      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
-      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)
-      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, 1, Course.randomUUID)
-      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, 1, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -183,10 +182,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "not return courses when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val first = Course("label1", "desc1", "abbreviation1", Employee.randomUUID, 1, Course.randomUUID)
-      val second = Course("label2", "desc2", "abbreviation2", Employee.randomUUID, 1, Course.randomUUID)
-      val third = Course("label3", "desc3", "abbreviation3", Employee.randomUUID, 1, Course.randomUUID)
-      val fourth = Course("label4", "desc4", "abbreviation4", Employee.randomUUID, 1, Course.randomUUID)
+      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1, Course.randomUUID)
+      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1, Course.randomUUID)
+      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1, Course.randomUUID)
+      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1, Course.randomUUID)
 
       val courses = Set(first, second, third, fourth)
 
@@ -316,10 +315,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       import Course.atomicWrites
 
       val courses = Set(entityToPass, entityToFail)
-      val lecturers = Set(lecturerToPass, lecturerToFail)
 
       when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Success(lecturers))
+
+      doReturn(Success(Some(lecturerToPass))).doReturn(Success(Some(lecturerToFail))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -337,7 +336,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
-      when(repository.getMany[Employee](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      doReturn(Failure(new Exception(errorMessage))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

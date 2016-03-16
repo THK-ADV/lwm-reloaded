@@ -3,7 +3,8 @@ package controllers.crud.schedule
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.users.Employee
+import models.semester.{BlacklistProtocol, Blacklist}
+import models.users.{User, Employee}
 import models.{Degree, Room, Labwork, UriGenerator}
 import models.schedule._
 import models.security.Permissions._
@@ -33,13 +34,15 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
 
-  override protected def fromInput(input: TimetableProtocol, id: Option[UUID]): Timetable = id match {
-    case Some(uuid) => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, uuid)
-    case None => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
+  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
+    case Some(timetable) =>
+      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, timetable.localBlacklist.id), timetable.id)
+    case None =>
+      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, Blacklist.randomUUID), Timetable.randomUUID)
   }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
+    input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.dates) && input.entries == output.entries
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = Success(all)
@@ -55,7 +58,7 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
     for {
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
       rooms <- repository.getMany[Room](output.entries.map(e => Room.generateUri(e.room)(namespace)))
-      supervisors <- repository.getMany[Employee](output.entries.map(e => Employee.generateUri(e.supervisor)(namespace)))
+      supervisors <- repository.getMany[Employee](output.entries.map(e => User.generateUri(e.supervisor)(namespace)))
       degrees <- repository.getMany[Degree](output.entries.map(e => Degree.generateUri(e.degree)(namespace)))
     } yield {
       labwork.map { l =>
@@ -64,7 +67,7 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
             r <- rooms.find(_.id == e.room)
             s <- supervisors.find(_.id == e.supervisor)
             d <- degrees.find(_.id == e.degree)
-          } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end, e.id)) match {
+          } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end)) match {
             case Some(atom) => newSet + atom
             case None => newSet
           }
@@ -72,44 +75,6 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
         Json.toJson(TimetableAtom(l, entries, output.start, output.localBlacklist, output.id))(Timetable.atomicWrites)
       }
     }
-  }
-
-  override protected def atomizeMany(output: Set[Timetable]): Try[JsValue] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.RoomBinding._
-    import defaultBindings.EmployeeBinding._
-    import defaultBindings.DegreeBinding._
-    import Timetable._
-    import TimetableEntry._
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    (for {
-      labworks <- repository.getMany[Labwork](output.map(s => Labwork.generateUri(s.labwork)(namespace)))
-      rooms <- output.map(s => repository.getMany[Room](s.entries.map(e => Room.generateUri(e.room)(namespace)))).sequence
-      supervisors <- output.map(s => repository.getMany[Employee](s.entries.map(e => Employee.generateUri(e.supervisor)(namespace)))).sequence
-      degrees <- output.map(s => repository.getMany[Degree](s.entries.map(e => Degree.generateUri(e.degree)(namespace)))).sequence
-    } yield {
-      output.foldLeft(Set.empty[TimetableAtom]) { (set, t) =>
-        labworks.find(_.id == t.labwork) match {
-          case Some(l) =>
-            val entries = t.entries.foldLeft(Set.empty[TimetableEntryAtom]) { (setE, e) =>
-              (for {
-                r <- rooms.flatten.find(_.id == e.room)
-                s <- supervisors.flatten.find(_.id == e.supervisor)
-                d <- degrees.flatten.find(_.id == e.degree)
-              } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end, e.id)) match {
-                case Some(entryAtom) => setE + entryAtom
-                case None => setE
-              }
-            }
-
-            val atom = TimetableAtom(l, entries, t.start, t.localBlacklist, t.id)
-            set + atom
-          case None => set
-        }
-      }
-    }).map(s => Json.toJson(s)(Timetable.setAtomicWrites))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -121,7 +86,8 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    super.create(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
+    super.create(NonSecureBlock)(newRequest)
   }
 
   def updateFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
@@ -130,7 +96,8 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   }
 
   def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    super.createAtomic(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
+    super.createAtomic(NonSecureBlock)(newRequest)
   }
 
   def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
@@ -139,11 +106,13 @@ class TimetableCRUDController(val repository: SesameRepository, val namespace: N
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.all(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
+    super.all(NonSecureBlock)(newRequest)
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    super.allAtomic(NonSecureBlock)(request)
+    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
+    super.allAtomic(NonSecureBlock)(newRequest)
   }
 
   def getFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { request =>

@@ -3,7 +3,7 @@ package store
 import java.util.UUID
 import base.TestBaseDefinition
 import models.{Degree, Group}
-import models.users.Student
+import models.users.{User, Student}
 import org.openrdf.model.Value
 import org.openrdf.repository.RepositoryConnection
 import org.scalatest.WordSpec
@@ -37,7 +37,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import utils.Ops.NaturalTrasformations._
       import bindings.StudentBinding._
 
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
       repo add student
 
@@ -53,7 +53,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         transform(_.fold(List.empty[Value])(a => a)).
         transform(_.headOption).
         map(value => UUID.fromString(value.stringValue()))(optM).
-        request(uuid => repo.get[Student](Student.generateUri(uuid))).
+        request(uuid => repo.get[Student](User.generateUri(uuid))).
         run
 
       result shouldBe Success(Some(student))
@@ -65,9 +65,9 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import bindings.StudentBinding._
       import bindings.GroupBinding._
 
-      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val s3 = Student("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)
+      val s3 = Student("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", Degree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, s3.id))
 
       repo addMany List(s1, s2, s3)
@@ -96,8 +96,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import bindings.StudentBinding._
       import bindings.GroupBinding._
 
-      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
-      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID, Student.randomUUID)
+      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, UUID.randomUUID()))
 
       repo addMany List(s1, s2)

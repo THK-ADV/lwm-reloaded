@@ -32,8 +32,8 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
-  override protected def fromInput(input: BlacklistProtocol, id: Option[UUID]): Blacklist = id match {
-    case Some(uuid) => Blacklist(input.dates, uuid)
+  override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
+    case Some(blacklist) => Blacklist(input.dates, blacklist.id)
     case None => Blacklist(input.dates, Blacklist.randomUUID)
   }
 
@@ -44,8 +44,6 @@ class BlacklistCRUDController(val repository: SesameRepository, val namespace: N
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)
 
   override protected def atomize(output: Blacklist): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-  override protected def atomizeMany(output: Set[Blacklist]): Try[JsValue] = Success(Json.toJson(output))
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(blacklist.get)

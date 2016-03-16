@@ -19,7 +19,7 @@ import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
 case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group, id: UUID)
+case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group)
 
 trait ScheduleServiceLike {
   def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG]
@@ -67,7 +67,7 @@ object ScheduleService {
 
   def replaceSchedule(s: ScheduleG)(f: ScheduleEntryG => ScheduleEntryG): ScheduleG = ScheduleG(s.labwork, s.entries map f, s.id)
 
-  def replaceEntry(e: ScheduleEntryG)(f: Group => Group) = ScheduleEntryG(e.start, e.end, e.date, e.room, e.supervisor, f(e.group), e.id)
+  def replaceEntry(e: ScheduleEntryG)(f: Group => Group) = ScheduleEntryG(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
 
   def replaceWithin(s: ScheduleG)(left: Group, right: Group): ScheduleG = replaceSchedule(s)(
     replaceEntry(_) {
@@ -89,7 +89,7 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
   override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val pop = population(300, timetable, assignmentPlan, groups)
 
-    implicit val evalF = evaluation(competitive, assignmentPlan.numberOfEntries)
+    implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
     implicit val mutateF = (mutate, mutateDestructive)
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
@@ -101,15 +101,15 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
 
   override def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG] = {
     val entries = timetableService.extrapolateEntries(timetable, assignmentPlan, groups)
-    (0 until times).map(_ => populate(timetable, entries, assignmentPlan, groups)).toVector
+    (0 until times).map(_ => populate(timetable, entries, groups)).toVector
   }
 
-  private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], assignmentPlan: AssignmentPlan, groups: Set[Group]): ScheduleG = {
+  private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
     val sg = shuffle(groups.toVector)
     val scheduleEntries = entries.toVector.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(sg).map {
       case (t, group) =>
         val o = TimetableDateEntry.organizer(t, timetable.entries)
-        ScheduleEntryG(t.start, t.end, t.date, o.room, o.supervisor, group, ScheduleEntry.randomUUID)
+        ScheduleEntryG(t.start, t.end, t.date, o.room, o.supervisor, group)
     }).toVector
 
     ScheduleG(timetable.labwork, scheduleEntries, Schedule.randomUUID)

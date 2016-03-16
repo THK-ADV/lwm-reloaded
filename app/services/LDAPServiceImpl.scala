@@ -10,7 +10,6 @@ import models.users.{Employee, Student, User}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-
 trait LDAPService {
   def authenticate(user: String, password: String): Future[Boolean]
 
@@ -123,8 +122,8 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
           val mail = results.head.getAttribute("mail").getValue
 
           employeeType match {
-            case "employee" => Success(Employee(user, surname, forename, mail, Employee.randomUUID))
-            case "student" => Success(Student(user, surname, forename, mail, "", Degree.randomUUID, Student.randomUUID))
+            case "employee" => Success(Employee(user, surname, forename, mail, employeeType))
+            case "student" => Success(Student(user, surname, forename, mail, "", Degree.randomUUID))
             case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
           }
         }.flatten
