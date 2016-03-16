@@ -1,10 +1,10 @@
 package controllers.crud.schedule
 
 import java.util.UUID
-
 import controllers.crud.AbstractCRUDController
-import models.users.{Employee, User}
-import models.{Degree, Labwork, Room, UriGenerator}
+import models.semester.{BlacklistProtocol, Blacklist}
+import models.users.{User, Employee}
+import models.{Degree, Room, Labwork, UriGenerator}
 import models.schedule._
 import models.security.Permissions._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -34,12 +34,14 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
-    case Some(timetable) => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
-    case None => Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
+    case Some(timetable) =>
+      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, timetable.localBlacklist.id), timetable.id)
+    case None =>
+      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, Blacklist.randomUUID), Timetable.randomUUID)
   }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.start == output.start && input.localBlacklist == output.localBlacklist && input.entries == output.entries
+    input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.dates) && input.entries == output.entries
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = Success(all)
@@ -64,7 +66,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
             r <- rooms.find(_.id == e.room)
             s <- supervisors.find(_.id == e.supervisor)
             d <- degrees.find(_.id == e.degree)
-          } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end, e.id)) match {
+          } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end)) match {
             case Some(atom) => newSet + atom
             case None => newSet
           }

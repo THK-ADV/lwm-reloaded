@@ -117,6 +117,7 @@ object Prefixes {
     val Blacklist = apply("Blacklist")
     val ReportCard = apply("ReportCard")
     val ReportCardEntry = apply("ReportCardEntry")
+    val ReportCardEntryType = apply("ReportCardEntryType")
   }
 
   object LWMPrefix {

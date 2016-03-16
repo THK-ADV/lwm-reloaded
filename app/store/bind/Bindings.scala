@@ -1,7 +1,6 @@
 package store.bind
 
 import java.util.UUID
-
 import models._
 import models.applications.LabworkApplication
 import models.schedule._
@@ -12,7 +11,6 @@ import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.joda.time.format.ISODateTimeFormat
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, PGBinder, RecordBinder}
-import services.TimetableServiceLike
 import store.Namespace
 import store.Prefixes.LWMPrefix
 
@@ -202,7 +200,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
 
-    implicit val assignmentEntryTypeBinder: PGBinder[Rdf, AssignmentEntryType] = pgbWithId[AssignmentEntryType](aEntryType => makeUri(AssignmentEntryType.generateUri(aEntryType)))(entryType, bool, int, id)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
+    implicit val assignmentEntryTypeBinder: PGBinder[Rdf, AssignmentEntryType] = pgb[AssignmentEntryType](entryType, bool, int)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
   }
 
   object AssignmentEntryBinding {
@@ -214,7 +212,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val duration = property[Int](lwm.duration)
     private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
 
-    implicit val assignmentEntryBinder: PGBinder[Rdf, AssignmentEntry] = pgbWithId[AssignmentEntry](aEntry => makeUri(AssignmentEntry.generateUri(aEntry)))(index, label, types, duration, id)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
+    implicit val assignmentEntryBinder: PGBinder[Rdf, AssignmentEntry] = pgb[AssignmentEntry](index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
   }
 
   object AssignmentPlanBinding {
@@ -322,7 +320,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
 
-    implicit val timetableEntryBinder: PGBinder[Rdf, TimetableEntry] = pgbWithId[TimetableEntry](timetableEntry => makeUri(TimetableEntry.generateUri(timetableEntry)))(supervisor, room, degree, dayIndex, start, end, id)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+    implicit val timetableEntryBinder: PGBinder[Rdf, TimetableEntry] = pgb[TimetableEntry](supervisor, room, degree, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
   }
 
   object ScheduleBinding {
@@ -347,7 +345,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
-    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](scheduleEntry => makeUri(ScheduleEntry.generateUri(scheduleEntry)))(start, end, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgb[ScheduleEntry](start, end, date, room, supervisor, group)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 
   object BlacklistBinding {
@@ -379,10 +377,21 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
-    private val room = property[UUID](lwm.room)
-    private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
+    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val types = set[ReportCardEntryType](lwm.types)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
 
     implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(index, label, date, start, end, room, types, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
+  }
+
+  object ReportCardEntryTypeBinding {
+    implicit val clazz = lwm.ReportCardEntryType
+    implicit val classUri = classUrisFor[ReportCardEntryType](clazz)
+
+    private val entryType = property[String](lwm.entryType)
+    private val bool = property[Boolean](lwm.bool)
+    private val int = property[Int](lwm.int)
+
+    implicit val reportCardEntryTypeBinding: PGBinder[Rdf, ReportCardEntryType] = pgbWithId[ReportCardEntryType](reportCardEntryType => makeUri(ReportCardEntryType.generateUri(reportCardEntryType)))(entryType, bool, int, id)(ReportCardEntryType.apply, ReportCardEntryType.unapply) withClasses classUri
   }
 }
 

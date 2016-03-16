@@ -26,7 +26,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
   }
 
   def entries(s: String): Set[AssignmentEntry] = (0 until 5).map( n =>
-    AssignmentEntry(n, s"${n.toString} to $s", AssignmentEntryType.all.map(AssignmentEntryType.fromProtocol).toSet)
+    AssignmentEntry(n, s"${n.toString} to $s", AssignmentEntryType.all)
   ).toSet
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())

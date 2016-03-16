@@ -48,9 +48,10 @@ trait Filterable[O] {
 }
 
 trait ModelConverter[I, O] {
-
   protected def fromInput(input: I, existing: Option[O] = None): O
+}
 
+trait Atomic[O] {
   import utils.Ops._
   import utils.Ops.MonadInstances._
 
@@ -189,7 +190,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with Secured
   with SessionChecking
   with SecureControllerContext
-  with Consistent[I, O] {
+  with Consistent[I, O]
+  with Atomic[O] {
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>

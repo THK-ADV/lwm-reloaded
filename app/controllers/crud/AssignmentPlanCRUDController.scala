@@ -21,8 +21,7 @@ object AssignmentPlanCRUDController {
 class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] {
 
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
-    import models.AssignmentEntry.toProtocol
-    input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries.map(toProtocol)
+    input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries
   }
 
   override implicit def rdfReads: FromPG[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
@@ -35,39 +34,9 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override protected def atomize(output: AssignmentPlan): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
-  // TODO REFACTOR, CONSIDER FILTER(SAME_X).FLATMAP
-  override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = {
-    def zip(left: AssignmentPlanProtocol, right: AssignmentPlan) = {
-      val i = left.entries.toVector.sortBy(_.index)
-      val e = right.entries.toVector.sortBy(_.index)
-      i.zip(e)
-    }
-
-    def fromEntryInput(input: AssignmentEntryProtocol, existing: Option[AssignmentEntry]): AssignmentEntry = {
-      def sameType(l: AssignmentEntryType, r: AssignmentEntryTypeProtocol) = {
-        l.entryType == r.entryType && l.bool == r.bool && l.int == r.int
-      }
-
-      existing match {
-        case Some(e) =>
-          val types = input.types.map(t => AssignmentEntryType(t.entryType, t.bool, t.int, e.types.filter(tt => sameType(tt, t)).head.id))
-          AssignmentEntry(input.index, input.label, types, input.duration, e.id)
-        case None =>
-          AssignmentEntry(input.index, input.label, input.types.map(t => fromTypeInput(t, None)), input.duration, AssignmentEntry.randomUUID)
-      }
-    }
-
-    def fromTypeInput(input: AssignmentEntryTypeProtocol, existing: Option[AssignmentEntryType]): AssignmentEntryType = existing match {
-      case Some(t) => AssignmentEntryType(input.entryType, input.bool, input.int, t.id)
-      case None => AssignmentEntryType.fromProtocol(input)
-    }
-
-    existing match {
-      case Some(ap) =>
-        AssignmentPlan(input.labwork, input.attendance, input.mandatory, zip(input, ap).map(e => fromEntryInput(e._1, Some(e._2))).toSet, ap.id)
-      case None =>
-        AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries.map(e => fromEntryInput(e, None)), AssignmentPlan.randomUUID)
-    }
+  override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = existing match {
+    case Some(ap) => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.id)
+    case None => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, AssignmentPlan.randomUUID)
   }
 
   override implicit def reads: Reads[AssignmentPlanProtocol] = AssignmentPlan.reads

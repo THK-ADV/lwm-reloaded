@@ -169,19 +169,8 @@ GET           /blacklists/:id                                              contr
 DELETE        /blacklists/:id                                              controllers.crud.semester.BlacklistCRUDController.delete(id)
 HEAD          /blacklists                                                  controllers.crud.semester.BlacklistCRUDController.header
 
-# ReportCard
-POST          /reportCards                                                 controllers.ReportCardController.create()
-PUT           /reportCards/:id                                             controllers.ReportCardController.update(id)
-GET           /reportCards                                                 controllers.ReportCardController.all()
-GET           /reportCards/:id                                             controllers.ReportCardController.get(id)
-DELETE        /reportCards/:id                                             controllers.ReportCardController.delete(id)
-HEAD          /reportCards                                                 controllers.ReportCardController.header
-
 # ReportCard restricted
-PUT           /courses/:course/reportCards/:id                             controllers.ReportCardController.updateFrom(course, id)
-PUT           /courses/:course/reportCards/:card/entries/:cardEntry        controllers.ReportCardController.updateReportCardEntry(course, card, cardEntry)
-GET           /courses/:course/reportCards                                 controllers.ReportCardController.allFrom(course)
-GET           /courses/:course/reportCards/:id                             controllers.ReportCardController.getFrom(course, id)
+PUT           /courses/:course/reportCards/:card/entries/:cardEntry        controllers.ReportCardController.updateReportCardEntryType(course, card, cardEntry)
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                             controllers.crud.AssignmentPlanCRUDController.createFrom(course)

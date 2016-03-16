@@ -10,7 +10,7 @@ case class Employee(systemId: String, lastname: String, firstname: String, email
 
 object Employee extends JsonSerialisation[Employee, Employee] {
 
-  lazy val default = Employee("n.a.", "n.a.", "n.a", "n.a.", "n.a")
+  lazy val default = Employee("n.a.", "n.a.", "n.a", "n.a.", "n.a", User.randomUUID)
 
   override implicit def reads: Reads[Employee] = Json.reads[Employee]
 

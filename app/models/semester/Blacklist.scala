@@ -19,7 +19,16 @@ case class Blacklist(dates: Set[DateTime], id: UUID) extends UniqueEntity {
   }
 }
 
-case class BlacklistProtocol(dates: Set[DateTime])
+case class BlacklistProtocol(dates: Set[DateTime]) {
+  import Blacklist.dateOrd
+
+  override def equals(that: scala.Any): Boolean = that match {
+    case BlacklistProtocol(e) =>
+      dates.toVector.sorted.zip(e.toVector.sorted).forall(d => d._1.isEqual(d._2))
+    case _ =>
+      false
+  }
+}
 
 object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[BlacklistProtocol, Blacklist] {
 
@@ -36,4 +45,6 @@ object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[Blacklis
   override implicit def writes: Writes[Blacklist] = Json.writes[Blacklist]
 
   implicit def format: Format[Blacklist] = Json.format[Blacklist]
+
+  implicit def protocolFormat: Format[BlacklistProtocol] = Json.format[BlacklistProtocol]
 }

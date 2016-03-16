@@ -40,8 +40,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       LocalDate.now.plusWeeks(n),
       roomToPass.id,
       supervisorToPass.id,
-      groupToPass.id,
-      ScheduleEntry.randomUUID
+      groupToPass.id
     )
   ).toSet
   val entriesToFail = (0 until 10).map (n =>
@@ -51,8 +50,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       LocalDate.now.plusWeeks(n),
       roomToFail.id,
       supervisorToFail.id,
-      groupToFail.id,
-      ScheduleEntry.randomUUID
+      groupToFail.id
     )
   ).toSet
 
@@ -97,13 +95,13 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     "labwork" -> entityToPass.labwork,
     "entries" -> (
       entityToPass.entries +
-        ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+        ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       ),
     "published" -> true
   )
 
   private def toScheduleEntryAtom(entries: Set[ScheduleEntry])(room: Room, supervisor: Employee, group: Group): Set[ScheduleEntryAtom] = {
-    entries.map(e => ScheduleEntryAtom(e.start, e.end, e.date, room, supervisor, group, e.id))
+    entries.map(e => ScheduleEntryAtom(e.start, e.end, e.date, room, supervisor, group))
   }
 
   val atomizedEntityToPass = ScheduleAtom(
@@ -186,7 +184,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
@@ -222,7 +220,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
@@ -259,14 +257,14 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List(
           Conflict(
-            ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), groups.head, UUID.randomUUID()),
+            ScheduleEntryG(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), groups.head),
             groups.head.members.toVector.take(1),
             groups.head
           )
         ), 1)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id, e.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
@@ -539,7 +537,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set(pointedGraph)))
 
       val request = FakeRequest(
@@ -566,7 +564,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(
@@ -594,7 +592,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Success(Set.empty[ReportCard]))
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(

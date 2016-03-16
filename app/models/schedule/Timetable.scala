@@ -3,10 +3,10 @@ package models.schedule
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.semester.Blacklist
+import models.semester.{BlacklistProtocol, Blacklist}
 import models.users.Employee
 import models._
-import org.joda.time.{DateTime, LocalDateTime, LocalTime, LocalDate}
+import org.joda.time.{LocalDateTime, LocalTime, LocalDate}
 import play.api.libs.json.{Format, Writes, Json, Reads}
 import services.ScheduleEntryG
 
@@ -19,25 +19,26 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDa
   }
 }
 
-case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Blacklist = Blacklist.empty)
+case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: BlacklistProtocol)
 
 case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Blacklist, id: UUID)
 
-case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime, id: UUID = TimetableEntry.randomUUID) extends UniqueEntity {
+case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case TimetableEntry(sup2, room2, degree2, dayIndex2, start2, end2, id2) =>
-      supervisor == sup2 && room == room2 && degree2 == degree && dayIndex2 == dayIndex && start2.isEqual(start) && end2.isEqual(end) && id2 == id
+    case TimetableEntry(sup2, room2, degree2, dayIndex2, start2, end2) =>
+      supervisor == sup2 && room == room2 && degree2 == degree && dayIndex2 == dayIndex && start2.isEqual(start) && end2.isEqual(end)
     case _ => false
   }
 }
 
-case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime, id: UUID)
+case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime)
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable] {
   import TimetableEntry.atomicFormat
+  import Blacklist._
 
   override def base: String = "timetables"
 
@@ -50,15 +51,13 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom](atomicWrites)
 }
 
-object TimetableEntry extends UriGenerator[TimetableEntry] with JsonSerialisation[TimetableEntry, TimetableEntry] {
+object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry] {
 
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
   implicit val timeOrd = TimetableDateEntry.localTimeOrd
 
   implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
-
-  override def base: String = "timetableEntries"
 
   override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
 
