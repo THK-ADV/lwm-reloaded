@@ -31,7 +31,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
       val request = FakeRequest(
         GET,
         s"/assignmentPlans"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -51,7 +54,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
         s"$FakeCourseUri/assignmentPlans",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.assignmentPlanV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -71,7 +77,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
         s"$FakeCourseUri/assignmentPlans/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.assignmentPlanV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -85,7 +94,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/assignmentPlans/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -105,7 +117,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
         s"$FakeCourseUri/assignmentPlans/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.assignmentPlanV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

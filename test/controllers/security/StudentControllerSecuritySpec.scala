@@ -28,7 +28,10 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/students/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -42,7 +45,10 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/students/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
+      ).withSession(
+        SessionController.userId -> FakeEmployee.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -58,7 +64,10 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         "/students"
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
+      ).withSession(
+        SessionController.userId -> FakeEmployee.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -72,7 +81,10 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/students/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -86,7 +98,10 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/students"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

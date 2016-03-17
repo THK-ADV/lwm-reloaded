@@ -12,7 +12,7 @@ import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
-import utils.LWMActions._
+import utils.LwmActions._
 import utils.LwmMimeType
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
@@ -195,20 +195,32 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>
-    repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+    repository.add[O](output).map(_ => Created(Json.toJson(output)).as(mimeType))
   }
 
   // POST /Ts with deserialisation
   def createAtomic(secureContext: SecureContext = contextFrom(Create)) = createWith(secureContext) { output =>
     repository.add[O](output).flatMap(_ => atomize(output)).map {
-        case Some(json) =>
-          Created(json).as(mimeType)
-        case None =>
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-      }
+      case Some(json) =>
+        Created(json).as(mimeType)
+      case None =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+    }
+  }
+
+  private def createWith(securedContext: SecureContext)(f: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
+    request.body.validate[I].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => existenceOf(success)(f)
+    )
   }
 
   // GET /Ts/:id
@@ -313,15 +325,14 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   }
 
   // PUT /Ts/:id
-  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = updateWith(id, secureContext)
-  { output => Success(Ok(Json.toJson(output)).as(mimeType)) }
-  { output =>
-    repository add[O] output map (_ => Created(Json.toJson(output)).as(mimeType))
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = updateWith(id, secureContext) { output =>
+    Success(Ok(Json.toJson(output)).as(mimeType))
+  } { output =>
+    repository.add[O](output).map(_ => Created(Json.toJson(output)).as(mimeType))
   }
 
   // PUT /Ts/:id with deserialisation
-  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = updateWith(id, securedContext)
-  { output =>
+  def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = updateWith(id, securedContext) { output =>
     atomize(output).map {
       case Some(json) =>
         Ok(json).as(mimeType)
@@ -343,23 +354,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
     }
   }
 
-
-  private def createWith(securedContext: SecureContext)
-                        (f: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
-    request.body.validate[I].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => existenceOf(success)(f)
-    )
-  }
-
   private def updateWith(id: String, securedContext: SecureContext)
-                (updatef: O => Try[Result])
-                (addf: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
+                        (updatef: O => Try[Result])
+                        (addf: O => Try[Result]) = securedContext contentTypedAction { implicit request =>
     val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
 
     request.body.validate[I].fold(
@@ -410,8 +407,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         "id" -> duplicate.toString
       ))
     case Success(None) =>
-      val model = fromInput(input)
-      f(model) match {
+      f(fromInput(input)) match {
         case Success(result) => result
         case Failure(e) =>
           InternalServerError(Json.obj(

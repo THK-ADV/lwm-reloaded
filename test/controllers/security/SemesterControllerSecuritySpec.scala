@@ -1,5 +1,7 @@
 package controllers.security
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import controllers.SessionController
 import models.security.Permissions._
@@ -36,7 +38,10 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
         "/semesters",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.semesterV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -56,7 +61,10 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
         "/semesters",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.semesterV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
+      ).withSession(
+        SessionController.userId -> FakeEmployee.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -70,7 +78,10 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         "GET",
         "/semesters"
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
+      ).withSession(
+        SessionController.userId -> FakeEmployee.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -84,7 +95,10 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         "GET",
         "/semesters"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

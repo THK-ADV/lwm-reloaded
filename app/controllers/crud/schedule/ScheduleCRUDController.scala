@@ -17,7 +17,7 @@ import services._
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.{Gen, LwmMimeType}
+import utils.{Ops, Gen, LwmMimeType}
 import models.security.Permissions._
 
 import scala.collection.Map
@@ -165,41 +165,31 @@ class ScheduleCRUDController(val repository: SesameRepository,
   }
 
   def previewFrom(course: String, labwork: String) = preview(course, labwork)( gen =>
-    Ok(Json.obj(
+    Success(Some(Ok(Json.obj(
       "status" -> "OK",
       "schedule" -> Json.toJson(ScheduleCRUDController.toSchedule(gen.elem)),
       "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
-    ))
+    ))))
   )
 
-  def previewAtomicFrom(course: String, labwork: String) = preview(course, labwork)( gen =>
-    gen.map(ScheduleCRUDController.toSchedule).map(atomize).elem match {
-      case Success(s) =>
-        s match {
-          case Some(json) =>
-            Ok(Json.obj(
-              "status" -> "OK",
-              "schedule" -> json,
-              "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
-            ))
-          case None =>
-            NotFound(Json.obj(
-              "status" -> "KO",
-              "message" -> "No such element..."
-            ))
-        }
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
-    }
-  )
-
-  private def preview(course: String, labwork: String)(f: Gen[ScheduleG, Conflict, Int] => Result) = restrictedContext(course)(Create) action { implicit request =>
+  def previewAtomicFrom(course: String, labwork: String) = preview(course, labwork) { gen =>
     import utils.Ops._
     import MonadInstances.{tryM, optM}
+
+    gen.map(ScheduleCRUDController.toSchedule).map(atomize).elem.peek( json =>
+      Ok(Json.obj(
+        "status" -> "OK",
+        "schedule" -> json,
+        "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
+      ))
+    )
+  }
+
+  private def preview(course: String, labwork: String)(f: Gen[ScheduleG, Conflict, Int] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
     import ScheduleCRUDController._
+    import utils.Ops._
+    import MonadInstances.{tryM, optM}
+    import TraverseInstances.{travT, travO}
 
     implicit val gb = defaultBindings.GroupBinding.groupBinder
     implicit val gcu = defaultBindings.GroupBinding.classUri
@@ -210,7 +200,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
 
     val id = UUID.fromString(labwork)
 
-    val gen = for {
+    val genesis = for {
       groups <- repository.get[Group].map(_.filter(_.labwork == id))
       timetable <- repository.get[Timetable].map(_.find(_.labwork == id))
       plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == id))
@@ -223,7 +213,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
       } yield scheduleGenesisService.generate(t, g, p, comp.toVector)._1
     }
 
-    gen.peek(f) match {
+    genesis.flatPeek(f) match {
       case Success(s) =>
         s match {
           case Some(result) => result

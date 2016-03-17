@@ -17,7 +17,7 @@ import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.{Application, ApplicationLoader}
 import services.{RoleService, SessionHandlingService}
 import store.{Namespace, Resolvers, SesameRepository}
-import utils.LWMActions.{SecureAction, SecureContentTypedAction}
+import utils.LwmActions.{SecureAction, SecureContentTypedAction}
 import utils.{DefaultLwmApplication, LwmMimeType}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
@@ -80,7 +80,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
+      val request = FakeRequest("GET", "/").withSession(
+        SessionController.userId -> userId.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = call(action, request)
 
@@ -99,7 +102,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/")
+      val request = FakeRequest("GET", "/").withSession(SessionController.sessionId -> UUID.randomUUID.toString)
 
       val result = call(action, request)
 
@@ -111,7 +114,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       val auth = Authority(userId, Set(module1UserRole2.id), UUID.randomUUID())
       val response = Json.obj(
         "status" -> "KO",
-        "message" -> "Session invalid or non-existent"
+        "message" -> "No session-id found in session"
       )
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(false))
 
@@ -139,7 +142,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
+      val request = FakeRequest("GET", "/").withSession(
+        SessionController.userId -> userId.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = call(action, request)
 
@@ -158,7 +164,10 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
         req => Results.Ok("Passed")
       }
 
-      val request = FakeRequest("GET", "/").withSession(SessionController.userId -> userId.toString)
+      val request = FakeRequest("GET", "/").withSession(
+        SessionController.userId -> userId.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = call(action, request)
 
@@ -192,7 +201,9 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       )
 
       val request = FakeRequest("POST", "/")
-        .withSession(SessionController.userId -> userId.toString)
+        .withSession(
+          SessionController.userId -> userId.toString,
+          SessionController.sessionId -> UUID.randomUUID.toString)
         .withJsonBody(login)
         .withHeaders("Content-Type" -> mimeType.value)
 

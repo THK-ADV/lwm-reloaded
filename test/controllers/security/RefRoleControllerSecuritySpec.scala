@@ -34,7 +34,10 @@ class RefRoleControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/refRoles"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -51,7 +54,10 @@ class RefRoleControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val request = FakeRequest(
         GET,
         s"/refRoles/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

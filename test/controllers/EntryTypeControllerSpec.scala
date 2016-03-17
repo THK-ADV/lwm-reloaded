@@ -16,7 +16,7 @@ import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 import AssignmentEntryType._
 import play.api.test.Helpers._
-import utils.LWMActions.ContentTypedAction
+import utils.LwmActions.ContentTypedAction
 
 class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
   self =>

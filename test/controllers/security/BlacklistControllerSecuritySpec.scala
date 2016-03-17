@@ -37,7 +37,10 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
         s"/blacklists",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.blacklistV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -51,7 +54,10 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       val request = FakeRequest(
         GET,
         s"/blacklists/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -65,7 +71,10 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       val request = FakeRequest(
         GET,
         s"/blacklists/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -79,7 +88,10 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       val request = FakeRequest(
         GET,
         s"/blacklists"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

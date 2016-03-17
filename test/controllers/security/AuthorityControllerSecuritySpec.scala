@@ -37,7 +37,10 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
         s"/authorities/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.authorityV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -58,7 +61,10 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
         s"/authorities/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.authorityV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeRv.toString)
+      ).withSession(
+        SessionController.userId -> FakeRv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -72,7 +78,10 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       val request = FakeRequest(
         GET,
         s"/authorities/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeRv.toString)
+      ).withSession(
+        SessionController.userId -> FakeRv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

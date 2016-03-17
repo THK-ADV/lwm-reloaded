@@ -1,5 +1,7 @@
 package controllers.security
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import controllers.SessionController
 import models.security.Permissions
@@ -28,7 +30,10 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
       val request = FakeRequest(
         GET,
         s"/permissions"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -43,7 +48,10 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
       val request = FakeRequest(
         GET,
         s"/permissions"
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

@@ -7,11 +7,12 @@ import controllers.SessionController
 import models.security.{Authority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import play.api.mvc.Results._
 import services.{RoleServiceLike, SessionHandlingService}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-object LWMActions {
+object LwmActions {
 
   implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
@@ -51,27 +52,35 @@ object LWMActions {
 }
 
 case class AuthRequest[A](private val unwrapped: Request[A], authority: Authority) extends WrappedRequest[A](unwrapped)
-case class IdRequest[A](private val unwrapped: Request[A], userId: UUID) extends WrappedRequest[A](unwrapped)
+case class IdRequest[A](private val unwrapped: Request[A], userId: String) extends WrappedRequest[A](unwrapped)
 
 case class Allowed(sessionService: SessionHandlingService) extends ActionBuilder[IdRequest] {
-  import LWMActions.actionExecutionContext
+  import LwmActions.actionExecutionContext
 
   override def invokeBlock[A](request: Request[A], block: (IdRequest[A]) => Future[Result]): Future[Result] = {
-    request.session.get(SessionController.userId) match {
-      case Some(sid) =>
-        val uuid = UUID.fromString(sid)
-        sessionService.isValid(uuid) flatMap { valid =>
-          if(valid) block(IdRequest(request, uuid))
-          else Future.successful {
-            Results.Unauthorized(Json.obj(
-              "status" -> "KO",
-              "message" -> "Session invalid or non-existent"
-            ))
+    (request.session.get(SessionController.sessionId), request.session.get(SessionController.userId)) match {
+      case (Some(sid), Some(uid)) =>
+        sessionService.isValid(UUID.fromString(sid)) flatMap { valid =>
+          if (valid)
+            block(IdRequest(request, uid))
+          else
+            Future.successful {
+              Unauthorized(Json.obj(
+                "status" -> "KO",
+                "message" -> "Session invalid or non-existent"
+              ))
           }
         }
-      case None =>
+      case (None, _) =>
         Future.successful {
-          Results.Unauthorized(Json.obj(
+          Unauthorized(Json.obj(
+            "status" -> "KO",
+            "message" -> "No session-id found in session"
+          ))
+        }
+      case (_, None) =>
+        Future.successful {
+          Unauthorized(Json.obj(
             "status" -> "KO",
             "message" -> "No user-id found in session"
           ))
@@ -81,21 +90,22 @@ case class Allowed(sessionService: SessionHandlingService) extends ActionBuilder
 }
 
 case class Authorized(roleServiceLike: RoleServiceLike) extends ActionFunction[IdRequest, AuthRequest] {
+
   override def invokeBlock[A](request: IdRequest[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
     def f = block compose (AuthRequest.apply[A] _).curried(request)
 
-    roleServiceLike.authorityFor(request.userId.toString) match {
+    roleServiceLike.authorityFor(request.userId) match {
       case Success(Some(auth)) => f(auth)
       case Success(_) =>
         Future.successful {
-          Results.Unauthorized(Json.obj(
+          Unauthorized(Json.obj(
             "status" -> "KO",
             "message" -> s"No authority found for ${request.userId}"
           ))
         }
       case Failure(e) =>
         Future.successful {
-          Results.InternalServerError(Json.obj(
+          InternalServerError(Json.obj(
             "status" -> "KO",
             "message" -> s"${e.getMessage}"
           ))
@@ -110,12 +120,12 @@ case class Permitted(predicate: Authority => Try[Boolean]) extends ActionFilter[
     predicate(request.authority) match {
       case Success(allowed) if allowed => None
       case Success(_) =>
-        Some(Results.Unauthorized(Json.obj(
+        Some(Unauthorized(Json.obj(
           "status" -> "KO",
           "message" -> "Insufficient permissions for given action"
         )))
       case Failure(e) =>
-        Some(Results.InternalServerError(Json.obj(
+        Some(InternalServerError(Json.obj(
           "status" -> "KO",
           "message" -> e.getMessage
         )))

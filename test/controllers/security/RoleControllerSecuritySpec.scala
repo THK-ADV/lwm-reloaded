@@ -44,7 +44,10 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
         s"/roles/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.roleV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -67,7 +70,10 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
         s"/roles/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.roleV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeRv.toString)
+      ).withSession(
+        SessionController.userId -> FakeRv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -81,7 +87,10 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
       val request = FakeRequest(
         GET,
         s"/roles/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeRv.toString)
+      ).withSession(
+        SessionController.userId -> FakeRv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

@@ -40,7 +40,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
         s"/labworkApplications",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.labworkApplicationV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -54,7 +57,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
       val request = FakeRequest(
         DELETE,
         s"/labworkApplications/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -76,7 +82,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
         s"/labworkApplications",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.labworkApplicationV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -90,7 +99,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
       val request = FakeRequest(
         DELETE,
         s"/labworkApplications/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -104,7 +116,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
       val request = FakeRequest(
         GET,
         s"/labworkApplications"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -118,7 +133,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
       val request = FakeRequest(
         GET,
         s"/labworkApplications"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -140,7 +158,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
         s"/labworkApplications",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.labworkApplicationV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

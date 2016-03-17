@@ -39,7 +39,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.scheduleV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeAdmin.toString)
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -61,7 +64,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
         s"$FakeCourseUri/schedules",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.scheduleV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -75,7 +81,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         DELETE,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -89,7 +98,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMv.toString)
+      ).withSession(
+        SessionController.userId -> FakeMv.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -103,7 +115,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -119,7 +134,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/schedules?course=$course"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -142,7 +160,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
         s"$FakeCourseUri/schedules",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.scheduleV1Json)),
         json
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -156,7 +177,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         DELETE,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeMa.toString)
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -170,7 +194,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeStudent.toString)
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 
@@ -184,7 +211,10 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val request = FakeRequest(
         GET,
         s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
-      ).withSession(SessionController.userId -> FakeEmployee.toString)
+      ).withSession(
+        SessionController.userId -> FakeEmployee.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
 
       val result = route(request).get
 

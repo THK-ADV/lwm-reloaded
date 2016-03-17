@@ -43,9 +43,12 @@ trait SecurityBaseDefinition extends FakeAuthority { self =>
   val sessionService = MockitoSugar.mock[SessionHandlingService]
 
   class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
+
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
+
       override lazy val roleService: RoleService = self.roleService
-      override def sessionService: SessionHandlingService = self.sessionService
+
+      override val sessionService: SessionHandlingService = self.sessionService
     }.application
   })
 }
