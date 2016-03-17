@@ -103,6 +103,13 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val robertStudent = User.randomUUID
   val christianStudent = User.randomUUID
 
+  val ma1KonenRefRole = RefRole(Some(ma1Konen), maRole.id)
+  val ma1LeopoldRefRole = RefRole(Some(ma1Leopold), maRole.id)
+  val ma2SchmitterRefRole = RefRole(Some(ma2Schmitter), maRole.id)
+  val ap1VictorRefRole = RefRole(Some(ap1Victor), maRole.id)
+  val ap2KohlsRefRole = RefRole(Some(ap2Kohls), maRole.id)
+  val cgaEisemannRefRole = RefRole(Some(cgaEisemann), maRole.id)
+
   val randomStudents = {
     val degrees = Vector(ai, mi, ti, wi)
     (0 until 400).map(n =>
@@ -222,6 +229,15 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     people.map(p => (p, Authority(p.id, Set(adminRefRole.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
     }
+
+    List(
+      Authority(konen, Set(employeeRefRole.id, ma1KonenRefRole.id, rvRefRole.id)),
+      Authority(leopold, Set(employeeRefRole.id, ma1LeopoldRefRole.id, rvRefRole.id)),
+      Authority(schmitter, Set(employeeRefRole.id, ma2SchmitterRefRole.id, rvRefRole.id)),
+      Authority(victor, Set(employeeRefRole.id, ap1VictorRefRole.id, rvRefRole.id)),
+      Authority(kohls, Set(employeeRefRole.id, ap2KohlsRefRole.id, rvRefRole.id)),
+      Authority(eisemann, Set(employeeRefRole.id, ap2KohlsRefRole.id, rvRefRole.id))
+    ) map repository.add[Authority]
   }
 
   def refroles = {
@@ -230,7 +246,13 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       adminRefRole,
       employeeRefRole,
       studentRefRole,
-      rvRefRole
+      rvRefRole,
+      ma1KonenRefRole,
+      ma1LeopoldRefRole,
+      ma2SchmitterRefRole,
+      ap1VictorRefRole,
+      ap2KohlsRefRole,
+      cgaEisemannRefRole
     ).map(repository.add[RefRole])
   }
 
