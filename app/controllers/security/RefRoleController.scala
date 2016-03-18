@@ -14,10 +14,14 @@ import utils.LwmMimeType
 import models.security.Permissions._
 
 import scala.collection.Map
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
+object RefRoleController {
+  val courseAttribute = "course"
+}
 
 class RefRoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
+
   override implicit def reads: Reads[RefRoleProtocol] = RefRole.reads
 
   override implicit def writes: Writes[RefRole] = RefRole.writes
@@ -39,7 +43,15 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
 
   override protected def compareModel(input: RefRoleProtocol, output: RefRole): Boolean = input.role == output.role
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Try[Set[RefRole]] = Success(all)
+  // TODO test
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Try[Set[RefRole]] = {
+    import RefRoleController._
+
+    queryString.foldRight(Try[Set[RefRole]](all)) {
+      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(id => set.filter(_.module.contains(id))))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   override protected def atomize(output: RefRole): Try[Option[JsValue]] = {
     import defaultBindings.RoleBinding.roleBinder

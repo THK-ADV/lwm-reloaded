@@ -1,7 +1,5 @@
 package controllers.crud.semester
 
-import java.util.UUID
-
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
@@ -33,12 +31,12 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
   override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
-    case Some(blacklist) => Blacklist(input.dates, blacklist.id)
-    case None => Blacklist(input.dates, Blacklist.randomUUID)
+    case Some(blacklist) => Blacklist(input.label, input.dates, blacklist.id)
+    case None => Blacklist(input.label, input.dates, Blacklist.randomUUID)
   }
 
   override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
-    input.dates == output.dates
+    input.label == output.label && input.dates == output.dates
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)

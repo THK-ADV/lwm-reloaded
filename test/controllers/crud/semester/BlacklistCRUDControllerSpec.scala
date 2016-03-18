@@ -26,9 +26,9 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     }
   }
 
-  override val entityToFail: Blacklist = Blacklist(dates, Blacklist.randomUUID)
+  override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates, Blacklist.randomUUID)
 
-  override val entityToPass: Blacklist = Blacklist(dates, Blacklist.randomUUID)
+  override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates, Blacklist.randomUUID)
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -37,10 +37,12 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
   override val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
   override val inputJson: JsValue = Json.obj(
+    "label" -> entityToPass.label,
     "dates" -> entityToPass.dates
   )
 
   override val updateJson: JsValue = Json.obj(
+    "label" -> entityToPass.label,
     "dates" -> (entityToPass.dates + DateTime.now)
   )
 }

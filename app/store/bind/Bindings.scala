@@ -352,9 +352,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.Blacklist
     implicit val classUri = classUrisFor[Blacklist](clazz)
 
+    private val label = property[String](lwm.label)
     private val dates = set[DateTime](lwm.dates)
 
-    implicit val blacklistBinder: PGBinder[Rdf, Blacklist] = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
+    implicit val blacklistBinder: PGBinder[Rdf, Blacklist] = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(label, dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
   }
 
   object ReportCardBinding {

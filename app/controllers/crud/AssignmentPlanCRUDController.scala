@@ -4,18 +4,23 @@ import java.util.UUID
 
 import models._
 import models.security.Permissions
+import org.openrdf.model.Value
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import utils.RequestOps._
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
+import AssignmentPlanCRUDController._
 
 object AssignmentPlanCRUDController {
   val labworkAttribute = "labwork"
+  val courseAttribute = "course"
 }
 
 class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] {
@@ -43,11 +48,30 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override implicit def writes: Writes[AssignmentPlan] = AssignmentPlan.writes
 
+  // TODO TEST
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[AssignmentPlan]): Try[Set[AssignmentPlan]] = {
-    import AssignmentPlanCRUDController._
+    import defaultBindings.LabworkBinding.labworkBinder
+    import utils.Ops.MonadInstances.listM
+    import store.sparql.select
+    import store.sparql.select._
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
 
     queryString.foldRight(Try[Set[AssignmentPlan]](all)) {
-      case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
+      case ((`labworkAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.labwork == id)))
+      case ((`courseAttribute`, values), t) =>
+        val query = select ("labworks") where {
+          ^(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
+          ^(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+        }
+
+        repository.prepareQuery(query).
+          select(_.get("labworks")).
+          transform(_.fold(List.empty[Value])(identity)).
+          map(_.stringValue).
+          requestAll(repository.getMany[Labwork](_)).
+          requestAll[Set, AssignmentPlan](labworks => t.map(_.filter(p => labworks.exists(_.id == p.labwork)))).
+          run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -66,28 +90,23 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     case GetAll => SecureBlock(restrictionId, Permissions.assignmentPlan.getAll)
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, AssignmentPlan.generateBase)
-    super.create(NonSecureBlock)(newRequest)
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase(AssignmentPlan.generateBase))
   }
 
-  def updateFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, AssignmentPlan.generateBase(UUID.fromString(assignmentPlan)))
-    super.update(assignmentPlan, NonSecureBlock)(newRequest)
+  def updateFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
   }
 
-  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, AssignmentPlan.generateBase)
-    super.all(NonSecureBlock)(newRequest)
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(AssignmentPlan.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def getFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, AssignmentPlan.generateBase(UUID.fromString(assignmentPlan)))
-    super.get(assignmentPlan, NonSecureBlock)(newRequest)
+  def getFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    get(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
   }
 
-  def deleteFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, AssignmentPlan.generateBase(UUID.fromString(assignmentPlan)))
-    super.delete(assignmentPlan, NonSecureBlock)(newRequest)
+  def deleteFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
   }
 }

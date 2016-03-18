@@ -38,7 +38,7 @@ object ApiDataController {
   val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
-      semester.get + group.get + user.get + reportCard.get
+      semester.get + user.get + reportCard.get
   )
   val employeeRole = Role(Roles.Employee,
     room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) + labworkApplication.getAll ++ entryType.all
@@ -421,8 +421,8 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
 
     List(
-      Blacklist(profileWeek, Blacklist.randomUUID),
-      Blacklist(christmas, Blacklist.randomUUID)
+      Blacklist("Profil hoch 2", profileWeek, Blacklist.randomUUID),
+      Blacklist("Weihnachten", christmas, Blacklist.randomUUID)
     ).map(repository.add[Blacklist])
   }
   

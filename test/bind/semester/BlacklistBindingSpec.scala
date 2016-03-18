@@ -20,9 +20,10 @@ class BlacklistBindingSpec extends SesameDbSpec {
   import bindings.BlacklistBinding.blacklistBinder
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
-  val blacklist = Blacklist(dates, Blacklist.randomUUID)
+  val blacklist = Blacklist("blacklist", dates, Blacklist.randomUUID)
   val blacklistGraph = (
     URI(Blacklist.generateUri(blacklist)).a(lwm.Blacklist)
+      -- lwm.label ->- blacklist.label
       -- lwm.dates ->- blacklist.dates
       -- lwm.id ->- blacklist.id
     ).graph

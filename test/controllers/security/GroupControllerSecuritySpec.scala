@@ -24,23 +24,6 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
-    "Allow non restricted context invocations when user is an admin" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, group.get))(FakeAdminAuth)).thenReturn(Success(true))
-
-      val request = FakeRequest(
-        GET,
-        s"/groups/${UUID.randomUUID()}"
-      ).withSession(
-        SessionController.userId -> FakeAdmin.toString,
-        SessionController.sessionId -> UUID.randomUUID.toString
-      )
-
-      val result = route(request).get
-
-      status(result) shouldBe NOT_FOUND
-    }
-
     "Allow restricted invocations when admin wants to get all groups" in new FakeApplication() {
       import Group.writes
 
@@ -49,7 +32,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/groups"
+        s"$FakeCourseUri/labworks/${UUID.randomUUID()}/groups"
       ).withSession(
         SessionController.userId -> FakeAdmin.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -72,7 +55,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
       val request = FakeRequest(
         POST,
-        s"$FakeCourseUri/groups/count",
+        s"$FakeCourseUri/labworks/${UUID.randomUUID()}/groups/count",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.groupV1Json)),
         json
       ).withSession(
@@ -91,7 +74,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/groups/${UUID.randomUUID()}"
+        s"$FakeCourseUri/labworks/${UUID.randomUUID()}/groups/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMv.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -108,7 +91,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/groups/${UUID.randomUUID()}"
+        s"$FakeCourseUri/labworks/${UUID.randomUUID()}/groups/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -125,60 +108,9 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/groups"
+        s"$FakeCourseUri/labworks/${UUID.randomUUID()}/groups"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
-        SessionController.sessionId -> UUID.randomUUID.toString
-      )
-
-      val result = route(request).get
-
-      status(result) shouldBe UNAUTHORIZED
-    }
-
-    "Allow non restricted invocations when student wants to get a single group" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, group.get))(FakeStudentAuth)).thenReturn(Success(true))
-
-      val request = FakeRequest(
-        GET,
-        s"/groups/${UUID.randomUUID()}"
-      ).withSession(
-        SessionController.userId -> FakeStudent.toString,
-        SessionController.sessionId -> UUID.randomUUID.toString
-      )
-
-      val result = route(request).get
-
-      status(result) shouldBe NOT_FOUND
-    }
-
-    "Block non restricted invocations when student wants to get all groups because route is not found" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, group.getAll))(FakeStudentAuth)).thenReturn(Success(false))
-
-      val request = FakeRequest(
-        GET,
-        s"/groups"
-      ).withSession(
-        SessionController.userId -> FakeStudent.toString,
-        SessionController.sessionId -> UUID.randomUUID.toString
-      )
-
-      val result = route(request).get
-
-      status(result) shouldBe NOT_FOUND
-    }
-
-    "Block non restricted invocations when employee wants to get a single group" in new FakeApplication {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
-      when(roleService.checkWith((None, group.get))(FakeEmployeeAuth)).thenReturn(Success(false))
-
-      val request = FakeRequest(
-        GET,
-        s"/groups/${UUID.randomUUID()}"
-      ).withSession(
-        SessionController.userId -> FakeEmployee.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
       )
 

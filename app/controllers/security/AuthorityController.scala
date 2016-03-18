@@ -60,8 +60,8 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
       refroles <- repository.getMany[RefRole](output.refRoles map RefRole.generateUri)
       atomicRefRoles <- atomRefs(refroles)
     } yield maybeUser map { user =>
-        Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
-      }
+      Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
+    }
   }
 
   import defaultBindings.CourseBinding._

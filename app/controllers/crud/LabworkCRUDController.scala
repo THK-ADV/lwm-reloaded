@@ -14,10 +14,10 @@ import store.sparql.select._
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import utils.RequestOps._
+import LabworkCRUDController._
 import scala.collection.Map
 import scala.util.{Failure, Try}
-import LabworkCRUDController._
 import models.security.Permissions._
 
 object LabworkCRUDController {
@@ -108,43 +108,35 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     case Delete => PartialSecureBlock(prime)
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
-    super.create(NonSecureBlock)(newRequest)
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase(Labwork.generateBase))
   }
 
-  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
-    super.createAtomic(NonSecureBlock)(newRequest)
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    createAtomic(NonSecureBlock)(rebase(Labwork.generateBase))
   }
 
-  def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
-    super.update(labwork, NonSecureBlock)(newRequest)
+  def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
 
-  def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
-    super.delete(labwork, NonSecureBlock)(newRequest)
+  def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
 
-  def getFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
-    super.get(labwork, NonSecureBlock)(newRequest)
+  def getFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    get(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
 
-  def getAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase(UUID.fromString(labwork)))
-    super.getAtomic(labwork, NonSecureBlock)(newRequest)
+  def getAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    getAtomic(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
 
-  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
-    super.all(NonSecureBlock)(newRequest)
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(Labwork.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Labwork.generateBase)
-    super.allAtomic(NonSecureBlock)(newRequest)
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase))
   }
 }
