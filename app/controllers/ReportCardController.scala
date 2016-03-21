@@ -3,8 +3,8 @@ package controllers
 import java.util.UUID
 
 import controllers.crud._
-import models.users.User
-import models.{ReportCardEntryType, UriGenerator, ReportCard}
+import models.users.{Student, User}
+import models._
 import modules.store.BaseNamespace
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
@@ -38,8 +38,6 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardV1Json
 
-  override protected def atomize(output: ReportCard): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
   override implicit def reads: Reads[ReportCard] = ReportCard.reads
 
   override implicit def writes: Writes[ReportCard] = ReportCard.writes
@@ -54,13 +52,25 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
     case _ => PartialSecureBlock(god)
   }
 
-  // TODO TEST
-  def get(student: String)= contextFrom(Get) action { request =>
-    import utils.Ops.MonadInstances.optM
+  def get(student: String) = reportCardFor(student) { card =>
+    Success(Some(Ok(Json.toJson(card)).as(mimeType)))
+  }
+
+  def getAtomic(student: String) = reportCardFor(student) { card =>
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{tryM, optM}
+
+    atomize(card).peek(json => Ok(json).as(mimeType))
+  }
+
+  private def reportCardFor(student: String)(f: ReportCard => Try[Option[Result]]) = contextFrom(Get) action { request =>
+    import utils.Ops._
     import utils.Ops.NaturalTrasformations._
-    import utils.Ops.TraverseInstances.travO
+    import utils.Ops.MonadInstances.{tryM, optM}
+    import utils.Ops.TraverseInstances.{travO, travT}
     import store.sparql.select
     import store.sparql.select._
+
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -76,17 +86,13 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
       request[Option, ReportCard](repository.get[ReportCard]).
       run
 
-    result match {
-      case Success(s) =>
-        s match {
-          case Some(card) =>
-            Ok(Json.toJson(card))
-          case None =>
-            NotFound(Json.obj(
-              "status" -> "KO",
-              "message" -> "No such element..."
-            ))
-        }
+    result.flatPeek(f) match {
+      case Success(Some(res)) => res
+      case Success(None) =>
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
@@ -123,4 +129,32 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
       }
     )
   }
+
+  override protected def atomize(output: ReportCard): Try[Option[JsValue]] = {
+    import defaultBindings.StudentBinding.studentBinder
+    import defaultBindings.LabworkBinding.labworkBinder
+    import defaultBindings.RoomBinding.roomBinder
+    import ReportCard.atomicWrites
+
+    for {
+      student <- repository.get[Student](User.generateUri(output.student)(namespace))
+      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
+      roomIds = output.entries.map(e => Room.generateUri(e.room)(namespace))
+      rooms <- repository.getMany[Room](roomIds)
+    } yield {
+      for {
+        s <- student; l <- labwork
+      } yield {
+        val entries = output.entries.foldLeft(Set.empty[ReportCardEntryAtom]) { (newSet, e) =>
+          rooms.find(_.id == e.room) match {
+            case Some(r) => newSet + ReportCardEntryAtom(e.index, e.label, e.date, e.start, e.end, r, e.entryTypes, e.id)
+            case None => newSet
+          }
+        }
+
+        Json.toJson(ReportCardAtom(s, l, entries, output.id))(atomicWrites)
+      }
+    }
+  }
+
 }

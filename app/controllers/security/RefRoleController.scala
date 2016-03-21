@@ -35,20 +35,19 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
   override implicit def rdfWrites: ToPG[Sesame, RefRole] = defaultBindings.RefRoleBinding.refRoleBinder
 
   override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = existing match {
-    case Some(refRole) => RefRole(input.module, input.role, refRole.id)
-    case None => RefRole(input.module, input.role, RefRole.randomUUID)
+    case Some(refRole) => RefRole(input.course, input.role, refRole.id)
+    case None => RefRole(input.course, input.role, RefRole.randomUUID)
   }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
   override protected def compareModel(input: RefRoleProtocol, output: RefRole): Boolean = input.role == output.role
 
-  // TODO test
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Try[Set[RefRole]] = {
     import RefRoleController._
 
     queryString.foldRight(Try[Set[RefRole]](all)) {
-      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(id => set.filter(_.module.contains(id))))
+      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(id => set.filter(_.course.contains(id))))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -60,7 +59,7 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
 
     for {
       role <- repository.get[Role](Role.generateUri(output.role)(namespace))
-      course <- output.module.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))
+      course <- output.course.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))
     } yield for {
         r <- role
       } yield {

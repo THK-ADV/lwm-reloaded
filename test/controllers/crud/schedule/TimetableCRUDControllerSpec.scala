@@ -118,6 +118,36 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   )
 
   "A TimetableCRUDControllerSpec also " should {
+    
+    "return all timetables for a given course" in {
+      val course = UUID.randomUUID
+      val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      
+      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+
+      when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(Set(
+        tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
+      )))
+      when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
+
+      val request = FakeRequest(
+        GET,
+        s"/$entityTypeName?${TimetableCRUDController.courseAttribute}=$course"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(tt1, tt2, tt5, tt7, tt8))
+    }
 
     s"successfully get a single $entityTypeName atomized" in {
       import Timetable.atomicWrites

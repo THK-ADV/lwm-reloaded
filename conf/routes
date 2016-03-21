@@ -167,6 +167,7 @@ HEAD          /blacklists                                                  contr
 
 # ReportCard restricted
 GET           /reportCards/student/:student                                controllers.ReportCardController.get(student)
+GET           /atomic/reportCards/student/:student                         controllers.ReportCardController.getAtomic(student)
 PUT           /courses/:course/reportCards/:card/entries/:cardEntry        controllers.ReportCardController.updateReportCardEntryType(course, card, cardEntry)
 
 # AssignmentPlan

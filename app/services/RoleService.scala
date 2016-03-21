@@ -72,12 +72,12 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
 
       (for {
         roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
-        admin = roles.filter(_.name == Roles.Admin)
+        admin = roles.filter(_.label == Roles.Admin)
         refRoles <- repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri)
       } yield {
         if(refRoles.exists(refrole => admin.exists(_.id == refrole.role))) Success(true)
         else for {
-          optRef <- Try(refRoles.filter(_.module == optCourse))
+          optRef <- Try(refRoles.filter(_.course == optCourse))
           optRole <- Try(optRef) flatMap (ref => repository.getMany[Role](ref.map(rr => Role.generateUri(rr.role)))(RoleBinding.roleBinder))
         } yield optRole.exists(_.permissions.contains(permission))
       }).flatten

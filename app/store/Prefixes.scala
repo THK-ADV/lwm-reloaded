@@ -14,10 +14,10 @@ object Prefixes {
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry
+    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role
     val label = apply("label")
 
-    // Labwork, LabworkApplication, Room, Degree, TimetableEntry
+    // Labwork, LabworkApplication, Room, Degree, TimetableEntry, RefRole
     val description = apply("description")
     val assignmentPlan = apply("assignmentPlan")
     val semester = apply("semester")
@@ -63,11 +63,9 @@ object Prefixes {
     val semesterIndex = apply("semesterIndex")
 
     // RefRole, Role, Authority
-    val name = apply("name")
     val role = apply("role")
     val refroles = apply("refRoles")
     val permissions = apply("permissions")
-    val module = apply("module")
     val privileged = apply("privileged")
 
     //Group, Timetable, Schedule, ReportCard

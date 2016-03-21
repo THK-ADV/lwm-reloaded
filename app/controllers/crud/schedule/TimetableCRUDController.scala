@@ -59,7 +59,6 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.label, output.localBlacklist.dates) && input.entries == output.entries
   }
 
-  // TODO TEST
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
     import defaultBindings.LabworkBinding.labworkBinder
     import utils.Ops.MonadInstances.listM

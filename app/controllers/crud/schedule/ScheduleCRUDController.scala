@@ -120,7 +120,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
-  // TODO TEST
+  // TODO FILTER WITH ASSIGNMENT PLAN
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Schedule]): Try[Set[Schedule]] = {
     import defaultBindings.LabworkBinding.labworkBinder
     import utils.Ops.MonadInstances.listM

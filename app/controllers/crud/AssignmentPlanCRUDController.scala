@@ -48,7 +48,6 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override implicit def writes: Writes[AssignmentPlan] = AssignmentPlan.writes
 
-  // TODO TEST
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[AssignmentPlan]): Try[Set[AssignmentPlan]] = {
     import defaultBindings.LabworkBinding.labworkBinder
     import utils.Ops.MonadInstances.listM

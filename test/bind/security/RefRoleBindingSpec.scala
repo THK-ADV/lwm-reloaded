@@ -20,25 +20,17 @@ class RefRoleBindingSpec extends SesameDbSpec {
   import bindings.RoleBinding._
   import bindings.uuidRefBinder
 
-  val refRoleWithCourse = RefRole(
-    Some(Course.randomUUID),
-    Role.randomUUID,
-    RefRole.randomUUID
-  )
+  val refRoleWithCourse = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
-  val refRoleWithoutCourse = RefRole(
-    None,
-    Role.randomUUID,
-    RefRole.randomUUID
-  )
+  val refRoleWithoutCourse = RefRole(None, Role.randomUUID, RefRole.randomUUID)
 
   val refRoleGraphWithCourse = URI(RefRole.generateUri(refRoleWithCourse)).a(lwm.RefRole)
-    .--(lwm.module).->-(refRoleWithCourse.module)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.course).->-(refRoleWithCourse.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.role).->-(refRoleWithCourse.role)(ops, uuidRefBinder(Role.splitter))
     .--(lwm.id).->-(refRoleWithCourse.id).graph
 
   val refRoleGraphWithoutCourse = URI(RefRole.generateUri(refRoleWithoutCourse)).a(lwm.RefRole)
-    .--(lwm.module).->-(refRoleWithoutCourse.module)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.course).->-(refRoleWithoutCourse.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.role).->-(refRoleWithoutCourse.role)(ops, uuidRefBinder(Role.splitter))
     .--(lwm.id).->-(refRoleWithoutCourse.id).graph
 
