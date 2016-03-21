@@ -34,7 +34,9 @@ object ApiDataController {
     Set(schedule.get, timetable.get) ++ reportCard.all
   )
 
-  val rvRole = Role(RightsManager, authority.all ++ refRole.all ++ role.all)
+  val rvRole = Role(RightsManager,
+    authority.all ++ refRole.all ++ role.all
+  )
   val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
