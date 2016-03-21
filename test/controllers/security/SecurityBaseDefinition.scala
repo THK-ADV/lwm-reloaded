@@ -13,7 +13,9 @@ import utils.DefaultLwmApplication
 trait FakeAuthority {
 
   val FakeCourse = UUID.randomUUID()
+  val FakeLabwork = UUID.randomUUID()
   val FakeCourseUri = s"/courses/$FakeCourse"
+  val FakeLabworkUri = s"labworks/$FakeLabwork"
 
   val FakeAdmin = UUID.randomUUID()
   val FakeAdminAuth = Authority(FakeAdmin, Set(UUID.randomUUID()))

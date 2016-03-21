@@ -28,7 +28,7 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
   val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)
-  val localBlacklist = Blacklist(Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
+  val localBlacklist = Blacklist("local", Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)

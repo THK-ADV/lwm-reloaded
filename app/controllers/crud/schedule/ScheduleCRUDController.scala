@@ -17,13 +17,16 @@ import services._
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
-import utils.{Ops, Gen, LwmMimeType}
+import utils.{Gen, LwmMimeType}
 import models.security.Permissions._
-
+import utils.RequestOps._
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
+import ScheduleCRUDController._
 
 object ScheduleCRUDController {
+
+  val courseAttribute = "course"
 
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
     scheduleFor(labwork, repository) map { set =>
@@ -117,51 +120,67 @@ class ScheduleCRUDController(val repository: SesameRepository,
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Schedule]): Try[Set[Schedule]] = Success(all)
+  // TODO FILTER WITH ASSIGNMENT PLAN
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Schedule]): Try[Set[Schedule]] = {
+    import defaultBindings.LabworkBinding.labworkBinder
+    import utils.Ops.MonadInstances.listM
+    import store.sparql.select
+    import store.sparql.select._
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase)
-    super.create(NonSecureBlock)(newRequest)
+    queryString.foldRight(Try[Set[Schedule]](all)) {
+      case ((`courseAttribute`, values), t) =>
+        val query = select ("labworks") where {
+          ^(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
+            ^(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+        }
+
+        repository.prepareQuery(query).
+          select(_.get("labworks")).
+          transform(_.fold(List.empty[Value])(identity)).
+          map(_.stringValue).
+          requestAll(repository.getMany[Labwork](_)).
+          requestAll[Set, Schedule](labworks => t.map(_.filter(s => labworks.exists(_.id == s.labwork)))).
+          run
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
   }
 
-  def updateFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
-    super.update(schedule, NonSecureBlock)(newRequest)
+  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase(Schedule.generateBase))
   }
 
-  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase)
-    super.createAtomic(NonSecureBlock)(newRequest)
+  def updateFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def updateAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
-    super.updateAtomic(schedule, NonSecureBlock)(newRequest)
+  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    createAtomic(NonSecureBlock)(rebase(Schedule.generateBase))
   }
 
-  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase)
-    super.all(NonSecureBlock)(newRequest)
+  def updateAtomicFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    updateAtomic(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase)
-    super.allAtomic(NonSecureBlock)(newRequest)
+  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(Schedule.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def getFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
-    super.get(schedule, NonSecureBlock)(newRequest)
+  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    allAtomic(NonSecureBlock)(rebase(Schedule.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def getAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
-    super.getAtomic(schedule, NonSecureBlock)(newRequest)
+  def getFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    get(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def deleteFrom(course: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Schedule.generateBase(UUID.fromString(schedule)))
-    super.delete(schedule, NonSecureBlock)(newRequest)
+  def getAtomicFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    getAtomic(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
+  }
+
+  def deleteFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
   def previewFrom(course: String, labwork: String) = preview(course, labwork)( gen =>
@@ -231,7 +250,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
     }
   }
 
-  def publish(course: String, schedule: String) = restrictedContext(course)(Create) action { implicit request =>
+  def publish(course: String, labwork: String, schedule: String) = restrictedContext(course)(Create) action { request =>
     import utils.Ops._
     import utils.Ops.MonadInstances.{tryM, optM, setM}
     import utils.Ops.NaturalTrasformations._
@@ -247,9 +266,8 @@ class ScheduleCRUDController(val repository: SesameRepository,
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     val query = select ("plan") where {
-      ^(s(uri), p(lwm.labwork), v("labwork")).
-        ^(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
-      ^(v("plan"), p(lwm.labwork), v("labwork"))
+      ^(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
+      ^(v("plan"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labwork))(namespace)))
     }
 
     val result = repository.prepareQuery(query).

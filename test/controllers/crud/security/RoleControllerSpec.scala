@@ -36,12 +36,12 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] 
   override val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
   override val inputJson: JsValue = Json.obj(
-    "name" -> entityToPass.name,
+    "name" -> entityToPass.label,
     "permissions" -> entityToPass.permissions
   )
 
   override val updateJson: JsValue = Json.obj(
-    "name" -> entityToPass.name,
+    "name" -> entityToPass.label,
     "permissions" -> (entityToPass.permissions + Permission(""))
   )
 }

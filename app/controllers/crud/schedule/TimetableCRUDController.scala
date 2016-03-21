@@ -4,18 +4,26 @@ import java.util.UUID
 import controllers.crud.AbstractCRUDController
 import models.semester.{BlacklistProtocol, Blacklist}
 import models.users.{User, Employee}
-import models.{Degree, Room, Labwork, UriGenerator}
+import models._
 import models.schedule._
 import models.security.Permissions._
+import org.openrdf.model.Value
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import utils.RequestOps._
 import scala.collection.Map
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
+import TimetableCRUDController._
+
+object TimetableCRUDController {
+  val courseAttribute = "course"
+}
 
 class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable] {
 
@@ -33,18 +41,49 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
 
-  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
-    case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, timetable.localBlacklist.id), timetable.id)
-    case None =>
-      Timetable(input.labwork, input.entries, input.start, Blacklist(input.localBlacklist.dates, Blacklist.randomUUID), Timetable.randomUUID)
+  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = {
+    def toBlacklist(protocol: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
+      case Some(blacklist) => Blacklist(protocol.label, protocol.dates, blacklist.id)
+      case None => Blacklist(protocol.label, protocol.dates, Blacklist.randomUUID)
+    }
+
+    existing match {
+      case Some(timetable) =>
+        Timetable(input.labwork, input.entries, input.start, toBlacklist(input.localBlacklist, Some(timetable.localBlacklist)), timetable.id)
+      case None =>
+        Timetable(input.labwork, input.entries, input.start, toBlacklist(input.localBlacklist, None), Timetable.randomUUID)
+    }
   }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.dates) && input.entries == output.entries
+    input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.label, output.localBlacklist.dates) && input.entries == output.entries
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = Success(all)
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
+    import defaultBindings.LabworkBinding.labworkBinder
+    import utils.Ops.MonadInstances.listM
+    import store.sparql.select
+    import store.sparql.select._
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    queryString.foldRight(Try[Set[Timetable]](all)) {
+      case ((`courseAttribute`, values), t) =>
+        val query = select ("labworks") where {
+          ^(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
+            ^(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+        }
+
+        repository.prepareQuery(query).
+          select(_.get("labworks")).
+          transform(_.fold(List.empty[Value])(identity)).
+          map(_.stringValue).
+          requestAll(repository.getMany[Labwork](_)).
+          requestAll[Set, Timetable](labworks => t.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
+          run
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   override protected def atomize(output: Timetable): Try[Option[JsValue]] = {
     import defaultBindings.LabworkBinding._
@@ -84,48 +123,39 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     case Delete => SecureBlock(restrictionId, timetable.delete)
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
-    super.create(NonSecureBlock)(newRequest)
+  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase(Timetable.generateBase))
   }
 
-  def updateFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
-    super.update(timetable, NonSecureBlock)(newRequest)
+  def updateFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
-    super.createAtomic(NonSecureBlock)(newRequest)
+  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    createAtomic(NonSecureBlock)(rebase(Timetable.generateBase))
   }
 
-  def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
-    super.updateAtomic(timetable, NonSecureBlock)(newRequest)
+  def updateAtomicFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    updateAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
-    super.all(NonSecureBlock)(newRequest)
+  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(labwork)))
   }
 
-  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase)
-    super.allAtomic(NonSecureBlock)(newRequest)
+  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    allAtomic(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(labwork)))
   }
 
-  def getFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
-    super.get(timetable, NonSecureBlock)(newRequest)
+  def getFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    get(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def getAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
-    super.getAtomic(timetable, NonSecureBlock)(newRequest)
+  def getAtomicFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    getAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def deleteFrom(course: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    val newRequest = AbstractCRUDController.rebaseUri(request, Timetable.generateBase(UUID.fromString(timetable)))
-    super.delete(timetable, NonSecureBlock)(newRequest)
+  def deleteFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 }

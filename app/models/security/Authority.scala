@@ -37,26 +37,26 @@ case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID)
  * Directly integrating them in the `RefRole` graph would mean that, upon deletion,
  * the `Role`s themselves would also be deleted.
  *
-  * @param module Referenced course/module
+ * @param course Referenced course/module
  * @param role Reference to `Role` Instance of that course/module
  * @param id Unique id of the `RefRole`
  */
-case class RefRole(module: Option[UUID] = None, role: UUID, id: UUID = RefRole.randomUUID) extends UniqueEntity
+case class RefRole(course: Option[UUID] = None, role: UUID, id: UUID = RefRole.randomUUID) extends UniqueEntity
 
-case class RefRoleProtocol(module: Option[UUID] = None, role: UUID)
+case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
 
-case class RefRoleAtom(module: Option[Course], role: Role, id: UUID)
+case class RefRoleAtom(course: Option[Course], role: Role, id: UUID)
 
 /**
  * Structure abstracting over a set of unary `Permission`s.
  * These sets are aggregated to specific `Role`s such that default, reusable `Role`s are possible.
  * `Role`s are independent. They can only be referenced by other graphs.
  *
- * @param name Name or label of the `Role`
+ * @param label Name or label of the `Role`
  * @param permissions The unary permissions of that `Role`
  */
 
-case class Role(name: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
+case class Role(label: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
 
 case class RoleProtocol(name: String, permissions: Set[Permission])
 

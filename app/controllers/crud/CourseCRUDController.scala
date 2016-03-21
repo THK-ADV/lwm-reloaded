@@ -126,7 +126,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         val query = select ("s") where {
             ^(v("s"), p(rdf.`type`), s(prefixes.RefRole)) .
             ^(v("s"), p(prefixes.role), v("role")) .
-            ^(v("role"), p(prefixes.name), o(RightsManager))
+            ^(v("role"), p(prefixes.label), o(RightsManager))
         }
 
         import utils.Ops.MonadInstances._
@@ -138,16 +138,16 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         val maybeRv = repository.prepareQuery(query).
           select(_.get("s")).
           changeTo(_.headOption).
-          request(value => repository.get[RefRole](value.stringValue())).
+          request[Option, RefRole](value => repository.get[RefRole](value.stringValue())).
           run
 
         for {
           allRoles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri) if allRoles.nonEmpty
           rvRefRole <- maybeRv
           lecturerAuth <- roleService.authorityFor(model.lecturer.toString) if lecturerAuth.isDefined
-          properRoles = allRoles.filter(role => (role.name == CourseManager) || (role.name == CourseEmployee) || (role.name == CourseAssistant))
+          properRoles = allRoles.filter(role => (role.label == CourseManager) || (role.label == CourseEmployee) || (role.label == CourseAssistant))
           refRoles = properRoles.map(role => RefRole(Some(model.id), role.id))
-          mvRefRole = properRoles.find(_.name == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
+          mvRefRole = properRoles.find(_.label == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
           authority = (lecturerAuth |@| rvRefRole |@| mvRefRole)((authority, rv, mv) => Authority(authority.user, authority.refRoles + mv.id + rv.id, authority.id))
           _ <- authority.map(repository.update(_)(authorityBinder, Authority)).sequenceM
           _ <- repository.add[Course](model)

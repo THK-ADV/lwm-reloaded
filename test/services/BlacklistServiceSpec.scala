@@ -64,11 +64,11 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableDateEntry(Weekday.toDay(date), date, start, end)
       }.toSet
 
-      val global1 = Blacklist(entries.slice(0, 10).map(toDateTime), Blacklist.randomUUID)
-      val global2 = Blacklist(entries.slice(10, 20).map(toDateTime), Blacklist.randomUUID)
+      val global1 = Blacklist("global 1", entries.slice(0, 10).map(toDateTime), Blacklist.randomUUID)
+      val global2 = Blacklist("global 2", entries.slice(10, 20).map(toDateTime), Blacklist.randomUUID)
       when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(Set(global1, global2)))
 
-      val local = Blacklist(entries.slice(20, 30).map(toDateTime), Blacklist.randomUUID)
+      val local = Blacklist("local", entries.slice(20, 30).map(toDateTime), Blacklist.randomUUID)
 
       val result = blacklistService.applyBlacklist(entries, local)
 

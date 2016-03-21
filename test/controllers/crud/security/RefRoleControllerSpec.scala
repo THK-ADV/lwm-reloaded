@@ -49,29 +49,41 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
-    "module" -> entityToPass.module,
+    "module" -> entityToPass.course,
     "role" -> entityToPass.role
   )
 
   override val updateJson: JsValue = Json.obj(
-    "module" -> entityToPass.module,
+    "module" -> entityToPass.course,
     "role" -> UUID.randomUUID()
   )
 
-  val atomizedEntityToPass = RefRoleAtom(
-    Some(courseToPass),
-    roleToPass,
-    entityToPass.id
-  )
-  val atomizedEntityToFail = RefRoleAtom(
-    None,
-    roleToFail,
-    entityToFail.id
-  )
+  val atomizedEntityToPass = RefRoleAtom(Some(courseToPass), roleToPass, entityToPass.id)
+  val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToFail.id)
 
   "A RefRoleControllerSpec " should {
 
-    s"successfully get a single refrole with course restriction atomized" in {
+    "return refRoles for a given course" in {
+      val course = UUID.randomUUID
+      val rr1 = RefRole(Some(course), UUID.randomUUID)
+      val rr2 = RefRole(Some(UUID.randomUUID), UUID.randomUUID)
+      val rr3 = RefRole(Some(course), UUID.randomUUID)
+      val rr4 = RefRole(None, UUID.randomUUID)
+
+      when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(Set(rr1, rr2, rr3, rr4)))
+
+      val request = FakeRequest(
+        GET,
+        s"/refRoles?${RefRoleController.courseAttribute}=$course"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(rr1, rr3))
+    }
+
+    "successfully get a single refrole with course restriction atomized" in {
       import RefRole.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
@@ -90,7 +102,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
     }
 
-    s"successfully get a single refrole without course restriction atomized" in {
+    "successfully get a single refrole without course restriction atomized" in {
       import RefRole.atomicWrites
 
       doReturn(Success(Some(entityToFail))).
@@ -109,7 +121,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       contentAsJson(result) shouldBe Json.toJson(atomizedEntityToFail)
     }
 
-    s"not get a single refrole atomized when role is not found" in {
+    "not get a single refrole atomized when role is not found" in {
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(None)).
         doReturn(Success(None)).
@@ -129,7 +141,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       )
     }
 
-    s"not get a single refrole atomized when there is an exception" in {
+    "not get a single refrole atomized when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired authority for some reason"
 
       doReturn(Success(Some(entityToPass))).
@@ -151,7 +163,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       )
     }
 
-    s"successfully get all refroles atomized" in {
+    "successfully get all refroles atomized" in {
       import RefRole.atomicWrites
 
       val refRoles = Set(entityToPass, entityToFail)
@@ -175,7 +187,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
     }
 
-    s"not get all refroles atomized when there is an exception" in {
+    "not get all refroles atomized when there is an exception" in {
       val refRoles = Set(entityToPass, entityToFail)
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 

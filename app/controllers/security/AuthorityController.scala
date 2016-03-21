@@ -60,8 +60,8 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
       refroles <- repository.getMany[RefRole](output.refRoles map RefRole.generateUri)
       atomicRefRoles <- atomRefs(refroles)
     } yield maybeUser map { user =>
-        Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
-      }
+      Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
+    }
   }
 
   import defaultBindings.CourseBinding._
@@ -69,7 +69,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
   def atomRefs(s: Set[RefRole]): Try[Set[RefRoleAtom]] = s.foldLeft(Try(Set.empty[RefRoleAtom])) { (T, ref) =>
     for {
-      course <- Try(ref.module).flatPeek(course => repository.get[Course](Course.generateUri(course)(repository.namespace)))
+      course <- Try(ref.course).flatPeek(course => repository.get[Course](Course.generateUri(course)(repository.namespace)))
       maybeRole <- repository.get[Role](Role.generateUri(ref.role)(repository.namespace))
       set <- T
     } yield maybeRole match {
@@ -98,7 +98,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
     queryString.foldRight(Try(clause)) {
       case ((`courseAttribute`, set), t) => t map {
-        _ append ^(v("refs"), p(lwm.module), s(Course.generateUri(UUID.fromString(set.head))))
+        _ append ^(v("refs"), p(lwm.course), s(Course.generateUri(UUID.fromString(set.head))))
       }
       case ((`roleAttribute`, set), t) => t map {
         _ append ^(v("refs"), p(lwm.role), s(Role.generateUri(UUID.fromString(set.head))))

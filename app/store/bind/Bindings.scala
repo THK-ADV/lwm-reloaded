@@ -164,10 +164,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.Role
     implicit val classUri = classUrisFor[Role](clazz)
 
-    private val name = property[String](lwm.name)
+    private val label = property[String](lwm.label)
     private val permissions = set[Permission](lwm.permissions)
 
-    implicit val roleBinder: PGBinder[Rdf, Role] = pgbWithId[Role](role => makeUri(Role.generateUri(role)))(name, permissions, id)(Role.apply, Role.unapply) withClasses classUri
+    implicit val roleBinder: PGBinder[Rdf, Role] = pgbWithId[Role](role => makeUri(Role.generateUri(role)))(label, permissions, id)(Role.apply, Role.unapply) withClasses classUri
   }
 
   object RefRoleBinding {
@@ -176,10 +176,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.RefRole
     implicit val classUri = classUrisFor[RefRole](clazz)
 
-    private val module = optional[UUID](lwm.module)(uuidRefBinder(Course.splitter))
+    private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
 
-    implicit val refRoleBinder: PGBinder[Rdf, RefRole] = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(module, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
+    implicit val refRoleBinder: PGBinder[Rdf, RefRole] = pgbWithId[RefRole](refRole => makeUri(RefRole.generateUri(refRole)))(course, role, id)(RefRole.apply, RefRole.unapply) withClasses classUri
   }
 
   object AuthorityBinding {
@@ -352,9 +352,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.Blacklist
     implicit val classUri = classUrisFor[Blacklist](clazz)
 
+    private val label = property[String](lwm.label)
     private val dates = set[DateTime](lwm.dates)
 
-    implicit val blacklistBinder: PGBinder[Rdf, Blacklist] = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
+    implicit val blacklistBinder: PGBinder[Rdf, Blacklist] = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(label, dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
   }
 
   object ReportCardBinding {

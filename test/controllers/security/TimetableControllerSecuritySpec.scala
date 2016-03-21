@@ -38,7 +38,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}",
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.timetableV1Json)),
         json
       ).withSession(
@@ -63,7 +63,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         POST,
-        s"$FakeCourseUri/timetables",
+        s"$FakeCourseUri/$FakeLabworkUri/timetables",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.timetableV1Json)),
         json
       ).withSession(
@@ -82,7 +82,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         DELETE,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMv.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -99,7 +99,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMv.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -116,7 +116,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -135,7 +135,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/timetables?course=$course"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables?course=$course"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -159,7 +159,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         POST,
-        s"$FakeCourseUri/timetables",
+        s"$FakeCourseUri/$FakeLabworkUri/timetables",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.timetableV1Json)),
         json
       ).withSession(
@@ -178,7 +178,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         DELETE,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -195,7 +195,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeStudent.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -212,7 +212,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/timetables/${UUID.randomUUID()}"
+        s"$FakeCourseUri/$FakeLabworkUri/timetables/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeEmployee.toString,
         SessionController.sessionId -> UUID.randomUUID.toString

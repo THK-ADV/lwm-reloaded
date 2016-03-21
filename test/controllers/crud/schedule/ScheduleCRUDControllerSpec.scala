@@ -122,6 +122,36 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
   "A ScheduleCRUDController also" should {
 
+    "return all schedules for a given course" in {
+      val course = UUID.randomUUID
+      val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+
+      val s1 = Schedule(lab1.id, Set.empty[ScheduleEntry])
+      val s2 = Schedule(lab2.id, Set.empty[ScheduleEntry])
+      val s3 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s4 = Schedule(lab1.id, Set.empty[ScheduleEntry])
+      val s5 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s6 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s7 = Schedule(lab2.id, Set.empty[ScheduleEntry])
+      val s8 = Schedule(lab2.id, Set.empty[ScheduleEntry])
+
+      when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(Set(
+        s1, s2, s3, s4, s5, s6, s7, s8
+      )))
+      when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
+
+      val request = FakeRequest(
+        GET,
+        s"/$entityTypeName?${ScheduleCRUDController.courseAttribute}=$course"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(s1, s2, s4, s7, s8))
+    }
+
     "return empty list of scheduleG's when there are no competitive schedules" in {
       val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
       val course = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
@@ -529,7 +559,6 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
     "successfully publish a schedule and create dedicated report cards" in {
       val courseId = Course.randomUUID
-      val scheduleId = Schedule.randomUUID
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(
@@ -542,9 +571,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       val request = FakeRequest(
         POST,
-        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
       )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some("application/json")
@@ -556,7 +585,6 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
     "fail publishing a schedule when there are no students for report cards" in {
       val courseId = Course.randomUUID
-      val scheduleId = Schedule.randomUUID
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(
@@ -569,9 +597,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       val request = FakeRequest(
         POST,
-        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
       )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
@@ -583,7 +611,6 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
     "fail publishing a schedule when there is a exception" in {
       val courseId = Course.randomUUID
-      val scheduleId = Schedule.randomUUID
       val errorMessage = "Oops, something went wrong"
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
@@ -597,9 +624,9 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
       val request = FakeRequest(
         POST,
-        s"/courses/$courseId/${entityTypeName}s/$scheduleId/publish"
+        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
       )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, scheduleId.toString)(request)
+      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

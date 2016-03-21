@@ -1,7 +1,5 @@
 package controllers.crud.semester
 
-import java.util.UUID
-
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._

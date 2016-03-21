@@ -27,7 +27,7 @@ class RoleBindingSpec extends SesameDbSpec {
   val roleGraph = (
     URI(Role.generateUri(roleWith)).a(lwm.Role)
       -- lwm.id ->- roleWith.id
-      -- lwm.name ->- roleWith.name
+      -- lwm.label ->- roleWith.label
       -- lwm.permissions ->- roleWith.permissions
     ).graph
 

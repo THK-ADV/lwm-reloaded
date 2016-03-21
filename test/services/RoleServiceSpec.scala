@@ -39,7 +39,7 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   val module2UserRole2 = RefRole(Some(module2), role2.id)
   val adminRefRole = RefRole(None, role3.id)
 
-  def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.module, roles.find(_.id == r.role).get.permissions)
+  def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.course, roles.find(_.id == r.role).get.permissions)
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 

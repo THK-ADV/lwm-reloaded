@@ -36,7 +36,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   )
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
-  val globalBlacklist = Set(Blacklist(profileWeek, Blacklist.randomUUID), Blacklist(christmas, Blacklist.randomUUID))
+  val globalBlacklist = Set(Blacklist("Profil hoch 2", profileWeek, Blacklist.randomUUID), Blacklist("Weihnachten", christmas, Blacklist.randomUUID))
   when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(globalBlacklist))
 
   "A TimetableService" should {
@@ -105,7 +105,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with local and global blacklists applied" in {
-      val localBlacklist = Blacklist(Set(
+      val localBlacklist = Blacklist("local", Set(
         fdt.parseDateTime("30/10/2015 15:00:00"),
         fdt.parseDateTime("06/11/2015 15:00:00"),
         fdt.parseDateTime("30/11/2015 11:00:00"),

@@ -274,7 +274,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
-      val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
+      val json = Json.toJson(GroupCountProtocol(groupSize))
 
       val fakeRequest = FakeRequest(
         POST,
@@ -283,7 +283,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         json
       )
 
-      val result = controller.createWithCount(labwork.toString)(fakeRequest)
+      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest)
 
       status(result) shouldBe CREATED
 
@@ -319,7 +319,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
-      val json = Json.toJson(GroupRangeProtocol(labwork, min, max))
+      val json = Json.toJson(GroupRangeProtocol(min, max))
 
       val fakeRequest = FakeRequest(
         POST,
@@ -328,7 +328,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         json
       )
 
-      val result = controller.createWithRange(labwork.toString)(fakeRequest)
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest)
       status(result) shouldBe CREATED
 
       val resultValue = contentAsJson(result).as[JsArray]
@@ -348,13 +348,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork: Predicate does not hold for Vector()"
+        "errors" -> s"Error while creating groups for labwork: Predicate does not hold for Vector()"
       )
 
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(Vector.empty[UUID]))
 
       implicit val groupProtWrites = Json.writes[GroupCountProtocol]
-      val json = Json.toJson(GroupCountProtocol(labwork, groupSize))
+      val json = Json.toJson(GroupCountProtocol(groupSize))
 
       val fakeRequest = FakeRequest(
         POST,
@@ -363,7 +363,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         json
       )
 
-      val result = controller.createWithCount(labwork.toString)(fakeRequest)
+      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(result) shouldBe expectedResult
@@ -380,7 +380,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val expectedResult = Json.obj(
         "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork $labwork: could not add to graph"
+        "errors" -> s"Error while creating groups for labwork: could not add to graph"
       )
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
@@ -392,7 +392,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
 
 
-      val json = Json.toJson(GroupRangeProtocol(labwork, min, max))
+      val json = Json.toJson(GroupRangeProtocol(min, max))
 
       val fakeRequest = FakeRequest(
         POST,
@@ -401,7 +401,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         json
       )
 
-      val result = controller.createWithRange(labwork.toString)(fakeRequest)
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(result) shouldBe expectedResult

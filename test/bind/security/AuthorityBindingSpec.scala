@@ -25,17 +25,9 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
 
-  val authorityForCourse1 = RefRole(
-    Some(Course.randomUUID),
-    Role.randomUUID,
-    RefRole.randomUUID
-  )
+  val authorityForCourse1 = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
-  val authorityForCourse2 = RefRole(
-    Some(Course.randomUUID),
-    Role.randomUUID,
-    RefRole.randomUUID
-  )
+  val authorityForCourse2 = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
   val authWith = Authority(student.id, Set(authorityForCourse1.id, authorityForCourse2.id), Authority.randomUUID)
   val authWithout = Authority(student.id, Set.empty, Authority.randomUUID)

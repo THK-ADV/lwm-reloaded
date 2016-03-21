@@ -172,14 +172,6 @@ trait SecureControllerContext {
   }
 }
 
-object AbstractCRUDController {
-
-  def rebaseUri[A](request: Request[A], uri: String): Request[A] = {
-    val headers = request.copy(request.id, request.tags, uri)
-    Request(headers, request.body)
-  }
-}
-
 trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with JsonSerialisation[I, O]
   with SesameRdfSerialisation[O]
