@@ -1,7 +1,5 @@
 package controllers.security
 
-import java.util.UUID
-
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.{Role, RoleProtocol}

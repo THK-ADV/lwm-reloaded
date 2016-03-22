@@ -11,7 +11,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services._
@@ -150,6 +150,50 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(Set(s1, s2, s4, s7, s8))
+    }
+
+    "return all schedules where a given employee supervises" in {
+      implicit def reads = Json.reads[Schedule]
+
+      def entries(supervisor: UUID = UUID.randomUUID) = {
+        import scala.util.Random.nextBoolean
+
+        (0 until 10).map(i =>
+          ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, if (nextBoolean) supervisor else UUID.randomUUID, UUID.randomUUID)
+        ).toSet
+      }
+      val supervisor = UUID.randomUUID
+
+      val s1 = Schedule(UUID.randomUUID, entries())
+      val s2 = Schedule(UUID.randomUUID, entries())
+      val s3 = Schedule(UUID.randomUUID, entries())
+      val s4 = Schedule(UUID.randomUUID, entries(supervisor))
+      val s5 = Schedule(UUID.randomUUID, entries(supervisor))
+      val s6 = Schedule(UUID.randomUUID, entries())
+      val s7 = Schedule(UUID.randomUUID, entries())
+      val s8 = Schedule(UUID.randomUUID, entries(supervisor))
+
+      when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(Set(
+        s1, s2, s3, s4, s5, s6, s7, s8
+      )))
+
+      val request = FakeRequest(
+        GET,
+        s"/$entityTypeName?${ScheduleCRUDController.supervisorAttribute}=$supervisor"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+
+      val schedulesRes = Json.fromJson[Set[Schedule]](contentAsJson(result))
+      schedulesRes.foreach { schedules =>
+        List(s4, s5, s8).forall { a =>
+          schedules.find(_.id == a.id).exists { s =>
+            s.entries == a.entries.filter(_.supervisor == supervisor)
+          }
+        } shouldBe true
+      }
     }
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
