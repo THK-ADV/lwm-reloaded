@@ -33,8 +33,8 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
   override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = existing match {
-    case Some(role) => Role(input.name, input.permissions, role.id)
-    case None => Role(input.name, input.permissions)
+    case Some(role) => Role(input.label, input.permissions, role.id)
+    case None => Role(input.label, input.permissions)
   }
 
   override protected def compareModel(input: RoleProtocol, output: Role): Boolean = input.permissions == output.permissions

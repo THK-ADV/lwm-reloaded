@@ -4,20 +4,15 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.security.Permissions.authority
+import models.security.Permissions.{authority, _}
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
-import org.scalatest.mock.MockitoSugar
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.test.Helpers._
-import play.api.{Application, ApplicationLoader}
-import play.api.ApplicationLoader.Context
-import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
-import services.RoleService
-import utils.{DefaultLwmApplication, LwmMimeType}
-import models.security.Permissions._
-import org.mockito.Matchers
+import play.api.test.{FakeHeaders, FakeRequest}
+import utils.LwmMimeType
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -35,7 +30,7 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
       when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.obj(
-        "name" -> "admin",
+        "label" -> "admin",
         "permissions" -> authority.all
       )
 
@@ -61,7 +56,7 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
       when(roleService.checkWith((None, prime))(FakeRvAuth)).thenReturn(Success(false))
 
       val json = Json.obj(
-        "name" -> "admin",
+        "label" -> "admin",
         "permissions" -> authority.all
       )
 
