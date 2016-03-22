@@ -82,6 +82,9 @@ object Prefixes {
     val dayIndex = apply("dayIndex")
     val date = apply("date")
 
+    // ReportCardEntry
+    val rescheduled = apply("rescheduled")
+
     // ScheduleEntry
     val group = apply("group")
 
@@ -116,6 +119,7 @@ object Prefixes {
     val ReportCard = apply("ReportCard")
     val ReportCardEntry = apply("ReportCardEntry")
     val ReportCardEntryType = apply("ReportCardEntryType")
+    val Rescheduled = apply("Rescheduled")
   }
 
   object LWMPrefix {

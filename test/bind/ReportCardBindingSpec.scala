@@ -31,7 +31,11 @@ class ReportCardBindingSpec extends SesameDbSpec {
     ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
   }.toSet
   val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
-  val entry = entries.head
+  val reportCardEntry = {
+    val first = entries.head
+    val rescheduled = Rescheduled(LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID)
+    ReportCardEntry(first.index, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.id)
+  }
   val entryType = ReportCardEntryType.Attendance
 
   val reportCardGraph = (
@@ -42,15 +46,16 @@ class ReportCardBindingSpec extends SesameDbSpec {
       -- lwm.id ->- reportCard.id
     ).graph
 
-  val entryGraph = URI(ReportCardEntry.generateUri(entry)).a(lwm.ReportCardEntry)
-    .--(lwm.index).->-(entry.index)
-    .--(lwm.label).->-(entry.label)
-    .--(lwm.date).->-(entry.date)
-    .--(lwm.start).->-(entry.start)
-    .--(lwm.end).->-(entry.end)
-    .--(lwm.room).->-(entry.room)(ops, uuidRefBinder(Room.splitter))
-    .--(lwm.types).->-(entry.entryTypes)
-    .--(lwm.id).->-(entry.id).graph
+  val entryGraph = URI(ReportCardEntry.generateUri(reportCardEntry)).a(lwm.ReportCardEntry)
+    .--(lwm.index).->-(reportCardEntry.index)
+    .--(lwm.label).->-(reportCardEntry.label)
+    .--(lwm.date).->-(reportCardEntry.date)
+    .--(lwm.start).->-(reportCardEntry.start)
+    .--(lwm.end).->-(reportCardEntry.end)
+    .--(lwm.room).->-(reportCardEntry.room)(ops, uuidRefBinder(Room.splitter))
+    .--(lwm.types).->-(reportCardEntry.entryTypes)
+    .--(lwm.rescheduled).->-(reportCardEntry.entryTypes)
+    .--(lwm.id).->-(reportCardEntry.id).graph
 
   val typeGraph = (URI(ReportCardEntryType.generateUri(entryType)).a(lwm.ReportCardEntryType)
     -- lwm.entryType ->- entryType.entryType
@@ -78,21 +83,10 @@ class ReportCardBindingSpec extends SesameDbSpec {
       }
     }
 
-    "return a RDF graph representation of a report card entry" in {
-      val graph = entry.toPG.graph
+    "successfully serialise a report card entry" in {
+      val entry = reportCardEntryBinding.fromPG(reportCardEntry.toPG)
 
-      graph isIsomorphicWith entryGraph shouldBe true
-    }
-
-    "return a report card entry based on a RDF graph representation" in {
-      val expectedEntry = PointedGraph[Rdf](URI(ReportCardEntry.generateUri(entry)), entryGraph).as[ReportCardEntry]
-
-      expectedEntry match {
-        case Success(s) =>
-          s shouldEqual entry
-        case Failure(e) =>
-          fail(s"Unable to deserialise report card entry graph: $e")
-      }
+      entry shouldBe Success(reportCardEntry)
     }
 
     "return a RDF graph representation of a report card entry type" in {
