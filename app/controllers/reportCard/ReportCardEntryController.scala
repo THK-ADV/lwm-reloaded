@@ -38,15 +38,15 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Update => PartialSecureBlock(reportCardEntry.update)
     case _ => PartialSecureBlock(god)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Update => SecureBlock(restrictionId, reportCardEntry.update)
     case _ => PartialSecureBlock(god)
   }
 
-  def update(card: String, entry: String) = contextFrom(Update) contentTypedAction { request =>
+  def update(course: String, card: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ReportCardEntry].fold(
       errors => {
         BadRequest(Json.obj(

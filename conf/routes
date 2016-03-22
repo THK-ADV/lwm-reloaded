@@ -170,10 +170,10 @@ GET           /reportCards/student/:student                            controlle
 GET           /atomic/reportCards/student/:student                     controllers.reportCard.ReportCardController.getAtomic(student)
 
 # ReportCardEntry
-PUT           /reportCards/:card/entries/:entry                        controllers.reportCard.ReportCardEntryController.update(card, entry)
+PUT           /courses/:c/reportCards/:card/entries/:e                 controllers.reportCard.ReportCardEntryController.update(c, card, e)
 
 # ReportCardEntryType
-PUT           /courses/:course/reportCards/:card/entries/:entry        controllers.reportCard.ReportCardEntryTypeController.update(course, card, entry)
+PUT           /courses/:c/reportCards/:card/entries/:e/types/:t        controllers.reportCard.ReportCardEntryTypeController.update(c, card, e, t)
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                         controllers.crud.AssignmentPlanCRUDController.createFrom(course)

@@ -45,7 +45,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
     case _ => PartialSecureBlock(god)
   }
 
-  def update(course: String, card: String, cardEntry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+  def update(course: String, card: String, cardEntry: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ReportCardEntryType].fold(
       errors => {
         BadRequest(Json.obj(
@@ -56,11 +56,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
       success => {
         repository.update(success) match {
           case Success(_) =>
-            Ok(Json.obj(
-              "reportCardId" -> card,
-              "reportCardEntryId" -> cardEntry,
-              "assignmentEntryType" -> Json.toJson(success)
-            )).as(mimeType)
+            Ok(Json.toJson(success)).as(mimeType)
           case Failure(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",

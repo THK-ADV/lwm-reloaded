@@ -38,6 +38,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition {
     ReportCard(UUID.randomUUID, UUID.randomUUID, entries)
   }
   val entry = reportCard.entries.head
+  val course = UUID.randomUUID.toString
 
   val controller: ReportCardEntryController = new ReportCardEntryController(repository, sessionService, namespace, roleService) {
 
@@ -64,11 +65,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val request = FakeRequest(
         GET,
-        s"/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(rescheduledEntry)
       )
-      val result = controller.update(reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course, reportCard.id.toString, entry.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
@@ -79,11 +80,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val invalidJson = Json.obj("first" -> 0)
       val request = FakeRequest(
         GET,
-        s"/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         invalidJson
       )
-      val result = controller.update(reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course, reportCard.id.toString, entry.id.toString)(request)
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
@@ -100,11 +101,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val request = FakeRequest(
         GET,
-        s"/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(rescheduledEntry)
       )
-      val result = controller.update(reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course, reportCard.id.toString, entry.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

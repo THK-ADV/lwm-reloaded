@@ -35,11 +35,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
     "Allow non restricted context invocations when admin wants to reschedule a report card entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, reportCardEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
-        s"/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryV1Json)),
         json
       ).withSession(
@@ -54,11 +54,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
     "Allow non restricted context invocations when mv wants to reschedule a report card entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((None, reportCardEntry.update))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
-        s"/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryV1Json)),
         json
       ).withSession(
@@ -73,11 +73,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
     "Allow non restricted context invocations when ma wants to reschedule a report card entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((None, reportCardEntry.update))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
-        s"/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryV1Json)),
         json
       ).withSession(
@@ -92,11 +92,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
     "Block non restricted context invocations when student wants to reschedule his own report card entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, reportCardEntry.update))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         PUT,
-        s"/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryV1Json)),
         json
       ).withSession(

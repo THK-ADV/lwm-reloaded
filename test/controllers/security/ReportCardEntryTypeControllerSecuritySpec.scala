@@ -35,7 +35,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -54,7 +54,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -73,7 +73,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -92,7 +92,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}",
+        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(

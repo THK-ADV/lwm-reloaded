@@ -38,6 +38,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
     )
     ReportCard(UUID.randomUUID, UUID.randomUUID, entries)
   }
+  val course = UUID.randomUUID.toString
 
   val controller: ReportCardEntryTypeController = new ReportCardEntryTypeController(repository, sessionService, namespace, roleService) {
 
@@ -57,26 +58,21 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       val entry = reportCard.entries.head
       val entryType = entry.entryTypes.head
       val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
-      val course = UUID.randomUUID
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}/types/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(toUpdate)
       )
 
-      val result = controller.update(course.toString, reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course, reportCard.id.toString, entry.id.toString, entryType.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.obj(
-        "reportCardId" -> reportCard.id,
-        "reportCardEntryId" -> entry.id,
-        "assignmentEntryType" -> Json.toJson(toUpdate)
-      )
+      contentAsJson(result) shouldBe Json.toJson(toUpdate)
     }
 
     "not update a report card entry type with invalid json data" in {
@@ -92,12 +88,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       )
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}/types/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         brokenJson
       )
 
-      val result = controller.update(course.toString, reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course.toString, reportCard.id.toString, entry.id.toString, entryType.id.toString)(request)
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
@@ -114,12 +110,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}",
+        s"/courses/$course/reportCards/${reportCard.id}/entries/${entry.id}/types/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(toUpdate)
       )
 
-      val result = controller.update(course.toString, reportCard.id.toString, entry.id.toString)(request)
+      val result = controller.update(course.toString, reportCard.id.toString, entry.id.toString, entryType.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
