@@ -27,6 +27,7 @@ import ScheduleCRUDController._
 object ScheduleCRUDController {
 
   val courseAttribute = "course"
+  val supervisorAttribute = "supervisor"
 
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
     scheduleFor(labwork, repository) map { set =>
@@ -143,6 +144,15 @@ class ScheduleCRUDController(val repository: SesameRepository,
           requestAll(repository.getMany[Labwork](_)).
           requestAll[Set, Schedule](labworks => t.map(_.filter(s => labworks.exists(_.id == s.labwork)))).
           run
+
+      case ((`supervisorAttribute`, values), t) =>
+        for {
+          schedules <- t; supervisor <- Try(UUID.fromString(values.head))
+        } yield
+          schedules.filter(_.entries.exists(_.supervisor == supervisor)).map { s =>
+            Schedule(s.id, s.entries.filter(_.supervisor == supervisor), s.published, s.id)
+          }
+
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
