@@ -58,7 +58,7 @@ case class RefRoleAtom(course: Option[Course], role: Role, id: UUID)
 
 case class Role(label: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
 
-case class RoleProtocol(name: String, permissions: Set[Permission])
+case class RoleProtocol(label: String, permissions: Set[Permission])
 
 object Roles {
   lazy val Admin = "Administrator"
