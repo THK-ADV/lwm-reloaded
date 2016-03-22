@@ -1,21 +1,22 @@
-package controllers
+package controllers.reportCard
 
 import java.util.UUID
 
 import controllers.crud._
-import models.users.{Student, User}
 import models._
+import models.security.Permissions._
+import models.users.{Student, User}
 import modules.store.BaseNamespace
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
+import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import play.api.mvc._
-import models.security.Permissions._
+
 import scala.util.{Failure, Success, Try}
 
 class ReportCardController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
@@ -48,7 +49,6 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Update => SecureBlock(restrictionId, reportCard.update)
     case _ => PartialSecureBlock(god)
   }
 
@@ -57,19 +57,19 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
   }
 
   def getAtomic(student: String) = reportCardFor(student) { card =>
+    import utils.Ops.MonadInstances.{optM, tryM}
     import utils.Ops._
-    import utils.Ops.MonadInstances.{tryM, optM}
 
     atomize(card).peek(json => Ok(json).as(mimeType))
   }
 
   private def reportCardFor(student: String)(f: ReportCard => Try[Option[Result]]) = contextFrom(Get) action { request =>
-    import utils.Ops._
-    import utils.Ops.NaturalTrasformations._
-    import utils.Ops.MonadInstances.{tryM, optM}
-    import utils.Ops.TraverseInstances.{travO, travT}
     import store.sparql.select
     import store.sparql.select._
+    import utils.Ops.MonadInstances.{optM, tryM}
+    import utils.Ops.NaturalTrasformations._
+    import utils.Ops.TraverseInstances.{travO, travT}
+    import utils.Ops._
 
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
@@ -101,40 +101,11 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
     }
   }
 
-  def updateReportCardEntryType(course: String, card: String, cardEntry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    import ReportCardEntryType._
-    import defaultBindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
-
-    request.body.validate[ReportCardEntryType].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        repository.update(success)(reportCardEntryTypeBinding, ReportCardEntryType) match {
-          case Success(s) =>
-            Ok(Json.obj(
-              "reportCardId" -> card,
-              "reportCardEntryId" -> cardEntry,
-              "assignmentEntryType" -> Json.toJson(success)
-            ))
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> e.getMessage
-            ))
-        }
-      }
-    )
-  }
-
   override protected def atomize(output: ReportCard): Try[Option[JsValue]] = {
-    import defaultBindings.StudentBinding.studentBinder
+    import ReportCard.atomicWrites
     import defaultBindings.LabworkBinding.labworkBinder
     import defaultBindings.RoomBinding.roomBinder
-    import ReportCard.atomicWrites
+    import defaultBindings.StudentBinding.studentBinder
 
     for {
       student <- repository.get[Student](User.generateUri(output.student)(namespace))
@@ -156,5 +127,4 @@ class ReportCardController(val repository: SesameRepository, val sessionService:
       }
     }
   }
-
 }

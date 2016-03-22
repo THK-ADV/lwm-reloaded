@@ -131,9 +131,20 @@ object Permissions {
 
   object reportCard {
     val get = Permission("ReportCard:get")
-    val update = Permission("ReportCard:update")
 
-    lazy val all = Set(get, update)
+    lazy val all = Set(get)
+  }
+
+  object reportCardEntry {
+    val update = Permission("ReportCardEntry:update")
+
+    lazy val all = Set(update)
+  }
+
+  object reportCardEntryType {
+    val update = Permission("ReportCardEntryType:update")
+
+    lazy val all = Set(update)
   }
 
   object assignmentPlan {
@@ -149,5 +160,6 @@ object Permissions {
   lazy val all = room.all ++ degree.all ++ course.all ++
     labwork.all ++ labworkApplication.all ++ authority.all ++ refRole.all ++
     role.all ++ schedule.all ++ timetable.all ++ semester.all ++ group.all ++
-    user.all ++ blacklist.all ++ entryType.all + prime
+    user.all ++ blacklist.all ++ entryType.all ++ reportCard.all ++ reportCardEntry.all ++
+    reportCardEntryType.all + prime
 }

@@ -5,6 +5,7 @@ import java.util.UUID
 import models._
 import models.applications.LabworkApplication
 import models.schedule.{Weekday, TimetableEntry, Timetable}
+import models.security.Permissions.reportCardEntry
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
 import models.semester.{Blacklist, Semester}
@@ -25,13 +26,13 @@ object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ reportCard.all ++ assignmentPlan.all + course.update
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++ reportCard.all + group.get + assignmentPlan.get
+    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++ reportCardEntry.all ++ reportCardEntryType.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, timetable.get) ++ reportCard.all
+    Set(schedule.get, timetable.get) ++ reportCardEntryType.all
   )
 
   val rvRole = Role(RightsManager,

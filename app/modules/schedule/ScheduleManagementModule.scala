@@ -1,7 +1,8 @@
 package modules.schedule
 
 import controllers.crud.schedule.ScheduleCRUDController
-import modules.{ReportCardServiceManagementModule, SessionRepositoryModule}
+import modules.SessionRepositoryModule
+import modules.reportCard.ReportCardServiceManagementModule
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
 import services._

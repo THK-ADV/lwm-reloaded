@@ -2,6 +2,7 @@ package utils
 
 import controllers._
 import modules._
+import modules.reportCard._
 import modules.schedule._
 import modules.security._
 import modules.semester._
@@ -71,6 +72,8 @@ with BlacklistManagementModule
 with BlacklistServiceManagementModule
 with ReportCardServiceManagementModule
 with ReportCardManagementModule
+with ReportCardEntryManagementModule
+with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with UserManagementModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
@@ -94,6 +97,8 @@ with UserManagementModule {
     timetableManagementController,
     blacklistManagementController,
     reportCardManagementController,
+    reportCardEntryManagementController,
+    reportCardEntryTypeManagementController,
     assignmentPlanManagementController,
     userController,
     sessionController,
@@ -137,5 +142,7 @@ with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklistServiceManagementModule
 with DefaultReportCardServiceManagementModule
 with DefaultReportCardManagementModuleImpl
+with DefaultReportCardEntryManagementModuleImpl
+with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultUserManagementModule

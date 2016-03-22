@@ -379,9 +379,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val rescheduled = optional[Rescheduled](lwm.rescheduled)(RescheduledBinding.rescheduledBinding)
     private val types = set[ReportCardEntryType](lwm.types)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
 
-    implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(index, label, date, start, end, room, types, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
+    implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(index, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
   }
 
   object ReportCardEntryTypeBinding {
@@ -393,6 +394,18 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val int = property[Int](lwm.int)
 
     implicit val reportCardEntryTypeBinding: PGBinder[Rdf, ReportCardEntryType] = pgbWithId[ReportCardEntryType](reportCardEntryType => makeUri(ReportCardEntryType.generateUri(reportCardEntryType)))(entryType, bool, int, id)(ReportCardEntryType.apply, ReportCardEntryType.unapply) withClasses classUri
+  }
+
+  object RescheduledBinding {
+    implicit val clazz = lwm.Rescheduled
+    implicit val classUri = classUrisFor[Rescheduled](clazz)
+
+    private val date = property[LocalDate](lwm.date)
+    private val start = property[LocalTime](lwm.start)
+    private val end = property[LocalTime](lwm.end)
+    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+
+    implicit val rescheduledBinding: PGBinder[Rdf, Rescheduled] = pgb[Rescheduled](date, start, end, room)(Rescheduled.apply, Rescheduled.unapply) withClasses classUri
   }
 }
 

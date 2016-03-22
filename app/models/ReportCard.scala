@@ -9,15 +9,17 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
 
 case class ReportCard(student: UUID, labwork: UUID, entries: Set[ReportCardEntry], id: UUID = ReportCard.randomUUID) extends UniqueEntity
 
-case class ReportCardEntry(index: Int, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity
+case class ReportCardEntry(index: Int, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled] = None, id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity
 
 case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
 // TODO make them repo ready
 case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
+case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
+
 /**
   * Atomic representation of a report card
- *
+  *
   * @param student to serialise
   * @param labwork to serialise
   * @param entries to serialise
@@ -70,4 +72,11 @@ object ReportCardEntryType extends UriGenerator[ReportCardEntryType] with JsonSe
   override implicit def reads: Reads[ReportCardEntryType] = Json.reads[ReportCardEntryType]
 
   override implicit def writes: Writes[ReportCardEntryType] = Json.writes[ReportCardEntryType]
+}
+
+object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled] {
+
+  override implicit def reads: Reads[Rescheduled] = Json.reads[Rescheduled]
+
+  override implicit def writes: Writes[Rescheduled] = Json.writes[Rescheduled]
 }

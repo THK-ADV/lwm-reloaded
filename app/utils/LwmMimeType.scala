@@ -26,6 +26,8 @@ object LwmMimeType {
   val timetableV1Json = LwmMimeType("application/vnd.fhk.timetable.V1+json")
   val blacklistV1Json = LwmMimeType("application/vnd.fhk.blacklist.V1+json")
   val reportCardV1Json = LwmMimeType("application/vnd.fhk.reportCard.V1+json")
+  val reportCardEntryV1Json = LwmMimeType("application/vnd.fhk.reportCardEntry.V1+json")
+  val reportCardEntryTypeV1Json = LwmMimeType("application/vnd.fhk.reportCardEntryType.V1+json")
   val assignmentPlanV1Json = LwmMimeType("application/vnd.fhk.assignmentPlan.V1+json")
 
   implicit def unboxMimeType(mime: LwmMimeType): String = mime.value
@@ -35,43 +37,26 @@ object LwmContentTypes extends ContentTypes {
 
   import play.api.mvc.Codec
 
-
   def loginV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.loginV1Json)
-
   def courseV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.courseV1Json)
-
   def degreeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.degreeV1Json)
-
   def groupV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.groupV1Json)
-
   def labworkV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.labworkV1Json)
-
   def roomV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.roomV1Json)
-
   def semesterV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.semesterV1Json)
-
   def userV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.userV1Json)
-
   def refRoleV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.refRoleV1Json)
-
   def authorityV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.authorityV1Json)
-
   def roleV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.roleV1Json)
-
   def permissionV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.permissionV1Json)
-
   def entryTypeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.entryTypeV1Json)
-
   def labworkApplicationV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.labworkApplicationV1Json)
-
   def scheduleV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.scheduleV1Json)
-
   def timetableV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.timetableV1Json)
-
   def blacklistV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.blacklistV1Json)
-
   def reportCardV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardV1Json)
-
+  def reportCardEntryV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEntryV1Json)
+  def reportCardEntryTypeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEntryTypeV1Json)
   def assignmentPlanV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.assignmentPlanV1Json)
 }
 
@@ -94,5 +79,7 @@ object LwmAccepts {
   val TimetableV1Accept = Accepting(LwmMimeType.timetableV1Json)
   val BlacklistV1Accept = Accepting(LwmMimeType.blacklistV1Json)
   val ReportCardV1Accept = Accepting(LwmMimeType.reportCardV1Json)
+  val ReportCardEntryV1Accept = Accepting(LwmMimeType.reportCardEntryV1Json)
+  val ReportCardEntryTypeV1Accept = Accepting(LwmMimeType.reportCardEntryTypeV1Json)
   val AssignmentPlanV1Accept = Accepting(LwmMimeType.assignmentPlanV1Json)
 }
