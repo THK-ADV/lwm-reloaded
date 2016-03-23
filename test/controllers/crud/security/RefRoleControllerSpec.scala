@@ -4,9 +4,9 @@ import java.util.UUID
 
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import controllers.security.RefRoleController
-import models.Course
+import models.{CourseAtom, Course}
 import models.security._
-import models.users.User
+import models.users.{Employee, User}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -34,13 +34,15 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     }
   }
 
-  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", User.randomUUID, 1, Course.randomUUID)
+  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1, Course.randomUUID)
+  val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.id)
   val roleToPass = Role("role to pass", labwork.all)
   val roleToFail = Role("role to fail", course.all)
 
   override val entityToFail: RefRole = RefRole(None, roleToFail.id, RefRole.randomUUID)
 
-  override val entityToPass: RefRole = RefRole(Some(courseToPass.id), roleToPass.id, RefRole.randomUUID)
+  override val entityToPass: RefRole = RefRole(Some(courseAtomToPass.id), roleToPass.id, RefRole.randomUUID)
 
   override implicit val jsonWrites: Writes[RefRole] = RefRole.writes
 
@@ -58,7 +60,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     "role" -> UUID.randomUUID()
   )
 
-  val atomizedEntityToPass = RefRoleAtom(Some(courseToPass), roleToPass, entityToPass.id)
+  val atomizedEntityToPass = RefRoleAtom(Some(courseAtomToPass), roleToPass, entityToPass.id)
   val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToFail.id)
 
   "A RefRoleControllerSpec " should {
@@ -89,6 +91,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       doReturn(Success(Some(entityToPass))).
       doReturn(Success(Some(roleToPass))).
       doReturn(Success(Some(courseToPass))).
+      doReturn(Success(Some(employeeToPass))).
       when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -147,6 +150,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       doReturn(Success(Some(entityToPass))).
         doReturn(Failure(new Exception(errorMessage))).
         doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(employeeToPass))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -172,6 +176,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
       doReturn(Success(Some(roleToPass))).
         doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(employeeToPass))).
         doReturn(Success(Some(roleToFail))).
         doReturn(Success(None)).
         when(repository).get(anyObject())(anyObject())

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.users.{Employee, Student, User}
-import models.{Course, UniqueEntity, UriGenerator}
+import models.{Course, CourseAtom, UniqueEntity, UriGenerator}
 import play.api.libs.json._
 
 /**
@@ -45,7 +45,7 @@ case class RefRole(course: Option[UUID] = None, role: UUID, id: UUID = RefRole.r
 
 case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
 
-case class RefRoleAtom(course: Option[Course], role: Role, id: UUID)
+case class RefRoleAtom(course: Option[CourseAtom], role: Role, id: UUID)
 
 /**
  * Structure abstracting over a set of unary `Permission`s.
@@ -109,7 +109,13 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
 
   override implicit def writes: Writes[RefRole] = Json.writes[RefRole]
 
-  implicit def atomicWrites: Writes[RefRoleAtom] = Json.writes[RefRoleAtom]
+  implicit def atomicWrites: Writes[RefRoleAtom] = Writes[RefRoleAtom] { rr =>
+    val obj = Json.obj(
+      "role" -> Json.toJson(rr.role),
+      "id" -> rr.id.toString
+    )
+    rr.course.fold(obj)(course => obj + ("course" -> Json.toJson(course)(Course.atomicWrites)))
+  }
 }
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority] {

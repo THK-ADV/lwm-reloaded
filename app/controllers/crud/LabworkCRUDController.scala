@@ -120,6 +120,10 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     update(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
 
+  def updateAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    updateAtomic(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+  }
+
   def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
     delete(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
   }
@@ -137,6 +141,6 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase))
+    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, courseAttribute -> Seq(course)))
   }
 }
