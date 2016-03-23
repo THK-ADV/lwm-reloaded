@@ -52,6 +52,7 @@ HEAD          /labworks                                                controlle
 POST          /courses/:course/labworks                                controllers.crud.LabworkCRUDController.createFrom(course)
 POST          /courses/:course/atomic/labworks                         controllers.crud.LabworkCRUDController.createAtomicFrom(course)
 PUT           /courses/:course/labworks/:id                            controllers.crud.LabworkCRUDController.updateFrom(course, id)
+PUT           /courses/:course/atomic/labworks/:id                     controllers.crud.LabworkCRUDController.updateAtomicFrom(course, id)
 GET           /courses/:course/labworks                                controllers.crud.LabworkCRUDController.allFrom(course)
 GET           /courses/:course/atomic/labworks                         controllers.crud.LabworkCRUDController.allAtomicFrom(course)
 GET           /courses/:course/labworks/:id                            controllers.crud.LabworkCRUDController.getFrom(course, id)
