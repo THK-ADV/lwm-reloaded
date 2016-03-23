@@ -3,7 +3,8 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.{Course, UriGenerator}
+import models.users.{User, Employee}
+import models.{CourseAtom, Course, UriGenerator}
 import models.security.{RefRole, RefRoleAtom, RefRoleProtocol, Role}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -55,17 +56,17 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
   override protected def atomize(output: RefRole): Try[Option[JsValue]] = {
     import defaultBindings.RoleBinding.roleBinder
     import defaultBindings.CourseBinding.courseBinder
+    import defaultBindings.EmployeeBinding.employeeBinder
     import RefRole.atomicWrites
+    import utils.Ops.MonadInstances.optM
+    import scalaz.syntax.applicative._
 
     for {
       role <- repository.get[Role](Role.generateUri(output.role)(namespace))
       course <- output.course.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))
-    } yield for {
-        r <- role
-      } yield {
-        val atom = RefRoleAtom(course, r, output.id)
-        Json.toJson(atom)
-      }
+      employee <- course.fold[Try[Option[Employee]]](Success(None))(course => repository.get[Employee](User.generateUri(course.lecturer)(namespace)))
+      courseAtom = (course |@| employee)((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
+    } yield role.map(r => Json.toJson(RefRoleAtom(courseAtom, r, output.id)))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

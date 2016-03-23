@@ -4,22 +4,20 @@ import java.util.UUID
 
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import controllers.security.AuthorityController
+import models.security.Permissions._
 import models.security._
 import models.users.{Employee, Student}
+import models.{Course, CourseAtom}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.w3.banana.{PointedGraph, RDFPrefix}
+import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import utils.LwmMimeType
-import Permissions._
-import models.Course
-import org.openrdf.model.Value
 import store.Prefixes.LWMPrefix
-import store.{Namespace, SesameRepository}
-import utils.Ops.MonadInstances._
+import store.SesameRepository
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
@@ -37,6 +35,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   }
 
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
+  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   val refRoleIdToPass1 = RefRole.randomUUID
@@ -44,8 +43,11 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   val refRoleIdToFail1 = RefRole.randomUUID
   val refRoleIdToFail2 = RefRole.randomUUID
 
-  val courseToPass = Course("Course2", "Description", "Abbrev", UUID.randomUUID(), 0, Course.randomUUID)
-  val courseToFail = Course("Course1", "Description", "Abbrev", UUID.randomUUID(), 0, Course.randomUUID)
+  val courseToPass = Course("Course2", "Description", "Abbrev", employeeToPass.id, 0, Course.randomUUID)
+  val courseToFail = Course("Course1", "Description", "Abbrev", employeeToFail.id, 0, Course.randomUUID)
+
+  val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.id)
+  val courseAtomToFail = CourseAtom(courseToFail.label, courseToFail.description, courseToFail.abbreviation, employeeToFail, courseToFail.semesterIndex, courseToFail.id)
 
   val role1 = Role("role1", Set(user.get, user.getAll))
   val role2 = Role("role2", Set(course.get, course.create, course.getAll))
@@ -54,12 +56,12 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
   val refRolesAtomicToPass = Set(
     RefRoleAtom(None, role1, refRoleIdToPass1),
-    RefRoleAtom(Some(courseToPass), role2, refRoleIdToPass2)
+    RefRoleAtom(Some(courseAtomToPass), role2, refRoleIdToPass2)
   )
 
   val refRolesAtomicToFail = Set(
     RefRoleAtom(None, role3, refRoleIdToFail1),
-    RefRoleAtom(Some(courseToFail), role4, refRoleIdToFail2)
+    RefRoleAtom(Some(courseAtomToFail), role4, refRoleIdToFail2)
   )
 
   val refRolesToPass = Set(
@@ -96,8 +98,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     entityToFail.id
   )
 
-  import ops._
   import bindings.AuthorityBinding.authorityBinder
+  import ops._
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -116,6 +118,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   )
 
   "A AuthorityControllerSpec " should {
+
     s"successfully get a single student authority atomized" in {
       import Authority.writesAtomic
 
@@ -123,6 +126,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
         doReturn(Success(Some(studentToPass))).
         doReturn(Success(Some(role1))).
         doReturn(Success(Some(courseToPass))).
+        doReturn(Success(Some(employeeToPass))).
         doReturn(Success(Some(role2))).
         when(repository).get(anyObject())(anyObject())
 
@@ -146,6 +150,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
         doReturn(Success(Some(employeeToFail))).
         doReturn(Success(Some(role3))).
         doReturn(Success(Some(courseToFail))).
+        doReturn(Success(Some(employeeToFail))).
         doReturn(Success(Some(role4))).
         when(repository).get(anyObject())(anyObject())
 
@@ -218,10 +223,12 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     doReturn(Success(Some(studentToPass))).
       doReturn(Success(Some(role1))).
       doReturn(Success(Some(courseToPass))).
+      doReturn(Success(Some(employeeToPass))).
       doReturn(Success(Some(role2))).
       doReturn(Success(Some(employeeToFail))).
       doReturn(Success(Some(role3))).
       doReturn(Success(Some(courseToFail))).
+      doReturn(Success(Some(employeeToFail))).
       doReturn(Success(Some(role4))).
       when(repository).get(anyObject())(anyObject())
 
