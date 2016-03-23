@@ -116,7 +116,7 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
           case Success(Some(userId)) => Future.successful {
             Session(user.toLowerCase, userId)
           }
-          case Success(_) => ldap.attributes(user).map(missingUserData).flatMap {
+          case Success(_) => ldap.attributes(user)(degree).map(missingUserData).flatMap {
             case Success(_) => resolve(auth)
             case Failure(t) => Future.failed(t)
           }

@@ -51,7 +51,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
     "not create a user if an appropriate role has not been found" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.attributes(anyString())).thenReturn(Future.successful(user))
+      when(ldap.attributes(anyString())(anyObject())).thenReturn(Future.successful(user))
 
       val future = actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")
       val result = Await.result(future, timeout.duration)
@@ -65,7 +65,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
     "create a session when a user is authorized and contains entries" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.attributes(anyString())).thenReturn(Future.successful(user))
+      when(ldap.attributes(anyString())(anyObject())).thenReturn(Future.successful(user))
       import bindings.RefRoleBinding._
       import bindings.RoleBinding._
       import bindings.permissionBinder
