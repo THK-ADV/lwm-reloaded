@@ -9,7 +9,7 @@ object Prefixes {
 
     // xsd extensions
     val localDate = apply("localDate")
-    val localTime = apply("localDate")
+    val localTime = apply("localTime")
 
     // _
     val id = apply("id")
@@ -94,16 +94,17 @@ object Prefixes {
     // ReportCard
     val student = apply("student")
 
+    // Labwork
+    val subscribable = apply("subscribable")
+
     // classes
     val User = apply("User")
     val Course = apply("Course")
     val Degree = apply("Degree")
-    //val Employee = apply("Employee")
     val Group = apply("Group")
     val Labwork = apply("Labwork")
     val Room = apply("Room")
     val Semester = apply("Semester")
-    //val Student = apply("Student")
     val Role = apply("Role")
     val RefRole = apply("RefRole")
     val Authority = apply("Authority")

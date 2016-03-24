@@ -24,6 +24,7 @@ object LabworkCRUDController {
   val courseAttribute = "course"
   val degreeAttribute = "degree"
   val semesterAttribute = "semester"
+  val subscribableAttribute = "subscribable"
 }
 
 class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
@@ -41,8 +42,8 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
   override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
-    case Some(labwork) => Labwork(input.label, input.description, input.semester, input.course, input.degree, labwork.id)
-    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, Labwork.randomUUID)
+    case Some(labwork) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, labwork.id)
+    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, Labwork.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
@@ -61,7 +62,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
-    input.label == output.label && input.description == output.description
+    input.label == output.label && input.description == output.description && input.subscribable == output.subscribable
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
@@ -69,6 +70,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
       case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
       case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
       case ((`semesterAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
+      case ((`subscribableAttribute`, v), t) => t flatMap (set => Try(v.head.toBoolean).map(b => set.filter(_.subscribable == b)))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -85,18 +87,16 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
       degree <- repository.get[Degree](Degree.generateUri(output.degree)(namespace))
     } yield {
       for {
-        s <- semester
-        c <- course
-        d <- degree
-      } yield {
-        val atom = LabworkAtom(output.label, output.description, s, c, d, output.id)
-        Json.toJson(atom)
-      }
+        s <- semester; c <- course; d <- degree
+      } yield Json.toJson(
+        LabworkAtom(output.label, output.description, s, c, d, output.subscribable, output.id)
+      )
     }
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(labwork.get)
+    case GetAll => PartialSecureBlock(labwork.getAll)
     case _ => PartialSecureBlock(god)
   }
 
@@ -142,5 +142,13 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
     allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, courseAttribute -> Seq(course)))
+  }
+
+  def allWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(Labwork.generateBase, degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
+  }
+
+  def allAtomicWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
+    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
   }
 }
