@@ -26,6 +26,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   val rdf = RDFPrefix[Rdf]
   val xsd = XSDPrefix[Rdf]
 
+  def innerUri: Rdf#URI = makeUri(s"$baseNs/${newUri("#")}")
+
   implicit val uuidBinder = new PGBinder[Rdf, UUID] {
     override def toPG(t: UUID): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.toString, xsd.string))
@@ -200,7 +202,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
 
-    implicit val assignmentEntryTypeBinder: PGBinder[Rdf, AssignmentEntryType] = pgb[AssignmentEntryType](entryType, bool, int)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
+    implicit val assignmentEntryTypeBinder: PGBinder[Rdf, AssignmentEntryType] = pgbWithId[AssignmentEntryType](_ => innerUri)(entryType, bool, int)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUri
   }
 
   object AssignmentEntryBinding {
@@ -212,7 +214,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val duration = property[Int](lwm.duration)
     private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
 
-    implicit val assignmentEntryBinder: PGBinder[Rdf, AssignmentEntry] = pgb[AssignmentEntry](index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
+    implicit val assignmentEntryBinder: PGBinder[Rdf, AssignmentEntry] = pgbWithId[AssignmentEntry](_ => innerUri)(index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
   }
 
   object AssignmentPlanBinding {
@@ -320,7 +322,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
 
-    implicit val timetableEntryBinder: PGBinder[Rdf, TimetableEntry] = pgb[TimetableEntry](supervisor, room, degree, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
+    implicit val timetableEntryBinder: PGBinder[Rdf, TimetableEntry] = pgbWithId[TimetableEntry](_ => innerUri)(supervisor, room, degree, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUri
   }
 
   object ScheduleBinding {
@@ -345,7 +347,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
-    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgb[ScheduleEntry](start, end, date, room, supervisor, group)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](_ => innerUri)(start, end, date, room, supervisor, group)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 
   object BlacklistBinding {
@@ -405,7 +407,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val end = property[LocalTime](lwm.end)
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
 
-    implicit val rescheduledBinding: PGBinder[Rdf, Rescheduled] = pgb[Rescheduled](date, start, end, room)(Rescheduled.apply, Rescheduled.unapply) withClasses classUri
+    implicit val rescheduledBinding: PGBinder[Rdf, Rescheduled] = pgbWithId[Rescheduled](_ => innerUri)(date, start, end, room)(Rescheduled.apply, Rescheduled.unapply) withClasses classUri
   }
 }
 
