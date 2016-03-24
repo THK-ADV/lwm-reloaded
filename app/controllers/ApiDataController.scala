@@ -5,7 +5,6 @@ import java.util.UUID
 import models._
 import models.applications.LabworkApplication
 import models.schedule.{Weekday, TimetableEntry, Timetable}
-import models.security.Permissions.reportCardEntry
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
 import models.semester.{Blacklist, Semester}
@@ -167,7 +166,6 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     }
   }
 
-  // TODO complete adding remaining models to this
   def getAdded = Action { request =>
     import bindings.RoleBinding
     import bindings.RoomBinding
@@ -178,7 +176,10 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.CourseBinding
     import bindings.RefRoleBinding
     import bindings.StudentBinding
+    import bindings.AssignmentPlanBinding
     import bindings.LabworkBinding
+    import bindings.TimetableBinding
+    import bindings.BlacklistBinding
     import bindings.LabworkApplicationBinding
 
     (for {
@@ -192,6 +193,9 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       refrole <- repository.get[RefRole](RefRoleBinding.refRoleBinder, RefRoleBinding.classUri)
       labworks <- repository.get[Labwork](LabworkBinding.labworkBinder, LabworkBinding.classUri)
       students <- repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
+      plans <- repository.get[AssignmentPlan](AssignmentPlanBinding.assignmentPlanBinder, AssignmentPlanBinding.classUri)
+      timetables <- repository.get[Timetable](TimetableBinding.timetableBinder, TimetableBinding.classUri)
+      blacklists <- repository.get[Blacklist](BlacklistBinding.blacklistBinder, BlacklistBinding.classUri)
       lApps <- repository.get[LabworkApplication](LabworkApplicationBinding.labworkApplicationBinder, LabworkApplicationBinding.classUri)
     } yield {
       List(
@@ -205,6 +209,9 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
         Json.toJson(refrole),
         Json.toJson(labworks),
         Json.toJson(students),
+        Json.toJson(plans),
+        Json.toJson(timetables),
+        Json.toJson(blacklists),
         Json.toJson(lApps)
       )
     }) match {
