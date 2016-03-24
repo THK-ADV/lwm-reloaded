@@ -125,9 +125,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(studentToPass))).
         doReturn(Success(Some(role1))).
+        doReturn(Success(Some(role2))).
         doReturn(Success(Some(courseToPass))).
         doReturn(Success(Some(employeeToPass))).
-        doReturn(Success(Some(role2))).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToPass))
@@ -149,9 +149,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       doReturn(Success(Some(entityToFail))).
         doReturn(Success(Some(employeeToFail))).
         doReturn(Success(Some(role3))).
+        doReturn(Success(Some(role4))).
         doReturn(Success(Some(courseToFail))).
         doReturn(Success(Some(employeeToFail))).
-        doReturn(Success(Some(role4))).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToFail))
@@ -222,14 +222,14 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
     doReturn(Success(Some(studentToPass))).
       doReturn(Success(Some(role1))).
+      doReturn(Success(Some(role2))).
       doReturn(Success(Some(courseToPass))).
       doReturn(Success(Some(employeeToPass))).
-      doReturn(Success(Some(role2))).
       doReturn(Success(Some(employeeToFail))).
       doReturn(Success(Some(role3))).
+      doReturn(Success(Some(role4))).
       doReturn(Success(Some(courseToFail))).
       doReturn(Success(Some(employeeToFail))).
-      doReturn(Success(Some(role4))).
       when(repository).get(anyObject())(anyObject())
 
     doReturn(Success(refRolesToPass)).

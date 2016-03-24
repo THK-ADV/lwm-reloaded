@@ -2,16 +2,13 @@ package store
 
 import base.TestBaseDefinition
 import models.Degree
-import models.users.{User, Employee, Student}
+import models.security.{Permissions, RefRole, Role}
+import models.users.{Employee, Student, User}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
+import services.RoleService
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
-import services.RoleService
-import models.security.{Permissions, Role, RefRole}
-import utils.Ops._
-import utils.Ops.MonadInstances._
-import utils.Ops.TraverseInstances._
 
 import scala.util.{Failure, Success}
 
@@ -22,12 +19,10 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
   val bindings = Bindings[Sesame](ns)
   val lwm = LWMPrefix[Sesame]
 
-  import bindings.StudentBinding._
-  import bindings.AuthorityBinding._
-  import bindings.permissionBinder
   import bindings.EmployeeBinding._
   import bindings.RefRoleBinding._
   import bindings.RoleBinding._
+  import bindings.StudentBinding._
 
   val repo = SesameRepository(ns)
 
@@ -35,6 +30,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
   val roleService = new RoleService(repo)
 
   "A UsernameResolverSpec " should {
+
     "resolve a given username properly" in {
       val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
@@ -168,7 +164,39 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
           demployee shouldBe Success(employee)
         case Failure(_) => fail("Should've found an appropriate `RefRole` or Role")
       }
+    }
 
+    "successfully resolve a degrees based on theirs abbreviations" in {
+      import bindings.DegreeBinding.degreeBinder
+
+      import scala.util.Random.nextInt
+
+      val degrees = (0 until 10).map(i => Degree(i.toString, i.toString, Degree.randomUUID)).toList
+      repo.addMany[Degree](degrees)
+
+      val result = (0 until 8).map(_ => resolver.degree(degrees(nextInt(degrees.size)).abbreviation)).toList
+
+      result.foreach {
+        case Success(id) => degrees.exists(_.id == id) shouldBe true
+        case Failure(e) => fail("No degree found for given abbreviation", e)
+      }
+    }
+
+    "throw an exception when degree cant be resolved cause its not found" in {
+      import bindings.DegreeBinding.degreeBinder
+
+      val degree1 = Degree("label", "abbrev", Degree.randomUUID)
+      val degree2 = Degree("label2", "abbrev“", Degree.randomUUID)
+      val abbreviation = "not existent"
+
+      repo.addMany[Degree](List(degree1, degree2))
+
+      val result = resolver.degree(abbreviation)
+
+      result match {
+        case Success(_) => fail("Found degree, but there shouldn't be some")
+        case Failure(e) => e.getMessage shouldBe s"No viable degree found for abbreviation $abbreviation"
+      }
     }
   }
 

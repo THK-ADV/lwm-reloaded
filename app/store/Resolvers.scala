@@ -2,9 +2,10 @@ package store
 
 import java.util.UUID
 
+import models.Degree
 import models.security.{Authority, RefRole, Role, Roles}
 import models.users.{Employee, Student, User}
-import org.w3.banana.PointedGraph
+import org.w3.banana.{RDFPrefix, PointedGraph}
 import org.w3.banana.binder.ToPG
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -14,7 +15,7 @@ import store.sparql.select._
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
 
-import scala.util.{Failure, Try}
+import scala.util.{Success, Failure, Try}
 
 trait Resolvers {
   type R <: org.w3.banana.RDF
@@ -22,6 +23,8 @@ trait Resolvers {
   def username(systemId: String): Try[Option[UUID]]
 
   def missingUserData[A <: User](v: A): Try[PointedGraph[R]]
+
+  def degree(abbreviation: String): Try[UUID]
 }
 
 class LwmResolvers(val repository: SesameRepository) extends Resolvers {
@@ -30,6 +33,7 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
 
   override type R = SesameModule#Rdf
   val prefix = LWMPrefix[Sesame]
+  val rdf = RDFPrefix[Sesame]
   val bindings = Bindings(repository.namespace)
 
   override def username(systemId: String): Try[Option[UUID]] = {
@@ -76,4 +80,22 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     }
   }
 
+  override def degree(abbreviation: String): Try[UUID] = {
+    import bindings.DegreeBinding.degreeBinder
+    import utils.Ops.MonadInstances.{tryM, optM}
+    import utils.Ops.TraverseInstances.travO
+
+    val query = select ("degree") where {
+      ^(v("degree"), p(rdf.`type`), s(prefix.Degree)).
+      ^(v("degree"), p(prefix.abbreviation), o(abbreviation))
+    }
+
+    repository.prepareQuery(query).
+      select(_.get("degree")).
+      changeTo(_.headOption).
+      request[Option, Degree](value => repository.get[Degree](value.stringValue())).
+      transform(_.fold[Try[Degree]](Failure(new Throwable(s"No viable degree found for abbreviation $abbreviation")))(Success(_))).
+      map(_.id).
+      run.flatten
+  }
 }

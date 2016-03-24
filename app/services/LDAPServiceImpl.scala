@@ -1,10 +1,10 @@
 package services
 
+import java.util.UUID
 import java.util.concurrent._
 
 import com.unboundid.ldap.sdk._
 import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
-import models.Degree
 import models.users.{Employee, Student, User}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 trait LDAPService {
   def authenticate(user: String, password: String): Future[Boolean]
 
-  def attributes(user: String): Future[User]
+  def attributes(user: String)(degreeFor: String => Try[UUID]): Future[User]
 }
 
 /**
@@ -32,6 +32,7 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
 
   /**
     * Tries to authenticate a user with the the LDAP service.
+ *
     * @param user the user
     * @param password the password for this user
     * @return either a boolean if the connection was successful or a String with the error message
@@ -47,6 +48,7 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
 
   /**
     * Grabs all groups from LDAP.
+ *
     * @param user the user
     * @param bindHost the host
     * @param bindPort the port
@@ -70,6 +72,7 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
 
   /**
     * Establishes a connection with the LDAP Server and runs an arbitrary function.
+ *
     * @param host the host of the LDAP server
     * @param port the port of the LDAP Server
     * @param dn
@@ -108,7 +111,7 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       }
   }
 
-  override def attributes(user: String): Future[User] = bind(bindHost, bindPort, dn, "") {
+  override def attributes(user: String)(degreeFor: String => Try[UUID]): Future[User] = bind(bindHost, bindPort, dn, "") {
     connection ⇒
       import scala.collection.JavaConverters._
 
@@ -116,15 +119,19 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
 
       def gather(entries: List[SearchResultEntry]): Try[User] = results match {
         case h :: Nil => Try {
-          val forename = results.head.getAttribute("givenName").getValue
-          val surname = results.head.getAttribute("sn").getValue
-          val employeeType = results.head.getAttribute("employeeType").getValue
-          val mail = results.head.getAttribute("mail").getValue
+          val forename = h.getAttribute("givenName").getValue
+          val surname = h.getAttribute("sn").getValue
+          val employeeType = h.getAttribute("employeeType").getValue
+          val mail = h.getAttribute("mail").getValue
 
           employeeType match {
-            case "employee" => Success(Employee(user, surname, forename, mail, employeeType))
-            case "student" => Success(Student(user, surname, forename, mail, "", Degree.randomUUID))
-            case _ => Failure(new Throwable(s"$user is neither an employee n'or a student"))
+            case "employee" | "lecturer" =>
+              Success(Employee(user, surname, forename, mail, employeeType))
+            case "student" =>
+              val studyPath = h.getAttribute("studyPath").getValue
+              degreeFor(studyPath).map(Student(user, surname, forename, mail, "", _))
+            case _ =>
+              Failure(new Throwable(s"$user is neither an employee n'or a student"))
           }
         }.flatten
         case _ :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
