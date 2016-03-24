@@ -51,7 +51,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "assignmentPlan" -> Json.toJson(AssignmentPlan.empty)(AssignmentPlan.writes)
+        "subscribable" -> false
       )
 
       val request = FakeRequest(
@@ -113,7 +113,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "assignmentPlan" -> Json.toJson(AssignmentPlan.empty)(AssignmentPlan.writes)
+        "subscribable" -> false
       )
 
       val request = FakeRequest(
@@ -178,7 +178,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "assignmentPlan" -> Json.toJson(AssignmentPlan.empty)(AssignmentPlan.writes)
+        "subscribable" -> false
       )
 
       val request = FakeRequest(
@@ -282,6 +282,26 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val result = route(request).get
 
       status(result) shouldBe NOT_FOUND
+    }
+
+    "Allow non restricted invocations when student wants to get all labworks where he can apply for" in new FakeApplication() {
+      import Labwork.writes
+
+      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.checkWith((None, labwork.getAll))(FakeStudentAuth)).thenReturn(Success(true))
+
+      val request = FakeRequest(
+        GET,
+        s"/labworks/degrees/${UUID.randomUUID}"
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
+
+      val result = route(request).get
+
+      status(result) shouldBe OK
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
     }
 
     "Block non restricted invocations when employee wants to get a single labwork" in new FakeApplication {

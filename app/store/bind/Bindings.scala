@@ -236,8 +236,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
     val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
+    val subscribable = property[Boolean](lwm.subscribable)
 
-    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {

@@ -39,7 +39,7 @@ object ApiDataController {
     authority.all ++ refRole.all ++ role.all
   )
   val studentRole = Role(Roles.Student,
-    Set(room.get, degree.get, course.get, labwork.get) ++
+    Set(room.get, degree.get, course.get, labwork.get, labwork.getAll) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
       semester.get + user.get + reportCard.get
   )
@@ -167,6 +167,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     }
   }
 
+  // TODO complete adding remaining models to this
   def getAdded = Action { request =>
     import bindings.RoleBinding
     import bindings.RoomBinding
@@ -223,7 +224,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
-  def people = List(Employee("ai1818", "Wurst", "Hans", "", "employee", User.randomUUID))
+  def people = List(Employee("lwmadmin", "Wurst", "Hans", "", "employee", User.randomUUID))
 
   def authorities = {
     import bindings.AuthorityBinding._
@@ -310,22 +311,22 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     import bindings.LabworkBinding._
 
     List(
-      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, ap1WiPrak),
-      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, ap1AiPrak),
-      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, ap1MiPrak),
-      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, ap1TiPrak),
-      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, ap2WiPrak),
-      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, ap2AiPrak),
-      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, ap2MiPrak),
-      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, ap2TiPrak),
-      Labwork("ma1 wi", "leopold", ws1516, ma1Leopold, wi, ma1WiPrak),
-      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, ma1AiPrak),
-      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, ma1MiPrak),
-      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, ma1TiPrak),
-      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, ma2AiPrak),
-      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, ma2MiPrak),
-      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, ma2TiPrak),
-      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, cgaMiPrak)
+      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, ap1WiPrak),
+      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, subscribable = false, ap1AiPrak),
+      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, subscribable = false, ap1MiPrak),
+      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, subscribable = false, ap1TiPrak),
+      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, subscribable = false, ap2WiPrak),
+      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, ap2AiPrak),
+      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, ap2MiPrak),
+      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, ap2TiPrak),
+      Labwork("ma1 wi", "leopold", ws1516, ma1Leopold, wi, subscribable = false, ma1WiPrak),
+      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, ma1AiPrak),
+      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, ma1MiPrak),
+      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, ma1TiPrak),
+      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, subscribable = false, ma2AiPrak),
+      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, subscribable = false, ma2MiPrak),
+      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, subscribable = false, ma2TiPrak),
+      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, subscribable = false, cgaMiPrak)
     ).map(repository.add[Labwork])
   }
 

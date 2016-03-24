@@ -44,6 +44,8 @@ GET           /courses/:c/labworks/:l/atomic/groups/:id                controlle
 DELETE        /courses/:c/labworks/:l/groups/:id                       controllers.crud.GroupCRUDController.deleteFrom(c, l, id)
 
 # Labwork
+GET           /labworks/degrees/:degree                                controllers.crud.LabworkCRUDController.allWithDegree(degree)
+GET           /atomic/labworks/degrees/:degree                         controllers.crud.LabworkCRUDController.allAtomicWithDegree(degree)
 GET           /labworks/:id                                            controllers.crud.LabworkCRUDController.get(id)
 GET           /atomic/labworks/:id                                     controllers.crud.LabworkCRUDController.getAtomic(id)
 HEAD          /labworks                                                controllers.crud.LabworkCRUDController.header
