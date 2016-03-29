@@ -1,30 +1,26 @@
-package bind.schedule
+package bind.labwork
 
 import base.SesameDbSpec
-import models.labwork.{TimetableEntry, Timetable, Labwork}
+import models.labwork.{Labwork, Timetable, TimetableEntry}
 import models.semester.Blacklist
-import models.{Room, Degree}
 import models.users.User
-import org.joda.time.{LocalDate, LocalTime, DateTime}
+import models.{Degree, Room}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
-import scala.util.{Success, Failure}
+
+import scala.util.{Failure, Success}
 
 class TimetableBindingSpec extends SesameDbSpec {
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
 
-  import ops._
-  import bindings.uuidBinder
-  import bindings.jodaLocalDateBinder
-  import bindings.jodaLocalTimeBinder
+  import bindings.BlacklistBinding.blacklistBinder
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
-  import bindings.BlacklistBinding.blacklistBinder
-  import bindings.uuidRefBinder
+  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import ops._
 
   val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
   val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)

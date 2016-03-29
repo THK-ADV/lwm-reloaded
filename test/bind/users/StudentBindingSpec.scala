@@ -3,7 +3,6 @@ package bind.users
 import base.SesameDbSpec
 import models.Degree
 import models.users.{User, Student}
-import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -12,15 +11,11 @@ import scala.util.{Failure, Success}
 
 class StudentBindingSpec extends SesameDbSpec {
 
+  val bindings = Bindings[Sesame](namespace)
+
+  import bindings.StudentBinding.studentBinder
+  import bindings.{uuidBinder, uuidRefBinder}
   import ops._
-
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val bindings = Bindings[Sesame](ns)
-
-  import bindings.StudentBinding._
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
   val studentGraph = URI(User.generateUri(student)).a(lwm.User)
@@ -33,6 +28,7 @@ class StudentBindingSpec extends SesameDbSpec {
     .--(lwm.id).->-(student.id).graph
 
   "A StudentBinding" should {
+
     "return a RDF graph representation of a student" in {
       val graph = student.toPG.graph
 

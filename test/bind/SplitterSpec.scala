@@ -1,6 +1,5 @@
 package bind
 
-import org.joda.time.LocalDate
 import java.util.UUID
 
 import base.TestBaseDefinition

@@ -186,6 +186,18 @@ GET           /courses/:course/assignmentPlans/:id                     controlle
 DELETE        /courses/:course/assignmentPlans/:id                     controllers.crud.labwork.AssignmentPlanCRUDController.deleteFrom(course, id)
 HEAD          /assignmentPlans                                         controllers.crud.labwork.AssignmentPlanCRUDController.header
 
+# Annotation
+POST          /courses/:c/labworks/:l/annotations                      controllers.crud.labwork.AnnotationCRUDController.createFrom(c, l)
+POST          /courses/:c/labworks/:l/atomic/annotations               controllers.crud.labwork.AnnotationCRUDController.createAtomicFrom(c, l)
+PUT           /courses/:c/labworks/:l/annotations/:id                  controllers.crud.labwork.AnnotationCRUDController.updateFrom(c, l, id)
+PUT           /courses/:c/labworks/:l/atomic/annotations/:id           controllers.crud.labwork.AnnotationCRUDController.updateAtomicFrom(c, l, id)
+GET           /courses/:c/labworks/:l/annotations                      controllers.crud.labwork.AnnotationCRUDController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/annotations               controllers.crud.labwork.AnnotationCRUDController.allAtomicFrom(c, l)
+GET           /courses/:c/labworks/:l/annotations/:id                  controllers.crud.labwork.AnnotationCRUDController.getFrom(c, l, id)
+GET           /courses/:c/labworks/:l/atomic/annotations/:id           controllers.crud.labwork.AnnotationCRUDController.getAtomicFrom(c, l, id)
+DELETE        /courses/:c/labworks/:l/annotations/:id                  controllers.crud.labwork.AnnotationCRUDController.deleteFrom(c, l, id)
+HEAD          /annotations                                             controllers.crud.labwork.AnnotationCRUDController.header
+
 # Users
 GET           /users                                                   controllers.UserController.all()
 GET           /users/:id                                               controllers.UserController.get(id)

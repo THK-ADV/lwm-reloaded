@@ -1,30 +1,26 @@
-package bind.schedule
+package bind.labwork
 
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork.{ScheduleEntry, Schedule, Group, Labwork}
-import models.users.User
 import models.Room
+import models.labwork.{Group, Labwork, Schedule, ScheduleEntry}
+import models.users.User
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
-import scala.util.{Success, Failure}
+
+import scala.util.{Failure, Success}
 
 class ScheduleBindingSpec extends SesameDbSpec {
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
 
-  import ops._
-  import bindings.uuidBinder
-  import bindings.jodaLocalDateBinder
-  import bindings.jodaLocalTimeBinder
   import bindings.ScheduleBinding.scheduleBinder
   import bindings.ScheduleEntryBinding.scheduleEntryBinder
-  import bindings.uuidRefBinder
+  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import ops._
 
   val scheduleEntry = ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val schedule = Schedule(Labwork.randomUUID, Set(scheduleEntry))

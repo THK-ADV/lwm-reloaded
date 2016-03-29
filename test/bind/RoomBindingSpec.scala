@@ -4,18 +4,16 @@ import base.SesameDbSpec
 import models.Room
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class RoomBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
   import bindings.uuidBinder
   import bindings.RoomBinding._
+  import ops._
 
   val room = Room("label", "description", Room.randomUUID)
   val roomGraph = (
@@ -26,11 +24,13 @@ class RoomBindingSpec extends SesameDbSpec {
     ).graph
 
   "A RoomBindingSpec" should {
+
     "return a RDF graph representation of a room" in {
       val graph = room.toPG.graph
 
       graph isIsomorphicWith roomGraph shouldBe true
     }
+
     "return a room based on a RDF graph representation" in {
       val expectedRoom = PointedGraph[Rdf](URI(Room.generateUri(room)), roomGraph).as[Room]
 

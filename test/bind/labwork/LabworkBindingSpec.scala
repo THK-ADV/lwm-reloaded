@@ -1,27 +1,23 @@
-package bind
+package bind.labwork
 
 import base.SesameDbSpec
-import models.labwork.{AssignmentEntryType, Labwork}
-import models.{Course, Degree}
+import models.labwork.Labwork
 import models.semester.Semester
-import store.Namespace
-import store.bind.Bindings
+import models.{Course, Degree}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import AssignmentEntryType._
+import store.bind.Bindings
+
 import scala.util.{Failure, Success}
 
 class LabworkBindingSpec extends SesameDbSpec {
 
   import ops._
 
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
+  val bindings = Bindings[Sesame](namespace)
 
-  val bindings = Bindings[Sesame](ns)
-
-  import bindings.LabworkBinding._
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
+  import bindings.LabworkBinding.labworkBinder
+  import bindings.{uuidBinder, uuidRefBinder}
 
   val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
   val labworkGraph = URI(Labwork.generateUri(labwork)).a(lwm.Labwork)

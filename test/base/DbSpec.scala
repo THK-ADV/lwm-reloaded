@@ -9,7 +9,9 @@ import store.{Namespace, SemanticRepository, SesameRepository}
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {
   val lwm = LWMPrefix[Sesame]
-  lazy val repo = SesameRepository(Namespace(s"http://testDB/${this.getClass.getSimpleName}"))
+  implicit val namespace = Namespace(s"http://testDB/${this.getClass.getSimpleName}")
+
+  lazy val repo = SesameRepository(namespace)
 
   override def initDB(): Unit = {}
 

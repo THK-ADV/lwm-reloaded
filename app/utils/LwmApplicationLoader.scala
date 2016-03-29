@@ -76,7 +76,8 @@ with ReportCardManagementModule
 with ReportCardEntryManagementModule
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
-with UserManagementModule {
+with UserManagementModule
+with AnnotationManagementModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
@@ -101,6 +102,7 @@ with UserManagementModule {
     reportCardEntryManagementController,
     reportCardEntryTypeManagementController,
     assignmentPlanManagementController,
+    annotationManagementController,
     userController,
     sessionController,
     apiDataController,
@@ -147,3 +149,4 @@ with DefaultReportCardEntryManagementModuleImpl
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultUserManagementModule
+with DefaultAnnotationManagementModuleImpl

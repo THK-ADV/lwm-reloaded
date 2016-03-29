@@ -24,13 +24,16 @@ object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all + course.update
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++
+      reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all ++
+      annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++ reportCardEntry.all ++ reportCardEntryType.all + group.get + assignmentPlan.get
+    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++
+      reportCardEntry.all ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, timetable.get) ++ reportCardEntryType.all
+    Set(schedule.get, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
   )
 
   val rvRole = Role(RightsManager,

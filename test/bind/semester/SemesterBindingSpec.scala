@@ -5,19 +5,16 @@ import models.semester.Semester
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class SemesterBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
-  import bindings.uuidBinder
+  val bindings = Bindings[Sesame](namespace)
+  import bindings.{uuidBinder, jodaLocalDateBinder}
   import bindings.SemesterBinding.semesterBinder
-  import bindings.jodaLocalDateBinder
+  import ops._
 
   val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5), Semester.randomUUID)
   val semesterGraph = (
@@ -31,11 +28,13 @@ class SemesterBindingSpec extends SesameDbSpec {
     ).graph
 
   "A SemesterBindingSpec" should {
+
     "return a RDF graph representation of a semester" in {
       val graph = semester.toPG.graph
 
       graph isIsomorphicWith semesterGraph shouldBe true
     }
+
     "return a semester based on a RDF graph representation" in {
       val expectedSemester = PointedGraph[Rdf](URI(Semester.generateUri(semester)), semesterGraph).as[Semester]
 

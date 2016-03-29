@@ -1,8 +1,8 @@
-package bind.applications
+package bind.labwork
 
 import base.SesameDbSpec
 import models.labwork.{Labwork, LabworkApplication}
-import models.users.{User, Student}
+import models.users.User
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.bind.Bindings
@@ -12,8 +12,6 @@ import scala.util.{Failure, Success}
 class LabworkApplicationBindingSpec extends SesameDbSpec {
 
   import ops._
-  import repo.namespace
-
   val bindings = Bindings[Sesame](repo.namespace)
 
   import bindings.LabworkApplicationBinding._

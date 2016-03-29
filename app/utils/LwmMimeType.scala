@@ -29,6 +29,7 @@ object LwmMimeType {
   val reportCardEntryV1Json = LwmMimeType("application/vnd.fhk.reportCardEntry.V1+json")
   val reportCardEntryTypeV1Json = LwmMimeType("application/vnd.fhk.reportCardEntryType.V1+json")
   val assignmentPlanV1Json = LwmMimeType("application/vnd.fhk.assignmentPlan.V1+json")
+  val annotationV1Json = LwmMimeType("application/vnd.fhk.annotation.V1+json")
 
   implicit def unboxMimeType(mime: LwmMimeType): String = mime.value
 }
@@ -58,6 +59,7 @@ object LwmContentTypes extends ContentTypes {
   def reportCardEntryV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEntryV1Json)
   def reportCardEntryTypeV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEntryTypeV1Json)
   def assignmentPlanV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.assignmentPlanV1Json)
+  def annotationV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.annotationV1Json)
 }
 
 object LwmAccepts {
@@ -82,4 +84,5 @@ object LwmAccepts {
   val ReportCardEntryV1Accept = Accepting(LwmMimeType.reportCardEntryV1Json)
   val ReportCardEntryTypeV1Accept = Accepting(LwmMimeType.reportCardEntryTypeV1Json)
   val AssignmentPlanV1Accept = Accepting(LwmMimeType.assignmentPlanV1Json)
+  val AnnotationV1Accept = Accepting(LwmMimeType.annotationV1Json)
 }

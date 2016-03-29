@@ -1,27 +1,25 @@
-package bind
+package bind.labwork
 
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork.{AssignmentEntry, AssignmentPlan, AssignmentEntryType, Labwork}
+import models.labwork.AssignmentEntryType._
+import models.labwork.{AssignmentEntry, AssignmentPlan, Labwork}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
-import AssignmentEntryType._
+
 import scala.util.{Failure, Success}
 
 class AssignmentPlanBindingSpec extends SesameDbSpec {
 
   import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
-  import bindings.AssignmentPlanBinding._
-  import bindings.AssignmentEntryBinding._
-  import bindings.AssignmentEntryTypeBinding._
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
+  val bindings = Bindings[Sesame](namespace)
+  import bindings.AssignmentEntryBinding.assignmentEntryBinder
+  import bindings.AssignmentEntryTypeBinding.assignmentEntryTypeBinder
+  import bindings.AssignmentPlanBinding.assignmentPlanBinder
+  import bindings.{uuidBinder, uuidRefBinder}
 
   val assignmentPlan = AssignmentPlan(UUID.randomUUID(), 2, 2, Set(
     AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),

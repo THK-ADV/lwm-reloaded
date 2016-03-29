@@ -1,15 +1,14 @@
-package bind
+package bind.labwork
 
 import java.util.UUID
 
 import base.SesameDbSpec
+import models._
 import models.labwork._
 import models.users.User
-import models._
-import org.joda.time.{LocalTime, LocalDate}
+import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
@@ -17,16 +16,12 @@ import scala.util.{Failure, Success}
 class ReportCardBindingSpec extends SesameDbSpec {
 
   import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
-  import bindings.uuidBinder
-  import bindings.jodaLocalDateBinder
-  import bindings.jodaLocalTimeBinder
-  import bindings.uuidRefBinder
+  val bindings = Bindings[Sesame](namespace)
   import bindings.ReportCardBinding.reportCardBinder
   import bindings.ReportCardEntryBinding.reportCardEntryBinding
   import bindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
+  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
 
   val entries = (0 until 5).map { n =>
     ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)

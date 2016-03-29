@@ -4,18 +4,16 @@ import base.SesameDbSpec
 import models.users.{User, Employee}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class EmployeeBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
   import bindings.uuidBinder
-  import bindings.EmployeeBinding._
+  import bindings.EmployeeBinding.employeeBinder
+  import ops._
 
   val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", "employee")
   val employeeGraph = (
