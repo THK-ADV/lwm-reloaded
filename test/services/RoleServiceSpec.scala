@@ -3,10 +3,11 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.labwork.Labwork
 import models.security._
 import models.semester.Semester
 import models.users.Student
-import models.{AssignmentPlan, Degree, Labwork}
+import models.Degree
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.SesameModule
 import store.bind.Bindings

@@ -3,6 +3,7 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
+import models.labwork._
 import models.users.User
 import models._
 import org.joda.time.{LocalTime, LocalDate}

@@ -1,8 +1,8 @@
 package bind
 
 import base.SesameDbSpec
+import models.labwork.{Group, Labwork}
 import models.users.{User, Student}
-import models.{Labwork, Group}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace

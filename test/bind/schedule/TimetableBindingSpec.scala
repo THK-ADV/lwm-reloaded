@@ -1,9 +1,9 @@
 package bind.schedule
 
 import base.SesameDbSpec
+import models.labwork.{TimetableEntry, Timetable, Labwork}
 import models.semester.Blacklist
-import models.{Room, Labwork, Degree}
-import models.schedule.{TimetableEntry, Timetable}
+import models.{Room, Degree}
 import models.users.User
 import org.joda.time.{LocalDate, LocalTime, DateTime}
 import org.w3.banana.PointedGraph

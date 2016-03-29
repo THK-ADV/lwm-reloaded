@@ -1,6 +1,6 @@
 package store
 
-import models.AssignmentEntryType
+import models.labwork.AssignmentEntryType
 import org.w3.banana.{RDF, RDFOps}
 
 object Prefixes {

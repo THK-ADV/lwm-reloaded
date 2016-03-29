@@ -3,8 +3,7 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.schedule.TimetableDateEntry
-import models.schedule._
+import models.labwork._
 import models.semester.{Blacklist, Semester}
 import models.users.{User, Employee, Student}
 import models._

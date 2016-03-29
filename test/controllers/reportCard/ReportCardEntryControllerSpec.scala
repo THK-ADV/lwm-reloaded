@@ -3,7 +3,7 @@ package controllers.reportCard
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{ReportCard, ReportCardEntry, ReportCardEntryType, Rescheduled}
+import models.labwork.{ReportCardEntryType, Rescheduled, ReportCardEntry, ReportCard}
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._

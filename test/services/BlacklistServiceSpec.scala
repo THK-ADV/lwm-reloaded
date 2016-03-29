@@ -1,8 +1,8 @@
 package services
 
 import base.TestBaseDefinition
+import models.labwork.{Weekday, TimetableDateEntry}
 import models.semester.Blacklist
-import models.schedule.{Weekday, TimetableDateEntry}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 import org.mockito.Matchers._

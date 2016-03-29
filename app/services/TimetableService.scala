@@ -1,7 +1,6 @@
 package services
 
-import models.{Group, AssignmentPlan}
-import models.schedule._
+import models.labwork.{TimetableDateEntry, Timetable, Group, AssignmentPlan}
 
 trait TimetableServiceLike {
 

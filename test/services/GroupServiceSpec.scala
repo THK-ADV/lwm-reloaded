@@ -1,8 +1,7 @@
 package services
 
 import base.TestBaseDefinition
-import models.Labwork
-import models.applications.LabworkApplication
+import models.labwork.{Labwork, LabworkApplication}
 import models.users.User
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec

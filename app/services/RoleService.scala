@@ -1,8 +1,7 @@
 package services
 
 import java.util.UUID
-
-import models.Labwork
+import models.labwork.Labwork
 import models.security._
 import models.users.User
 import store.Prefixes.LWMPrefix

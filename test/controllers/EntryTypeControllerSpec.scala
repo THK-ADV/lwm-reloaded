@@ -1,22 +1,16 @@
 package controllers
 
 import base.TestBaseDefinition
-import models.{AssignmentEntryType, AssignmentEntryType$}
+import models.labwork.AssignmentEntryType
+import models.labwork.AssignmentEntryType._
 import org.scalatest.WordSpec
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Request, Result}
-import play.api.{Application, ApplicationLoader}
-import play.api.ApplicationLoader.Context
-import play.api.test.{FakeRequest, WithApplicationLoader}
+import org.scalatest.mock.MockitoSugar.mock
+import play.api.libs.json.Json
+import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
-import utils.{DefaultLwmApplication, LwmMimeType}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar.mock
-import AssignmentEntryType._
-import play.api.test.Helpers._
-import utils.LwmActions.ContentTypedAction
+import utils.LwmMimeType
 
 class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
   self =>

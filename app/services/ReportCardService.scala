@@ -1,6 +1,6 @@
 package services
 
-import models.schedule.TimetableDateEntry
+import models.labwork._
 import models._
 
 object ReportCardService {

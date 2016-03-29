@@ -1,13 +1,14 @@
 package bind
 
 import base.SesameDbSpec
-import models.{AssignmentPlan, AssignmentEntry, Labwork, Course, Degree}
+import models.labwork.{AssignmentEntryType, Labwork}
+import models.{Course, Degree}
 import models.semester.Semester
 import store.Namespace
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import models.AssignmentEntryType._
+import AssignmentEntryType._
 import scala.util.{Failure, Success}
 
 class LabworkBindingSpec extends SesameDbSpec {

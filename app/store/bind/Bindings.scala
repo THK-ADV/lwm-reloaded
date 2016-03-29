@@ -2,8 +2,7 @@ package store.bind
 
 import java.util.UUID
 import models._
-import models.applications.LabworkApplication
-import models.schedule._
+import models.labwork._
 import models.security._
 import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student, User}

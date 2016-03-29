@@ -2,7 +2,7 @@ package services
 
 import base.TestBaseDefinition
 import models._
-import models.applications.LabworkApplication
+import models.labwork.{AssignmentPlan, Labwork, LabworkApplication}
 import models.semester.Semester
 import models.users.User
 import org.joda.time.DateTime

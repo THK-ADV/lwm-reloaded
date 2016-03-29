@@ -3,8 +3,7 @@ package controllers
 import java.util.UUID
 
 import models._
-import models.applications.LabworkApplication
-import models.schedule.{Weekday, TimetableEntry, Timetable}
+import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
 import models.semester.{Blacklist, Semester}
@@ -148,7 +147,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def reportCard(user: String) = Action { request =>
     import bindings.ReportCardBinding._
-    import models.AssignmentEntryType._
+    import AssignmentEntryType._
 
     val entries = (0 until 5).map { n =>
       val start = LocalTime.now.plusHours(n)
@@ -367,7 +366,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   }
 
   def plans = {
-    import models.AssignmentEntryType._
+    import AssignmentEntryType._
     import bindings.AssignmentPlanBinding._
 
     def ap1Plan(labwork: UUID): AssignmentPlan = {

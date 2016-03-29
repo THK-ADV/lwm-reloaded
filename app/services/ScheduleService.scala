@@ -1,9 +1,7 @@
 package services
 
 import java.util.UUID
-
-import models.{AssignmentPlan, Group}
-import models.schedule._
+import models.labwork._
 import org.joda.time.{LocalDate, LocalTime}
 import utils.{Gen, Genesis}
 import utils.TypeClasses._

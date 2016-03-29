@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
-import models.applications.LabworkApplication
+import models.labwork.{Labwork, LabworkApplication}
 import models.security._
 import models.users.{Employee, Student, User}
 import org.scalatest.WordSpec

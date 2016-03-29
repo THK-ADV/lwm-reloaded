@@ -3,7 +3,7 @@ package controllers.reportCard
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{ReportCard, ReportCardEntry, ReportCardEntryType}
+import models.labwork.{ReportCardEntryType, ReportCardEntry, ReportCard}
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -17,7 +17,6 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{RoleService, SessionHandlingService}
-import store.sparql.{Initial, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 

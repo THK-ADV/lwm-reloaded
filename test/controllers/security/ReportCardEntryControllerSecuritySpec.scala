@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.{Rescheduled, ReportCardEntryType, ReportCardEntry}
+import models.labwork.{Rescheduled, ReportCardEntryType, ReportCardEntry}
 import models.security.Permissions.reportCardEntry
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers

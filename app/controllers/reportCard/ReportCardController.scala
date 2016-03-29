@@ -4,6 +4,7 @@ import java.util.UUID
 
 import controllers.crud._
 import models._
+import models.labwork.{ReportCardEntryAtom, ReportCardAtom, ReportCard, Labwork}
 import models.security.Permissions._
 import models.users.{Student, User}
 import modules.store.BaseNamespace

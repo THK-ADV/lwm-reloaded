@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.AssignmentPlan
+import models.labwork.AssignmentPlan
 import models.security.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._

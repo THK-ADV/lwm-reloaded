@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.ReportCardEntryType
+import models.labwork.ReportCardEntryType
 import models.security.Permissions.reportCardEntryType
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -23,7 +23,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
   when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
   val json = {
-    import models.ReportCardEntryType._
+    import ReportCardEntryType._
     Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0))
   }
 

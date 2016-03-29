@@ -3,12 +3,12 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Labwork, AssignmentPlan, AssignmentEntry, AssignmentEntryType}
+import models.labwork.{AssignmentEntry, AssignmentPlan, AssignmentEntryType, Labwork}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.Namespace
 import store.bind.Bindings
-import models.AssignmentEntryType._
+import AssignmentEntryType._
 import scala.util.{Failure, Success}
 
 class AssignmentPlanBindingSpec extends SesameDbSpec {
