@@ -10,9 +10,11 @@ case class Labwork(label: String, description: String, semester: UUID, course: U
 
 case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean)
 
-case class LabworkAtom(label: String, description: String, semester: Semester, course: Course, degree: Degree, subscribable: Boolean, id: UUID)
+case class LabworkAtom(label: String, description: String, semester: Semester, course: CourseAtom, degree: Degree, subscribable: Boolean, id: UUID)
 
 object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork] {
+
+  import Course.atomicFormat
 
   override implicit def reads: Reads[LabworkProtocol] = Json.reads[LabworkProtocol]
 
