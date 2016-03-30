@@ -4,10 +4,11 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import controllers.crud.labwork.LabworkCRUDController._
-import models.{UriGenerator, Course, Degree}
+import models.{CourseAtom, UriGenerator, Course, Degree}
 import models.labwork.{Labwork, LabworkAtom, LabworkProtocol}
 import models.security.Permissions._
 import models.semester.Semester
+import models.users.{User, Employee}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -19,7 +20,6 @@ import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
-
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -79,22 +79,26 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   override protected def atomize(output: Labwork): Try[Option[JsValue]] = {
-    import Labwork.atomicWrites
-    import defaultBindings.CourseBinding.courseBinder
-    import defaultBindings.DegreeBinding.degreeBinder
     import defaultBindings.SemesterBinding.semesterBinder
+    import defaultBindings.DegreeBinding.degreeBinder
+    import defaultBindings.CourseBinding.courseBinder
+    import defaultBindings.EmployeeBinding.employeeBinder
+    import Labwork.atomicWrites
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import utils.Ops.TraverseInstances.travO
 
     for {
       semester <- repository.get[Semester](Semester.generateUri(output.semester)(namespace))
       course <- repository.get[Course](Course.generateUri(output.course)(namespace))
       degree <- repository.get[Degree](Degree.generateUri(output.degree)(namespace))
-    } yield {
-      for {
-        s <- semester; c <- course; d <- degree
-      } yield Json.toJson(
-        LabworkAtom(output.label, output.description, s, c, d, output.subscribable, output.id)
-      )
-    }
+      lecturer <- course.map(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace))).sequenceM
+    } yield for {
+      s <- semester; c <- course; d <- degree; e <- lecturer.flatten
+      courseAtom = CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id)
+    } yield Json.toJson(
+      LabworkAtom(output.label, output.description, s, courseAtom, d, output.subscribable, output.id)
+    )
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

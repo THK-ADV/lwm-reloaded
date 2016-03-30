@@ -6,7 +6,7 @@ import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models._
 import models.labwork.{Labwork, LabworkAtom, LabworkProtocol}
 import models.semester.Semester
-import models.users.User
+import models.users.{Employee, User}
 import org.joda.time.LocalDate
 import org.mockito.Matchers
 import org.mockito.Matchers._
@@ -26,12 +26,20 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
   val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
 
-  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", User.randomUUID, 1, Course.randomUUID)
-  val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", User.randomUUID, 1, Course.randomUUID)
+  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+  val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
+
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1, Course.randomUUID)
+  val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", employeeToFail.id, 1, Course.randomUUID)
+
+  def toAtom(course: Course): CourseAtom = {
+    def employee(id: UUID): Employee = if (id == employeeToPass.id) employeeToPass else employeeToFail
+    CourseAtom(course.label, course.description, course.abbreviation, employee(course.lecturer), course.semesterIndex, course.id)
+  }
 
   val degreeToPass = Degree("label to pass", "abbrev to pass", Degree.randomUUID)
   val degreeToFail = Degree("label to fail", "abbrev to fail", Degree.randomUUID)
-  
+
   override val entityToPass: Labwork = Labwork(
     "label to pass",
     "description to pass",
@@ -85,7 +93,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     entityToPass.label,
     entityToPass.description,
     semesterToPass,
-    courseToPass,
+    toAtom(courseToPass),
     degreeToPass,
     entityToPass.subscribable,
     entityToPass.id
@@ -95,7 +103,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     entityToFail.label,
     entityToFail.description,
     semesterToFail,
-    courseToFail,
+    toAtom(courseToFail),
     degreeToFail,
     entityToFail.subscribable,
     entityToFail.id
@@ -561,6 +569,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         doReturn(Success(Some(semesterToPass))).
         doReturn(Success(Some(courseToPass))).
         doReturn(Success(Some(degreeToPass))).
+        doReturn(Success(Some(employeeToPass))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -579,6 +588,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         doReturn(Success(None)).
         doReturn(Success(Some(courseToPass))).
         doReturn(Success(Some(degreeToPass))).
+        doReturn(Success(Some(employeeToPass))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -619,19 +629,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
       import Labwork.atomicWrites
 
-      val labworks = Set(entityToPass, entityToFail)
-      val semesters = Set(semesterToPass, semesterToFail)
-      val courses = Set(courseToPass, courseToFail)
-      val degrees = Set(degreeToPass, degreeToFail)
-
-      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
+      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
 
       doReturn(Success(Some(semesterToPass))).
         doReturn(Success(Some(courseToPass))).
         doReturn(Success(Some(degreeToPass))).
+        doReturn(Success(Some(employeeToPass))).
         doReturn(Success(Some(semesterToFail))).
         doReturn(Success(Some(courseToFail))).
         doReturn(Success(Some(degreeToFail))).
+        doReturn(Success(Some(employeeToFail))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -646,10 +653,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
-      val labworks = Set(entityToPass, entityToFail)
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(labworks))
+      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
       doReturn(Failure(new Exception(errorMessage))).
         when(repository).get(anyObject())(anyObject())
 

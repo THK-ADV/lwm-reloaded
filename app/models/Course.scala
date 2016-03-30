@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.users.Employee
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Format, Json, Reads, Writes}
 
 case class Course(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID) extends UniqueEntity
 
@@ -18,6 +18,8 @@ object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol
   override implicit def reads: Reads[CourseProtocol] = Json.reads[CourseProtocol]
 
   override implicit def writes: Writes[Course] = Json.writes[Course]
+
+  implicit def atomicFormat: Format[CourseAtom] = Json.format[CourseAtom]
 
   implicit def atomicWrites: Writes[CourseAtom] = Json.writes[CourseAtom]
 
