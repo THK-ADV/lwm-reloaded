@@ -40,10 +40,11 @@ object ApiDataController {
   val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get, labwork.getAll) ++
       Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
-      semester.get + user.get + reportCard.get
+      semester.get + user.get + reportCard.get + authority.getAll
   )
   val employeeRole = Role(Roles.Employee,
-    room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) + labworkApplication.getAll ++ entryType.all
+    room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) +
+      labworkApplication.getAll ++ entryType.all + authority.getAll
   )
   val adminRole = Role(Admin, Set(prime))
 }
@@ -61,7 +62,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val rvRefRole = RefRole(None, rvRole.id)
 
   val konen = User.randomUUID
-  val leopold = User.randomUUID
+  val giannakopoulos = User.randomUUID
   val schmitter = User.randomUUID
   val victor = User.randomUUID
   val eisemann = User.randomUUID
@@ -77,7 +78,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val ss16 = Semester.randomUUID
 
   val ma1Konen = Course.randomUUID
-  val ma1Leopold = Course.randomUUID
+  val ma1Giannakopoulos = Course.randomUUID
   val ma2Schmitter = Course.randomUUID
   val ap1Victor = Course.randomUUID
   val ap2Kohls = Course.randomUUID
@@ -106,7 +107,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   val christianStudent = User.randomUUID
 
   val ma1KonenRefRole = RefRole(Some(ma1Konen), maRole.id)
-  val ma1LeopoldRefRole = RefRole(Some(ma1Leopold), maRole.id)
+  val ma1GiannakopoulosRefRole = RefRole(Some(ma1Giannakopoulos), maRole.id)
   val ma2SchmitterRefRole = RefRole(Some(ma2Schmitter), maRole.id)
   val ap1VictorRefRole = RefRole(Some(ap1Victor), maRole.id)
   val ap2KohlsRefRole = RefRole(Some(ap2Kohls), maRole.id)
@@ -243,7 +244,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
     List(
       Authority(konen, Set(employeeRefRole.id, ma1KonenRefRole.id, rvRefRole.id)),
-      Authority(leopold, Set(employeeRefRole.id, ma1LeopoldRefRole.id, rvRefRole.id)),
+      Authority(giannakopoulos, Set(employeeRefRole.id, ma1GiannakopoulosRefRole.id, rvRefRole.id)),
       Authority(schmitter, Set(employeeRefRole.id, ma2SchmitterRefRole.id, rvRefRole.id)),
       Authority(victor, Set(employeeRefRole.id, ap1VictorRefRole.id, rvRefRole.id)),
       Authority(kohls, Set(employeeRefRole.id, ap2KohlsRefRole.id, rvRefRole.id)),
@@ -259,7 +260,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       studentRefRole,
       rvRefRole,
       ma1KonenRefRole,
-      ma1LeopoldRefRole,
+      ma1GiannakopoulosRefRole,
       ma2SchmitterRefRole,
       ap1VictorRefRole,
       ap2KohlsRefRole,
@@ -293,7 +294,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
     List(
       Course("Mathematik 1", "Konen", "MA 1", konen, 1, ma1Konen),
-      Course("Mathematik 1", "Leopold", "MA 1", leopold, 1, ma1Leopold),
+      Course("Mathematik 1", "Giannakopoulos", "MA 1", giannakopoulos, 1, ma1Giannakopoulos),
       Course("Mathematik 2", "Schmitter", "MA 2", schmitter, 2, ma2Schmitter),
       Course("Algorithmen und Programmierung 1", "Victor", "AP 1", victor, 1, ap1Victor),
       Course("Computergrafik und Animation", "Eisemann", "CGA", eisemann, 3, cgaEisemann),
@@ -306,7 +307,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
     List(
       Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", konen),
-      Employee("leopold", "leopold", "edda", "edda.leopold@fh-koeln.de", "lecturer", leopold),
+      Employee("fotios", "giannakopoulos", "edda", "fotios.giannakopoulos@fh-koeln.de", "lecturer", giannakopoulos),
       Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", "lecturer", schmitter),
       Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", "lecturer", victor),
       Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", "lecturer", eisemann),
@@ -326,7 +327,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
       Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, ap2AiPrak),
       Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, ap2MiPrak),
       Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, ap2TiPrak),
-      Labwork("ma1 wi", "leopold", ws1516, ma1Leopold, wi, subscribable = false, ma1WiPrak),
+      Labwork("ma1 wi", "giannakopoulos", ws1516, ma1Giannakopoulos, wi, subscribable = false, ma1WiPrak),
       Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, ma1AiPrak),
       Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, ma1MiPrak),
       Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, ma1TiPrak),

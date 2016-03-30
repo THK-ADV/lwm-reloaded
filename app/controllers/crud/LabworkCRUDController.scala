@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models._
 import models.semester.Semester
+import models.users.{User, Employee}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -17,7 +18,7 @@ import utils.LwmMimeType
 import utils.RequestOps._
 import LabworkCRUDController._
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Success, Failure, Try}
 import models.security.Permissions._
 
 object LabworkCRUDController {
@@ -79,19 +80,23 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     import defaultBindings.SemesterBinding.semesterBinder
     import defaultBindings.DegreeBinding.degreeBinder
     import defaultBindings.CourseBinding.courseBinder
+    import defaultBindings.EmployeeBinding.employeeBinder
     import Labwork.atomicWrites
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import utils.Ops.TraverseInstances.travO
 
     for {
       semester <- repository.get[Semester](Semester.generateUri(output.semester)(namespace))
       course <- repository.get[Course](Course.generateUri(output.course)(namespace))
       degree <- repository.get[Degree](Degree.generateUri(output.degree)(namespace))
-    } yield {
-      for {
-        s <- semester; c <- course; d <- degree
-      } yield Json.toJson(
-        LabworkAtom(output.label, output.description, s, c, d, output.subscribable, output.id)
-      )
-    }
+      lecturer <- course.map(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace))).sequenceM
+    } yield for {
+      s <- semester; c <- course; d <- degree; e <- lecturer.flatten
+      courseAtom = CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id)
+    } yield Json.toJson(
+      LabworkAtom(output.label, output.description, s, courseAtom, d, output.subscribable, output.id)
+    )
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
