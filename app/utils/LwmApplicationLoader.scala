@@ -2,8 +2,9 @@ package utils
 
 import controllers._
 import modules._
-import modules.reportCard._
-import modules.schedule._
+import modules.labwork.reportCard._
+import modules.labwork.schedule._
+import modules.labwork._
 import modules.security._
 import modules.semester._
 import modules.store._
@@ -75,7 +76,8 @@ with ReportCardManagementModule
 with ReportCardEntryManagementModule
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
-with UserManagementModule {
+with UserManagementModule
+with AnnotationManagementModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
@@ -100,6 +102,7 @@ with UserManagementModule {
     reportCardEntryManagementController,
     reportCardEntryTypeManagementController,
     assignmentPlanManagementController,
+    annotationManagementController,
     userController,
     sessionController,
     apiDataController,
@@ -146,3 +149,4 @@ with DefaultReportCardEntryManagementModuleImpl
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultUserManagementModule
+with DefaultAnnotationManagementModuleImpl

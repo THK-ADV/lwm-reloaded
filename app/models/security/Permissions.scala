@@ -157,9 +157,19 @@ object Permissions {
     lazy val all = Set(create, update, delete, getAll, get)
   }
 
+  object annotation {
+    val create = Permission("Annotation:create")
+    val update = Permission("Annotation:update")
+    val delete = Permission("Annotation:delete")
+    val getAll = Permission("Annotation:getAll")
+    val get = Permission("Annotation:get")
+
+    lazy val all = Set(create, update, delete, getAll, get)
+  }
+
   lazy val all = room.all ++ degree.all ++ course.all ++
     labwork.all ++ labworkApplication.all ++ authority.all ++ refRole.all ++
     role.all ++ schedule.all ++ timetable.all ++ semester.all ++ group.all ++
     user.all ++ blacklist.all ++ entryType.all ++ reportCard.all ++ reportCardEntry.all ++
-    reportCardEntryType.all + prime
+    reportCardEntryType.all ++ assignmentPlan.all ++ annotation.all + prime
 }

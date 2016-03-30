@@ -1,28 +1,24 @@
 package bind.security
 
 import base.SesameDbSpec
-import models.security.{Authority, Permission, Role}
+import models.security.{Permission, Role}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.Success
 
 class RoleBindingSpec extends SesameDbSpec {
 
-  import ops._
-
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
 
   val roleWith = Role("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
   val roleWithout = Role("role1", Set())
 
-  import bindings.RoleBinding._
-
+  import bindings.RoleBinding.roleBinder
   import bindings.permissionBinder
   import bindings.uuidBinder
+  import ops._
 
   val roleGraph = (
     URI(Role.generateUri(roleWith)).a(lwm.Role)

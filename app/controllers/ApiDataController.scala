@@ -3,8 +3,7 @@ package controllers
 import java.util.UUID
 
 import models._
-import models.applications.LabworkApplication
-import models.schedule.{Weekday, TimetableEntry, Timetable}
+import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
 import models.semester.{Blacklist, Semester}
@@ -25,13 +24,16 @@ object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all + course.update
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++
+      reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all ++
+      annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++ reportCardEntry.all ++ reportCardEntryType.all + group.get + assignmentPlan.get
+    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++
+      reportCardEntry.all ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, timetable.get) ++ reportCardEntryType.all
+    Set(schedule.get, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
   )
 
   val rvRole = Role(RightsManager,
@@ -149,7 +151,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
   def reportCard(user: String) = Action { request =>
     import bindings.ReportCardBinding._
-    import models.AssignmentEntryType._
+    import AssignmentEntryType._
 
     val entries = (0 until 5).map { n =>
       val start = LocalTime.now.plusHours(n)
@@ -368,7 +370,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
   }
 
   def plans = {
-    import models.AssignmentEntryType._
+    import AssignmentEntryType._
     import bindings.AssignmentPlanBinding._
 
     def ap1Plan(labwork: UUID): AssignmentPlan = {

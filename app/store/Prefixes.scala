@@ -1,6 +1,6 @@
 package store
 
-import models.AssignmentEntryType
+import models.labwork.AssignmentEntryType
 import org.w3.banana.{RDF, RDFOps}
 
 object Prefixes {
@@ -17,7 +17,7 @@ object Prefixes {
     //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role
     val label = apply("label")
 
-    // Labwork, LabworkApplication, Room, Degree, TimetableEntry, RefRole
+    // Labwork, LabworkApplication, Room, Degree, TimetableEntry, RefRole, Annotation
     val description = apply("description")
     val assignmentPlan = apply("assignmentPlan")
     val semester = apply("semester")
@@ -68,7 +68,7 @@ object Prefixes {
     val permissions = apply("permissions")
     val privileged = apply("privileged")
 
-    //Group, Timetable, Schedule, ReportCard
+    // Group, Timetable, Schedule, ReportCard, Annotation, Assignmentplan
     val members = apply("members")
     val labwork = apply("labwork")
 
@@ -91,11 +91,15 @@ object Prefixes {
     // Schedule
     val published = apply("published")
 
-    // ReportCard
+    // ReportCard, Annotation
     val student = apply("student")
 
     // Labwork
     val subscribable = apply("subscribable")
+
+    // Annotation
+    val reportCardEntry = apply("reportCardEntry")
+    val message = apply("message")
 
     // classes
     val User = apply("User")
@@ -121,6 +125,7 @@ object Prefixes {
     val ReportCardEntry = apply("ReportCardEntry")
     val ReportCardEntryType = apply("ReportCardEntryType")
     val Rescheduled = apply("Rescheduled")
+    val Annotation = apply("Annotation")
   }
 
   object LWMPrefix {

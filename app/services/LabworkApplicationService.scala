@@ -1,9 +1,7 @@
 package services
 
 import java.util.UUID
-
-import models.Labwork
-import models.applications.LabworkApplication
+import models.labwork.{Labwork, LabworkApplication}
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix

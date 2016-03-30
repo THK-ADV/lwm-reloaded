@@ -4,18 +4,16 @@ import base.SesameDbSpec
 import models.Degree
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class DegreeBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
   import bindings.DegreeBinding._
   import bindings.uuidBinder
+  import ops._
 
   val degree = Degree("degree", "abbreviation", Degree.randomUUID)
   val degreeGraph = (
@@ -26,11 +24,13 @@ class DegreeBindingSpec extends SesameDbSpec {
     ).graph
 
   "A DegreeBindingSpec" should {
+
     "return a RDF graph representation of a student" in {
       val graph = degree.toPG.graph
 
       graph isIsomorphicWith degreeGraph shouldBe true
     }
+
     "return a student based on a RDF graph representation" in {
       val expecteddegree = PointedGraph[Rdf](URI(Degree.generateUri(degree)), degreeGraph).as[Degree]
 

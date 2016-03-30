@@ -1,10 +1,11 @@
 package services
 
 import base.TestBaseDefinition
+import models.labwork._
 import models.semester.Blacklist
 import models.users.User
 import models._
-import models.schedule.{Weekday, Timetable, TimetableEntry, TimetableDateEntry}
+import models.labwork.Weekday
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
 import org.mockito.Matchers._

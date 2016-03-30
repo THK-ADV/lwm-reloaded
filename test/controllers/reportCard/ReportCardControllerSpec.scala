@@ -4,6 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
+import models.labwork._
 import models.users.Student
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._

@@ -2,23 +2,19 @@ package bind.security
 
 import base.SesameDbSpec
 import models.Course
-import models.security.{Permission, Role, RefRole}
+import models.security.{Role, RefRole}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class RefRoleBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
-  import bindings.RefRoleBinding._
-  import bindings.uuidBinder
-  import bindings.RoleBinding._
-  import bindings.uuidRefBinder
+  val bindings = Bindings[Sesame](namespace)
+  import bindings.RefRoleBinding.refRoleBinder
+  import bindings.{uuidBinder, uuidRefBinder}
+  import ops._
 
   val refRoleWithCourse = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
@@ -35,6 +31,7 @@ class RefRoleBindingSpec extends SesameDbSpec {
     .--(lwm.id).->-(refRoleWithoutCourse.id).graph
 
   "A RefRoleBindingSpec" should {
+
     "return a RDF graph representation of a refRole" in {
       val graph = refRoleWithCourse.toPG.graph
 

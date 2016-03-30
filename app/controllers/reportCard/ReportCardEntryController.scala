@@ -1,7 +1,8 @@
 package controllers.reportCard
 
 import controllers.crud._
-import models.{UriGenerator, ReportCardEntry}
+import models.UriGenerator
+import models.labwork.ReportCardEntry
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame

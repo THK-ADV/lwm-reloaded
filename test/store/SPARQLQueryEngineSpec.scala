@@ -2,7 +2,8 @@ package store
 
 import java.util.UUID
 import base.TestBaseDefinition
-import models.{Degree, Group}
+import models.Degree
+import models.labwork.Group
 import models.users.{User, Student}
 import org.openrdf.model.Value
 import org.openrdf.repository.RepositoryConnection

@@ -1,7 +1,7 @@
 package controllers
 
 import controllers.crud.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
-import models.AssignmentEntryType
+import models.labwork.AssignmentEntryType
 import models.security.Permissions
 import modules.store.BaseNamespace
 import play.api.libs.json.Json

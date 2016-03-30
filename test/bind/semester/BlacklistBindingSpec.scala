@@ -1,26 +1,25 @@
 package bind.semester
 
 import base.SesameDbSpec
-import models.semester.{Blacklist, Semester}
+import models.semester.Blacklist
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class BlacklistBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
   import bindings.uuidBinder
   import bindings.jodaDateTimeBinder
   import bindings.BlacklistBinding.blacklistBinder
+  import ops._
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
   val blacklist = Blacklist("blacklist", dates, Blacklist.randomUUID)
+
   val blacklistGraph = (
     URI(Blacklist.generateUri(blacklist)).a(lwm.Blacklist)
       -- lwm.label ->- blacklist.label

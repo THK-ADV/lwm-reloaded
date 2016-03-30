@@ -2,26 +2,21 @@ package bind.security
 
 import base.SesameDbSpec
 import models.{Course, Degree}
-import models.security.{Authority, Permission, RefRole, Role}
+import models.security.{Authority, RefRole, Role}
 import models.users.{Student, User}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import store.Namespace
 import store.bind.Bindings
 
 import scala.util.Success
 
 class AuthorityBindingSpec extends SesameDbSpec {
 
+  val bindings = Bindings[Sesame](namespace)
+
   import ops._
-
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-  val bindings = Bindings[Sesame](ns)
-
-  import bindings.RefRoleBinding._
-  import bindings.AuthorityBinding._
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
+  import bindings.AuthorityBinding.authorityBinder
+  import bindings.{uuidBinder, uuidRefBinder}
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
 

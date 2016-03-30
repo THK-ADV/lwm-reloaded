@@ -2,8 +2,7 @@ package store.bind
 
 import java.util.UUID
 import models._
-import models.applications.LabworkApplication
-import models.schedule._
+import models.labwork._
 import models.security._
 import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student, User}
@@ -409,6 +408,19 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
 
     implicit val rescheduledBinding: PGBinder[Rdf, Rescheduled] = pgbWithId[Rescheduled](_ => innerUri)(date, start, end, room)(Rescheduled.apply, Rescheduled.unapply) withClasses classUri
+  }
+
+  object AnnotationBinding {
+    implicit val clazz = lwm.Annotation
+    implicit val classUri = classUrisFor[Annotation](clazz)
+
+    private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
+    private val reportCardEntry = property[UUID](lwm.reportCardEntry)(uuidRefBinder(ReportCardEntry.splitter))
+    private val message = property[String](lwm.message)
+    private val timestamp = property[DateTime](lwm.timestamp)
+
+    implicit val annotationBinding: PGBinder[Rdf, Annotation] = pgbWithId[Annotation](annotation => makeUri(Annotation.generateUri(annotation)))(student, labwork, reportCardEntry, message, timestamp, id)(Annotation.apply, Annotation.unapply) withClasses classUri
   }
 }
 

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.schedule.{Timetable, TimetableEntry}
+import models.labwork.{TimetableEntry, Timetable}
 import models.security.Permissions._
 import models.semester.Blacklist
 import org.joda.time.LocalDate

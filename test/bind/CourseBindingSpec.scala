@@ -2,8 +2,7 @@ package bind
 
 import base.SesameDbSpec
 import models.Course
-import models.users.{Employee, User}
-import store.Namespace
+import models.users.User
 import store.bind.Bindings
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -11,13 +10,11 @@ import org.w3.banana.sesame.Sesame
 import scala.util.{Failure, Success}
 
 class CourseBindingSpec extends SesameDbSpec {
-  import ops._
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
 
-  val bindings = Bindings[Sesame](ns)
+  val bindings = Bindings[Sesame](namespace)
   import bindings.CourseBinding.courseBinder
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
+  import bindings.{uuidBinder, uuidRefBinder}
+  import ops._
 
   val course = Course("Algorithmen und Programmierung", "AP Victor", "AP", User.randomUUID, 1, Course.randomUUID)
   val courseGraph = URI(Course.generateUri(course)).a(lwm.Course)
