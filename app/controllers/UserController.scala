@@ -66,7 +66,6 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   import bindings.StudentBinding
   import bindings.EmployeeBinding
 
-
   def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
     repository.get[Student](uri)(StudentBinding.studentBinder)

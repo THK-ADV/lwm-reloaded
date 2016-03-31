@@ -1,10 +1,10 @@
-package controllers.security
+package security
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.{AssignmentPlan, Labwork}
+import models.labwork.Labwork
 import models.security.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._

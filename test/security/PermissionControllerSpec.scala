@@ -1,6 +1,7 @@
-package controllers.security
+package security
 
 import base.TestBaseDefinition
+import controllers.security.PermissionController
 import models.security.Permissions
 import org.mockito.Matchers
 import org.mockito.Mockito.{mock => _, _}

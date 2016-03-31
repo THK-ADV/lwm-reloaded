@@ -1,8 +1,8 @@
-package controllers.security
+package security
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.labwork.ReportCardEntryType
 import models.security.Permissions.reportCardEntryType
@@ -11,8 +11,8 @@ import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
-import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
+import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 
 import scala.concurrent.Future

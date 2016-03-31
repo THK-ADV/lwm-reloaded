@@ -1,17 +1,18 @@
-package controllers.security
+package security
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
+import models.security.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
-import models.security.Permissions._
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
+
 import scala.concurrent.Future
 import scala.util.Success
-import play.api.test.Helpers._
 
 class ReportCardControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition  {
 
