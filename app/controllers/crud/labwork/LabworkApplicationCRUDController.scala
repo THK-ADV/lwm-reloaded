@@ -76,15 +76,11 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
       applicant <- repository.get[Student](User.generateUri(output.applicant)(namespace))
       friends <- repository.getMany[Student](output.friends.map(id => User.generateUri(id)(namespace)))
-    } yield {
-      for {
-        l <- labwork
-        app <- applicant
-      } yield {
-        val atom = LabworkApplicationAtom(l, app, friends, output.timestamp, output.id)
-        Json.toJson(atom)
-      }
-    }
+    } yield for {
+      l <- labwork; app <- applicant
+    } yield Json.toJson(
+      LabworkApplicationAtom(l, app, friends, output.timestamp, output.id)
+    )
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

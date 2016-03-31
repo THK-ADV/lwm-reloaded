@@ -16,7 +16,7 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{GroupService, RoleService, SessionHandlingService, TimetableService}
 import store.bind.Bindings
-import store.sparql.{Initial, QueryExecutor, SelectClause}
+import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -32,7 +32,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   val sessionService = mock[SessionHandlingService]
   val qe = mock[QueryExecutor[SelectClause]]
   val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
-  val query = Initial[Nothing, Nothing](store.sparql.select(""))(qe)
+  val query = QueryEngine.empty(qe)
 
   def pointedGraph: PointedGraph[Rdf]
 

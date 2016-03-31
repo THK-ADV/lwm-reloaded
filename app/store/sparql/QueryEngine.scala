@@ -8,6 +8,9 @@ import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 import scalaz.{Functor, Monad, Traverse, ~>}
 
+object QueryEngine {
+  def empty(implicit qe: QueryExecutor[SelectClause]) = Initial[Nothing, Nothing](select(""))(qe)
+}
 
 sealed trait QueryExecutor[A] {
   def parse(s: A): Try[Sesame#SelectQuery]

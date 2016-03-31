@@ -1,8 +1,8 @@
-package controllers.security
+package security
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.labwork.Group
 import models.security.Permissions._

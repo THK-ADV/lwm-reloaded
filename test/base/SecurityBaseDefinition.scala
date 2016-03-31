@@ -1,12 +1,12 @@
-package controllers.security
+package base
 
 import java.util.UUID
 
 import models.security.Authority
 import org.scalatest.mock.MockitoSugar
-import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.WithApplicationLoader
+import play.api.{Application, ApplicationLoader}
 import services.{RoleService, SessionHandlingService}
 import utils.DefaultLwmApplication
 

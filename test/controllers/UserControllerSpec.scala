@@ -6,42 +6,56 @@ import base.TestBaseDefinition
 import models.Degree
 import models.users.{Employee, Student, StudentAtom, User}
 import org.mockito.Matchers._
+import org.openrdf.model.Value
 import org.scalatest.WordSpec
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
-import play.api.test.FakeRequest
+import org.w3.banana.sesame.SesameModule
+import play.api.{Application, ApplicationLoader}
+import play.api.ApplicationLoader.Context
+import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.http.HttpVerbs
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
+import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import Student._
+import utils.{DefaultLwmApplication, LwmContentTypes, LwmMimeType}
 
 import scala.util.Success
 
-class UserControllerSpec extends WordSpec with TestBaseDefinition {
-  
-  val ns = Namespace("http://lwm.gm.th-koeln.de")
-  val repo = mock[SesameRepository]
+class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
+
+  val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
   val sessionService = mock[SessionHandlingService]
+  val qe = mock[QueryExecutor[SelectClause]]
+  val query = QueryEngine.empty(qe)
 
-  val bindings = Bindings[repo.Rdf](ns)
+  val namespace = Namespace("http://lwm.gm.th-koeln.de")
+  val bindings = Bindings[repository.Rdf](namespace)
 
-  val controller: UserController = new UserController(roleService, sessionService, repo, ns) {
-    //to be specialized
+  val controller: UserController = new UserController(roleService, sessionService, repository, namespace) {
+
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
   }
+
+  class FakeApp extends WithApplicationLoader(new ApplicationLoader {
+    override def load(context: Context): Application = new DefaultLwmApplication(context) {
+      override def userController: UserController = controller
+    }.application
+  })
 
   "A UserController" should {
 
     "get one specific user, regardless of his subcategory" in {
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
 
-      when(repo.get[User](anyObject())(anyObject())).thenReturn(Success(Some(student1)))
+      when(repository.get[User](anyObject())(anyObject())).thenReturn(Success(Some(student1)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -63,7 +77,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-      when(repo.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -91,14 +105,14 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
 
       val atom = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree, student1.id)
 
-      doReturn(Success(Some(student1))).doReturn(Success(Some(degree))).when(repo).get(anyObject())(anyObject())
+      doReturn(Success(Some(student1))).doReturn(Success(Some(degree))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         HttpVerbs.GET,
         "/atomic/users/" + student1.id
       )
 
-      val result = controller.getAtomic(User.generateUri(student1)(ns))(request)
+      val result = controller.getAtomic(User.generateUri(student1)(namespace))(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(atom)
@@ -121,8 +135,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-        when(repo.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-        when(repo.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+        when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+        when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -142,7 +156,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
     "get a single student" in {
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
 
-      when(repo.get[Student](anyObject())(anyObject())).thenReturn(Success(Some(student1)))
+      when(repository.get[Student](anyObject())(anyObject())).thenReturn(Success(Some(student1)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -161,14 +175,14 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
       val atom = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree1, student1.id)
 
-      doReturn(Success(Some(student1))).doReturn(Success(Some(degree1))).when(repo).get(anyObject())(anyObject())
+      doReturn(Success(Some(student1))).doReturn(Success(Some(degree1))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         HttpVerbs.GET,
         "/atomic/students/" + student1.id
       )
 
-      val result = controller.studentAtomic(User.generateUri(student1)(ns))(request)
+      val result = controller.studentAtomic(User.generateUri(student1)(namespace))(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(atom)
@@ -181,7 +195,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
 
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repo.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -210,8 +224,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val student3 = Student("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree1.id)
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repo.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
-      when(repo.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request = FakeRequest(
         GET,
@@ -231,7 +245,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
     "get a single employee" in {
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
 
-        when(repo.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
+        when(repository.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
 
         val request = FakeRequest(
           HttpVerbs.GET,
@@ -250,7 +264,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val employees: Set[Employee] = Set(employee1, employee2, employee3)
 
-      when(repo.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
+      when(repository.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -275,7 +289,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", Degree.randomUUID)
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repo.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
 
       val request = FakeRequest(
         GET,
@@ -303,8 +317,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repo.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
-      when(repo.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request = FakeRequest(
         GET,
@@ -328,7 +342,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val employees: Set[Employee] = Set(employee1, employee2, employee3)
       val lecturers: Set[Employee] = Set(employee1, employee3)
 
-      when(repo.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
+      when(repository.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -357,7 +371,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val lecturers: Set[Employee] = Set(employee1, employee3)
       val degreers: Set[Student] = Set(student1, student3)
 
-      when(repo.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
 
       val request1 = FakeRequest(
         HttpVerbs.GET,
@@ -403,8 +417,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       val lecturers: Set[Employee] = Set(employee1, employee3)
       val degreers: Set[Student] = Set(student1, student3)
 
-      when(repo.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-      when(repo.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request1 = FakeRequest(
         HttpVerbs.GET,
@@ -431,6 +445,78 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition {
       contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
         jsonVals2 contains entry shouldBe true
       }
+    }
+
+    "successfully return requested buddy by his system id" in new FakeApp {
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
+
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
+      val request = FakeRequest(
+        GET,
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = route(request).get
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](LwmMimeType.userV1Json)
+      contentAsJson(result) shouldBe Json.toJson(buddy)
+    }
+
+    "not return requested buddy by his system id when degree doesn't match" in new FakeApp {
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", UUID.randomUUID)
+
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
+      val request = FakeRequest(
+        GET,
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = route(request).get
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "Students are not part of the same degree"
+      )
+    }
+
+    "not return requested buddy when he is not found by his system id" in new FakeApp {
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
+
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set.empty[Student]))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
+      val request = FakeRequest(
+        GET,
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = route(request).get
+
+      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )
     }
   }
 }

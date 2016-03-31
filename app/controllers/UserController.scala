@@ -8,9 +8,11 @@ import models.Degree
 import models.security.Permissions
 import models.users.{Employee, Student, StudentAtom, User}
 import modules.store.BaseNamespace
+import org.openrdf.model.Value
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request, Result}
 import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -65,7 +67,6 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   import bindings.UserBinding
   import bindings.StudentBinding
   import bindings.EmployeeBinding
-
 
   def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
@@ -138,15 +139,50 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     }
   }
 
-    private def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
-      case Success(json) =>
-        Ok(json).as(mimeType)
-      case Failure(e) =>
-        failure(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
+  def buddy(systemId: String, secureContext: SecureContext = contextFrom(Get)) = many(secureContext) { request =>
+    import store.sparql.select
+    import store.sparql.select._
+    import utils.Ops.NaturalTrasformations._
+    import bindings.StudentBinding.studentBinder
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace)))(SessionController.userId)
+
+    val query = select ("student") where {
+      ^(v("student"), p(lwm.systemId), o(systemId))
     }
+
+    repository.prepareQuery(query).
+      select(_.get("student")).
+      changeTo(_.headOption).
+      transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
+      requestAll(repository.getMany[Student](_)).
+      run
+  } { set => set.find(_.systemId == systemId).fold(
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        ))
+      ) { student =>
+        if (set.groupBy(_.enrollment).size == 1)
+          Ok(Json.toJson(student)).as(mimeType)
+        else
+          BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> "Students are not part of the same degree"
+        ))
+      }
+  }
+
+  private def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
+    case Success(json) =>
+      Ok(json).as(mimeType)
+    case Failure(e) =>
+      failure(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      ))
+  }
 
   private def gets(secureContext: SecureContext)(f: Request[AnyContent] => Try[Result]) = secureContext action { request =>
     f(request) match {
@@ -183,6 +219,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         }
     }
   }
+
   private def jsonify[A <: User](set: Set[A])(f: A => Try[Option[JsValue]]) = manyToJson(repository)(set, f)
 
   private def gatomize[A <: User](output: Set[A]): Try[JsValue] = jsonify(output)(atomize)

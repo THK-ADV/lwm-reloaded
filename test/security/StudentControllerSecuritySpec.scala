@@ -1,11 +1,10 @@
-package controllers.security
+package security
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.security.Permissions._
-import models.users.Student
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -56,7 +55,6 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow non restricted context invocations when employee wants to get all students" in new FakeApplication() {
-      import Student.writes
 
       when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
       when(roleService.checkWith((None, user.getAll))(FakeEmployeeAuth)).thenReturn(Success(true))

@@ -309,7 +309,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
 
     List(
       Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", konen),
-      Employee("fotios", "giannakopoulos", "edda", "fotios.giannakopoulos@fh-koeln.de", "lecturer", giannakopoulos),
+      Employee("giannakopoulos", "giannakopoulos", "fotios", "fotios.giannakopoulos@fh-koeln.de", "lecturer", giannakopoulos),
       Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", "lecturer", schmitter),
       Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", "lecturer", victor),
       Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", "lecturer", eisemann),
