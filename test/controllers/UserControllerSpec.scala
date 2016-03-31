@@ -13,16 +13,16 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.sesame.SesameModule
 import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
-import play.api.test.{WithApplicationLoader, FakeRequest}
+import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.http.HttpVerbs
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
-import store.sparql.{Initial, SelectClause, QueryExecutor}
+import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import Student._
-import utils.{DefaultLwmApplication, LwmMimeType, LwmContentTypes}
+import utils.{DefaultLwmApplication, LwmContentTypes, LwmMimeType}
 
 import scala.util.Success
 
@@ -32,7 +32,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
   val roleService = mock[RoleService]
   val sessionService = mock[SessionHandlingService]
   val qe = mock[QueryExecutor[SelectClause]]
-  val query = Initial[Nothing, Nothing](store.sparql.select(""))(qe)
+  val query = QueryEngine.empty(qe)
 
   val namespace = Namespace("http://lwm.gm.th-koeln.de")
   val bindings = Bindings[repository.Rdf](namespace)
