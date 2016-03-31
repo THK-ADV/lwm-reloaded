@@ -209,6 +209,7 @@ GET           /students/:id                                            controlle
 GET           /atomic/students/:id                                     controllers.UserController.studentAtomic(id)
 GET           /employees                                               controllers.UserController.allEmployees()
 GET           /employees/:id                                           controllers.UserController.employee(id)
+GET           /students/buddies/:systemId                              controllers.UserController.buddy(systemId)
 
 # Sessions
 POST          /sessions                                                controllers.SessionController.login
