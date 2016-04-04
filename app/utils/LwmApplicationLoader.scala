@@ -58,6 +58,7 @@ with AuthorityManagementModule
 with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
+with LDAPModule
 with AssetsModule
 with EntryTypeManagementModule
 with ResolversModule

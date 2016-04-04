@@ -218,6 +218,7 @@ DELETE        /sessions                                                controlle
 HEAD          /sessions                                                controllers.SessionController.header
 
 # APIData
+GET           /api/populateProd                                        controllers.ApiDataController.populateProduction
 GET           /api/populate                                            controllers.ApiDataController.populate
 GET           /api/added                                               controllers.ApiDataController.getAdded
 GET           /api/reportCard/:user                                    controllers.ApiDataController.reportCard(user)
