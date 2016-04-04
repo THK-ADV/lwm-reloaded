@@ -47,10 +47,14 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       bindResult.getResultCode == ResultCode.SUCCESS
   }
 
-
+  def filter[B](pred: String)(f: Vector[SearchResultEntry] => B): Future[B] = bind(bindHost, bindPort, dn, "", ssl = true) { connection =>
+    val a = connection.search(dn, SearchScope.SUB, Filter.create(pred), "*")
+    import scala.collection.JavaConverters._
+    f(a.getSearchEntries.asScala.toVector)
+  }
   /**
     * Grabs all groups from LDAP.
- *
+    *
     * @param user the user
     * @param bindHost the host
     * @param bindPort the port

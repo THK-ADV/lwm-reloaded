@@ -147,12 +147,17 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     import utils.Ops.NaturalTrasformations._
     import bindings.DegreeBinding.degreeBinder
     import scala.concurrent.ExecutionContext.Implicits.global
-
+    import utils.Ops.MonadInstances.optM
     val lwm = LWMPrefix[repository.Rdf]
 
     val query = select ("degree") where {
       ^(v("student"), p(lwm.id), o(request.session(SessionController.userId))).
       ^(v("student"), p(lwm.enrollment), v("degree"))
+    }
+
+    val query2 = select ("id") where {
+      ^(v("student"), p(lwm.systemId), o(systemId)).
+        ^(v("student"), p(lwm.id), v("id"))
     }
 
     val degreeResult = repository.prepareQuery(query).
@@ -161,20 +166,30 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       request[Option, Degree](value => repository.get[Degree](value.stringValue)).
       run
 
+    val buddyId = repository.prepareQuery(query2).
+      select(_.get("id")).
+      changeTo(_.headOption).
+      map(value => UUID.fromString(value.stringValue()))(optM).
+      run
+
     (for {
-      degree <- Future.fromTry(degreeResult)
+      mfriend <- Future.fromTry(buddyId)
+      mdegree <- Future.fromTry(degreeResult)
       buddyDegree <- ldapService.degreeAbbrev(systemId)
-    } yield degree.map(_.abbreviation == buddyDegree)).map {
-      case Some(degree) if degree => Ok
-      case Some(_) => BadRequest(Json.obj(
+    } yield (mfriend, mdegree) match {
+      case (Some(friend), Some(degree)) if degree.abbreviation == buddyDegree =>
+        Ok(Json.obj(
+          "id" -> friend.toString
+        ))
+      case (_, Some(degree)) => BadRequest(Json.obj(
         "status" -> "KO",
         "message" -> "Students are not part of the same degree"
       ))
-      case None => NotFound(Json.obj(
+      case (None, _) => NotFound(Json.obj(
         "status" -> "KO",
         "message" -> "No such element..."
       ))
-    }.recover {
+    }).recover {
       case NonFatal(e) => InternalServerError(Json.obj(
         "status" -> "KO",
         "errors" -> e.getMessage

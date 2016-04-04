@@ -454,11 +454,12 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "successfully return requested buddy by his system id" in new FakeApp {
       val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
       val buddy = "buddy"
-
+      val id = UUID.randomUUID()
       when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree)))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map("degree" -> List(factory.createBNode()))))
+      doReturn(Success(Map("degree" -> List(factory.createBNode())))).doReturn(Success(Map("id" -> List(factory.createLiteral(id.toString)))))
+        .when(qe).execute(anyObject())
       when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.successful(degree.abbreviation))
 
       val request = FakeRequest(
@@ -469,6 +470,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val result = route(request).get
 
       status(result) shouldBe OK
+      contentAsJson(result) shouldBe Json.obj("id" -> id.toString)
     }
 
     "not return requested buddy when degree of current user doesn't even exists" in new FakeApp {
@@ -477,6 +479,9 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(None))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
+      doReturn(Success(Map("degree" -> List(factory.createBNode())))).doReturn(Success(Map("id" -> List.empty[String])))
+        .when(qe).execute(anyObject())
+
       when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.successful(degree.abbreviation))
 
       val request = FakeRequest(
