@@ -7,15 +7,19 @@ import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
 import models.semester.{Blacklist, Semester}
-import models.users.{User, Employee, Student}
+import models.users.{Employee, Student, User}
 import org.joda.time.format.DateTimeFormat
-import org.joda.time.{LocalTime, LocalDate}
+import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
+import services.{LDAPService, LDAPServiceImpl}
 import store.SesameRepository
 import store.bind.Bindings
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
@@ -51,7 +55,7 @@ object ApiDataController {
   val adminRole = Role(Admin, Set(prime))
 }
 
-class ApiDataController(val repository: SesameRepository) extends Controller {
+class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl) extends Controller {
   import repository.ops
   import ApiDataController._
 
@@ -149,6 +153,18 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     }
   }
 
+  def populateProduction = Action {
+    (productionDegrees ++ productionRefRoles ++ productionRoles ++ productionAuthorities).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
+      l match {
+        case Success(g) => r map (_ :+ g)
+        case Failure(e) => Failure(e)
+      }
+    } match {
+      case Success(g) => Ok("Graph created")
+      case Failure(e) => InternalServerError(e.getMessage)
+    }
+  }
+
   def reportCard(user: String) = Action { request =>
     import bindings.ReportCardBinding._
     import AssignmentEntryType._
@@ -234,7 +250,7 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
-  def people = List(Employee("lwmadmin", "Wurst", "Hans", "", "employee", User.randomUUID))
+  def people = List(Employee("lwmadmin", "Lwm", "Admin", "", "employee", User.randomUUID))
 
   def authorities = {
     import bindings.AuthorityBinding._
@@ -474,11 +490,27 @@ class ApiDataController(val repository: SesameRepository) extends Controller {
     List(Employee.default).map(repository.add[Employee])
   }
 
-  def foo = {
-    import bindings.RefRoleBinding._
 
-    List(
-      RefRole(Some(ap2Kohls), mvRole.id)
-    ).map(repository.add[RefRole])
+  def productionDegrees = {
+    import bindings.DegreeBinding._
+    Await.result(
+    ldap.filter("(gidNumber=1)") { vec =>
+      vec.filter(z => z.hasAttribute("studyPath") && Option(z.getAttribute("studyPath")).isDefined).map(_.getAttributeValue("studyPath")).distinct
+    } map { abbrevs =>
+      abbrevs.map(a => repository.add[Degree](Degree("", a)))
+
+    }, 7.seconds)
   }
+
+  def productionAuthorities = {
+    import bindings.EmployeeBinding._
+    import bindings.AuthorityBinding._
+    people.map(p => (p, Authority(p.id, Set(adminRefRole.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
+      case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
+    }
+  }
+
+  def productionRoles = roles
+
+  def productionRefRoles = refroles
 }

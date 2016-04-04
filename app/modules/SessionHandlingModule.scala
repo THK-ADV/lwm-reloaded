@@ -15,7 +15,7 @@ trait LDAPModuleImpl extends LDAPModule {
   val dn: String = lwmConfig.getString("lwm.bindDN").getOrElse("no dn set")
 
 
-  override def ldap: LDAPService = LDAPServiceImpl(bindHost, bindPort, dn)
+  override def ldap = LDAPServiceImpl(bindHost, bindPort, dn)
 }
 
 trait SessionControllerModule {
