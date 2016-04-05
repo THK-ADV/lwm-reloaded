@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.crud.labwork.ScheduleCRUDController
 import models._
 import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
@@ -13,7 +14,7 @@ import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
-import services.{LDAPService, LDAPServiceImpl}
+import services._
 import store.SesameRepository
 import store.bind.Bindings
 
@@ -54,7 +55,7 @@ object ApiDataController {
   val adminRole = Role(Admin, Set(prime))
 }
 
-class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl) extends Controller {
+class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl, groupService: GroupServiceLike, scheduleGenesisService: ScheduleGenesisServiceLike, reportCardService: ReportCardServiceLike) extends Controller {
   import repository.ops
   import ApiDataController._
 
@@ -235,6 +236,48 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl)
     }) match {
       case Success(json) => Ok(json.foldLeft(JsArray())((l, r) => l ++ r.asInstanceOf[JsArray]))
       case Failure(e) => InternalServerError(e.getMessage)
+    }
+  }
+
+  def scheduleGen(count: String) = Action { request =>
+    implicit val gb = bindings.GroupBinding.groupBinder
+    implicit val gcu = bindings.GroupBinding.classUri
+    implicit val tb = bindings.TimetableBinding.timetableBinder
+    implicit val tcu = bindings.TimetableBinding.classUri
+    implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
+    implicit val abu = bindings.AssignmentPlanBinding.classUri
+    import bindings.ReportCardBinding._
+
+    (for {
+      people <- groupService.sortApplicantsFor(ap1MiPrak) if people.nonEmpty
+      groupSize = (people.size / count.toInt) + 1
+      grouped = people.grouped(groupSize).toList
+      zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
+      groups = zipped map (t => Group(t._1, ap1MiPrak, t._2.toSet))
+      _ <- repository.addMany[Group](groups)
+      timetable <- repository.get[Timetable].map(_.find(_.labwork == ap1MiPrak))
+      plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == ap1MiPrak))
+      comp <- ScheduleCRUDController.competitive(ap1MiPrak, repository)
+    } yield for {
+      t <- timetable if t.entries.nonEmpty
+      p <- plans if p.entries.nonEmpty
+      g <- if (groups.nonEmpty) Some(groups.toSet) else None
+    } yield scheduleGenesisService.generate(t, g, p, comp.toVector)._1.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCard](_))) match {
+      case Success(Some(s)) => s.elem match {
+        case Success(g) if g.nonEmpty => Ok(Json.obj(
+          "status" -> "Ok",
+          "message" -> "created schedule and report cards for applied students"
+        ))
+        case _ =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "message" -> "could not create report cards"
+          ))
+      }
+      case _ => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> "could not create schedule"
+      ))
     }
   }
 
