@@ -7,7 +7,6 @@ import models.Degree
 import models.users.{Employee, Student, StudentAtom, User}
 import org.mockito.Matchers._
 import org.openrdf.model.Value
-import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
@@ -18,14 +17,13 @@ import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.http.HttpVerbs
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.test.Helpers._
-import services.{LDAPService, RoleService, SessionHandlingService}
+import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
-import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
+import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import Student._
-import utils.DefaultLwmApplication
+import utils.{DefaultLwmApplication, LwmContentTypes, LwmMimeType}
 
-import scala.concurrent.Future
 import scala.util.Success
 
 class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -33,15 +31,13 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
   val sessionService = mock[SessionHandlingService]
-  val ldapService = mock[LDAPService]
   val qe = mock[QueryExecutor[SelectClause]]
   val query = QueryEngine.empty(qe)
-  val factory = ValueFactoryImpl.getInstance()
 
   val namespace = Namespace("http://lwm.gm.th-koeln.de")
   val bindings = Bindings[repository.Rdf](namespace)
 
-  val controller: UserController = new UserController(roleService, sessionService, repository, namespace, ldapService) {
+  val controller: UserController = new UserController(roleService, sessionService, repository, namespace) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -94,7 +90,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       status(result) shouldBe OK
       contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-          jsonVals contains entry shouldBe true
+        jsonVals contains entry shouldBe true
       }
     }
 
@@ -139,8 +135,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-        when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-        when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -220,7 +216,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
 
       def jsonAtomic(students: Set[Student]): Set[JsValue] = students map { s =>
-          Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
+        Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
       }
 
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
@@ -249,17 +245,17 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "get a single employee" in {
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
 
-        when(repository.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
+      when(repository.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
 
-        val request = FakeRequest(
-          HttpVerbs.GET,
-          "/employees/" + employee1.id
-        )
+      val request = FakeRequest(
+        HttpVerbs.GET,
+        "/employees/" + employee1.id
+      )
 
-        val result = controller.employee(employee1.id.toString)(request)
+      val result = controller.employee(employee1.id.toString)(request)
 
-        status(result) shouldBe OK
-        contentAsJson(result) shouldBe Json.toJson(employee1)
+      status(result) shouldBe OK
+      contentAsJson(result) shouldBe Json.toJson(employee1)
     }
 
     "get all employees" in {
@@ -452,62 +448,44 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "successfully return requested buddy by his system id" in new FakeApp {
-      val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
-      val buddy = "buddy"
-      val id = UUID.randomUUID()
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree)))
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
+
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      doReturn(Success(Map("degree" -> List(factory.createBNode())))).doReturn(Success(Map("id" -> List(factory.createLiteral(id.toString)))))
-        .when(qe).execute(anyObject())
-      when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.successful(degree.abbreviation))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       val request = FakeRequest(
         GET,
-        s"/students/buddies/$buddy"
-      ).withSession(SessionController.userId -> UUID.randomUUID.toString)
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
 
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.obj("id" -> id.toString)
-    }
-
-    "not return requested buddy when degree of current user doesn't even exists" in new FakeApp {
-      val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
-      val buddy = "buddy"
-
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(None))
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      doReturn(Success(Map("degree" -> List(factory.createBNode())))).doReturn(Success(Map("id" -> List.empty[String])))
-        .when(qe).execute(anyObject())
-
-      when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.successful(degree.abbreviation))
-
-      val request = FakeRequest(
-        GET,
-        s"/students/buddies/$buddy"
-      ).withSession(SessionController.userId -> UUID.randomUUID.toString)
-
-      val result = route(request).get
-
-      status(result) shouldBe NOT_FOUND
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "OK",
+        "id" -> buddy.id
+      )
     }
 
     "not return requested buddy by his system id when degree doesn't match" in new FakeApp {
-      val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
-      val buddy = "buddy"
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", UUID.randomUUID)
 
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree)))
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map("degree" -> List(factory.createBNode()))))
-      when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.successful("AI"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       val request = FakeRequest(
         GET,
-        s"/students/buddies/$buddy"
-      ).withSession(SessionController.userId -> UUID.randomUUID.toString)
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
 
       val result = route(request).get
 
@@ -520,54 +498,27 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "not return requested buddy when he is not found by his system id" in new FakeApp {
-      val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
-      val buddy = "buddy"
-      val errorMessage = s"User $buddy not found"
+      val degree = UUID.randomUUID
+      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+      val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
 
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree)))
+      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set.empty[Student]))
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.failed(new RuntimeException(errorMessage)))
 
       val request = FakeRequest(
         GET,
-        s"/students/buddies/$buddy"
-      ).withSession(SessionController.userId -> UUID.randomUUID.toString)
+        s"/students/buddies/${buddy.systemId}"
+      ).withSession(SessionController.userId -> currentUser.id.toString)
 
       val result = route(request).get
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
+      status(result) shouldBe NOT_FOUND
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    "not return requested buddy when he is not a student" in new FakeApp {
-      val degree = Degree("Medieninformatik", "MI", UUID.randomUUID)
-      val buddy = "buddy"
-      val errorMessage = s"User $buddy is not a student"
-
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree)))
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(ldapService.degreeAbbrev(anyObject())).thenReturn(Future.failed(new RuntimeException(errorMessage)))
-
-      val request = FakeRequest(
-        GET,
-        s"/students/buddies/$buddy"
-      ).withSession(SessionController.userId -> UUID.randomUUID.toString)
-
-      val result = route(request).get
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
+        "message" -> "No such element..."
       )
     }
   }

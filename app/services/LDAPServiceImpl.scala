@@ -14,8 +14,6 @@ trait LDAPService {
   def authenticate(user: String, password: String): Future[Boolean]
 
   def attributes(user: String)(degreeFor: String => Try[UUID]): Future[User]
-
-  def degreeAbbrev(user: String): Future[String]
 }
 
 /**

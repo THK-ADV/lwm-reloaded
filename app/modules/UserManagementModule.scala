@@ -10,7 +10,7 @@ trait UserManagementModule {
 }
 
 trait DefaultUserManagementModule extends UserManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with BaseNamespace with SessionRepositoryModule with LDAPModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with BaseNamespace with SessionRepositoryModule =>
 
-  override def userController: UserController = new UserController(roleService, sessionService, repository, namespace, ldap)
+  override def userController: UserController = new UserController(roleService, sessionService, repository, namespace)
 }

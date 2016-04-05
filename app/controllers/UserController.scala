@@ -54,7 +54,7 @@ object UserController {
   lazy val statusAttribute = "status"
 }
 
-class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace, val ldapService: LDAPService) extends
+class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
   Controller with
   Secured with
   SessionChecking with
@@ -141,60 +141,42 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     }
   }
 
-  def buddy(systemId: String) = contextFrom(Get) asyncAction { request =>
+  def buddy(systemId: String, secureContext: SecureContext = contextFrom(Get)) = many(secureContext) { request =>
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.NaturalTrasformations._
-    import bindings.DegreeBinding.degreeBinder
-    import scala.concurrent.ExecutionContext.Implicits.global
-    import utils.Ops.MonadInstances.optM
+    import bindings.StudentBinding.studentBinder
+
     val lwm = LWMPrefix[repository.Rdf]
+    val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace)))(SessionController.userId)
 
-    val query = select ("degree") where {
-      ^(v("student"), p(lwm.id), o(request.session(SessionController.userId))).
-      ^(v("student"), p(lwm.enrollment), v("degree"))
+    val query = select ("student") where {
+      ^(v("student"), p(lwm.systemId), o(systemId))
     }
 
-    val query2 = select ("id") where {
-      ^(v("student"), p(lwm.systemId), o(systemId)).
-        ^(v("student"), p(lwm.id), v("id"))
-    }
-
-    val degreeResult = repository.prepareQuery(query).
-      select(_.get("degree")).
+    repository.prepareQuery(query).
+      select(_.get("student")).
       changeTo(_.headOption).
-      request[Option, Degree](value => repository.get[Degree](value.stringValue)).
+      transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
+      requestAll(repository.getMany[Student](_)).
       run
-
-    val buddyId = repository.prepareQuery(query2).
-      select(_.get("id")).
-      changeTo(_.headOption).
-      map(value => UUID.fromString(value.stringValue()))(optM).
-      run
-
-    (for {
-      mfriend <- Future.fromTry(buddyId)
-      mdegree <- Future.fromTry(degreeResult)
-      buddyDegree <- ldapService.degreeAbbrev(systemId)
-    } yield (mfriend, mdegree) match {
-      case (Some(friend), Some(degree)) if degree.abbreviation == buddyDegree =>
-        Ok(Json.obj(
-          "id" -> friend.toString
+  } { set => set.find(_.systemId == systemId).fold(
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
         ))
-      case (_, Some(degree)) => BadRequest(Json.obj(
-        "status" -> "KO",
-        "message" -> "Students are not part of the same degree"
-      ))
-      case (None, _) => NotFound(Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      ))
-    }).recover {
-      case NonFatal(e) => InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
-    }
+      ) { student =>
+        if (set.groupBy(_.enrollment).size == 1)
+          Ok(Json.obj(
+            "status" -> "OK",
+            "id" -> student.id
+          ))
+        else
+          BadRequest(Json.obj(
+            "status" -> "KO",
+            "message" -> "Students are not part of the same degree"
+          ))
+      }
   }
 
   private def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
