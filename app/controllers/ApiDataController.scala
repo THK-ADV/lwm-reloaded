@@ -44,8 +44,7 @@ object ApiDataController {
     authority.all ++ refRole.all ++ role.all
   )
   val studentRole = Role(Roles.Student,
-    Set(room.get, degree.get, course.get, labwork.get, labwork.getAll) ++
-      Set(labworkApplication.create, labworkApplication.update, labworkApplication.delete, labworkApplication.get) +
+    Set(room.get, degree.get, course.get, labwork.get, labwork.getAll) ++ labworkApplication.all +
       semester.get + user.get + reportCard.get + authority.getAll
   )
   val employeeRole = Role(Roles.Employee,

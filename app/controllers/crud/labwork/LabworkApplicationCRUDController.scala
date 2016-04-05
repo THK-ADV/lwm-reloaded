@@ -10,13 +10,15 @@ import models.labwork.{Labwork, LabworkApplication, LabworkApplicationAtom, Labw
 import models.security.Permissions._
 import models.users.{Student, User}
 import org.joda.time.DateTime
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
+import store.sparql.{Clause, select}
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -89,5 +91,19 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     case Delete => PartialSecureBlock(labworkApplication.delete)
     case Get => PartialSecureBlock(labworkApplication.get)
     case GetAll => PartialSecureBlock(labworkApplication.getAll)
+  }
+
+  override protected def existsQuery(input: LabworkApplicationProtocol): (Clause, select.Var) = {
+    import store.sparql.select._
+
+    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    (select ("id") where {
+      ^(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)) .
+        ^(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))) .
+        ^(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))) .
+        ^(v("s"), p(prefixes.id), v("id"))
+    }, v("id"))
   }
 }
