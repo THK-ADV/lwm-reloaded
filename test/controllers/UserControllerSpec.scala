@@ -90,7 +90,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       status(result) shouldBe OK
       contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-          jsonVals contains entry shouldBe true
+        jsonVals contains entry shouldBe true
       }
     }
 
@@ -135,8 +135,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-        when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-        when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -216,7 +216,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
 
       def jsonAtomic(students: Set[Student]): Set[JsValue] = students map { s =>
-          Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
+        Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
       }
 
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
@@ -245,17 +245,17 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "get a single employee" in {
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
 
-        when(repository.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
+      when(repository.get[Employee](anyObject())(anyObject())).thenReturn(Success(Some(employee1)))
 
-        val request = FakeRequest(
-          HttpVerbs.GET,
-          "/employees/" + employee1.id
-        )
+      val request = FakeRequest(
+        HttpVerbs.GET,
+        "/employees/" + employee1.id
+      )
 
-        val result = controller.employee(employee1.id.toString)(request)
+      val result = controller.employee(employee1.id.toString)(request)
 
-        status(result) shouldBe OK
-        contentAsJson(result) shouldBe Json.toJson(employee1)
+      status(result) shouldBe OK
+      contentAsJson(result) shouldBe Json.toJson(employee1)
     }
 
     "get all employees" in {
@@ -465,8 +465,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](LwmMimeType.userV1Json)
-      contentAsJson(result) shouldBe Json.toJson(buddy)
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "OK",
+        "id" -> buddy.id
+      )
     }
 
     "not return requested buddy by his system id when degree doesn't match" in new FakeApp {

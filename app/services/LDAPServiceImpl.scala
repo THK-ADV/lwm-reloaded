@@ -115,37 +115,49 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       }
   }
 
-  override def attributes(user: String)(degreeFor: String => Try[UUID]): Future[User] = bind(bindHost, bindPort, dn, "") {
-    connection ⇒
-      import scala.collection.JavaConverters._
+  def degreeAbbrev(user: String): Future[String] = bind(bindHost, bindPort, dn, "") { connection ⇒
+    import scala.collection.JavaConverters._
+    val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala.toList
 
-      val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala.toList
+    results match {
+      case h :: Nil =>
+        h.getAttribute("employeeType").getValue match {
+          case "student" => h.getAttribute("studyPath").getValue
+          case _ => throw new RuntimeException(s"User $user is not a student")
+        }
+      case _ => throw new RuntimeException(s"User $user not found")
+    }
+  }
 
-      def gather(entries: List[SearchResultEntry]): Try[User] = results match {
-        case h :: Nil => Try {
-          val forename = h.getAttribute("givenName").getValue
-          val surname = h.getAttribute("sn").getValue
-          val employeeType = h.getAttribute("employeeType").getValue
-          val mail = h.getAttribute("mail").getValue
+  override def attributes(user: String)(degreeFor: String => Try[UUID]): Future[User] = bind(bindHost, bindPort, dn, "") { connection ⇒
+    import scala.collection.JavaConverters._
+    val results = connection.search(s"uid=$user,$dn", SearchScope.SUB, "(cn=*)", "*").getSearchEntries.asScala.toList
 
-          employeeType match {
-            case "employee" | "lecturer" =>
-              Success(Employee(user, surname, forename, mail, employeeType))
-            case "student" =>
-              val studyPath = h.getAttribute("studyPath").getValue
-              degreeFor(studyPath).map(Student(user, surname, forename, mail, "", _))
-            case _ =>
-              Failure(new Throwable(s"$user is neither an employee n'or a student"))
-          }
-        }.flatten
-        case _ :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
+    def gather(entries: List[SearchResultEntry]): Try[User] = results match {
+      case h :: Nil => Try {
+        val forename = h.getAttribute("givenName").getValue
+        val surname = h.getAttribute("sn").getValue
+        val employeeType = h.getAttribute("employeeType").getValue
+        val mail = h.getAttribute("mail").getValue
 
-        case _ => Failure(new Throwable("No attributes found"))
-      }
+        employeeType match {
+          case "employee" | "lecturer" =>
+            Success(Employee(user, surname, forename, mail, employeeType))
+          case "student" =>
+            val studyPath = h.getAttribute("studyPath").getValue
+            degreeFor(studyPath).map(Student(user, surname, forename, mail, "", _))
+          case _ =>
+            Failure(new Throwable(s"$user is neither an employee n'or a student"))
+        }
+      }.flatten
+      case _ :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
 
-      gather(results) match {
-        case Success(u) => u
-        case Failure(e) => throw new RuntimeException(e.getMessage)
-      }
+      case _ => Failure(new Throwable("No attributes found"))
+    }
+
+    gather(results) match {
+      case Success(u) => u
+      case Failure(e) => throw new RuntimeException(e.getMessage)
+    }
   }
 }

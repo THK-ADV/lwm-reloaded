@@ -11,7 +11,7 @@ import modules.store.BaseNamespace
 import org.openrdf.model.Value
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request, Result}
-import services.{RoleService, SessionHandlingService}
+import services.{LDAPService, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
@@ -21,6 +21,8 @@ import utils.Ops.TraverseInstances._
 import utils.Ops._
 
 import scala.collection.Map
+import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -165,12 +167,15 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         ))
       ) { student =>
         if (set.groupBy(_.enrollment).size == 1)
-          Ok(Json.toJson(student)).as(mimeType)
+          Ok(Json.obj(
+            "status" -> "OK",
+            "id" -> student.id
+          ))
         else
           BadRequest(Json.obj(
-          "status" -> "KO",
-          "message" -> "Students are not part of the same degree"
-        ))
+            "status" -> "KO",
+            "message" -> "Students are not part of the same degree"
+          ))
       }
   }
 

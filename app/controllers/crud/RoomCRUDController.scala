@@ -1,7 +1,5 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.{Room, RoomProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
