@@ -154,7 +154,12 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
   }
 
   def populateProduction = Action {
-    (productionDegrees ++ productionRefRoles ++ productionRoles ++ productionAuthorities).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
+    (productionDegrees ++
+      productionRefRoles ++
+      productionRoles ++
+      productionAuthorities ++
+      defaultEmployee ++
+      defaultRoom).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
         case Failure(e) => Failure(e)
@@ -563,5 +568,14 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
 
   def productionRoles = roles
 
-  def productionRefRoles = refroles
+  def productionRefRoles = {
+    import bindings.RefRoleBinding._
+
+    List(
+      adminRefRole,
+      employeeRefRole,
+      studentRefRole,
+      rvRefRole
+    ).map(repository.add[RefRole])
+  }
 }
