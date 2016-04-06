@@ -33,7 +33,7 @@ class SessionController(val sessionService: SessionHandlingService) extends Cont
         )))
       },
       success => {
-        sessionService.newSession(success.username, success.password).map {
+        sessionService.newSession(success.username.toLowerCase, success.password).map {
           case s: Session =>
             Ok.withSession(
               SessionController.sessionId -> s.id.toString,

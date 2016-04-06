@@ -138,15 +138,16 @@ case class LDAPServiceImpl(bindHost: String, bindPort: Int, dn: String) extends 
       case h :: Nil => Try {
         val forename = h.getAttribute("givenName").getValue
         val surname = h.getAttribute("sn").getValue
+        val systemId = h.getAttribute("uid").getValue
         val employeeType = h.getAttribute("employeeType").getValue
         val mail = h.getAttribute("mail").getValue
 
         employeeType match {
           case "employee" | "lecturer" =>
-            Success(Employee(user, surname, forename, mail, employeeType))
+            Success(Employee(systemId, surname, forename, mail, employeeType))
           case "student" =>
             val studyPath = h.getAttribute("studyPath").getValue
-            degreeFor(studyPath).map(Student(user, surname, forename, mail, "", _))
+            degreeFor(studyPath).map(Student(systemId, surname, forename, mail, "", _))
           case _ =>
             Failure(new Throwable(s"$user is neither an employee n'or a student"))
         }

@@ -247,6 +247,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
     implicit val abu = bindings.AssignmentPlanBinding.classUri
     import bindings.ReportCardBinding._
+    import bindings.ScheduleBinding._
 
     (for {
       people <- groupService.sortApplicantsFor(ap1MiPrak) if people.nonEmpty
@@ -262,7 +263,15 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
       g <- if (groups.nonEmpty) Some(groups.toSet) else None
-    } yield scheduleGenesisService.generate(t, g, p, comp.toVector)._1.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCard](_))) match {
+    } yield {
+      val gen = scheduleGenesisService.generate(t, g, p, comp.toVector)._1
+      gen.map { scheduleG =>
+        val s = scheduleG.entries.map(g => ScheduleEntry(g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
+        Schedule(scheduleG.labwork, s, published = true, scheduleG.id)
+      }.map(repository.add[Schedule])
+
+      gen.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCard](_))
+    }) match {
       case Success(Some(s)) => s.elem match {
         case Success(g) if g.nonEmpty => Ok(Json.obj(
           "status" -> "Ok",
