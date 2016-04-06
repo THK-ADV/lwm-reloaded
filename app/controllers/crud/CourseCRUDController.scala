@@ -120,13 +120,13 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         import store.sparql.select
         import store.sparql.select._
 
-        lazy val prefixes = LWMPrefix[repository.Rdf]
+        lazy val lwm = LWMPrefix[repository.Rdf]
         lazy val rdf = RDFPrefix[repository.Rdf]
 
         val query = select ("s") where {
-            ^(v("s"), p(rdf.`type`), s(prefixes.RefRole)) .
-            ^(v("s"), p(prefixes.role), v("role")) .
-            ^(v("role"), p(prefixes.label), o(RightsManager))
+            ^(v("s"), p(rdf.`type`), s(lwm.RefRole)) .
+            ^(v("s"), p(lwm.role), v("role")) .
+            ^(v("role"), p(lwm.label), o(RightsManager))
         }
 
         import utils.Ops.MonadInstances._
