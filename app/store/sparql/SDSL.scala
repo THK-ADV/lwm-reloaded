@@ -69,7 +69,7 @@ case class WhereClause(body: Clause, tail: Clause = NoneClause) extends ConsClau
 }
 
 case class StatementClause[A <: Properties#Property](statement: (A, A, A), tail: Clause = NoneClause) extends ConsClause {
-  override def append(c: Clause): Clause = StatementClause(statement, tail append c)
+  override def append(c: Clause) = StatementClause(statement, tail append c)
 }
 
 case class FilterClause(p: String, tail: Clause = NoneClause) extends ConsClause {

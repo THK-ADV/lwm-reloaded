@@ -610,7 +610,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set(pointedGraph)))
 
       val request = FakeRequest(
@@ -636,7 +636,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(
@@ -663,7 +663,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       ))
       doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(

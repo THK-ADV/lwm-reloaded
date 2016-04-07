@@ -25,8 +25,8 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
-  val entryToPass = ReportCardEntry(0, "label to pass", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType])
-  val entryToFail = ReportCardEntry(1, "label to fail", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType])
+  val entryToPass = ReportCardEntry(studentToPass.id, labworkToPass.id, "label to pass", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType])
+  val entryToFail = ReportCardEntry(studentToFail.id, labworkToFail.id, "label to fail", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType])
 
   override val entityToFail: Annotation = Annotation(studentToFail.id, labworkToFail.id, entryToFail.id, "message to fail")
 

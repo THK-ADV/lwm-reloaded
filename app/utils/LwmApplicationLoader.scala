@@ -73,7 +73,6 @@ with ScheduleServiceManagementModule
 with BlacklistManagementModule
 with BlacklistServiceManagementModule
 with ReportCardServiceManagementModule
-with ReportCardManagementModule
 with ReportCardEntryManagementModule
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
@@ -99,7 +98,6 @@ with AnnotationManagementModule {
     scheduleManagementController,
     timetableManagementController,
     blacklistManagementController,
-    reportCardManagementController,
     reportCardEntryManagementController,
     reportCardEntryTypeManagementController,
     assignmentPlanManagementController,
@@ -145,7 +143,6 @@ with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklistServiceManagementModule
 with DefaultReportCardServiceManagementModule
-with DefaultReportCardManagementModuleImpl
 with DefaultReportCardEntryManagementModuleImpl
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
