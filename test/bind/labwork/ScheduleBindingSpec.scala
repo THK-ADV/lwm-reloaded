@@ -19,7 +19,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
 
   import bindings.ScheduleBinding.scheduleBinder
   import bindings.ScheduleEntryBinding.scheduleEntryBinder
-  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
   import ops._
 
   val scheduleEntry = ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())

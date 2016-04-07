@@ -79,7 +79,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   import ops._
   import bindings.TimetableBinding.timetableBinder
-  import bindings.jodaLocalDateBinder
+  import bindings.localDateBinder
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 

@@ -15,7 +15,7 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](repo.namespace)
 
   import bindings.LabworkApplicationBinding._
-  import bindings.{uuidBinder, uuidRefBinder, jodaDateTimeBinder}
+  import bindings.{uuidBinder, uuidRefBinder, dateTimeBinder}
 
   val student = User.randomUUID
   val friend1 = User.randomUUID

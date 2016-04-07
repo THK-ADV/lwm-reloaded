@@ -142,7 +142,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
       timetables ++
       blacklists ++
       defaultRoom ++
-      defaultEmployee ++ testEntries ++
+      defaultEmployee ++
       lApps).foldRight(Try(List[PointedGraph[repository.Rdf]]())) { (l, r) =>
       l match {
         case Success(g) => r map (_ :+ g)
@@ -578,14 +578,5 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
       studentRefRole,
       rvRefRole
     ).map(repository.add[RefRole])
-  }
-
-  def testEntries = {
-    import bindings.ReportCardEntryBinding.reportCardEntryBinding
-
-    (0 until 5).map { n =>
-      val start = LocalTime.now.plusHours(n)
-      ReportCardEntry(alexStudent, ap1MiPrak, n.toString, LocalDate.now, start, start.plusHours(1), UUID.randomUUID(), Set(ReportCardEntryType.Attendance))
-    }.map(repository.add[ReportCardEntry])
   }
 }

@@ -17,7 +17,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
   import bindings.AnnotationBinding.annotationBinding
-  import bindings.{uuidBinder, uuidRefBinder, jodaDateTimeBinder}
+  import bindings.{uuidBinder, uuidRefBinder, dateTimeBinder}
 
   val annotation = Annotation(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, "message")
   val annotationGraph = URI(Annotation.generateUri(annotation)).a(lwm.Annotation)

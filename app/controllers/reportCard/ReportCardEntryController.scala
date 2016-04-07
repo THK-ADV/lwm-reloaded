@@ -62,36 +62,6 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     case _ => PartialSecureBlock(god)
   }
 
-  def update(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    request.body.validate[ReportCardEntry].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        success.id == UUID.fromString(entry) match {
-          case true =>
-            repository.update(success) match {
-              case Success(_) =>
-                Ok(Json.toJson(success)).as(mimeType)
-              case Failure(e) =>
-                InternalServerError(Json.obj(
-                  "status" -> "KO",
-                  "errors" -> e.getMessage
-                ))
-            }
-          case false =>
-            BadRequest(Json.obj(
-              "status" -> "KO",
-              "message" -> s"Update body does not match with ReportCardEntry (${success.id})"
-            ))
-        }
-      }
-    )
-  }
-
   def get(student: String) = forStudent(student) { entries =>
     Success(Ok(Json.toJson(entries)).as(mimeType))
   }
@@ -106,6 +76,43 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def allAtomic(course: String) = reportCardEntries(course) { entries =>
     atomizeMany(entries).map(json => Ok(Json.toJson(json)).as(mimeType))
+  }
+
+  def update(course: String, entry: String) = updateEntry(course, entry) { entry =>
+    Success(Ok(Json.toJson(entry)).as(mimeType))
+  }
+
+  def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
+    atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
+  }
+
+  private def updateEntry(course: String, entry: String)(f: ReportCardEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
+    request.body.validate[ReportCardEntry].fold(
+      errors => {
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        ))
+      },
+      success => {
+        success.id == UUID.fromString(entry) match {
+          case true =>
+            repository.update(success).flatMap(_ => f(success)) match {
+              case Success(result) => result
+              case Failure(e) =>
+                InternalServerError(Json.obj(
+                  "status" -> "KO",
+                  "errors" -> e.getMessage
+                ))
+            }
+          case false =>
+            BadRequest(Json.obj(
+              "status" -> "KO",
+              "message" -> s"Update body does not match with ReportCardEntry (${success.id})"
+            ))
+        }
+      }
+    )
   }
 
   private def reportCardEntries(course: String)(f: Set[ReportCardEntry] => Try[Result]) = restrictedContext(course)(GetAll) action { request =>

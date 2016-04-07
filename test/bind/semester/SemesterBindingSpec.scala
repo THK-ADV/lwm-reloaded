@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 class SemesterBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.{uuidBinder, jodaLocalDateBinder}
+  import bindings.{uuidBinder, localDateBinder}
   import bindings.SemesterBinding.semesterBinder
   import ops._
 

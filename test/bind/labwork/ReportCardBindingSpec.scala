@@ -20,7 +20,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   val bindings = Bindings[Sesame](namespace)
   import bindings.ReportCardEntryBinding.reportCardEntryBinding
   import bindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
-  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
 
   val entries = (0 until 5).map { n =>
     ReportCardEntry(UUID.randomUUID, UUID.randomUUID, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)

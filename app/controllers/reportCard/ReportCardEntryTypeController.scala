@@ -4,11 +4,10 @@ import java.util.UUID
 
 import controllers.crud._
 import models.UriGenerator
-import models.labwork.{ReportCardEntry, Labwork, ReportCardEntryType}
+import models.labwork.{Labwork, ReportCardEntry, ReportCardEntryType}
 import models.security.Permissions._
 import models.users.User
 import modules.store.BaseNamespace
-import org.joda.time.LocalDate
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
@@ -20,7 +19,7 @@ import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ReportCardEntryTypeController {
   val studentAttribute = "student"
@@ -119,18 +118,18 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
           _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
         }
         case (clause, (`dateAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.localDate), o(values.head))
+          _ append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'")
         }
         case (clause, (`startAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.start), o(values.head))
+          _ append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'")
         }
         case (clause, (`endAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.end), o(values.head))
+          _ append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'")
         }
         case _ => Failure(new Throwable("Unknown attribute"))
       } flatMap { clause =>
         val query = select distinct "entries" where clause
-        println(query.run)
+
         repository.prepareQuery(query).
           select(_.get("entries")).
           transform(_.fold(List.empty[Value])(identity)).

@@ -51,7 +51,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaDateTimeBinder = new PGBinder[Rdf, DateTime] {
+  implicit val dateTimeBinder = new PGBinder[Rdf, DateTime] {
     val formatter = ISODateTimeFormat.dateTime()
 
     override def toPG(t: DateTime): PointedGraph[Rdf] = {
@@ -65,7 +65,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
+  implicit val localDateBinder = new PGBinder[Rdf, LocalDate] {
     // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
     override def toPG(t: LocalDate): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
@@ -78,10 +78,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaLocalTimeBinder = new PGBinder[Rdf, LocalTime] {
-    // LocalTime.toString formats to ISO8601 (yyyy-MM-dd)
+  implicit val localTimeBinder = new PGBinder[Rdf, LocalTime] {
+    // LocalTime.toString formats to HH:mm:ms:mms
     override def toPG(t: LocalTime): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString(), lwm.localTime))
+      PointedGraph(ops.makeLiteral(t.toString, lwm.localTime))
     }
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
@@ -367,7 +367,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val label = property[String](lwm.label)
-    private val date = property[LocalDate](lwm.localDate)
+    private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))

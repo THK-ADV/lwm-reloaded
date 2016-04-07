@@ -26,7 +26,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
   import bindings.LabworkApplicationBinding._
   import bindings.LabworkBinding._
   import bindings.AssignmentPlanBinding._
-  import bindings.jodaDateTimeBinder
+  import bindings.dateTimeBinder
 
   val emptyPlan = AssignmentPlan.empty
 

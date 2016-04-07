@@ -19,7 +19,7 @@ class TimetableBindingSpec extends SesameDbSpec {
   import bindings.BlacklistBinding.blacklistBinder
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
-  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
   import ops._
 
   val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)

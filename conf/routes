@@ -172,8 +172,9 @@ HEAD          /blacklists                                           controllers.
 GET           /reportCardEntries/student/:s                         controllers.reportCard.ReportCardEntryController.get(s)
 GET           /atomic/reportCardEntries/student/:s                  controllers.reportCard.ReportCardEntryController.getAtomic(s)
 GET           /courses/:c/reportCardEntries                         controllers.reportCard.ReportCardEntryController.all(c)
-GET           /atomic/courses/:c/reportCardEntries                  controllers.reportCard.ReportCardEntryController.allAtomic(c)
+GET           /courses/:c/atomic/reportCardEntries                  controllers.reportCard.ReportCardEntryController.allAtomic(c)
 PUT           /courses/:c/reportCardEntries/:e                      controllers.reportCard.ReportCardEntryController.update(c, e)
+PUT           /courses/:c/atomic/reportCardEntries/:e               controllers.reportCard.ReportCardEntryController.updateAtomic(c, e)
 
 # ReportCardEntryType
 GET           /courses/:c/reportCardEntries/types                   controllers.reportCard.ReportCardEntryTypeController.all(c)
