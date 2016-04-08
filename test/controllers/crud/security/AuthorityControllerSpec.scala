@@ -12,13 +12,16 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
+import play.api.libs.iteratee.{Enumeratee, Iteratee}
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
+import play.api.mvc.Results
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import utils.LwmMimeType
 
+import scala.concurrent.Await
 import scala.util.{Failure, Success}
 
 class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
@@ -241,13 +244,14 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       s"/${entityTypeName}s"
     )
     val result = controller.allAtomic()(request)
-    val jsVals = Set(Json.toJson(atomizedEntityToPass), Json.toJson(atomizedEntityToFail))
+    val jsVals = Seq(Json.toJson(atomizedEntityToPass), Json.toJson(atomizedEntityToFail))
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result).asInstanceOf[JsArray].value foreach { entity =>
-      jsVals contains entity shouldBe true
-    }
+
+
+    contentAsString(result) shouldEqual jsVals.foldLeft("")(_ + _)
+
   }
 
   s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
@@ -265,12 +269,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     )
     val result = controller.allAtomic()(request)
 
-    status(result) shouldBe INTERNAL_SERVER_ERROR
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "errors" -> errorMessage
-    )
+    status(result) shouldBe OK
+    contentType(result) shouldBe Some(mimeType.value)
+    contentAsString(result) shouldBe ""
   }
 
   "filter through nested levels of graphs" in {
