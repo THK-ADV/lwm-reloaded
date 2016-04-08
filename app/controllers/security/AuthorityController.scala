@@ -3,24 +3,27 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud._
-import models.{CourseAtom, Course, UriGenerator}
+import models.{Course, CourseAtom, UriGenerator}
 import models.security.Permissions._
 import models.security._
 import models.users.{Employee, User}
 import org.openrdf.model.Value
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
+import play.api.libs.iteratee.{Enumeratee, Enumerator, Input}
 import play.api.libs.json._
+import play.api.mvc.{Action, AnyContent}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.Ops._
-import utils.Ops.MonadInstances.{optM, tryM, listM}
+import utils.Ops.MonadInstances.{listM, optM, tryM}
 import utils.Ops.TraverseInstances._
+
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object AuthorityController {
   val userAttribute = "user"
@@ -86,10 +89,42 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Update => PartialSecureBlock(authority.update)
-    case GetAll => PartialSecureBlock(authority.getAll)
-    case Get => PartialSecureBlock(authority.get)
-    case _ => PartialSecureBlock(god)
+    //    case Update => PartialSecureBlock(authority.update)
+    //    case GetAll => PartialSecureBlock(authority.getAll)
+    //    case Get => PartialSecureBlock(authority.get)
+    //    case _ => PartialSecureBlock(god)
+    //  }
+    case _ => NonSecureBlock
+  }
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  private def chunk(s: Set[Authority]): Enumerator[JsValue] = {
+    val satom = Enumeratee.map[Authority](atomize)
+    val shandle = Enumeratee.mapInput[Try[Option[JsValue]]] {
+      case Input.El(Success(Some(v))) => Input.El(v)
+      case Input.El(Success(None)) => Input.Empty
+      case _ => Input.EOF
+    }
+
+    Enumerator.enumerate(s) &> satom &> shandle
+  }
+
+  def getStreamed(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { request =>
+    val res = {
+      if(request.queryString.nonEmpty)
+        getWithFilter(request.queryString)(Set.empty) map (set => chunk(set))
+      else {
+        repository.get[Authority] map (set => chunk(set))
+      }
+    }
+
+    res match {
+      case Success(enum) =>
+        Ok.chunked(enum).as(mimeType)
+      case Failure(e) =>
+        InternalServerError("Shit")
+    }
   }
 
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles

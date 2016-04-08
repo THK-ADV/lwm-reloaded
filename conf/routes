@@ -102,12 +102,13 @@ DELETE        /refRoles/:id                                            controlle
 HEAD          /refRoles                                                controllers.security.RefRoleController.header
 
 # Authority
+GET           /chunckedAuths                                           controllers.security.AuthorityController.getStreamed()
 POST          /authorities                                             controllers.security.AuthorityController.create()
 POST          /atomic/authorities                                      controllers.security.AuthorityController.createAtomic()
 PUT           /authorities/:id                                         controllers.security.AuthorityController.update(id)
 PUT           /atomic/authorities/:id                                  controllers.security.AuthorityController.updateAtomic(id)
 GET           /authorities                                             controllers.security.AuthorityController.all()
-GET           /atomic/authorities                                      controllers.security.AuthorityController.allAtomic()
+GET           /atomic/authorities                                      controllers.security.AuthorityController.getStreamed()
 GET           /authorities/:id                                         controllers.security.AuthorityController.get(id)
 GET           /atomic/authorities/:id                                  controllers.security.AuthorityController.getAtomic(id)
 DELETE        /authorities/:id                                         controllers.security.AuthorityController.delete(id)
