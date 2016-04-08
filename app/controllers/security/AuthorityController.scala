@@ -3,14 +3,13 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud._
-import models.{Course, CourseAtom, UriGenerator}
 import models.security.Permissions._
 import models.security._
 import models.users.{Employee, User}
+import models.{Course, CourseAtom, UriGenerator}
 import org.openrdf.model.Value
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.iteratee.{Enumeratee, Enumerator, Input}
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import services.{RoleService, SessionHandlingService}
@@ -18,9 +17,9 @@ import store.Prefixes.LWMPrefix
 import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.Ops._
 import utils.Ops.MonadInstances.{listM, optM, tryM}
 import utils.Ops.TraverseInstances._
+import utils.Ops._
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -53,9 +52,9 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override protected def atomize(output: Authority): Try[Option[JsValue]] = {
+    import defaultBindings.RefRoleBinding._
     import defaultBindings.UserBinding._
     import models.security.Authority._
-    import defaultBindings.RefRoleBinding._
 
     implicit val ns = repository.namespace
     for {
@@ -68,8 +67,8 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   import defaultBindings.CourseBinding._
-  import defaultBindings.RoleBinding._
   import defaultBindings.EmployeeBinding._
+  import defaultBindings.RoleBinding._
 
   def atomRefs(s: Set[RefRole]): Try[Set[RefRoleAtom]] = {
     import scalaz.syntax.applicative._
@@ -89,33 +88,20 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    //    case Update => PartialSecureBlock(authority.update)
-    //    case GetAll => PartialSecureBlock(authority.getAll)
-    //    case Get => PartialSecureBlock(authority.get)
-    //    case _ => PartialSecureBlock(god)
-    //  }
-    case _ => NonSecureBlock
-  }
+        case Update => PartialSecureBlock(authority.update)
+        case GetAll => PartialSecureBlock(authority.getAll)
+        case Get => PartialSecureBlock(authority.get)
+        case _ => PartialSecureBlock(god)
+      }
 
-  import scala.concurrent.ExecutionContext.Implicits.global
 
-  private def chunk(s: Set[Authority]): Enumerator[JsValue] = {
-    val satom = Enumeratee.map[Authority](atomize)
-    val shandle = Enumeratee.mapInput[Try[Option[JsValue]]] {
-      case Input.El(Success(Some(v))) => Input.El(v)
-      case Input.El(Success(None)) => Input.Empty
-      case _ => Input.EOF
-    }
-
-    Enumerator.enumerate(s) &> satom &> shandle
-  }
-
-  def getStreamed(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { request =>
+  // GET /ts with optional queries and deserialisation
+  override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
     val res = {
       if(request.queryString.nonEmpty)
-        getWithFilter(request.queryString)(Set.empty) map (set => chunk(set))
+        getWithFilter(request.queryString)(Set.empty) map (set => chunkAtoms(set))
       else {
-        repository.get[Authority] map (set => chunk(set))
+        repository.get[Authority] map (set => chunkAtoms(set))
       }
     }
 
@@ -123,16 +109,19 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
       case Success(enum) =>
         Ok.chunked(enum).as(mimeType)
       case Failure(e) =>
-        InternalServerError("Shit")
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
     }
   }
 
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = {
-    import store.sparql.select._
-    import store.sparql.select
     import AuthorityController._
+    import store.sparql.select
+    import store.sparql.select._
 
     val lwm = LWMPrefix[repository.Rdf]
     implicit val ns = repository.namespace

@@ -7,6 +7,7 @@ import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
+import play.api.libs.iteratee.{Enumeratee, Enumerator, Input}
 import play.api.libs.json._
 import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
@@ -184,6 +185,17 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with SecureControllerContext
   with Consistent[I, O]
   with Atomic[O] {
+
+  def chunkAtoms[R](data: Set[O]): Enumerator[JsValue] = {
+    val js = Enumeratee.map[O](atomize)
+    val transfer = Enumeratee.mapInput[Try[Option[JsValue]]] {
+      case Input.El(Success(Some(json))) => Input.El(json)
+      case Input.El(Success(None)) => Input.Empty
+      case _ => Input.EOF
+    }
+
+    Enumerator.enumerate(data) &> js &> transfer
+  }
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>
