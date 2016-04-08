@@ -78,7 +78,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
         maybeRole <- repository.get[Role](Role.generateUri(ref.role)(namespace))
         course <- Try(ref.course).flatPeek(course => repository.get[Course](Course.generateUri(course)(namespace)))
         lecturer <- Try(course).flatPeek(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace)))
-        courseAtom = (course |@| lecturer)((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
+        courseAtom = (course |@| lecturer) ((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
         set <- T
       } yield maybeRole match {
         case Some(role) => set + RefRoleAtom(courseAtom, role, ref.id)
@@ -88,17 +88,17 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-        case Update => PartialSecureBlock(authority.update)
-        case GetAll => PartialSecureBlock(authority.getAll)
-        case Get => PartialSecureBlock(authority.get)
-        case _ => PartialSecureBlock(god)
-      }
+    case Update => PartialSecureBlock(authority.update)
+    case GetAll => PartialSecureBlock(authority.getAll)
+    case Get => PartialSecureBlock(authority.get)
+    case _ => PartialSecureBlock(god)
+  }
 
 
   // GET /ts with optional queries and deserialisation
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
     val res = {
-      if(request.queryString.nonEmpty)
+      if (request.queryString.nonEmpty)
         getWithFilter(request.queryString)(Set.empty) map (set => chunkAtoms(set))
       else {
         repository.get[Authority] map (set => chunkAtoms(set))

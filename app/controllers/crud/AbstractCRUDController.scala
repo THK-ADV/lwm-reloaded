@@ -186,7 +186,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with Consistent[I, O]
   with Atomic[O] {
 
-  def chunkAtoms[R](data: Set[O]): Enumerator[JsValue] = {
+  def chunkAtoms(data: Set[O]): Enumerator[JsValue] = {
     val js = Enumeratee.map[O](atomize)
     val transfer = Enumeratee.mapInput[Try[Option[JsValue]]] {
       case Input.El(Success(Some(json))) => Input.El(json)
