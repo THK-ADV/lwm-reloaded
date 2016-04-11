@@ -3,8 +3,9 @@ package controllers.reportCard
 import java.util.UUID
 
 import controllers.crud._
+import controllers.crud.labwork.ScheduleCRUDController
 import models.{Room, UriGenerator}
-import models.labwork.{ReportCardEntryAtom, Labwork, ReportCardEntry}
+import models.labwork._
 import models.users.{Student, User}
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
@@ -13,13 +14,12 @@ import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Result, Controller}
-import services.{RoleService, SessionHandlingService}
+import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
 
-import scala.collection.Map
 import scala.util.{Try, Failure, Success}
 
 object ReportCardEntryController {
@@ -27,7 +27,12 @@ object ReportCardEntryController {
   val labworkAttribute = "labwork"
 }
 
-class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
+class ReportCardEntryController(val repository: SesameRepository,
+                                val sessionService: SessionHandlingService,
+                                val namespace: Namespace,
+                                val roleService: RoleService,
+                                val reportCardService: ReportCardServiceLike
+                               ) extends Controller
   with BaseNamespace
   with JsonSerialisation[ReportCardEntry, ReportCardEntry]
   with SesameRdfSerialisation[ReportCardEntry]
@@ -57,6 +62,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, reportCardEntry.create)
     case Update => SecureBlock(restrictionId, reportCardEntry.update)
     case GetAll => SecureBlock(restrictionId, reportCardEntry.getAll)
     case _ => PartialSecureBlock(god)
@@ -84,6 +90,46 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
     atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
+  }
+
+  def create(course: String, schedule: String) = restrictedContext(course)(Create) action { request =>
+    import store.sparql.select
+    import store.sparql.select._
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{optM, tryM}
+    import utils.Ops.TraverseInstances.travO
+    import utils.Ops.NaturalTrasformations._
+    import defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
+    import defaultBindings.ScheduleBinding.scheduleBinder
+
+    val id = UUID.fromString(schedule)
+    val sUri = Schedule.generateUri(id)(namespace)
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    repository.prepareQuery(select("plan") where {
+      ^(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
+        ^(s(sUri), p(lwm.labwork), v("labwork")).
+        ^(v("plan"), p(lwm.labwork), v("labwork"))
+    }).select(_.get("plan")).changeTo(_.headOption).
+      request[Option, AssignmentPlan](v => repository.get[AssignmentPlan](v.stringValue)).
+      request[Option, (AssignmentPlan, Schedule)](plan => repository.get[Schedule](sUri).peek(s => (plan, s))(tryM, optM)).
+      flatMap(res => ScheduleCRUDController.toScheduleG(res._2, repository).map(sg => (res._1, sg))).
+      map(res => reportCardService.reportCards(res._2, res._1))(optM).
+      transform(_.fold(Set.empty[ReportCardEntry])(set => set)).
+      requestAll[Set, ReportCardEntry](entries => repository.addMany[ReportCardEntry](entries).map(_ => entries)).
+      run match {
+        case Success(entries) =>
+          Created(Json.obj(
+            "status" -> "OK",
+            "message" -> s"Created report card entries for schedule $schedule"
+          ))
+        case Failure(e) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          ))
+      }
   }
 
   private def updateEntry(course: String, entry: String)(f: ReportCardEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>

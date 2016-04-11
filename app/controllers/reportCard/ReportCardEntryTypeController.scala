@@ -62,7 +62,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
     case _ => PartialSecureBlock(god)
   }
 
-  def update(course: String, cardEntry: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+  def update(course: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ReportCardEntryType].fold(
       errors => {
         BadRequest(Json.obj(

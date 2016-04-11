@@ -30,7 +30,7 @@ class ReportCardService extends ReportCardServiceLike {
     students.foldLeft(Vector.empty[ReportCardEntry]) { (vec, student) =>
       val appointments = schedule.entries.filter(_.group.members.contains(student)).sortBy(toLocalDateTime)
       appointments.zip(assignments).map {
-        case (se, ap) => ReportCardEntry(student, schedule.labwork, ap.label, se.date, se.start, se.end, se.room, toReportCardEntryType(ap.types))
+        case (se, ap) => ReportCardEntry(student, assignmentPlan.labwork, ap.label, se.date, se.start, se.end, se.room, toReportCardEntryType(ap.types))
       } ++ vec
     }.toSet
   }

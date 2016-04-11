@@ -37,7 +37,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCardEntries/${UUID.randomUUID}/types/$id",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -56,7 +56,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCardEntries/${UUID.randomUUID}/types/$id",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -75,7 +75,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCardEntries/${UUID.randomUUID}/types/$id",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -94,7 +94,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCardEntries/${UUID.randomUUID}/types/$id",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -113,7 +113,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/reportCardEntries/types?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
+        s"$FakeCourseUri/reportCardEntryTypes?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -130,7 +130,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/reportCardEntries/types?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
+        s"$FakeCourseUri/reportCardEntryTypes?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
       ).withSession(
         SessionController.userId -> FakeStudent.toString,
         SessionController.sessionId -> UUID.randomUUID.toString

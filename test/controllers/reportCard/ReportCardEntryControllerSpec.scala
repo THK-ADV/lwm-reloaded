@@ -19,7 +19,7 @@ import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
-import services.{RoleService, SessionHandlingService}
+import services.{ReportCardService, RoleService, SessionHandlingService}
 import store.sparql.{QueryEngine, SelectClause, QueryExecutor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -30,6 +30,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
+  val reportCardService = mock[ReportCardService]
   val namespace = Namespace("http://lwm.gm.th-koeln.de")
   val sessionService = mock[SessionHandlingService]
   val factory = ValueFactoryImpl.getInstance()
@@ -50,7 +51,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val entry = entries.head
   val course = UUID.randomUUID.toString
 
-  val controller: ReportCardEntryController = new ReportCardEntryController(repository, sessionService, namespace, roleService) {
+  val controller: ReportCardEntryController = new ReportCardEntryController(repository, sessionService, namespace, roleService, reportCardService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -283,6 +284,65 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
+    }
+
+    "successfully create report cards for given schedule" in {
+      val schedule = UUID.randomUUID
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(
+        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      ))
+      doReturn(Success(Some(AssignmentPlan.empty))).
+        doReturn(Success(Some(Schedule.empty))).
+        doReturn(Success(Some(Group.empty))).
+        when(repository).get(anyObject())(anyObject())
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+      )
+
+      val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "OK",
+        "message" -> s"Created report card entries for schedule $schedule"
+      )
+    }
+
+    "fail publishing a schedule when there is a exception" in {
+      val schedule = UUID.randomUUID
+      val errorMessage = "Oops, something went wrong"
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(
+        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      ))
+      doReturn(Failure(new Exception(errorMessage))).
+        doReturn(Success(Some(Schedule.empty))).
+        doReturn(Success(Some(Group.empty))).
+        when(repository).get(anyObject())(anyObject())
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+      )
+
+      val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
   }
 }

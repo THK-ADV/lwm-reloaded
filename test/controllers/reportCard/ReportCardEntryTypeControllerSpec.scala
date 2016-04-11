@@ -63,12 +63,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCardEntries/$entry/types/${entryType.id}",
+        s"/courses/$course/reportCardEntryTypes/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(toUpdate)
       )
 
-      val result = controller.update(course, entry.toString, entryType.id.toString)(request)
+      val result = controller.update(course, entryType.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
@@ -81,12 +81,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCardEntries/$entry/types/${entryType.id}",
+        s"/courses/$course/reportCardEntryTypes/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(toUpdate)
       )
 
-      val result = controller.update(course, entry.toString, UUID.randomUUID.toString)(request)
+      val result = controller.update(course, UUID.randomUUID.toString)(request)
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
@@ -104,12 +104,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       )
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCardEntries/$entry/types/${entryType.id}",
+        s"/courses/$course/reportCardEntryTypes/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         brokenJson
       )
 
-      val result = controller.update(course.toString, entry.toString, entryType.id.toString)(request)
+      val result = controller.update(course.toString, entryType.id.toString)(request)
 
       status(result) shouldBe BAD_REQUEST
       contentType(result) shouldBe Some("application/json")
@@ -125,12 +125,12 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$course/reportCardEntries/$entry/types/${entryType.id}",
+        s"/courses/$course/reportCardEntryTypes/${entryType.id}",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson(toUpdate)
       )
 
-      val result = controller.update(course.toString, entry.toString, entryType.id.toString)(request)
+      val result = controller.update(course.toString, entryType.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
@@ -160,7 +160,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val request = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries/types?$studentAttribute=$student&$dateAttribute=${chosen.date}&$startAttribute=${chosen.start}"
+        s"/courses/$course/reportCardEntryTypes?$studentAttribute=$student&$dateAttribute=${chosen.date}&$startAttribute=${chosen.start}"
       )
 
       val result = controller.all(course)(request)
@@ -173,7 +173,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
     "fail when there are no attributes" in {
       val request = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries/types"
+        s"/courses/$course/reportCardEntryTypes"
       )
 
       val result = controller.all(course)(request)
@@ -221,14 +221,13 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val requestWithDate = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries?date=$date1"
+        s"/courses/$course/reportCardEntryTypes?date=$date1"
       )
 
       val requestWithTime = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries?start=$start1"
+        s"/courses/$course/reportCardEntryTypes?start=$start1"
       )
-
 
       val result1 = localController.all(course.toString)(requestWithDate)
       val result2 = localController.all(course.toString)(requestWithTime)

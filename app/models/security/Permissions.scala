@@ -130,6 +130,7 @@ object Permissions {
   }
 
   object reportCardEntry {
+    val create = Permission("ReportCardEntry:create")
     val update = Permission("ReportCardEntry:update")
     val get = Permission("ReportCardEntry:get")
     val getAll = Permission("ReportCardEntry:getAll")

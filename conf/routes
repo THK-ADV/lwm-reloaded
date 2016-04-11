@@ -135,7 +135,6 @@ HEAD          /schedules                                            controllers.
 # Schedule restricted
 POST          /courses/:c/labworks/:l/schedules                     controllers.crud.labwork.ScheduleCRUDController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/atomic/schedules              controllers.crud.labwork.ScheduleCRUDController.createAtomicFrom(c, l)
-PUT           /courses/:c/labworks/:l/schedules/:s/publish          controllers.crud.labwork.ScheduleCRUDController.publish(c, l, s)
 PUT           /courses/:c/labworks/:l/schedules/:id                 controllers.crud.labwork.ScheduleCRUDController.updateFrom(c, l, id)
 PUT           /courses/:c/labworks/:l/atomic/schedules/:id          controllers.crud.labwork.ScheduleCRUDController.updateAtomicFrom(c, l, id)
 GET           /courses/:c/labworks/:l/schedules                     controllers.crud.labwork.ScheduleCRUDController.allFrom(c, l)
@@ -171,14 +170,16 @@ HEAD          /blacklists                                           controllers.
 # ReportCardEntry
 GET           /reportCardEntries/student/:s                         controllers.reportCard.ReportCardEntryController.get(s)
 GET           /atomic/reportCardEntries/student/:s                  controllers.reportCard.ReportCardEntryController.getAtomic(s)
+
+POST          /courses/:c/reportCardEntries/schedules/:s            controllers.reportCard.ReportCardEntryController.create(c, s)
 GET           /courses/:c/reportCardEntries                         controllers.reportCard.ReportCardEntryController.all(c)
 GET           /courses/:c/atomic/reportCardEntries                  controllers.reportCard.ReportCardEntryController.allAtomic(c)
 PUT           /courses/:c/reportCardEntries/:e                      controllers.reportCard.ReportCardEntryController.update(c, e)
 PUT           /courses/:c/atomic/reportCardEntries/:e               controllers.reportCard.ReportCardEntryController.updateAtomic(c, e)
 
 # ReportCardEntryType
-GET           /courses/:c/reportCardEntries/types                   controllers.reportCard.ReportCardEntryTypeController.all(c)
-PUT           /courses/:c/reportCardEntries/:e/types/:t             controllers.reportCard.ReportCardEntryTypeController.update(c, e, t)
+GET           /courses/:c/reportCardEntryTypes                      controllers.reportCard.ReportCardEntryTypeController.all(c)
+PUT           /courses/:c/reportCardEntryTypes/:t                   controllers.reportCard.ReportCardEntryTypeController.update(c, t)
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                      controllers.crud.labwork.AssignmentPlanCRUDController.createFrom(course)

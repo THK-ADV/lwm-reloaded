@@ -1,6 +1,6 @@
 package controllers
 
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 
 class HomepageController extends Controller {
@@ -11,5 +11,4 @@ class HomepageController extends Controller {
       "message" -> "it works"
     ))
   }
-
 }
