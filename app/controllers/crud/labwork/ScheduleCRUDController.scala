@@ -27,6 +27,7 @@ object ScheduleCRUDController {
 
   val courseAttribute = "course"
   val supervisorAttribute = "supervisor"
+  val publishAttribute = "publish"
 
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
     scheduleFor(labwork, repository) map { set =>
@@ -125,6 +126,7 @@ class ScheduleCRUDController(val repository: SesameRepository,
     import utils.Ops.MonadInstances.listM
     import store.sparql.select
     import store.sparql.select._
+
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -146,10 +148,12 @@ class ScheduleCRUDController(val repository: SesameRepository,
       case ((`supervisorAttribute`, values), t) =>
         for {
           schedules <- t; supervisor <- Try(UUID.fromString(values.head))
-        } yield
-          schedules.filter(_.entries.exists(_.supervisor == supervisor)).map { s =>
-            Schedule(s.id, s.entries.filter(_.supervisor == supervisor), s.published, s.id)
-          }
+        } yield schedules.filter(_.entries.exists(_.supervisor == supervisor)).map { s =>
+          Schedule(s.id, s.entries.filter(_.supervisor == supervisor), s.published, s.id)
+        }
+
+      case ((`publishAttribute`, values), t) =>
+        t flatMap (set => Try(values.head.toBoolean).map(b => set.filter(_.published == b)))
 
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }

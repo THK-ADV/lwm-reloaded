@@ -178,7 +178,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     val userId = UUID.fromString(user)
     val entries = (0 until 5).map { n =>
       val start = LocalTime.now.plusHours(n)
-      ReportCardEntry(userId, ap1MiPrak, n.toString, LocalDate.now, start, start.plusHours(1), UUID.randomUUID(), Set(ReportCardEntryType.Attendance))
+      ReportCardEntry(userId, ap1MiPrak, n.toString, LocalDate.now, start, start.plusHours(1), Room.default.id, Set(ReportCardEntryType.Attendance))
     }.toSet
 
     repository.addMany[ReportCardEntry](entries) match {

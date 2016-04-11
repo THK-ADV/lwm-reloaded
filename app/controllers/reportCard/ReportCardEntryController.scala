@@ -141,22 +141,20 @@ class ReportCardEntryController(val repository: SesameRepository,
         ))
       },
       success => {
-        success.id == UUID.fromString(entry) match {
-          case true =>
-            repository.update(success).flatMap(_ => f(success)) match {
-              case Success(result) => result
-              case Failure(e) =>
-                InternalServerError(Json.obj(
-                  "status" -> "KO",
-                  "errors" -> e.getMessage
-                ))
-            }
-          case false =>
-            BadRequest(Json.obj(
-              "status" -> "KO",
-              "message" -> s"Update body does not match with ReportCardEntry (${success.id})"
-            ))
-        }
+        if (success.id == UUID.fromString(entry))
+          repository.update(success).flatMap(_ => f(success)) match {
+            case Success(result) => result
+            case Failure(e) =>
+              InternalServerError(Json.obj(
+                "status" -> "KO",
+                "errors" -> e.getMessage
+              ))
+          }
+        else
+          BadRequest(Json.obj(
+            "status" -> "KO",
+            "message" -> s"Id found in body (${success.id}) does not match id found in resource ($entry)"
+          ))
       }
     )
   }
@@ -229,27 +227,20 @@ class ReportCardEntryController(val repository: SesameRepository,
       }
   }
 
-  override protected def atomizeMany(output: Set[ReportCardEntry]): Try[JsValue] = {
+  override protected def atomize(output: ReportCardEntry): Try[Option[JsValue]] = {
     import defaultBindings.StudentBinding.studentBinder
     import defaultBindings.LabworkBinding.labworkBinder
     import defaultBindings.RoomBinding.roomBinder
     import ReportCardEntry.atomicWrites
 
-    (for {
-      students <- repository.getMany[Student](output.map(e => User.generateUri(e.student)(namespace)))
-      labworks <- repository.getMany[Labwork](output.map(e => Labwork.generateUri(e.labwork)(namespace)))
-      rooms <- repository.getMany[Room](output.map(e => Room.generateUri(e.room)(namespace)))
-    } yield output.foldLeft(Set.empty[ReportCardEntryAtom]) { (set, o) =>
-      (for {
-        s <- students.find(_.id == o.student)
-        l <- labworks.find(_.id == o.labwork)
-        r <- rooms.find(_.id == o.room)
-      } yield ReportCardEntryAtom(s, l, o.label, o.date, o.start, o.end, r, o.entryTypes, o.rescheduled, o.id)) match {
-        case Some(atom) => set + atom
-        case None => set
-      }
-    }).map(set => Json.toJson(set))
+    for {
+      student <- repository.get[Student](User.generateUri(output.student)(namespace))
+      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
+      room <- repository.get[Room](Room.generateUri(output.room)(namespace))
+    } yield for {
+      s <- student; l <- labwork; r <- room
+    } yield Json.toJson(
+      ReportCardEntryAtom(s, l, output.label, output.date, output.start, output.end, r, output.entryTypes, output.rescheduled, output.id)
+    )
   }
-
-  override protected def atomize(output: ReportCardEntry): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 }

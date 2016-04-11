@@ -71,24 +71,21 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
         ))
       },
       success => {
-        success.id == UUID.fromString(entryType) match {
-          case true =>
-            repository.update(success) match {
-              case Success(_) =>
-                Ok(Json.toJson(success)).as(mimeType)
-              case Failure(e) =>
-                InternalServerError(Json.obj(
-                  "status" -> "KO",
-                  "errors" -> e.getMessage
-                ))
-            }
-          case false =>
-            BadRequest(Json.obj(
-              "status" -> "KO",
-              "message" -> s"Update body does not match with ReportCardEntryType (${success.id})"
-            ))
-        }
-
+        if (success.id == UUID.fromString(entryType))
+          repository.update(success) match {
+            case Success(_) =>
+              Ok(Json.toJson(success)).as(mimeType)
+            case Failure(e) =>
+              InternalServerError(Json.obj(
+                "status" -> "KO",
+                "errors" -> e.getMessage
+              ))
+          }
+        else
+          BadRequest(Json.obj(
+            "status" -> "KO",
+            "message" -> s"Id found in body (${success.id}) does not match id found in resource ($entryType)"
+          ))
       }
     )
   }

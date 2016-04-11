@@ -41,7 +41,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val student = Student("systemId", "last", "first", "email", "regId", UUID.randomUUID)
   val labwork = Labwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
   val room = Room("label", "desc")
-  val entries = (0 until 5).map( n =>
+  val entries = (0 until 2).map( n =>
     ReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, ReportCardEntryType.all)
   ).toSet
   val atomizedEntries = entries.map(e =>
@@ -209,11 +209,15 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      doReturn(Success(entries)).
-        doReturn(Success(Set(student))).
-        doReturn(Success(Set(labwork))).
-        doReturn(Success(Set(room))).
-        when(repository).getMany(anyObject())(anyObject())
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+
+        doReturn(Success(Some(student))).
+          doReturn(Success(Some(labwork))).
+          doReturn(Success(Some(room))).
+          doReturn(Success(Some(student))).
+          doReturn(Success(Some(labwork))).
+          doReturn(Success(Some(room))).
+          when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -233,11 +237,12 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      doReturn(Success(entries)).
-        doReturn(Failure(new Throwable(errorMessage))).
-        doReturn(Success(Set(labwork))).
-        doReturn(Success(Set(room))).
-        when(repository).getMany(anyObject())(anyObject())
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+
+      doReturn(Failure(new Throwable(errorMessage))).
+        doReturn(Success(Some(labwork))).
+        doReturn(Success(Some(room))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
