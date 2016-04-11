@@ -5,9 +5,9 @@ import java.util.UUID
 import base.TestBaseDefinition
 import models.labwork._
 import models.semester.{Blacklist, Semester}
-import models.users.{User, Employee, Student}
+import models.users.User
 import models._
-import org.joda.time.{LocalTime, LocalDate}
+import org.joda.time.{DateTime, LocalTime, LocalDate}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
@@ -69,7 +69,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "populate initial schedules any times" in {
       val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val plan = assignmentPlan(5)
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty))
 
@@ -188,7 +188,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val plan = assignmentPlan(5)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(labwork.id, entries, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
       val groups = Set(
         Group("A", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
@@ -249,8 +249,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
       val ap1Schedule = scheduleService.population(1, ap1T, plan, ap1G)
       val ma1Schedule = scheduleService.population(1, ma1T, plan, ma1G).head
@@ -433,7 +433,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(200).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan)
@@ -498,8 +498,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan),
@@ -575,9 +575,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
       val gdvkG = shuffle(students).take(150).grouped(30).map(s => Group("", gdvkPrak.id, s.toSet, Group.randomUUID)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan),
@@ -692,10 +692,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val anotherG = shuffle(students).take(200).grouped(20).map(s => Group("", anotherPrak.id, s.toSet, Group.randomUUID)).toSet
 
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Blacklist.empty, Timetable.randomUUID)
-      val anotherT = Timetable(anotherPrak.id, anotherEntries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val anotherT = Timetable(anotherPrak.id, anotherEntries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan),

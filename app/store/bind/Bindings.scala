@@ -306,7 +306,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val entries = set[TimetableEntry](lwm.entries)(TimetableEntryBinding.timetableEntryBinder)
     private val start = property[LocalDate](lwm.start)
-    private val blacklist = property[Blacklist](lwm.blacklist)(BlacklistBinding.blacklistBinder)
+    private val blacklist = set[DateTime](lwm.blacklist)
 
     implicit val timetableBinder: PGBinder[Rdf, Timetable] = pgbWithId[Timetable](timetable => makeUri(Timetable.generateUri(timetable)))(labwork, entries, start, blacklist, id)(Timetable.apply, Timetable.unapply) withClasses classUri
   }

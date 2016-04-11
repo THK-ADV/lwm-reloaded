@@ -4,24 +4,26 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models._
-import models.semester.{Blacklist, BlacklistProtocol}
+import models.semester.Blacklist
 import models.users.Employee
-import org.joda.time.{LocalDate, LocalDateTime, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 import services.ScheduleEntryG
 
-case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Blacklist, id: UUID) extends UniqueEntity {
+case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], id: UUID) extends UniqueEntity {
+
+  import Blacklist.dateOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case Timetable(l2, e2, s2, bl2, id2) =>
-      l2 == labwork && e2 == entries && s2.isEqual(start) && bl2 == localBlacklist && id2 == id
+      l2 == labwork &&
+        e2 == entries &&
+        s2.isEqual(start) &&
+        bl2.toVector.sorted.zip(localBlacklist.toVector.sorted).forall(d => d._1.isEqual(d._2)) &&
+        id2 == id
     case _ => false
   }
 }
-
-case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: BlacklistProtocol)
-
-case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Blacklist, id: UUID)
 
 case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
 
@@ -32,7 +34,23 @@ case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: 
   }
 }
 
+/**
+  * Protocol
+  */
+
+case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime])
+
+/**
+  * Atom
+  */
+
+case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], id: UUID)
+
 case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
+
+/**
+  * Helper
+  */
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime)
 

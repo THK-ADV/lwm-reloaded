@@ -4,9 +4,9 @@ import java.util.UUID
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models._
 import models.labwork._
-import models.semester.{Blacklist, Semester}
+import models.semester.Semester
 import models.users.{User, Employee}
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -278,7 +278,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -314,7 +314,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -352,7 +352,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -395,7 +395,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -424,7 +424,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     "not preview a schedule when timetable is empty" in {
       val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
-      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -455,7 +455,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)

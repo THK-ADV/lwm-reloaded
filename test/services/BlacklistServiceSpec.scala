@@ -38,19 +38,19 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         TimetableDateEntry(Weekday.toDay(date), date, start, end)
       }.toSet
 
-      val local = Blacklist.empty
+      val local = Set.empty[DateTime]
       val result = blacklistService.applyBlacklist(entries, local)
 
-      local.dates.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe local.dates.size
+      local.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe local.size
       global.head.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global.head.dates.size
 
       result.map(_.date).intersect(global.head.dates.map(_.toLocalDate)) shouldBe empty
-      result.map(toLocalDateTime).intersect(local.dates.map(_.toLocalDateTime)) shouldBe empty
+      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime)) shouldBe empty
       result.subsetOf(entries) shouldBe true
 
       result shouldBe entries
       result.size shouldBe entries.size
-      result.forall(a => local.dates.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
+      result.forall(a => local.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
       result.forall(a => global.head.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
       result.map(toLocalDateTime).toVector.sorted shouldBe sorted
     }
@@ -68,22 +68,22 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       val global2 = Blacklist("global 2", entries.slice(10, 20).map(toDateTime), Blacklist.randomUUID)
       when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(Set(global1, global2)))
 
-      val local = Blacklist("local", entries.slice(20, 30).map(toDateTime), Blacklist.randomUUID)
+      val local = entries.slice(20, 30).map(toDateTime)
 
       val result = blacklistService.applyBlacklist(entries, local)
 
-      local.dates.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe local.dates.size
+      local.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe local.size
       global1.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global1.dates.size
       global2.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global2.dates.size
 
       result.map(_.date).intersect(global1.dates.map(_.toLocalDate)) shouldBe empty
       result.map(_.date).intersect(global2.dates.map(_.toLocalDate)) shouldBe empty
-      result.map(toLocalDateTime).intersect(local.dates.map(_.toLocalDateTime)) shouldBe empty
+      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime)) shouldBe empty
       result.subsetOf(entries) shouldBe true
 
       result.size should be < entries.size
-      result.size shouldBe entries.size - local.dates.size - global1.dates.size - global2.dates.size
-      result.forall(a => local.dates.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
+      result.size shouldBe entries.size - local.size - global1.dates.size - global2.dates.size
+      result.forall(a => local.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
       result.forall(a => global1.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
       result.forall(a => global2.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
       result.map(toLocalDateTime).toVector.sorted shouldBe sorted

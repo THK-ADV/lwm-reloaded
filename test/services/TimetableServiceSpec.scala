@@ -6,6 +6,7 @@ import models.semester.Blacklist
 import models.users.User
 import models._
 import models.labwork.Weekday
+import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
 import org.mockito.Matchers._
@@ -43,7 +44,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   "A TimetableService" should {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with global blacklists applied" in {
-      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
       val aEntries = (0 until 7).map {
         case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
         case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
@@ -77,7 +78,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with global blacklists applied" in {
-      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
       val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
       val plan = AssignmentPlan(timetable.labwork, aEntries.size, aEntries.size, aEntries)
       val members = (0 until 20).map(_ => User.randomUUID).toSet
@@ -106,14 +107,14 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with local and global blacklists applied" in {
-      val localBlacklist = Blacklist("local", Set(
+      val localBlacklist = Set(
         fdt.parseDateTime("30/10/2015 15:00:00"),
         fdt.parseDateTime("06/11/2015 15:00:00"),
         fdt.parseDateTime("30/11/2015 11:00:00"),
         fdt.parseDateTime("30/11/2015 13:00:00"),
         fdt.parseDateTime("30/11/2015 15:00:00"),
         fdt.parseDateTime("30/11/2015 17:00:00")
-      ), Blacklist.randomUUID)
+      )
 
       val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist, Timetable.randomUUID)
       val aEntries = (0 until 7).map {
@@ -141,7 +142,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       result.size shouldBe groups.size * plan.entries.size
       sortedResult shouldBe sorted
       globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime))) shouldBe false
-      localBlacklist.dates.subsetOf(result.map(e => e.date.toDateTime(e.start))) shouldBe false
+      localBlacklist.subsetOf(result.map(e => e.date.toDateTime(e.start))) shouldBe false
       sortedResult.grouped(groups.size).forall(a => expectedStart.count(b => a.head.isEqual(b.toLocalDateTime)) == 1) shouldBe true
       sortedResult.grouped(groups.size).foldLeft((true, expectedStart)) {
         case ((bool, vec), e) =>
