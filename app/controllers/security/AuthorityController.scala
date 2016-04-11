@@ -3,24 +3,26 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud._
-import models.{CourseAtom, Course, UriGenerator}
 import models.security.Permissions._
 import models.security._
 import models.users.{Employee, User}
+import models.{Course, CourseAtom, UriGenerator}
 import org.openrdf.model.Value
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
+import play.api.mvc.{Action, AnyContent}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.Ops._
-import utils.Ops.MonadInstances.{optM, tryM, listM}
+import utils.Ops.MonadInstances.{listM, optM, tryM}
 import utils.Ops.TraverseInstances._
+import utils.Ops._
+
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object AuthorityController {
   val userAttribute = "user"
@@ -50,9 +52,9 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override protected def atomize(output: Authority): Try[Option[JsValue]] = {
+    import defaultBindings.RefRoleBinding._
     import defaultBindings.UserBinding._
     import models.security.Authority._
-    import defaultBindings.RefRoleBinding._
 
     implicit val ns = repository.namespace
     for {
@@ -65,8 +67,8 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   import defaultBindings.CourseBinding._
-  import defaultBindings.RoleBinding._
   import defaultBindings.EmployeeBinding._
+  import defaultBindings.RoleBinding._
 
   def atomRefs(s: Set[RefRole]): Try[Set[RefRoleAtom]] = {
     import scalaz.syntax.applicative._
@@ -76,7 +78,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
         maybeRole <- repository.get[Role](Role.generateUri(ref.role)(namespace))
         course <- Try(ref.course).flatPeek(course => repository.get[Course](Course.generateUri(course)(namespace)))
         lecturer <- Try(course).flatPeek(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace)))
-        courseAtom = (course |@| lecturer)((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
+        courseAtom = (course |@| lecturer) ((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
         set <- T
       } yield maybeRole match {
         case Some(role) => set + RefRoleAtom(courseAtom, role, ref.id)
@@ -92,12 +94,34 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case _ => PartialSecureBlock(god)
   }
 
+
+  // GET /ts with optional queries and deserialisation
+  override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
+    val res = {
+      if (request.queryString.nonEmpty)
+        getWithFilter(request.queryString)(Set.empty) map (set => chunkAtoms(set))
+      else {
+        repository.get[Authority] map (set => chunkAtoms(set))
+      }
+    }
+
+    res match {
+      case Success(enum) =>
+        Ok.chunked(enum).as(mimeType)
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
+    }
+  }
+
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = {
-    import store.sparql.select._
-    import store.sparql.select
     import AuthorityController._
+    import store.sparql.select
+    import store.sparql.select._
 
     val lwm = LWMPrefix[repository.Rdf]
     implicit val ns = repository.namespace
