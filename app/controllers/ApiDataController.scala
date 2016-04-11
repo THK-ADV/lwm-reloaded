@@ -7,10 +7,10 @@ import models._
 import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
-import models.semester.{Blacklist, Semester}
+import models.semester.{BlacklistProtocol, Blacklist, Semester}
 import models.users.{Employee, Student, User}
 import org.joda.time.format.DateTimeFormat
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, Controller}
@@ -516,8 +516,8 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     )
 
     List(
-      Timetable(ap1MiPrak, ap1MiEntries, fd.parseLocalDate("27/10/2015"), Blacklist.empty, Timetable.randomUUID),
-      Timetable(ma1MiPrak, ma1MiEntries, fd.parseLocalDate("26/10/2015"), Blacklist.empty, Timetable.randomUUID)
+      Timetable(ap1MiPrak, ap1MiEntries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID),
+      Timetable(ma1MiPrak, ma1MiEntries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
     ).map(repository.add[Timetable])
   }
 

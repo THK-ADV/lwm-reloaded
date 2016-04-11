@@ -6,8 +6,7 @@ import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.labwork.{Timetable, TimetableEntry}
 import models.security.Permissions._
-import models.semester.Blacklist
-import org.joda.time.LocalDate
+import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -33,7 +32,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
       )
 
       val request = FakeRequest(
@@ -58,7 +57,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
       )
 
       val request = FakeRequest(
@@ -154,7 +153,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
       )
 
       val request = FakeRequest(

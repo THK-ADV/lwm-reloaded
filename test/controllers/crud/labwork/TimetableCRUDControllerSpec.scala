@@ -6,8 +6,7 @@ import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import models.labwork._
 import models.users.Employee
 import models.{Degree, Room}
-import models.semester.Blacklist
-import org.joda.time.{LocalTime, LocalDate}
+import org.joda.time.{DateTime, LocalTime, LocalDate}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -69,9 +68,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
   }
 
-  override val entityToFail: Timetable = Timetable(labworkToFail.id, entriesToFail, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+  override val entityToFail: Timetable = Timetable(labworkToFail.id, entriesToFail, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
-  override val entityToPass: Timetable = Timetable(labworkToPass.id, entriesToPass, LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+  override val entityToPass: Timetable = Timetable(labworkToPass.id, entriesToPass, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
   override implicit val jsonWrites: Writes[Timetable] = Timetable.writes
 
@@ -124,14 +123,14 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       
-      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
-      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Blacklist.empty, Timetable.randomUUID)
+      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
       when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8

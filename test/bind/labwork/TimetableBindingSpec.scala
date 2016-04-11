@@ -2,7 +2,6 @@ package bind.labwork
 
 import base.SesameDbSpec
 import models.labwork.{Labwork, Timetable, TimetableEntry}
-import models.semester.Blacklist
 import models.users.User
 import models.{Degree, Room}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
@@ -16,16 +15,14 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
 
-  import bindings.BlacklistBinding.blacklistBinder
   import bindings.TimetableBinding.timetableBinder
   import bindings.TimetableEntryBinding.timetableEntryBinder
-  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder, dateTimeBinder}
   import ops._
 
   val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
   val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)
-  val localBlacklist = Blacklist("local", Set(DateTime.now, DateTime.now), Blacklist.randomUUID)
-  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, localBlacklist, Timetable.randomUUID)
+  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
     .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(Labwork.splitter))

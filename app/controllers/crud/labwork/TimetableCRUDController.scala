@@ -3,7 +3,6 @@ package controllers.crud.labwork
 import java.util.UUID
 import controllers.crud.AbstractCRUDController
 import models.labwork._
-import models.semester.{BlacklistProtocol, Blacklist}
 import models.users.{User, Employee}
 import models._
 import models.security.Permissions._
@@ -18,7 +17,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
 import scala.collection.Map
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 import TimetableCRUDController._
 
 object TimetableCRUDController {
@@ -41,22 +40,20 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
 
-  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = {
-    def toBlacklist(protocol: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
-      case Some(blacklist) => Blacklist(protocol.label, protocol.dates, blacklist.id)
-      case None => Blacklist(protocol.label, protocol.dates, Blacklist.randomUUID)
-    }
+  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
+    case Some(timetable) =>
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
+    case None =>
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
+   }
 
-    existing match {
-      case Some(timetable) =>
-        Timetable(input.labwork, input.entries, input.start, toBlacklist(input.localBlacklist, Some(timetable.localBlacklist)), timetable.id)
-      case None =>
-        Timetable(input.labwork, input.entries, input.start, toBlacklist(input.localBlacklist, None), Timetable.randomUUID)
-    }
-  }
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    input.start == output.start && input.localBlacklist == BlacklistProtocol(output.localBlacklist.label, output.localBlacklist.dates) && input.entries == output.entries
+    import models.semester.Blacklist.dateOrd
+
+    input.start == output.start &&
+      input.entries == output.entries &&
+      input.localBlacklist.toVector.sorted.zip(output.localBlacklist.toVector.sorted).forall(d => d._1.isEqual(d._2))
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
@@ -98,20 +95,18 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
       rooms <- repository.getMany[Room](output.entries.map(e => Room.generateUri(e.room)(namespace)))
       supervisors <- repository.getMany[Employee](output.entries.map(e => User.generateUri(e.supervisor)(namespace)))
       degrees <- repository.getMany[Degree](output.entries.map(e => Degree.generateUri(e.degree)(namespace)))
-    } yield {
-      labwork.map { l =>
-        val entries = output.entries.foldLeft(Set.empty[TimetableEntryAtom]) { (newSet, e) =>
-          (for {
-            r <- rooms.find(_.id == e.room)
-            s <- supervisors.find(_.id == e.supervisor)
-            d <- degrees.find(_.id == e.degree)
-          } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end)) match {
-            case Some(atom) => newSet + atom
-            case None => newSet
-          }
+    } yield labwork.map { l =>
+      val entries = output.entries.foldLeft(Set.empty[TimetableEntryAtom]) { (newSet, e) =>
+        (for {
+          r <- rooms.find(_.id == e.room)
+          s <- supervisors.find(_.id == e.supervisor)
+          d <- degrees.find(_.id == e.degree)
+        } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end)) match {
+          case Some(atom) => newSet + atom
+          case None => newSet
         }
-        Json.toJson(TimetableAtom(l, entries, output.start, output.localBlacklist, output.id))(Timetable.atomicWrites)
       }
+      Json.toJson(TimetableAtom(l, entries, output.start, output.localBlacklist, output.id))(Timetable.atomicWrites)
     }
   }
 
@@ -140,11 +135,11 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
   }
 
   def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(labwork)))
+    allAtomic(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
