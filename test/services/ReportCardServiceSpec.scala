@@ -5,10 +5,8 @@ import java.util.UUID
 import base.TestBaseDefinition
 import models.labwork._
 import ReportCardEntryType._
-import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
-import scala.util.{Failure, Success}
 
 object ReportCardServiceSpec {
 
@@ -21,8 +19,7 @@ object ReportCardServiceSpec {
       left == right.map(toAssignmentEntryType)
     }
 
-    assEntry.index == cEntry.index &&
-      assEntry.label == cEntry.label &&
+    assEntry.label == cEntry.label &&
       integerTypes(assEntry.types, cEntry.entryTypes) &&
       appEntry.date.isEqual(cEntry.date) &&
       appEntry.start.isEqual(cEntry.start) &&
@@ -46,16 +43,18 @@ object ReportCardServiceSpec {
     AssignmentPlan(UUID.randomUUID(), amount, amount, pe)
   }
 
-  def schedule(amount: Int, aps: Int, emptyMembers: Boolean = false): ScheduleG = {
-    val se = (0 until amount).map { n =>
+  def schedule(amount: Int, aps: Int): ScheduleG = {
+    val initial = (0 until amount).map { n =>
       val start = LocalTime.now.plusHours(n)
-      val grp = if (emptyMembers) group(0) else group(20)
 
-      ScheduleEntryG(start, start.plusHours(n), LocalDate.now.plusWeeks(n), UUID.randomUUID(), UUID.randomUUID(), grp)
+      ScheduleEntryG(start, start.plusHours(n), LocalDate.now.plusWeeks(n), UUID.randomUUID(), UUID.randomUUID(), group(20))
     }.toVector
 
-    val see = (0 until aps).foldLeft(Vector.empty[ScheduleEntryG]) { (vec, _) =>
-      vec ++ se
+    val see = (0 until aps).foldLeft(Vector.empty[ScheduleEntryG]) { (vec, i) =>
+      vec ++ initial.map { o =>
+        val deltaStart = o.start.plusHours(i)
+        ScheduleEntryG(deltaStart, deltaStart.plusHours(1), o.date.plusWeeks(i), o.room, o.supervisor, o.group)
+      }
     }
 
     ScheduleG(UUID.randomUUID(), see, UUID.randomUUID())
@@ -91,20 +90,19 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val assignmentPlan = plan(amount)
       val scheduleG = schedule(amount, assignmentPlan.entries.size)
 
-      val cards = reportCardService.reportCards(scheduleG, assignmentPlan)
+      val entries = reportCardService.reportCards(scheduleG, assignmentPlan)
 
-      cards.nonEmpty shouldBe true
-      cards.forall(_.entries.size == assignmentPlan.entries.size) shouldBe true
-      cards.forall(c => c.entries.size == scheduleG.entries.count(_.group.members.contains(c.student))) shouldBe true
-
-      cards.forall( c =>
-        c.entries.flatMap(_.entryTypes.map(_.id)).size == assignmentPlan.entries.toVector.flatMap(_.types).size
+      entries.nonEmpty shouldBe true
+      entries.size should be(assignmentPlan.entries.size * scheduleG.entries.flatMap(_.group.members).toSet.size)
+      entries.groupBy(_.student).forall(m => m._2.size == scheduleG.entries.count(_.group.members.contains(m._1))) shouldBe true
+      entries.groupBy(_.student).forall(m =>
+        m._2.flatMap(_.entryTypes.map(_.id)).size == assignmentPlan.entries.toVector.flatMap(_.types).size
       ) shouldBe true
 
-      cards.forall { c =>
+      entries.groupBy(_.student).forall { m =>
         val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
-        val appointments = scheduleG.entries.filter(_.group.members.contains(c.student)).sortBy(toLocalDateTime)
-        val studentApps = c.entries.toVector.sortBy(_.index)
+        val appointments = scheduleG.entries.filter(_.group.members.contains(m._1)).sortBy(toLocalDateTime)
+        val studentApps = m._2.toVector.sortBy(e => e.date.toLocalDateTime(e.start))
 
         (assignments, appointments, studentApps).zipped.forall {
           case (ass, app, s) => integer(ass, app, s)
@@ -122,16 +120,14 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-
       val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
-      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries.toSet)
 
-      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+      val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
       result.size shouldBe ReportCardEntryType.all.size
       result.forall(_.bool)
@@ -147,16 +143,14 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-
       val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 2, mandatory - 3, planEntries.toSet)
-      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries.toSet)
 
-      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+      val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
       result.size shouldBe ReportCardEntryType.all.size
       result.foreach {
@@ -177,16 +171,14 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-
       val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
-      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries.toSet)
 
-      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+      val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
       result.size shouldBe ReportCardEntryType.all.size
       result.foreach {
@@ -206,16 +198,14 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, !(e.index == 7), 0)
         }
 
-        ReportCardEntry(e.index, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-
       val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
-      val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), cardEntries.toSet)
 
-      val result = reportCardService.evaluate(assignmentPlan, reportCard)
+      val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
       result.size shouldBe ReportCardEntryType.all.size
       result.foreach {

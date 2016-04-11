@@ -4,8 +4,9 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
+import controllers.reportCard.ReportCardEntryTypeController
 import models.labwork.ReportCardEntryType
-import models.security.Permissions.reportCardEntryType
+import models.security.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -22,9 +23,10 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
   when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
+  val id = UUID.randomUUID
   val json = {
     import ReportCardEntryType._
-    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0))
+    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0, id))
   }
 
   "A ReportCardEntryTypeControllerSecuritySpec " should {
@@ -35,7 +37,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -54,7 +56,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -73,7 +75,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
       ).withSession(
@@ -92,9 +94,43 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/reportCards/${UUID.randomUUID}/entries/${UUID.randomUUID}/types/${UUID.randomUUID()}",
+        s"$FakeCourseUri/reportCardEntryTypes/$id",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.reportCardEntryTypeV1Json)),
         json
+      ).withSession(
+        SessionController.userId -> FakeStudent.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
+
+      val result = route(request).get
+
+      status(result) shouldBe UNAUTHORIZED
+    }
+
+    "Allow restricted context invocations when mv wants to get certain report card entry types by filters" in new FakeApplication() {
+      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.getAll))(FakeMaAuth)).thenReturn(Success(true))
+
+      val request = FakeRequest(
+        GET,
+        s"$FakeCourseUri/reportCardEntryTypes?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
+      ).withSession(
+        SessionController.userId -> FakeMa.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
+
+      val result = route(request).get
+
+      status(result) shouldBe OK
+    }
+
+    "Bock restricted context invocations when student wants to get certain report card entry types by filters" in new FakeApplication() {
+      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.getAll))(FakeStudentAuth)).thenReturn(Success(false))
+
+      val request = FakeRequest(
+        GET,
+        s"$FakeCourseUri/reportCardEntryTypes?${ReportCardEntryTypeController.studentAttribute}=${UUID.randomUUID}"
       ).withSession(
         SessionController.userId -> FakeStudent.toString,
         SessionController.sessionId -> UUID.randomUUID.toString

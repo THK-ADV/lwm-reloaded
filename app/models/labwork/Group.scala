@@ -21,6 +21,8 @@ case class GroupCountProtocol(count: Int) extends GroupConstraint
 
 object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group] {
 
+  lazy val empty = Group("", UUID.randomUUID, Set.empty[UUID])
+
   override implicit def reads: Reads[GroupProtocol] = Json.reads[GroupProtocol]
 
   override implicit def writes: Writes[Group] = Json.writes[Group]

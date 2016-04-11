@@ -51,7 +51,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaDateTimeBinder = new PGBinder[Rdf, DateTime] {
+  implicit val dateTimeBinder = new PGBinder[Rdf, DateTime] {
     val formatter = ISODateTimeFormat.dateTime()
 
     override def toPG(t: DateTime): PointedGraph[Rdf] = {
@@ -65,7 +65,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaLocalDateBinder = new PGBinder[Rdf, LocalDate] {
+  implicit val localDateBinder = new PGBinder[Rdf, LocalDate] {
     // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
     override def toPG(t: LocalDate): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
@@ -78,10 +78,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     }
   }
 
-  implicit val jodaLocalTimeBinder = new PGBinder[Rdf, LocalTime] {
-    // LocalTime.toString formats to ISO8601 (yyyy-MM-dd)
+  implicit val localTimeBinder = new PGBinder[Rdf, LocalTime] {
+    // LocalTime.toString formats to HH:mm:ms:mms
     override def toPG(t: LocalTime): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString(), lwm.localTime))
+      PointedGraph(ops.makeLiteral(t.toString, lwm.localTime))
     }
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
@@ -232,12 +232,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.Labwork
     implicit val classUri = classUrisFor[Labwork](clazz)
 
-    val label = property[String](lwm.label)
-    val description = property[String](lwm.description)
-    val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
-    val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
-    val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
-    val subscribable = property[Boolean](lwm.subscribable)
+    private val label = property[String](lwm.label)
+    private val description = property[String](lwm.description)
+    private val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
+    private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
+    private val subscribable = property[Boolean](lwm.subscribable)
 
     implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
@@ -360,22 +360,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val blacklistBinder: PGBinder[Rdf, Blacklist] = pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(label, dates, id)(Blacklist.apply, Blacklist.unapply) withClasses classUri
   }
 
-  object ReportCardBinding {
-    implicit val clazz = lwm.ReportCard
-    implicit val classUri = classUrisFor[ReportCard](clazz)
-
-    private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
-    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
-    private val entries = set[ReportCardEntry](lwm.entries)(ReportCardEntryBinding.reportCardEntryBinding)
-
-    implicit val reportCardBinder: PGBinder[Rdf, ReportCard] = pgbWithId[ReportCard](reportCard => makeUri(ReportCard.generateUri(reportCard)))(student, labwork, entries, id)(ReportCard.apply, ReportCard.unapply) withClasses classUri
-  }
-
   object ReportCardEntryBinding {
     implicit val clazz = lwm.ReportCardEntry
     implicit val classUri = classUrisFor[ReportCardEntry](clazz)
 
-    private val index = property[Int](lwm.index)
+    private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val label = property[String](lwm.label)
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
@@ -384,7 +374,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val rescheduled = optional[Rescheduled](lwm.rescheduled)(RescheduledBinding.rescheduledBinding)
     private val types = set[ReportCardEntryType](lwm.types)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
 
-    implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(index, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
+    implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(student, labwork, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
   }
 
   object ReportCardEntryTypeBinding {

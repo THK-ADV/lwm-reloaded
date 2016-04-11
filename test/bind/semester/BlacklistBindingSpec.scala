@@ -13,7 +13,7 @@ class BlacklistBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
   import bindings.uuidBinder
-  import bindings.jodaDateTimeBinder
+  import bindings.dateTimeBinder
   import bindings.BlacklistBinding.blacklistBinder
   import ops._
 

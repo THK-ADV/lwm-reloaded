@@ -25,17 +25,18 @@ import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
+// TODO update roles somehow
 object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
     labwork.all ++ schedule.all ++ timetable.all ++ group.all ++
-      reportCardEntry.all ++ reportCardEntryType.all ++ assignmentPlan.all ++
+      Set(reportCardEntry.getAll, reportCardEntry.update, reportCardEntry.create) ++ reportCardEntryType.all ++ assignmentPlan.all ++
       annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
     Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++
-      reportCardEntry.all ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
+      Set(reportCardEntry.getAll, reportCardEntry.update) ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
     Set(schedule.get, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
@@ -46,7 +47,7 @@ object ApiDataController {
   )
   val studentRole = Role(Roles.Student,
     Set(room.get, degree.get, course.get, labwork.get, labwork.getAll) ++ labworkApplication.all +
-      semester.get + user.get + reportCard.get + authority.getAll
+      semester.get + user.get + reportCardEntry.get + authority.getAll
   )
   val employeeRole = Role(Roles.Employee,
     room.all ++ semester.all ++ degree.all ++ user.all + blacklist.get ++ Set(course.get, course.getAll) +
@@ -171,16 +172,16 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
   }
 
   def reportCard(user: String) = Action { request =>
-    import bindings.ReportCardBinding._
+    import bindings.ReportCardEntryBinding._
     import AssignmentEntryType._
 
+    val userId = UUID.fromString(user)
     val entries = (0 until 5).map { n =>
       val start = LocalTime.now.plusHours(n)
-      ReportCardEntry(n, n.toString, LocalDate.now, start, start.plusHours(1), UUID.randomUUID(), Set(ReportCardEntryType.Attendance))
+      ReportCardEntry(userId, ap1MiPrak, n.toString, LocalDate.now, start, start.plusHours(1), Room.default.id, Set(ReportCardEntryType.Attendance))
     }.toSet
-    val card = ReportCard(UUID.fromString(user), ap1MiPrak, entries)
 
-    repository.add[ReportCard](card) match {
+    repository.addMany[ReportCardEntry](entries) match {
       case Success(_) => Ok(Json.obj(
         "status" -> "Ok"
       ))
@@ -251,7 +252,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     implicit val tcu = bindings.TimetableBinding.classUri
     implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
     implicit val abu = bindings.AssignmentPlanBinding.classUri
-    import bindings.ReportCardBinding._
+    import bindings.ReportCardEntryBinding._
     import bindings.ScheduleBinding._
 
     (for {
@@ -275,7 +276,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
         Schedule(scheduleG.labwork, s, published = true, scheduleG.id)
       }.map(repository.add[Schedule])
 
-      gen.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCard](_))
+      gen.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCardEntry](_))
     }) match {
       case Success(Some(s)) => s.elem match {
         case Success(g) if g.nonEmpty => Ok(Json.obj(

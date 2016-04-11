@@ -34,6 +34,8 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[SchedulePr
 
   import ScheduleEntry.format
 
+  lazy val empty = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+
   override def base: String = "schedules"
 
   override implicit def reads: Reads[ScheduleProtocol] = Json.reads[ScheduleProtocol]

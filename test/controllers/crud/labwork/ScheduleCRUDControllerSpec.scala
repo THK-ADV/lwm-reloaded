@@ -68,7 +68,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   val scheduleService = org.scalatest.mock.MockitoSugar.mock[ScheduleService]
   val reportCardService = org.scalatest.mock.MockitoSugar.mock[ReportCardService]
 
-  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, sessionService, namespace, roleService, scheduleService, reportCardService) {
+  override val controller: AbstractCRUDController[ScheduleProtocol, Schedule] = new ScheduleCRUDController(repository, sessionService, namespace, roleService, scheduleService) {
 
     override protected def fromInput(input: ScheduleProtocol, existing: Option[Schedule]): Schedule = entityToPass
 
@@ -150,6 +150,33 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(Set(s1, s2, s4, s7, s8))
+    }
+
+    "return all schedules which are published" in {
+      val s1 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s2 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry], published = true)
+      val s3 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s4 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s5 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry], published = true)
+      val s6 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s7 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
+      val s8 = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry], published = true)
+
+      when(repository.get[Schedule](anyObject(), anyObject())).thenReturn(Success(Set(
+        s1, s2, s3, s4, s5, s6, s7, s8
+      )))
+
+      val request = FakeRequest(
+        GET,
+        s"/$entityTypeName?${ScheduleCRUDController.publishAttribute}=true"
+      )
+      val result = controller.all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      Set(s2, s5, s8).forall { s =>
+        contentAsString(result).contains(Json.toJson(s).toString)
+      } shouldBe true
     }
 
     "return all schedules where a given employee supervises" in {
@@ -592,85 +619,6 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         s"/${entityTypeName}s"
       )
       val result = controller.allAtomic()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    "successfully publish a schedule and create dedicated report cards" in {
-      val courseId = Course.randomUUID
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
-      ))
-      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set(pointedGraph)))
-
-      val request = FakeRequest(
-        POST,
-        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
-      )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "OK",
-        "message" -> "Published"
-      )
-    }
-
-    "fail publishing a schedule when there are no students for report cards" in {
-      val courseId = Course.randomUUID
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
-      ))
-      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(pointedGraph))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
-
-      val request = FakeRequest(
-        POST,
-        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
-      )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "Error while creating report cards"
-      )
-    }
-
-    "fail publishing a schedule when there is a exception" in {
-      val courseId = Course.randomUUID
-      val errorMessage = "Oops, something went wrong"
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
-      ))
-      doReturn(Success(Some(AssignmentPlan.empty))).doReturn(Success(Some(entityToPass))).doReturn(Success(Some(groupToPass))).when(repository).get(anyObject())(anyObject())
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCard])
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
-
-      val request = FakeRequest(
-        POST,
-        s"/courses/$courseId/${entityTypeName}s/${entityToPass.id}/publish"
-      )
-      val result = controller.asInstanceOf[ScheduleCRUDController].publish(courseId.toString, entityToPass.labwork.toString, entityToPass.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

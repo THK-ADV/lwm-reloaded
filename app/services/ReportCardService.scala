@@ -1,7 +1,8 @@
 package services
 
+import java.util.UUID
+
 import models.labwork._
-import models._
 
 object ReportCardService {
 
@@ -12,36 +13,42 @@ object ReportCardService {
 
 trait ReportCardServiceLike {
 
-  def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCard]
+  def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry]
 
-  def evaluate(assignmentPlan: AssignmentPlan, reportCard: ReportCard): Set[ReportCardEvaluation]
+  def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation]
 }
 
 class ReportCardService extends ReportCardServiceLike {
 
-  override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCard] = {
+  override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry] = {
     import TimetableDateEntry._
     import ReportCardService._
 
-    val students = schedule.entries.flatMap(_.group.members)
+    val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
 
-    students.foldLeft(List.empty[ReportCard]) { (list, student) =>
+    students.foldLeft(Vector.empty[ReportCardEntry]) { (vec, student) =>
       val appointments = schedule.entries.filter(_.group.members.contains(student)).sortBy(toLocalDateTime)
-      val entries = appointments.zip(assignments).map {
-        case (se, ap) => ReportCardEntry(ap.index, ap.label, se.date, se.start, se.end, se.room, toReportCardEntryType(ap.types))
-      }.toSet
-
-      list.+:(ReportCard(student, schedule.labwork, entries))
+      appointments.zip(assignments).map {
+        case (se, ap) => ReportCardEntry(student, assignmentPlan.labwork, ap.label, se.date, se.start, se.end, se.room, toReportCardEntryType(ap.types))
+      } ++ vec
     }.toSet
   }
 
-  override def evaluate(assignmentPlan: AssignmentPlan, reportCard: ReportCard): Set[ReportCardEvaluation] = {
-    val entries = reportCard.entries flatMap (_.entryTypes)
+  override def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
+    val entries = reportCardEntries.flatMap(_.entryTypes)
+    val student = reportCardEntries.head.student
+    val labwork = reportCardEntries.head.labwork
+
+    def prepareEval(student: UUID, labwork: UUID)(label: String, bool: Boolean, int: Int): ReportCardEvaluation = {
+      ReportCardEvaluation(student, labwork, label, bool, int)
+    }
+
+    val eval = prepareEval(student, labwork)_
 
     def folder(reportCardEntryType: ReportCardEntryType)(f: Set[ReportCardEntryType] => (Boolean, Int)): ReportCardEvaluation = {
       val (boolRes, intRes) = f(entries.filter(_.entryType == reportCardEntryType.entryType))
-      ReportCardEvaluation(reportCard.student, reportCard.labwork, reportCardEntryType.entryType, boolRes, intRes)
+      eval(reportCardEntryType.entryType, boolRes, intRes)
     }
 
     import ReportCardEntryType._

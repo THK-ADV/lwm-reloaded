@@ -29,6 +29,7 @@ sealed trait Clause {
       case AscendingClause(v, t) => acc + s"ORDER BY ASC($v) "
       case DescendingClause(v, t) => acc + s"ORDER BY DESC($v)"
       case GroupByClause(p, t) => acc + s"GROUP BY $p "
+      case FilterStartsWith(w, s, t) => acc + s"FILTER STRSTARTS(str($w), $s)"
       case _ => acc
     }
   }
@@ -69,7 +70,7 @@ case class WhereClause(body: Clause, tail: Clause = NoneClause) extends ConsClau
 }
 
 case class StatementClause[A <: Properties#Property](statement: (A, A, A), tail: Clause = NoneClause) extends ConsClause {
-  override def append(c: Clause): Clause = StatementClause(statement, tail append c)
+  override def append(c: Clause) = StatementClause(statement, tail append c)
 }
 
 case class FilterClause(p: String, tail: Clause = NoneClause) extends ConsClause {
@@ -106,6 +107,10 @@ case class EverythingClause(tail: Clause = NoneClause) extends ConsClause {
 
 case class AskClause(body: Clause, tail: Clause = NoneClause) extends ConsClause {
   override def append(c: Clause): Clause = AskClause(body, tail append c)
+}
+
+case class FilterStartsWith(what: String, startsWith: String, tail: Clause = NoneClause) extends ConsClause {
+  override def append(c: Clause): Clause = FilterStartsWith(what, startsWith, c)
 }
 //---
 
@@ -158,6 +163,8 @@ trait Clauses {
     def ^(s: Properties#Property, p: Properties#Property, o: Properties#Property) = c append StatementClause((s, p, o))
 
     def filter(v: String) = c append FilterClause(v)
+
+    def filterStrStarts(what: Properties#Var, starting: String) = c append FilterStartsWith(what.toString, starting)
 
     def filterNotExists(cc: Clause) = c append FilterNotExistsClause(cc)
 

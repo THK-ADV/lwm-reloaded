@@ -1,18 +1,33 @@
 package controllers.reportCard
 
+import java.util.UUID
+
 import controllers.crud._
 import models.UriGenerator
-import models.labwork.ReportCardEntryType
+import models.labwork.{Labwork, ReportCardEntry, ReportCardEntryType}
+import models.security.Permissions._
+import models.users.User
 import modules.store.BaseNamespace
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.openrdf.model.Value
+import org.w3.banana.RDFPrefix
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.Controller
 import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import models.security.Permissions._
-import scala.util.{Failure, Success}
+
+import scala.util.{Failure, Success, Try}
+
+object ReportCardEntryTypeController {
+  val studentAttribute = "student"
+  val labworkAttribute = "labwork"
+  val dateAttribute = "date"
+  val startAttribute = "start"
+  val endAttribute = "end"
+}
 
 class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
   with BaseNamespace
@@ -43,10 +58,11 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Update => SecureBlock(restrictionId, reportCardEntryType.update)
+    case GetAll => SecureBlock(restrictionId, reportCardEntryType.getAll)
     case _ => PartialSecureBlock(god)
   }
 
-  def update(course: String, card: String, cardEntry: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+  def update(course: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ReportCardEntryType].fold(
       errors => {
         BadRequest(Json.obj(
@@ -55,16 +71,77 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
         ))
       },
       success => {
-        repository.update(success) match {
-          case Success(_) =>
-            Ok(Json.toJson(success)).as(mimeType)
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> e.getMessage
-            ))
-        }
+        if (success.id == UUID.fromString(entryType))
+          repository.update(success) match {
+            case Success(_) =>
+              Ok(Json.toJson(success)).as(mimeType)
+            case Failure(e) =>
+              InternalServerError(Json.obj(
+                "status" -> "KO",
+                "errors" -> e.getMessage
+              ))
+          }
+        else
+          BadRequest(Json.obj(
+            "status" -> "KO",
+            "message" -> s"Id found in body (${success.id}) does not match id found in resource ($entryType)"
+          ))
       }
     )
+  }
+
+  def all(course: String) = restrictedContext(course)(GetAll) action { request =>
+    import store.sparql.select._
+    import store.sparql.select
+    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinding
+    import ReportCardEntryTypeController._
+    import utils.Ops.MonadInstances.setM
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+    implicit val ns = repository.namespace
+
+    if (request.queryString.isEmpty)
+      BadRequest(Json.obj(
+        "status" -> "KO",
+        "message" -> "Request should contain at least one attribute"
+      ))
+    else
+      request.queryString.foldLeft(Try(^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)))) {
+        case (clause, (`studentAttribute`, values)) => clause map {
+          _ append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head))))
+        }
+        case (clause, (`labworkAttribute`, values)) => clause map {
+          _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
+        }
+        case (clause, (`dateAttribute`, values)) => clause map {
+          _ append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'")
+        }
+        case (clause, (`startAttribute`, values)) => clause map {
+          _ append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'")
+        }
+        case (clause, (`endAttribute`, values)) => clause map {
+          _ append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'")
+        }
+        case _ => Failure(new Throwable("Unknown attribute"))
+      } flatMap { clause =>
+        val query = select distinct "entries" where clause
+
+        repository.prepareQuery(query).
+          select(_.get("entries")).
+          transform(_.fold(List.empty[Value])(identity)).
+          requestAll[Set, ReportCardEntry](values => repository.getMany[ReportCardEntry](values.map(_.stringValue))).
+          flatMap(_.entryTypes).
+          run
+
+      } match {
+        case Success(entries) =>
+          Ok(Json.toJson(entries)).as(mimeType)
+        case Failure(e) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          ))
+      }
   }
 }

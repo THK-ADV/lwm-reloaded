@@ -58,7 +58,7 @@ trait Atomic[O] {
 
   protected def atomize(output: O): Try[Option[JsValue]]
 
-  final def atomizeMany(output: Set[O]): Try[JsValue] = output.foldLeft(Try(Option(JsArray()))) { (T, model) =>
+  protected def atomizeMany(output: Set[O]): Try[JsValue] = output.foldLeft(Try(Option(JsArray()))) { (T, model) =>
     T.bipeek(atomize(model))(_ :+ _)
   } map {
     case Some(jsArray) => jsArray

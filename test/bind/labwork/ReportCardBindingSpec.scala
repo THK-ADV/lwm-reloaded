@@ -18,32 +18,23 @@ class ReportCardBindingSpec extends SesameDbSpec {
   import ops._
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.ReportCardBinding.reportCardBinder
   import bindings.ReportCardEntryBinding.reportCardEntryBinding
   import bindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
-  import bindings.{jodaLocalDateBinder, jodaLocalTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
 
   val entries = (0 until 5).map { n =>
-    ReportCardEntry(n, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
+    ReportCardEntry(UUID.randomUUID, UUID.randomUUID, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
   }.toSet
-  val reportCard = ReportCard(UUID.randomUUID(), UUID.randomUUID(), entries)
   val reportCardEntry = {
     val first = entries.head
     val rescheduled = Rescheduled(LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID)
-    ReportCardEntry(first.index, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.id)
+    ReportCardEntry(first.student, first.labwork, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.id)
   }
   val entryType = ReportCardEntryType.Attendance
 
-  val reportCardGraph = (
-    URI(ReportCard.generateUri(reportCard)).a(lwm.ReportCard)
-      .--(lwm.student).->-(reportCard.student)(ops, uuidRefBinder(User.splitter))
-      .--(lwm.labwork).->-(reportCard.labwork)(ops, uuidRefBinder(Labwork.splitter))
-      -- lwm.entries ->- reportCard.entries
-      -- lwm.id ->- reportCard.id
-    ).graph
-
   val entryGraph = URI(ReportCardEntry.generateUri(reportCardEntry)).a(lwm.ReportCardEntry)
-    .--(lwm.index).->-(reportCardEntry.index)
+    .--(lwm.student).->-(reportCardEntry.student)(ops, uuidRefBinder(User.splitter))
+    .--(lwm.labwork).->-(reportCardEntry.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.label).->-(reportCardEntry.label)
     .--(lwm.date).->-(reportCardEntry.date)
     .--(lwm.start).->-(reportCardEntry.start)
@@ -61,23 +52,6 @@ class ReportCardBindingSpec extends SesameDbSpec {
   ).graph
 
   "A ReportCardBindingSpec " should {
-
-    "return a RDF graph representation of a report card" in {
-      val graph = reportCard.toPG.graph
-
-      graph isIsomorphicWith reportCardGraph shouldBe true
-    }
-
-    "return a report card based on a RDF graph representation" in {
-      val expectedCard = PointedGraph[Rdf](URI(ReportCard.generateUri(reportCard)), reportCardGraph).as[ReportCard]
-
-      expectedCard match {
-        case Success(s) =>
-          s shouldEqual reportCard
-        case Failure(e) =>
-          fail(s"Unable to deserialise report card graph: $e")
-      }
-    }
 
     "successfully serialise a report card entry" in {
       val entry = reportCardEntryBinding.fromPG(reportCardEntry.toPG)
