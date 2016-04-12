@@ -159,39 +159,39 @@ class ScheduleCRUDController(val repository: SesameRepository,
     }
   }
 
-  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Schedule.generateBase))
   }
 
-  def updateFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
-  }
-
-  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     createAtomic(NonSecureBlock)(rebase(Schedule.generateBase))
   }
 
-  def updateAtomicFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+  def updateFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
+  }
+
+  def updateAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
     updateAtomic(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
     all(NonSecureBlock)(rebase(Schedule.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
     allAtomic(NonSecureBlock)(rebase(Schedule.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def getFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+  def getFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
     get(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def getAtomicFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+  def getAtomicFrom(course: String, schedule: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
     getAtomic(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 
-  def deleteFrom(course: String, labwork: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+  def deleteFrom(course: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
     delete(schedule, NonSecureBlock)(rebase(Schedule.generateBase(UUID.fromString(schedule))))
   }
 

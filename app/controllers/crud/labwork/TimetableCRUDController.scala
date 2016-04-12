@@ -118,39 +118,39 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     case Delete => SecureBlock(restrictionId, timetable.delete)
   }
 
-  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Timetable.generateBase))
   }
 
-  def updateFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
-  }
-
-  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     createAtomic(NonSecureBlock)(rebase(Timetable.generateBase))
   }
 
-  def updateAtomicFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+  def updateFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+  }
+
+  def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
     updateAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
     all(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
     allAtomic(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def getFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+  def getFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
     get(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def getAtomicFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+  def getAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
     getAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 
-  def deleteFrom(course: String, labwork: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+  def deleteFrom(course: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
     delete(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
   }
 }
