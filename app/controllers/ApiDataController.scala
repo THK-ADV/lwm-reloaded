@@ -25,7 +25,6 @@ import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
-// TODO update roles somehow
 object ApiDataController {
   import models.security.Permissions._
 
@@ -39,7 +38,7 @@ object ApiDataController {
       Set(reportCardEntry.getAll, reportCardEntry.update) ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
+    Set(schedule.get, schedule.getAll, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
   )
 
   val rvRole = Role(RightsManager,
