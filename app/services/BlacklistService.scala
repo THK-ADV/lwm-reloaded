@@ -2,7 +2,7 @@ package services
 
 import models.labwork.TimetableDateEntry
 import models.semester.Blacklist
-import org.joda.time.{LocalDate, DateTime}
+import org.joda.time.DateTime
 import org.w3.banana.sesame.Sesame
 import store.SesameRepository
 import store.bind.Bindings
