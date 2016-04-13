@@ -24,6 +24,9 @@ object GroupCRUDController {
   val labworkAttribute = "labwork"
   val studentAttribute = "student"
   val labelAttribute = "label"
+  val countAttribute = "value"
+  val minAttribute = "min"
+  val maxAttribute = "max"
 
   def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
     if (prev % s < curr % s) curr
@@ -44,6 +47,14 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   override implicit def reads: Reads[GroupProtocol] = Group.reads
 
   override implicit def writes: Writes[Group] = Group.writes
+
+  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(request)
+  }
+
+  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    createAtomic(NonSecureBlock)(request)
+  }
 
   def updateFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
     update(group, NonSecureBlock)(rebase(Group.generateBase(UUID.fromString(group))))
@@ -73,63 +84,104 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     delete(group, NonSecureBlock)(rebase(Group.generateBase(UUID.fromString(group))))
   }
 
-  def createWithRange(course: String, labwork: String) = groupBy[GroupRangeProtocol](course, labwork) { (people, rangeProt) =>
-    range(rangeProt.min, rangeProt.max, people.size)
+  def createWithRange(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyRange(people, params)
   } { groups =>
-    Success(Created(Json.toJson(groups)).as(mimeType))
+    createGroups(groups)
   }
 
-  def createWithCount(course: String, labwork: String) = groupBy[GroupCountProtocol](course, labwork) { (people, countProt) =>
-    (people.size / countProt.count) + 1
+  def createWithCount(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyCount(people, params)
   } { groups =>
-    Success(Created(Json.toJson(groups)).as(mimeType))
+    createGroups(groups)
   }
 
-  def createAtomicWithRange(course: String, labwork: String) = groupBy[GroupRangeProtocol](course, labwork) { (people, rangeProt) =>
-    range(rangeProt.min, rangeProt.max, people.size)
+  def createAtomicWithRange(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyRange(people, params)
   } { groups =>
-    atomizeMany(groups.toSet).map(Created(_).as(mimeType))
+    createAtomic(groups)
   }
 
-  def createAtomicWithCount(course: String, labwork: String) = groupBy[GroupCountProtocol](course, labwork) { (people, countProt) =>
-    (people.size / countProt.count) + 1
+  def createAtomicWithCount(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyCount(people, params)
   } { groups =>
-    atomizeMany(groups.toSet).map(Created(_).as(mimeType))
+    createAtomic(groups)
   }
 
-  private def groupBy[T <: GroupConstraint](course: String, labwork: String)
-                                           (f: (Vector[UUID], T) => Int)
-                                           (g: List[Group] => Try[Result])
-                                           (implicit reads: Reads[T]) = restrictedContext(course)(Create) contentTypedAction { request =>
-    request.body.validate[T].fold(
-      errors => {
-        BadRequest(Json.obj(
+  def previewWithCount(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyCount(people, params)
+  } { groups =>
+    returnGroups(groups)
+  }
+
+  def previewAtomicWithCount(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyCount(people, params)
+  } { groups =>
+    returnAtomic(groups)
+  }
+
+  def previewWithRange(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyRange(people, params)
+  } { groups =>
+    returnGroups(groups)
+  }
+
+  def previewAtomicWithRange(course: String, labwork: String) = groupBy(course, labwork) { (people, params) =>
+    applyRange(people, params)
+  } { groups =>
+    returnAtomic(groups)
+  }
+
+  private def applyRange(people: Vector[UUID], params: Map[String, Seq[String]]) = {
+    for {
+      min <- Try(params(minAttribute).head.toInt)
+      max <- Try(params(maxAttribute).head.toInt) if min <= max
+    } yield range(min, max, people.size)
+  }
+
+  private def applyCount(people: Vector[UUID], params: Map[String, Seq[String]]) = {
+    Try(params(countAttribute).head.toInt) map (count => (people.size / count) + 1)
+  }
+
+  private def returnGroups(protocol: List[GroupProtocol]) = {
+    import Group.protocolWrites
+
+    Success(Ok(Json.toJson(protocol)).as(mimeType))
+  }
+
+  private def returnAtomic(protocol: List[GroupProtocol]) = {
+    val enumerator = chunkAtoms(protocol.map(p => Group(p.label, p.labwork, p.members)).toSet)
+    Success(Ok.chunked(enumerator).as(mimeType))
+  }
+
+  private def createGroups(protocol: List[GroupProtocol]) = {
+    val groups = protocol.map(p => Group(p.label, p.labwork, p.members))
+    repository.addMany(groups).map(_ => Created(Json.toJson(groups)).as(mimeType))
+  }
+
+  private def createAtomic(protocol: List[GroupProtocol]) = {
+    val groups = protocol.map(p => Group(p.label, p.labwork, p.members)).toSet
+    repository.addMany(groups).map(_ => chunkAtoms(groups)).map(Created.chunked(_).as(mimeType))
+  }
+
+  private def groupBy(course: String, labwork: String)
+                      (grouping: (Vector[UUID], Map[String, Seq[String]]) => Try[Int])
+                      (serialise: List[GroupProtocol] => Try[Result]) = restrictedContext(course)(Create) action { request =>
+    (for {
+      people <- groupService.sortApplicantsFor(UUID.fromString(labwork)) if people.nonEmpty
+      groupSize <- grouping(people, request.queryString)
+      grouped = people.grouped(groupSize).toList
+      zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
+      mapped = zipped map (t => GroupProtocol(t._1, UUID.fromString(labwork), t._2.toSet))
+      res <- serialise(mapped)
+    } yield res) match {
+      case Success(result) => result
+      case Failure(e) =>
+        InternalServerError(Json.obj(
           "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
+          "errors" -> s"Error while creating groups for labwork: ${e.getMessage}"
         ))
-      },
-      success => {
-        val labworkId = UUID.fromString(labwork)
-        val processed =
-          for {
-            people <- groupService.sortApplicantsFor(labworkId) if people.nonEmpty
-            groupSize = f(people, success)
-            grouped = people.grouped(groupSize).toList
-            zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-            mapped = zipped map (t => Group(t._1, labworkId, t._2.toSet))
-            _ <- repository.addMany[Group](mapped)
-          } yield mapped
-
-          processed flatMap g match {
-            case Success(result) => result
-            case Failure(e) =>
-              InternalServerError(Json.obj(
-                "status" -> "KO",
-                "errors" -> s"Error while creating groups for labwork: ${e.getMessage}"
-              ))
-          }
-      }
-    )
+    }
   }
 
   override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
@@ -162,11 +214,8 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     for {
       labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
       students <- repository.getMany[Student](output.members.map(id => User.generateUri(id)(namespace)))
-    } yield {
-      labwork.map { l =>
-        val atom = GroupAtom(output.label, l, students, output.id)
-        Json.toJson(atom)
-      }
+    } yield labwork.map { l =>
+      Json.toJson(GroupAtom(output.label, l, students, output.id))
     }
   }
 

@@ -266,8 +266,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val groupSize = 12
       val applicantsAmount = 100
 
-      implicit val groupProtWrites = Json.writes[GroupCountProtocol]
-
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
@@ -276,16 +274,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
-      val json = Json.toJson(GroupCountProtocol(groupSize))
-
       val fakeRequest = FakeRequest(
         POST,
-        s"/${entityTypeName}s/$course/groups/count",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        s"/${entityTypeName}s/$course/groups/count?value=$groupSize",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
       )
 
-      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest)
+      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest).run
 
       status(result) shouldBe CREATED
 
@@ -311,8 +307,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val predictedGroupsNumber = (applicantsAmount / calculatedGroupSize) + 1
 
-      implicit val groupProtWrites = Json.writes[GroupRangeProtocol]
-
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
@@ -321,16 +315,14 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Try(Set.empty[PointedGraph[Sesame]]))
 
-      val json = Json.toJson(GroupRangeProtocol(min, max))
-
       val fakeRequest = FakeRequest(
         POST,
-        s"/${entityTypeName}s/$course/groups/range",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        s"/${entityTypeName}s/$course/groups/range?min=$min&max=$max",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
       )
 
-      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest)
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest).run
       status(result) shouldBe CREATED
 
       val resultValue = contentAsJson(result).as[JsArray]
@@ -348,27 +340,22 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val course = Course.randomUUID
       val groupSize = 12
 
-      val expectedResult = Json.obj(
-        "status" -> "KO",
-        "errors" -> s"Error while creating groups for labwork: Predicate does not hold for Vector()"
-      )
-
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(Vector.empty[UUID]))
-
-      implicit val groupProtWrites = Json.writes[GroupCountProtocol]
-      val json = Json.toJson(GroupCountProtocol(groupSize))
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/${entityTypeName}s/$course/groups/count",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        s"/${entityTypeName}s/$course/groups/count?value=$groupSize",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
       )
 
-      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest)
+      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest).run
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(result) shouldBe expectedResult
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> s"Error while creating groups for labwork: Predicate does not hold for Vector()"
+      )
     }
 
     "stop creating groups when models cannot be added to database" in {
@@ -378,12 +365,34 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val max = 20
       val applicantsAmount = 100
 
-      implicit val groupProtWrites = Json.writes[GroupRangeProtocol]
+      val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
 
-      val expectedResult = Json.obj(
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
+      when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
+      when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
+
+      val fakeRequest = FakeRequest(
+        POST,
+        s"/${entityTypeName}s/$course/groups/range?min=$min&max=$max",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest).run
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "errors" -> s"Error while creating groups for labwork: could not add to graph"
       )
+    }
+
+    "stop creating groups when there are invalid attributes" in {
+      val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
+      val applicantsAmount = 100
 
       val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
       val concreteApplications = applications(labwork).take(applicantsAmount).toSet
@@ -393,20 +402,76 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
 
+      val fakeRequest = FakeRequest(
+        POST,
+        s"/${entityTypeName}s/$course/groups/range?invalid=1",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
+      )
 
-      val json = Json.toJson(GroupRangeProtocol(min, max))
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest).run
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> "Error while creating groups for labwork: key not found: min"
+      )
+    }
+
+    "stop creating groups when there are invalid values for attribute" in {
+      val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
+      val applicantsAmount = 100
+
+      val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
+
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
+      when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
+      when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
 
       val fakeRequest = FakeRequest(
         POST,
-        s"/${entityTypeName}s/$course/groups/range",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        json
+        s"/${entityTypeName}s/$course/groups/count?value=invalid",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
       )
 
-      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest)
+      val result = controller.createWithCount(course.toString, labwork.toString)(fakeRequest).run
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(result) shouldBe expectedResult
+    }
+
+    "stop creating groups when max is lower than min" in {
+      val labwork = Labwork.randomUUID
+      val course = Course.randomUUID
+      val min = 20
+      val max = 15
+      val applicantsAmount = 100
+
+      val concreteApplicationIds = applicationIds.take(applicantsAmount).toVector
+      val concreteApplications = applications(labwork).take(applicantsAmount).toSet
+
+      when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
+      when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
+      when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
+
+      val fakeRequest = FakeRequest(
+        POST,
+        s"/${entityTypeName}s/$course/groups/range?min=$min&max=$max",
+        FakeHeaders(Seq.empty),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createWithRange(course.toString, labwork.toString)(fakeRequest).run
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> s"Error while creating groups for labwork: Predicate does not hold for $max"
+      )
     }
 
     s"successfully get a single $entityTypeName atomized" in {
