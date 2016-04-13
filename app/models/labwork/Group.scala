@@ -21,6 +21,8 @@ object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, G
 
   override implicit def writes: Writes[Group] = Json.writes[Group]
 
+  implicit def protocolWrites: Writes[GroupProtocol] = Json.writes[GroupProtocol]
+
   implicit def format: Format[Group] = Json.format[Group]
 
   implicit def atomicWrites: Writes[GroupAtom] = Json.writes[GroupAtom]

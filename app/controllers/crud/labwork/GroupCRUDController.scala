@@ -143,23 +143,36 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     Try(params(countAttribute).head.toInt) map (count => (people.size / count) + 1)
   }
 
-  private def returnGroups(groups: List[Group]) = Success(Ok(Json.toJson(groups)).as(mimeType))
+  private def returnGroups(protocol: List[GroupProtocol]) = {
+    import Group.protocolWrites
 
-  private def returnAtomic(groups: List[Group]) = atomizeMany(groups.toSet).map(Ok(_).as(mimeType))
+    Success(Ok(Json.toJson(protocol)).as(mimeType))
+  }
 
-  private def createGroups(groups: List[Group]) = repository.addMany(groups).map(_ => Created(Json.toJson(groups)).as(mimeType))
+  private def returnAtomic(protocol: List[GroupProtocol]) = {
+    val enumerator = chunkAtoms(protocol.map(p => Group(p.label, p.labwork, p.members)).toSet)
+    Success(Ok.chunked(enumerator).as(mimeType))
+  }
 
-  private def createAtomic(groups: List[Group]) = repository.addMany(groups).flatMap(_ => atomizeMany(groups.toSet)).map(Created(_).as(mimeType))
+  private def createGroups(protocol: List[GroupProtocol]) = {
+    val groups = protocol.map(p => Group(p.label, p.labwork, p.members))
+    repository.addMany(groups).map(_ => Created(Json.toJson(groups)).as(mimeType))
+  }
+
+  private def createAtomic(protocol: List[GroupProtocol]) = {
+    val groups = protocol.map(p => Group(p.label, p.labwork, p.members)).toSet
+    repository.addMany(groups).map(_ => chunkAtoms(groups)).map(Created.chunked(_).as(mimeType))
+  }
 
   private def groupBy(course: String, labwork: String)
                       (grouping: (Vector[UUID], Map[String, Seq[String]]) => Try[Int])
-                      (serialise: List[Group] => Try[Result]) = restrictedContext(course)(Create) action { request =>
+                      (serialise: List[GroupProtocol] => Try[Result]) = restrictedContext(course)(Create) action { request =>
     (for {
       people <- groupService.sortApplicantsFor(UUID.fromString(labwork)) if people.nonEmpty
       groupSize <- grouping(people, request.queryString)
       grouped = people.grouped(groupSize).toList
       zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-      mapped = zipped map (t => Group(t._1, UUID.fromString(labwork), t._2.toSet))
+      mapped = zipped map (t => GroupProtocol(t._1, UUID.fromString(labwork), t._2.toSet))
       res <- serialise(mapped)
     } yield res) match {
       case Success(result) => result
