@@ -95,7 +95,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
 
-  // GET /ts with optional queries and deserialisation
+  // TODO allAtomic should chunk responses by default
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
     val res = {
       if (request.queryString.nonEmpty)

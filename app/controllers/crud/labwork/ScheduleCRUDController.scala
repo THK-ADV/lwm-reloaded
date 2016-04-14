@@ -3,15 +3,15 @@ package controllers.crud.labwork
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.{Room, Course, UriGenerator}
+import models.{Course, Room, UriGenerator}
 import models.labwork._
 import org.openrdf.model.Value
-import models.users.{User, Employee}
+import models.users.{Employee, User}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
-import play.api.mvc.Result
+import play.api.mvc.{Action, AnyContent, Result}
 import services._
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
@@ -19,6 +19,7 @@ import store.{Namespace, SesameRepository}
 import utils.{Gen, LwmMimeType}
 import models.security.Permissions._
 import utils.RequestOps._
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import ScheduleCRUDController._
@@ -289,6 +290,25 @@ class ScheduleCRUDController(val repository: SesameRepository,
         }
         Json.toJson(ScheduleAtom(l, entries, output.published, output.id))(Schedule.atomicWrites)
       }
+    }
+  }
+
+  // TODO allAtomic should chunk responses by default
+  override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
+    repository.get[Schedule] flatMap { s =>
+      if (request.queryString.nonEmpty)
+        getWithFilter(request.queryString)(s) map (set => chunkAtoms(set))
+      else {
+        Success(chunkAtoms(s))
+      }
+    } match {
+      case Success(enum) =>
+        Ok.chunked(enum).as(mimeType)
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
     }
   }
 

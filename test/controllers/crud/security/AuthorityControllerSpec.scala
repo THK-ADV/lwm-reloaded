@@ -248,10 +248,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-
-
     contentAsString(result) shouldEqual jsVals.foldLeft("")(_ + _)
-
   }
 
   s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {

@@ -244,7 +244,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     }
   }
 
-  def scheduleGen(count: String) = Action { request =>
+  def scheduleGen(count: String, labwork: String) = Action { request =>
     implicit val gb = bindings.GroupBinding.groupBinder
     implicit val gcu = bindings.GroupBinding.classUri
     implicit val tb = bindings.TimetableBinding.timetableBinder
@@ -255,15 +255,15 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     import bindings.ScheduleBinding._
 
     (for {
-      people <- groupService.sortApplicantsFor(ap1MiPrak) if people.nonEmpty
+      people <- groupService.sortApplicantsFor(UUID.fromString(labwork)) if people.nonEmpty
       groupSize = (people.size / count.toInt) + 1
       grouped = people.grouped(groupSize).toList
       zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-      groups = zipped map (t => Group(t._1, ap1MiPrak, t._2.toSet))
+      groups = zipped map (t => Group(t._1, UUID.fromString(labwork), t._2.toSet))
       _ <- repository.addMany[Group](groups)
-      timetable <- repository.get[Timetable].map(_.find(_.labwork == ap1MiPrak))
-      plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == ap1MiPrak))
-      comp <- ScheduleCRUDController.competitive(ap1MiPrak, repository)
+      timetable <- repository.get[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)))
+      plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork)))
+      comp <- ScheduleCRUDController.competitive(UUID.fromString(labwork), repository)
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
