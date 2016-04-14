@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 import java.util.concurrent.Executors
-import utils.PTree._
+import utils.PreferenceSort._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -22,8 +22,8 @@ class GroupService(private val applicationService: LabworkApplicationServiceLike
 
   override def sortApplicantsFor(labwork: UUID): Try[Vector[UUID]] = {
     applicationService.applicationsFor(labwork) map { v =>
-      val nodes = v map (app => (app.applicant, app.friends.toList))
-      sortWithPairs(nodes)
+      val nodes = v map (app => (app.applicant, app.friends))
+      sort(nodes)
     }
   }
 }
