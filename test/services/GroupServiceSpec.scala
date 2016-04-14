@@ -6,7 +6,7 @@ import models.users.User
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
-import utils.PTree._
+import utils.PreferenceSort._
 
 import scala.util.{Failure, Random, Success}
 
@@ -51,7 +51,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       when(applicationService.applicationsFor(labworkUUID)).thenReturn(Success(applications))
 
       val sorted = groupService.sortApplicantsFor(labworkUUID)
-      val directlySorted = sortWithPairs(Random.shuffle(applications).map(z => (z.applicant, z.friends.toList)))
+      val directlySorted = sort(Random.shuffle(applications).map(z => (z.applicant, z.friends)))
 
       sorted match {
         case Success(v) => v.last shouldBe directlySorted.last
