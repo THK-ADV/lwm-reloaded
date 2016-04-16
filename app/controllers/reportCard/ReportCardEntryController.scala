@@ -10,21 +10,25 @@ import models.users.{Student, User}
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Result, Controller}
+import play.api.mvc.{Controller, Result}
 import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+import store.sparql.{Clause, NoneClause}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ReportCardEntryController {
   val studentAttribute = "student"
   val labworkAttribute = "labwork"
+  val dateAttribute = "date"
+  val startAttribute = "start"
+  val endAttribute = "end"
 }
 
 class ReportCardEntryController(val repository: SesameRepository,
@@ -174,24 +178,52 @@ class ReportCardEntryController(val repository: SesameRepository,
         "message" -> "Request should contain at least one attribute"
       ))
     else
-      request.queryString.foldLeft(Try(^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)))) {
+      request.queryString.foldLeft(Try((^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
         case (clause, (`studentAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head))))
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`labworkAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
+        }
+        case (clause, (`dateAttribute`, values)) => clause map {
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rdate"), s"'${values.head}'"))
+        }
+        case (clause, (`startAttribute`, values)) => clause map {
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rstart"), s"'${values.head}'"))
+        }
+        case (clause, (`endAttribute`, values)) => clause map {
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rend"), s"'${values.head}'"))
         }
         case _ => Failure(new Throwable("Unknown attribute"))
-      } flatMap { clause =>
-        val query = select distinct "entries" where clause
+      } flatMap {
+        case ((clause, resched)) =>
+          val query = select distinct "entries" where {
+            clause . optional {
+              ^(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
+                ^(v("rescheduled"), p(lwm.date), v("rdate")).
+                ^(v("rescheduled"), p(lwm.start), v("rstart")).
+                ^(v("rescheduled"), p(lwm.end), v("rend")) append
+                resched
+            }
+          }
 
-        repository.prepareQuery(query).
-          select(_.get("entries")).
-          transform(_.fold(List.empty[Value])(identity)).
-          requestAll[Set, ReportCardEntry](values => repository.getMany(values.map(_.stringValue))).
-          run
-      } flatMap f match {
-        case Success(result) => result
+          repository.prepareQuery(query).
+            select(_.get("entries")).
+            transform(_.fold(List.empty[Value])(identity)).
+            requestAll[Set, ReportCardEntry](values => repository.getMany[ReportCardEntry](values.map(_.stringValue))).
+            run
+
+      } match {
+        case Success(entries) =>
+          Ok(Json.toJson(entries)).as(mimeType)
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",

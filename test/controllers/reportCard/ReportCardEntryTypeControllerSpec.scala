@@ -3,7 +3,7 @@ package controllers.reportCard
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.labwork.{ReportCardEntry, ReportCardEntryType}
+import models.labwork.{ReportCardEntry, ReportCardEntryType, Rescheduled}
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -212,12 +212,15 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
       val room2 = UUID.randomUUID()
 
+      val student3 = UUID.randomUUID()
 
       val entry1 = ReportCardEntry(student1, labwork1, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
       val entry2 = ReportCardEntry(student2, labwork2, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
       val entry3 = ReportCardEntry(student1, labwork1, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
+      val entry4 = ReportCardEntry(student3, labwork1, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
+        Some(Rescheduled(date1, start2, end2, room2)))
 
-      realRepo.addMany[ReportCardEntry](List(entry1, entry2, entry3))
+      realRepo.addMany[ReportCardEntry](List(entry1, entry2, entry3, entry4))
 
       val requestWithDate = FakeRequest(
         GET,
@@ -231,8 +234,8 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
       val result1 = localController.all(course.toString)(requestWithDate)
       val result2 = localController.all(course.toString)(requestWithTime)
-      val expected1 = entry1.entryTypes ++ entry3.entryTypes
-      val expected2 = entry1.entryTypes ++ entry2.entryTypes
+      val expected1 = entry1.entryTypes ++ entry3.entryTypes ++ entry4.entryTypes
+      val expected2 = entry1.entryTypes ++ entry2.entryTypes ++ entry4.entryTypes
 
       contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
       expected1 contains Json.fromJson[ReportCardEntryType](entry).get shouldBe true

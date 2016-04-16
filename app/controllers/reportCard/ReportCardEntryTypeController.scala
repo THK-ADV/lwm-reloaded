@@ -16,6 +16,7 @@ import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.Controller
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.sparql.{Clause, NoneClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -107,25 +108,42 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
         "message" -> "Request should contain at least one attribute"
       ))
     else
-      request.queryString.foldLeft(Try(^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)))) {
+      request.queryString.foldLeft(Try((^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
         case (clause, (`studentAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head))))
+          case ((filter, resched)) =>
+          (filter append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`labworkAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`dateAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'")
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rdate"), s"'${values.head}'"))
         }
         case (clause, (`startAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'")
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rstart"), s"'${values.head}'"))
         }
         case (clause, (`endAttribute`, values)) => clause map {
-          _ append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'")
+          case ((filter, resched)) =>
+            (filter append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'"),
+              resched . filterStrStarts(v("rend"), s"'${values.head}'"))
         }
         case _ => Failure(new Throwable("Unknown attribute"))
-      } flatMap { clause =>
-        val query = select distinct "entries" where clause
+      } flatMap {
+        case ((clause, resched)) =>
+        val query = select distinct "entries" where {
+          clause . optional {
+              ^(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
+              ^(v("rescheduled"), p(lwm.date), v("rdate")).
+              ^(v("rescheduled"), p(lwm.start), v("rstart")).
+              ^(v("rescheduled"), p(lwm.end), v("rend")) append
+              resched
+          }
+        }
 
         repository.prepareQuery(query).
           select(_.get("entries")).
