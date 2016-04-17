@@ -253,16 +253,21 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       import bindings.RoomBinding._
       import bindings.UserBinding._
       import bindings.ScheduleEntryBinding._
+      import bindings.LabworkBinding._
 
       val courseID = UUID.randomUUID()
+      val courseID2 = UUID.randomUUID()
 
-      val labwork1 = UUID.randomUUID()
-      val labwork2 = UUID.randomUUID()
+      val labwork1 = Labwork("Label1", "Desc1", UUID.randomUUID(), courseID, UUID.randomUUID())
+      val labwork2 = Labwork("Label2", "Desc2", UUID.randomUUID(), courseID2, UUID.randomUUID())
+      val labwork3 = Labwork("Label3", "Desc3", UUID.randomUUID(), courseID, UUID.randomUUID())
 
-      val group1 = Group("Label1", labwork1, Set.empty)
-      val group2 = Group("Label2", labwork2, Set.empty)
+      val group1 = Group("Label1", labwork1.id, Set.empty)
+      val group2 = Group("Label2", labwork2.id, Set.empty)
+      val group3 = Group("Label3", labwork3.id, Set.empty)
       val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
+      val supervisor3 = Employee("systemid3", "lastname3", "firstname3", "email3", "status3")
       val room1 = Room("label1", "description1")
       val room2 = Room("label1", "description2")
       val start1 = LocalTime.now
@@ -278,64 +283,79 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val date3 = LocalDate.now plusDays 2
       val date4 = LocalDate.now plusDays 4
 
-      val sentry1 = ScheduleEntry(labwork1, start1, end1, date1, room1.id, supervisor1.id, group1.id)
-      val sentry2 = ScheduleEntry(labwork1, start1, end2, date2, room1.id, supervisor1.id, group1.id)
-      val sentry3 = ScheduleEntry(labwork2, start3, end3, date2, room2.id, supervisor2.id, group2.id)
-      val sentry4 = ScheduleEntry(labwork2, start2, end2, date3, room2.id, supervisor2.id, group1.id)
-      val sentry5 = ScheduleEntry(labwork1, start2, end2, date4, room1.id, supervisor1.id, group2.id)
+      val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, supervisor1.id, group1.id)
+      val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, supervisor1.id, group1.id)
+      val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, supervisor2.id, group2.id)
+      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group1.id)
+      val sentry5 = ScheduleEntry(labwork1.id, start2, end2, date4, room1.id, supervisor1.id, group2.id)
+      val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, supervisor3.id, group3.id)
 
 
-      realRepository addMany List(group1, group2)
+      realRepository addMany List(labwork1, labwork2, labwork3)
+      realRepository addMany List(group1, group2, group3)
       realRepository addMany List(supervisor1, supervisor2)
       realRepository addMany List(room1, room2)
-      realRepository addMany List(sentry1, sentry2, sentry3, sentry4, sentry5)
+      realRepository addMany List(sentry1, sentry2, sentry3, sentry4, sentry5, sentry6)
+
+
+      val requestForCourse = FakeRequest(
+        GET,
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?course=$courseID"
+      )
 
       val requestForLabwork = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?labwork=$labwork2"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?labwork=${labwork2.id}"
+      )
+
+      val requestForCourseAndLabwork = FakeRequest(
+        GET,
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?course=$courseID&labwork=${labwork3.id}"
       )
 
       val requestForGroup = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?group=${group1.id}"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group1.id}"
       )
 
       val requestForSupervisor = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?supervisor=${supervisor1.id}"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?supervisor=${supervisor1.id}"
       )
 
       val requestGroupSupervisor = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?group=${group2.id}&supervisor=${supervisor1.id}"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group2.id}&supervisor=${supervisor1.id}"
       )
 
       val requestForDate = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?date=$date2"
+        s"/courses/$courseID/labwork/${labwork1.id}entries?date=$date2"
       )
 
       val requestForDateAndTime = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?date=$date2&start=$start3"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?date=$date2&start=$start3"
       )
 
       val requestForMinMax = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?dateRange=$date2,$date3"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?dateRange=$date2,$date3"
       )
 
       val requestForGroupWithinDateRange = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?group=${group1.id}&dateRange=$date2,$date4"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group1.id}&dateRange=$date2,$date4"
       )
 
       val requestForGroupWithinDateRangeAndSup = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/$labwork1/entries?group=${group1.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
+        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group1.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
       )
 
+      val resultForCourse = realController.all(courseID.toString)(requestForCourse)
       val resultForLabwork = realController.all(courseID.toString)(requestForLabwork)
+      val resultForCourseAndLabwork = realController.all(courseID.toString)(requestForCourseAndLabwork)
       val resultForGroup = realController.all(courseID.toString)(requestForGroup)
       val resultForSupervisor = realController.all(courseID.toString)(requestForSupervisor)
       val resultForGroupSupervisor = realController.all(courseID.toString)(requestGroupSupervisor)
@@ -345,7 +365,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val resultForGroupWithinDateRange = realController.all(courseID.toString)(requestForGroupWithinDateRange)
       val resultForGroupWithinDateRangeAndSup = realController.all(courseID.toString)(requestForGroupWithinDateRangeAndSup)
 
+      val valsForCourse = List(Json.toJson(sentry6), Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForLabwork = List(Json.toJson(sentry4), Json.toJson(sentry3))
+      val valsForCourseAndLabwork = List(Json.toJson(sentry6))
       val valsForGroup = List(Json.toJson(sentry4), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForSupervisor = List(Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForGroupSupervisor = List(Json.toJson(sentry5))
@@ -355,7 +377,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val valsForGroupWithinDateRange = List(Json.toJson(sentry4), Json.toJson(sentry2))
       val valsForGroupWithinDateRangeAndSup = List(Json.toJson(sentry4))
 
+      status(resultForCourse) shouldBe OK
       status(resultForLabwork) shouldBe OK
+      status(resultForCourseAndLabwork) shouldBe OK
       status(resultForGroup) shouldBe OK
       status(resultForSupervisor) shouldBe OK
       status(resultForGroupSupervisor) shouldBe OK
@@ -365,7 +389,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       status(resultForGroupWithinDateRange) shouldBe OK
       status(resultForGroupWithinDateRangeAndSup) shouldBe OK
 
+      contentAsString(resultForCourse) shouldBe valsForCourse.foldLeft("")(_ + _)
       contentAsString(resultForLabwork) shouldBe valsForLabwork.foldLeft("")(_ + _)
+      contentAsString(resultForCourseAndLabwork) shouldBe valsForCourseAndLabwork.foldLeft("")(_ + _)
       contentAsString(resultForGroup) shouldBe valsForGroup.foldLeft("")(_ + _)
       contentAsString(resultForSupervisor) shouldBe valsForSupervisor.foldLeft("")(_ + _)
       contentAsString(resultForGroupSupervisor) shouldBe valsForGroupSupervisor.foldLeft("")(_ + _)

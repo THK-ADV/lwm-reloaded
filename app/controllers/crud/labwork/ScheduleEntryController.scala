@@ -3,7 +3,7 @@ package controllers.crud.labwork
 import java.util.UUID
 
 import controllers.crud._
-import models.Room
+import models.{Course, Room}
 import models.labwork._
 import models.users.{Employee, User}
 import modules.store.BaseNamespace
@@ -28,6 +28,7 @@ import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 object ScheduleEntryController {
+  val courseAttribute = "course"
   val labworkAttribute = "labwork"
   val groupAttribute = "group"
   val supervisorAttribute = "supervisor"
@@ -52,20 +53,23 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   val bindings = Bindings[repository.Rdf](namespace)
 
 
-  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, labworkAttribute -> Seq(labwork))(request)
+  def allFrom(course: String) = restrictedContext(course)(GetAll) action { request =>
+    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course))(request)
     chunkedAll(chunkSimple)
   }
 
-  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, labworkAttribute -> Seq(labwork))(request)
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { request =>
+    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course))(request)
     chunkedAll(chunkAtoms)
   }
 
-  def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+  def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
+    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))(request)
     chunkedAll(chunkSimple)
   }
-  def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+
+  def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
+    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))(request)
     chunkedAll(chunkAtoms)
   }
 
@@ -100,6 +104,14 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     Success(action(sentry))
   }
 
+  //FOT TEST PURPOSES. DO NOT DELETE
+  def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkSimple)
+  }
+  def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkAtoms)
+  }
+
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ScheduleEntry]): Try[Set[ScheduleEntry]] = {
     import bindings.ScheduleEntryBinding._
 
@@ -109,6 +121,9 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     val startClause = ^(v("entries"), p(rdf.`type`), s(lwm.ScheduleEntry))
 
     queryString.foldRight(Try(startClause)) {
+      case ((`courseAttribute`, values), clause) => clause map {
+        _ append ^(v("entries"), p(lwm.labwork), v("labwork")) . ^(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
+      }
       case ((`labworkAttribute`, values), clause) => clause map {
         _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
       }
