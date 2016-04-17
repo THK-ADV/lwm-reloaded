@@ -271,7 +271,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     } yield {
       val gen = scheduleGenesisService.generate(t, g, p, comp.toVector)._1
       gen.map { scheduleG =>
-        val s = scheduleG.entries.map(g => ScheduleEntry(g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
+        val s = scheduleG.entries.map(g => ScheduleEntry(scheduleG.labwork, g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
         Schedule(scheduleG.labwork, s, published = true, scheduleG.id)
       }.map(repository.add[Schedule])
 

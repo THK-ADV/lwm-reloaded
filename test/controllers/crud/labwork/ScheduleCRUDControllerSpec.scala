@@ -35,6 +35,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
 
   val entriesToPass = (0 until 10).map (n =>
     ScheduleEntry(
+      labworkToPass.id,
       LocalTime.now.plusHours(n),
       LocalTime.now.plusHours(n),
       LocalDate.now.plusWeeks(n),
@@ -45,6 +46,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
   ).toSet
   val entriesToFail = (0 until 10).map (n =>
     ScheduleEntry(
+      labworkToFail.id,
       LocalTime.now.plusHours(n),
       LocalTime.now.plusHours(n),
       LocalDate.now.plusWeeks(n),
@@ -95,7 +97,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
     "labwork" -> entityToPass.labwork,
     "entries" -> (
       entityToPass.entries +
-        ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+        ScheduleEntry(labworkToPass.id, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       ),
     "published" -> true
   )
@@ -186,7 +188,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         import scala.util.Random.nextBoolean
 
         (0 until 10).map(i =>
-          ScheduleEntry(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, if (nextBoolean) supervisor else UUID.randomUUID, UUID.randomUUID)
+          ScheduleEntry(labworkToPass.id, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, if (nextBoolean) supervisor else UUID.randomUUID, UUID.randomUUID)
         ).toSet
       }
       val supervisor = UUID.randomUUID
@@ -285,7 +287,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
@@ -321,7 +323,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 
@@ -365,7 +367,7 @@ class ScheduleCRUDControllerSpec extends AbstractCRUDControllerSpec[ScheduleProt
         ), 1)
       )
       val schedule = {
-        val entries = gen.elem.entries.map(e => ScheduleEntry(e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
+        val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
       }
 

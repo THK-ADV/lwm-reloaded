@@ -326,11 +326,13 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object ScheduleBinding {
+    import ScheduleEntryBinding.scheduleEntryBinder
+
     implicit val clazz = lwm.Schedule
     implicit val classUri = classUrisFor[Schedule](clazz)
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
-    private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryBinding.scheduleEntryBinder)
+    private val entries = set[ScheduleEntry](lwm.entries)
     private val published = property[Boolean](lwm.published)
 
     implicit val scheduleBinder: PGBinder[Rdf, Schedule] = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, published, id)(Schedule.apply, Schedule.unapply) withClasses classUri
@@ -340,6 +342,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     implicit val clazz = lwm.ScheduleEntry
     implicit val classUri = classUrisFor[ScheduleEntry](clazz)
 
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
     private val date = property[LocalDate](lwm.date)
@@ -347,7 +350,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
-    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](_ => innerUri)(start, end, date, room, supervisor, group)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](sentry => makeUri(ScheduleEntry.generateUri(sentry)))(labwork, start, end, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 
   object BlacklistBinding {
