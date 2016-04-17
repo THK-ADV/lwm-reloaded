@@ -95,6 +95,23 @@ trait Consistent[I, O] {
   protected def compareModel(input: I, output: O): Boolean
 }
 
+trait Chunkable[I] { self: Atomic[I] =>
+
+  def chunkAtoms(data: Set[I]): Enumerator[JsValue] = chunkWith(data)(atomize)
+  def chunkSimple(data: Set[I])(implicit writes: Writes[I]): Enumerator[JsValue] = chunkWith(data)(i => Success(Some(Json.toJson(i))))
+
+  def chunkWith[O](data: Set[I])(f: I => Try[Option[O]]): Enumerator[O] = {
+    val result = Enumeratee.map[I](f)
+    val transfer = Enumeratee.mapInput[Try[Option[O]]] {
+      case Input.El(Success(Some(out))) => Input.El[O](out)
+      case Input.El(Success(None)) => Input.Empty
+      case _ => Input.EOF
+    }
+
+    Enumerator.enumerate(data) &> result &> transfer
+  }
+}
+
 trait ContentTyped {
   implicit val mimeType: LwmMimeType
 }
@@ -184,18 +201,9 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   with SessionChecking
   with SecureControllerContext
   with Consistent[I, O]
+  with Chunkable[O]
   with Atomic[O] {
 
-  def chunkAtoms(data: Set[O]): Enumerator[JsValue] = {
-    val js = Enumeratee.map[O](atomize)
-    val transfer = Enumeratee.mapInput[Try[Option[JsValue]]] {
-      case Input.El(Success(Some(json))) => Input.El(json)
-      case Input.El(Success(None)) => Input.Empty
-      case _ => Input.EOF
-    }
-
-    Enumerator.enumerate(data) &> js &> transfer
-  }
 
   // POST /Ts
   def create(securedContext: SecureContext = contextFrom(Create)) = createWith(securedContext) { output =>

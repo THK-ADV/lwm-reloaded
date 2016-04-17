@@ -189,18 +189,18 @@ class ReportCardEntryController(val repository: SesameRepository,
         }
         case (clause, (`dateAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), s"'${values.head}'"),
-              resched . filterStrStarts(v("rdate"), s"'${values.head}'"))
+            (filter append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head),
+              resched . filterStrStarts(v("rdate"), values.head))
         }
         case (clause, (`startAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), s"'${values.head}'"),
-              resched . filterStrStarts(v("rstart"), s"'${values.head}'"))
+            (filter append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head),
+              resched . filterStrStarts(v("rstart"), values.head))
         }
         case (clause, (`endAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), s"'${values.head}'"),
-              resched . filterStrStarts(v("rend"), s"'${values.head}'"))
+            (filter append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head),
+              resched . filterStrStarts(v("rend"), values.head))
         }
         case _ => Failure(new Throwable("Unknown attribute"))
       } flatMap {

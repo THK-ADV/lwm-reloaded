@@ -164,7 +164,7 @@ trait Clauses {
 
     def filter(v: String) = c append FilterClause(v)
 
-    def filterStrStarts(what: Properties#Var, starting: String) = c append FilterStartsWith(what.toString, starting)
+    def filterStrStarts(what: Properties#Var, starting: String) = c append FilterStartsWith(what.toString, s"'$starting'")
 
     def filterNotExists(cc: Clause) = c append FilterNotExistsClause(cc)
 

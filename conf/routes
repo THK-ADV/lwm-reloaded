@@ -151,6 +151,17 @@ GET           /courses/:c/labworks/:l/schedules/preview                  control
 GET           /courses/:c/labworks/:l/atomic/schedules/preview           controllers.crud.labwork.ScheduleCRUDController.previewAtomicFrom(c, l)
 DELETE        /courses/:c/schedules/:id                                  controllers.crud.labwork.ScheduleCRUDController.deleteFrom(c,id)
 
+# Schedule entries
+GET           /courses/:c/labwork/:l/scheduleEntries                     controllers.crud.labwork.ScheduleEntryController.allFrom(c, l)
+GET           /courses/:c/labwork/:l/atomic/scheduleEntries              controllers.crud.labwork.ScheduleEntryController.allAtomicFrom(c, l)
+
+GET           /courses/:c/scheduleEntries/:id                            controllers.crud.labwork.ScheduleEntryController.get(c, id)
+GET           /courses/:c/atomic/scheduleEntries/:id                     controllers.crud.labwork.ScheduleEntryController.getAtomic(c, id)
+GET           /courses/:c/schedulesEntries                               controllers.crud.labwork.ScheduleEntryController.all(c)
+GET           /courses/:c/atomic/scheduleEntries                         controllers.crud.labwork.ScheduleEntryController.allAtomic(c)
+PUT           /courses/:c/scheduleEntries/:id                            controllers.crud.labwork.ScheduleEntryController.update(c, id)
+PUT           /courses/:c/atomic/scheduleEntries/:id                     controllers.crud.labwork.ScheduleEntryController.updateAtomic(c, id)
+
 # Timetable
 HEAD          /timetables                                                controllers.crud.labwork.TimetableCRUDController.header
 
