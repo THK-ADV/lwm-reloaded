@@ -97,10 +97,10 @@ trait Consistent[I, O] {
 
 trait Chunkable[I] { self: Atomic[I] =>
 
-  def chunkAtoms(data: Set[I]): Enumerator[JsValue] = chunkWith(data)(atomize)
-  def chunkSimple(data: Set[I])(implicit writes: Writes[I]): Enumerator[JsValue] = chunkWith(data)(i => Success(Some(Json.toJson(i))))
+  final def chunkAtoms(data: Set[I]): Enumerator[JsValue] = chunkWith(data)(atomize)
+  final def chunkSimple(data: Set[I])(implicit writes: Writes[I]): Enumerator[JsValue] = chunkWith(data)(i => Success(Some(Json.toJson(i))))
 
-  def chunkWith[O](data: Set[I])(f: I => Try[Option[O]]): Enumerator[O] = {
+  private final def chunkWith[O](data: Set[I])(f: I => Try[Option[O]]): Enumerator[O] = {
     val result = Enumeratee.map[I](f)
     val transfer = Enumeratee.mapInput[Try[Option[O]]] {
       case Input.El(Success(Some(out))) => Input.El[O](out)

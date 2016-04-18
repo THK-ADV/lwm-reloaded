@@ -33,13 +33,15 @@ case class ScheduleEntry(labwork: UUID,
   }
 }
 
-case class ScheduleProtocol(labwork: UUID, entries: Set[ScheduleEntry], published: Boolean)
+/**
+  * Atoms
+  */
 
 case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], published: Boolean, id: UUID)
 
-case class ScheduleEntryAtom(start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group)
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group)
 
-object Schedule extends UriGenerator[Schedule] with JsonSerialisation[ScheduleProtocol, Schedule] {
+object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule] {
 
   import ScheduleEntry.format
 
@@ -47,7 +49,7 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[SchedulePr
 
   override def base: String = "schedules"
 
-  override implicit def reads: Reads[ScheduleProtocol] = Json.reads[ScheduleProtocol]
+  override implicit def reads: Reads[Schedule] = Json.reads[Schedule]
 
   override implicit def writes: Writes[Schedule] = Json.writes[Schedule]
 

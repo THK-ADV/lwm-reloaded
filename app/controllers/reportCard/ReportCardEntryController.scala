@@ -18,7 +18,7 @@ import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import models.security.Permissions._
+import models.security.Permissions.{reportCardEntry, god}
 import store.sparql.{Clause, NoneClause}
 
 import scala.util.{Failure, Success, Try}
@@ -31,20 +31,16 @@ object ReportCardEntryController {
   val endAttribute = "end"
 }
 
-class ReportCardEntryController(val repository: SesameRepository,
-                                val sessionService: SessionHandlingService,
-                                val namespace: Namespace,
-                                val roleService: RoleService,
-                                val reportCardService: ReportCardServiceLike
-                               ) extends Controller
-  with BaseNamespace
-  with JsonSerialisation[ReportCardEntry, ReportCardEntry]
-  with SesameRdfSerialisation[ReportCardEntry]
-  with ContentTyped
-  with Secured
-  with SessionChecking
-  with SecureControllerContext
-  with Atomic[ReportCardEntry] {
+class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
+  extends Controller
+    with BaseNamespace
+    with JsonSerialisation[ReportCardEntry, ReportCardEntry]
+    with SesameRdfSerialisation[ReportCardEntry]
+    with ContentTyped
+    with Secured
+    with SessionChecking
+    with SecureControllerContext
+    with Atomic[ReportCardEntry] {
 
   override implicit def reads: Reads[ReportCardEntry] = ReportCardEntry.reads
 
@@ -96,7 +92,7 @@ class ReportCardEntryController(val repository: SesameRepository,
     atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
   }
 
-  def create(course: String, schedule: String) = restrictedContext(course)(Create) action { request =>
+  def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops._
@@ -107,7 +103,7 @@ class ReportCardEntryController(val repository: SesameRepository,
     import defaultBindings.ScheduleBinding.scheduleBinder
 
     val id = UUID.fromString(schedule)
-    val sUri = Schedule.generateUri(id)(namespace)
+    val sUri = Schedule.generateUri(id)
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -136,7 +132,7 @@ class ReportCardEntryController(val repository: SesameRepository,
       }
   }
 
-  private def updateEntry(course: String, entry: String)(f: ReportCardEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
+  private def updateEntry(course: String, entry: String)(toResult: ReportCardEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ReportCardEntry].fold(
       errors => {
         BadRequest(Json.obj(
@@ -146,8 +142,9 @@ class ReportCardEntryController(val repository: SesameRepository,
       },
       success => {
         if (success.id == UUID.fromString(entry))
-          repository.update(success).flatMap(_ => f(success)) match {
-            case Success(result) => result
+          repository.update(success).flatMap(_ => toResult(success)) match {
+            case Success(result) =>
+              result
             case Failure(e) =>
               InternalServerError(Json.obj(
                 "status" -> "KO",
@@ -163,14 +160,13 @@ class ReportCardEntryController(val repository: SesameRepository,
     )
   }
 
-  private def reportCardEntries(course: String)(f: Set[ReportCardEntry] => Try[Result]) = restrictedContext(course)(GetAll) action { request =>
+  private def reportCardEntries(course: String)(toResult: Set[ReportCardEntry] => Try[Result]) = restrictedContext(course)(GetAll) action { request =>
     import store.sparql.select._
     import store.sparql.select
     import ReportCardEntryController._
 
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
-    implicit val ns = repository.namespace
 
     if (request.queryString.isEmpty)
       BadRequest(Json.obj(
@@ -220,10 +216,9 @@ class ReportCardEntryController(val repository: SesameRepository,
             transform(_.fold(List.empty[Value])(identity)).
             requestAll[Set, ReportCardEntry](values => repository.getMany[ReportCardEntry](values.map(_.stringValue))).
             run
-
-      } match {
-        case Success(entries) =>
-          Ok(Json.toJson(entries)).as(mimeType)
+      } flatMap toResult match {
+        case Success(result) =>
+          result
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
@@ -232,7 +227,7 @@ class ReportCardEntryController(val repository: SesameRepository,
       }
   }
 
-  private def forStudent(student: String)(f: Set[ReportCardEntry] => Try[Result]) = contextFrom(Get) action { request =>
+  private def forStudent(student: String)(toResult: Set[ReportCardEntry] => Try[Result]) = contextFrom(Get) action { request =>
     import store.sparql.select
     import store.sparql.select._
 
@@ -241,16 +236,16 @@ class ReportCardEntryController(val repository: SesameRepository,
 
     val query = select ("entries") where {
       ^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(student))(namespace)))
+        ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(student))))
     }
 
     repository.prepareQuery(query).
       select(_.get("entries")).
       transform(_.fold(List.empty[Value])(identity)).
-      requestAll[Set, ReportCardEntry](values => repository.getMany(values.map(_.stringValue))).run.
-      flatMap(f) match {
-        case Success(entries) =>
-          entries
+      requestAll[Set, ReportCardEntry](values => repository.getMany(values.map(_.stringValue))).
+      run flatMap toResult match {
+        case Success(result) =>
+          result
         case Failure(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
@@ -266,13 +261,13 @@ class ReportCardEntryController(val repository: SesameRepository,
     import ReportCardEntry.atomicWrites
 
     for {
-      student <- repository.get[Student](User.generateUri(output.student)(namespace))
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      room <- repository.get[Room](Room.generateUri(output.room)(namespace))
+      mbStudent <- repository.get[Student](User.generateUri(output.student))
+      mbLabwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
+      mbRoom <- repository.get[Room](Room.generateUri(output.room))
     } yield for {
-      s <- student; l <- labwork; r <- room
+      student <- mbStudent; labwork <- mbLabwork; room <- mbRoom
     } yield Json.toJson(
-      ReportCardEntryAtom(s, l, output.label, output.date, output.start, output.end, r, output.entryTypes, output.rescheduled, output.id)
+      ReportCardEntryAtom(student, labwork, output.label, output.date, output.start, output.end, room, output.entryTypes, output.rescheduled, output.id)
     )
   }
 }

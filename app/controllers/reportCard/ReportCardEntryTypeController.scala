@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud._
 import models.UriGenerator
 import models.labwork.{Labwork, ReportCardEntry, ReportCardEntryType}
-import models.security.Permissions._
+import models.security.Permissions.{reportCardEntryType, god}
 import models.users.User
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
@@ -30,14 +30,15 @@ object ReportCardEntryTypeController {
   val endAttribute = "end"
 }
 
-class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
-  with BaseNamespace
-  with JsonSerialisation[ReportCardEntryType, ReportCardEntryType]
-  with SesameRdfSerialisation[ReportCardEntryType]
-  with ContentTyped
-  with Secured
-  with SessionChecking
-  with SecureControllerContext {
+class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
+  extends Controller
+    with BaseNamespace
+    with JsonSerialisation[ReportCardEntryType, ReportCardEntryType]
+    with SesameRdfSerialisation[ReportCardEntryType]
+    with ContentTyped
+    with Secured
+    with SessionChecking
+    with SecureControllerContext {
 
   override implicit def reads: Reads[ReportCardEntryType] = ReportCardEntryType.reads
 
@@ -100,7 +101,6 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
 
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
-    implicit val ns = repository.namespace
 
     if (request.queryString.isEmpty)
       BadRequest(Json.obj(

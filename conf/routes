@@ -139,19 +139,16 @@ HEAD          /labworkApplications                                       control
 HEAD          /schedules                                                 controllers.crud.labwork.ScheduleCRUDController.header
 
 # Schedule restricted
-POST          /courses/:c/schedules                                      controllers.crud.labwork.ScheduleCRUDController.createFrom(c)
-POST          /courses/:c/atomic/schedules                               controllers.crud.labwork.ScheduleCRUDController.createAtomicFrom(c)
-PUT           /courses/:c/schedules/:id                                  controllers.crud.labwork.ScheduleCRUDController.updateFrom(c, id)
-PUT           /courses/:c/atomic/schedules/:id                           controllers.crud.labwork.ScheduleCRUDController.updateAtomicFrom(c, id)
-GET           /courses/:c/schedules                                      controllers.crud.labwork.ScheduleCRUDController.allFrom(c)
-GET           /courses/:c/atomic/schedules                               controllers.crud.labwork.ScheduleCRUDController.allAtomicFrom(c)
-GET           /courses/:c/schedules/:id                                  controllers.crud.labwork.ScheduleCRUDController.getFrom(c, id)
-GET           /courses/:c/atomic/schedules/:id                           controllers.crud.labwork.ScheduleCRUDController.getAtomicFrom(c, id)
-GET           /courses/:c/labworks/:l/schedules/preview                  controllers.crud.labwork.ScheduleCRUDController.previewFrom(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules/preview           controllers.crud.labwork.ScheduleCRUDController.previewAtomicFrom(c, l)
-DELETE        /courses/:c/schedules/:id                                  controllers.crud.labwork.ScheduleCRUDController.deleteFrom(c,id)
+POST          /courses/:c/schedules                                      controllers.crud.labwork.ScheduleCRUDController.create(c)
+POST          /courses/:c/atomic/schedules                               controllers.crud.labwork.ScheduleCRUDController.createAtomic(c)
+GET           /courses/:c/labworks/:l/schedules/preview                  controllers.crud.labwork.ScheduleCRUDController.preview(c, l)
+GET           /courses/:c/labworks/:l/atomic/schedules/preview           controllers.crud.labwork.ScheduleCRUDController.previewAtomic(c, l)
+DELETE        /courses/:c/schedules/:id                                  controllers.crud.labwork.ScheduleCRUDController.delete(c,id)
 
-# Schedule entries
+# ScheduleEntries
+HEAD          /scheduleEntries                                           controllers.crud.labwork.ScheduleEntryController.header
+
+# ScheduleEntries restriced
 GET           /courses/:c/scheduleEntries                                controllers.crud.labwork.ScheduleEntryController.allFrom(c)
 GET           /courses/:c/atomic/scheduleEntries                         controllers.crud.labwork.ScheduleEntryController.allAtomicFrom(c)
 GET           /courses/:c/labwork/:l/scheduleEntries                     controllers.crud.labwork.ScheduleEntryController.allFromLabwork(c, l)

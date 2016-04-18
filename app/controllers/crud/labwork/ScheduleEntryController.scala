@@ -3,12 +3,11 @@ package controllers.crud.labwork
 import java.util.UUID
 
 import controllers.crud._
-import models.{Course, Room}
+import models.{Course, Room, UriGenerator}
 import models.labwork._
 import models.users.{Employee, User}
-import modules.store.BaseNamespace
 import org.w3.banana.RDFPrefix
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
@@ -17,12 +16,15 @@ import store.sparql.select
 import store.sparql.select._
 import utils.Ops._
 import ScheduleEntryController._
+import modules.store.BaseNamespace
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.Enumerator
-import play.api.mvc.{AnyContent, Controller, Request, Result}
-import store.bind.Bindings
+import play.api.mvc._
 import utils.Ops.MonadInstances.{optM, tryM}
 import utils.Ops.TraverseInstances.{travO, travT}
 import utils.RequestOps._
+import models.security.Permissions.{god, scheduleEntry}
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -40,68 +42,67 @@ object ScheduleEntryController {
 
 class ScheduleEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
   extends Controller
-    with Filterable[ScheduleEntry]
     with BaseNamespace
+    with Filterable[ScheduleEntry]
     with ContentTyped
     with Secured
     with SessionChecking
     with SecureControllerContext
     with Chunkable[ScheduleEntry]
-    with Atomic[ScheduleEntry] {
+    with Atomic[ScheduleEntry]
+    with SesameRdfSerialisation[ScheduleEntry]
+    with JsonSerialisation[ScheduleEntry, ScheduleEntry] {
+
+  override implicit def reads: Reads[ScheduleEntry] = ScheduleEntry.reads
+
+  override implicit def writes: Writes[ScheduleEntry] = ScheduleEntry.writes
+
+  override implicit def rdfWrites: ToPG[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.scheduleEntryBinder
+
+  override implicit def rdfReads: FromPG[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.scheduleEntryBinder
+
+  override implicit def classUrisFor: ClassUrisFor[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.classUri
+
+  override implicit def uriGenerator: UriGenerator[ScheduleEntry] = ScheduleEntry
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
-  val bindings = Bindings[repository.Rdf](namespace)
 
-
-  def allFrom(course: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course))(request)
-    chunkedAll(chunkSimple)
+  def allFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkSimple)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course))(request)
-    chunkedAll(chunkAtoms)
+  def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkAtoms)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course)))
   }
 
-  def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))(request)
-    chunkedAll(chunkSimple)
+  def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkSimple)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
-  def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { request =>
-    implicit val req = rebase[AnyContent](request.uri, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))(request)
-    chunkedAll(chunkAtoms)
+  def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    chunkedAll(chunkAtoms)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def get(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    import bindings.ScheduleEntryBinding._
-
-    val action =
-      UUID.fromString _ andThen
-      ScheduleEntry.generateUri andThen
-      (id => repository.get[ScheduleEntry](id)) andThen
-      (attempt => handle(attempt)(r => Ok(Json.toJson(r)).as(mimeType)))
-
-    action(entry)
+    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri)(entry))
+    handle(result)(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
   def getAtomic(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    import bindings.ScheduleEntryBinding._
-
-    val action =
-      UUID.fromString _ andThen
-      ScheduleEntry.generateUri andThen
-      (id => repository.get[ScheduleEntry](id)) andThen
-      (_ flatPeek atomize) andThen
-      (attempt => handle(attempt)(r => Ok(Json.toJson(r)).as(mimeType)))
-
-    action(entry)
+    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri)(entry)).flatPeek(atomize)
+    handle(result)(json => Ok(json).as(mimeType))
   }
 
-  def update(course: String, entry: String) = updateEntry(course, entry)(sentry => Success(Ok(Json.toJson(sentry)).as(mimeType)))
-  def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { sentry =>
-    val action = atomize _ andThen (attempt => handle(attempt)(js => Ok(js).as(mimeType)))
-    Success(action(sentry))
+  def update(course: String, entry: String) = updateEntry(course, entry) { entry =>
+    Success(Ok(Json.toJson(entry)).as(mimeType))
+  }
+
+  def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
+    Success(handle(atomize(entry))(json => Ok(json).as(mimeType)))
+  }
+
+  def header = Action { implicit request =>
+    NoContent.as(mimeType)
   }
 
   //FOT TEST PURPOSES. DO NOT DELETE
@@ -113,8 +114,6 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ScheduleEntry]): Try[Set[ScheduleEntry]] = {
-    import bindings.ScheduleEntryBinding._
-
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
@@ -144,10 +143,12 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
       }
       case ((`dateRangeAttribute`, values), clause) =>
         val split = values.head.split(",").toVector
-        if(split.size != 2) Failure(new Throwable("A range can only have two parameters"))
-        else clause map {
-          _ append ^(v("entries"), p(lwm.date), v("date")) . filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
-        }
+        if (split.size != 2)
+          Failure(new Throwable("A range can only have two parameters"))
+        else
+          clause map {
+            _ append ^(v("entries"), p(lwm.date), v("date")) . filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
+          }
 
       case ((_, _), clause) => Failure(new Throwable("Unknown attribute"))
     } flatMap { clause =>
@@ -162,39 +163,42 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def atomize(output: ScheduleEntry): Try[Option[JsValue]] = {
-    import bindings.GroupBinding._
-    import bindings.EmployeeBinding._
-    import bindings.RoomBinding._
+    import defaultBindings.GroupBinding.groupBinder
+    import defaultBindings.EmployeeBinding.employeeBinder
+    import defaultBindings.RoomBinding.roomBinder
+    import defaultBindings.LabworkBinding.labworkBinder
     import ScheduleEntry.format
+
     for {
-      mgroup <- repository.get[Group](Group.generateUri(output.group))
-      msupervisor <- repository.get[Employee](User.generateUri(output.supervisor))
-      mroom <- repository.get[Room](Room.generateUri(output.room))
+      mbLabwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
+      mbGroup <- repository.get[Group](Group.generateUri(output.group))
+      mbSupervisor <- repository.get[Employee](User.generateUri(output.supervisor))
+      mbRoom <- repository.get[Room](Room.generateUri(output.room))
     } yield for {
-      group <- mgroup
-      supervisor <- msupervisor
-      room <- mroom
-    } yield Json.toJson(ScheduleEntryAtom(output.start, output.end, output.date, room, supervisor, group))
+      labwork <- mbLabwork; group <- mbGroup; supervisor <- mbSupervisor; room <- mbRoom
+    } yield Json.toJson(
+      ScheduleEntryAtom(labwork, output.start, output.end, output.date, room, supervisor, group)
+    )
   }
 
-  private def chunkedAll(f: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
-    import bindings.ScheduleEntryBinding._
-
-    (if(request.queryString.isEmpty)
-      repository.get[ScheduleEntry] map f
+  private def chunkedAll(chunks: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
+    (if (request.queryString.isEmpty)
+      repository.get[ScheduleEntry] map chunks
     else
-      getWithFilter(request.queryString)(Set.empty) map f) match {
-      case Success(enum) => Ok.chunked(enum).as(mimeType)
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
+      getWithFilter(request.queryString)(Set.empty) map chunks) match {
+        case Success(enum) =>
+          Ok.chunked(enum).as(mimeType)
+        case Failure(e) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          ))
     }
   }
 
-  private def handle[A](attempt: Try[Option[A]])(f: A => Result): Result = attempt match {
-    case Success(Some(element)) => f(element)
+  private def handle[A](attempt: Try[Option[A]])(toResult: A => Result): Result = attempt match {
+    case Success(Some(element)) =>
+      toResult(element)
     case Success(None) =>
       NotFound(Json.obj(
         "status" -> "KO",
@@ -207,8 +211,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
       ))
   }
 
-  private def updateEntry(course: String, entry: String)(f: ScheduleEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
-    import bindings.ScheduleEntryBinding._
+  private def updateEntry(course: String, entry: String)(toResult: ScheduleEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
     request.body.validate[ScheduleEntry].fold(
       errors => {
         BadRequest(Json.obj(
@@ -218,8 +221,9 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
       },
       success => {
         if (success.id == UUID.fromString(entry))
-          repository.update(success)(scheduleEntryBinder, ScheduleEntry).flatMap(_ => f(success)) match {
-            case Success(result) => result
+          repository.update(success).flatMap(_ => toResult(success)) match {
+            case Success(result) =>
+              result
             case Failure(e) =>
               InternalServerError(Json.obj(
                 "status" -> "KO",
@@ -235,6 +239,10 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     )
   }
 
-  //TODO: Add necessary permissions
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = super.restrictedContext(restrictionId)
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case GetAll => SecureBlock(restrictionId, scheduleEntry.getAll)
+    case Get => SecureBlock(restrictionId, scheduleEntry.get)
+    case Update => SecureBlock(restrictionId, scheduleEntry.update)
+    case _ => PartialSecureBlock(god)
+  }
 }

@@ -25,20 +25,21 @@ import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
+// TODO ADJUST
 object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ scheduleEntry.all ++
       Set(reportCardEntry.getAll, reportCardEntry.update, reportCardEntry.create) ++ reportCardEntryType.all ++ assignmentPlan.all ++
       annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++
+    Set(labwork.get, labwork.getAll) ++ Set(scheduleEntry.get, scheduleEntry.getAll) ++ Set(timetable.get, timetable.getAll) ++
       Set(reportCardEntry.getAll, reportCardEntry.update) ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, schedule.getAll, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
+    Set(scheduleEntry.get, scheduleEntry.getAll, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
   )
 
   val rvRole = Role(RightsManager,

@@ -35,5 +35,5 @@ trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
     else Files.createDirectory(file.toPath).toFile
   }
 
-  val repository: SesameRepository = SesameRepository(namespace)
+  val repository: SesameRepository = SesameRepository(folder, namespace)
 }
