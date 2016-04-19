@@ -1,30 +1,30 @@
-package controllers.crud.labwork
+package controllers.schedule
 
 import java.util.UUID
 
 import controllers.crud._
-import models.{Course, Room, UriGenerator}
+import controllers.schedule.ScheduleEntryController._
 import models.labwork._
+import models.security.Permissions.{god, scheduleEntry}
 import models.users.{Employee, User}
-import org.w3.banana.RDFPrefix
-import play.api.libs.json._
-import services.{RoleService, SessionHandlingService}
-import store.Prefixes.LWMPrefix
-import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
-import store.sparql.select
-import store.sparql.select._
-import utils.Ops._
-import ScheduleEntryController._
+import models.{Course, Room, UriGenerator}
 import modules.store.BaseNamespace
+import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.Enumerator
+import play.api.libs.json._
 import play.api.mvc._
+import services.{RoleService, SessionHandlingService}
+import store.Prefixes.LWMPrefix
+import store.sparql.select
+import store.sparql.select._
+import store.{Namespace, SesameRepository}
+import utils.LwmMimeType
 import utils.Ops.MonadInstances.{optM, tryM}
 import utils.Ops.TraverseInstances.{travO, travT}
+import utils.Ops._
 import utils.RequestOps._
-import models.security.Permissions.{god, scheduleEntry}
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -105,14 +105,6 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     NoContent.as(mimeType)
   }
 
-  //FOT TEST PURPOSES. DO NOT DELETE
-  def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkSimple)
-  }
-  def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkAtoms)
-  }
-
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ScheduleEntry]): Try[Set[ScheduleEntry]] = {
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
@@ -163,11 +155,11 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def atomize(output: ScheduleEntry): Try[Option[JsValue]] = {
-    import defaultBindings.GroupBinding.groupBinder
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import defaultBindings.RoomBinding.roomBinder
-    import defaultBindings.LabworkBinding.labworkBinder
     import ScheduleEntry.format
+    import defaultBindings.EmployeeBinding.employeeBinder
+    import defaultBindings.GroupBinding.groupBinder
+    import defaultBindings.LabworkBinding.labworkBinder
+    import defaultBindings.RoomBinding.roomBinder
 
     for {
       mbLabwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
@@ -177,11 +169,11 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     } yield for {
       labwork <- mbLabwork; group <- mbGroup; supervisor <- mbSupervisor; room <- mbRoom
     } yield Json.toJson(
-      ScheduleEntryAtom(labwork, output.start, output.end, output.date, room, supervisor, group)
+      ScheduleEntryAtom(labwork, output.start, output.end, output.date, room, supervisor, group, output.id)
     )
   }
 
-  private def chunkedAll(chunks: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
+  def chunkedAll(chunks: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
     (if (request.queryString.isEmpty)
       repository.get[ScheduleEntry] map chunks
     else

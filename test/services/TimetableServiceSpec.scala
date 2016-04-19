@@ -6,7 +6,7 @@ import models.semester.Blacklist
 import models.users.User
 import models._
 import models.labwork.Weekday
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Weeks}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
 import org.mockito.Matchers._
@@ -28,6 +28,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
+  val weeks = Weeks.weeks(30)
   val degree = Degree("degree", "abbrev", Degree.randomUUID)
   val tEntries = Set(
     TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
@@ -63,13 +64,13 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         fdt.parseDateTime("29/01/2016 15:00:00")
       )
 
-      val result = timetableService.extrapolateEntries(timetable, plan, groups)
-      val sortedResult = result.toVector.map(toLocalDateTime).sorted
+      val result = timetableService.extrapolateTimetableByWeeks(timetable, weeks, plan, groups)
+      val sortedResult = result.map(toLocalDateTime).sorted
 
       result.size should be > timetable.entries.size
       result.size shouldBe groups.size * plan.entries.size
       sortedResult shouldBe sorted
-      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime))) shouldBe false
+      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime).toSet)) shouldBe false
       sortedResult.grouped(groups.size).forall(a => expectedStart.count(b => a.head.isEqual(b.toLocalDateTime)) == 1) shouldBe true
       sortedResult.grouped(groups.size).foldLeft((true, expectedStart)) {
         case ((bool, vec), e) =>
@@ -92,13 +93,13 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         fdt.parseDateTime("18/01/2016 17:00:00")
       )
 
-      val result = timetableService.extrapolateEntries(timetable, plan, groups)
-      val sortedResult = result.toVector.map(toLocalDateTime).sorted
+      val result = timetableService.extrapolateTimetableByWeeks(timetable, weeks, plan, groups)
+      val sortedResult = result.map(toLocalDateTime).sorted
 
       result.size should be > timetable.entries.size
       result.size shouldBe groups.size * plan.entries.size
       sortedResult shouldBe sorted
-      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime))) shouldBe false
+      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime).toSet)) shouldBe false
       sortedResult.grouped(groups.size).forall(a => expectedStart.count(b => a.head.isEqual(b.toLocalDateTime)) == 1) shouldBe true
       sortedResult.grouped(groups.size).foldLeft((true, expectedStart)) {
         case ((bool, vec), e) =>
@@ -135,14 +136,14 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         fdt.parseDateTime("08/02/2016 11:00:00")
       )
 
-      val result = timetableService.extrapolateEntries(timetable, plan, groups)
+      val result = timetableService.extrapolateTimetableByWeeks(timetable, weeks, plan, groups)
       val sortedResult = result.toVector.map(toLocalDateTime).sorted
 
       result.size should be > timetable.entries.size
       result.size shouldBe groups.size * plan.entries.size
       sortedResult shouldBe sorted
-      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime))) shouldBe false
-      localBlacklist.subsetOf(result.map(e => e.date.toDateTime(e.start))) shouldBe false
+      globalBlacklist.forall(a => a.dates.subsetOf(result.map(_.date.toDateTimeAtCurrentTime).toSet)) shouldBe false
+      localBlacklist.subsetOf(result.map(e => e.date.toDateTime(e.start)).toSet) shouldBe false
       sortedResult.grouped(groups.size).forall(a => expectedStart.count(b => a.head.isEqual(b.toLocalDateTime)) == 1) shouldBe true
       sortedResult.grouped(groups.size).foldLeft((true, expectedStart)) {
         case ((bool, vec), e) =>

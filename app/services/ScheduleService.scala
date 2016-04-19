@@ -1,8 +1,9 @@
 package services
 
 import java.util.UUID
+
 import models.labwork._
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{LocalDate, LocalTime, Weeks}
 import utils.{Gen, Genesis}
 import utils.TypeClasses._
 
@@ -11,6 +12,7 @@ import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
 import TimetableDateEntry._
+import models.semester.Semester
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
@@ -20,7 +22,7 @@ case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
 case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group)
 
 trait ScheduleServiceLike {
-  def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG]
+  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG]
   def mutate: Mutator
   def mutateDestructive: Mutator
   def crossover: Crossover
@@ -29,7 +31,7 @@ trait ScheduleServiceLike {
 }
 
 trait ScheduleGenesisServiceLike {
-  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int)
+  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int)
 }
 
 object ScheduleService {
@@ -84,8 +86,9 @@ object ScheduleService {
 
 class ScheduleService(private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
 
-  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
-    val pop = population(300, timetable, assignmentPlan, groups)
+  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
+    val entries = timetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups)
+    val pop = population(300, timetable.labwork, entries, groups)
 
     implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
     implicit val mutateF = (mutate, mutateDestructive)
@@ -97,20 +100,17 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
     }
   }
 
-  override def population(times: Int, timetable: Timetable, assignmentPlan: AssignmentPlan, groups: Set[Group]): Vector[ScheduleG] = {
-    val entries = timetableService.extrapolateEntries(timetable, assignmentPlan, groups)
-    (0 until times).map(_ => populate(timetable, entries, groups)).toVector
+  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG] = {
+    (0 until times).map(_ => populate(labwork, entries, groups)).toVector
   }
 
-  private def populate(timetable: Timetable, entries: Set[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
-    val sg = shuffle(groups.toVector)
-    val scheduleEntries = entries.toVector.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(sg).map {
-      case (t, group) =>
-        val o = TimetableDateEntry.organizer(t, timetable.entries)
-        ScheduleEntryG(t.start, t.end, t.date, o.room, o.supervisor, group)
+  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
+    val shuffled = shuffle(groups.toVector)
+    val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
+      case (t, group) => ScheduleEntryG(t.start, t.end, t.date, t.room, t.supervisor, group)
     }).toVector
 
-    ScheduleG(timetable.labwork, scheduleEntries, Schedule.randomUUID)
+    ScheduleG(labwork, scheduleEntries, Schedule.randomUUID)
   }
 
   override def mutate: Mutator = mutation { (s, e) =>

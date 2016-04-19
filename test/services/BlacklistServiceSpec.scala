@@ -1,7 +1,9 @@
 package services
 
+import java.util.UUID
+
 import base.TestBaseDefinition
-import models.labwork.{Weekday, TimetableDateEntry}
+import models.labwork.{TimetableDateEntry, Weekday}
 import models.semester.Blacklist
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
@@ -35,8 +37,8 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        TimetableDateEntry(Weekday.toDay(date), date, start, end)
-      }.toSet
+        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, UUID.randomUUID)
+      }.toVector
 
       val local = Set.empty[DateTime]
       val result = blacklistService.applyBlacklist(entries, local)
@@ -44,9 +46,9 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       local.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe local.size
       global.head.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global.head.dates.size
 
-      result.map(_.date).intersect(global.head.dates.map(_.toLocalDate)) shouldBe empty
-      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime)) shouldBe empty
-      result.subsetOf(entries) shouldBe true
+      result.map(_.date).intersect(global.head.dates.map(_.toLocalDate).toVector) shouldBe empty
+      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime).toVector) shouldBe empty
+      result.toSet.subsetOf(entries.toSet) shouldBe true
 
       result shouldBe entries
       result.size shouldBe entries.size
@@ -61,14 +63,14 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        TimetableDateEntry(Weekday.toDay(date), date, start, end)
-      }.toSet
+        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, UUID.randomUUID)
+      }.toVector
 
-      val global1 = Blacklist("global 1", entries.slice(0, 10).map(toDateTime), Blacklist.randomUUID)
-      val global2 = Blacklist("global 2", entries.slice(10, 20).map(toDateTime), Blacklist.randomUUID)
+      val global1 = Blacklist("global 1", entries.slice(0, 10).map(toDateTime).toSet, Blacklist.randomUUID)
+      val global2 = Blacklist("global 2", entries.slice(10, 20).map(toDateTime).toSet, Blacklist.randomUUID)
       when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(Set(global1, global2)))
 
-      val local = entries.slice(20, 30).map(toDateTime)
+      val local = entries.slice(20, 30).map(toDateTime).toSet
 
       val result = blacklistService.applyBlacklist(entries, local)
 
@@ -76,17 +78,17 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       global1.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global1.dates.size
       global2.dates.count(g => entries.exists(_.date.isEqual(g.toLocalDate))) shouldBe global2.dates.size
 
-      result.map(_.date).intersect(global1.dates.map(_.toLocalDate)) shouldBe empty
-      result.map(_.date).intersect(global2.dates.map(_.toLocalDate)) shouldBe empty
-      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime)) shouldBe empty
-      result.subsetOf(entries) shouldBe true
+      result.map(_.date).intersect(global1.dates.map(_.toLocalDate).toVector) shouldBe empty
+      result.map(_.date).intersect(global2.dates.map(_.toLocalDate).toVector) shouldBe empty
+      result.map(toLocalDateTime).intersect(local.map(_.toLocalDateTime).toVector) shouldBe empty
+      result.toSet.subsetOf(entries.toSet) shouldBe true
 
       result.size should be < entries.size
       result.size shouldBe entries.size - local.size - global1.dates.size - global2.dates.size
       result.forall(a => local.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
       result.forall(a => global1.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
       result.forall(a => global2.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
-      result.map(toLocalDateTime).toVector.sorted shouldBe sorted
+      result.map(toLocalDateTime).sorted shouldBe sorted
     }
   }
 }

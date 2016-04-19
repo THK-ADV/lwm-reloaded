@@ -309,7 +309,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val request = FakeRequest(
         POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
       )
 
       val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
@@ -339,7 +341,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val request = FakeRequest(
         POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
       )
 
       val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)

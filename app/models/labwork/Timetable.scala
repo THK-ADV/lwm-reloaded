@@ -52,7 +52,7 @@ case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, 
   * Helper
   */
 
-case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime)
+case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: UUID)
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable] {
 
@@ -90,20 +90,6 @@ object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry] 
 }
 
 object TimetableDateEntry {
-
-  case class Organizer(supervisor: UUID, room: UUID)
-
-  def unravel(entries: Set[TimetableEntry], start: LocalDate): Set[TimetableDateEntry] = entries.map { entry =>
-    val weekday = Weekday.toDay(entry.dayIndex)
-    TimetableDateEntry(weekday, weekday.sync(start), entry.start, entry.end)
-  }
-
-  def organizer(entry: TimetableDateEntry, schema: Set[TimetableEntry]): Organizer = {
-    schema.find(e => Weekday.toDay(e.dayIndex) == entry.weekday && e.start.isEqual(entry.start) && e.end.isEqual(entry.end)) match {
-      case Some(s) => Organizer(s.supervisor, s.room)
-      case None => Organizer(Employee.default.id, Room.default.id)
-    }
-  }
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)

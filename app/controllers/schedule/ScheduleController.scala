@@ -1,10 +1,11 @@
-package controllers.crud.labwork
+package controllers.schedule
 
 import java.util.UUID
 
 import controllers.crud._
 import models.labwork._
 import models.security.Permissions.{god, schedule}
+import models.semester.Semester
 import models.users.{Employee, User}
 import models.{Room, UriGenerator}
 import modules.store.BaseNamespace
@@ -21,7 +22,7 @@ import utils.{Gen, LwmMimeType}
 
 import scala.util.{Failure, Success, Try}
 
-object ScheduleCRUDController {
+object ScheduleController {
 
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
     scheduleFor(labwork, repository) map { set =>
@@ -84,7 +85,7 @@ object ScheduleCRUDController {
   }
 }
 
-class ScheduleCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike)
+class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike)
   extends Controller
     with BaseNamespace
     with ContentTyped
@@ -110,11 +111,11 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
   def create(course: String) = createWith(course) { s =>
-    Success(Ok(Json.toJson(s)).as(mimeType))
+    Success(Created(Json.toJson(s)).as(mimeType))
   }
 
   def createAtomic(course: String) = createWith(course) { s =>
-    atomizeMany(Set(s)).map(json => Ok(json).as(mimeType))
+    atomizeMany(Set(s)).map(json => Created(json).as(mimeType))
   }
 
   def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { implicit request =>
@@ -135,7 +136,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
   def preview(course: String, labwork: String) = previewWith(course, labwork) { gen =>
     Success(Some(Ok(Json.obj(
       "status" -> "OK",
-      "schedule" -> Json.toJson(ScheduleCRUDController.toSchedule(gen.elem)),
+      "schedule" -> Json.toJson(ScheduleController.toSchedule(gen.elem)),
       "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
     ))))
   }
@@ -144,7 +145,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
     import utils.Ops._
     import MonadInstances.{optM, tryM}
 
-    gen.map(ScheduleCRUDController.toSchedule).map(atomize).elem.peek( json =>
+    gen.map(ScheduleController.toSchedule).map(atomize).elem.peek(json =>
       Ok(Json.obj(
         "status" -> "OK",
         "schedule" -> json,
@@ -178,14 +179,16 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
     )
   }
 
-  private def previewWith(course: String, labwork: String)(ok: Gen[ScheduleG, Conflict, Int] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
-    import ScheduleCRUDController._
+  private def previewWith(course: String, labwork: String)(toResult: Gen[ScheduleG, Conflict, Int] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
+    import ScheduleController._
     import utils.Ops._
     import MonadInstances.{optM, tryM}
     import TraverseInstances.{travO, travT}
 
     implicit val gb = defaultBindings.GroupBinding.groupBinder
     implicit val gcu = defaultBindings.GroupBinding.classUri
+    implicit val lb = defaultBindings.LabworkBinding.labworkBinder
+    implicit val sb = defaultBindings.SemesterBinding.semesterBinder
     implicit val tb = defaultBindings.TimetableBinding.timetableBinder
     implicit val tcu = defaultBindings.TimetableBinding.classUri
     implicit val ab = defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
@@ -194,6 +197,8 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
     val id = UUID.fromString(labwork)
 
     val genesis = for {
+      lab <- repository.get[Labwork](Labwork.generateUri(UUID.fromString(labwork)))
+      semester <- lab.map(l => repository.get[Semester](Semester.generateUri(l.semester))).sequenceM
       groups <- repository.get[Group].map(_.filter(_.labwork == id))
       timetable <- repository.get[Timetable].map(_.find(_.labwork == id))
       plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == id))
@@ -201,10 +206,11 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
+      s <- semester.flatten
       g <- if (groups.nonEmpty) Some(groups) else None
-    } yield scheduleGenesisService.generate(t, g, p, comp.toVector)._1
+    } yield scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
 
-    genesis flatPeek ok match {
+    genesis flatPeek toResult match {
       case Success(s) =>
         s match {
           case Some(result) => result
@@ -245,7 +251,7 @@ class ScheduleCRUDController(val repository: SesameRepository, val sessionServic
           r <- rooms.find(_.id == e.room)
           s <- supervisors.find(_.id == e.supervisor)
           g <- groups.find(_.id == e.group)
-        } yield ScheduleEntryAtom(l, e.start, e.end, e.date, r, s, g)) match {
+        } yield ScheduleEntryAtom(l, e.start, e.end, e.date, r, s, g, e.id)) match {
           case Some(atom) => newSet + atom
           case None => newSet
         }

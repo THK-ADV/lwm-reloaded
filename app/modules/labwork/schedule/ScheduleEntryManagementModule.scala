@@ -1,6 +1,6 @@
 package modules.labwork.schedule
 
-import controllers.crud.labwork.ScheduleEntryController
+import controllers.schedule.ScheduleEntryController
 import modules.SessionRepositoryModule
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}

@@ -2,12 +2,12 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.labwork.ScheduleCRUDController
+import controllers.schedule.ScheduleController
 import models._
 import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
-import models.semester.{BlacklistProtocol, Blacklist, Semester}
+import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student, User}
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalTime}
@@ -56,11 +56,12 @@ object ApiDataController {
   val adminRole = Role(Admin, Set(prime))
 }
 
-class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl, groupService: GroupServiceLike, scheduleGenesisService: ScheduleGenesisServiceLike, reportCardService: ReportCardServiceLike) extends Controller {
+class ApiDataController(val repository: SesameRepository, val ldap: LDAPServiceImpl, val groupService: GroupServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val reportCardService: ReportCardServiceLike) extends Controller {
   import repository.ops
   import ApiDataController._
 
-  private val bindings = Bindings(repository.namespace)
+  implicit val ns = repository.namespace
+  private val bindings = Bindings(ns)
   implicit def toLocalDate(s: String): LocalDate = LocalDate.parse(s)
 
   val adminRefRole = RefRole(None, adminRole.id)
@@ -251,6 +252,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     implicit val tb = bindings.TimetableBinding.timetableBinder
     implicit val tcu = bindings.TimetableBinding.classUri
     implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
+    implicit val sb = bindings.SemesterBinding.semesterBinder
     implicit val abu = bindings.AssignmentPlanBinding.classUri
     import bindings.ReportCardEntryBinding._
     import bindings.ScheduleBinding._
@@ -264,13 +266,15 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
       _ <- repository.addMany[Group](groups)
       timetable <- repository.get[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)))
       plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork)))
-      comp <- ScheduleCRUDController.competitive(UUID.fromString(labwork), repository)
+      comp <- ScheduleController.competitive(UUID.fromString(labwork), repository)
+      semester <- repository.get[Semester](Semester.generateUri(ss16))
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
+      s <- semester
       g <- if (groups.nonEmpty) Some(groups.toSet) else None
     } yield {
-      val gen = scheduleGenesisService.generate(t, g, p, comp.toVector)._1
+      val gen = scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
       gen.map { scheduleG =>
         val s = scheduleG.entries.map(g => ScheduleEntry(scheduleG.labwork, g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
         Schedule(scheduleG.labwork, s, published = true, scheduleG.id)

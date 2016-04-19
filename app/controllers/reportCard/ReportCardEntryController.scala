@@ -3,7 +3,7 @@ package controllers.reportCard
 import java.util.UUID
 
 import controllers.crud._
-import controllers.crud.labwork.ScheduleCRUDController
+import controllers.schedule.ScheduleController
 import models.{Room, UriGenerator}
 import models.labwork._
 import models.users.{Student, User}
@@ -18,7 +18,7 @@ import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import models.security.Permissions.{reportCardEntry, god}
+import models.security.Permissions.{god, reportCardEntry}
 import store.sparql.{Clause, NoneClause}
 
 import scala.util.{Failure, Success, Try}
@@ -114,7 +114,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     }).select(_.get("plan")).changeTo(_.headOption).
       request[Option, AssignmentPlan](v => repository.get[AssignmentPlan](v.stringValue)).
       request[Option, (AssignmentPlan, Schedule)](plan => repository.get[Schedule](sUri).peek(s => (plan, s))(tryM, optM)).
-      flatMap(res => ScheduleCRUDController.toScheduleG(res._2, repository).map(sg => (res._1, sg))).
+      flatMap(res => ScheduleController.toScheduleG(res._2, repository).map(sg => (res._1, sg))).
       map(res => reportCardService.reportCards(res._2, res._1))(optM).
       transform(_.fold(Set.empty[ReportCardEntry])(set => set)).
       requestAll[Set, ReportCardEntry](entries => repository.addMany[ReportCardEntry](entries).map(_ => entries)).

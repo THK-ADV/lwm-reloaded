@@ -7,7 +7,7 @@ import models.labwork._
 import models.semester.{Blacklist, Semester}
 import models.users.User
 import models._
-import org.joda.time.{DateTime, LocalTime, LocalDate}
+import org.joda.time.{DateTime, LocalDate, LocalTime, Weeks}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
@@ -15,6 +15,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import store.SesameRepository
 import utils.{Evaluation, Gen}
+
 import scala.language.postfixOps
 import scala.util.Random._
 import scala.util.Success
@@ -49,13 +50,17 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val timetableService = new TimetableService(blacklistService)
   val scheduleService = new ScheduleService(timetableService)
 
+  val semester = Semester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4), Semester.randomUUID)
+  val weeks = Weeks.weeksBetween(semester.start, semester.examStart)
+
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
   def gen(specs: Vector[(Timetable, Set[Group], AssignmentPlan)]): Vector[(Gen[ScheduleG, Conflict, Int], Int)] = {
+
     specs.foldLeft((Vector.empty[ScheduleG], Vector.empty[(Gen[ScheduleG, Conflict, Int], Int)])) {
       case ((comp, _), (t, g, ap)) =>
-        val result = scheduleService.generate(t, g, ap, comp)
+        val result = scheduleService.generate(t, g, ap, semester, comp)
 
         (comp ++ Vector(result._1.elem), Vector((result._1, result._2)))
     }._2
@@ -71,10 +76,11 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val plan = assignmentPlan(5)
-      val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty))
+      val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty)).toSet
 
       val times = 100
-      val result = scheduleService.population(times, timetable, plan, groups toSet)
+      val extrapolated = timetableService.extrapolateTimetableByWeeks(timetable, weeks, plan, groups)
+      val result = scheduleService.population(times, timetable.labwork, extrapolated, groups)
       //println(result.head.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size))
       //println(result.last.entries.toVector.sortBy(toLocalDateTime).map(_.group.label).take(groups.size))
 
@@ -94,7 +100,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       } shouldBe true
 
       val g = result.map(_.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
-      val gv = groups.toVector.map(_.id)
+      val gv = groups.map(_.id)
       g.forall(vec => vec.foldLeft((true, vec.head)) {
         case ((b, rep), l) => (b && l == rep, rep)
       }._1) shouldBe true
@@ -124,7 +130,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       result.foreach(_.entries.sortBy(toLocalDateTime) should not be schedule.entries.sortBy(toLocalDateTime))
       val g = result.map(_.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector)
-      val gv = groups.toVector.map(_.id)
+      val gv = groups.map(_.id)
       g.forall(vec => vec.foldLeft((true, vec.head)) {
         case ((b, rep), l) => (b && l == rep, rep)
       }._1) shouldBe true
@@ -136,8 +142,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       val plan = assignmentPlan(8)
       val groups = alph(8).map(Group(_, UUID.randomUUID(), Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)))
-      val g1 = shuffle(groups.toVector)
-      val g2 = shuffle(groups.toVector)
+      val g1 = shuffle(groups)
+      val g2 = shuffle(groups)
 
       val entries = {
         (0 until plan.entries.size * groups.size).grouped(groups.size).flatMap(_.zip(g1).zip(g2).map {
@@ -176,7 +182,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       Vector(result._1, result._2).foreach { s =>
         val gg = s.entries.sortBy(toLocalDateTime).map(_.group.label).grouped(groups.size).toVector
-        val gv = groups.toVector.map(_.id)
+        val gv = groups.map(_.id)
         gg.foldLeft((true, gg.head)) {
           case ((b, rep), l) => (b && l == rep, rep)
         }._1 shouldBe true
@@ -197,7 +203,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
       val existing = Vector.empty[ScheduleG]
 
-      val schedule = scheduleService.population(1, timetable, plan, groups).head
+      val extrapolated = timetableService.extrapolateTimetableByWeeks(timetable, weeks, plan, groups)
+      val schedule = scheduleService.population(1, labwork.id, extrapolated, groups).head
       val result = scheduleService.evaluation(existing, plan.entries.size)(schedule)
 
       result.err shouldBe empty
@@ -252,8 +259,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
       val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
 
-      val ap1Schedule = scheduleService.population(1, ap1T, plan, ap1G)
-      val ma1Schedule = scheduleService.population(1, ma1T, plan, ma1G).head
+      val extrapolatedAp1 = timetableService.extrapolateTimetableByWeeks(ap1T, weeks, plan, ap1G)
+      val extrapolatedMa1 = timetableService.extrapolateTimetableByWeeks(ma1T, weeks, plan, ma1G)
+      val ap1Schedule = scheduleService.population(1, ap1Prak.id, extrapolatedAp1, ap1G)
+      val ma1Schedule = scheduleService.population(1, ma1Prak.id, extrapolatedMa1, ma1G).head
 
       val result = scheduleService.evaluation(ap1Schedule, plan.entries.size)(ma1Schedule)
 //      println(s"conflicts ${result.err.size}")

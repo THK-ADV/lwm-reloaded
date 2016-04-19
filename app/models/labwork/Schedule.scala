@@ -39,7 +39,7 @@ case class ScheduleEntry(labwork: UUID,
 
 case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], published: Boolean, id: UUID)
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group)
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID)
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule] {
 
