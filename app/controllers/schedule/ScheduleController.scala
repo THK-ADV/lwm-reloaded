@@ -43,16 +43,16 @@ object ScheduleController {
     lazy val id = Labwork.generateUri(labwork)(repository.namespace)
 
     val query = select distinct "schedules" where {
-      ^(s(id), p(lwm.course), v("courseid")).
-        ^(s(id), p(lwm.semester), v("semester")).
-        ^(v("course"), p(lwm.id), v("courseid")).
-        ^(v("course"), p(lwm.semesterIndex), v("semesterIndex")).
-        ^(v("labwork"), p(lwm.semester), v("semester")).
-        ^(v("labwork"), p(lwm.course), v("course2id")).
-        ^(v("course2"), p(lwm.id), v("course2id")).
-        ^(v("course2"), p(lwm.semesterIndex), v("semesterIndex")).
-        ^(v("labwork"), p(lwm.id), v("labworkid")).
-        ^(v("schedules"), p(lwm.labwork), v("labworkid"))
+      **(s(id), p(lwm.course), v("courseid")).
+        **(s(id), p(lwm.semester), v("semester")).
+        **(v("course"), p(lwm.id), v("courseid")).
+        **(v("course"), p(lwm.semesterIndex), v("semesterIndex")).
+        **(v("labwork"), p(lwm.semester), v("semester")).
+        **(v("labwork"), p(lwm.course), v("course2id")).
+        **(v("course2"), p(lwm.id), v("course2id")).
+        **(v("course2"), p(lwm.semesterIndex), v("semesterIndex")).
+        **(v("labwork"), p(lwm.id), v("labworkid")).
+        **(v("schedules"), p(lwm.labwork), v("labworkid"))
     }
 
       repository.prepareQuery(query).
@@ -144,8 +144,9 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   def previewAtomic(course: String, labwork: String) = previewWith(course, labwork) { gen =>
     import utils.Ops._
     import MonadInstances.{optM, tryM}
+    import ScheduleController._
 
-    gen.map(ScheduleController.toSchedule).map(atomize).elem.peek(json =>
+    gen.map(toSchedule _ andThen atomize).elem.peek(json =>
       Ok(Json.obj(
         "status" -> "OK",
         "schedule" -> json,

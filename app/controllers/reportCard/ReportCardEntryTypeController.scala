@@ -95,7 +95,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
   def all(course: String) = restrictedContext(course)(GetAll) action { request =>
     import store.sparql.select._
     import store.sparql.select
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinding
+    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
     import ReportCardEntryTypeController._
     import utils.Ops.MonadInstances.setM
 
@@ -108,28 +108,28 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
         "message" -> "Request should contain at least one attribute"
       ))
     else
-      request.queryString.foldLeft(Try((^(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
+      request.queryString.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
         case (clause, (`studentAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-          (filter append ^(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
+          (filter append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`labworkAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
+            (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`dateAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head),
+            (filter append **(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head),
               resched . filterStrStarts(v("rdate"), values.head))
         }
         case (clause, (`startAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head),
+            (filter append **(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head),
               resched . filterStrStarts(v("rstart"), values.head))
         }
         case (clause, (`endAttribute`, values)) => clause map {
           case ((filter, resched)) =>
-            (filter append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head),
+            (filter append **(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head),
               resched . filterStrStarts(v("rend"), values.head))
         }
         case _ => Failure(new Throwable("Unknown attribute"))
@@ -137,10 +137,10 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
         case ((clause, resched)) =>
         val query = select distinct "entries" where {
           clause . optional {
-              ^(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
-              ^(v("rescheduled"), p(lwm.date), v("rdate")).
-              ^(v("rescheduled"), p(lwm.start), v("rstart")).
-              ^(v("rescheduled"), p(lwm.end), v("rend")) append
+              **(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
+              **(v("rescheduled"), p(lwm.date), v("rdate")).
+              **(v("rescheduled"), p(lwm.start), v("rstart")).
+              **(v("rescheduled"), p(lwm.end), v("rend")) append
               resched
           }
         }

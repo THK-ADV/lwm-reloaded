@@ -125,17 +125,17 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
     val lwm = LWMPrefix[repository.Rdf]
     implicit val ns = repository.namespace
-    val clause: Clause = ^(v("auth"), p(lwm.refroles), v("refs"))
+    val clause: Clause = **(v("auth"), p(lwm.refroles), v("refs"))
 
     queryString.foldRight(Try(clause)) {
       case ((`courseAttribute`, set), t) => t map {
-        _ append ^(v("refs"), p(lwm.course), s(Course.generateUri(UUID.fromString(set.head))))
+        _ append **(v("refs"), p(lwm.course), s(Course.generateUri(UUID.fromString(set.head))))
       }
       case ((`roleAttribute`, set), t) => t map {
-        _ append ^(v("refs"), p(lwm.role), s(Role.generateUri(UUID.fromString(set.head))))
+        _ append **(v("refs"), p(lwm.role), s(Role.generateUri(UUID.fromString(set.head))))
       }
       case ((`userAttribute`, set), t) => t map {
-        _ append ^(v("auth"), p(lwm.privileged), s(User.generateUri(UUID.fromString(set.head))))
+        _ append **(v("auth"), p(lwm.privileged), s(User.generateUri(UUID.fromString(set.head))))
       }
       case _ => Failure(new Throwable("Unknown attribute"))
     } flatMap { clause =>

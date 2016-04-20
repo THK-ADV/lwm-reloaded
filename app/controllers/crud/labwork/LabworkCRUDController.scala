@@ -59,11 +59,11 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
-        ^(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
-        ^(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
-        ^(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
+        **(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
+        **(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
+        **(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 

@@ -43,9 +43,9 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
       lazy val rdf = RDFPrefix[repository.Rdf]
 
       (select ("id") where {
-         ^(v("s"), p(rdf.`type`), s(prefixes.Room)) .
-           ^(v("s"), p(prefixes.label), o(input.label)).
-           ^(v("s"), p(prefixes.id), v("id"))
+         **(v("s"), p(rdf.`type`), s(prefixes.Room)) .
+           **(v("s"), p(prefixes.label), o(input.label)).
+           **(v("s"), p(prefixes.id), v("id"))
       }, v("id"))
    }
 

@@ -64,8 +64,8 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
       case ((`labworkAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.labwork == id)))
       case ((`courseAttribute`, values), t) =>
         val query = select ("labworks") where {
-          ^(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
-          ^(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+          **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
+          **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
         }
 
         repository.prepareQuery(query).

@@ -109,29 +109,29 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
-    val startClause = ^(v("entries"), p(rdf.`type`), s(lwm.ScheduleEntry))
+    val startClause = **(v("entries"), p(rdf.`type`), s(lwm.ScheduleEntry))
 
     queryString.foldRight(Try(startClause)) {
       case ((`courseAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.labwork), v("labwork")) . ^(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.labwork), v("labwork")) . **(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
       }
       case ((`labworkAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
       }
       case ((`groupAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.group), s(Group.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.group), s(Group.generateUri(UUID.fromString(values.head))))
       }
       case ((`supervisorAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.supervisor), s(User.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.supervisor), s(User.generateUri(UUID.fromString(values.head))))
       }
       case ((`startAttribute`, values), clause) => clause map {
-      _ append ^(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head)
+        _ append **(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head)
       }
       case ((`endAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head)
+        _ append **(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head)
       }
       case ((`dateAttribute`, values), clause) => clause map {
-        _ append ^(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head)
+        _ append **(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head)
       }
       case ((`dateRangeAttribute`, values), clause) =>
         val split = values.head.split(",").toVector
@@ -139,7 +139,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
           Failure(new Throwable("A range can only have two parameters"))
         else
           clause map {
-            _ append ^(v("entries"), p(lwm.date), v("date")) . filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
+            _ append **(v("entries"), p(lwm.date), v("date")) . filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
           }
 
       case ((_, _), clause) => Failure(new Throwable("Unknown attribute"))

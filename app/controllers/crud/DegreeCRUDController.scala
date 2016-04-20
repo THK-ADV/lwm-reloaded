@@ -44,10 +44,10 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
     import store.sparql.select._
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.Degree)) .
-        ^(v("s"), p(prefixes.label), o(input.label)) .
-        ^(v("s"), p(prefixes.abbreviation), o(input.abbreviation)).
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.Degree)) .
+        **(v("s"), p(prefixes.label), o(input.label)) .
+        **(v("s"), p(prefixes.abbreviation), o(input.abbreviation)).
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 

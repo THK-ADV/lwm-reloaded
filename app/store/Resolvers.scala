@@ -39,8 +39,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   override def username(systemId: String): Try[Option[UUID]] = {
     val result = repository.prepareQuery {
       select("id") where {
-          ^(v("s"), p(prefix.systemId), o(systemId)).
-          ^(v("s"), p(prefix.id), v("id"))
+          **(v("s"), p(prefix.systemId), o(systemId)).
+          **(v("s"), p(prefix.id), v("id"))
       }
     }
 
@@ -86,8 +86,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     import utils.Ops.TraverseInstances.travO
 
     val query = select ("degree") where {
-      ^(v("degree"), p(rdf.`type`), s(prefix.Degree)).
-      ^(v("degree"), p(prefix.abbreviation), o(abbreviation))
+      **(v("degree"), p(rdf.`type`), s(prefix.Degree)).
+      **(v("degree"), p(prefix.abbreviation), o(abbreviation))
     }
 
     repository.prepareQuery(query).

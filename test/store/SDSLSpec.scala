@@ -19,9 +19,9 @@ class SDSLSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "allow simple select queries" in {
       val query =
         (select("a", "b", "c") where {
-          ^(v("a"), p("isDefined"), o("concretely")).
-            ^(v("b"), p("isDefined"), o("not")).
-            ^(v("c"), p("isDefined"), o("notReally"))
+          **(v("a"), p("isDefined"), o("concretely")).
+            **(v("b"), p("isDefined"), o("not")).
+            **(v("c"), p("isDefined"), o("notReally"))
         }).run
 
       trim(query).toLowerCase shouldBe trim(simpleQuery).toLowerCase
@@ -31,11 +31,11 @@ class SDSLSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "allow more complex select queries with additional nested and concatenated clauses" in {
       val query =
         (select("a", "b", "c") where {
-          ^(v("a"), p("isDefined"), o("concretely")).
-            ^(v("b"), p("isDefined"), o("not")).
+          **(v("a"), p("isDefined"), o("concretely")).
+            **(v("b"), p("isDefined"), o("not")).
             filter(v("b") >= o("2")).
             optional {
-              ^(v("c"), p("isDefined"), o("notReally"))
+              **(v("c"), p("isDefined"), o("notReally"))
             }
         } orderby "b").run
 
@@ -45,8 +45,8 @@ class SDSLSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "allow ask queries" in {
       val query =
         ask {
-          ^(v("a"), p("isDefined"), o("concretely")).
-            ^(v("b"), p("isDefined"), o("not"))
+          **(v("a"), p("isDefined"), o("concretely")).
+            **(v("b"), p("isDefined"), o("not"))
         }.run
 
       trim(query).toLowerCase shouldBe trim(askQuery).toLowerCase
@@ -55,11 +55,11 @@ class SDSLSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "generate correct select queries" in {
       val query =
         (select("a", "b", "c") where {
-          ^(v("a"), p("isDefined"), o("concretely")).
-            ^(v("b"), p("isDefined"), o("not")).
+          **(v("a"), p("isDefined"), o("concretely")).
+            **(v("b"), p("isDefined"), o("not")).
             filter(v("b") >= o("2")).
             optional {
-              ^(v("c"), p("isDefined"), o("notReally"))
+              **(v("c"), p("isDefined"), o("notReally"))
             }
         } orderby "b").run
 
@@ -71,8 +71,8 @@ class SDSLSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "generate correct ask queries" in {
       val query =
         ask {
-          ^(v("a"), p("isDefined"), o("concretely")).
-            ^(v("b"), p("isDefined"), o("not"))
+          **(v("a"), p("isDefined"), o("concretely")).
+            **(v("b"), p("isDefined"), o("not"))
         }.run
 
       val res = sparqlOps.parseAsk(query)

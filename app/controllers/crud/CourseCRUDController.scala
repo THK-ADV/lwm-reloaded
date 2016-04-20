@@ -73,10 +73,10 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.Course)) .
-        ^(v("s"), p(prefixes.label), o(input.label)) .
-        ^(v("s"), p(prefixes.lecturer), s(User.generateUri(input.lecturer)(namespace))) .
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.Course)) .
+        **(v("s"), p(prefixes.label), o(input.label)) .
+        **(v("s"), p(prefixes.lecturer), s(User.generateUri(input.lecturer)(namespace))) .
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 
@@ -124,9 +124,9 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         lazy val rdf = RDFPrefix[repository.Rdf]
 
         val query = select ("s") where {
-            ^(v("s"), p(rdf.`type`), s(lwm.RefRole)) .
-            ^(v("s"), p(lwm.role), v("role")) .
-            ^(v("role"), p(lwm.label), o(RightsManager))
+            **(v("s"), p(rdf.`type`), s(lwm.RefRole)) .
+            **(v("s"), p(lwm.role), v("role")) .
+            **(v("role"), p(lwm.label), o(RightsManager))
         }
 
         import utils.Ops.MonadInstances._

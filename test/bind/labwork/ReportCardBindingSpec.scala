@@ -18,7 +18,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   import ops._
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.ReportCardEntryBinding.reportCardEntryBinding
+  import bindings.ReportCardEntryBinding.reportCardEntryBinder
   import bindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
   import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
 
@@ -54,7 +54,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   "A ReportCardBindingSpec " should {
 
     "successfully serialise a report card entry" in {
-      val entry = reportCardEntryBinding.fromPG(reportCardEntry.toPG)
+      val entry = reportCardEntryBinder.fromPG(reportCardEntry.toPG)
 
       entry shouldBe Success(reportCardEntry)
     }
