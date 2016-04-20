@@ -92,8 +92,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
   val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
-    "entries" -> entityToPass.entries,
-    "published" -> entityToPass.published
+    "entries" -> entityToPass.entries
   )
 
   val emptyVector = Vector.empty[ScheduleEntryG]
@@ -147,7 +146,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
           s should not be empty
           s.size shouldBe 2
 
-          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], published = false, sg.id))
+          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], sg.id))
           schedules.contains(first) shouldBe true
           schedules.contains(second) shouldBe true
           schedules.contains(third) shouldBe false
@@ -169,7 +168,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -207,7 +206,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -253,7 +252,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, published = false, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, gen.elem.id)
       }
 
       val request = FakeRequest(

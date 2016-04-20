@@ -238,8 +238,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
     private val subscribable = property[Boolean](lwm.subscribable)
+    private val published = property[Boolean](lwm.published)
 
-    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, published, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {
@@ -333,9 +334,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val entries = set[ScheduleEntry](lwm.entries)
-    private val published = property[Boolean](lwm.published)
 
-    implicit val scheduleBinder: PGBinder[Rdf, Schedule] = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, published, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+    implicit val scheduleBinder: PGBinder[Rdf, Schedule] = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, id)(Schedule.apply, Schedule.unapply) withClasses classUri
   }
 
   object ScheduleEntryBinding {

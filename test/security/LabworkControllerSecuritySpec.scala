@@ -51,7 +51,8 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "subscribable" -> false
+        "subscribable" -> false,
+        "published" -> false
       )
 
       val request = FakeRequest(
@@ -113,7 +114,8 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "subscribable" -> false
+        "subscribable" -> false,
+        "published" -> false
       )
 
       val request = FakeRequest(
@@ -178,7 +180,8 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
         "semester" -> UUID.randomUUID(),
         "course" -> UUID.randomUUID(),
         "degree" -> UUID.randomUUID(),
-        "subscribable" -> false
+        "subscribable" -> false,
+        "published" -> false
       )
 
       val request = FakeRequest(

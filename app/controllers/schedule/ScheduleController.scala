@@ -81,7 +81,7 @@ object ScheduleController {
 
   def toSchedule(scheduleG: ScheduleG): Schedule = {
     val entries = scheduleG.entries.map(e => ScheduleEntry(scheduleG.labwork, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-    Schedule(scheduleG.labwork, entries, published = false, scheduleG.id)
+    Schedule(scheduleG.labwork, entries, scheduleG.id)
   }
 }
 
@@ -256,7 +256,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
           case None => newSet
         }
       }
-      Json.toJson(ScheduleAtom(l, entries, output.published, output.id))(Schedule.atomicWrites)
+      Json.toJson(ScheduleAtom(l, entries, output.id))(Schedule.atomicWrites)
     }
   }
 }

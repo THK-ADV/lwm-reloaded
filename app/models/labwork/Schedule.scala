@@ -8,7 +8,7 @@ import models.users.Employee
 import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], published: Boolean = false, id: UUID = Schedule.randomUUID) extends UniqueEntity
+case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID = Schedule.randomUUID) extends UniqueEntity
 
 case class ScheduleEntry(labwork: UUID,
                          start: LocalTime,
@@ -37,7 +37,7 @@ case class ScheduleEntry(labwork: UUID,
   * Atoms
   */
 
-case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], published: Boolean, id: UUID)
+case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID)
 
 case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID)
 

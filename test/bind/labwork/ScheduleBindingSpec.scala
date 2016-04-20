@@ -28,7 +28,6 @@ class ScheduleBindingSpec extends SesameDbSpec {
   val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
     .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.entries).->-(schedule.entries)
-    .--(lwm.published).->-(schedule.published)
     .--(lwm.id).->-(schedule.id).graph
 
   val scheduleEntryGraph = URI(ScheduleEntry.generateUri(scheduleEntry)).a(lwm.ScheduleEntry)
