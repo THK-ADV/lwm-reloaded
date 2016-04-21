@@ -1,6 +1,6 @@
 package modules.labwork.schedule
 
-import controllers.crud.labwork.ScheduleCRUDController
+import controllers.schedule.{ScheduleController, ScheduleController$}
 import modules.SessionRepositoryModule
 import modules.security.SecurityManagementModule
 import modules.store.{BaseNamespace, SemanticRepositoryModule}
@@ -20,13 +20,12 @@ trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementMo
 }
 
 trait ScheduleManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
 
-  def scheduleManagementController: ScheduleCRUDController
+  def scheduleManagementController: ScheduleController
 }
 
 trait DefaultScheduleManagementModuleImpl extends ScheduleManagementModule {
   self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule with ScheduleServiceManagementModule =>
 
-  lazy val scheduleManagementController: ScheduleCRUDController = new ScheduleCRUDController(repository, sessionService, namespace, roleService, scheduleService)
+  lazy val scheduleManagementController: ScheduleController = new ScheduleController(repository, sessionService, namespace, roleService, scheduleService)
 }

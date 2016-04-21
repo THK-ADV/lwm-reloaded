@@ -75,12 +75,17 @@ object Permissions {
 
   object schedule {
     val create = Permission("Schedule:create")
-    val update = Permission("Schedule:update")
     val delete = Permission("Schedule:delete")
-    val get = Permission("Schedule:get")
-    val getAll = Permission("Schedule:getAll")
 
-    lazy val all = Set(create, update, delete, get, getAll)
+    lazy val all = Set(create, delete)
+  }
+
+  object scheduleEntry {
+    val update = Permission("ScheduleEntry:update")
+    val get = Permission("ScheduleEntry:get")
+    val getAll = Permission("ScheduleEntry:getAll")
+
+    lazy val all = Set(update, get, getAll)
   }
 
   object timetable {

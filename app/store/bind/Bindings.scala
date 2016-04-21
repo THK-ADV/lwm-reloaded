@@ -238,8 +238,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
     private val subscribable = property[Boolean](lwm.subscribable)
+    private val published = property[Boolean](lwm.published)
 
-    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, published, id)(Labwork.apply, Labwork.unapply) withClasses classUri
   }
 
   object CourseBinding {
@@ -326,20 +327,22 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object ScheduleBinding {
+    import ScheduleEntryBinding.scheduleEntryBinder
+
     implicit val clazz = lwm.Schedule
     implicit val classUri = classUrisFor[Schedule](clazz)
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
-    private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryBinding.scheduleEntryBinder)
-    private val published = property[Boolean](lwm.published)
+    private val entries = set[ScheduleEntry](lwm.entries)
 
-    implicit val scheduleBinder: PGBinder[Rdf, Schedule] = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, published, id)(Schedule.apply, Schedule.unapply) withClasses classUri
+    implicit val scheduleBinder: PGBinder[Rdf, Schedule] = pgbWithId[Schedule](schedule => makeUri(Schedule.generateUri(schedule)))(labwork, entries, id)(Schedule.apply, Schedule.unapply) withClasses classUri
   }
 
   object ScheduleEntryBinding {
     implicit val clazz = lwm.ScheduleEntry
     implicit val classUri = classUrisFor[ScheduleEntry](clazz)
 
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
     private val date = property[LocalDate](lwm.date)
@@ -347,7 +350,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
-    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](_ => innerUri)(start, end, date, room, supervisor, group)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
+    implicit val scheduleEntryBinder: PGBinder[Rdf, ScheduleEntry] = pgbWithId[ScheduleEntry](sentry => makeUri(ScheduleEntry.generateUri(sentry)))(labwork, start, end, date, room, supervisor, group, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUri
   }
 
   object BlacklistBinding {
@@ -374,7 +377,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val rescheduled = optional[Rescheduled](lwm.rescheduled)(RescheduledBinding.rescheduledBinding)
     private val types = set[ReportCardEntryType](lwm.types)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
 
-    implicit val reportCardEntryBinding: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(student, labwork, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
+    implicit val reportCardEntryBinder: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(student, labwork, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
   }
 
   object ReportCardEntryTypeBinding {

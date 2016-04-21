@@ -77,7 +77,8 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "semester" -> entityToPass.semester,
     "course" -> entityToPass.course,
     "degree" -> entityToPass.degree,
-    "subscribable" -> entityToPass.subscribable
+    "subscribable" -> entityToPass.subscribable,
+    "published" -> entityToPass.published
   )
 
   override val updateJson: JsValue = Json.obj(
@@ -86,7 +87,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "semester" -> UUID.randomUUID(),
     "course" -> entityToPass.course,
     "degree" -> entityToPass.degree,
-    "subscribable" -> !entityToPass.subscribable
+    "subscribable" -> !entityToPass.subscribable,
+  "published" -> entityToPass.published
+
   )
 
   val atomizedEntityToPass = LabworkAtom(
@@ -96,6 +99,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     toAtom(courseToPass),
     degreeToPass,
     entityToPass.subscribable,
+    entityToPass.published,
     entityToPass.id
   )
 
@@ -106,6 +110,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     toAtom(courseToFail),
     degreeToFail,
     entityToFail.subscribable,
+    entityToFail.published,
     entityToFail.id
   )
 
@@ -513,6 +518,32 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+    }
+
+    "return all corresponding labworks which schedules are published" in {
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val fifth = Labwork("label 5", "description 5", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
+      val sixth = Labwork("label 6", "description 6", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+
+      when(repository.get[Labwork](anyObject(), anyObject())).thenReturn(Success(Set(
+        first, second, third, fourth, fifth, sixth
+      )))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}?${LabworkCRUDController.publishedAttribute}=true"
+      )
+
+      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      Set(second, third, fifth).forall { l =>
+        contentAsString(result) contains Json.toJson(l).toString
+      } shouldBe true
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {

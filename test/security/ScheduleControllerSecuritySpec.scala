@@ -6,6 +6,7 @@ import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.labwork.{Schedule, ScheduleEntry}
 import models.security.Permissions._
+import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -24,21 +25,18 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
-    "Allow restricted context invocations when admin wants to update a schedule" in new FakeApplication() {
-      import Schedule.writes
+    "Allow restricted context invocations when admin wants to update a schedule entry" in new FakeApplication() {
+      import ScheduleEntry.writes
 
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.update))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
-      )
-
+      val entry = ScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val request = FakeRequest(
         PUT,
-        s"$FakeCourseUri/schedules/${UUID.randomUUID()}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.scheduleV1Json)),
-        json
+        s"$FakeCourseUri/scheduleEntries/${entry.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.scheduleEntryV1Json)),
+        Json.toJson(entry)
       ).withSession(
         SessionController.userId -> FakeAdmin.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -46,7 +44,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted context invocations when mv wants to create a schedule" in new FakeApplication() {
@@ -91,13 +89,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       status(result) shouldBe OK
     }
 
-    "Allow restricted context invocations when mv wants to get a single schedule" in new FakeApplication() {
+    "Allow restricted context invocations when mv wants to get a single schedule entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.get))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
+        s"$FakeCourseUri/scheduleEntries/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMv.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -108,13 +106,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       status(result) shouldBe NOT_FOUND
     }
 
-    "Allow restricted context invocations when ma wants to get a single schedule" in new FakeApplication() {
+    "Allow restricted context invocations when ma wants to get a single schedule entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.get))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
+        s"$FakeCourseUri/scheduleEntries/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -125,15 +123,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       status(result) shouldBe NOT_FOUND
     }
 
-    "Allow restricted context invocations when ma wants to get all schedules which belongs to him" in new FakeApplication() {
-      import Schedule.writes
-
+    "Allow restricted context invocations when ma wants to get all schedule entries" in new FakeApplication() {
       when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.getAll))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.getAll))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/schedules?course=$course"
+        s"$FakeCourseUri/scheduleEntries"
       ).withSession(
         SessionController.userId -> FakeMa.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -142,7 +138,6 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Schedule])
     }
 
     "Block restricted context invocations when ma wants to create schedule" in new FakeApplication() {
@@ -187,13 +182,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       status(result) shouldBe UNAUTHORIZED
     }
 
-    "Block restricted context invocations when students wants to get a single schedule" in new FakeApplication() {
+    "Block restricted context invocations when students wants to get a single schedule entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.get))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
+        s"$FakeCourseUri/scheduleEntries/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeStudent.toString,
         SessionController.sessionId -> UUID.randomUUID.toString
@@ -204,13 +199,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       status(result) shouldBe UNAUTHORIZED
     }
 
-    "Block restricted context invocations when employee wants to get a single schedule" in new FakeApplication() {
+    "Block restricted context invocations when employee wants to get a single schedule entry" in new FakeApplication() {
       when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
-      when(roleService.checkWith((Some(FakeCourse), schedule.get))(FakeEmployeeAuth)).thenReturn(Success(false))
+      when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,
-        s"$FakeCourseUri/schedules/${UUID.randomUUID()}"
+        s"$FakeCourseUri/scheduleEntries/${UUID.randomUUID()}"
       ).withSession(
         SessionController.userId -> FakeEmployee.toString,
         SessionController.sessionId -> UUID.randomUUID.toString

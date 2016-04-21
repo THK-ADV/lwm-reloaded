@@ -50,8 +50,8 @@ object UserController {
     case e: Employee => g(e)
   }
 
-  lazy val degreeAttribute = "degree"
-  lazy val statusAttribute = "status"
+  val degreeAttribute = "degree"
+  val statusAttribute = "status"
 }
 
 class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
@@ -151,7 +151,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace)))(SessionController.userId)
 
     val query = select ("student") where {
-      ^(v("student"), p(lwm.systemId), o(systemId))
+      **(v("student"), p(lwm.systemId), o(systemId))
     }
 
     repository.prepareQuery(query).

@@ -44,8 +44,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
       val query: SelectClause =
         select ("id") where {
-          ^(v("s"), p(prefixes.systemId), o(student.systemId)) .
-          ^(v("s"), p(prefixes.id), v("id"))
+          **(v("s"), p(prefixes.systemId), o(student.systemId)) .
+          **(v("s"), p(prefixes.id), v("id"))
         }
 
       val result =
@@ -76,8 +76,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
       val query =
         select ("members") where {
-          ^(v("s"), p(prefixes.members), v("members")) .
-          ^(v("s"), p(prefixes.label), o(group.label))
+          **(v("s"), p(prefixes.members), v("members")) .
+          **(v("s"), p(prefixes.label), o(group.label))
         }
 
       val result = sparql.
@@ -106,8 +106,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
       val query =
         select ("members") where {
-          ^(v("s"), p(prefixes.members), v("members")) .
-            ^(v("s"), p(prefixes.label), o(group.label))
+          **(v("s"), p(prefixes.members), v("members")) .
+            **(v("s"), p(prefixes.label), o(group.label))
         }
 
       val result = sparql.

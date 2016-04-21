@@ -156,15 +156,15 @@ trait AskOperation extends Clauses with Properties {
  * mixin this trait.
  */
 trait Clauses {
-  def ^(s: Properties#Property, p: Properties#Property, o: Properties#Property): StatementClause[Properties#Property] = StatementClause((s, p, o))
+  def **(s: Properties#Property, p: Properties#Property, o: Properties#Property): StatementClause[Properties#Property] = StatementClause((s, p, o))
 
   implicit class ClauseOps(c: Clause) {
 
-    def ^(s: Properties#Property, p: Properties#Property, o: Properties#Property) = c append StatementClause((s, p, o))
+    def **(s: Properties#Property, p: Properties#Property, o: Properties#Property) = c append StatementClause((s, p, o))
 
     def filter(v: String) = c append FilterClause(v)
 
-    def filterStrStarts(what: Properties#Var, starting: String) = c append FilterStartsWith(what.toString, starting)
+    def filterStrStarts(what: Properties#Var, starting: String) = c append FilterStartsWith(what.toString, s"'$starting'")
 
     def filterNotExists(cc: Clause) = c append FilterNotExistsClause(cc)
 

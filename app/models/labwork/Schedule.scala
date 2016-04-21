@@ -8,29 +8,40 @@ import models.users.Employee
 import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], published: Boolean = false, id: UUID = Schedule.randomUUID) extends UniqueEntity
+case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID = Schedule.randomUUID) extends UniqueEntity
 
-case class ScheduleEntry(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: UUID) {
+case class ScheduleEntry(labwork: UUID,
+                         start: LocalTime,
+                         end: LocalTime,
+                         date: LocalDate,
+                         room: UUID,
+                         supervisor: UUID,
+                         group: UUID,
+                         id: UUID = ScheduleEntry.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case ScheduleEntry(s, e, d, r, su, g) =>
-      s.isEqual(start) &&
+    case ScheduleEntry(l, s, e, d, r, su, g, i) =>
+        l == labwork &&
+        s.isEqual(start) &&
         e.isEqual(end) &&
         d.isEqual(date) &&
         r == room &&
         su == supervisor &&
-        g == group
+        g == group &&
+        i == id
     case _ => false
   }
 }
 
-case class ScheduleProtocol(labwork: UUID, entries: Set[ScheduleEntry], published: Boolean)
+/**
+  * Atoms
+  */
 
-case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], published: Boolean, id: UUID)
+case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID)
 
-case class ScheduleEntryAtom(start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group)
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID)
 
-object Schedule extends UriGenerator[Schedule] with JsonSerialisation[ScheduleProtocol, Schedule] {
+object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule] {
 
   import ScheduleEntry.format
 
@@ -38,7 +49,7 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[SchedulePr
 
   override def base: String = "schedules"
 
-  override implicit def reads: Reads[ScheduleProtocol] = Json.reads[ScheduleProtocol]
+  override implicit def reads: Reads[Schedule] = Json.reads[Schedule]
 
   override implicit def writes: Writes[Schedule] = Json.writes[Schedule]
 
@@ -47,7 +58,7 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[SchedulePr
   implicit def setAtomicWrites: Writes[Set[ScheduleAtom]] = Writes.set[ScheduleAtom](atomicWrites)
 }
 
-object ScheduleEntry extends JsonSerialisation[ScheduleEntry, ScheduleEntry] {
+object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry] {
 
   override implicit def reads: Reads[ScheduleEntry] = Json.reads[ScheduleEntry]
 
@@ -58,4 +69,6 @@ object ScheduleEntry extends JsonSerialisation[ScheduleEntry, ScheduleEntry] {
   implicit def format: Format[ScheduleEntryAtom] = Json.format[ScheduleEntryAtom]
 
   implicit def setAtomicWrites: Writes[Set[ScheduleEntryAtom]] = Writes.set[ScheduleEntryAtom](atomicWrites)
+
+  override def base: String = "scheduleEntry"
 }

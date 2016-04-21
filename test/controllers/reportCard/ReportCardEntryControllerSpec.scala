@@ -14,13 +14,15 @@ import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.{SesameModule, Sesame}
+import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.http.HeaderNames
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{ReportCardService, RoleService, SessionHandlingService}
-import store.sparql.{QueryEngine, SelectClause, QueryExecutor}
+import store.Prefixes.LWMPrefix
+import store.bind.Bindings
+import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -307,7 +309,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val request = FakeRequest(
         POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
       )
 
       val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
@@ -337,7 +341,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val request = FakeRequest(
         POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule"
+        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
       )
 
       val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
@@ -348,6 +354,71 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         "status" -> "KO",
         "errors" -> errorMessage
       )
+    }
+
+    "filter with query" in {
+      val realRepo = SesameRepository(namespace)
+      val lwm = LWMPrefix[realRepo.Rdf](realRepo.rdfOps, realRepo.rdfOps)
+      val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+
+      import bindings.ReportCardEntryBinding._
+
+      val localController = new ReportCardEntryController(realRepo, sessionService, namespace, roleService, reportCardService) {
+        override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+          case _ => NonSecureBlock
+        }
+
+        override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+          case _ => NonSecureBlock
+        }
+      }
+
+      val course = UUID.randomUUID()
+
+      val student1 = UUID.randomUUID()
+      val labwork1 = UUID.randomUUID()
+      val date1 = LocalDate.now
+      val (start1, end1) = (LocalTime.parse(LocalTime.now.toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(2).toString("HH:mm")))
+      val room1 = UUID.randomUUID()
+
+      val student2 = UUID.randomUUID()
+      val labwork2 = UUID.randomUUID()
+      val date2 = LocalDate.now plusDays 2
+      val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
+      val room2 = UUID.randomUUID()
+
+      val student3 = UUID.randomUUID()
+
+      val entry1 = ReportCardEntry(student1, labwork1, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
+      val entry2 = ReportCardEntry(student2, labwork2, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
+      val entry3 = ReportCardEntry(student1, labwork1, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
+      val entry4 = ReportCardEntry(student3, labwork1, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
+        Some(Rescheduled(date1, start2, end2, room2)))
+
+      realRepo.addMany[ReportCardEntry](List(entry1, entry2, entry3, entry4))
+
+      val requestWithDate = FakeRequest(
+        GET,
+        s"/courses/$course/reportCardEntries?date=$date1"
+      )
+
+      val requestWithTime = FakeRequest(
+        GET,
+        s"/courses/$course/reportCardEntries?start=$start1"
+      )
+
+      val result1 = localController.all(course.toString)(requestWithDate)
+      val result2 = localController.all(course.toString)(requestWithTime)
+      val expected1 = List(entry1, entry3, entry4)
+      val expected2 = List(entry1, entry2, entry4)
+
+      contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
+        expected1 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
+      }
+
+      contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
+        expected2 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
+      }
     }
   }
 }

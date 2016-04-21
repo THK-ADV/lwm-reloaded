@@ -87,14 +87,12 @@ object Prefixes {
     // ScheduleEntry
     val group = apply("group")
 
-    // Schedule
-    val published = apply("published")
-
     // Annotation, ReportCardEntry
     val student = apply("student")
 
     // Labwork
     val subscribable = apply("subscribable")
+    val published = apply("published")
 
     // Annotation
     val reportCardEntry = apply("reportCardEntry")

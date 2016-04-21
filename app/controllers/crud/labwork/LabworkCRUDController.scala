@@ -28,6 +28,7 @@ object LabworkCRUDController {
   val degreeAttribute = "degree"
   val semesterAttribute = "semester"
   val subscribableAttribute = "subscribable"
+  val publishedAttribute = "published"
 }
 
 class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
@@ -45,8 +46,10 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   override implicit def writes: Writes[Labwork] = Labwork.writes
 
   override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
-    case Some(labwork) => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, labwork.id)
-    case None => Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, Labwork.randomUUID)
+    case Some(labwork) =>
+      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, labwork.id)
+    case None =>
+      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, Labwork.randomUUID)
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
@@ -56,24 +59,25 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
-        ^(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
-        ^(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
-        ^(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
+        **(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
+        **(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
+        **(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
-    input.label == output.label && input.description == output.description && input.subscribable == output.subscribable
+    input.label == output.label && input.description == output.description && input.subscribable == output.subscribable && input.published == output.published
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
     queryString.foldRight(Try[Set[Labwork]](all)) {
-      case ((`courseAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.course == p)))
-      case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.degree == p)))
-      case ((`semesterAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.semester == p)))
-      case ((`subscribableAttribute`, v), t) => t flatMap (set => Try(v.head.toBoolean).map(b => set.filter(_.subscribable == b)))
+      case ((`courseAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.course == p)))
+      case ((`degreeAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.degree == p)))
+      case ((`semesterAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.semester == p)))
+      case ((`subscribableAttribute`, values), set) => set flatMap (set => Try(values.head.toBoolean).map(b => set.filter(_.subscribable == b)))
+      case ((`publishedAttribute`, values), set) => set flatMap (set => Try(values.head.toBoolean).map(b => set.filter(_.published == b)))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -97,7 +101,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
       s <- semester; c <- course; d <- degree; e <- lecturer.flatten
       courseAtom = CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id)
     } yield Json.toJson(
-      LabworkAtom(output.label, output.description, s, courseAtom, d, output.subscribable, output.id)
+      LabworkAtom(output.label, output.description, s, courseAtom, d, output.subscribable, output.published, output.id)
     )
   }
 

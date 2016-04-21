@@ -2,12 +2,12 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.labwork.ScheduleCRUDController
+import controllers.schedule.ScheduleController
 import models._
 import models.labwork._
 import models.security.{Authority, RefRole, Role, Roles}
 import models.security.Roles._
-import models.semester.{BlacklistProtocol, Blacklist, Semester}
+import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student, User}
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalTime}
@@ -25,20 +25,21 @@ import scala.language.implicitConversions
 import scala.util.Random._
 import scala.util.{Failure, Success, Try}
 
+// TODO ADJUST
 object ApiDataController {
   import models.security.Permissions._
 
   val mvRole = Role(CourseManager,
-    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++
+    labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ scheduleEntry.all ++
       Set(reportCardEntry.getAll, reportCardEntry.update, reportCardEntry.create) ++ reportCardEntryType.all ++ assignmentPlan.all ++
       annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
-    Set(labwork.get, labwork.getAll) ++ Set(schedule.get, schedule.getAll) ++ Set(timetable.get, timetable.getAll) ++
+    Set(labwork.get, labwork.getAll) ++ Set(scheduleEntry.get, scheduleEntry.getAll) ++ Set(timetable.get, timetable.getAll) ++
       Set(reportCardEntry.getAll, reportCardEntry.update) ++ reportCardEntryType.all ++ annotation.all + group.get + assignmentPlan.get
   )
   val assistantRole = Role(CourseAssistant,
-    Set(schedule.get, schedule.getAll, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
+    Set(scheduleEntry.get, scheduleEntry.getAll, timetable.get) ++ reportCardEntryType.all + annotation.get + annotation.getAll
   )
 
   val rvRole = Role(RightsManager,
@@ -55,11 +56,12 @@ object ApiDataController {
   val adminRole = Role(Admin, Set(prime))
 }
 
-class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl, groupService: GroupServiceLike, scheduleGenesisService: ScheduleGenesisServiceLike, reportCardService: ReportCardServiceLike) extends Controller {
+class ApiDataController(val repository: SesameRepository, val ldap: LDAPServiceImpl, val groupService: GroupServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val reportCardService: ReportCardServiceLike) extends Controller {
   import repository.ops
   import ApiDataController._
 
-  private val bindings = Bindings(repository.namespace)
+  implicit val ns = repository.namespace
+  private val bindings = Bindings(ns)
   implicit def toLocalDate(s: String): LocalDate = LocalDate.parse(s)
 
   val adminRefRole = RefRole(None, adminRole.id)
@@ -250,6 +252,7 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     implicit val tb = bindings.TimetableBinding.timetableBinder
     implicit val tcu = bindings.TimetableBinding.classUri
     implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
+    implicit val sb = bindings.SemesterBinding.semesterBinder
     implicit val abu = bindings.AssignmentPlanBinding.classUri
     import bindings.ReportCardEntryBinding._
     import bindings.ScheduleBinding._
@@ -263,16 +266,18 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
       _ <- repository.addMany[Group](groups)
       timetable <- repository.get[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)))
       plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork)))
-      comp <- ScheduleCRUDController.competitive(UUID.fromString(labwork), repository)
+      comp <- ScheduleController.competitive(UUID.fromString(labwork), repository)
+      semester <- repository.get[Semester](Semester.generateUri(ss16))
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
+      s <- semester
       g <- if (groups.nonEmpty) Some(groups.toSet) else None
     } yield {
-      val gen = scheduleGenesisService.generate(t, g, p, comp.toVector)._1
+      val gen = scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
       gen.map { scheduleG =>
-        val s = scheduleG.entries.map(g => ScheduleEntry(g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
-        Schedule(scheduleG.labwork, s, published = true, scheduleG.id)
+        val s = scheduleG.entries.map(g => ScheduleEntry(scheduleG.labwork, g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
+        Schedule(scheduleG.labwork, s, scheduleG.id)
       }.map(repository.add[Schedule])
 
       gen.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCardEntry](_))
@@ -393,22 +398,22 @@ class ApiDataController(val repository: SesameRepository, ldap: LDAPServiceImpl,
     import bindings.LabworkBinding._
 
     List(
-      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, ap1WiPrak),
-      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, subscribable = false, ap1AiPrak),
-      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, subscribable = false, ap1MiPrak),
-      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, subscribable = false, ap1TiPrak),
-      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, subscribable = false, ap2WiPrak),
-      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, ap2AiPrak),
-      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, ap2MiPrak),
-      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, ap2TiPrak),
-      Labwork("ma1 wi", "giannakopoulos", ws1516, ma1Giannakopoulos, wi, subscribable = false, ma1WiPrak),
-      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, ma1AiPrak),
-      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, ma1MiPrak),
-      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, ma1TiPrak),
-      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, subscribable = false, ma2AiPrak),
-      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, subscribable = false, ma2MiPrak),
-      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, subscribable = false, ma2TiPrak),
-      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, subscribable = false, cgaMiPrak)
+      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, published = false, ap1WiPrak),
+      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, subscribable = false, published = false, ap1AiPrak),
+      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, subscribable = false, published = false, ap1MiPrak),
+      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, subscribable = false, published = false, ap1TiPrak),
+      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, subscribable = false, published = false, ap2WiPrak),
+      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, published = false, ap2AiPrak),
+      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, published = false, ap2MiPrak),
+      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, published = false, ap2TiPrak),
+      Labwork("ma1 wi", "giannakopoulos", ws1516, ma1Giannakopoulos, wi, subscribable = false, published = false, ma1WiPrak),
+      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, published = false, ma1AiPrak),
+      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, published = false, ma1MiPrak),
+      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, published = false, ma1TiPrak),
+      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, subscribable = false, published = false, ma2AiPrak),
+      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, subscribable = false, published = false, ma2MiPrak),
+      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, subscribable = false, published = false, ma2TiPrak),
+      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, subscribable = false, published = false, cgaMiPrak)
     ).map(repository.add[Labwork])
   }
 

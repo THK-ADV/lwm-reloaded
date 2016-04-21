@@ -27,6 +27,7 @@ class LabworkBindingSpec extends SesameDbSpec {
     .--(lwm.course).->-(labwork.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(Degree.splitter))
     .--(lwm.subscribable).->-(labwork.subscribable)
+    .--(lwm.published).->-(labwork.published)
     .--(lwm.id).->-(labwork.id).graph
 
   "A LabworkBinding" should {

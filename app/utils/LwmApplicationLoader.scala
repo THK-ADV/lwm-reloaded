@@ -67,6 +67,7 @@ with ApiDataModule
 with LabworkApplicationManagementModule
 with LabworkApplicationServiceModule
 with ScheduleManagementModule
+with ScheduleEntryManagementModule
 with TimetableManagementModule
 with TimetableServiceManagementModule
 with ScheduleServiceManagementModule
@@ -96,6 +97,7 @@ with AnnotationManagementModule {
     permissionManagementController,
     labworkApplicationController,
     scheduleManagementController,
+    scheduleEntryController,
     timetableManagementController,
     blacklistManagementController,
     reportCardEntryManagementController,
@@ -137,6 +139,7 @@ with DefaultApiDataModule
 with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationServiceModule
 with DefaultScheduleManagementModuleImpl
+with DefaultScheduleEntryManagementModule
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableServiceManagementModule
 with DefaultScheduleServiceManagementModule

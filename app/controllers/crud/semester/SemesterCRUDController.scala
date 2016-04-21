@@ -49,11 +49,11 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     import store.sparql.select._
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.Semester)) .
-        ^(v("s"), p(prefixes.label), o(input.label)) .
-        ^(v("s"), p(prefixes.start), o(input.start)) .
-        ^(v("s"), p(prefixes.end), o(input.end)) .
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.Semester)) .
+        **(v("s"), p(prefixes.label), o(input.label)) .
+        **(v("s"), p(prefixes.start), o(input.start)) .
+        **(v("s"), p(prefixes.end), o(input.end)) .
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 

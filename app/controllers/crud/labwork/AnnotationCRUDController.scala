@@ -54,7 +54,7 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
   override protected def atomize(output: Annotation): Try[Option[JsValue]] = {
     import defaultBindings.StudentBinding.studentBinder
     import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinding
+    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
     import Annotation.atomicWrites
 
     for {

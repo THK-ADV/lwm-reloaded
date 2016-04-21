@@ -100,10 +100,10 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select ("id") where {
-      ^(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)) .
-        ^(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))) .
-        ^(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))) .
-        ^(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)) .
+        **(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))) .
+        **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))) .
+        **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
 }

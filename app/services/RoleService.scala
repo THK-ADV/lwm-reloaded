@@ -51,7 +51,7 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
     val useruri = User.generateUri(UUID.fromString(userId))
     val result = repository.prepareQuery {
       select("auth") where {
-        ^(v("auth"), p(lwm.privileged), s(useruri))
+        **(v("auth"), p(lwm.privileged), s(useruri))
       }
     }
 
