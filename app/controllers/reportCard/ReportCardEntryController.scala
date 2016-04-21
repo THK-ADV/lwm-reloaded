@@ -26,6 +26,7 @@ import scala.util.{Failure, Success, Try}
 object ReportCardEntryController {
   val studentAttribute = "student"
   val labworkAttribute = "labwork"
+  val roomAttribute = "room"
   val dateAttribute = "date"
   val startAttribute = "start"
   val endAttribute = "end"
@@ -191,6 +192,10 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         case (clause, (`labworkAttribute`, values)) => clause map {
           case ((filter, resched)) =>
             (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
+        }
+        case (clause, (`roomAttribute`, values)) => clause map {
+          case ((filter, resched)) =>
+            (filter append **(v("entries"), p(lwm.Room), s(Room.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`dateAttribute`, values)) => clause map {
           case ((filter, resched)) =>
