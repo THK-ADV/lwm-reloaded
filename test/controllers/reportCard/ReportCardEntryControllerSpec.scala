@@ -407,10 +407,17 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         s"/courses/$course/reportCardEntries?start=$start1"
       )
 
+      val requestWithDateAndTimeAndRoom = FakeRequest(
+        GET,
+        s"/courses/$course/reportCardEntries?date=$date1&start=$start1&room=$room1"
+      )
+
       val result1 = localController.all(course.toString)(requestWithDate)
       val result2 = localController.all(course.toString)(requestWithTime)
+      val result3 = localController.all(course.toString)(requestWithDateAndTimeAndRoom)
       val expected1 = List(entry1, entry3, entry4)
       val expected2 = List(entry1, entry2, entry4)
+      val expected3 = List(entry1, entry4)
 
       contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
         expected1 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
@@ -418,6 +425,10 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
         expected2 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
+      }
+
+      contentAsJson(result3).asInstanceOf[JsArray].value foreach { entry =>
+        expected3 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
       }
     }
   }

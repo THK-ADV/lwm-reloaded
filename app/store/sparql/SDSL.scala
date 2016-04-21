@@ -29,7 +29,7 @@ sealed trait Clause {
       case AscendingClause(v, t) => acc + s"ORDER BY ASC($v) "
       case DescendingClause(v, t) => acc + s"ORDER BY DESC($v)"
       case GroupByClause(p, t) => acc + s"GROUP BY $p "
-      case FilterStartsWith(w, s, t) => acc + s"FILTER STRSTARTS(str($w), $s)"
+      case FilterStartsWith(w, s, t) => acc + s"FILTER STRSTARTS(str($w), $s) ."
       case _ => acc
     }
   }
@@ -110,7 +110,7 @@ case class AskClause(body: Clause, tail: Clause = NoneClause) extends ConsClause
 }
 
 case class FilterStartsWith(what: String, startsWith: String, tail: Clause = NoneClause) extends ConsClause {
-  override def append(c: Clause): Clause = FilterStartsWith(what, startsWith, c)
+  override def append(c: Clause): Clause = FilterStartsWith(what, startsWith, tail append c)
 }
 //---
 
