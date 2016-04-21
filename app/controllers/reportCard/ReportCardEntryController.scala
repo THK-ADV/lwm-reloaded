@@ -93,6 +93,8 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
   }
 
+  def allWithSchedule(course: String, scheduleEntry: String) = ???
+
   def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     import scalaz.syntax.applicative._
     import store.sparql.select
