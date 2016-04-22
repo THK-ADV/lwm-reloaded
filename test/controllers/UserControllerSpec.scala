@@ -15,14 +15,14 @@ import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.http.HttpVerbs
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
-import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
+import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import Student._
-import utils.{DefaultLwmApplication, LwmContentTypes, LwmMimeType}
+import utils.DefaultLwmApplication
 
 import scala.util.Success
 
@@ -85,13 +85,14 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       )
 
       val result = controller.all()(request)
-
       val jsonVals = users map UserController.toJson
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      val stringResult = contentAsString(result)
+
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "atomize one specific user, regardless of his subcategory" in {
@@ -276,9 +277,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val jsonVals = employees map (a => Json.toJson(a))
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      val stringResult = contentAsString(result)
+
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get students specific to particular degree" in {
@@ -300,9 +303,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { student =>
-        sjson contains student shouldBe true
-      }
+      val stringResult = contentAsString(result)
+
+      sjson.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get atomized students specific to a particular degree" in {
@@ -351,12 +356,14 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       val result = controller.all()(request)
 
-      val jsonVals = lecturers map (a => Json.toJson(a))
+      val jsonVals = lecturers map (l => Json.toJson(l))
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      val stringResult = contentAsString(result)
+
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get users specific to some particular filter attribute" in {
@@ -386,18 +393,22 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val result1 = controller.all()(request1)
       val result2 = controller.all()(request2)
 
-      val jsonVals1 = lecturers map (a => Json.toJson(a))
+      val jsonVals1 = lecturers map (l => Json.toJson(l))
       val jsonVals2 = degreers map (a => Json.toJson(a))
 
       status(result1) shouldBe OK
-      contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals1 contains entry shouldBe true
-      }
+      val stringResult1 = contentAsString(result1)
+
+      jsonVals1.forall { json =>
+        stringResult1 contains json.toString
+      } shouldBe true
 
       status(result2) shouldBe OK
-      contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals2 contains entry shouldBe true
-      }
+      val stringResult2 = contentAsString(result2)
+
+      jsonVals2.forall { json =>
+        stringResult2 contains json.toString
+      } shouldBe true
     }
 
     "get atomized users specific to some particular filter attribute" in {

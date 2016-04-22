@@ -12,16 +12,13 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.libs.iteratee.{Enumeratee, Iteratee}
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
-import play.api.mvc.Results
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import utils.LwmMimeType
 
-import scala.concurrent.Await
 import scala.util.{Failure, Success}
 
 class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
