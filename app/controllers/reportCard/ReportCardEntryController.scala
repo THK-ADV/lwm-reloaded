@@ -19,7 +19,7 @@ import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions.{god, reportCardEntry}
-import store.sparql.{Clause, NoneClause}
+import store.sparql.{Clause, NoneClause, SelectClause}
 
 import scala.util.{Failure, Success, Try}
 
@@ -38,6 +38,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     with JsonSerialisation[ReportCardEntry, ReportCardEntry]
     with SesameRdfSerialisation[ReportCardEntry]
     with ContentTyped
+    with Chunkable[ReportCardEntry]
     with Secured
     with SessionChecking
     with SecureControllerContext
@@ -73,6 +74,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     Success(Ok(Json.toJson(entries)).as(mimeType))
   }
 
+  // TODO STREAMING
   def getAtomic(student: String) = forStudent(student) { entries =>
     atomizeMany(entries).map(json => Ok(json).as(mimeType))
   }
@@ -81,6 +83,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     Success(Ok(Json.toJson(entries)).as(mimeType))
   }
 
+  // TODO STREAMING
   def allAtomic(course: String) = reportCardEntries(course) { entries =>
     atomizeMany(entries).map(json => Ok(Json.toJson(json)).as(mimeType))
   }
@@ -91,6 +94,73 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
     atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
+  }
+
+  def allFromScheduleEntry(course: String, scheduleEntry: String) = fromScheduleEntry(course, scheduleEntry) { entries =>
+    Ok.chunked(chunkSimple(entries)).as(mimeType)
+  }
+
+  def allAtomicFromScheduleEntry(course: String, scheduleEntry: String) = fromScheduleEntry(course, scheduleEntry) { entries =>
+    Ok.chunked(chunkAtoms(entries)).as(mimeType)
+  }
+
+  private def fromScheduleEntry(course: String, scheduleEntry: String)(toResult: Set[ReportCardEntry] => Result) = restrictedContext(course)(GetAll) action { request =>
+    import store.sparql.select
+    import store.sparql.select._
+    import utils.Ops.MonadInstances._
+    import scalaz.syntax.applicative._
+
+    def getEntries(query: SelectClause) = {
+      repository.prepareQuery(query).
+        select(_.get("entries")).
+        transform(_.fold(List.empty[Value])(identity)).
+        map(_.stringValue()).
+        requestAll(repository.getMany[ReportCardEntry]).
+        run
+    }
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+
+    val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(scheduleEntry))(namespace)
+
+    val entryQuery = select distinct ("entries", "rescheduled") where {
+      **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
+      **(s(scheduleEntryUri), p(lwm.room), v("room")).
+      **(s(scheduleEntryUri), p(lwm.date), v("date")) .
+      **(s(scheduleEntryUri), p(lwm.start), v("start")).
+      **(s(scheduleEntryUri), p(lwm.end), v("end")).
+      **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+      **(v("entries"), p(lwm.labwork), v("labwork")).
+      **(v("entries"), p(lwm.room), v("room")).
+      **(v("entries"), p(lwm.date), v("date")) .
+      **(v("entries"), p(lwm.start), v("start")).
+      **(v("entries"), p(lwm.end), v("end"))
+    }
+
+    val rescheduledQuery = select distinct ("entries", "rescheduled") where {
+      **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
+      **(s(scheduleEntryUri), p(lwm.room), v("room")).
+      **(s(scheduleEntryUri), p(lwm.date), v("date")).
+      **(s(scheduleEntryUri), p(lwm.start), v("start")).
+      **(s(scheduleEntryUri), p(lwm.end), v("end")).
+      **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+      **(v("entries"), p(lwm.rescheduled), v("rescheduled")).
+      **(v("rescheduled"), p(lwm.date), v("date")).
+      **(v("rescheduled"), p(lwm.start), v("start")).
+      **(v("rescheduled"), p(lwm.end), v("end")).
+      **(v("rescheduled"), p(lwm.room), v("room"))
+    }
+
+    (getEntries(entryQuery) |@| getEntries(rescheduledQuery))(_ ++ _) match {
+      case Success(entries) =>
+        toResult(entries)
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
+    }
   }
 
   def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>

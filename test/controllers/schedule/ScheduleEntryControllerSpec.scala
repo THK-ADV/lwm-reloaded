@@ -409,17 +409,17 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       status(resultForGroupWithinDateRange) shouldBe OK
       status(resultForGroupWithinDateRangeAndSup) shouldBe OK
 
-      contentAsString(resultForCourse) shouldBe valsForCourse.foldLeft("")(_ + _)
-      contentAsString(resultForLabwork) shouldBe valsForLabwork.foldLeft("")(_ + _)
-      contentAsString(resultForCourseAndLabwork) shouldBe valsForCourseAndLabwork.foldLeft("")(_ + _)
-      contentAsString(resultForGroup) shouldBe valsForGroup.foldLeft("")(_ + _)
-      contentAsString(resultForSupervisor) shouldBe valsForSupervisor.foldLeft("")(_ + _)
-      contentAsString(resultForGroupSupervisor) shouldBe valsForGroupSupervisor.foldLeft("")(_ + _)
-      contentAsString(resultForDate) shouldBe valsForDate.foldLeft("")(_ + _)
-      contentAsString(resultForDateAndTime) shouldBe valsForDateAndTime.foldLeft("")(_ + _)
-      contentAsString(resultForMinMax) shouldBe valsForMinMax.foldLeft("")(_ + _)
-      contentAsString(resultForGroupWithinDateRange) shouldBe valsForGroupWithinDateRange.foldLeft("")(_ + _)
-      contentAsString(resultForGroupWithinDateRangeAndSup) shouldBe valsForGroupWithinDateRangeAndSup.foldLeft("")(_ + _)
+      contentAsString(resultForCourse) shouldBe valsForCourse.mkString("")
+      contentAsString(resultForLabwork) shouldBe valsForLabwork.mkString("")
+      contentAsString(resultForCourseAndLabwork) shouldBe valsForCourseAndLabwork.mkString("")
+      contentAsString(resultForGroup) shouldBe valsForGroup.mkString("")
+      contentAsString(resultForSupervisor) shouldBe valsForSupervisor.mkString("")
+      contentAsString(resultForGroupSupervisor) shouldBe valsForGroupSupervisor.mkString("")
+      contentAsString(resultForDate) shouldBe valsForDate.mkString("")
+      contentAsString(resultForDateAndTime) shouldBe valsForDateAndTime.mkString("")
+      contentAsString(resultForMinMax) shouldBe valsForMinMax.mkString("")
+      contentAsString(resultForGroupWithinDateRange) shouldBe valsForGroupWithinDateRange.mkString("")
+      contentAsString(resultForGroupWithinDateRangeAndSup) shouldBe valsForGroupWithinDateRangeAndSup.mkString("")
     }
   }
 }

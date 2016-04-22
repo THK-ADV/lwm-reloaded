@@ -8,10 +8,9 @@ import models.Degree
 import models.security.Permissions
 import models.users.{Employee, Student, StudentAtom, User}
 import modules.store.BaseNamespace
-import org.openrdf.model.Value
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request, Result}
-import services.{LDAPService, RoleService, SessionHandlingService}
+import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.{Namespace, SesameRepository}
@@ -21,8 +20,6 @@ import utils.Ops.TraverseInstances._
 import utils.Ops._
 
 import scala.collection.Map
-import scala.concurrent.Future
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -56,13 +53,14 @@ object UserController {
 
 class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
   Controller with
-  Secured with
-  SessionChecking with
-  SecureControllerContext with
-  Filterable[User] with
-  ContentTyped with
-  BaseNamespace with
-  Atomic[User] {
+    Secured with
+    SessionChecking with
+    SecureControllerContext with
+    Filterable[User] with
+    ContentTyped with
+    BaseNamespace with
+    Atomic[User] with
+    Chunkable[User] {
 
   val bindings = Bindings[repository.Rdf](namespace)
 
@@ -115,13 +113,13 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     repository.get[User](uri)(UserBinding.userBinder)
   } (a => Ok(toJson(a)).as(mimeType))
 
+  // TODO applied streaming for this request. expand to others too
   def all(secureContext: SecureContext = contextFrom(GetAll)) = {
-    val makeResult = (jsonify(_: Set[User])(user => Try(Option(toJson(user))))) andThen (handle(_)(InternalServerError(_)))
-
     many(secureContext) { request =>
       repository.get[User](UserBinding.userBinder, UserBinding.classUri)
-
-    } (makeResult)
+    } { users =>
+      Ok.chunked(chunkSimpleJson(users)(u => Success(Some(toJson(u))))).as(mimeType)
+    }
   }
 
   def getAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>

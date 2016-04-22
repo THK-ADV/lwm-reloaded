@@ -131,41 +131,41 @@ PUT           /atomic/labworkApplications/:id                            control
 GET           /labworkApplications                                       controllers.crud.labwork.LabworkApplicationCRUDController.all()
 GET           /atomic/labworkApplications                                controllers.crud.labwork.LabworkApplicationCRUDController.allAtomic()
 GET           /labworkApplications/:id                                   controllers.crud.labwork.LabworkApplicationCRUDController.get(id)
-GET           /atomic/labworkApplications/:id                         controllers.crud.labwork.LabworkApplicationCRUDController.getAtomic(id)
-DELETE        /labworkApplications/:id                                controllers.crud.labwork.LabworkApplicationCRUDController.delete(id)
-HEAD          /labworkApplications                                    controllers.crud.labwork.LabworkApplicationCRUDController.header
+GET           /atomic/labworkApplications/:id                            controllers.crud.labwork.LabworkApplicationCRUDController.getAtomic(id)
+DELETE        /labworkApplications/:id                                   controllers.crud.labwork.LabworkApplicationCRUDController.delete(id)
+HEAD          /labworkApplications                                       controllers.crud.labwork.LabworkApplicationCRUDController.header
 
 # Schedule
-HEAD          /schedules                                              controllers.schedule.ScheduleController.header
+HEAD          /schedules                                                 controllers.schedule.ScheduleController.header
 
 # Schedule restricted
-POST          /courses/:c/schedules                                   controllers.schedule.ScheduleController.create(c)
-POST          /courses/:c/atomic/schedules                            controllers.schedule.ScheduleController.createAtomic(c)
-GET           /courses/:c/labworks/:l/schedules/preview               controllers.schedule.ScheduleController.preview(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules/preview        controllers.schedule.ScheduleController.previewAtomic(c, l)
-DELETE        /courses/:c/schedules/:id                               controllers.schedule.ScheduleController.delete(c,id)
+POST          /courses/:c/schedules                                      controllers.schedule.ScheduleController.create(c)
+POST          /courses/:c/atomic/schedules                               controllers.schedule.ScheduleController.createAtomic(c)
+GET           /courses/:c/labworks/:l/schedules/preview                  controllers.schedule.ScheduleController.preview(c, l)
+GET           /courses/:c/labworks/:l/atomic/schedules/preview           controllers.schedule.ScheduleController.previewAtomic(c, l)
+DELETE        /courses/:c/schedules/:id                                  controllers.schedule.ScheduleController.delete(c,id)
 
 # ScheduleEntries
-HEAD          /scheduleEntries                                        controllers.schedule.ScheduleEntryController.header
+HEAD          /scheduleEntries                                           controllers.schedule.ScheduleEntryController.header
 
 # ScheduleEntries restriced
-GET           /courses/:c/scheduleEntries                             controllers.schedule.ScheduleEntryController.allFrom(c)
-GET           /courses/:c/atomic/scheduleEntries                      controllers.schedule.ScheduleEntryController.allAtomicFrom(c)
-GET           /courses/:c/labwork/:l/scheduleEntries                  controllers.schedule.ScheduleEntryController.allFromLabwork(c, l)
-GET           /courses/:c/labwork/:l/atomic/scheduleEntries           controllers.schedule.ScheduleEntryController.allAtomicFromLabwork(c, l)
+GET           /courses/:c/scheduleEntries                                controllers.schedule.ScheduleEntryController.allFrom(c)
+GET           /courses/:c/atomic/scheduleEntries                         controllers.schedule.ScheduleEntryController.allAtomicFrom(c)
+GET           /courses/:c/labwork/:l/scheduleEntries                     controllers.schedule.ScheduleEntryController.allFromLabwork(c, l)
+GET           /courses/:c/labwork/:l/atomic/scheduleEntries              controllers.schedule.ScheduleEntryController.allAtomicFromLabwork(c, l)
 
-GET           /courses/:c/scheduleEntries/:id                         controllers.schedule.ScheduleEntryController.get(c, id)
-GET           /courses/:c/atomic/scheduleEntries/:id                  controllers.schedule.ScheduleEntryController.getAtomic(c, id)
-PUT           /courses/:c/scheduleEntries/:id                         controllers.schedule.ScheduleEntryController.update(c, id)
-PUT           /courses/:c/atomic/scheduleEntries/:id                  controllers.schedule.ScheduleEntryController.updateAtomic(c, id)
+GET           /courses/:c/scheduleEntries/:id                            controllers.schedule.ScheduleEntryController.get(c, id)
+GET           /courses/:c/atomic/scheduleEntries/:id                     controllers.schedule.ScheduleEntryController.getAtomic(c, id)
+PUT           /courses/:c/scheduleEntries/:id                            controllers.schedule.ScheduleEntryController.update(c, id)
+PUT           /courses/:c/atomic/scheduleEntries/:id                     controllers.schedule.ScheduleEntryController.updateAtomic(c, id)
 
 # Timetable
-HEAD          /timetables                                             controllers.crud.labwork.TimetableCRUDController.header
+HEAD          /timetables                                                controllers.crud.labwork.TimetableCRUDController.header
 
 # Timetable restricted
-POST          /courses/:c/timetables                                  controllers.crud.labwork.TimetableCRUDController.createFrom(c)
-POST          /courses/:c/atomic/timetables                           controllers.crud.labwork.TimetableCRUDController.createAtomicFrom(c)
-PUT           /courses/:c/timetables/:id                              controllers.crud.labwork.TimetableCRUDController.updateFrom(c, id)
+POST          /courses/:c/timetables                                     controllers.crud.labwork.TimetableCRUDController.createFrom(c)
+POST          /courses/:c/atomic/timetables                              controllers.crud.labwork.TimetableCRUDController.createAtomicFrom(c)
+PUT           /courses/:c/timetables/:id                                 controllers.crud.labwork.TimetableCRUDController.updateFrom(c, id)
 PUT           /courses/:c/atomic/timetables/:id                          controllers.crud.labwork.TimetableCRUDController.updateAtomicFrom(c, id)
 GET           /courses/:c/timetables                                     controllers.crud.labwork.TimetableCRUDController.allFrom(c)
 GET           /courses/:c/atomic/timetables                              controllers.crud.labwork.TimetableCRUDController.allAtomicFrom(c)
@@ -191,9 +191,12 @@ GET           /courses/:c/atomic/reportCardEntries                       control
 PUT           /courses/:c/reportCardEntries/:e                           controllers.reportCard.ReportCardEntryController.update(c, e)
 PUT           /courses/:c/atomic/reportCardEntries/:e                    controllers.reportCard.ReportCardEntryController.updateAtomic(c, e)
 
+GET           /courses/:c/scheduleEntries/:s/reportCardEntries           controllers.reportCard.ReportCardEntryController.allFromScheduleEntry(c, s)
+GET           /courses/:c/atomic/scheduleEntries/:s/reportCardEntries           controllers.reportCard.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
+
 # ReportCardEntryType
-GET           /courses/:c/reportCardEntryTypes                           controllers.reportCard.ReportCardEntryTypeController.all(c)
 PUT           /courses/:c/reportCardEntryTypes/:t                        controllers.reportCard.ReportCardEntryTypeController.update(c, t)
+HEAD          /reportCardEntryTypes                                      controllers.reportCard.ReportCardEntryTypeController.header()
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                           controllers.crud.labwork.AssignmentPlanCRUDController.createFrom(course)

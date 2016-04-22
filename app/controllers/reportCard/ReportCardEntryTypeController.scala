@@ -4,31 +4,18 @@ import java.util.UUID
 
 import controllers.crud._
 import models.UriGenerator
-import models.labwork.{Labwork, ReportCardEntry, ReportCardEntryType}
-import models.security.Permissions.{reportCardEntryType, god}
-import models.users.User
+import models.labwork.ReportCardEntryType
+import models.security.Permissions.{god, reportCardEntryType}
 import modules.store.BaseNamespace
-import org.openrdf.model.Value
-import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
-import play.api.mvc.Controller
+import play.api.mvc.{Action, Controller}
 import services.{RoleService, SessionHandlingService}
-import store.Prefixes.LWMPrefix
-import store.sparql.{Clause, NoneClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success, Try}
-
-object ReportCardEntryTypeController {
-  val studentAttribute = "student"
-  val labworkAttribute = "labwork"
-  val dateAttribute = "date"
-  val startAttribute = "start"
-  val endAttribute = "end"
-}
+import scala.util.{Failure, Success}
 
 class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
   extends Controller
@@ -60,7 +47,6 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Update => SecureBlock(restrictionId, reportCardEntryType.update)
-    case GetAll => SecureBlock(restrictionId, reportCardEntryType.getAll)
     case _ => PartialSecureBlock(god)
   }
 
@@ -92,74 +78,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
     )
   }
 
-  def all(course: String) = restrictedContext(course)(GetAll) action { request =>
-    import store.sparql.select._
-    import store.sparql.select
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
-    import ReportCardEntryTypeController._
-    import utils.Ops.MonadInstances.setM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    if (request.queryString.isEmpty)
-      BadRequest(Json.obj(
-        "status" -> "KO",
-        "message" -> "Request should contain at least one attribute"
-      ))
-    else
-      request.queryString.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
-        case (clause, (`studentAttribute`, values)) => clause map {
-          case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
-        }
-        case (clause, (`labworkAttribute`, values)) => clause map {
-          case ((filter, resched)) =>
-            (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
-        }
-        case (clause, (`dateAttribute`, values)) => clause map {
-          case ((filter, resched)) =>
-            (filter append **(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head),
-              resched . filterStrStarts(v("rdate"), values.head))
-        }
-        case (clause, (`startAttribute`, values)) => clause map {
-          case ((filter, resched)) =>
-            (filter append **(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head),
-              resched . filterStrStarts(v("rstart"), values.head))
-        }
-        case (clause, (`endAttribute`, values)) => clause map {
-          case ((filter, resched)) =>
-            (filter append **(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head),
-              resched . filterStrStarts(v("rend"), values.head))
-        }
-        case _ => Failure(new Throwable("Unknown attribute"))
-      } flatMap {
-        case ((clause, resched)) =>
-        val query = select distinct "entries" where {
-          clause . optional {
-              **(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
-              **(v("rescheduled"), p(lwm.date), v("rdate")).
-              **(v("rescheduled"), p(lwm.start), v("rstart")).
-              **(v("rescheduled"), p(lwm.end), v("rend")) append
-              resched
-          }
-        }
-
-        repository.prepareQuery(query).
-          select(_.get("entries")).
-          transform(_.fold(List.empty[Value])(identity)).
-          requestAll[Set, ReportCardEntry](values => repository.getMany[ReportCardEntry](values.map(_.stringValue))).
-          flatMap(_.entryTypes).
-          run
-
-      } match {
-        case Success(entries) =>
-          Ok(Json.toJson(entries)).as(mimeType)
-        case Failure(e) =>
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          ))
-      }
+  def header = Action { implicit request =>
+    NoContent.as(mimeType)
   }
 }

@@ -16,7 +16,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.http.HeaderNames
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{ReportCardService, RoleService, SessionHandlingService}
@@ -362,6 +362,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
       import bindings.ReportCardEntryBinding._
+      import bindings.ScheduleEntryBinding._
 
       val localController = new ReportCardEntryController(realRepo, sessionService, namespace, roleService, reportCardService) {
         override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -389,13 +390,16 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val student3 = UUID.randomUUID()
 
+      val scheduleEntry1 = ScheduleEntry(labwork1, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
+      val scheduleEntry2 = ScheduleEntry(labwork1, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
       val entry1 = ReportCardEntry(student1, labwork1, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
       val entry2 = ReportCardEntry(student2, labwork2, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
       val entry3 = ReportCardEntry(student1, labwork1, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
       val entry4 = ReportCardEntry(student3, labwork1, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
         Some(Rescheduled(date1, start2, end2, room2)))
 
-      realRepo.addMany[ReportCardEntry](List(entry1, entry2, entry3, entry4))
+      realRepo addMany List(entry1, entry2, entry3, entry4)
+      realRepo addMany List(scheduleEntry1, scheduleEntry2)
 
       val requestWithDate = FakeRequest(
         GET,
@@ -412,12 +416,21 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         s"/courses/$course/reportCardEntries?date=$date1&start=$start1&room=$room1"
       )
 
+      val requestWithScheduleEntry = FakeRequest(
+        GET,
+        s"/courses/$course/scheduleEntries/${scheduleEntry1.id}/reportCardEntries"
+      )
+
       val result1 = localController.all(course.toString)(requestWithDate)
       val result2 = localController.all(course.toString)(requestWithTime)
       val result3 = localController.all(course.toString)(requestWithDateAndTimeAndRoom)
+      val result4 = localController.allFromScheduleEntry(course.toString, scheduleEntry1.id.toString)(requestWithScheduleEntry)
+      val result5 = localController.allFromScheduleEntry(course.toString, scheduleEntry2.id.toString)(requestWithScheduleEntry)
       val expected1 = List(entry1, entry3, entry4)
       val expected2 = List(entry1, entry2, entry4)
       val expected3 = List(entry1, entry4)
+      val expected4 = List(entry4, entry1)
+      val expected5 = List(entry3, entry4)
 
       contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
         expected1 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
@@ -430,6 +443,23 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       contentAsJson(result3).asInstanceOf[JsArray].value foreach { entry =>
         expected3 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
       }
+
+      def consistent(s: String)(l: List[ReportCardEntry]): Boolean = {
+        val jss = Json.parse(s)
+        val entry = Json.fromJson[ReportCardEntry](jss).get
+        l contains entry
+      }
+      contentAsString(result4).split("\\}\\{").toVector forall { s =>
+        if(s endsWith "}") consistent("{" + s)(expected4)
+        else if (s startsWith "{") consistent(s + "}")(expected4)
+        else consistent(s"{$s}")(expected4)
+      } shouldBe true
+
+      contentAsString(result5).split("\\}\\{").toVector forall { s =>
+        if(s endsWith "}") consistent("{" + s)(expected5)
+        else if (s startsWith "{") consistent(s + "}")(expected5)
+        else consistent(s"{$s}")(expected5)
+      } shouldBe true
     }
   }
 }
