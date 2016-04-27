@@ -211,7 +211,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val index = property[Int](lwm.index)
     private val label = property[String](lwm.label)
     private val duration = property[Int](lwm.duration)
-    private val types = set[AssignmentEntryType](lwm.types)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
+    private val types = set[AssignmentEntryType](lwm.entryTypes)(AssignmentEntryTypeBinding.assignmentEntryTypeBinder)
 
     implicit val assignmentEntryBinder: PGBinder[Rdf, AssignmentEntry] = pgbWithId[AssignmentEntry](_ => innerUri)(index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUri
   }
@@ -375,7 +375,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val end = property[LocalTime](lwm.end)
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
     private val rescheduled = optional[Rescheduled](lwm.rescheduled)(RescheduledBinding.rescheduledBinding)
-    private val types = set[ReportCardEntryType](lwm.types)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
+    private val types = set[ReportCardEntryType](lwm.entryTypes)(ReportCardEntryTypeBinding.reportCardEntryTypeBinding)
 
     implicit val reportCardEntryBinder: PGBinder[Rdf, ReportCardEntry] = pgbWithId[ReportCardEntry](reportCardEntry => makeUri(ReportCardEntry.generateUri(reportCardEntry)))(student, labwork, label, date, start, end, room, types, rescheduled, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUri
   }

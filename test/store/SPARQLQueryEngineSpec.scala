@@ -119,7 +119,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         map(_.id).
         run
 
-      result.isSuccess shouldBe false
+      result.isSuccess shouldBe true
+      result.get.size shouldBe 2
     }
 
     "not run the query if one attempts to run it to soon" in {

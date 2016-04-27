@@ -84,12 +84,12 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def get(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri)(entry))
+    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri) (entry))
     handle(result)(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
   def getAtomic(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri)(entry)).flatPeek(atomize)
+    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)).flatPeek(atomize)
     handle(result)(json => Ok(json).as(mimeType))
   }
 
@@ -113,7 +113,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
 
     queryString.foldRight(Try(startClause)) {
       case ((`courseAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), v("labwork")) . **(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
       }
       case ((`labworkAttribute`, values), clause) => clause map {
         _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
@@ -125,13 +125,13 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
         _ append **(v("entries"), p(lwm.supervisor), s(User.generateUri(UUID.fromString(values.head))))
       }
       case ((`startAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head)
+        _ append **(v("entries"), p(lwm.start), v("start")).filterStrStarts(v("start"), values.head)
       }
       case ((`endAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head)
+        _ append **(v("entries"), p(lwm.end), v("end")).filterStrStarts(v("end"), values.head)
       }
       case ((`dateAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head)
+        _ append **(v("entries"), p(lwm.date), v("date")).filterStrStarts(v("date"), values.head)
       }
       case ((`dateRangeAttribute`, values), clause) =>
         val split = values.head.split(",").toVector
@@ -139,7 +139,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
           Failure(new Throwable("A range can only have two parameters"))
         else
           clause map {
-            _ append **(v("entries"), p(lwm.date), v("date")) . filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
+            _ append **(v("entries"), p(lwm.date), v("date")).filter(s"str(?date) >= '${split(0)}' && str(?date) <= '${split(1)}'")
           }
 
       case ((_, _), clause) => Failure(new Throwable("Unknown attribute"))
@@ -178,13 +178,13 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
       repository.get[ScheduleEntry] map chunks
     else
       getWithFilter(request.queryString)(Set.empty) map chunks) match {
-        case Success(enum) =>
-          Ok.chunked(enum).as(mimeType)
-        case Failure(e) =>
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          ))
+      case Success(enum) =>
+        Ok.chunked(enum).as(mimeType)
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
     }
   }
 
