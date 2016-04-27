@@ -126,6 +126,14 @@ object Ops { self =>
     }
   }
 
+  def time[A](msg: String)(f: () => A): A = {
+    val start = System.nanoTime()
+    val res = f()
+    val end = System.nanoTime()
+    println(s"$msg took: ${(end - start) / 1e6}")
+    res
+  }
+
   implicit class TravOps[A, F[X] <: TraversableOnce[X]](Z: F[A]) {
     def foldMap[B](b: B, f: A => B)(g: (B, B) => B): B = Z.foldLeft(b)((b, a) => g(b, f(a)))
   }

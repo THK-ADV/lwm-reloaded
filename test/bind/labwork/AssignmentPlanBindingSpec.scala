@@ -41,7 +41,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
     URI("#").a(lwm.AssignmentEntry)
       -- lwm.index ->- assignmentEntry.index
       -- lwm.label ->- assignmentEntry.label
-      -- lwm.types ->- assignmentEntry.types
+      -- lwm.entryTypes ->- assignmentEntry.types
       -- lwm.duration ->- assignmentEntry.duration
     ).graph
 

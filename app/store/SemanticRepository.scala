@@ -2,20 +2,23 @@ package store
 
 import java.io.File
 
+import info.aduna.iteration.Iterations
 import utils.Ops._
 import utils.Ops.MonadInstances._
 import models.{UniqueEntity, UriGenerator}
-import org.openrdf.model.URI
+import org.openrdf.model.{Statement, URI}
 import org.openrdf.repository.RepositoryConnection
 import org.openrdf.repository.sail.SailRepository
 import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
+import store.Prefixes.LWMPrefix
 import store.sparql.SPARQLQueryEngine
+
 import scala.concurrent.duration._
 import scala.language.{higherKinds, postfixOps}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 
 trait SemanticRepository extends RDFModule with RDFOpsModule {
@@ -77,7 +80,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   repo.initialize()
 
 
-  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Sesame, T]): Try[Set[PointedGraph[Sesame]]] = commited {
+  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit serialiser: ToPG[Rdf, T]): Try[Set[PointedGraph[Rdf]]] = commited {
     connection =>
       (entities map { entity =>
         val pointedGraph = entity.toPG
@@ -85,12 +88,28 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
       }).sequence map (_.toSet)
   }
 
-  override def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Sesame, T]): Try[Set[T]] = connection {
-    connection =>
-      (ids map { uri =>
-        val url = makeUri(uri)
-        rdfStore.getGraph(connection, ns) flatMap (PointedGraph[Rdf](url, _).as[T])
-      }).sequence map (_.toSet)
+  def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
+    many[T](ids)(getExplicit[T])
+  }
+
+  def getManyExpanded[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
+    many[T](ids)(getExpanded[T](_))
+  }
+
+  def getManyExpanded[T <: UniqueEntity](ids: TraversableOnce[String], preds: URI*)(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
+    many[T](ids)(uri => getExpanded[T](uri, preds: _*))
+  }
+
+  private def many[T <: UniqueEntity](ids: TraversableOnce[String])(f: String => Try[Option[T]])(implicit conn: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Set[T]] = {
+    import utils.Ops.MonadInstances.tryM
+    import scalaz.syntax.applicative._
+
+    ids.toVector.foldLeft(Try(Set.empty[T])) { (tset, uri) =>
+      (tset |@| f(uri)) {
+        case (set, Some(t)) => set + t
+        case (set, _) => set
+      }
+    }
   }
 
   override def close() = {
@@ -106,12 +125,40 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
       }
   }
 
-  override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = connection { connection =>
-    val url = makeUri(uri)
+  override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = connection { implicit conn =>
+    getExplicit[T](uri)
+  }
 
-    rdfStore.getGraph(connection, ns) map {
-      PointedGraph[Rdf](url, _).as[T].toOption
+  private def statements(uri: URI)(implicit connection: RepositoryConnection): Vector[Statement] = {
+    import scala.collection.JavaConverters._
+    Iterations.asList(connection.getStatements(uri, null, null, false)).asScala.toVector
+  }
+
+  private def expand(vs: Vector[Statement], preds: URI*)(implicit connection: RepositoryConnection): Vector[Statement] = {
+    val additional = {
+      if (preds.isEmpty)
+        vs filter (_.getObject.isURI)
+      else
+        (preds flatMap { pred =>
+        vs filter (_.getPredicate == pred)
+      }).toVector
     }
+    additional.flatMap(s => statements(makeUri(s.getObject.stringValue()))) ++ vs
+  }
+
+  private def getExpanded[T](uri: String, preds: URI*)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
+    val url = makeUri(uri)
+    val vs = statements(url)
+    val expanded = expand(vs, preds: _*)
+    if(vs.isEmpty) Success(None)
+    else PointedGraph[Rdf](url, rdfOps.makeGraph(expanded)).as[T] map (Some(_))
+  }
+
+  private def getExplicit[T](uri: String)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
+    val url = makeUri(uri)
+    val vs = statements(url)
+    if(vs.isEmpty) Success(None)
+    else PointedGraph[Rdf](url, rdfOps.makeGraph(vs)).as[T] map (Some(_))
   }
 
   def graph = connection(rdfStore.getGraph(_, ns))

@@ -43,7 +43,7 @@ object Prefixes {
     // AssignmentEntry, AssignmentPlan, Timetable, Schedule
     val index = apply("index")
     val duration = apply("duration")
-    val types = apply("types")
+    val entryTypes = apply("types")
     val entries = apply("entries")
     val attendance = apply("attendance")
     val mandatory = apply("mandatory")

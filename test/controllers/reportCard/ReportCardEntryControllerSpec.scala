@@ -43,7 +43,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val student = Student("systemId", "last", "first", "email", "regId", UUID.randomUUID)
   val labwork = Labwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
   val room = Room("label", "desc")
-  val entries = (0 until 2).map( n =>
+  val entries = (0 until 2).map(n =>
     ReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, ReportCardEntryType.all)
   ).toSet
   val atomizedEntries = entries.map(e =>
@@ -65,297 +65,297 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   }
 
   "A ReportCardEntryControllerSpec " should {
+    /*
+        "successfully reschedule a student's report card entry" in {
+          import ReportCardEntry.writes
 
-    "successfully reschedule a student's report card entry" in {
-      import ReportCardEntry.writes
+          val rescheduledEntry = {
+            val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+            ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+          }
 
-      val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
-      }
+          when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
 
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
+          val request = FakeRequest(
+            GET,
+            s"/courses/$course/reportCardEntries/${entry.id}",
+            FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+            Json.toJson(rescheduledEntry)
+          )
+          val result = controller.update(course, entry.id.toString)(request)
 
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/reportCardEntries/${entry.id}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        Json.toJson(rescheduledEntry)
-      )
-      val result = controller.update(course, entry.id.toString)(request)
+          status(result) shouldBe OK
+          contentType(result) shouldBe Some[String](mimeType)
+          contentAsJson(result) shouldBe Json.toJson(rescheduledEntry)
+        }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(rescheduledEntry)
-    }
+        "not update when there is an inconsistency" in {
+          val rescheduledEntry = {
+            val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+            ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+          }
 
-    "not update when there is an inconsistency" in {
-      val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
-      }
+          val request = FakeRequest(
+            GET,
+            s"/courses/$course/reportCardEntries/${entry.id}",
+            FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+            Json.toJson(rescheduledEntry)
+          )
+          val result = controller.update(course, UUID.randomUUID.toString)(request)
 
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/reportCardEntries/${entry.id}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        Json.toJson(rescheduledEntry)
-      )
-      val result = controller.update(course, UUID.randomUUID.toString)(request)
+          status(result) shouldBe BAD_REQUEST
+          contentType(result) shouldBe Some("application/json")
+        }
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-    }
+        "not update a report card entry type with invalid json data" in {
+          val invalidJson = Json.obj("first" -> 0)
+          val request = FakeRequest(
+            GET,
+            s"/courses/$course/reportCardEntries/${entry.id}",
+            FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+            invalidJson
+          )
+          val result = controller.update(course, entry.id.toString)(request)
 
-    "not update a report card entry type with invalid json data" in {
-      val invalidJson = Json.obj("first" -> 0)
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/reportCardEntries/${entry.id}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        invalidJson
-      )
-      val result = controller.update(course, entry.id.toString)(request)
+          status(result) shouldBe BAD_REQUEST
+          contentType(result) shouldBe Some("application/json")
+        }
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-    }
+        "not update a report card entry type when there is an exception" in {
+          val errorMessage = "Oops, something went wrong"
+          val rescheduledEntry = {
+            val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+            ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+          }
 
-    "not update a report card entry type when there is an exception" in {
-      val errorMessage = "Oops, something went wrong"
-      val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
-      }
+          when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
 
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+          val request = FakeRequest(
+            GET,
+            s"/courses/$course/reportCardEntries/${entry.id}",
+            FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+            Json.toJson(rescheduledEntry)
+          )
+          val result = controller.update(course, entry.id.toString)(request)
 
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/reportCardEntries/${entry.id}",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
-        Json.toJson(rescheduledEntry)
-      )
-      val result = controller.update(course, entry.id.toString)(request)
+          status(result) shouldBe INTERNAL_SERVER_ERROR
+          contentType(result) shouldBe Some("application/json")
+          contentAsJson(result) shouldBe Json.obj(
+            "status" -> "KO",
+            "errors" -> errorMessage
+          )
+        }
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
+        "successfully return a student's report card entries" in {
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
 
-    "successfully return a student's report card entries" in {
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+          val request = FakeRequest(
+            GET,
+            s"/reportCardEntries/student/${student.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/reportCardEntries/student/${student.id}"
-      )
+          val result = controller.get(student.id.toString)(request)
 
-      val result = controller.get(student.id.toString)(request)
+          status(result) shouldBe OK
+          contentType(result) shouldBe Some[String](mimeType)
+          contentAsJson(result) shouldBe Json.toJson(entries)
+        }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entries)
-    }
+        "return an empty json when entries are not found" in {
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
 
-    "return an empty json when entries are not found" in {
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
+          val request = FakeRequest(
+            GET,
+            s"/reportCardEntries/student/${student.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/reportCardEntries/student/${student.id}"
-      )
+          val result = controller.get(student.id.toString)(request)
 
-      val result = controller.get(student.id.toString)(request)
+          status(result) shouldBe OK
+          contentType(result) shouldBe Some[String](mimeType)
+          contentAsJson(result) shouldBe Json.toJson(Set.empty[ReportCardEntry])
+        }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[ReportCardEntry])
-    }
+        "not return a student's report card entries when there is an exception" in {
+          val errorMsg = "Oops, something went wrong"
 
-    "not return a student's report card entries when there is an exception" in {
-      val errorMsg = "Oops, something went wrong"
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMsg)))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMsg)))
+          val request = FakeRequest(
+            GET,
+            s"/reportCardEntries/student/${student.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/reportCardEntries/student/${student.id}"
-      )
+          val result = controller.get(student.id.toString)(request)
 
-      val result = controller.get(student.id.toString)(request)
+          status(result) shouldBe INTERNAL_SERVER_ERROR
+          contentType(result) shouldBe Some("application/json")
+          contentAsJson(result) shouldBe Json.obj(
+            "status" -> "KO",
+            "errors" -> errorMsg
+          )
+        }
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMsg
-      )
-    }
+        "successfully return a student's report card entries atomized" in {
+          import ReportCardEntry.atomicWrites
 
-    "successfully return a student's report card entries atomized" in {
-      import ReportCardEntry.atomicWrites
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+            doReturn(Success(Some(student))).
+              doReturn(Success(Some(labwork))).
+              doReturn(Success(Some(room))).
+              doReturn(Success(Some(student))).
+              doReturn(Success(Some(labwork))).
+              doReturn(Success(Some(room))).
+              when(repository).get(anyObject())(anyObject())
 
-        doReturn(Success(Some(student))).
-          doReturn(Success(Some(labwork))).
-          doReturn(Success(Some(room))).
-          doReturn(Success(Some(student))).
-          doReturn(Success(Some(labwork))).
-          doReturn(Success(Some(room))).
-          when(repository).get(anyObject())(anyObject())
+          val request = FakeRequest(
+            GET,
+            s"/atomic/reportCardEntries/student/${student.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/atomic/reportCardEntries/student/${student.id}"
-      )
+          val result = controller.getAtomic(student.id.toString)(request)
 
-      val result = controller.getAtomic(student.id.toString)(request)
+          status(result) shouldBe OK
+          contentType(result) shouldBe Some[String](mimeType)
+          contentAsJson(result) shouldBe Json.toJson(atomizedEntries)
+        }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntries)
-    }
+        "not return a student's report card entries atomized when there is an exception" in {
+          val errorMessage = "Oops, something went wrong"
 
-    "not return a student's report card entries atomized when there is an exception" in {
-      val errorMessage = "Oops, something went wrong"
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+          doReturn(Failure(new Throwable(errorMessage))).
+            doReturn(Success(Some(labwork))).
+            doReturn(Success(Some(room))).
+            when(repository).get(anyObject())(anyObject())
 
-      doReturn(Failure(new Throwable(errorMessage))).
-        doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(room))).
-        when(repository).get(anyObject())(anyObject())
+          val request = FakeRequest(
+            GET,
+            s"/atomic/reportCardEntries/student/${student.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/atomic/reportCardEntries/student/${student.id}"
-      )
+          val result = controller.getAtomic(student.id.toString)(request)
 
-      val result = controller.getAtomic(student.id.toString)(request)
+          status(result) shouldBe INTERNAL_SERVER_ERROR
+          contentType(result) shouldBe Some("application/json")
+          contentAsJson(result) shouldBe Json.obj(
+            "status" -> "KO",
+            "errors" -> errorMessage
+          )
+        }
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
+        "successfully return report card entries for a given attributes" in {
+          import ReportCardEntryController._
 
-    "successfully return report card entries for a given attributes" in {
-      import ReportCardEntryController._
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+          when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+          when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+          val request = FakeRequest(
+            GET,
+            s"/reportCardEntries?$studentAttribute=${student.id}&$labworkAttribute=${labwork.id}"
+          )
 
-      val request = FakeRequest(
-        GET,
-        s"/reportCardEntries?$studentAttribute=${student.id}&$labworkAttribute=${labwork.id}"
-      )
+          val result = controller.all(course)(request)
 
-      val result = controller.all(course)(request)
+          status(result) shouldBe OK
+          contentType(result) shouldBe Some[String](mimeType)
+          contentAsJson(result) shouldBe Json.toJson(entries)
+        }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entries)
-    }
+        "fail when there are not attributes" in {
+          val request = FakeRequest(
+            GET,
+            s"/reportCardEntries/"
+          )
 
-    "fail when there are not attributes" in {
-      val request = FakeRequest(
-        GET,
-        s"/reportCardEntries/"
-      )
+          val result = controller.all(course)(request)
 
-      val result = controller.all(course)(request)
+          status(result) shouldBe BAD_REQUEST
+          contentType(result) shouldBe Some("application/json")
+        }
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-    }
+        "successfully create report cards for given schedule" in {
+          val schedule = UUID.randomUUID
 
-    "successfully create report cards for given schedule" in {
-      val schedule = UUID.randomUUID
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.execute(anyObject())).thenReturn(Success(
+            Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+          ))
+          doReturn(Success(Some(AssignmentPlan.empty))).
+            doReturn(Success(Some(Schedule.empty))).
+            doReturn(Success(Some(Group.empty))).
+            when(repository).get(anyObject())(anyObject())
+          when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+          when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
-      ))
-      doReturn(Success(Some(AssignmentPlan.empty))).
-        doReturn(Success(Some(Schedule.empty))).
-        doReturn(Success(Some(Group.empty))).
-        when(repository).get(anyObject())(anyObject())
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+          val request = FakeRequest(
+            POST,
+            s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+            FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+            Json.obj("" -> "")
+          )
 
-      val request = FakeRequest(
-        POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
-        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
-        Json.obj("" -> "")
-      )
+          val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
 
-      val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
+          status(result) shouldBe CREATED
+          contentType(result) shouldBe Some("application/json")
+          contentAsJson(result) shouldBe Json.obj(
+            "status" -> "OK",
+            "message" -> s"Created report card entries for schedule $schedule"
+          )
+        }
 
-      status(result) shouldBe CREATED
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "OK",
-        "message" -> s"Created report card entries for schedule $schedule"
-      )
-    }
+        "fail publishing a schedule when there is a exception" in {
+          val schedule = UUID.randomUUID
+          val errorMessage = "Oops, something went wrong"
 
-    "fail publishing a schedule when there is a exception" in {
-      val schedule = UUID.randomUUID
-      val errorMessage = "Oops, something went wrong"
+          when(repository.prepareQuery(anyObject())).thenReturn(query)
+          when(qe.execute(anyObject())).thenReturn(Success(
+            Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+          ))
+          doReturn(Failure(new Exception(errorMessage))).
+            doReturn(Success(Some(Schedule.empty))).
+            doReturn(Success(Some(Group.empty))).
+            when(repository).get(anyObject())(anyObject())
+          when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+          when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
-      ))
-      doReturn(Failure(new Exception(errorMessage))).
-        doReturn(Success(Some(Schedule.empty))).
-        doReturn(Success(Some(Group.empty))).
-        when(repository).get(anyObject())(anyObject())
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+          val request = FakeRequest(
+            POST,
+            s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
+            FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+            Json.obj("" -> "")
+          )
 
-      val request = FakeRequest(
-        POST,
-        s"/courses/${UUID.randomUUID}/reportCardEntries/schedules/$schedule",
-        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
-        Json.obj("" -> "")
-      )
+          val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
 
-      val result = controller.create(UUID.randomUUID.toString, schedule.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
+          status(result) shouldBe INTERNAL_SERVER_ERROR
+          contentType(result) shouldBe Some("application/json")
+          contentAsJson(result) shouldBe Json.obj(
+            "status" -> "KO",
+            "errors" -> errorMessage
+          )
+        }
+     */
     "filter with query" in {
       val realRepo = SesameRepository(namespace)
       val lwm = LWMPrefix[realRepo.Rdf](realRepo.rdfOps, realRepo.rdfOps)
@@ -449,14 +449,15 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         val entry = Json.fromJson[ReportCardEntry](jss).get
         l contains entry
       }
+
       contentAsString(result4).split("\\}\\{").toVector forall { s =>
-        if(s endsWith "}") consistent("{" + s)(expected4)
+        if (s endsWith "}") consistent("{" + s)(expected4)
         else if (s startsWith "{") consistent(s + "}")(expected4)
         else consistent(s"{$s}")(expected4)
       } shouldBe true
 
       contentAsString(result5).split("\\}\\{").toVector forall { s =>
-        if(s endsWith "}") consistent("{" + s)(expected5)
+        if (s endsWith "}") consistent("{" + s)(expected5)
         else if (s startsWith "{") consistent(s + "}")(expected5)
         else consistent(s"{$s}")(expected5)
       } shouldBe true

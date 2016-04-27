@@ -110,17 +110,17 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     import utils.Ops.MonadInstances._
     import scalaz.syntax.applicative._
 
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+
     def getEntries(query: SelectClause) = {
       repository.prepareQuery(query).
         select(_.get("entries")).
         transform(_.fold(List.empty[Value])(identity)).
         map(_.stringValue()).
-        requestAll(repository.getMany[ReportCardEntry]).
+        requestAll(repository.getManyExpanded[ReportCardEntry](_, lwm.entryTypes, lwm.rescheduled)).
         run
     }
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
 
     val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(scheduleEntry))(namespace)
 
@@ -300,7 +300,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
             select(_.get("entries")).
             transform(_.fold(List.empty[Value])(identity)).
             map(_.stringValue).
-            requestAll(repository.getMany[ReportCardEntry](_)).
+            requestAll(repository.getManyExpanded[ReportCardEntry](_, lwm.entryTypes, lwm.rescheduled)).
             run flatMap toResult
       } match {
         case Success(result) =>
@@ -330,7 +330,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       select(_.get("entries")).
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
-      requestAll(repository.getMany[ReportCardEntry](_)).
+      requestAll(repository.getManyExpanded[ReportCardEntry](_, lwm.entryTypes, lwm.rescheduled)).
       run flatMap toResult match {
         case Success(result) =>
           result
