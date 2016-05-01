@@ -15,7 +15,7 @@ import play.api.{Application, ApplicationLoader}
 import play.api.ApplicationLoader.Context
 import play.api.test.{FakeRequest, WithApplicationLoader}
 import play.api.http.HttpVerbs
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
 import store.bind.Bindings
@@ -23,7 +23,7 @@ import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import Student._
 import utils.DefaultLwmApplication
-
+import UserController.writes
 import scala.util.Success
 
 class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -62,7 +62,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/users/" + student1.id
       )
 
-      val result = controller.get(student1.id.toString)(request)
+      val result = controller.user(student1.id.toString)(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(student1)
@@ -84,8 +84,8 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/users"
       )
 
-      val result = controller.all()(request)
-      val jsonVals = users map UserController.toJson
+      val result = controller.allUsers()(request)
+      val jsonVals = users map (u => Json.toJson(u))
 
       status(result) shouldBe OK
       val stringResult = contentAsString(result)
@@ -113,7 +113,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/atomic/users/" + student1.id
       )
 
-      val result = controller.getAtomic(User.generateUri(student1)(namespace))(request)
+      val result = controller.userAtomic(User.generateUri(student1)(namespace))(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(atom)
@@ -144,14 +144,14 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/atomic/users"
       )
 
-      val result = controller.allAtomic()(request)
-
+      val result = controller.allUserAtomic()(request)
       val jsonVals = jsonAtomic(users)
+      val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { user =>
-        jsonVals contains user shouldBe true
-      }
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get a single student" in {
@@ -206,11 +206,12 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val result = controller.allStudents()(request)
 
       val jsonVals = students map (a => Json.toJson(a))
+      val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "atomize all students" in {
@@ -234,13 +235,13 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       )
 
       val result = controller.allAtomicStudents()(request)
-
       val jsonVals = jsonAtomic(students)
+      val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get a single employee" in {
@@ -272,7 +273,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/employees"
       )
 
-      val result = controller.all()(request)
+      val result = controller.allUsers()(request)
 
       val jsonVals = employees map (a => Json.toJson(a))
 
@@ -300,7 +301,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       )
 
       val sjson = Vector(Json.toJson(student1), Json.toJson(student2))
-      val result = controller.all()(request)
+      val result = controller.allUsers()(request)
 
       status(result) shouldBe OK
       val stringResult = contentAsString(result)
@@ -331,13 +332,13 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       )
 
       val result = controller.allAtomicStudents()(request)
-
       val jsonVals = jsonAtomic(Set(student1, student2))
+      val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      contentAsJson(result).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals contains entry shouldBe true
-      }
+      jsonVals.forall { json =>
+        stringResult contains json.toString
+      } shouldBe true
     }
 
     "get employees specific to a particular status" in {
@@ -354,7 +355,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/employees?status=lecturer"
       )
 
-      val result = controller.all()(request)
+      val result = controller.allUsers()(request)
 
       val jsonVals = lecturers map (l => Json.toJson(l))
 
@@ -367,34 +368,71 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "get users specific to some particular filter attribute" in {
+      import UserController.{firstnameAttribute, lastnameAttribute, statusAttribute, degreeAttribute, systemIdAttribute}
+
       val degree = UUID.randomUUID()
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID)
       val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree)
+      val student4 = Student("mi5323", "Nahst", "Ruste", "lab@mail.de", "3213213", UUID.randomUUID)
+      val student5 = Student("mi2453", "Nahss", "Kramral", "lab@mail.de", "2312", UUID.randomUUID)
+      val student6 = Student("mi3452", "Nahsa", "Rusth", "lab@mail.de", "3213123", UUID.randomUUID)
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "lecturer")
       val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "employee")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "lecturer")
-      val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
+      val employee3 = Employee("rlak", "Rasl", "Rustb", "ramk@mail.de", "lecturer")
+      val users: Set[User] = Set(student1, student2, student3, student4, student5, student6, employee1, employee2, employee3)
       val lecturers: Set[Employee] = Set(employee1, employee3)
       val degreers: Set[Student] = Set(student1, student3)
+      val firstnamers: Set[User] = Set(student3, student4, employee3, student6)
+      val lastnamer: Set[Employee] = Set(employee2)
+      val systemIders: Set[Student] = Set(student1, student2)
+      val systemIder: Set[Student] = Set(student5)
 
       when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
 
       val request1 = FakeRequest(
         HttpVerbs.GET,
-        "/users?status=lecturer"
+        s"/users?$statusAttribute=lecturer"
       )
 
       val request2 = FakeRequest(
         HttpVerbs.GET,
-        "/users?degree=" + degree
+        s"/users?$degreeAttribute=" + degree
       )
 
-      val result1 = controller.all()(request1)
-      val result2 = controller.all()(request2)
+      val request3 = FakeRequest(
+        HttpVerbs.GET,
+        s"/users?$firstnameAttribute=" + "rust"
+      )
+
+      val request4 = FakeRequest(
+        HttpVerbs.GET,
+        s"/users?$lastnameAttribute=" + "Sarl"
+      )
+
+      val request5 = FakeRequest(
+        HttpVerbs.GET,
+        s"/users?$systemIdAttribute=" + "ai"
+      )
+
+      val request6 = FakeRequest(
+        HttpVerbs.GET,
+        s"/users?$systemIdAttribute=" + "mi2453"
+      )
+
+      val result1 = controller.allUsers()(request1)
+      val result2 = controller.allUsers()(request2)
+      val result3 = controller.allUsers()(request3)
+      val result4 = controller.allUsers()(request4)
+      val result5 = controller.allUsers()(request5)
+      val result6 = controller.allUsers()(request6)
 
       val jsonVals1 = lecturers map (l => Json.toJson(l))
-      val jsonVals2 = degreers map (a => Json.toJson(a))
+      val jsonVals2 = degreers map (s => Json.toJson(s))
+      val jsonVals3 = firstnamers map (u => Json.toJson(u))
+      val jsonVals4 = lastnamer map (e => Json.toJson(e))
+      val jsonVals5 = systemIders map (s => Json.toJson(s))
+      val jsonVals6 = systemIder map (s => Json.toJson(s))
 
       status(result1) shouldBe OK
       val stringResult1 = contentAsString(result1)
@@ -408,6 +446,34 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       jsonVals2.forall { json =>
         stringResult2 contains json.toString
+      } shouldBe true
+
+      status(result3) shouldBe OK
+      val stringResult3 = contentAsString(result3)
+
+      jsonVals3.forall { json =>
+        stringResult3 contains json.toString
+      } shouldBe true
+
+      status(result4) shouldBe OK
+      val stringResult4 = contentAsString(result4)
+
+      jsonVals4.forall { json =>
+        stringResult4 contains json.toString
+      } shouldBe true
+
+      status(result5) shouldBe OK
+      val stringResult5 = contentAsString(result5)
+
+      jsonVals5.forall { json =>
+        stringResult5 contains json.toString
+      } shouldBe true
+
+      status(result6) shouldBe OK
+      val stringResult6 = contentAsString(result6)
+
+      jsonVals6.forall { json =>
+        stringResult6 contains json.toString
       } shouldBe true
     }
 
@@ -441,21 +507,23 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         "/atomic/users?status=lecturer"
       )
 
-      val result1 = controller.allAtomic()(request1)
-      val result2 = controller.allAtomic()(request2)
+      val result1 = controller.allUserAtomic()(request1)
+      val result2 = controller.allUserAtomic()(request2)
 
       val jsonVals1 = jsonAtomic(degreers)
       val jsonVals2 = lecturers map (a => Json.toJson(a))
+      val stringResult1 = contentAsString(result1)
+      val stringResult2 = contentAsString(result2)
 
       status(result1) shouldBe OK
-      contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals1 contains entry shouldBe true
-      }
+      jsonVals1.forall { json =>
+        stringResult1 contains json.toString
+      } shouldBe true
 
       status(result2) shouldBe OK
-      contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
-        jsonVals2 contains entry shouldBe true
-      }
+      jsonVals2.forall { json =>
+        stringResult2 contains json.toString
+      } shouldBe true
     }
 
     "successfully return requested buddy by his system id" in new FakeApp {
