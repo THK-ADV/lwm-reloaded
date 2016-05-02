@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud._
 import controllers.schedule.ScheduleController
-import models.{Room, UriGenerator}
+import models.{Course, Room, UriGenerator}
 import models.labwork._
 import models.users.{Student, User}
 import modules.store.BaseNamespace
@@ -25,6 +25,7 @@ import scala.util.{Failure, Success, Try}
 
 object ReportCardEntryController {
   val studentAttribute = "student"
+  val courseAttribute = "course"
   val labworkAttribute = "labwork"
   val roomAttribute = "room"
   val dateAttribute = "date"
@@ -74,18 +75,16 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     Success(Ok(Json.toJson(entries)).as(mimeType))
   }
 
-  // TODO STREAMING
   def getAtomic(student: String) = forStudent(student) { entries =>
-    atomizeMany(entries).map(json => Ok(json).as(mimeType))
+    Success(Ok.chunked(chunkAtoms(entries)).as(mimeType))
   }
 
   def all(course: String) = reportCardEntries(course) { entries =>
-    Success(Ok(Json.toJson(entries)).as(mimeType))
+    Success(Ok.chunked(chunkSimple(entries)).as(mimeType))
   }
 
-  // TODO STREAMING
   def allAtomic(course: String) = reportCardEntries(course) { entries =>
-    atomizeMany(entries).map(json => Ok(Json.toJson(json)).as(mimeType))
+    Success(Ok.chunked(chunkAtoms(entries)).as(mimeType))
   }
 
   def update(course: String, entry: String) = updateEntry(course, entry) { entry =>
@@ -248,16 +247,23 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
-    if (request.queryString.isEmpty)
+    val query = request.queryString + (courseAttribute -> Seq(course))
+
+    if (query.isEmpty)
       BadRequest(Json.obj(
         "status" -> "KO",
         "message" -> "Request should contain at least one attribute"
       ))
     else
-      request.queryString.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
+      query.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
         case (clause, (`studentAttribute`, values)) => clause map {
           case ((filter, resched)) =>
             (filter append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
+        }
+        case (clause, (`courseAttribute`, values)) => clause map {
+          case ((filter, resched)) =>
+            (filter append **(v("entries"), p(lwm.labwork), v("labwork")).
+              **(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head)))), resched)
         }
         case (clause, (`labworkAttribute`, values)) => clause map {
           case ((filter, resched)) =>
