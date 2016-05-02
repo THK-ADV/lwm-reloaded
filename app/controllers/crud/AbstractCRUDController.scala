@@ -99,7 +99,6 @@ trait Chunkable[I] { self: Atomic[I] =>
 
   final def chunkAtoms(data: Set[I]): Enumerator[JsValue] = chunkWith(data)(atomize)
   final def chunkSimple(data: Set[I])(implicit writes: Writes[I]): Enumerator[JsValue] = chunkWith(data)(i => Success(Some(Json.toJson(i))))
-  final def chunkSimpleJson(data: Set[I])(toJson: I => Try[Option[JsValue]]): Enumerator[JsValue] = chunkWith(data)(toJson)
 
   private final def chunkWith[O](data: Set[I])(f: I => Try[Option[O]]): Enumerator[O] = {
     val result = Enumeratee.map[I](f)

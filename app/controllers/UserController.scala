@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import controllers.UserController._
-import controllers.crud._
+import controllers.crud.{Chunkable, _}
 import models.Degree
 import models.security.Permissions
 import models.users.{Employee, Student, StudentAtom, User}
@@ -23,32 +23,53 @@ import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 object UserController {
-  def manyToJson[A <: User](repo: SesameRepository)(output: Set[A], f: A => Try[Option[JsValue]]): Try[JsValue] =
-    output.foldLeft(Try(Option(JsArray()))) { (t, user) => t.bipeek(f(user))(_ :+ _) } map {
-    case Some(jsarr) => jsarr
-    case None => JsArray()
-  }
 
-  def toJson(user: User): JsValue = user match {
-    case student: Student => Json.toJson(student)
-    case employee: Employee => Json.toJson(employee)
+  implicit val writes: Writes[User] = new Writes[User] {
+    override def writes(user: User): JsValue = user match {
+      case student: Student => Json.toJson(student)
+      case employee: Employee => Json.toJson(employee)
+    }
   }
 
   private def withFilter[A <: User](queryString: Map[String, Seq[String]])(all: Set[A]): Try[Set[A]] = {
     queryString.foldRight(Try(all)) {
-      case ((`degreeAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(d => bifilter(set)(_.enrollment == d)(_ => false)))
-      case ((`statusAttribute`, v), t) => t map (set => v.foldLeft(set)((set, status) => bifilter(set)(_ => false)(_.status == status))) //replace with status
-      case ((_, _), _) => Failure(new Throwable("Unknown attribute"))
+      case ((`degreeAttribute`, degrees), users) => users flatMap { set =>
+        Try(UUID.fromString(degrees.head)) map (degree => set filter {
+          case Student(_, _, _, _, _, e, _) => e == degree
+          case _ => false
+        })
+      }
+      case ((`statusAttribute`, states), users) => users map { set =>
+        states.foldLeft(set)((set, status) => set filter {
+          case Employee(_, _, _, _, s, _) => s == status
+          case _ => false
+          }
+        )
+      }
+      case ((`firstnameAttribute`, firstnames), users) => users map { set =>
+        firstnames.foldLeft(set) { (set, firstname) =>
+          set.filter(_.firstname.toLowerCase.contains(firstname.toLowerCase))
+        }
+      }
+      case ((`lastnameAttribute`, lastnames), users) => users map { set =>
+        lastnames.foldLeft(set) { (set, lastname) =>
+          set.filter(_.lastname.toLowerCase.contains(lastname.toLowerCase))
+        }
+      }
+      case ((`systemIdAttribute`, systemIds), users) => users map { set =>
+        systemIds.foldLeft(set) { (set, id) =>
+          set.filter(_.systemId.toLowerCase.contains(id.toLowerCase))
+        }
+      }
+      case _ => Failure(new Throwable("Unknown attribute"))
     }
-  }
-
-  private def bifilter[A <: User](s: Set[A])(f: Student => Boolean)(g: Employee => Boolean): Set[A] = s filter {
-    case s: Student => f(s)
-    case e: Employee => g(e)
   }
 
   val degreeAttribute = "degree"
   val statusAttribute = "status"
+  val systemIdAttribute = "systemId"
+  val firstnameAttribute = "firstname"
+  val lastnameAttribute = "lastname"
 }
 
 class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
@@ -60,7 +81,15 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     ContentTyped with
     BaseNamespace with
     Atomic[User] with
-    Chunkable[User] {
+    Chunkable[User] { self =>
+
+  val studentChunker = new Chunkable[Student] with Atomic[Student] {
+    override protected def atomize(output: Student): Try[Option[JsValue]] = self.atomize(output)
+  }
+
+  val employeeChunker = new Chunkable[Employee] with Atomic[Employee] {
+    override protected def atomize(output: Employee): Try[Option[JsValue]] = self.atomize(output)
+  }
 
   val bindings = Bindings[repository.Rdf](namespace)
 
@@ -71,72 +100,66 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
     repository.get[Student](uri)(StudentBinding.studentBinder)
-  } (a => Ok(Json.toJson(a)).as(mimeType))
+  } { student =>
+    Ok(Json.toJson(student)).as(mimeType)
+  }
 
   def studentAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
     repository.get[Student](uri)(StudentBinding.studentBinder) flatPeek atomize
-  } (Ok(_).as(mimeType))
+  } { json =>
+    Ok(json).as(mimeType)
+  }
 
   def employee(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
     repository.get[Employee](uri)(EmployeeBinding.employeeBinder)
-  } (a => Ok(Json.toJson(a)).as(mimeType))
+  } { employee =>
+    Ok(Json.toJson(employee)).as(mimeType)
+  }
 
   def allEmployees(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
     repository.get[Employee](EmployeeBinding.employeeBinder, EmployeeBinding.classUri)
-  } (a => Ok(Json.toJson(a)).as(mimeType))
+  } { employees =>
+    Ok.chunked(employeeChunker.chunkSimple(employees)).as(mimeType)
+  }
 
   def allStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
     repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
-  } (a => Ok(Json.toJson(a)).as(mimeType))
-
-  def allAtomicStudents(secureContext: SecureContext = contextFrom(GetAll)) = gets(secureContext) { request =>
-    repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri) map {
-      case set if set.nonEmpty =>
-        if(request.queryString.isEmpty) handle(gatomize(set))(InternalServerError(_))
-        else {
-          val makeResult =
-            (withFilter(request.queryString)(_: Set[Student])) andThen (_.flatMap(gatomize)) andThen (handle(_)(ServiceUnavailable(_)))
-          makeResult(set)
-        }
-      case set =>
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        ))
-    }
+  } { students =>
+    Ok.chunked(studentChunker.chunkSimple(students)).as(mimeType)
   }
 
-  def get(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def allAtomicStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
+    repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
+  } { students =>
+    Ok.chunked(studentChunker.chunkAtoms(students)).as(mimeType)
+  }
+
+  def user(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}"
     repository.get[User](uri)(UserBinding.userBinder)
-  } (a => Ok(toJson(a)).as(mimeType))
-
-  // TODO applied streaming for this request. expand to others too
-  def all(secureContext: SecureContext = contextFrom(GetAll)) = {
-    many(secureContext) { request =>
-      repository.get[User](UserBinding.userBinder, UserBinding.classUri)
-    } { users =>
-      Ok.chunked(chunkSimpleJson(users)(u => Success(Some(toJson(u))))).as(mimeType)
-    }
+  } { user =>
+    Ok(Json.toJson(user)).as(mimeType)
   }
 
-  def getAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def allUsers(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
+    repository.get[User](UserBinding.userBinder, UserBinding.classUri)
+  } { users =>
+    Ok.chunked(chunkSimple(users)).as(mimeType)
+  }
+
+  def userAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "")
-    repository.get[User](uri)(UserBinding.userBinder).flatPeek(atomize)
-  } (Ok(_).as(mimeType))
+    repository.get[User](uri)(UserBinding.userBinder) flatPeek atomize
+  } { json =>
+    Ok(json).as(mimeType)
+  }
 
-  def allAtomic(secureContext: SecureContext = contextFrom(GetAll)) = gets(secureContext) { request =>
-    repository.get[User](UserBinding.userBinder, UserBinding.classUri) map { set =>
-        if(request.queryString.isEmpty) handle(atomizeMany(set))(InternalServerError(_))
-        else {
-          val makeResult =
-            (getWithFilter(request.queryString)(_)) andThen (_.flatMap(atomizeMany)) andThen (handle(_)(ServiceUnavailable(_)))
-
-          makeResult(set)
-        }
-    }
+  def allUserAtomic(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
+    repository.get[User](UserBinding.userBinder, UserBinding.classUri)
+  } { users =>
+    Ok.chunked(chunkAtoms(users)).as(mimeType)
   }
 
   def buddy(systemId: String, secureContext: SecureContext = contextFrom(Get)) = many(secureContext) { request =>
@@ -158,13 +181,13 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
       requestAll(repository.getMany[Student](_)).
       run
-  } { set => set.find(_.systemId == systemId).fold(
+  } { students => students.find(_.systemId == systemId).fold(
         NotFound(Json.obj(
           "status" -> "KO",
           "message" -> "No such element..."
         ))
       ) { student =>
-        if (set.groupBy(_.enrollment).size == 1)
+        if (students.groupBy(_.enrollment).size == 1)
           Ok(Json.obj(
             "status" -> "OK",
             "id" -> student.id
@@ -177,19 +200,10 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       }
   }
 
-  private def handle(t: Try[JsValue])(failure: JsObject => Result): Result = t match {
-    case Success(json) =>
-      Ok(json).as(mimeType)
-    case Failure(e) =>
-      failure(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
-  }
-
-  private def gets(secureContext: SecureContext)(f: Request[AnyContent] => Try[Result]) = secureContext action { request =>
-    f(request) match {
-      case Success(result) => result
+  private def gets(secureContext: SecureContext)(user: Request[AnyContent] => Try[Result]) = secureContext action { request =>
+    user(request) match {
+      case Success(result) =>
+        result
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
@@ -198,9 +212,9 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     }
   }
 
-  private def one[A](secureContext: SecureContext)(f: Request[AnyContent] => Try[Option[A]])(g: A => Result) = gets(secureContext) { request =>
-    f(request) map {
-      case Some(a) => g(a)
+  private def one[A](secureContext: SecureContext)(user: Request[AnyContent] => Try[Option[A]])(toResult: A => Result) = gets(secureContext) { request =>
+    user(request) map {
+      case Some(a) => toResult(a)
       case None =>
         NotFound(Json.obj(
           "status" -> "KO",
@@ -209,11 +223,14 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     }
   }
 
-  private def many[A <: User](secureContext: SecureContext)(f: Request[AnyContent] => Try[Set[A]])(g: Set[A] => Result) = gets(secureContext) { request =>
-    f(request) map { set =>
-        if(request.queryString.isEmpty) g(set)
-        else withFilter(request.queryString)(set) match {
-          case Success(filtered) => g(filtered)
+  private def many[A <: User](secureContext: SecureContext)(user: Request[AnyContent] => Try[Set[A]])(toResult: Set[A] => Result) = gets(secureContext) { request =>
+    user(request) map { set =>
+      if (request.queryString.isEmpty)
+        toResult(set)
+      else
+        withFilter(request.queryString)(set) match {
+          case Success(filtered) =>
+            toResult(filtered)
           case Failure(e) =>
             ServiceUnavailable(Json.obj(
               "status" -> "KO",
@@ -222,10 +239,6 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         }
     }
   }
-
-  private def jsonify[A <: User](set: Set[A])(f: A => Try[Option[JsValue]]) = manyToJson(repository)(set, f)
-
-  private def gatomize[A <: User](output: Set[A]): Try[JsValue] = jsonify(output)(atomize)
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
 
@@ -241,7 +254,6 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         }(tryM, optM)
 
       case employee: Employee => Success(Some(Json.toJson(employee)))
-
     }
   }
 
