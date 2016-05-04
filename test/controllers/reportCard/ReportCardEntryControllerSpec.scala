@@ -3,7 +3,7 @@ package controllers.reportCard
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Room
+import models.{Course, Room}
 import models.labwork._
 import models.users.Student
 import org.joda.time.{LocalDate, LocalTime}
@@ -363,6 +363,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       import bindings.ReportCardEntryBinding._
       import bindings.ScheduleEntryBinding._
+      import bindings.CourseBinding._
+      import bindings.LabworkBinding._
 
       val localController = new ReportCardEntryController(realRepo, sessionService, namespace, roleService, reportCardService) {
         override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -374,75 +376,65 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         }
       }
 
-      val course = UUID.randomUUID()
+      val course1 = Course("", "", "", UUID.randomUUID, 1, UUID.randomUUID)
 
       val student1 = UUID.randomUUID()
-      val labwork1 = UUID.randomUUID()
+      val labwork1 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
       val date1 = LocalDate.now
       val (start1, end1) = (LocalTime.parse(LocalTime.now.toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(2).toString("HH:mm")))
       val room1 = UUID.randomUUID()
 
       val student2 = UUID.randomUUID()
-      val labwork2 = UUID.randomUUID()
+      val labwork2 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
       val date2 = LocalDate.now plusDays 2
       val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
       val room2 = UUID.randomUUID()
 
       val student3 = UUID.randomUUID()
 
-      val scheduleEntry1 = ScheduleEntry(labwork1, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
-      val scheduleEntry2 = ScheduleEntry(labwork1, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
-      val entry1 = ReportCardEntry(student1, labwork1, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
-      val entry2 = ReportCardEntry(student2, labwork2, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
-      val entry3 = ReportCardEntry(student1, labwork1, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
-      val entry4 = ReportCardEntry(student3, labwork1, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
+      val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
+      val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
+      val entry1 = ReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
+      val entry2 = ReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
+      val entry3 = ReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
+      val entry4 = ReportCardEntry(student3, labwork1.id, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
         Some(Rescheduled(date1, start2, end2, room2)))
 
+      realRepo addMany List(course1)
+      realRepo addMany List(labwork1, labwork2)
       realRepo addMany List(entry1, entry2, entry3, entry4)
       realRepo addMany List(scheduleEntry1, scheduleEntry2)
 
       val requestWithDate = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries?date=$date1"
+        s"/courses/${course1.id}/reportCardEntries?date=$date1"
       )
 
       val requestWithTime = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries?start=$start1"
+        s"/courses/${course1.id}/reportCardEntries?start=$start1"
       )
 
       val requestWithDateAndTimeAndRoom = FakeRequest(
         GET,
-        s"/courses/$course/reportCardEntries?date=$date1&start=$start1&room=$room1"
+        s"/courses/${course1.id}/reportCardEntries?date=$date1&start=$start1&room=$room1"
       )
 
       val requestWithScheduleEntry = FakeRequest(
         GET,
-        s"/courses/$course/scheduleEntries/${scheduleEntry1.id}/reportCardEntries"
+        s"/courses/${course1.id}/scheduleEntries/${scheduleEntry1.id}/reportCardEntries"
       )
 
-      val result1 = localController.all(course.toString)(requestWithDate)
-      val result2 = localController.all(course.toString)(requestWithTime)
-      val result3 = localController.all(course.toString)(requestWithDateAndTimeAndRoom)
-      val result4 = localController.allFromScheduleEntry(course.toString, scheduleEntry1.id.toString)(requestWithScheduleEntry)
-      val result5 = localController.allFromScheduleEntry(course.toString, scheduleEntry2.id.toString)(requestWithScheduleEntry)
+      val result1 = localController.all(course1.id.toString)(requestWithDate)
+      val result2 = localController.all(course1.id.toString)(requestWithTime)
+      val result3 = localController.all(course1.id.toString)(requestWithDateAndTimeAndRoom)
+      val result4 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry1.id.toString)(requestWithScheduleEntry)
+      val result5 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry2.id.toString)(requestWithScheduleEntry)
       val expected1 = List(entry1, entry3, entry4)
       val expected2 = List(entry1, entry2, entry4)
       val expected3 = List(entry1, entry4)
       val expected4 = List(entry4, entry1)
       val expected5 = List(entry3, entry4)
-
-      contentAsJson(result1).asInstanceOf[JsArray].value foreach { entry =>
-        expected1 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
-      }
-
-      contentAsJson(result2).asInstanceOf[JsArray].value foreach { entry =>
-        expected2 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
-      }
-
-      contentAsJson(result3).asInstanceOf[JsArray].value foreach { entry =>
-        expected3 contains Json.fromJson[ReportCardEntry](entry).get shouldBe true
-      }
 
       def consistent(s: String)(l: List[ReportCardEntry]): Boolean = {
         val jss = Json.parse(s)
@@ -450,17 +442,14 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         l contains entry
       }
 
-      contentAsString(result4).split("\\}\\{").toVector forall { s =>
-        if (s endsWith "}") consistent("{" + s)(expected4)
-        else if (s startsWith "{") consistent(s + "}")(expected4)
-        else consistent(s"{$s}")(expected4)
-      } shouldBe true
-
-      contentAsString(result5).split("\\}\\{").toVector forall { s =>
-        if (s endsWith "}") consistent("{" + s)(expected5)
-        else if (s startsWith "{") consistent(s + "}")(expected5)
-        else consistent(s"{$s}")(expected5)
-      } shouldBe true
+      List(result1, result2, result3, result4, result5).zip(List(expected1, expected2, expected3, expected4, expected5)) foreach {
+        case (result, expected) =>
+          contentAsString(result).split("\\}\\{").toVector forall { s =>
+            if (s endsWith "}") consistent("{" + s)(expected)
+            else if (s startsWith "{") consistent(s + "}")(expected)
+            else consistent(s"{$s}")(expected)
+          } shouldBe true
+      }
     }
   }
 }

@@ -192,7 +192,7 @@ PUT           /courses/:c/reportCardEntries/:e                               con
 PUT           /courses/:c/atomic/reportCardEntries/:e                        controllers.reportCard.ReportCardEntryController.updateAtomic(c, e)
 
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries               controllers.reportCard.ReportCardEntryController.allFromScheduleEntry(c, s)
-GET           /courses/:c/atomic/scheduleEntries/:s/reportCardEntries        controllers.reportCard.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
+GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries        controllers.reportCard.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
 
 # ReportCardEntryType
 PUT           /courses/:c/reportCardEntryTypes/:t                            controllers.reportCard.ReportCardEntryTypeController.update(c, t)
