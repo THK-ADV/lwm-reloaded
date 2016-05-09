@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{Room, UniqueEntity, UriGenerator}
 import org.joda.time.{LocalDate, LocalTime}
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 
 case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled] = None, id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity {
 
@@ -36,17 +36,35 @@ case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: 
   * Atomic representation of a report card entry
   */
 
-case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled], id: UUID)
+case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], id: UUID)
+
+case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
 object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisation[ReportCardEntry, ReportCardEntry] {
 
-  import Labwork.format
-
   override def base: String = "reportCardEntries"
 
-  implicit def atomicWrites = Json.writes[ReportCardEntryAtom]
+  implicit def atomicWrites: Writes[ReportCardEntryAtom] = Writes[ReportCardEntryAtom] { entry =>
+    val json = Json.obj(
+      "student" -> Json.toJson(entry.student),
+      "labwork" -> Json.toJson(entry.labwork),
+      "label" -> entry.label,
+      "date" -> entry.date.toString,
+      "start" -> entry.start.toString,
+      "end" -> entry.end.toString,
+      "room" -> Json.toJson(entry.room),
+      "entryTypes" -> Json.toJson(entry.entryTypes),
+      "id" -> entry.id.toString
+    )
 
-  implicit def atomicFormat: Format[ReportCardEntryAtom] = Json.format[ReportCardEntryAtom]
+    entry.rescheduled.fold(json)(rs =>
+      json + ("rescheduled" -> Json.obj(
+      "date" -> rs.date.toString,
+      "start" -> rs.start.toString,
+      "end" -> rs.end.toString,
+      "room" -> Json.toJson(rs.room)))
+    )
+  }
 
   override implicit def reads: Reads[ReportCardEntry] = Json.reads[ReportCardEntry]
 

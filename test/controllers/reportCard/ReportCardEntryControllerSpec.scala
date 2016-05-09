@@ -46,9 +46,10 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val entries = (0 until 2).map(n =>
     ReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, ReportCardEntryType.all)
   ).toSet
-  val atomizedEntries = entries.map(e =>
-    ReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, e.rescheduled, e.id)
-  )
+  val atomizedEntries = entries.map { e =>
+    val rescheduledAtom = RescheduledAtom(e.date, e.start, e.end, room)
+    ReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, Some(rescheduledAtom), e.id)
+  }
 
   val entry = entries.head
   val course = UUID.randomUUID.toString
