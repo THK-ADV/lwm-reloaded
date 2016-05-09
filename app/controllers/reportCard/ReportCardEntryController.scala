@@ -353,15 +353,21 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     import defaultBindings.LabworkBinding.labworkBinder
     import defaultBindings.RoomBinding.roomBinder
     import ReportCardEntry.atomicWrites
+    import utils.Ops.MonadInstances._
+    import utils.Ops.TraverseInstances.travO
+    import utils.Ops._
+    import scalaz.syntax.applicative._
 
     for {
       optStudent <- repository.get[Student](User.generateUri(output.student))
       optLabwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
       optRoom <- repository.get[Room](Room.generateUri(output.room))
+      optRescheduledRoom <- output.rescheduled.map(rs => repository.get[Room](Room.generateUri(rs.room))).sequenceM
     } yield for {
       student <- optStudent; labwork <- optLabwork; room <- optRoom
+      optRescheduled = (optRescheduledRoom.flatten |@| output.rescheduled)((r, rs) => RescheduledAtom(rs.date, rs.start, rs.end, r))
     } yield Json.toJson(
-      ReportCardEntryAtom(student, labwork, output.label, output.date, output.start, output.end, room, output.entryTypes, output.rescheduled, output.id)
+      ReportCardEntryAtom(student, labwork, output.label, output.date, output.start, output.end, room, output.entryTypes, optRescheduled, output.id)
     )
   }
 }
