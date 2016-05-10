@@ -7,6 +7,7 @@ version := "1.0-SNAPSHOT"
 
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
+resolvers += "theatr.us" at "http://repo.theatr.us"
 
 lazy val sesameVersion = "2.7.15"
 lazy val bananaVersion = "0.8.1"
@@ -54,7 +55,8 @@ lazy val scalazDependencies = Seq(
 
 lazy val lwmDependencies = Seq(
   "com.chuusai" %% "shapeless" % "2.2.5",
-  "com.unboundid" % "unboundid-ldapsdk" % "2.3.6"
+  "com.unboundid" % "unboundid-ldapsdk" % "2.3.6",
+  "us.theatr" %% "akka-quartz" % "0.3.0"
 )
 
 scalaVersion := "2.11.7"

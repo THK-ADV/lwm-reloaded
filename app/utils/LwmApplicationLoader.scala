@@ -43,6 +43,7 @@ with ConfigurationModule
 with BaseNamespace
 with HomepageModule
 with SemanticRepositoryModule
+with DbFolder
 with DegreeManagementModule
 with CourseManagementModule
 with GroupServiceManagementModule
@@ -151,3 +152,5 @@ with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultUserManagementModule
 with DefaultAnnotationManagementModuleImpl
+with DefaultDbFolderImpl
+with DefaultDbBackupModuleImpl
