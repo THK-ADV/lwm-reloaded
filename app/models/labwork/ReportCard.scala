@@ -28,17 +28,19 @@ case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: Lo
 
 case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
 // TODO make them repo ready
-case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
 
 case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
 
 /**
-  * Atomic representation of a report card entry
+  * Atomic
   */
 
 case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], id: UUID)
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
+
+case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, id: UUID)
 
 object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisation[ReportCardEntry, ReportCardEntry] {
 
@@ -85,6 +87,17 @@ object ReportCardEntryType extends UriGenerator[ReportCardEntryType] with JsonSe
   override implicit def reads: Reads[ReportCardEntryType] = Json.reads[ReportCardEntryType]
 
   override implicit def writes: Writes[ReportCardEntryType] = Json.writes[ReportCardEntryType]
+}
+
+object ReportCardEvaluation extends UriGenerator[ReportCardEvaluation] with JsonSerialisation[ReportCardEvaluation, ReportCardEvaluation] {
+
+  override def base: String = "reportCardEvaluation"
+
+  override implicit def reads: Reads[ReportCardEvaluation] = Json.reads[ReportCardEvaluation]
+
+  override implicit def writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
+
+  implicit def atomicWrites: Writes[ReportCardEvaluationAtom] = Json.writes[ReportCardEvaluationAtom]
 }
 
 object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled] {

@@ -89,15 +89,15 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   }
 
   def getMany[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
-    many[T](ids)(getExplicit[T])
+    many[T](ids)(explicit[T])
   }
 
   def getManyExpanded[T <: UniqueEntity](ids: TraversableOnce[String])(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
-    many[T](ids)(getExpanded[T](_))
+    many[T](ids)(expanded[T](_))
   }
 
   def getManyExpanded[T <: UniqueEntity](ids: TraversableOnce[String], preds: URI*)(implicit serialiser: FromPG[Rdf, T]): Try[Set[T]] = connection { implicit conn =>
-    many[T](ids)(uri => getExpanded[T](uri, preds: _*))
+    many[T](ids)(uri => expanded[T](uri, preds: _*))
   }
 
   private def many[T <: UniqueEntity](ids: TraversableOnce[String])(f: String => Try[Option[T]])(implicit conn: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Set[T]] = {
@@ -126,7 +126,11 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   }
 
   override def get[T <: UniqueEntity](uri: String)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = connection { implicit conn =>
-    getExplicit[T](uri)
+    explicit[T](uri)
+  }
+
+   def getExpanded[T <: UniqueEntity](uri: String, preds: URI*)(implicit serialiser: FromPG[Rdf, T]): Try[Option[T]] = connection { implicit conn =>
+    expanded[T](uri, preds: _*)
   }
 
   private def statements(uri: URI)(implicit connection: RepositoryConnection): Vector[Statement] = {
@@ -146,7 +150,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     additional.flatMap(s => statements(makeUri(s.getObject.stringValue()))) ++ vs
   }
 
-  private def getExpanded[T](uri: String, preds: URI*)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
+  private def expanded[T](uri: String, preds: URI*)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
     val url = makeUri(uri)
     val vs = statements(url)
     val expanded = expand(vs, preds: _*)
@@ -154,7 +158,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     else PointedGraph[Rdf](url, rdfOps.makeGraph(expanded)).as[T] map (Some(_))
   }
 
-  private def getExplicit[T](uri: String)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
+  private def explicit[T](uri: String)(implicit connection: RepositoryConnection, serialiser: FromPG[Rdf, T]): Try[Option[T]] = {
     val url = makeUri(uri)
     val vs = statements(url)
     if(vs.isEmpty) Success(None)

@@ -36,6 +36,12 @@ class ReportCardService extends ReportCardServiceLike {
   }
 
   override def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
+    reportCardEntries.groupBy(_.student).flatMap {
+      case ((_, entries)) => evaluateStudent(assignmentPlan, entries)
+    }.toSet
+  }
+
+  private def evaluateStudent(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
     val entries = reportCardEntries.flatMap(_.entryTypes)
     val student = reportCardEntries.head.student
     val labwork = reportCardEntries.head.labwork
@@ -44,7 +50,7 @@ class ReportCardService extends ReportCardServiceLike {
       ReportCardEvaluation(student, labwork, label, bool, int)
     }
 
-    val eval = prepareEval(student, labwork)_
+    val eval = prepareEval(student, labwork) _
 
     def folder(reportCardEntryType: ReportCardEntryType)(f: Set[ReportCardEntryType] => (Boolean, Int)): ReportCardEvaluation = {
       val (boolRes, intRes) = f(entries.filter(_.entryType == reportCardEntryType.entryType))

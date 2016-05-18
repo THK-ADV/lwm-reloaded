@@ -31,8 +31,8 @@ object ApiDataController {
 
   val mvRole = Role(CourseManager,
     labwork.all ++ schedule.all ++ timetable.all ++ group.all ++ scheduleEntry.all ++
-      Set(reportCardEntry.getAll, reportCardEntry.update, reportCardEntry.create) ++ reportCardEntryType.all ++ assignmentPlan.all ++
-      annotation.all + course.update
+      Set(reportCardEntry.getAll, reportCardEntry.update, reportCardEntry.create) ++ reportCardEntryType.all ++
+      reportCardEvaluation.all ++ assignmentPlan.all ++ annotation.all + course.update
   )
   val maRole = Role(CourseEmployee,
     Set(labwork.get, labwork.getAll) ++ Set(scheduleEntry.get, scheduleEntry.getAll) ++ Set(timetable.get, timetable.getAll) ++

@@ -149,6 +149,14 @@ object Permissions {
     lazy val all = Set(update)
   }
 
+  object reportCardEvaluation {
+    val create = Permission("ReportCardEvaluation:create")
+    val get = Permission("ReportCardEvaluation:get")
+    val getAll = Permission("ReportCardEvaluation:getAll")
+
+    lazy val all = Set(create, get, getAll)
+  }
+
   object assignmentPlan {
     val create = Permission("AssignmentPlan:create")
     val update = Permission("AssignmentPlan:update")
@@ -173,5 +181,6 @@ object Permissions {
     labwork.all ++ labworkApplication.all ++ authority.all ++ refRole.all ++
     role.all ++ schedule.all ++ timetable.all ++ semester.all ++ group.all ++
     user.all ++ blacklist.all ++ entryType.all ++ reportCardEntry.all ++
-    reportCardEntryType.all ++ assignmentPlan.all ++ annotation.all ++ scheduleEntry.all
+    reportCardEntryType.all ++ reportCardEvaluation.all ++ assignmentPlan.all ++
+    annotation.all ++ scheduleEntry.all
 }

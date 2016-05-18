@@ -198,6 +198,13 @@ GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries        con
 PUT           /courses/:c/reportCardEntryTypes/:t                            controllers.reportCard.ReportCardEntryTypeController.update(c, t)
 HEAD          /reportCardEntryTypes                                          controllers.reportCard.ReportCardEntryTypeController.header()
 
+# ReportCardEvaluation
+#POST          /courses/:c/labworks/:l/reportCardEvaluations                  controllers.reportCard.ReportCardEvaluationController.create(c, l)
+#GET           /courses/:c/labworks/:l/reportCardEvaluations/:id              controllers.reportCard.ReportCardEvaluationController.get(c, l, id)
+#GET           /courses/:c/labworks/:l/reportCardEvaluations                  controllers.reportCard.ReportCardEvaluationController.all(c, l)
+GET           /courses/:c/labworks/:l/reportCardEvaluations                  controllers.reportCard.ReportCardEvaluationController.preview(c, l)
+GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                  controllers.reportCard.ReportCardEvaluationController.previewAtomic(c, l)
+
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                               controllers.crud.labwork.AssignmentPlanCRUDController.createFrom(course)
 PUT           /courses/:course/assignmentPlans/:id                           controllers.crud.labwork.AssignmentPlanCRUDController.updateFrom(course, id)
