@@ -106,7 +106,6 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
 
   context.system.scheduler.schedule(5.seconds, 10.seconds, self, Update)
 
-
   override def receive: Receive = {
     case SessionRequest(user, password) =>
       val requester = sender()

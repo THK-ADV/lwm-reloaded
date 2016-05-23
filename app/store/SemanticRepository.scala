@@ -13,13 +13,11 @@ import org.openrdf.sail.memory.MemoryStore
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame._
-import store.Prefixes.LWMPrefix
 import store.sparql.SPARQLQueryEngine
 
 import scala.concurrent.duration._
 import scala.language.{higherKinds, postfixOps}
 import scala.util.{Success, Try}
-
 
 trait SemanticRepository extends RDFModule with RDFOpsModule {
 
@@ -52,9 +50,9 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
 object  SesameRepository {
 
-  def apply(folder: File, syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(Some(folder), syncInterval, baseNS)
+  def apply(folder: Option[File], syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(folder, syncInterval, baseNS)
 
-  def apply(folder: File, baseNS: Namespace) = new SesameRepository(Some(folder), baseNS = baseNS)
+  def apply(folder: Option[File], baseNS: Namespace) = new SesameRepository(folder, baseNS = baseNS)
 
   def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
 

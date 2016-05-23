@@ -6,6 +6,25 @@ import java.nio.file.Files
 import modules.ConfigurationModule
 import store.{Namespace, SesameRepository}
 
+trait DbFolder {
+  def folder: Option[File]
+}
+
+//Note: Relative paths do not directly work.
+trait DefaultDbFolderImpl extends DbFolder {
+  self: ConfigurationModule =>
+
+  override lazy val folder = lwmConfig.underlying.getString("lwm.store.path") match {
+    case path if path.nonEmpty =>
+      val file = new File(path)
+
+      if (Files.exists(file.toPath))
+        Some(file)
+      else
+        Some(Files.createDirectory(file.toPath).toFile)
+    case _ => None
+  }
+}
 
 trait BaseNamespace {
   def namespace: Namespace
@@ -15,25 +34,16 @@ trait ConfigurableBaseNamespace extends BaseNamespace {
   self: ConfigurationModule =>
   lwmConfig.underlying.resolve()
 
-  override def namespace: Namespace = Namespace(lwmConfig.underlying.getString("lwm.namespace"))
+  override val namespace: Namespace = Namespace(lwmConfig.underlying.getString("lwm.namespace"))
 }
 
 trait SemanticRepositoryModule {
-  self: BaseNamespace with ConfigurationModule =>
 
   def repository: SesameRepository
 }
-//TODO: ADD A PROPER PATH FOR THE STORAGE FOLDER
-//Note: Relative paths do not directly work.
+
 trait DefaultSemanticRepositoryModuleImpl extends SemanticRepositoryModule {
-  self: BaseNamespace with ConfigurationModule =>
+  self: BaseNamespace with DbFolder =>
 
-  val folder = {
-    val file = new File(lwmConfig.underlying.getString("lwm.store.path"))
-
-    if(Files.exists(file.toPath)) file
-    else Files.createDirectory(file.toPath).toFile
-  }
-
-  val repository: SesameRepository = SesameRepository(namespace)
+  val repository: SesameRepository = SesameRepository(folder, namespace)
 }
