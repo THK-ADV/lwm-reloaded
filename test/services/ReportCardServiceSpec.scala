@@ -80,6 +80,8 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     )
   }
 
+  val student = UUID.randomUUID
+
   "A ReportCardServiceSpec " should {
 
     "successfully return report cards for given schedule" in {
@@ -120,7 +122,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -143,7 +145,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -171,7 +173,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -198,7 +200,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, !(e.index == 7), 0)
         }
 
-        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
