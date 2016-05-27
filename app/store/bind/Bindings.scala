@@ -415,6 +415,19 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     implicit val annotationBinding: PGBinder[Rdf, Annotation] = pgbWithId[Annotation](annotation => makeUri(Annotation.generateUri(annotation)))(student, labwork, reportCardEntry, message, timestamp, id)(Annotation.apply, Annotation.unapply) withClasses classUri
   }
+
+  object ReportCardEvaluationBinding {
+    implicit val clazz = lwm.ReportCardEvaluation
+    implicit val classUri = classUrisFor[ReportCardEvaluation](clazz)
+
+    private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
+    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
+    private val label = property[String](lwm.label)
+    private val bool = property[Boolean](lwm.bool)
+    private val int = property[Int](lwm.int)
+
+    implicit val reportCardEvaluationBinding: PGBinder[Rdf, ReportCardEvaluation] = pgbWithId[ReportCardEvaluation](eval => makeUri(ReportCardEvaluation.generateUri(eval)))(student, labwork, label, bool, int, id)(ReportCardEvaluation.apply, ReportCardEvaluation.unapply) withClasses classUri
+  }
 }
 
 object Bindings {

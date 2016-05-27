@@ -13,7 +13,7 @@ object Prefixes {
     // _
     val id = apply("id")
 
-    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role
+    //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role, ReportCardEvaluation
     val label = apply("label")
 
     // Labwork, LabworkApplication, Room, Degree, TimetableEntry, RefRole, Annotation
@@ -67,7 +67,7 @@ object Prefixes {
     val permissions = apply("permissions")
     val privileged = apply("privileged")
 
-    // Group, Timetable, Schedule, Annotation, Assignmentplan, ReportCardEntry
+    // Group, Timetable, Schedule, Annotation, Assignmentplan, ReportCardEntry, ReportCardEvaluation
     val members = apply("members")
     val labwork = apply("labwork")
 
@@ -87,7 +87,7 @@ object Prefixes {
     // ScheduleEntry
     val group = apply("group")
 
-    // Annotation, ReportCardEntry
+    // Annotation, ReportCardEntry, ReportCardEvaluation
     val student = apply("student")
 
     // Labwork
@@ -122,6 +122,7 @@ object Prefixes {
     val ReportCardEntryType = apply("ReportCardEntryType")
     val Rescheduled = apply("Rescheduled")
     val Annotation = apply("Annotation")
+    val ReportCardEvaluation = apply("ReportCardEvaluation")
   }
 
   object LWMPrefix {
