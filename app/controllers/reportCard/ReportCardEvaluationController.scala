@@ -107,39 +107,32 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     Success(Some(Ok.chunked(chunkAtoms(evals)).as(mimeType)))
   }
 
-  private def evalsByService(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = {
+  private def evalsByService(labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = {
     import defaultBindings.AssignmentPlanBinding._
     import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
     import utils.Ops.MonadInstances.tryM
     import utils.Ops.TraverseInstances.travO
     import utils.Ops._
+    import store.sparql.select
+    import store.sparql.select._
 
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
-    def query(variable: String, subject: repository.Rdf#URI) = {
-      import store.sparql.select
-      import store.sparql.select._
-
-      select (variable) where {
-        **(v(variable), p(rdf.`type`), s(subject)).
-          **(v(variable), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labwork))))
-      }
+    val labworkId = UUID.fromString(labwork)
+    val cardsQuery = select ("cards") where {
+      **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+        **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labworkId)))
     }
 
-    /*val apQuery = repository.prepareQuery(query("ap", lwm.AssignmentPlan)).
-      select(_.get("ap")).
-      transform(_.fold(List.empty[Value])(vs => vs)).transform(_.headOption).
-      request[Option, AssignmentPlan](v => repository.getManyExpanded[AssignmentPlan](List(v.stringValue)))*/
-
-    val cardsQuery = repository.prepareQuery(query("cards", lwm.ReportCardEntry)).
+    val cardsPrepared = repository.prepareQuery(cardsQuery).
       select(_.get("cards")).
       transform(_.fold(List.empty[Value])(vs => vs)).
       requestAll[Set, ReportCardEntry](vs => repository.getManyExpanded[ReportCardEntry](vs.map(_.stringValue)))
 
     val result = for {
-      assignmentPlan <- repository.get[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork))) // TODO query does not work, there are two objects to expand
-      cards <- cardsQuery.run
+      assignmentPlan <- repository.get[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
+      cards <- cardsPrepared.run
       optEvals = assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
       result <- optEvals.map(toResult).sequenceM
     } yield result.flatten
@@ -153,11 +146,11 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   private def previewWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
-    evalsByService(course, labwork)(toResult)
+    evalsByService(labwork)(toResult)
   }
 
   private def createWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    evalsByService(course, labwork)(toResult)
+    evalsByService(labwork)(toResult)
   }
 
   private def allWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(GetAll) action { implicit request =>
@@ -216,7 +209,9 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         _ append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(students.head))))
       }
       case _ => Failure(new Throwable("Unknown attribute"))
-    } map (clause => select distinct "entries" where clause) flatMap { query =>
+    } flatMap { clause =>
+      val query = select distinct "entries" where clause
+
       repository.prepareQuery(query).
         select(_.get("entries")).
         transform(_.fold(List.empty[String])(_.map(_.stringValue))).
