@@ -47,7 +47,7 @@ object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisat
   override def base: String = "reportCardEntries"
 
   implicit def atomicWrites: Writes[ReportCardEntryAtom] = Writes[ReportCardEntryAtom] { entry =>
-    val json = Json.obj(
+    val base = Json.obj(
       "student" -> Json.toJson(entry.student),
       "labwork" -> Json.toJson(entry.labwork),
       "label" -> entry.label,
@@ -55,17 +55,12 @@ object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisat
       "start" -> entry.start.toString,
       "end" -> entry.end.toString,
       "room" -> Json.toJson(entry.room),
-      "entryTypes" -> Json.toJson(entry.entryTypes),
-      "id" -> entry.id.toString
+      "entryTypes" -> Json.toJson(entry.entryTypes)
     )
 
-    entry.rescheduled.fold(json)(rs =>
-      json + ("rescheduled" -> Json.obj(
-      "date" -> rs.date.toString,
-      "start" -> rs.start.toString,
-      "end" -> rs.end.toString,
-      "room" -> Json.toJson(rs.room)))
-    )
+    entry.rescheduled.fold(base)(rs =>
+      base + ("rescheduled" -> Json.toJson(rs)(Rescheduled.atomicWrties))
+    ) + ("id" -> Json.toJson(entry.id.toString))
   }
 
   override implicit def reads: Reads[ReportCardEntry] = Json.reads[ReportCardEntry]
@@ -105,4 +100,6 @@ object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled] {
   override implicit def reads: Reads[Rescheduled] = Json.reads[Rescheduled]
 
   override implicit def writes: Writes[Rescheduled] = Json.writes[Rescheduled]
+
+  implicit def atomicWrties: Writes[RescheduledAtom] = Json.writes[RescheduledAtom]
 }
