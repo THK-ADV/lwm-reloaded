@@ -10,7 +10,7 @@ case class Course(label: String, description: String, abbreviation: String, lect
 
 case class CourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
 
-case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: Employee, semesterIndex: Int, id: UUID)
+case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: Employee, semesterIndex: Int, id: UUID) extends UniqueEntity
 
 object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol, Course] {
   import models.users.Employee._

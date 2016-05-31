@@ -15,6 +15,36 @@ import store.Prefixes.LWMPrefix
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
+import BindingsS._
+
+object BindingsS {
+
+  implicit class RecordBinderComp[Rdf <: RDF](recordBinder: RecordBinder[Rdf]) {
+    def compositeClass[T](clazz: Rdf#URI, classComponents: Rdf#URI*): CompositeClassUris[Rdf, T] = new CompositeClassUris[Rdf, T] {
+      override def classes: Iterable[Rdf#URI] = Iterable(clazz)
+
+      override def components: Iterable[Rdf#URI] = classComponents
+    }
+  }
+
+  trait CompositeClassUris[Rdf <: RDF, T] {
+    self =>
+    def classes: Iterable[Rdf#URI]
+
+    def components: Iterable[Rdf#URI]
+
+    def classUris: ClassUrisFor[Rdf, T] = new ClassUrisFor[Rdf, T] {
+      override def classes: Iterable[Rdf#URI] = self.classes
+    }
+
+    def #>[A](c: CompositeClassUris[Rdf, A]): CompositeClassUris[Rdf, T] = new CompositeClassUris[Rdf, T] {
+      override def classes: Iterable[Rdf#URI] = self.classes
+
+      override def components: Iterable[Rdf#URI] = self.components ++ c.classes ++ c.components
+    }
+  }
+
+}
 
 class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordBinder: RecordBinder[Rdf]) {
 
@@ -42,7 +72,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   implicit def uuidRefBinder(splitter: URLSplit[UUID]): PGBinder[Rdf, UUID] = new PGBinder[Rdf, UUID] {
     override def toPG(t: UUID): PointedGraph[Rdf] = {
       PointedGraph(ops.makeUri(splitter.to(t)))
-  }
+    }
 
     override def fromPG(pointed: PointedGraph[Rdf]): Try[UUID] = {
       pointed.pointer.as[Rdf#URI].map { value =>
@@ -108,6 +138,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     val classUri: ClassUrisFor[Rdf, User] = classUrisFor[User](clazz)
 
     implicit val userBinder: PGBinder[Rdf, User] = new PGBinder[Rdf, User] {
+
       import StudentBinding._
       import EmployeeBinding._
 
@@ -137,6 +168,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object StudentBinding {
     implicit val clazz = lwm.User
     implicit val classUri: ClassUrisFor[Rdf, Student] = classUrisFor[Student](clazz)
+    implicit val compClass: CompositeClassUris[Rdf, Student] = recordBinder.compositeClass(clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -151,6 +183,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object EmployeeBinding {
     implicit val clazz = lwm.User
     implicit val classUri: ClassUrisFor[Rdf, Employee] = classUrisFor[Employee](clazz)
+    implicit val compositeClassUris: CompositeClassUris[Rdf, Employee] = recordBinder.compositeClass[Employee](clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -172,6 +205,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object RefRoleBinding {
+
     import RoleBinding.roleBinder
 
     implicit val clazz = lwm.RefRole
@@ -219,6 +253,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object AssignmentPlanBinding {
     implicit val clazz = lwm.AssignmentPlan
     implicit val classUri = classUrisFor[AssignmentPlan](clazz)
+    implicit val compClass: CompositeClassUris[Rdf, AssignmentPlan] = recordBinder.compositeClass(clazz, AssignmentEntryBinding.clazz, AssignmentEntryTypeBinding.clazz)
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val attendance = property[Int](lwm.attendance)
@@ -231,34 +266,50 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object LabworkBinding {
     implicit val clazz = lwm.Labwork
     implicit val classUri = classUrisFor[Labwork](clazz)
+    implicit val compositeClassUris: CompositeClassUris[Rdf, Labwork] = recordBinder.compositeClass[Labwork](clazz)
+    implicit val atomicClassUri =
+      recordBinder.compositeClass[LabworkAtom](clazz) #>
+        SemesterBinding.compositeClassUris #>
+        CourseBinding.atomicClassUris #>
+        DegreeBinding.compositeClassUris
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
+    private val semester2 = property[Semester](lwm.semester)(SemesterBinding.semesterBinder)
     private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val course2 = property[CourseAtom](lwm.course)(CourseBinding.courseAtomicBinder)
     private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
+    private val degree2 = property[Degree](lwm.degree)(DegreeBinding.degreeBinder)
     private val subscribable = property[Boolean](lwm.subscribable)
     private val published = property[Boolean](lwm.published)
 
     implicit val labworkBinder: PGBinder[Rdf, Labwork] = pgbWithId[Labwork](labwork => makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, published, id)(Labwork.apply, Labwork.unapply) withClasses classUri
+    implicit val labworkAtomicBinder: PGBinder[Rdf, LabworkAtom] =
+      pgbWithId[LabworkAtom](atom => makeUri(Labwork.generateUri(atom.id)))(label, description, semester2, course2, degree2, subscribable, published, id)(LabworkAtom.apply, LabworkAtom.unapply) withClasses atomicClassUri.classUris
   }
 
   object CourseBinding {
     implicit val clazz = lwm.Course
     implicit val classUri = classUrisFor[Course](clazz)
+    implicit val compositeClassUris = recordBinder.compositeClass[Course](clazz)
+    implicit val atomicClassUris = recordBinder.compositeClass[CourseAtom](clazz) #> EmployeeBinding.compositeClassUris
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val abbreviation = property[String](lwm.abbreviation)
     private val lecturer = property[UUID](lwm.lecturer)(uuidRefBinder(User.splitter))
+    private val lecturer2 = property[Employee](lwm.lecturer)(EmployeeBinding.employeeBinder)
     private val semesterIndex = property[Int](lwm.semesterIndex)
 
     implicit val courseBinder: PGBinder[Rdf, Course] = pgbWithId[Course](course => makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, id)(Course.apply, Course.unapply) withClasses classUri
+    implicit val courseAtomicBinder: PGBinder[Rdf, CourseAtom] = pgbWithId[CourseAtom](atom => makeUri(Course.generateUri(atom.id)))(label, description, abbreviation, lecturer2, semesterIndex, id)(CourseAtom.apply, CourseAtom.unapply) withClasses atomicClassUris.classUris
   }
 
   object DegreeBinding {
     implicit val clazz = lwm.Degree
     implicit val classUri = classUrisFor[Degree](clazz)
+    implicit val compositeClassUris = recordBinder.compositeClass[Degree](clazz)
 
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
@@ -290,6 +341,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object SemesterBinding {
     implicit val clazz = lwm.Semester
     implicit val classUri = classUrisFor[Semester](clazz)
+    implicit val compositeClassUris = recordBinder.compositeClass[Semester](clazz)
 
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
@@ -327,6 +379,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   }
 
   object ScheduleBinding {
+
     import ScheduleEntryBinding.scheduleEntryBinder
 
     implicit val clazz = lwm.Schedule
@@ -366,6 +419,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
   object ReportCardEntryBinding {
     implicit val clazz = lwm.ReportCardEntry
     implicit val classUri = classUrisFor[ReportCardEntry](clazz)
+    implicit val comPos = recordBinder.compositeClass[ReportCardEntry](clazz, ReportCardEntryTypeBinding.clazz, RescheduledBinding.clazz)
 
     private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
@@ -428,6 +482,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     implicit val reportCardEvaluationBinding: PGBinder[Rdf, ReportCardEvaluation] = pgbWithId[ReportCardEvaluation](eval => makeUri(ReportCardEvaluation.generateUri(eval)))(student, labwork, label, bool, int, id)(ReportCardEvaluation.apply, ReportCardEvaluation.unapply) withClasses classUri
   }
+
 }
 
 object Bindings {
