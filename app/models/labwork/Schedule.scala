@@ -37,9 +37,9 @@ case class ScheduleEntry(labwork: UUID,
   * Atoms
   */
 
-case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID)
+case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID)
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule] {
 

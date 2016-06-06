@@ -10,7 +10,7 @@ import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 import services.ScheduleEntryG
 
-case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], id: UUID) extends UniqueEntity {
+case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], id: UUID = Timetable.randomUUID) extends UniqueEntity {
 
   import Blacklist.dateOrd
 
@@ -44,7 +44,7 @@ case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start:
   * Atom
   */
 
-case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], id: UUID)
+case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], id: UUID) extends UniqueEntity
 
 case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
 

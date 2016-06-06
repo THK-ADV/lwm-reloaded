@@ -3,8 +3,8 @@ package controllers.security
 import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
-import models.users.{User, Employee}
-import models.{CourseAtom, Course, UriGenerator}
+import models.users.{Employee, User}
+import models.{Course, CourseAtom, UriGenerator}
 import models.security.{RefRole, RefRoleAtom, RefRoleProtocol, Role}
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
@@ -13,6 +13,7 @@ import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -27,13 +28,9 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
 
   override implicit def writes: Writes[RefRole] = RefRole.writes
 
-  override implicit def rdfReads: FromPG[Sesame, RefRole] = defaultBindings.RefRoleBinding.refRoleBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, RefRole] = defaultBindings.RefRoleBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[RefRole] = RefRole
 
-  override implicit def rdfWrites: ToPG[Sesame, RefRole] = defaultBindings.RefRoleBinding.refRoleBinder
+  override implicit def descriptor: Descriptor[Sesame, RefRole] = defaultBindings.RefRoleDescriptor
 
   override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = existing match {
     case Some(refRole) => RefRole(input.course, input.role, refRole.id)
@@ -54,19 +51,14 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
   }
 
   override protected def atomize(output: RefRole): Try[Option[JsValue]] = {
-    import defaultBindings.RoleBinding.roleBinder
-    import defaultBindings.CourseBinding.courseBinder
-    import defaultBindings.EmployeeBinding.employeeBinder
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{tryM, optM}
     import RefRole.atomicWrites
-    import utils.Ops.MonadInstances.optM
-    import scalaz.syntax.applicative._
+    import defaultBindings.RefRoleAtomDescriptor
 
-    for {
-      role <- repository.get[Role](Role.generateUri(output.role)(namespace))
-      course <- output.course.fold[Try[Option[Course]]](Success(None))(id => repository.get[Course](Course.generateUri(id)(namespace)))
-      employee <- course.fold[Try[Option[Employee]]](Success(None))(course => repository.get[Employee](User.generateUri(course.lecturer)(namespace)))
-      courseAtom = (course |@| employee)((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
-    } yield role.map(r => Json.toJson(RefRoleAtom(courseAtom, r, output.id)))
+    implicit val ns = repository.namespace
+
+    repository.get[RefRoleAtom](RefRole.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

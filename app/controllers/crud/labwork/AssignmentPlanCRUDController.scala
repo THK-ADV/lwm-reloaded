@@ -14,6 +14,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
@@ -31,14 +32,9 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries
   }
-
-  override implicit def rdfReads: FromPG[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanDescriptor
 
   override implicit def uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
-
-  override implicit def rdfWrites: ToPG[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
 
   override protected def atomize(output: AssignmentPlan): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
@@ -55,7 +51,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
-    import defaultBindings.LabworkBinding.labworkBinder
+    import defaultBindings.LabworkDescriptor
 
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]

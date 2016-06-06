@@ -66,9 +66,9 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     "create a session when a user is authorized and contains entries" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.attributes(anyString())(anyObject())).thenReturn(Future.successful(user))
-      import bindings.RefRoleBinding._
-      import bindings.RoleBinding._
-      import bindings.permissionBinder
+      import bindings.{
+      RefRoleDescriptor,
+      RoleDescriptor}
 
       val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
       val employeeRole = Role("Employee", Set(Permissions.course.create, Permissions.timetable.create))
@@ -96,7 +96,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
 
   override protected def beforeEach(): Unit = {
-    repository.connection { conn =>
+    repository.connect { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

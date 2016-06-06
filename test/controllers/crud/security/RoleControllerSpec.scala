@@ -1,19 +1,16 @@
 package controllers.crud.security
 
-import java.util.UUID
-
 import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
 import controllers.security.RoleController
 import models.security.{Permission, Role, RoleProtocol}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import store.SesameRepository
 import utils.LwmMimeType
 
 class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] {
   import ops._
-  import bindings.RoleBinding._
+  import bindings.RoleDescriptor
   override def entityTypeName: String = "role"
 
   override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleController(repository, sessionService, namespace, roleService) {
@@ -28,6 +25,8 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] 
   override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)
 
   override val entityToPass: Role = Role("role to pass", Set(Permission("permission to pass")), Role.randomUUID)
+
+  implicit val roleBinder = RoleDescriptor.binder
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 

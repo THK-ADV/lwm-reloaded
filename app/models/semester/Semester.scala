@@ -7,7 +7,7 @@ import models.{UriGenerator, UniqueEntity}
 import org.joda.time.LocalDate
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID) extends UniqueEntity {
+case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID = Semester.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
     case Semester(l, a, s, e, ex, i) =>

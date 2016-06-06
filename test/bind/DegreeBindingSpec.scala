@@ -11,9 +11,14 @@ import scala.util.{Failure, Success}
 class DegreeBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.DegreeBinding._
-  import bindings.uuidBinder
+
+  import bindings.{
+  DegreeDescriptor,
+  uuidBinder
+  }
   import ops._
+
+  implicit val degreeBinder = DegreeDescriptor.binder
 
   val degree = Degree("degree", "abbreviation", Degree.randomUUID)
   val degreeGraph = (

@@ -44,9 +44,10 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
     "abbreviation" -> s"${entityToPass.abbreviation} updated"
   )
 
-  import bindings.DegreeBinding.degreeBinder
+  import bindings.DegreeDescriptor
   import ops._
 
+  implicit val degreeBinder = DegreeDescriptor.binder
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A DegreeCRUDControllerSpec also " should {

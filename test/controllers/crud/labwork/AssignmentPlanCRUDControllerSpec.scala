@@ -47,8 +47,10 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
 
   override val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 
-  import bindings.AssignmentPlanBinding.assignmentPlanBinder
   import ops._
+  import bindings.AssignmentPlanDescriptor
+
+  implicit val assignmentPlanBinder = AssignmentPlanDescriptor.binder
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val updateJson: JsValue = Json.obj(
@@ -74,7 +76,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val ap3 = AssignmentPlan(labwork, 0, 0, entries("ap3"))
       val ap4 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap4"))
 
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(Set(ap1, ap2, ap3, ap4)))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap1, ap2, ap3, ap4)))
 
       val request = FakeRequest(
         GET,
@@ -91,7 +93,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val labwork = UUID.randomUUID
       val errorMessage = "Oops, something went wrong"
 
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
 
       val request = FakeRequest(
         GET,
@@ -120,7 +122,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val ap7 = AssignmentPlan(lab2.id, 0, 0, entries("ap7"))
       val ap8 = AssignmentPlan(lab1.id, 0, 0, entries("ap8"))
 
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(Set(
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(
         ap1, ap2, ap3, ap4, ap5, ap6, ap7, ap8
       )))
       when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
@@ -142,7 +144,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val aps = (0 until 1).map(i => AssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
 
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(aps))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(aps))
       when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
 
       val request = FakeRequest(
@@ -159,7 +161,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     "not return assignment plans when there is an invalid query attribute" in {
       val aps = (0 until 1).map(i => AssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
 
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(aps))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(aps))
 
       val request = FakeRequest(
         GET,

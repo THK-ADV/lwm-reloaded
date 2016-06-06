@@ -17,6 +17,7 @@ import play.api.mvc.{Action, Controller, Result}
 import services._
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.{Gen, LwmMimeType}
 
@@ -34,7 +35,7 @@ object ScheduleController {
     lazy val lwm = LWMPrefix[repository.Rdf]
     val bindings = Bindings[repository.Rdf](repository.namespace)
 
-    import bindings.ScheduleBinding._
+    import bindings.ScheduleDescriptor
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops._
@@ -65,7 +66,7 @@ object ScheduleController {
 
   def toScheduleG(schedule: Schedule, repository: SesameRepository): Option[ScheduleG] = {
     val bindings = Bindings[repository.Rdf](repository.namespace)
-    import bindings.GroupBinding.groupBinder
+    import bindings.GroupDescriptor
     import utils.Ops._
     import MonadInstances._
 
@@ -96,11 +97,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     with JsonSerialisation[Schedule, Schedule]
     with Atomic[Schedule] {
 
-  override implicit def rdfWrites: ToPG[Sesame, Schedule] = defaultBindings.ScheduleBinding.scheduleBinder
-
-  override implicit def rdfReads: FromPG[Sesame, Schedule] = defaultBindings.ScheduleBinding.scheduleBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Schedule] = defaultBindings.ScheduleBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, Schedule] = defaultBindings.ScheduleDescriptor
 
   override implicit def uriGenerator: UriGenerator[Schedule] = Schedule
 
@@ -119,11 +116,10 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { implicit request =>
-    repository.deleteCascading((UUID.fromString _ andThen Schedule.generateUri)(schedule)) match {
+    repository.delete[Schedule]((UUID.fromString _ andThen Schedule.generateUri)(schedule)) match {
       case Success(s) =>
         Ok(Json.obj(
-          "status" -> "OK",
-          "deleted" -> s
+          "status" -> "OK"
         ))
       case Failure(e) =>
         InternalServerError(Json.obj(
@@ -185,29 +181,21 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     import utils.Ops._
     import MonadInstances.{optM, tryM}
     import TraverseInstances.{travO, travT}
-
-    implicit val gb = defaultBindings.GroupBinding.groupBinder
-    implicit val gcu = defaultBindings.GroupBinding.classUri
-    implicit val lb = defaultBindings.LabworkBinding.labworkBinder
-    implicit val sb = defaultBindings.SemesterBinding.semesterBinder
-    implicit val tb = defaultBindings.TimetableBinding.timetableBinder
-    implicit val tcu = defaultBindings.TimetableBinding.classUri
-    implicit val ab = defaultBindings.AssignmentPlanBinding.assignmentPlanBinder
-    implicit val abu = defaultBindings.AssignmentPlanBinding.classUri
+    import defaultBindings.{GroupDescriptor, LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
 
     val id = UUID.fromString(labwork)
 
     val genesis = for {
-      lab <- repository.get[Labwork](Labwork.generateUri(UUID.fromString(labwork)))
-      semester <- lab.map(l => repository.get[Semester](Semester.generateUri(l.semester))).sequenceM
-      groups <- repository.get[Group].map(_.filter(_.labwork == id))
-      timetable <- repository.get[Timetable].map(_.find(_.labwork == id))
-      plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == id))
+      lab <- repository.get[LabworkAtom](Labwork.generateUri(UUID.fromString(labwork)))
+      semester = lab map (_.semester)
+      groups <- repository.getAll[Group].map(_.filter(_.labwork == id))
+      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == id))
+      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == id))
       comp <- competitive(id, repository)
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
-      s <- semester.flatten
+      s <- semester
       g <- if (groups.nonEmpty) Some(groups) else None
     } yield scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
 
@@ -236,28 +224,11 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   override protected def atomize(output: Schedule): Try[Option[JsValue]] = {
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import defaultBindings.GroupBinding.groupBinder
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.RoomBinding.roomBinder
+    import defaultBindings.ScheduleAtomDescriptor
+    import Schedule.atomicWrites
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{tryM, optM}
 
-    for {
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      rooms <- repository.getMany[Room](output.entries.map(e => Room.generateUri(e.room)(namespace)))
-      supervisors <- repository.getMany[Employee](output.entries.map(e => User.generateUri(e.supervisor)(namespace)))
-      groups <- repository.getMany[Group](output.entries.map(e => Group.generateUri(e.group)(namespace)))
-    } yield labwork.map { l =>
-      val entries = output.entries.foldLeft(Set.empty[ScheduleEntryAtom]) { (newSet, e) =>
-        (for {
-          r <- rooms.find(_.id == e.room)
-          s <- supervisors.find(_.id == e.supervisor)
-          g <- groups.find(_.id == e.group)
-        } yield ScheduleEntryAtom(l, e.start, e.end, e.date, r, s, g, e.id)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-      Json.toJson(ScheduleAtom(l, entries, output.id))(Schedule.atomicWrites)
-    }
+    repository.get[ScheduleAtom](Schedule.generateUri(output)) peek (Json.toJson(_))
   }
 }

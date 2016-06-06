@@ -12,16 +12,14 @@ import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 
 import scala.collection.Map
 import scala.util.{Success, Try}
 
 class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoomProtocol, Room] {
-   override implicit def rdfWrites: ToPG[Sesame, Room] = defaultBindings.RoomBinding.roomBinder
 
-   override implicit def rdfReads: FromPG[Sesame, Room] = defaultBindings.RoomBinding.roomBinder
-
-   override implicit def classUrisFor: ClassUrisFor[Sesame, Room] = defaultBindings.RoomBinding.classUri
+   override implicit def descriptor: Descriptor[Sesame, Room] = defaultBindings.RoomDescriptor
 
    override implicit def uriGenerator: UriGenerator[Room] = Room
 

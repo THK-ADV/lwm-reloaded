@@ -54,7 +54,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def namespace: Namespace = Namespace("http://testNamespace/")
 
-  def fgrammar(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
+  def plural(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
 
   when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
   when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
@@ -63,7 +63,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     s"successfully create a new $entityTypeName" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(repository.add(anyObject())(anyObject())).thenReturn(Success(pointedGraph))
-      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
+      when(repository.getAll[O](anyObject())).thenReturn(Success(Set.empty[O]))
 
       val request = FakeRequest(
         POST,
@@ -82,7 +82,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       val errorMessage = s"Oops, cant create $entityTypeName for some reason"
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(repository.add(anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(Set.empty[O]))
+      when(repository.getAll[O](anyObject())).thenReturn(Success(Set.empty[O]))
 
       val request = FakeRequest(
         POST,
@@ -166,9 +166,9 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
-    s"successfully get all ${fgrammar(entityTypeName)}" in {
+    s"successfully get all ${plural(entityTypeName)}" in {
       val allEntities = Set(entityToPass, entityToFail)
-      when(repository.get[O](anyObject(), anyObject())).thenReturn(Success(allEntities))
+      when(repository.getAll[O](anyObject())).thenReturn(Success(allEntities))
 
       val request = FakeRequest(
         GET,
@@ -181,9 +181,9 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
       contentAsJson(result) shouldBe Json.toJson(allEntities)
     }
 
-    s"not get all ${fgrammar(entityTypeName)} when there is an exception" in {
+    s"not get all ${plural(entityTypeName)} when there is an exception" in {
       val errorMessage = s"Oops, cant get all ${entityTypeName}s for some reason"
-      when(repository.get[O](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.getAll[O](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         GET,
@@ -200,7 +200,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.deleteCascading(anyString())).thenReturn(Success(true))
+      when(repository.delete(anyString())(anyObject())).thenReturn(Success(()))
 
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
@@ -216,7 +216,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
     s"not delete an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
-      when(repository.deleteCascading(anyString())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.delete(anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         DELETE,
@@ -343,7 +343,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    repository.connection { conn =>
+    repository.connect { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

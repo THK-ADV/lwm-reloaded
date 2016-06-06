@@ -16,9 +16,11 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import store.sparql.{Clause, select}
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -45,13 +47,9 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
-  override implicit def rdfReads: FromPG[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationBinding.labworkApplicationBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[LabworkApplication] = LabworkApplication
 
-  override implicit def rdfWrites: ToPG[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationBinding.labworkApplicationBinder
+  override implicit def descriptor: Descriptor[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationDescriptor
 
   override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = input.friends == output.friends
 
@@ -70,19 +68,12 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
   }
 
   override protected def atomize(output: LabworkApplication): Try[Option[JsValue]] = {
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{optM, tryM}
+    import defaultBindings.LabworkApplicationAtomDescriptor
     import LabworkApplication.atomicWrites
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.StudentBinding.studentBinder
-
-    for {
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      applicant <- repository.get[Student](User.generateUri(output.applicant)(namespace))
-      friends <- repository.getMany[Student](output.friends.map(id => User.generateUri(id)(namespace)))
-    } yield for {
-      l <- labwork; app <- applicant
-    } yield Json.toJson(
-      LabworkApplicationAtom(l, app, friends, output.timestamp, output.id)
-    )
+    implicit val ns = repository.namespace
+    repository.get[LabworkApplicationAtom](LabworkApplication.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

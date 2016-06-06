@@ -77,9 +77,10 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   override val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
   import ops._
-  import bindings.TimetableBinding.timetableBinder
+  import bindings.TimetableDescriptor
   import bindings.localDateBinder
 
+  implicit val timetableBinder = TimetableDescriptor.binder
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
@@ -117,12 +118,12 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   )
 
   "A TimetableCRUDControllerSpec also " should {
-    
+
     "return all timetables for a given course" in {
       val course = UUID.randomUUID
       val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      
+
       val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
@@ -132,7 +133,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
 
-      when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(Set(
+      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
       )))
       when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
@@ -152,7 +153,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       import Timetable.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(labworkToPass))).
+        doReturn(Success(Some(atomizedEntityToPass))).
         when(repository).get(anyObject())(anyObject())
 
       doReturn(Success(Set(roomToPass))).
@@ -176,11 +177,6 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
         doReturn(Success(None)).
         when(repository).get(anyObject())(anyObject())
 
-      doReturn(Success(Set(roomToPass))).
-        doReturn(Success(Set(supervisorToPass))).
-        doReturn(Success(Set(degreeToPass))).
-        when(repository).getMany(anyObject())(anyObject())
-
       val request = FakeRequest(
         GET,
         s"/${entityTypeName}s/${entityToPass.id}"
@@ -198,14 +194,8 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     s"not get a single $entityTypeName atomized when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(labworkToPass))).
+      doReturn(Failure(new Exception(errorMessage))).
         when(repository).get(anyObject())(anyObject())
-
-      doReturn(Success(Set(roomToPass))).
-        doReturn(Failure(new Exception(errorMessage))).
-        doReturn(Success(Set(degreeToPass))).
-        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -221,24 +211,16 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       )
     }
 
-    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+    s"successfully get all ${plural(entityTypeName)} atomized" in {
       import Timetable.atomicWrites
 
       val timetables = Set(entityToPass, entityToFail)
 
-      when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(timetables))
+      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(timetables))
 
-      doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(labworkToFail))).
+      doReturn(Success(Some(atomizedEntityToPass))).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
-
-      doReturn(Success(Set(roomToPass))).
-        doReturn(Success(Set(supervisorToPass))).
-        doReturn(Success(Set(degreeToPass))).
-        doReturn(Success(Set(roomToFail))).
-        doReturn(Success(Set(supervisorToFail))).
-        doReturn(Success(Set(degreeToFail))).
-        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -251,13 +233,14 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
     }
 
-    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+    s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
       val timetables = Set(entityToPass, entityToFail)
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[Timetable](anyObject(), anyObject())).thenReturn(Success(timetables))
+      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(timetables))
+
       doReturn(Failure(new Exception(errorMessage))).
-        when(repository).getMany(anyObject())(anyObject())
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

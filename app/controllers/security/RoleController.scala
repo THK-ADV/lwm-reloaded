@@ -8,6 +8,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import models.security.Permissions._
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -20,13 +21,9 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
 
   override implicit def writes: Writes[Role] = Role.writes
 
-  override implicit def rdfReads: FromPG[Sesame, Role] = defaultBindings.RoleBinding.roleBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Role] = defaultBindings.RoleBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[Role] = Role
 
-  override implicit def rdfWrites: ToPG[Sesame, Role] = defaultBindings.RoleBinding.roleBinder
+  override implicit def descriptor: Descriptor[Sesame, Role] = defaultBindings.RoleDescriptor
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 

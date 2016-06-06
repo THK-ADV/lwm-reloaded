@@ -18,7 +18,7 @@ case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, messa
 
 case class AnnotationProtocol(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String)
 
-case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, id: UUID)
+case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, id: UUID) extends UniqueEntity
 
 object Annotation extends UriGenerator[Annotation] with JsonSerialisation[AnnotationProtocol, Annotation] {
 

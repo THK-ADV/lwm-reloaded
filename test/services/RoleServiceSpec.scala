@@ -55,9 +55,11 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
   "A role service" should {
 
     "check refroles properly" in {
-      import bindings.RoleBinding._
-      import bindings.LabworkBinding._
-      import bindings.RefRoleBinding._
+      import bindings.{
+      RoleDescriptor,
+      LabworkDescriptor,
+      RefRoleDescriptor
+      }
       import util.Random.nextInt
 
       repository.addMany(roles)
@@ -99,10 +101,12 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
 
     "retrieve authorities properly" in {
-      import bindings.RoleBinding._
-      import bindings.AuthorityBinding._
-      import bindings.StudentBinding._
-      import bindings.RefRoleBinding._
+      import bindings.{
+      RoleDescriptor,
+      AuthorityDescriptor,
+      StudentDescriptor,
+      RefRoleDescriptor
+      }
 
       val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)

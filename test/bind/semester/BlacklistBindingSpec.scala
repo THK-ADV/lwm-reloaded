@@ -12,10 +12,14 @@ import scala.util.{Failure, Success}
 class BlacklistBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.uuidBinder
-  import bindings.dateTimeBinder
-  import bindings.BlacklistBinding.blacklistBinder
+
+  import bindings.{
+  BlacklistDescriptor,
+  uuidBinder,
+  dateTimeBinder}
   import ops._
+
+  implicit val blacklistBinder = BlacklistDescriptor.binder
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
   val blacklist = Blacklist("blacklist", dates, Blacklist.randomUUID)
@@ -44,5 +48,5 @@ class BlacklistBindingSpec extends SesameDbSpec {
           fail(s"Unable to deserialise blacklist graph: $e")
       }
     }
-    }
+  }
 }

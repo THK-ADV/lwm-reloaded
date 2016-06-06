@@ -12,9 +12,13 @@ import scala.util.{Failure, Success}
 class SemesterBindingSpec extends SesameDbSpec {
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.{uuidBinder, localDateBinder}
-  import bindings.SemesterBinding.semesterBinder
+  import bindings.{
+  SemesterDescriptor,
+  uuidBinder,
+  localDateBinder}
   import ops._
+
+  implicit val semesterBinder = SemesterDescriptor.binder
 
   val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5), Semester.randomUUID)
   val semesterGraph = (

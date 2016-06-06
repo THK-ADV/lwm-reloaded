@@ -33,7 +33,10 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
   override val entityToPass: Annotation = Annotation(studentToPass.id, labworkToPass.id, entryToPass.id, "message to pass")
 
   import ops._
-  import bindings.AnnotationBinding.annotationBinding
+  import bindings.AnnotationDescriptor
+
+  implicit val annotationBinder = AnnotationDescriptor.binder
+
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override def entityTypeName: String = "annotation"
@@ -98,7 +101,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       val third = Annotation(UUID.randomUUID, labwork, UUID.randomUUID, "message 3")
       val fourth = Annotation(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, "message 4")
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
 
       val request = FakeRequest(
@@ -119,7 +122,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       val third = Annotation(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, "message 3")
       val fourth = Annotation(student, UUID.randomUUID, UUID.randomUUID, "message 4")
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
 
       val request = FakeRequest(
@@ -140,7 +143,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       val third = Annotation(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, "message 3")
       val fourth = Annotation(UUID.randomUUID, UUID.randomUUID, reportCardEntry, "message 4")
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
 
       val request = FakeRequest(
@@ -162,7 +165,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       val third = Annotation(UUID.randomUUID, labwork, UUID.randomUUID, "message 3")
       val fourth = Annotation(student, labwork, UUID.randomUUID, "message 4")
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
 
       val request = FakeRequest(
@@ -180,9 +183,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       import Annotation.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(studentToPass))).
-        doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(entryToPass))).
+        doReturn(Success(Some(atomizedEntityToPass))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -241,14 +242,10 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     s"successfully get all annotations atomized" in {
       import Annotation.atomicWrites
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
 
-      doReturn(Success(Some(studentToPass))).
-        doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(entryToPass))).
-        doReturn(Success(Some(studentToFail))).
-        doReturn(Success(Some(labworkToFail))).
-        doReturn(Success(Some(entryToFail))).
+      doReturn(Success(Some(atomizedEntityToPass))).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -265,7 +262,8 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     s"not get all annotations atomized when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[Annotation](anyObject(), anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
+      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
+
       doReturn(Failure(new Exception(errorMessage))).
         when(repository).get(anyObject())(anyObject())
 

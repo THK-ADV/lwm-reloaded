@@ -13,6 +13,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.Result
 import services.{GroupServiceLike, RoleService, SessionHandlingService}
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
@@ -38,9 +39,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
-  override implicit def rdfWrites: ToPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Group] = defaultBindings.GroupBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, Group] = defaultBindings.GroupDescriptor
 
   override implicit def uriGenerator: UriGenerator[Group] = Group
 
@@ -184,8 +183,6 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     }
   }
 
-  override implicit def rdfReads: FromPG[Sesame, Group] = defaultBindings.GroupBinding.groupBinder
-
   override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = existing match {
     case Some(group) => Group(input.label, input.labwork, input.members, group.id)
     case None => Group(input.label, input.labwork, input.members, Group.randomUUID)
@@ -207,16 +204,12 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def atomize(output: Group): Try[Option[JsValue]] = {
+    import defaultBindings.GroupAtomDescriptor
     import Group.atomicWrites
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.StudentBinding._
-
-    for {
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      students <- repository.getMany[Student](output.members.map(id => User.generateUri(id)(namespace)))
-    } yield labwork.map { l =>
-      Json.toJson(GroupAtom(output.label, l, students, output.id))
-    }
+    import utils.Ops._
+    import utils.Ops.MonadInstances._
+    implicit val ns = repository.namespace
+    repository.get[GroupAtom](Group.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

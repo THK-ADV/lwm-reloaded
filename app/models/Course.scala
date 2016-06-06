@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models.users.Employee
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Course(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID) extends UniqueEntity
+case class Course(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID = Course.randomUUID) extends UniqueEntity
 
 case class CourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
 

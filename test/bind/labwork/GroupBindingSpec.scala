@@ -1,8 +1,10 @@
 package bind.labwork
 
+import java.util.UUID
+
 import base.SesameDbSpec
-import models.labwork.{Group, Labwork}
-import models.users.User
+import models.labwork.{Group, GroupAtom, Labwork}
+import models.users.{Student, User}
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.bind.Bindings
@@ -14,8 +16,13 @@ class GroupBindingSpec extends SesameDbSpec {
   import ops._
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.GroupBinding.groupBinder
-  import bindings.{uuidBinder, uuidRefBinder}
+
+  import bindings.{
+  GroupDescriptor,
+  uuidBinder,
+  uuidRefBinder}
+
+  implicit val groupBinder = GroupDescriptor.binder
 
   val group = Group("Label", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID), Group.randomUUID)
   val groupGraph = URI(Group.generateUri(group)).a(lwm.Group)
@@ -40,6 +47,37 @@ class GroupBindingSpec extends SesameDbSpec {
           s shouldEqual group
         case Failure(e) =>
           fail(s"Unable to deserialise group graph: $e")
+      }
+    }
+
+    "return an atomic group based on an RDF graph representation" in {
+      import bindings.{
+      LabworkDescriptor,
+      StudentDescriptor,
+      GroupDescriptor,
+      GroupAtomDescriptor
+      }
+
+      val labwork = Labwork("Label", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val student1 = Student("systemid1", "lastname1", "firstname1", "email1", "registrationId1", UUID.randomUUID())
+      val student2 = Student("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
+      val group = Group("label", labwork.id, Set(student1.id, student2.id))
+
+      val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.id)
+
+      repo.add[Labwork](labwork)
+      repo.add[Student](student1)
+      repo.add[Student](student2)
+      repo.add[Group](group)
+
+      repo.get[GroupAtom](Group.generateUri(group.id)) match {
+        case Success(Some(dgroup)) =>
+          dgroup shouldEqual groupAtom
+        case Success(None) =>
+          fail("Groups were not found")
+        case Failure(e) =>
+          fail(s"Group could not be deserialised: $e")
+
       }
     }
   }

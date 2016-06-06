@@ -5,17 +5,18 @@ import java.util.UUID
 import models.Degree
 import models.security.{Authority, RefRole, Role, Roles}
 import models.users.{Employee, Student, User}
-import org.w3.banana.{RDFPrefix, PointedGraph}
+import org.w3.banana.{PointedGraph, RDFPrefix}
 import org.w3.banana.binder.ToPG
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
+import store.bind.Descriptor.Descriptor
 import store.sparql.select
 import store.sparql.select._
 import utils.Ops.MonadInstances.optM
 import utils.Ops.NaturalTrasformations._
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 trait Resolvers {
   type R <: org.w3.banana.RDF
@@ -52,22 +53,25 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   }
 
   override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = {
-    import bindings.RefRoleBinding.{refRoleBinder, classUri => refRoleClassUri}
-    import bindings.RoleBinding.{roleBinder, classUri => roleClassUri}
+    import bindings.
+    {AuthorityDescriptor,
+    RefRoleDescriptor,
+    RoleDescriptor,
+    StudentDescriptor,
+    EmployeeDescriptor}
 
-    def f[Z <: User](entity: Z)(p: Role => Boolean)(implicit serialiser: ToPG[Sesame, Z]): Try[PointedGraph[Sesame]] =
+    def f[Z <: User](entity: Z)(p: Role => Boolean)(implicit descriptor: Descriptor[Rdf, Z]): Try[PointedGraph[Sesame]] =
       for {
-        roles <- repository.get[Role](roleBinder, roleClassUri)
-        refroles <- repository.get[RefRole](refRoleBinder, refRoleClassUri)
+        roles <- repository.getAll[Role]
+        refroles <- repository.getAll[RefRole]
         refrole = for {
           role <- roles.find(p)
           refrole <- refroles.find(_.role == role.id)
         } yield refrole
         user <- refrole match {
           case Some(refRole) =>
-            import bindings.AuthorityBinding._
             for {
-              user <- repository.add[Z](entity)(serialiser)
+              user <- repository.add[Z](entity)
               _ <- repository.add[Authority](Authority(v.id, Set(refRole.id)))
             } yield user
           case _ => Failure(new Throwable("No appropriate RefRole or Role found while resolving user"))
@@ -75,13 +79,13 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
       } yield user
 
     v match {
-      case s: Student => f(s)(_.label == Roles.Student)(bindings.StudentBinding.studentBinder)
-      case e: Employee => f(e)(_.label == Roles.Employee)(bindings.EmployeeBinding.employeeBinder)
+      case s: Student => f(s)(_.label == Roles.Student)
+      case e: Employee => f(e)(_.label == Roles.Employee)
     }
   }
 
   override def degree(abbreviation: String): Try[UUID] = {
-    import bindings.DegreeBinding.degreeBinder
+    import bindings.DegreeDescriptor
     import utils.Ops.MonadInstances.{tryM, optM}
     import utils.Ops.TraverseInstances.travO
 

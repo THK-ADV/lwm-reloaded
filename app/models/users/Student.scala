@@ -8,7 +8,7 @@ import play.api.libs.json.{Json, Reads, Writes}
 
 case class Student(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, id: UUID = User.randomUUID) extends User
 
-case class StudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: Degree, id: UUID)
+case class StudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: Degree, id: UUID) extends UniqueEntity
 
 object Student extends JsonSerialisation[Student, Student] {
 

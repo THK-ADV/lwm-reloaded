@@ -7,11 +7,12 @@ import models.UriGenerator
 import models.labwork.ReportCardEntryType
 import models.security.Permissions.{god, reportCardEntryType}
 import modules.store.BaseNamespace
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.binder.{FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsError, Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
 import services.{RoleService, SessionHandlingService}
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -31,13 +32,9 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
 
   override implicit def writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
 
-  override implicit def rdfReads: FromPG[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeDescriptor
 
   override implicit def uriGenerator: UriGenerator[ReportCardEntryType] = ReportCardEntryType
-
-  override implicit def rdfWrites: ToPG[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryTypeV1Json
 

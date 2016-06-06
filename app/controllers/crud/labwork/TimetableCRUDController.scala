@@ -1,9 +1,10 @@
 package controllers.crud.labwork
 
 import java.util.UUID
+
 import controllers.crud.AbstractCRUDController
 import models.labwork._
-import models.users.{User, Employee}
+import models.users.{Employee, User}
 import models._
 import models.security.Permissions._
 import org.openrdf.model.Value
@@ -16,9 +17,11 @@ import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 import TimetableCRUDController._
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 
 object TimetableCRUDController {
   val courseAttribute = "course"
@@ -32,13 +35,9 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
-  override implicit def rdfReads: FromPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Timetable] = defaultBindings.TimetableBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[Timetable] = Timetable
 
-  override implicit def rdfWrites: ToPG[Sesame, Timetable] = defaultBindings.TimetableBinding.timetableBinder
+  override implicit def descriptor: Descriptor[Sesame, Timetable] = defaultBindings.TimetableDescriptor
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
     case Some(timetable) =>
@@ -57,7 +56,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
-    import defaultBindings.LabworkBinding.labworkBinder
+    import defaultBindings.LabworkDescriptor
     import utils.Ops.MonadInstances.listM
     import store.sparql.select
     import store.sparql.select._
@@ -83,31 +82,12 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def atomize(output: Timetable): Try[Option[JsValue]] = {
-    import defaultBindings.LabworkBinding._
-    import defaultBindings.RoomBinding._
-    import defaultBindings.EmployeeBinding._
-    import defaultBindings.DegreeBinding._
-    import Timetable._
-    import TimetableEntry._
-
-    for {
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      rooms <- repository.getMany[Room](output.entries.map(e => Room.generateUri(e.room)(namespace)))
-      supervisors <- repository.getMany[Employee](output.entries.map(e => User.generateUri(e.supervisor)(namespace)))
-      degrees <- repository.getMany[Degree](output.entries.map(e => Degree.generateUri(e.degree)(namespace)))
-    } yield labwork.map { l =>
-      val entries = output.entries.foldLeft(Set.empty[TimetableEntryAtom]) { (newSet, e) =>
-        (for {
-          r <- rooms.find(_.id == e.room)
-          s <- supervisors.find(_.id == e.supervisor)
-          d <- degrees.find(_.id == e.degree)
-        } yield TimetableEntryAtom(s, r, d, e.dayIndex, e.start, e.end)) match {
-          case Some(atom) => newSet + atom
-          case None => newSet
-        }
-      }
-      Json.toJson(TimetableAtom(l, entries, output.start, output.localBlacklist, output.id))(Timetable.atomicWrites)
-    }
+    import defaultBindings.TimetableAtomDescriptor
+    import Timetable.atomicWrites
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{optM, tryM}
+    implicit val ns = repository.namespace
+    repository.get[TimetableAtom](Timetable.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

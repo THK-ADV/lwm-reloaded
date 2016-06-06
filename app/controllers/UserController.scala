@@ -93,71 +93,71 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   val bindings = Bindings[repository.Rdf](namespace)
 
-  import bindings.UserBinding
-  import bindings.StudentBinding
-  import bindings.EmployeeBinding
+  import bindings.UserDescriptor
+  import bindings.StudentDescriptor
+  import bindings.EmployeeDescriptor
 
   def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
-    repository.get[Student](uri)(StudentBinding.studentBinder)
+    repository.get[Student](uri)
   } { student =>
     Ok(Json.toJson(student)).as(mimeType)
   }
 
   def studentAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
-    repository.get[Student](uri)(StudentBinding.studentBinder) flatPeek atomize
+    repository.get[Student](uri) flatPeek atomize
   } { json =>
     Ok(json).as(mimeType)
   }
 
   def employee(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
-    repository.get[Employee](uri)(EmployeeBinding.employeeBinder)
+    repository.get[Employee](uri)
   } { employee =>
     Ok(Json.toJson(employee)).as(mimeType)
   }
 
   def allEmployees(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.get[Employee](EmployeeBinding.employeeBinder, EmployeeBinding.classUri)
+    repository.getAll[Employee]
   } { employees =>
     Ok.chunked(employeeChunker.chunkSimple(employees)).as(mimeType)
   }
 
   def allStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
+    repository.getAll[Student]
   } { students =>
     Ok.chunked(studentChunker.chunkSimple(students)).as(mimeType)
   }
 
   def allAtomicStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
+    repository.getAll[Student]
   } { students =>
     Ok.chunked(studentChunker.chunkAtoms(students)).as(mimeType)
   }
 
   def user(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}"
-    repository.get[User](uri)(UserBinding.userBinder)
+    repository.get[User](uri)
   } { user =>
     Ok(Json.toJson(user)).as(mimeType)
   }
 
   def allUsers(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.get[User](UserBinding.userBinder, UserBinding.classUri)
+    repository.getAll[User]
   } { users =>
     Ok.chunked(chunkSimple(users)).as(mimeType)
   }
 
   def userAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "")
-    repository.get[User](uri)(UserBinding.userBinder) flatPeek atomize
+    repository.get[User](uri) flatPeek atomize
   } { json =>
     Ok(json).as(mimeType)
   }
 
   def allUserAtomic(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.get[User](UserBinding.userBinder, UserBinding.classUri)
+    repository.getAll[User]
   } { users =>
     Ok.chunked(chunkAtoms(users)).as(mimeType)
   }
@@ -166,7 +166,6 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.NaturalTrasformations._
-    import bindings.StudentBinding.studentBinder
 
     val lwm = LWMPrefix[repository.Rdf]
     val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace)))(SessionController.userId)
@@ -243,15 +242,13 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
 
   override protected def atomize(output: User): Try[Option[JsValue]] = {
-    import bindings.DegreeBinding._
     import models.users.Student.atomicWrites
+    import bindings.StudentAtomDescriptor
 
     output match {
-      case s@Student(_, _, _, _, registrationId, enrollment, _) =>
-        repository.get[Degree](Degree.generateUri(enrollment)(namespace)).peek { degree =>
-          val atom = StudentAtom(output.systemId, output.lastname, output.firstname, output.email, registrationId, degree, output.id)
-          Json.toJson(atom)
-        }(tryM, optM)
+      case student: Student =>
+        implicit val ns = repository.namespace
+        repository.get[StudentAtom](User.generateUri(output)).peek(Json.toJson(_))(tryM, optM)
 
       case employee: Employee => Success(Some(Json.toJson(employee)))
     }

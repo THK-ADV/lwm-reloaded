@@ -36,11 +36,11 @@ case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: 
   * Atomic
   */
 
-case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], id: UUID)
+case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], id: UUID) extends UniqueEntity
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
-case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, id: UUID)
+case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, id: UUID) extends UniqueEntity
 
 object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisation[ReportCardEntry, ReportCardEntry] {
 

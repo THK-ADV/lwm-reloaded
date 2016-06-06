@@ -5,18 +5,20 @@ import java.util.UUID
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.labwork._
-import models.users.{User, Student}
-import org.w3.banana.binder.{FromPG, ClassUrisFor, ToPG}
+import models.users.{Student, User}
+import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, JsValue, Reads, Writes}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 import utils.RequestOps._
 import AnnotationCRUDController._
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 
 object AnnotationCRUDController {
   val labworkAttribute = "labwork"
@@ -26,17 +28,13 @@ object AnnotationCRUDController {
 
 class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AnnotationProtocol, Annotation] {
 
+  override implicit def descriptor: Descriptor[Sesame, Annotation] = defaultBindings.AnnotationDescriptor
+
   override implicit def reads: Reads[AnnotationProtocol] = Annotation.reads
 
   override implicit def writes: Writes[Annotation] = Annotation.writes
 
-  override implicit def rdfReads: FromPG[Sesame, Annotation] = defaultBindings.AnnotationBinding.annotationBinding
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Annotation] = defaultBindings.AnnotationBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[Annotation] = Annotation
-
-  override implicit def rdfWrites: ToPG[Sesame, Annotation] = defaultBindings.AnnotationBinding.annotationBinding
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.annotationV1Json
 
@@ -52,18 +50,12 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
   }
 
   override protected def atomize(output: Annotation): Try[Option[JsValue]] = {
-    import defaultBindings.StudentBinding.studentBinder
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
+    import defaultBindings.AnnotationAtomDescriptor
     import Annotation.atomicWrites
-
-    for {
-      student <- repository.get[Student](User.generateUri(output.student)(namespace))
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork)(namespace))
-      reportCardEntry <-repository.get[ReportCardEntry](ReportCardEntry.generateUri(output.reportCardEntry)(namespace))
-    } yield for {
-      s <- student; l <- labwork; e <- reportCardEntry
-    } yield Json.toJson(AnnotationAtom(s, l, e, output.message, output.timestamp, output.id))
+    import utils.Ops.MonadInstances.{optM, tryM}
+    import utils.Ops._
+    implicit val ns = repository.namespace
+    repository.get[AnnotationAtom](Annotation.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def fromInput(input: AnnotationProtocol, existing: Option[Annotation]): Annotation = existing match {

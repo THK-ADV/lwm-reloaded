@@ -1,15 +1,13 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.security.Permissions._
 import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -22,13 +20,9 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
 
   override implicit def writes: Writes[Degree] = Degree.writes
 
-  override implicit def rdfReads: FromPG[Sesame, Degree] = defaultBindings.DegreeBinding.degreeBinder
-
   override implicit def uriGenerator: UriGenerator[Degree] = Degree
 
-  override implicit def rdfWrites: ToPG[Sesame, Degree] = defaultBindings.DegreeBinding.degreeBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, Degree] = defaultBindings.DegreeDescriptor
 
   override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
     case Some(degree) => Degree(input.label, input.abbreviation, degree.id)

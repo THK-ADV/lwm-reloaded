@@ -23,7 +23,7 @@ case class Authority(user: UUID, refRoles: Set[UUID], id: UUID = Authority.rando
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
 
-case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID)
+case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID) extends UniqueEntity
 
 /**
  * Structure binding a particular module to a particular `Role`(or set of permissions).
@@ -45,7 +45,7 @@ case class RefRole(course: Option[UUID] = None, role: UUID, id: UUID = RefRole.r
 
 case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
 
-case class RefRoleAtom(course: Option[CourseAtom], role: Role, id: UUID)
+case class RefRoleAtom(course: Option[CourseAtom], role: Role, id: UUID) extends UniqueEntity
 
 /**
  * Structure abstracting over a set of unary `Permission`s.

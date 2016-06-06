@@ -30,7 +30,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
 
     "pass timetable entries when local and global blacklists are empty" in {
       val global = Set(Blacklist.empty)
-      when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(global))
+      when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(global))
 
       val entries = (0 until 100).map { n =>
         val date = LocalDate.now.plusWeeks(n)
@@ -54,7 +54,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       result.size shouldBe entries.size
       result.forall(a => local.exists(_.toLocalDateTime.isEqual(toLocalDateTime(a)))) shouldBe false
       result.forall(a => global.head.dates.exists(_.toLocalDate.isEqual(a.date))) shouldBe false
-      result.map(toLocalDateTime).toVector.sorted shouldBe sorted
+      result.map(toLocalDateTime).sorted shouldBe sorted
     }
 
     "apply local and global blacklist dates on timetable entries" in {
@@ -68,7 +68,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
 
       val global1 = Blacklist("global 1", entries.slice(0, 10).map(toDateTime).toSet, Blacklist.randomUUID)
       val global2 = Blacklist("global 2", entries.slice(10, 20).map(toDateTime).toSet, Blacklist.randomUUID)
-      when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(Set(global1, global2)))
+      when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(Set(global1, global2)))
 
       val local = entries.slice(20, 30).map(toDateTime).toSet
 

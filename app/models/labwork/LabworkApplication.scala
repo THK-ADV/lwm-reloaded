@@ -18,7 +18,7 @@ case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID]
 
 case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
 
-case class LabworkApplicationAtom(labwork: Labwork, applicant: Student, friends: Set[Student], timestamp: DateTime, id: UUID)
+case class LabworkApplicationAtom(labwork: Labwork, applicant: Student, friends: Set[Student], timestamp: DateTime, id: UUID) extends UniqueEntity
 
 object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSerialisation[LabworkApplicationProtocol, LabworkApplication] {
 

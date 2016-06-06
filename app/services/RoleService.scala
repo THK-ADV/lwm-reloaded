@@ -1,7 +1,6 @@
 package services
 
 import java.util.UUID
-import models.labwork.Labwork
 import models.security._
 import models.users.User
 import store.Prefixes.LWMPrefix
@@ -44,8 +43,7 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
   override def authorityFor(userId: String): Try[Option[Authority]] = {
     import store.sparql.select
     import store.sparql.select._
-    import bindings.AuthorityBinding._
-    import bindings.RefRoleBinding._
+    import bindings.AuthorityDescriptor
     import utils.Ops.NaturalTrasformations._
 
     val useruri = User.generateUri(UUID.fromString(userId))
@@ -65,19 +63,18 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
   override def checkWith(whatToCheck: (Option[UUID], Permission))(checkWith: Authority): Try[Boolean] = whatToCheck match {
     case (optCourse, permission) if permission == Permissions.god => Success(false)
     case (optCourse, permission) =>
-      import bindings.RefRoleBinding._
-      import bindings.RoleBinding
-      import bindings.LabworkBinding._
+      import bindings.RefRoleDescriptor
+      import bindings.RoleDescriptor
 
       (for {
-        roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
+        roles <- repository.getAll[Role]
         admin = roles.filter(_.label == Roles.Admin)
         refRoles <- repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri)
       } yield {
         if(refRoles.exists(refrole => admin.exists(_.id == refrole.role))) Success(true)
         else for {
           optRef <- Try(refRoles.filter(_.course == optCourse))
-          optRole <- Try(optRef) flatMap (ref => repository.getMany[Role](ref.map(rr => Role.generateUri(rr.role)))(RoleBinding.roleBinder))
+          optRole <- Try(optRef) flatMap (ref => repository.getMany[Role](ref.map(rr => Role.generateUri(rr.role))))
         } yield optRole.exists(_.permissions.contains(permission))
       }).flatten
   }

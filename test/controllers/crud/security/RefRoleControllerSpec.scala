@@ -22,7 +22,8 @@ import scala.util.{Failure, Success}
 class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole] {
 
   import ops._
-  import bindings.RefRoleBinding._
+  import bindings.RefRoleDescriptor
+
   override def entityTypeName: String = "refRole"
 
   override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleController(repository, sessionService, namespace, roleService) {
@@ -48,6 +49,8 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
   override val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
+  implicit val refroleBinder = RefRoleDescriptor.binder
+
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
@@ -72,7 +75,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val rr3 = RefRole(Some(course), UUID.randomUUID)
       val rr4 = RefRole(None, UUID.randomUUID)
 
-      when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(Set(rr1, rr2, rr3, rr4)))
+      when(repository.getAll[RefRole](anyObject())).thenReturn(Success(Set(rr1, rr2, rr3, rr4)))
 
       val request = FakeRequest(
         GET,
@@ -89,10 +92,8 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       import RefRole.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(roleToPass))).
-      doReturn(Success(Some(courseToPass))).
-      doReturn(Success(Some(employeeToPass))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(Some(atomizedEntityToPass))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -109,8 +110,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       import RefRole.atomicWrites
 
       doReturn(Success(Some(entityToFail))).
-        doReturn(Success(Some(roleToFail))).
-        doReturn(Success(None)).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -149,8 +149,6 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Failure(new Exception(errorMessage))).
-        doReturn(Success(Some(courseToPass))).
-        doReturn(Success(Some(employeeToPass))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -172,13 +170,10 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
       val refRoles = Set(entityToPass, entityToFail)
 
-      when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
+      when(repository.getAll[RefRole](anyObject())).thenReturn(Success(refRoles))
 
-      doReturn(Success(Some(roleToPass))).
-        doReturn(Success(Some(courseToPass))).
-        doReturn(Success(Some(employeeToPass))).
-        doReturn(Success(Some(roleToFail))).
-        doReturn(Success(None)).
+      doReturn(Success(Some(atomizedEntityToPass))).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -196,10 +191,9 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       val refRoles = Set(entityToPass, entityToFail)
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[RefRole](anyObject(), anyObject())).thenReturn(Success(refRoles))
+      when(repository.getAll[RefRole](anyObject())).thenReturn(Success(refRoles))
 
-      doReturn(Success(Some(roleToPass))).
-        doReturn(Failure(new Exception(errorMessage))).
+      doReturn(Failure(new Exception(errorMessage))).
         when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(

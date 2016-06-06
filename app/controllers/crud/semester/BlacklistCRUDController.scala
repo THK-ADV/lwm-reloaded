@@ -8,6 +8,7 @@ import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -20,13 +21,9 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit def writes: Writes[Blacklist] = Blacklist.writes
 
-  override implicit def rdfReads: FromPG[Sesame, Blacklist] = defaultBindings.BlacklistBinding.blacklistBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Blacklist] = defaultBindings.BlacklistBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[Blacklist] = Blacklist
 
-  override implicit def rdfWrites: ToPG[Sesame, Blacklist] = defaultBindings.BlacklistBinding.blacklistBinder
+  override implicit def descriptor: Descriptor[Sesame, Blacklist] = defaultBindings.BlacklistDescriptor
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 

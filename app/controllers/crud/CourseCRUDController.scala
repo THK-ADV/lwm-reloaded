@@ -17,6 +17,7 @@ import models.security.Permissions._
 import models.security.{Authority, RefRole, Role}
 import models.security.Roles._
 import play.api.mvc.Result
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -28,11 +29,8 @@ object CourseCRUDController {
 }
 
 class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course] {
-  override implicit def rdfWrites: ToPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
 
-  override implicit def rdfReads: FromPG[Sesame, Course] = defaultBindings.CourseBinding.courseBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Course] = defaultBindings.CourseBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, Course] = defaultBindings.CourseDescriptor
 
   override implicit def uriGenerator: UriGenerator[Course] = Course
 
@@ -48,13 +46,10 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
   override protected def atomize(output: Course): Try[Option[JsValue]] = {
     import utils.Ops._
     import utils.Ops.MonadInstances.{tryM, optM}
-    import defaultBindings.EmployeeBinding.employeeBinder
+    import defaultBindings.CourseAtomDescriptor
     import Course.atomicWrites
-
-    repository.get[Employee](User.generateUri(output.lecturer)(namespace)).peek { employee =>
-      val atom = CourseAtom(output.label, output.description, output.abbreviation, employee, output.semesterIndex, output.id)
-      Json.toJson(atom)
-    }
+    implicit val ns = repository.namespace
+    repository.get[CourseAtom](Course.generateUri(output)) peek (Json.toJson(_))
   }
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
@@ -113,10 +108,9 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         ))
       },
       success => existenceOf(success) { model =>
-        import defaultBindings.CourseBinding._
-        import defaultBindings.RoleBinding
-        import defaultBindings.RefRoleBinding._
-        import defaultBindings.AuthorityBinding._
+        import defaultBindings.RoleDescriptor
+        import defaultBindings.RefRoleDescriptor
+        import defaultBindings.AuthorityDescriptor
         import store.sparql.select
         import store.sparql.select._
 
@@ -142,14 +136,14 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
           run
 
         for {
-          allRoles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri) if allRoles.nonEmpty
+          allRoles <- repository.getAll[Role] if allRoles.nonEmpty
           rvRefRole <- maybeRv
           lecturerAuth <- roleService.authorityFor(model.lecturer.toString) if lecturerAuth.isDefined
           properRoles = allRoles.filter(role => (role.label == CourseManager) || (role.label == CourseEmployee) || (role.label == CourseAssistant))
           refRoles = properRoles.map(role => RefRole(Some(model.id), role.id))
           mvRefRole = properRoles.find(_.label == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
           authority = (lecturerAuth |@| rvRefRole |@| mvRefRole)((authority, rv, mv) => Authority(authority.user, authority.refRoles + mv.id + rv.id, authority.id))
-          _ <- authority.map(repository.update(_)(authorityBinder, Authority)).sequenceM
+          _ <- authority.map(repository.update(_)(AuthorityDescriptor, Authority)).sequenceM
           _ <- repository.add[Course](model)
           _ <- repository.addMany[RefRole](refRoles)
           result <- f(model)

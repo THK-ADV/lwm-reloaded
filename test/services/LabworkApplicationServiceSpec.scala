@@ -22,11 +22,12 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
 
   val applicationService = new LabworkApplicationService(repository)
 
-  import bindings._
-  import bindings.LabworkApplicationBinding._
-  import bindings.LabworkBinding._
-  import bindings.AssignmentPlanBinding._
-  import bindings.dateTimeBinder
+  import bindings.{
+  LabworkApplicationDescriptor,
+  LabworkDescriptor,
+  AssignmentPlanDescriptor,
+  dateTimeBinder
+  }
 
   val emptyPlan = AssignmentPlan.empty
 
@@ -48,7 +49,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
       val resApplications = applicationService.applicationsFor(labwork.id)
 
       resApplications match {
-        case Success(v) if v.nonEmpty=>
+        case Success(v) if v.nonEmpty =>
           v.size shouldBe applications.size
           v.forall(applications.contains) shouldBe true
         case Success(v) => fail("LabworkApplications should exist")

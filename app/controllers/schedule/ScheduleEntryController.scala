@@ -6,17 +6,18 @@ import controllers.crud._
 import controllers.schedule.ScheduleEntryController._
 import models.labwork._
 import models.security.Permissions.{god, scheduleEntry}
-import models.users.{Employee, User}
-import models.{Course, Room, UriGenerator}
+import models.users.User
+import models.{Course, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
+import org.w3.banana.binder.{FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.Enumerator
 import play.api.libs.json._
 import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.sparql.select
 import store.sparql.select._
 import store.{Namespace, SesameRepository}
@@ -57,11 +58,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
 
   override implicit def writes: Writes[ScheduleEntry] = ScheduleEntry.writes
 
-  override implicit def rdfWrites: ToPG[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.scheduleEntryBinder
-
-  override implicit def rdfReads: FromPG[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.scheduleEntryBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryDescriptor
 
   override implicit def uriGenerator: UriGenerator[ScheduleEntry] = ScheduleEntry
 
@@ -155,27 +152,15 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def atomize(output: ScheduleEntry): Try[Option[JsValue]] = {
-    import ScheduleEntry.format
-    import defaultBindings.EmployeeBinding.employeeBinder
-    import defaultBindings.GroupBinding.groupBinder
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.RoomBinding.roomBinder
-
-    for {
-      mbLabwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
-      mbGroup <- repository.get[Group](Group.generateUri(output.group))
-      mbSupervisor <- repository.get[Employee](User.generateUri(output.supervisor))
-      mbRoom <- repository.get[Room](Room.generateUri(output.room))
-    } yield for {
-      labwork <- mbLabwork; group <- mbGroup; supervisor <- mbSupervisor; room <- mbRoom
-    } yield Json.toJson(
-      ScheduleEntryAtom(labwork, output.start, output.end, output.date, room, supervisor, group, output.id)
-    )
+    import defaultBindings.ScheduleEntryAtomDescriptor
+    import utils.Ops._
+    import ScheduleEntry.atomicWrites
+    repository.get[ScheduleEntryAtom](ScheduleEntry.generateUri(output)).peek (Json.toJson(_))(tryM, optM)
   }
 
   def chunkedAll(chunks: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
     (if (request.queryString.isEmpty)
-      repository.get[ScheduleEntry] map chunks
+      repository.getAll[ScheduleEntry] map chunks
     else
       getWithFilter(request.queryString)(Set.empty) map chunks) match {
       case Success(enum) =>

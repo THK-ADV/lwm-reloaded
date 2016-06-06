@@ -17,6 +17,7 @@ import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import play.api.mvc.{Controller, Result}
 import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
@@ -46,29 +47,18 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   override implicit def writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
 
-  override implicit def rdfReads: FromPG[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.reportCardEvaluationBinding
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
 
-  override implicit def rdfWrites: ToPG[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.reportCardEvaluationBinding
+  override implicit def descriptor: Descriptor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
   override protected def atomize(output: ReportCardEvaluation): Try[Option[JsValue]] = {
+    import defaultBindings.ReportCardEvaluationAtomDescriptor
+    import utils.Ops._
+    import utils.Ops.MonadInstances.{optM, tryM}
     import ReportCardEvaluation.atomicWrites
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.StudentBinding.studentBinder
-
-    for {
-      student <- repository.get[Student](User.generateUri(output.student))
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
-    } yield for {
-      s <- student; l <- labwork
-    } yield Json.toJson(
-      ReportCardEvaluationAtom(s, l, output.label, output.bool, output.int, output.id)
-    )
+    repository.get[ReportCardEvaluationAtom](ReportCardEvaluation.generateUri(output)) peek (Json.toJson(_))
   }
 
   def create(course: String, labwork: String) = createWith(course, labwork) { evals =>
@@ -108,8 +98,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   private def evalsByService(labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = {
-    import defaultBindings.AssignmentPlanBinding._
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
+    import defaultBindings.{AssignmentPlanDescriptor, ReportCardEntryDescriptor}
     import utils.Ops.MonadInstances.tryM
     import utils.Ops.TraverseInstances.travO
     import utils.Ops._
@@ -128,10 +117,10 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     val cardsPrepared = repository.prepareQuery(cardsQuery).
       select(_.get("cards")).
       transform(_.fold(List.empty[Value])(vs => vs)).
-      requestAll[Set, ReportCardEntry](vs => repository.getManyExpanded[ReportCardEntry](vs.map(_.stringValue)))
+      requestAll[Set, ReportCardEntry](vs => repository.getMany[ReportCardEntry](vs.map(_.stringValue)))
 
     val result = for {
-      assignmentPlan <- repository.get[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
+      assignmentPlan <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
       cards <- cardsPrepared.run
       optEvals = assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
       result <- optEvals.map(toResult).sequenceM

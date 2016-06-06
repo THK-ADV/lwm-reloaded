@@ -15,10 +15,14 @@ class RoleBindingSpec extends SesameDbSpec {
   val roleWith = Role("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
   val roleWithout = Role("role1", Set())
 
-  import bindings.RoleBinding.roleBinder
-  import bindings.permissionBinder
-  import bindings.uuidBinder
+  import bindings.{
+  RoleDescriptor,
+  permissionBinder,
+  uuidBinder
+  }
   import ops._
+
+  implicit val roleBinder = RoleDescriptor.binder
 
   val roleGraph = (
     URI(Role.generateUri(roleWith)).a(lwm.Role)

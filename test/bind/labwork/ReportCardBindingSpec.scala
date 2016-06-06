@@ -18,9 +18,13 @@ class ReportCardBindingSpec extends SesameDbSpec {
   import ops._
 
   val bindings = Bindings[Sesame](namespace)
-  import bindings.ReportCardEntryBinding.reportCardEntryBinder
-  import bindings.ReportCardEntryTypeBinding.reportCardEntryTypeBinding
-  import bindings.{localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
+  import bindings.{
+  ReportCardEntryDescriptor,
+  ReportCardEntryTypeDescriptor,
+  localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
+
+  implicit val reportCardEntryBinder = ReportCardEntryDescriptor.binder
+  implicit val reportCardEntryTypeBinder = ReportCardEntryTypeDescriptor.binder
 
   val entries = (0 until 5).map { n =>
     ReportCardEntry(UUID.randomUUID, UUID.randomUUID, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)

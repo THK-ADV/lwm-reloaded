@@ -14,6 +14,7 @@ import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -32,13 +33,9 @@ object AuthorityController {
 
 class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority] {
 
-  override implicit def rdfReads: FromPG[Sesame, Authority] = defaultBindings.AuthorityBinding.authorityBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Authority] = defaultBindings.AuthorityBinding.classUri
-
   override implicit def uriGenerator: UriGenerator[Authority] = Authority
 
-  override implicit def rdfWrites: ToPG[Sesame, Authority] = defaultBindings.AuthorityBinding.authorityBinder
+  override implicit def descriptor: Descriptor[Sesame, Authority] = defaultBindings.AuthorityDescriptor
 
   override implicit def reads: Reads[AuthorityProtocol] = Authority.reads
 
@@ -52,39 +49,12 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
   override protected def atomize(output: Authority): Try[Option[JsValue]] = {
-    import defaultBindings.RefRoleBinding._
-    import defaultBindings.UserBinding._
-    import models.security.Authority._
+    import utils.Ops._
+    import defaultBindings.AuthorityAtomDescriptor
+    import Authority.writesAtomic
 
     implicit val ns = repository.namespace
-    for {
-      maybeUser <- repository.get[User](User.generateUri(output.user))(userBinder)
-      refroles <- repository.getMany[RefRole](output.refRoles map RefRole.generateUri)
-      atomicRefRoles <- atomRefs(refroles)
-    } yield maybeUser map { user =>
-      Json.toJson(AuthorityAtom(user, atomicRefRoles, output.id))
-    }
-  }
-
-  import defaultBindings.CourseBinding._
-  import defaultBindings.EmployeeBinding._
-  import defaultBindings.RoleBinding._
-
-  def atomRefs(s: Set[RefRole]): Try[Set[RefRoleAtom]] = {
-    import scalaz.syntax.applicative._
-
-    s.foldLeft(Try(Set.empty[RefRoleAtom])) { (T, ref) =>
-      for {
-        maybeRole <- repository.get[Role](Role.generateUri(ref.role)(namespace))
-        course <- Try(ref.course).flatPeek(course => repository.get[Course](Course.generateUri(course)(namespace)))
-        lecturer <- Try(course).flatPeek(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace)))
-        courseAtom = (course |@| lecturer) ((c, e) => CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id))
-        set <- T
-      } yield maybeRole match {
-        case Some(role) => set + RefRoleAtom(courseAtom, role, ref.id)
-        case None => set
-      }
-    }
+    repository.get[AuthorityAtom](Authority.generateUri(output)).peek (Json.toJson(_)) (tryM, optM)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -94,14 +64,13 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case _ => PartialSecureBlock(god)
   }
 
-
   // TODO allAtomic should chunk responses by default
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
     val res = {
       if (request.queryString.nonEmpty)
         getWithFilter(request.queryString)(Set.empty) map (set => chunkAtoms(set))
       else {
-        repository.get[Authority] map (set => chunkAtoms(set))
+        repository.getAll[Authority] map (set => chunkAtoms(set))
       }
     }
 

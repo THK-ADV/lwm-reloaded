@@ -98,9 +98,10 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     entityToFail.id
   )
 
-  import bindings.AuthorityBinding.authorityBinder
+  import bindings.AuthorityDescriptor
   import ops._
 
+  implicit val authorityBinder = AuthorityDescriptor.binder
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override implicit val jsonWrites: Writes[Authority] = Authority.writes
@@ -123,11 +124,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       import Authority.writesAtomic
 
       doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(studentToPass))).
-        doReturn(Success(Some(role1))).
-        doReturn(Success(Some(role2))).
-        doReturn(Success(Some(courseToPass))).
-        doReturn(Success(Some(employeeToPass))).
+        doReturn(Success(Some(atomizedEntityToPass))).
         when(repository).get(anyObject())(anyObject())
 
       when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToPass))
@@ -147,14 +144,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       import Authority.writesAtomic
 
       doReturn(Success(Some(entityToFail))).
-        doReturn(Success(Some(employeeToFail))).
-        doReturn(Success(Some(role3))).
-        doReturn(Success(Some(role4))).
-        doReturn(Success(Some(courseToFail))).
-        doReturn(Success(Some(employeeToFail))).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
-
-      when(repository.getMany[RefRole](anyObject())(anyObject())).thenReturn(Success(refRolesToFail))
 
       val request = FakeRequest(
         GET,
@@ -169,7 +160,6 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
     s"not get a single authority atomized when user is not found" in {
       doReturn(Success(Some(entityToPass))).
-        doReturn(Success(None)).
         doReturn(Success(None)).
         when(repository).get(anyObject())(anyObject())
 
@@ -213,28 +203,16 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
   }
 
-  s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+  s"successfully get all ${plural(entityTypeName)} atomized" in {
     import Authority._
 
     val authorities = Set(entityToPass, entityToFail)
 
-    when(repository.get[Authority](anyObject(), anyObject())).thenReturn(Success(authorities))
+    when(repository.getAll[Authority](anyObject())).thenReturn(Success(authorities))
 
-    doReturn(Success(Some(studentToPass))).
-      doReturn(Success(Some(role1))).
-      doReturn(Success(Some(role2))).
-      doReturn(Success(Some(courseToPass))).
-      doReturn(Success(Some(employeeToPass))).
-      doReturn(Success(Some(employeeToFail))).
-      doReturn(Success(Some(role3))).
-      doReturn(Success(Some(role4))).
-      doReturn(Success(Some(courseToFail))).
-      doReturn(Success(Some(employeeToFail))).
+    doReturn(Success(Some(atomizedEntityToPass))).
+      doReturn(Success(Some(atomizedEntityToFail))).
       when(repository).get(anyObject())(anyObject())
-
-    doReturn(Success(refRolesToPass)).
-      doReturn(Success(refRolesToFail)).
-      when(repository).getMany(anyObject())(anyObject())
 
     val request = FakeRequest(
       GET,
@@ -245,10 +223,10 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
     status(result) shouldBe OK
     contentType(result) shouldBe Some[String](mimeType)
-    contentAsString(result) shouldEqual jsVals.foldLeft("")(_ + _)
+    contentAsString(result) shouldEqual jsVals.mkString("")
   }
 
-  s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+  s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
     val authorities = Set(entityToPass, entityToFail)
     val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
@@ -269,8 +247,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   }
 
   "filter through nested levels of graphs" in {
-    import bindings.AuthorityBinding._
-    import bindings.RefRoleBinding._
+    import bindings.{
+    AuthorityDescriptor,
+    RefRoleDescriptor}
 
     val realRepo = SesameRepository(namespace)
     val lwm = LWMPrefix[realRepo.Rdf](realRepo.rdfOps, realRepo.rdfOps)
@@ -279,6 +258,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
         case _ => NonSecureBlock
       }
+
       override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
         case _ => NonSecureBlock
       }
@@ -351,7 +331,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
 
     contentAsJson(result3).asInstanceOf[JsArray].value foreach { auth =>
-     expected3 contains auth shouldBe true
+      expected3 contains auth shouldBe true
     }
 
     contentAsJson(result4).asInstanceOf[JsArray].value foreach { auth =>

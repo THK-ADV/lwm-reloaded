@@ -67,8 +67,10 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   override def entityTypeName: String = "course"
 
-  import bindings.CourseBinding.courseBinder
+  import bindings.CourseDescriptor
   import ops._
+
+  implicit val courseBinder = CourseDescriptor.binder
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -91,7 +93,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -115,7 +117,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -139,7 +141,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -161,7 +163,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -188,7 +190,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -256,8 +258,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       import Course.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(lecturerToPass))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(Some(atomizedEntityToPass))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -272,8 +274,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
     s"not get a single $entityTypeName atomized when lecturer is not found" in {
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(None)).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(None)).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -293,8 +295,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Failure(new Exception(errorMessage))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -310,14 +312,16 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       )
     }
 
-    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+    s"successfully get all ${plural(entityTypeName)} atomized" in {
       import Course.atomicWrites
 
       val courses = Set(entityToPass, entityToFail)
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
 
-      doReturn(Success(Some(lecturerToPass))).doReturn(Success(Some(lecturerToFail))).when(repository).get(anyObject())(anyObject())
+      doReturn(Success(Some(atomizedEntityToPass)))
+        .doReturn(Success(Some(atomizedEntityToFail)))
+        .when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -330,11 +334,11 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
     }
 
-    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
+    s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
       val courses = Set(entityToPass, entityToFail)
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[Course](anyObject(), anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
       doReturn(Failure(new Exception(errorMessage))).when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
@@ -364,7 +368,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
-      when(repository.get[Role](anyObject(), anyObject())).thenReturn(Success(roles))
+      when(repository.getAll[Role](anyObject())).thenReturn(Success(roles))
       when(roleService.authorityFor(anyObject())).thenReturn(Success(Some(auth)))
       when(repository.get[RefRole](anyObject())(anyObject())).thenReturn(Success(Some(refrole)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
@@ -394,7 +398,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.get[Role](anyObject(), anyObject())).thenReturn(Success(roles))
+      when(repository.getAll[Role](anyObject())).thenReturn(Success(roles))
 
       val request = FakeRequest(
         POST,

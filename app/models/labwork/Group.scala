@@ -11,7 +11,7 @@ case class Group(label: String, labwork: UUID, members: Set[UUID], id: UUID = Gr
 
 case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
-case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], id: UUID)
+case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], id: UUID) extends UniqueEntity
 
 object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group] {
 

@@ -71,12 +71,15 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override def entityTypeName: String = "group"
 
-  import bindings.GroupBinding._
+  import bindings.GroupDescriptor
   import ops._
+
+  implicit val groupBinder = GroupDescriptor.binder
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   def applicationIds = Stream.continually(LabworkApplication.randomUUID)
+
   def applications(labwork: UUID) = Stream.continually(LabworkApplication(labwork, User.randomUUID, Set.empty[UUID]))
 
   implicit val groupReads = Json.reads[Group]
@@ -94,7 +97,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -118,7 +121,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -142,7 +145,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -166,7 +169,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -190,7 +193,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -214,7 +217,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -243,7 +246,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -302,7 +305,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val max = 20
       val applicantsAmount = 100
       val calculatedGroupSize = (min to max).reduce { (l, r) =>
-        if(l % applicantsAmount < r % applicantsAmount) r else l
+        if (l % applicantsAmount < r % applicantsAmount) r else l
       } + 1
 
       val predictedGroupsNumber = (applicantsAmount / calculatedGroupSize) + 1
@@ -478,8 +481,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       import Group.atomicWrites
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(labworkToPass))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(Some(atomizedEntityToPass))).
+        when(repository).get(anyObject())(anyObject())
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
@@ -495,8 +498,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
     s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
       doReturn(Success(Some(entityToPass))).
-      doReturn(Success(None)).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Success(None)).
+        when(repository).get(anyObject())(anyObject())
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
@@ -517,8 +520,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
       doReturn(Success(Some(entityToPass))).
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
+        doReturn(Failure(new Exception(errorMessage))).
+        when(repository).get(anyObject())(anyObject())
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
 
       val request = FakeRequest(
@@ -535,21 +538,17 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       )
     }
 
-    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
+    s"successfully get all ${plural(entityTypeName)} atomized" in {
       import Group.atomicWrites
 
       val groups = Set(entityToPass, entityToFail)
       val labworks = Set(labworkToPass, labworkToFail)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
-      doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(labworkToFail))).
+      doReturn(Success(Some(atomizedEntityToPass))).
+        doReturn(Success(Some(atomizedEntityToFail))).
         when(repository).get(anyObject())(anyObject())
-
-      doReturn(Success(studentsToPass)).
-        doReturn(Success(studentsToFail)).
-        when(repository).getMany(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,
@@ -562,13 +561,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
     }
 
-    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
-      val groups = Set(entityToPass, entityToFail)
+    s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
+
       doReturn(Failure(new Exception(errorMessage))).
-      when(repository).getMany(anyObject())(anyObject())
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         GET,

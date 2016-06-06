@@ -26,7 +26,7 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
   private val rdf = RDFPrefix[Rdf]
   private val bindings = Bindings[Rdf](namespace)
 
-  import bindings.LabworkApplicationBinding._
+  import bindings.LabworkApplicationDescriptor
   import utils.Ops.MonadInstances.listM
 
   override def applicationsFor(labwork: UUID): Try[Set[LabworkApplication]] = {

@@ -11,7 +11,7 @@ import utils.LwmMimeType
 class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist] {
 
   import ops._
-  import bindings.BlacklistBinding.blacklistBinder
+  import bindings.BlacklistDescriptor
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
 
@@ -25,6 +25,8 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
       case _ => NonSecureBlock
     }
   }
+
+  implicit val blacklistBinder = BlacklistDescriptor.binder
 
   override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates, Blacklist.randomUUID)
 

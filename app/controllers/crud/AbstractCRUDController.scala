@@ -13,6 +13,7 @@ import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import utils.LwmActions._
 import utils.LwmMimeType
 import utils.Ops.MonadInstances.optM
@@ -29,11 +30,7 @@ trait SesameRdfSerialisation[T <: UniqueEntity] {
 
   def repository: SesameRepository
 
-  implicit def rdfWrites: ToPG[Sesame, T]
-
-  implicit def rdfReads: FromPG[Sesame, T]
-
-  implicit def classUrisFor: ClassUrisFor[Sesame, T]
+  implicit def descriptor: Descriptor[Sesame, T]
 
   implicit def uriGenerator: UriGenerator[T]
 }
@@ -53,6 +50,7 @@ trait ModelConverter[I, O] {
 }
 
 trait Atomic[O] {
+
   import utils.Ops._
   import utils.Ops.MonadInstances._
 
@@ -95,9 +93,11 @@ trait Consistent[I, O] {
   protected def compareModel(input: I, output: O): Boolean
 }
 
-trait Chunkable[I] { self: Atomic[I] =>
+trait Chunkable[I] {
+  self: Atomic[I] =>
 
   final def chunkAtoms(data: Set[I]): Enumerator[JsValue] = chunkWith(data)(atomize)
+
   final def chunkSimple(data: Set[I])(implicit writes: Writes[I]): Enumerator[JsValue] = chunkWith(data)(i => Success(Some(Json.toJson(i))))
 
   private final def chunkWith[O](data: Set[I])(f: I => Try[Option[O]]): Enumerator[O] = {
@@ -287,14 +287,14 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
 
   // GET /ts with optional queries
   def all(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { implicit request =>
-    repository.get[O] match {
+    repository.getAll[O] match {
       case Success(s) =>
         if (request.queryString.isEmpty)
           Ok(Json.toJson(s)).as(mimeType)
         else
           getWithFilter(request.queryString)(s) match {
             case Success(filtered) =>
-                Ok(Json.toJson(filtered)).as(mimeType)
+              Ok(Json.toJson(filtered)).as(mimeType)
             case Failure(e) =>
               ServiceUnavailable(Json.obj(
                 "status" -> "KO",
@@ -316,18 +316,18 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
         Ok(json).as(mimeType)
       case Failure(e) =>
         failure(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
     }
 
-    repository.get[O] match {
+    repository.getAll[O] match {
       case Success(os) =>
         if (request.queryString.isEmpty)
           handle(atomizeMany(os))(InternalServerError(_))
         else (getWithFilter(request.queryString)(_))
-            .andThen(_.flatMap(atomizeMany))
-            .andThen(handle(_)(ServiceUnavailable(_)))(os)
+          .andThen(_.flatMap(atomizeMany))
+          .andThen(handle(_)(ServiceUnavailable(_)))(os)
       case Failure(e) =>
         InternalServerError(Json.obj(
           "status" -> "KO",
@@ -438,11 +438,10 @@ trait AbstractCRUDController[I, O <: UniqueEntity] extends Controller
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
     val uri = s"$namespace${request.uri}"
 
-    repository.deleteCascading(uri) match {
+    repository.delete[O](uri) match {
       case Success(s) =>
         Ok(Json.obj(
-          "status" -> "OK",
-          "deleted" -> s
+          "status" -> "OK"
         ))
       case Failure(e) =>
         InternalServerError(Json.obj(

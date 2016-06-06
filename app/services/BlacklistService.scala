@@ -15,7 +15,7 @@ trait BlacklistServiceLike {
 class BlacklistService(private val repository: SesameRepository) extends BlacklistServiceLike {
 
   private val bindings = Bindings[Sesame](repository.namespace)
-  import bindings.BlacklistBinding._
+  import bindings.BlacklistDescriptor
 
   override def applyBlacklist(entries: Vector[TimetableDateEntry], localBlacklist: Set[DateTime]): Vector[TimetableDateEntry] = {
     def checkLocal(toCheck: TimetableDateEntry, checkWith: DateTime): Boolean = {
@@ -25,7 +25,7 @@ class BlacklistService(private val repository: SesameRepository) extends Blackli
         toCheck.date.toDateTime(toCheck.start).isEqual(checkWith)
     }
 
-    val globalBlacklist = repository.get[Blacklist].getOrElse(Set(Blacklist.empty)).foldLeft(Set.empty[DateTime]) {
+    val globalBlacklist = repository.getAll[Blacklist].getOrElse(Set(Blacklist.empty)).foldLeft(Set.empty[DateTime]) {
       case (set, blacklist) => set ++ blacklist.dates
     }
 

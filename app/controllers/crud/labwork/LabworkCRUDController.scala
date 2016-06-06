@@ -4,22 +4,24 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import controllers.crud.labwork.LabworkCRUDController._
-import models.{CourseAtom, UriGenerator, Course, Degree}
+import models.{Course, CourseAtom, Degree, UriGenerator}
 import models.labwork.{Labwork, LabworkAtom, LabworkProtocol}
 import models.security.Permissions._
 import models.semester.Semester
-import models.users.{User, Employee}
+import models.users.{Employee, User}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import store.sparql.select._
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -33,11 +35,7 @@ object LabworkCRUDController {
 
 class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
 
-  override implicit def rdfWrites: ToPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
-
-  override implicit def rdfReads: FromPG[Sesame, Labwork] = defaultBindings.LabworkBinding.labworkBinder
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Labwork] = defaultBindings.LabworkBinding.classUri
+  override implicit def descriptor: Descriptor[Sesame, Labwork] = defaultBindings.LabworkDescriptor
 
   override implicit def uriGenerator: UriGenerator[Labwork] = Labwork
 
@@ -83,26 +81,12 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   override protected def atomize(output: Labwork): Try[Option[JsValue]] = {
-    import defaultBindings.SemesterBinding.semesterBinder
-    import defaultBindings.DegreeBinding.degreeBinder
-    import defaultBindings.CourseBinding.courseBinder
-    import defaultBindings.EmployeeBinding.employeeBinder
+    import defaultBindings.LabworkAtomDescriptor
     import Labwork.atomicWrites
     import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-    import utils.Ops.TraverseInstances.travO
-
-    for {
-      semester <- repository.get[Semester](Semester.generateUri(output.semester)(namespace))
-      course <- repository.get[Course](Course.generateUri(output.course)(namespace))
-      degree <- repository.get[Degree](Degree.generateUri(output.degree)(namespace))
-      lecturer <- course.map(c => repository.get[Employee](User.generateUri(c.lecturer)(namespace))).sequenceM
-    } yield for {
-      s <- semester; c <- course; d <- degree; e <- lecturer.flatten
-      courseAtom = CourseAtom(c.label, c.description, c.abbreviation, e, c.semesterIndex, c.id)
-    } yield Json.toJson(
-      LabworkAtom(output.label, output.description, s, courseAtom, d, output.subscribable, output.published, output.id)
-    )
+    import utils.Ops.MonadInstances.{optM, tryM}
+    implicit val ns = repository.namespace
+    repository.get[LabworkAtom](Labwork.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

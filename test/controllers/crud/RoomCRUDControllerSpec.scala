@@ -46,9 +46,10 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
     "description" -> s"${entityToPass.description} updated"
   )
 
-  import bindings.RoomBinding._
+  import bindings.RoomDescriptor
   import ops._
 
+  implicit val roomBinder = RoomDescriptor.binder
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A RoomCRUDControllerSpec also " should {
