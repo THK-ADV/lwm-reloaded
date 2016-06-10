@@ -14,7 +14,7 @@ trait DbBackupModule {
 trait DefaultDbBackupModuleImpl extends DbBackupModule {
   self: AkkaActorSystemModule with DbFolder with ConfigurationModule =>
 
-  val cronExpression = lwmConfig.getString("lwm.store.cron") match {
+  val dbCron = lwmConfig.getString("lwm.store.cron") match {
     case Some(cron) if cron.nonEmpty => cron
     case _ => "0 0 3 1/1 * ? *" // every day at 03:00 am
   }
@@ -30,5 +30,5 @@ trait DefaultDbBackupModuleImpl extends DbBackupModule {
     case _ => None
   }
 
-  override val backupService: DbBackupService = new ActorBasedBackupService(system, folder, backupFolder, cronExpression)
+  override val backupService: DbBackupService = new ActorBasedBackupService(system, folder, backupFolder, dbCron)
 }

@@ -2,7 +2,7 @@ package services
 
 import java.io.File
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import org.apache.commons.io.FileUtils
 import org.joda.time.LocalDateTime
 import services.BackupServiceActor.BackupRequest
@@ -34,14 +34,14 @@ object BackupServiceActor {
   case object BackupRequest
 }
 
-class BackupServiceActor(srcFolder: File, destFolder: File) extends Actor {
+class BackupServiceActor(srcFolder: File, destFolder: File) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case BackupRequest =>
       srcFolder.listFiles.find(_.getName.endsWith(".data")).map { memstore =>
         Try(FileUtils.copyFileToDirectory(memstore, new File(destFolder, s"${srcFolder.getName}_${LocalDateTime.now.toString("yyyy-MM-dd_HH:mm")}")))
       } match {
-        case Some(Failure(e)) => println("Oops, db backup failed", e.getMessage); Unit // TODO replace with logger
+        case Some(Failure(e)) => log.info("Oops, db backup failed", e.getMessage); Unit
         case _ => Unit
       }
   }
