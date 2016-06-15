@@ -8,7 +8,7 @@ import org.joda.time.LocalDateTime
 import services.BackupServiceActor.BackupRequest
 import us.theatr.akka.quartz._
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 trait DbBackupService {
   val cronExpression: String
@@ -39,10 +39,12 @@ class BackupServiceActor(srcFolder: File, destFolder: File) extends Actor with A
   override def receive: Receive = {
     case BackupRequest =>
       srcFolder.listFiles.find(_.getName.endsWith(".data")).map { memstore =>
-        Try(FileUtils.copyFileToDirectory(memstore, new File(destFolder, s"${srcFolder.getName}_${LocalDateTime.now.toString("yyyy-MM-dd_HH:mm")}")))
+        val dest = new File(destFolder, s"${srcFolder.getName}_${LocalDateTime.now.toString("yyyy-MM-dd_HH:mm")}")
+        Try(FileUtils.copyFileToDirectory(memstore, dest)).map(_ => dest)
       } match {
-        case Some(Failure(e)) => log.info("Oops, db backup failed", e.getMessage); Unit
-        case _ => Unit
+        case Some(Success(file)) => log.info(s"backup succeeded ${file.getAbsolutePath}"); Unit
+        case Some(Failure(e)) => log.error("Oops, db backup failed", e.getMessage); Unit
+        case None => log.info("Oops, could not find data to back up"); Unit
       }
   }
 }

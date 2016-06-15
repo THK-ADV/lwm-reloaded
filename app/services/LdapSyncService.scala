@@ -62,10 +62,10 @@ class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: LD
             difference(lwmUsers, ldapUsers) foreach { user =>
               repository.update(user)(userBinder, User) match {
                 case Success(_) => log.info(s"updated $user")
-                case Failure(e) => log.info(s"failed to update $user. Exception: ${e.getMessage}")
+                case Failure(e) => log.error(s"failed to update $user. Exception: ${e.getMessage}")
               }
             }
-          case Failure(e) => log.info(s"failed to gather users from ldap. Exception: ${e.getMessage}")
+          case Failure(e) => log.error(s"failed to gather users from ldap. Exception: ${e.getMessage}")
         } (context.system.dispatcher)
       }
   }
