@@ -71,15 +71,17 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     )
   }
 
+  // TODO delete existing evals before adding
   def create(course: String, labwork: String) = createWith(course, labwork) { evals =>
     repository.addMany[ReportCardEvaluation](evals) map { _ =>
-      Some(Created(Json.toJson(evals)).as(mimeType))
+      Some(Created.chunked(chunkSimple(evals)).as(mimeType))
     }
   }
 
+  // TODO delete existing evals before adding
   def createAtomic(course: String, labwork: String) = createWith(course, labwork) { evals =>
-    repository.addMany[ReportCardEvaluation](evals).flatMap(_ => atomizeMany(evals)) map { json =>
-      Some(Created(json).as(mimeType))
+    repository.addMany[ReportCardEvaluation](evals).map { _ =>
+      Some(Created.chunked(chunkAtoms(evals)).as(mimeType))
     }
   }
 
