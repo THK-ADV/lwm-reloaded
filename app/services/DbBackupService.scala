@@ -42,9 +42,9 @@ class BackupServiceActor(srcFolder: File, destFolder: File) extends Actor with A
         val dest = new File(destFolder, s"${srcFolder.getName}_${LocalDateTime.now.toString("yyyy-MM-dd_HH:mm")}")
         Try(FileUtils.copyFileToDirectory(memstore, dest)).map(_ => dest)
       } match {
-        case Some(Success(file)) => log.info(s"backup succeeded ${file.getAbsolutePath}"); Unit
-        case Some(Failure(e)) => log.error("Oops, db backup failed", e.getMessage); Unit
-        case None => log.info("Oops, could not find data to back up"); Unit
+        case Some(Success(file)) => log.info(s"backup succeeded ${file.getAbsolutePath}")
+        case Some(Failure(e)) => log.error("Oops, db backup failed", e.getMessage)
+        case None => log.info("Oops, could not find data to back up")
       }
   }
 }
