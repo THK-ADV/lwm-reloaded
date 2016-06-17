@@ -4,5 +4,6 @@ import akka.actor.ActorSystem
 
 
 trait AkkaActorSystemModule {
-  implicit def system = ActorSystem("lwm-system")
+
+  implicit val system = ActorSystem("lwm-system")
 }

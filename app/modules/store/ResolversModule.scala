@@ -4,11 +4,13 @@ import store.{LwmResolvers, Resolvers}
 
 trait ResolversModule {
   self: SemanticRepositoryModule =>
-  def resolver: Resolvers
+
+  def resolvers: Resolvers
 }
 
 
 trait DefaultResolversModule extends ResolversModule {
   self: SemanticRepositoryModule =>
-  override def resolver: Resolvers = new LwmResolvers(repository)
+
+  override def resolvers: Resolvers = new LwmResolvers(repository)
 }

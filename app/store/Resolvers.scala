@@ -37,15 +37,12 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   val bindings = Bindings(repository.namespace)
 
   override def username(systemId: String): Try[Option[UUID]] = {
-    val result = repository.prepareQuery {
+    repository.prepareQuery {
       select("id") where {
-          **(v("s"), p(prefix.systemId), o(systemId)).
+        **(v("s"), p(prefix.systemId), o(systemId)).
           **(v("s"), p(prefix.id), v("id"))
       }
-    }
-
-    result.
-      select(_.get("id")).
+    }.select(_.get("id")).
       changeTo(_.headOption).
       map(value => UUID.fromString(value.stringValue())).
       run

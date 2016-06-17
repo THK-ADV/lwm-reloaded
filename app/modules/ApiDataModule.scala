@@ -13,5 +13,5 @@ trait ApiDataModule { self: SemanticRepositoryModule with LDAPModule =>
 trait DefaultApiDataModule extends ApiDataModule {
   self: SemanticRepositoryModule with LDAPModuleImpl with GroupServiceManagementModule with ScheduleServiceManagementModule with ReportCardServiceManagementModule  =>
 
-  override def apiDataController: ApiDataController = new ApiDataController(repository, ldap, groupService, scheduleService, reportCardService)
+  override def apiDataController: ApiDataController = new ApiDataController(repository, ldapService, groupService, scheduleService, reportCardService)
 }

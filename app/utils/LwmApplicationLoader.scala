@@ -80,7 +80,8 @@ with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with UserManagementModule
 with AnnotationManagementModule
-with ReportCardEvaluationManagementModule {
+with ReportCardEvaluationManagementModule
+with LdapSyncModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
@@ -157,3 +158,4 @@ with DefaultAnnotationManagementModuleImpl
 with DefaultReportCardEvaluationManagementModuleImpl
 with DefaultDbFolderImpl
 with DefaultDbBackupModuleImpl
+with DefaultLdapSyncService
