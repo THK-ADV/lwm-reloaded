@@ -11,7 +11,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import services.{LDAPService, SessionServiceActor}
+import services.{LdapService, SessionServiceActor}
 import services.SessionServiceActor.{AuthenticationFailure, AuthenticationSuccess}
 import store.bind.Bindings
 import store.{LwmResolvers, Namespace, SesameRepository}
@@ -27,7 +27,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(ns)
-  val ldap = mock[LDAPService]
+  val ldap = mock[LdapService]
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 

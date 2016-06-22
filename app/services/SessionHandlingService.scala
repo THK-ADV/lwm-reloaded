@@ -18,7 +18,7 @@ trait SessionHandlingService {
   def deleteSession(id: UUID): Future[Boolean]
 }
 
-class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, resolvers: Resolvers) extends SessionHandlingService {
 
   import SessionServiceActor._
   import akka.pattern.ask
@@ -63,7 +63,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, 
 
 object SessionServiceActor {
 
-  def props(ldap: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
+  def props(ldap: LdapService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
 
   private[services] case class SessionRemovalRequest(id: UUID)
 
@@ -93,7 +93,7 @@ object SessionServiceActor {
 
 }
 
-class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor with ActorLogging {
+class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor with ActorLogging {
 
   import SessionServiceActor._
   import resolvers._

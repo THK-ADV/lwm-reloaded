@@ -10,7 +10,7 @@ import org.mockito.Matchers.anyObject
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike
 import org.scalatest.mock.MockitoSugar._
-import services.{LDAPService, LdapSyncServiceActor}
+import services.{LdapService, LdapSyncServiceActor}
 import store.bind.Bindings
 import store.{Namespace, Resolvers, SesameRepository}
 
@@ -22,7 +22,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
   val namespace = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(namespace)
   val bindings = Bindings[repository.Rdf](namespace)
-  val ldapService = mock[LDAPService]
+  val ldapService = mock[LdapService]
   val resolvers = mock[Resolvers]
 
   val actorRef = system.actorOf(LdapSyncServiceActor.props(repository, ldapService, resolvers))

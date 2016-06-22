@@ -9,7 +9,7 @@ trait LdapSyncModule {
 }
 
 trait DefaultLdapSyncService extends LdapSyncModule {
-  self: AkkaActorSystemModule with ConfigurationModule with SemanticRepositoryModule with LDAPModule with ResolversModule =>
+  self: AkkaActorSystemModule with ConfigurationModule with SemanticRepositoryModule with LdapModule with ResolversModule =>
 
   val syncCron = lwmConfig.getString("lwm.ldap.cron") match {
     case Some(cron) if cron.nonEmpty => cron

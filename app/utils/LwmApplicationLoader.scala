@@ -59,7 +59,7 @@ with AuthorityManagementModule
 with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
-with LDAPModule
+with LdapModule
 with AssetsModule
 with EntryTypeManagementModule
 with ResolversModule
@@ -127,7 +127,7 @@ with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
 with DefaultRoomManagementModuleImpl
 with DefaultSemesterManagementModuleImpl
-with LDAPModuleImpl
+with LdapModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
