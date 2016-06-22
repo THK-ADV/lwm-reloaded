@@ -6,12 +6,12 @@ import modules.labwork.reportCard.ReportCardServiceManagementModule
 import modules.labwork.schedule.ScheduleServiceManagementModule
 import modules.store.SemanticRepositoryModule
 
-trait ApiDataModule { self: SemanticRepositoryModule with LDAPModule =>
+trait ApiDataModule { self: SemanticRepositoryModule with LdapModule =>
   def apiDataController: ApiDataController
 }
 
 trait DefaultApiDataModule extends ApiDataModule {
-  self: SemanticRepositoryModule with LDAPModuleImpl with GroupServiceManagementModule with ScheduleServiceManagementModule with ReportCardServiceManagementModule  =>
+  self: SemanticRepositoryModule with LdapModuleImpl with GroupServiceManagementModule with ScheduleServiceManagementModule with ReportCardServiceManagementModule  =>
 
   override def apiDataController: ApiDataController = new ApiDataController(repository, ldapService, groupService, scheduleService, reportCardService)
 }

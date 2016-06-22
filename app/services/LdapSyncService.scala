@@ -12,12 +12,12 @@ import scala.util.{Failure, Success}
 
 trait LdapSyncService {
   val cronExpression: String
-  val ldapService: LDAPService
+  val ldapService: LdapService
   val resolvers: Resolvers
   val repository: SesameRepository
 }
 
-class ActorBasedLdapSyncService(val system: ActorSystem, val cronExpression: String, val repository: SesameRepository, val ldapService: LDAPService, val resolvers: Resolvers) extends LdapSyncService {
+class ActorBasedLdapSyncService(val system: ActorSystem, val cronExpression: String, val repository: SesameRepository, val ldapService: LdapService, val resolvers: Resolvers) extends LdapSyncService {
 
   val quartzActor = system.actorOf(Props[QuartzActor])
   val destinationActorRef = system.actorOf(LdapSyncServiceActor.props(repository, ldapService, resolvers))
@@ -27,12 +27,12 @@ class ActorBasedLdapSyncService(val system: ActorSystem, val cronExpression: Str
 
 object LdapSyncServiceActor {
 
-  def props(repository: SesameRepository, ldapService: LDAPService, resolvers: Resolvers) = Props(new LdapSyncServiceActor(repository, ldapService, resolvers))
+  def props(repository: SesameRepository, ldapService: LdapService, resolvers: Resolvers) = Props(new LdapSyncServiceActor(repository, ldapService, resolvers))
 
   case object SyncRequest
 }
 
-class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: LDAPService, val resolvers: Resolvers) extends Actor with ActorLogging {
+class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: LdapService, val resolvers: Resolvers) extends Actor with ActorLogging {
 
   val bindings = Bindings[repository.Rdf](repository.namespace)
   implicit val dispatcher: ExecutionContextExecutor = context.system.dispatcher
