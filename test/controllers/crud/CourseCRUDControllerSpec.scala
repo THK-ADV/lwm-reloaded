@@ -17,7 +17,7 @@ import play.api.test.Helpers._
 import utils.LwmMimeType
 import scala.util.{Failure, Success}
 
-class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course] {
+class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course, CourseAtom] {
 
   val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
@@ -255,7 +255,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     s"successfully get a single $entityTypeName atomized" in {
-      import Course.atomicWrites
+      import Course.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -313,7 +313,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     s"successfully get all ${plural(entityTypeName)} atomized" in {
-      import Course.atomicWrites
+      import Course.writesAtom
 
       val courses = Set(entityToPass, entityToFail)
 

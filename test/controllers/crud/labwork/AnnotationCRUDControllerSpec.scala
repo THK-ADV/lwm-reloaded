@@ -17,7 +17,7 @@ import org.mockito.Mockito._
 
 import scala.util.{Failure, Success}
 
-class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[AnnotationProtocol, Annotation] {
+class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[AnnotationProtocol, Annotation, AnnotationAtom] {
 
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val studentToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())
@@ -41,7 +41,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
 
   override def entityTypeName: String = "annotation"
 
-  override val controller: AbstractCRUDController[AnnotationProtocol, Annotation] = new AnnotationCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: AnnotationCRUDController = new AnnotationCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: AnnotationProtocol, existing: Option[Annotation]): Annotation = entityToPass
 

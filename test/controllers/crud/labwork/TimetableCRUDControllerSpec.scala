@@ -18,7 +18,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable] {
+class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable, TimetableAtom] {
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -55,7 +55,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   override def entityTypeName: String = "timetable"
 
-  override val controller: AbstractCRUDController[TimetableProtocol, Timetable] = new TimetableCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: TimetableCRUDController = new TimetableCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = entityToPass
 
@@ -150,7 +150,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
 
     s"successfully get a single $entityTypeName atomized" in {
-      import Timetable.atomicWrites
+      import Timetable.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -212,7 +212,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
 
     s"successfully get all ${plural(entityTypeName)} atomized" in {
-      import Timetable.atomicWrites
+      import Timetable.writesAtom
 
       val timetables = Set(entityToPass, entityToFail)
 

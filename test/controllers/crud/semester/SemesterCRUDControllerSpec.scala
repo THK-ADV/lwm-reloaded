@@ -19,7 +19,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester] {
+class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester, Semester] {
 
   override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
 
@@ -27,7 +27,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = entityToPass
 

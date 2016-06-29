@@ -16,12 +16,12 @@ import play.api.test.Helpers._
 
 import scala.util.Success
 
-class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room] {
+class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room, Room] {
   override val entityToPass: Room = Room("label to pass", "description to pass", Room.randomUUID)
 
   override def entityTypeName: String = "room"
 
-  override val controller: AbstractCRUDController[RoomProtocol, Room] = new RoomCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: RoomCRUDController = new RoomCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = entityToPass
 

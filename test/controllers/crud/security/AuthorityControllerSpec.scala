@@ -21,11 +21,11 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority] {
+class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority, AuthorityAtom] {
 
   override def entityTypeName: String = "authority"
 
-  override val controller: AbstractCRUDController[AuthorityProtocol, Authority] = new AuthorityController(repository, sessionService, namespace, roleService) {
+  override val controller: AuthorityController = new AuthorityController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = entityToPass
 
@@ -121,7 +121,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   "A AuthorityControllerSpec " should {
 
     s"successfully get a single student authority atomized" in {
-      import Authority.writesAtomic
+      import Authority.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -141,7 +141,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
 
     s"successfully get a single employee authority atomized" in {
-      import Authority.writesAtomic
+      import Authority.writesAtom
 
       doReturn(Success(Some(entityToFail))).
         doReturn(Success(Some(atomizedEntityToFail))).

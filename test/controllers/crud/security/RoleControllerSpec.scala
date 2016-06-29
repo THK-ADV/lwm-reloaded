@@ -8,12 +8,12 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LwmMimeType
 
-class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role] {
+class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, Role] {
   import ops._
   import bindings.RoleDescriptor
   override def entityTypeName: String = "role"
 
-  override val controller: AbstractCRUDController[RoleProtocol, Role] = new RoleController(repository, sessionService, namespace, roleService) {
+  override val controller: RoleController = new RoleController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = entityToPass
 

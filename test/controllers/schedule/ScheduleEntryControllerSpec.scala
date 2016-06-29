@@ -39,14 +39,6 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
   val controller: ScheduleEntryController = new ScheduleEntryController(repository, sessionService, ns, roleService) {
 
-    override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      chunkedAll(chunkSimple)
-    }
-
-    override def allAtomicFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      chunkedAll(chunkAtoms)
-    }
-
     override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
@@ -122,13 +114,6 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val courseID = UUID.randomUUID()
 
       val entry = entries(labworkID)(3)
-      val group1 = Group("Label1", labworkID, Set.empty)
-      val group2 = Group("Label2", labworkID, Set.empty)
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
-      val room1 = Room("label1", "description1")
-      val room2 = Room("label1", "description2")
-
 
       when(repository.getAll[ScheduleEntry](anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
       val request = FakeRequest(
@@ -230,10 +215,6 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val realRepository = SesameRepository(ns)
       val bindings = Bindings[realRepository.Rdf](ns)
       val realController: ScheduleEntryController = new ScheduleEntryController(realRepository, sessionService, ns, roleService) {
-
-        override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
-          chunkedAll(chunkSimple)
-        }
 
         override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
           case _ => NonSecureBlock

@@ -21,7 +21,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication] {
+class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -39,7 +39,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   )
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
-  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = entityToPass
 
@@ -608,7 +608,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   s"successfully get a single $entityTypeName atomized" in {
-    import LabworkApplication.atomicWrites
+    import LabworkApplication.writesAtom
 
     when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
     doReturn(Success(Some(entityToPass))).
@@ -669,7 +669,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   s"successfully get all ${plural(entityTypeName)} atomized" in {
-    import LabworkApplication.atomicWrites
+    import LabworkApplication.writesAtom
 
     val labworkApplications = Set(entityToPass, entityToFail)
 

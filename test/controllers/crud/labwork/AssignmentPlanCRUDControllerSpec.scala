@@ -15,11 +15,11 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan] {
+class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
 
   override def entityTypeName: String = "assignmentPlan"
 
-  override val controller: AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] = new AssignmentPlanCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: AssignmentPlanCRUDController = new AssignmentPlanCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock

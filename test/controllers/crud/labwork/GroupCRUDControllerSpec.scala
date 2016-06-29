@@ -11,7 +11,6 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.http.HeaderNames
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
@@ -19,7 +18,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
+class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group, GroupAtom] {
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -478,7 +477,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     s"successfully get a single $entityTypeName atomized" in {
-      import Group.atomicWrites
+      import Group.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -539,7 +538,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     s"successfully get all ${plural(entityTypeName)} atomized" in {
-      import Group.atomicWrites
+      import Group.writesAtom
 
       val groups = Set(entityToPass, entityToFail)
       val labworks = Set(labworkToPass, labworkToFail)

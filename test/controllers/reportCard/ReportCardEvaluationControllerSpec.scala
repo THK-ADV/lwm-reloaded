@@ -153,7 +153,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
         s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
       )
 
-      val result = controller.preview(course.toString, labwork.toString)(request)
+      val result = controller.preview(course.toString, labwork.toString)(request).run
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
@@ -186,7 +186,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
         s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
       )
 
-      val result = controller.preview(course.toString, labwork.toString)(request)
+      val result = controller.preview(course.toString, labwork.toString)(request).run
 
       status(result) shouldBe NOT_FOUND
     }

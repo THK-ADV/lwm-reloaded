@@ -19,14 +19,14 @@ import models.security.Permissions._
 
 import scala.util.{Failure, Success}
 
-class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole] {
+class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole, RefRoleAtom] {
 
   import ops._
   import bindings.RefRoleDescriptor
 
   override def entityTypeName: String = "refRole"
 
-  override val controller: AbstractCRUDController[RefRoleProtocol, RefRole] = new RefRoleController(repository, sessionService, namespace, roleService) {
+  override val controller: RefRoleController = new RefRoleController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = entityToPass
 
@@ -89,7 +89,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     }
 
     "successfully get a single refrole with course restriction atomized" in {
-      import RefRole.atomicWrites
+      import RefRole.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -107,7 +107,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     }
 
     "successfully get a single refrole without course restriction atomized" in {
-      import RefRole.atomicWrites
+      import RefRole.writesAtom
 
       doReturn(Success(Some(entityToFail))).
         doReturn(Success(Some(atomizedEntityToFail))).
@@ -166,7 +166,7 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     }
 
     "successfully get all refroles atomized" in {
-      import RefRole.atomicWrites
+      import RefRole.writesAtom
 
       val refRoles = Set(entityToPass, entityToFail)
 

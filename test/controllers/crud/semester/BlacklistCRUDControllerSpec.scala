@@ -8,7 +8,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import utils.LwmMimeType
 
-class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist] {
+class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist, Blacklist] {
 
   import ops._
   import bindings.BlacklistDescriptor
@@ -17,7 +17,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override def entityTypeName: String = "blacklist"
 
-  override val controller: AbstractCRUDController[BlacklistProtocol, Blacklist] = new BlacklistCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: BlacklistCRUDController = new BlacklistCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = entityToPass
 
