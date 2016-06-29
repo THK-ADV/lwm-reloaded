@@ -33,15 +33,19 @@ object LabworkCRUDController {
   val publishedAttribute = "published"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork] {
+class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork, LabworkAtom] {
 
   override implicit def descriptor: Descriptor[Sesame, Labwork] = defaultBindings.LabworkDescriptor
+
+  override implicit def descriptorAtom: Descriptor[Sesame, LabworkAtom] = defaultBindings.LabworkAtomDescriptor
 
   override implicit def uriGenerator: UriGenerator[Labwork] = Labwork
 
   override implicit def reads: Reads[LabworkProtocol] = Labwork.reads
 
   override implicit def writes: Writes[Labwork] = Labwork.writes
+
+  override implicit def writesAtom: Writes[LabworkAtom] = Labwork.writesAtom
 
   override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
     case Some(labwork) =>
@@ -56,11 +60,11 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     lazy val prefixes = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select ("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Labwork)) .
-        **(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))) .
-        **(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))) .
-        **(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))) .
+    (select("id") where {
+      **(v("s"), p(rdf.`type`), s(prefixes.Labwork)).
+        **(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))).
+        **(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))).
+        **(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))).
         **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }
@@ -78,15 +82,6 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
       case ((`publishedAttribute`, values), set) => set flatMap (set => Try(values.head.toBoolean).map(b => set.filter(_.published == b)))
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
-  }
-
-  override protected def atomize(output: Labwork): Try[Option[JsValue]] = {
-    import defaultBindings.LabworkAtomDescriptor
-    import Labwork.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{optM, tryM}
-    implicit val ns = repository.namespace
-    repository.get[LabworkAtom](Labwork.generateUri(output)) peek (Json.toJson(_))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -146,4 +141,15 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   def allAtomicWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
     allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
   }
+
+  override protected def coatomic(atom: LabworkAtom): Labwork =
+    Labwork(
+      atom.label,
+      atom.description,
+      atom.semester.id,
+      atom.course.id,
+      atom.degree.id,
+      atom.subscribable,
+      atom.published,
+      atom.id)
 }

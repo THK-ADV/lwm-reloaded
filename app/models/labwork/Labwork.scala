@@ -13,7 +13,7 @@ case class LabworkProtocol(label: String, description: String, semester: UUID, c
 
 case class LabworkAtom(label: String, description: String, semester: Semester, course: CourseAtom, degree: Degree, subscribable: Boolean, published: Boolean, id: UUID) extends UniqueEntity
 
-object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork] {
+object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork, LabworkAtom] {
 
   import Course.atomicFormat
 
@@ -21,9 +21,9 @@ object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProto
 
   override implicit def writes: Writes[Labwork] = Json.writes[Labwork]
 
-  implicit def format: Format[Labwork] = Json.format[Labwork]
+  override implicit def writesAtom: Writes[LabworkAtom] = Json.writes[LabworkAtom]
 
-  implicit def atomicWrites: Writes[LabworkAtom] = Json.writes[LabworkAtom]
+  implicit def format: Format[Labwork] = Json.format[Labwork]
 
   override def base: String = "labworks"
 }

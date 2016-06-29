@@ -26,7 +26,7 @@ case class BlacklistProtocol(label: String, dates: Set[DateTime]) {
   }
 }
 
-object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[BlacklistProtocol, Blacklist] {
+object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[BlacklistProtocol, Blacklist, Blacklist] {
 
   implicit val dateOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
@@ -39,6 +39,8 @@ object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[Blacklis
   override implicit def reads: Reads[BlacklistProtocol] = Json.reads[BlacklistProtocol]
 
   override implicit def writes: Writes[Blacklist] = Json.writes[Blacklist]
+
+  override implicit def writesAtom: Writes[Blacklist] = writes
 
   implicit def format: Format[Blacklist] = Json.format[Blacklist]
 

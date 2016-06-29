@@ -5,23 +5,20 @@ import java.util.UUID
 import controllers.crud._
 import models.labwork._
 import models.security.Permissions.{god, schedule}
-import models.semester.Semester
-import models.users.{Employee, User}
-import models.{Room, UriGenerator}
+import models.UriGenerator
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Action, Controller, Result}
+import play.api.mvc.{Action, Controller}
 import services._
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{Gen, LwmMimeType}
-
-import scala.util.{Failure, Success, Try}
+import ScheduleController._
+import scala.util.Try
 
 object ScheduleController {
 
@@ -56,7 +53,7 @@ object ScheduleController {
         **(v("schedules"), p(lwm.labwork), v("labworkid"))
     }
 
-      repository.prepareQuery(query).
+    repository.prepareQuery(query).
       select(_.get("schedules")).
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
@@ -93,9 +90,12 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     with Secured
     with SessionChecking
     with SecureControllerContext
-    with SesameRdfSerialisation[Schedule]
-    with JsonSerialisation[Schedule, Schedule]
-    with Atomic[Schedule] {
+    with Stored
+    with JsonSerialisation[Schedule, Schedule, ScheduleAtom]
+    with RdfSerialisation[Schedule, ScheduleAtom]
+    with Added[Schedule, Schedule, ScheduleAtom]
+    with Removed[Schedule, ScheduleAtom]
+    with Retrieved[Schedule, ScheduleAtom] {
 
   override implicit def descriptor: Descriptor[Sesame, Schedule] = defaultBindings.ScheduleDescriptor
 
@@ -105,82 +105,63 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
 
   override implicit def writes: Writes[Schedule] = Schedule.writes
 
+  override implicit def writesAtom: Writes[ScheduleAtom] = Schedule.writesAtom
+
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
-  def create(course: String) = createWith(course) { s =>
-    Success(Created(Json.toJson(s)).as(mimeType))
+  def create(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+    validate(request)
+      .flatMap(add)
+      .mapResult(s => Created(Json.toJson(s)).as(mimeType))
   }
 
-  def createAtomic(course: String) = createWith(course) { s =>
-    atomizeMany(Set(s)).map(json => Created(json).as(mimeType))
+  def createAtomic(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+    validate(request)
+      .flatMap(add)
+      .flatMap(s => retrieve[ScheduleAtom](Schedule.generateUri(s)))
+      .mapResult(s => Created(Json.toJson(s)).as(mimeType))
   }
 
-  def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { implicit request =>
-    repository.delete[Schedule]((UUID.fromString _ andThen Schedule.generateUri)(schedule)) match {
-      case Success(s) =>
+  def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { request =>
+    val url = (UUID.fromString _ andThen Schedule.generateUri) (schedule)
+    remove[Schedule](url)
+      .mapResult(identity)
+  }
+
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    generate(labwork)
+      .map(_ map toSchedule)
+      .mapResult { gen =>
         Ok(Json.obj(
-          "status" -> "OK"
+          "status" -> "OK",
+          "schedule" -> Json.toJson(gen.elem),
+          "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
         ))
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
+      }
   }
 
-  def preview(course: String, labwork: String) = previewWith(course, labwork) { gen =>
-    Success(Some(Ok(Json.obj(
-      "status" -> "OK",
-      "schedule" -> Json.toJson(ScheduleController.toSchedule(gen.elem)),
-      "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
-    ))))
-  }
-
-  def previewAtomic(course: String, labwork: String) = previewWith(course, labwork) { gen =>
-    import utils.Ops._
-    import MonadInstances.{optM, tryM}
-    import ScheduleController._
-
-    gen.map(toSchedule _ andThen atomize).elem.peek(json =>
-      Ok(Json.obj(
-        "status" -> "OK",
-        "schedule" -> json,
-        "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
-      ))
-    )
+  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    generate(labwork)
+      .map(_ map toSchedule)
+      .flatMap { gen =>
+        retrieve[ScheduleAtom](Schedule.generateUri(gen.elem))
+          .map(atom => gen.map(_ => atom))
+      }
+      .mapResult { gen =>
+        Ok(Json.obj(
+          "status" -> "OK",
+          "schedule" -> Json.toJson(gen.elem),
+          "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
+        ))
+      }
   }
 
   def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
 
-  private def createWith(course: String)(toResult: Schedule => Try[Result]) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    request.body.validate[Schedule].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success =>
-        repository.add[Schedule](success).flatMap(_ => toResult(success)) match {
-          case Success(result) =>
-            result
-          case Failure(e) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> e.getMessage
-            ))
-        }
-    )
-  }
-
-  private def previewWith(course: String, labwork: String)(toResult: Gen[ScheduleG, Conflict, Int] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
+  def generate(labwork: String): Return[Gen[ScheduleG, Conflict, Int]] = {
     import ScheduleController._
-    import utils.Ops._
-    import MonadInstances.{optM, tryM}
-    import TraverseInstances.{travO, travT}
     import defaultBindings.{GroupDescriptor, LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
 
     val id = UUID.fromString(labwork)
@@ -199,22 +180,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       g <- if (groups.nonEmpty) Some(groups) else None
     } yield scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
 
-    genesis flatPeek toResult match {
-      case Success(s) =>
-        s match {
-          case Some(result) => result
-          case None =>
-            NotFound(Json.obj(
-              "status" -> "KO",
-              "message" -> "No such element..."
-            ))
-        }
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
+    optional(genesis)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -223,12 +189,5 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def atomize(output: Schedule): Try[Option[JsValue]] = {
-    import defaultBindings.ScheduleAtomDescriptor
-    import Schedule.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{tryM, optM}
-
-    repository.get[ScheduleAtom](Schedule.generateUri(output)) peek (Json.toJson(_))
-  }
+  override implicit def descriptorAtom: Descriptor[Sesame, ScheduleAtom] = defaultBindings.ScheduleAtomDescriptor
 }

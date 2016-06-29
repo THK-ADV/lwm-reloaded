@@ -13,7 +13,7 @@ case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
 case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], id: UUID) extends UniqueEntity
 
-object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group] {
+object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group, GroupAtom] {
 
   lazy val empty = Group("", UUID.randomUUID, Set.empty[UUID])
 
@@ -21,11 +21,11 @@ object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, G
 
   override implicit def writes: Writes[Group] = Json.writes[Group]
 
+  override implicit def writesAtom: Writes[GroupAtom] = Json.writes[GroupAtom]
+
   implicit def protocolWrites: Writes[GroupProtocol] = Json.writes[GroupProtocol]
 
   implicit def format: Format[Group] = Json.format[Group]
-
-  implicit def atomicWrites: Writes[GroupAtom] = Json.writes[GroupAtom]
 
   override def base: String = "groups"
 }

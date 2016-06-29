@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.AbstractCRUDController
 import controllers.crud.labwork.AssignmentPlanCRUDController._
 import models._
-import models.labwork.{AssignmentPlan, AssignmentPlanProtocol, Labwork}
+import models.labwork.{AssignmentPlan, AssignmentPlanAtom, AssignmentPlanProtocol, Labwork}
 import models.security.Permissions
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
@@ -27,7 +27,7 @@ object AssignmentPlanCRUDController {
   val courseAttribute = "course"
 }
 
-class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan] {
+class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
 
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries
@@ -35,8 +35,6 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
   override implicit def descriptor: Descriptor[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanDescriptor
 
   override implicit def uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
-
-  override protected def atomize(output: AssignmentPlan): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = existing match {
     case Some(ap) => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.id)
@@ -108,4 +106,10 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
   def deleteFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
     delete(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
   }
+
+  override protected def coatomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.id)
+
+  override implicit def descriptorAtom: Descriptor[Sesame, AssignmentPlanAtom] = defaultBindings.AssignmentPlanAtomDescriptor
+
+  override implicit def writesAtom: Writes[AssignmentPlanAtom] = AssignmentPlan.writesAtom
 }

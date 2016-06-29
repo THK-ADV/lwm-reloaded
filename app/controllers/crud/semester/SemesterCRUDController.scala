@@ -23,7 +23,7 @@ object SemesterCRUDController {
   val periodAttribute = "period"
 }
 
-class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester] {
+class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester, Semester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override implicit def descriptor: Descriptor[Sesame, Semester] = defaultBindings.SemesterDescriptor
@@ -33,6 +33,8 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
   override implicit def reads: Reads[SemesterProtocol] = Semester.reads
 
   override implicit def writes: Writes[Semester] = Semester.writes
+
+  override implicit def writesAtom: Writes[Semester] = Semester.writesAtom
 
   override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = existing match {
     case Some(semester) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.id)
@@ -54,11 +56,13 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     }, v("id"))
   }
 
+  override protected def coatomic(atom: Semester): Semester = atom
+
+  override implicit def descriptorAtom: Descriptor[Sesame, Semester] = descriptor
+
   override protected def compareModel(input: SemesterProtocol, output: Semester): Boolean = {
     input.abbreviation == output.abbreviation && input.examStart.isEqual(output.examStart)
   }
-
-  override protected def atomize(output: Semester): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
     val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))

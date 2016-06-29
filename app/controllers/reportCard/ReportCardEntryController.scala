@@ -6,22 +6,24 @@ import controllers.crud._
 import controllers.schedule.ScheduleController
 import models.{Course, Room, UriGenerator}
 import models.labwork._
-import models.users.{Student, User}
+import models.users.User
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Controller, Result}
+import play.api.mvc.{Controller, Request}
 import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+import utils.RequestOps._
 import models.security.Permissions.{god, reportCardEntry}
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, NoneClause, SelectClause}
+import ReportCardEntryController._
 
+import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 object ReportCardEntryController {
@@ -37,18 +39,24 @@ object ReportCardEntryController {
 class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
   extends Controller
     with BaseNamespace
-    with JsonSerialisation[ReportCardEntry, ReportCardEntry]
-    with SesameRdfSerialisation[ReportCardEntry]
+    with JsonSerialisation[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom]
+    with RdfSerialisation[ReportCardEntry, ReportCardEntryAtom]
     with ContentTyped
-    with Chunkable[ReportCardEntry]
+    with Chunked
     with Secured
     with SessionChecking
     with SecureControllerContext
-    with Atomic[ReportCardEntry] {
+    with Stored
+    with ModelConverter[ReportCardEntry, ReportCardEntry]
+    with Consistent[ReportCardEntry, ReportCardEntry]
+    with Filterable[ReportCardEntry]
+    with Basic[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
 
   override implicit def reads: Reads[ReportCardEntry] = ReportCardEntry.reads
 
   override implicit def writes: Writes[ReportCardEntry] = ReportCardEntry.writes
+
+  override implicit def writesAtom: Writes[ReportCardEntryAtom] = ReportCardEntry.writesAtom
 
   override implicit def uriGenerator: UriGenerator[ReportCardEntry] = ReportCardEntry
 
@@ -68,39 +76,179 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     case _ => PartialSecureBlock(god)
   }
 
-  def get(student: String) = forStudent(student) { entries =>
-    Success(Ok(Json.toJson(entries)).as(mimeType))
+  def get(student: String) = contextFrom(Get) action { request =>
+    forStudent(student)
+      .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
-  def getAtomic(student: String) = forStudent(student) { entries =>
-    Success(Ok.chunked(chunkAtoms(entries)).as(mimeType))
+  def getAtomic(student: String) = contextFrom(Get) action { request =>
+    forStudent(student)
+      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
-  def all(course: String) = reportCardEntries(course) { entries =>
-    Success(Ok.chunked(chunkSimple(entries)).as(mimeType))
+  def all(course: String) = contextFrom(GetAll) action { implicit request =>
+    val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
+    filtered(rebased)(Set.empty)
+      .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
-  def allAtomic(course: String) = reportCardEntries(course) { entries =>
-    Success(Ok.chunked(chunkAtoms(entries)).as(mimeType))
+  def allAtomic(course: String) = contextFrom(GetAll) action { implicit request =>
+    val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
+    filtered(rebased)(Set.empty)
+      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def update(course: String, entry: String) = updateEntry(course, entry) { entry =>
-    Success(Ok(Json.toJson(entry)).as(mimeType))
+  def update(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+    updateEntry(request, entry)
+      .mapResult(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
-  def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
-    atomizeMany(Set(entry)).map(json => Ok(Json.toJson(json)).as(mimeType))
+  def updateAtomic(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+    updateEntry(request, entry)
+      .flatMap(entry => retrieve[ReportCardEntryAtom](ReportCardEntry.generateUri(entry)))
+      .mapResult(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
-  def allFromScheduleEntry(course: String, scheduleEntry: String) = fromScheduleEntry(course, scheduleEntry) { entries =>
-    Ok.chunked(chunkSimple(entries)).as(mimeType)
+  def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) action { request =>
+    fromScheduleEntry(scheduleEntry)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def allAtomicFromScheduleEntry(course: String, scheduleEntry: String) = fromScheduleEntry(course, scheduleEntry) { entries =>
-    Ok.chunked(chunkAtoms(entries)).as(mimeType)
+
+  def allAtomicFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) action { request =>
+    fromScheduleEntry(scheduleEntry)
+      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  private def fromScheduleEntry(course: String, scheduleEntry: String)(toResult: Set[ReportCardEntry] => Result) = restrictedContext(course)(GetAll) action { request =>
+  def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+    import scalaz.syntax.applicative._
+    import store.sparql.select
+    import store.sparql.select._
+    import ScheduleController._
+    import utils.Ops.MonadInstances.optM
+    import utils.Ops.TraverseInstances.travO
+    import utils.Ops.NaturalTrasformations._
+    import defaultBindings.{ScheduleDescriptor, AssignmentPlanDescriptor}
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+    val scheduleId = UUID.fromString(schedule)
+    val scheduleUri = Schedule.generateUri(scheduleId)
+
+    val query = select("plan") where {
+      **(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
+        **(s(scheduleUri), p(lwm.labwork), v("labwork")).
+        **(v("plan"), p(lwm.labwork), v("labwork"))
+    }
+
+    val attemptPlan = repository.prepareQuery(query).
+      select(_.get("plan")).
+      changeTo(_.headOption).
+      map(_.stringValue())(optM).
+      request(repository.get[AssignmentPlan](_))
+
+    (for {
+      optPlan <- attemptPlan.run
+      optSchedule <- repository.get[Schedule](scheduleUri)
+      optScheduleG = optSchedule flatMap (toScheduleG(_, repository))
+      reportCards = (optScheduleG |@| optPlan) (reportCardService.reportCards) getOrElse Set.empty[ReportCardEntry]
+      _ <- repository addMany reportCards
+    } yield reportCards) match {
+      case Success(_) =>
+        Created(Json.obj(
+          "status" -> "OK",
+          "message" -> s"Created report card entries for schedule $schedule"
+        ))
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        ))
+    }
+  }
+
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEntry]): Try[Set[ReportCardEntry]] = {
+    import store.sparql.select._
+    import store.sparql.select
+    import ReportCardEntryController._
+    import utils.Ops.MonadInstances.listM
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+
+    queryString.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
+      case (clause, (`studentAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
+      }
+      case (clause, (`courseAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.labwork), v("labwork")).
+            **(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head)))), resched)
+      }
+      case (clause, (`labworkAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
+      }
+      case (clause, (`roomAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.room), s(Room.generateUri(UUID.fromString(values.head)))),
+            resched.**(v("rescheduled"), p(lwm.room), s(Room.generateUri(UUID.fromString(values.head)))))
+      }
+      case (clause, (`dateAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.date), v("date")).filterStrStarts(v("date"), values.head),
+            resched.filterStrStarts(v("rdate"), values.head))
+      }
+      case (clause, (`startAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.start), v("start")).filterStrStarts(v("start"), values.head),
+            resched.filterStrStarts(v("rstart"), values.head))
+      }
+      case (clause, (`endAttribute`, values)) => clause map {
+        case ((filter, resched)) =>
+          (filter append **(v("entries"), p(lwm.end), v("end")).filterStrStarts(v("end"), values.head),
+            resched.filterStrStarts(v("rend"), values.head))
+      }
+      case _ => Failure(new Throwable("Unknown attribute"))
+    } flatMap {
+      case ((clause, resched)) =>
+        val query = select distinct "entries" where {
+          clause.optional {
+            **(v("entries"), p(lwm.rescheduled), v("rescheduled")).
+              **(v("rescheduled"), p(lwm.date), v("rdate")).
+              **(v("rescheduled"), p(lwm.start), v("rstart")).
+              **(v("rescheduled"), p(lwm.end), v("rend")) append
+              resched
+          }
+        }
+
+        repository.prepareQuery(query).
+          select(_.get("entries")).
+          transform(_.fold(List.empty[Value])(identity)).
+          map(_.stringValue).
+          requestAll(repository.getMany[ReportCardEntry](_)).
+          run
+    }
+  }
+
+  def updateEntry(request: Request[JsValue], entry: String): Return[ReportCardEntry] = {
+    validate(request)
+      .when(_.id == UUID.fromString(entry), overwrite0)(
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> s"Id found in body  does not match id found in resource ($entry)"
+        )))
+  }
+
+  def fromScheduleEntry(entry: String): Return[Set[ReportCardEntry]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances._
@@ -118,199 +266,48 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         run
     }
 
-    val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(scheduleEntry))(namespace)
+    val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(entry))(namespace)
 
-    val entryQuery = select distinct ("entries", "rescheduled") where {
+    val entryQuery = select distinct("entries", "rescheduled") where {
       **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
-      **(s(scheduleEntryUri), p(lwm.room), v("room")).
-      **(s(scheduleEntryUri), p(lwm.date), v("date")) .
-      **(s(scheduleEntryUri), p(lwm.start), v("start")).
-      **(s(scheduleEntryUri), p(lwm.end), v("end")).
-      **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-      **(v("entries"), p(lwm.labwork), v("labwork")).
-      **(v("entries"), p(lwm.room), v("room")).
-      **(v("entries"), p(lwm.date), v("date")) .
-      **(v("entries"), p(lwm.start), v("start")).
-      **(v("entries"), p(lwm.end), v("end"))
+        **(s(scheduleEntryUri), p(lwm.room), v("room")).
+        **(s(scheduleEntryUri), p(lwm.date), v("date")).
+        **(s(scheduleEntryUri), p(lwm.start), v("start")).
+        **(s(scheduleEntryUri), p(lwm.end), v("end")).
+        **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+        **(v("entries"), p(lwm.labwork), v("labwork")).
+        **(v("entries"), p(lwm.room), v("room")).
+        **(v("entries"), p(lwm.date), v("date")).
+        **(v("entries"), p(lwm.start), v("start")).
+        **(v("entries"), p(lwm.end), v("end"))
     }
 
-    val rescheduledQuery = select distinct ("entries", "rescheduled") where {
+    val rescheduledQuery = select distinct("entries", "rescheduled") where {
       **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
-      **(s(scheduleEntryUri), p(lwm.room), v("room")).
-      **(s(scheduleEntryUri), p(lwm.date), v("date")).
-      **(s(scheduleEntryUri), p(lwm.start), v("start")).
-      **(s(scheduleEntryUri), p(lwm.end), v("end")).
-      **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-      **(v("entries"), p(lwm.rescheduled), v("rescheduled")).
-      **(v("rescheduled"), p(lwm.date), v("date")).
-      **(v("rescheduled"), p(lwm.start), v("start")).
-      **(v("rescheduled"), p(lwm.end), v("end")).
-      **(v("rescheduled"), p(lwm.room), v("room"))
+        **(s(scheduleEntryUri), p(lwm.room), v("room")).
+        **(s(scheduleEntryUri), p(lwm.date), v("date")).
+        **(s(scheduleEntryUri), p(lwm.start), v("start")).
+        **(s(scheduleEntryUri), p(lwm.end), v("end")).
+        **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+        **(v("entries"), p(lwm.rescheduled), v("rescheduled")).
+        **(v("rescheduled"), p(lwm.date), v("date")).
+        **(v("rescheduled"), p(lwm.start), v("start")).
+        **(v("rescheduled"), p(lwm.end), v("end")).
+        **(v("rescheduled"), p(lwm.room), v("room"))
     }
 
-    (getEntries(entryQuery) |@| getEntries(rescheduledQuery))(_ ++ _) match {
+    (getEntries(entryQuery) |@| getEntries(rescheduledQuery)) (_ ++ _) match {
       case Success(entries) =>
-        toResult(entries)
-      case Failure(e) =>
+        Continue(entries)
+      case Failure(e) => Stop(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
-        ))
+        )))
     }
   }
 
-  def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    import scalaz.syntax.applicative._
-    import store.sparql.select
-    import store.sparql.select._
-    import ScheduleController._
-    import utils.Ops.MonadInstances.optM
-    import utils.Ops.TraverseInstances.travO
-    import utils.Ops.NaturalTrasformations._
-    import defaultBindings.ScheduleDescriptor
-    import defaultBindings.AssignmentPlanDescriptor
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-    val scheduleId = UUID.fromString(schedule)
-    val scheduleUri = Schedule.generateUri(scheduleId)
-
-    val query = select("plan") where {
-        **(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)) .
-        **(s(scheduleUri), p(lwm.labwork), v("labwork")) .
-        **(v("plan"), p(lwm.labwork), v("labwork"))
-      }
-
-    val attemptPlan = repository.prepareQuery(query).
-        select(_.get("plan")).
-        changeTo(_.headOption).
-        map(_.stringValue())(optM).
-        request(repository.get[AssignmentPlan](_))
-
-    (for {
-      optPlan <- attemptPlan.run
-      optSchedule <- repository.get[Schedule](scheduleUri)
-      optScheduleG = optSchedule flatMap (toScheduleG(_, repository))
-      reportCards = (optScheduleG |@| optPlan)(reportCardService.reportCards) getOrElse Set.empty[ReportCardEntry]
-      _ <- repository addMany reportCards
-    } yield reportCards) match {
-      case Success(_) =>
-        Created(Json.obj(
-          "status" -> "OK",
-          "message" -> s"Created report card entries for schedule $schedule"
-        ))
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
-  }
-
-  private def updateEntry(course: String, entry: String)(toResult: ReportCardEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
-    request.body.validate[ReportCardEntry].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        if (success.id == UUID.fromString(entry))
-          repository.update(success).flatMap(_ => toResult(success)) match {
-            case Success(result) =>
-              result
-            case Failure(e) =>
-              InternalServerError(Json.obj(
-                "status" -> "KO",
-                "errors" -> e.getMessage
-              ))
-          }
-        else
-          BadRequest(Json.obj(
-            "status" -> "KO",
-            "message" -> s"Id found in body (${success.id}) does not match id found in resource ($entry)"
-          ))
-      }
-    )
-  }
-
-  private def reportCardEntries(course: String)(toResult: Set[ReportCardEntry] => Try[Result]) = restrictedContext(course)(GetAll) action { request =>
-    import store.sparql.select._
-    import store.sparql.select
-    import ReportCardEntryController._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val query = request.queryString + (courseAttribute -> Seq(course))
-
-    query.foldLeft(Try((**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)), NoneClause: Clause))) {
-      case (clause, (`studentAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(values.head)))), resched)
-      }
-      case (clause, (`courseAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.labwork), v("labwork")).
-            **(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head)))), resched)
-      }
-      case (clause, (`labworkAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
-      }
-      case (clause, (`roomAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.room), s(Room.generateUri(UUID.fromString(values.head)))),
-            resched . **(v("rescheduled"), p(lwm.room), s(Room.generateUri(UUID.fromString(values.head)))))
-      }
-      case (clause, (`dateAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.date), v("date")) . filterStrStarts(v("date"), values.head),
-            resched . filterStrStarts(v("rdate"), values.head))
-      }
-      case (clause, (`startAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.start), v("start")) . filterStrStarts(v("start"), values.head),
-            resched . filterStrStarts(v("rstart"), values.head))
-      }
-      case (clause, (`endAttribute`, values)) => clause map {
-        case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.end), v("end")) . filterStrStarts(v("end"), values.head),
-            resched . filterStrStarts(v("rend"), values.head))
-      }
-      case _ => Failure(new Throwable("Unknown attribute"))
-    } flatMap {
-      case ((clause, resched)) =>
-        val query = select distinct "entries" where {
-          clause . optional {
-            **(v("entries"), p(lwm.rescheduled), v("rescheduled")) .
-              **(v("rescheduled"), p(lwm.date), v("rdate")).
-              **(v("rescheduled"), p(lwm.start), v("rstart")).
-              **(v("rescheduled"), p(lwm.end), v("rend")) append
-              resched
-          }
-        }
-
-        repository.prepareQuery(query).
-          select(_.get("entries")).
-          transform(_.fold(List.empty[Value])(identity)).
-          map(_.stringValue).
-          requestAll(repository.getMany[ReportCardEntry](_)).
-          run flatMap toResult
-    } match {
-      case Success(result) =>
-        result
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
-  }
-
-  private def forStudent(student: String)(toResult: Set[ReportCardEntry] => Try[Result]) = contextFrom(Get) action { request =>
+  private def forStudent(student: String): Return[Set[ReportCardEntry]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
@@ -318,9 +315,9 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
-    val query = select ("entries") where {
+    val query = select("entries") where {
       **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-      **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(student))))
+        **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(student))))
     }
 
     repository.prepareQuery(query).
@@ -328,23 +325,19 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
       requestAll(repository.getMany[ReportCardEntry](_)).
-      run flatMap toResult match {
-        case Success(result) =>
-          result
-        case Failure(e) =>
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          ))
-      }
+      run match {
+      case Success(result) => Continue(result)
+      case Failure(e) => Stop(
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        )))
+    }
   }
 
-  override protected def atomize(output: ReportCardEntry): Try[Option[JsValue]] = {
-    import defaultBindings.ReportCardEntryAtomDescriptor
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{optM, tryM}
-    import ReportCardEntry.atomicWrites
+  override protected def compareModel(input: ReportCardEntry, output: ReportCardEntry): Boolean = input == output
 
-    repository.get[ReportCardEntryAtom](ReportCardEntry.generateUri(output)) peek (Json.toJson(_))
-  }
+  override implicit def descriptorAtom: Descriptor[Sesame, ReportCardEntryAtom] = defaultBindings.ReportCardEntryAtomDescriptor
+
+  override protected def fromInput(input: ReportCardEntry, existing: Option[ReportCardEntry]): ReportCardEntry = input
 }

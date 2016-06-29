@@ -16,13 +16,13 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{GroupService, RoleService, SessionHandlingService, TimetableService}
 import store.bind.Bindings
-import store.sparql.{Initial, QueryEngine, QueryExecutor, SelectClause}
+import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule { self =>
+abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntity] extends WordSpec with TestBaseDefinition with SesameModule { self =>
 
   val factory = ValueFactoryImpl.getInstance()
   val repository = mock[SesameRepository]
@@ -42,7 +42,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity] extends WordSpec
 
   def mimeType: LwmMimeType
 
-  def controller: AbstractCRUDController[I, O]
+  def controller: AbstractCRUDController[I, O, A]
 
   def entityTypeName: String
 

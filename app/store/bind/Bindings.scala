@@ -369,6 +369,24 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(AssignmentPlan.generateUri(aPlan)))(labwork, attendance, mandatory, entries, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses compositeClassUris.classUris
   }
 
+  implicit lazy val AssignmentPlanAtomDescriptor: Descriptor[Rdf, AssignmentPlanAtom] = new Descriptor[Rdf, AssignmentPlanAtom] {
+    override val clazz: Rdf#URI = lwm.AssignmentPlan
+
+    override val compositeClassUris: CompositeClassUris[Rdf, AssignmentPlanAtom] =
+      compositeClass[Rdf, AssignmentPlanAtom](clazz) #>
+        LabworkDescriptor.compositeClassUris #>
+        AssignmentEntryDescriptor.compositeClassUris
+
+    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val attendance = property[Int](lwm.attendance)
+    private val mandatory = property[Int](lwm.mandatory)
+    private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryDescriptor.binder)
+
+    override val binder: PGBinder[Rdf, AssignmentPlanAtom] =
+      pgbWithId[AssignmentPlanAtom](aPlan =>
+        makeUri(AssignmentPlan.generateUri(aPlan.id)))(labwork, attendance, mandatory, entries, id)(AssignmentPlanAtom.apply, AssignmentPlanAtom.unapply) withClasses compositeClassUris.classUris
+  }
+
   implicit lazy val LabworkDescriptor: Descriptor[Rdf, Labwork] = new Descriptor[Rdf, Labwork] {
     override val clazz: Rdf#URI = lwm.Labwork
 

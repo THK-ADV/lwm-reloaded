@@ -17,7 +17,7 @@ import store.bind.Descriptor.{CompositeClassUris, Descriptor}
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoomProtocol, Room] {
+class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoomProtocol, Room, Room] {
 
    override implicit def descriptor: Descriptor[Sesame, Room] = defaultBindings.RoomDescriptor
 
@@ -26,6 +26,8 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
    override implicit def reads: Reads[RoomProtocol] = Room.reads
 
    override implicit def writes: Writes[Room] = Room.writes
+
+   override implicit def writesAtom: Writes[Room] = Room.writesAtom
 
    override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = existing match {
       case Some(room) => Room(input.label, input.description, room.id)
@@ -49,7 +51,10 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
 
    override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Try[Set[Room]] = Success(all)
 
-   override protected def atomize(output: Room): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+
+   override protected def coatomic(atom: Room): Room = atom
+
+   override implicit def descriptorAtom: Descriptor[Sesame, Room] = descriptor
 
    override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case Get => PartialSecureBlock(room.get)

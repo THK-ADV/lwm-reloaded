@@ -180,7 +180,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     }
 
     s"successfully get a single annotation atomized" in {
-      import Annotation.atomicWrites
+      import Annotation.writesAtom
 
       doReturn(Success(Some(entityToPass))).
         doReturn(Success(Some(atomizedEntityToPass))).
@@ -240,7 +240,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     }
 
     s"successfully get all annotations atomized" in {
-      import Annotation.atomicWrites
+      import Annotation.writesAtom
 
       when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
 

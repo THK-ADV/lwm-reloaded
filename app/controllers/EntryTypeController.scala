@@ -4,7 +4,7 @@ import controllers.crud.{ContentTyped, SecureControllerContext, Secured, Session
 import models.labwork.AssignmentEntryType
 import models.security.Permissions
 import modules.store.BaseNamespace
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
 import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
@@ -22,7 +22,7 @@ with SecureControllerContext {
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
-    Ok(Json.toJson(AssignmentEntryType.all)).as(mimeType)
+    Ok(Json.toJson(AssignmentEntryType.all)(Writes.set(AssignmentEntryType.writes))).as(mimeType)
   }
 
   def header() = Action { implicit request =>

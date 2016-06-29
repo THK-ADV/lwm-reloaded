@@ -12,16 +12,16 @@ case class CourseProtocol(label: String, description: String, abbreviation: Stri
 
 case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: Employee, semesterIndex: Int, id: UUID) extends UniqueEntity
 
-object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol, Course] {
+object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol, Course, CourseAtom] {
   import models.users.Employee._
 
   override implicit def reads: Reads[CourseProtocol] = Json.reads[CourseProtocol]
 
   override implicit def writes: Writes[Course] = Json.writes[Course]
 
-  implicit def atomicFormat: Format[CourseAtom] = Json.format[CourseAtom]
+  override implicit def writesAtom: Writes[CourseAtom] = Json.writes[CourseAtom]
 
-  implicit def atomicWrites: Writes[CourseAtom] = Json.writes[CourseAtom]
+  implicit def atomicFormat: Format[CourseAtom] = Json.format[CourseAtom]
 
   override def base: String = "courses"
 }

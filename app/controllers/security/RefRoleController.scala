@@ -22,11 +22,13 @@ object RefRoleController {
   val courseAttribute = "course"
 }
 
-class RefRoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole]{
+class RefRoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RefRoleProtocol, RefRole, RefRoleAtom]{
 
   override implicit def reads: Reads[RefRoleProtocol] = RefRole.reads
 
   override implicit def writes: Writes[RefRole] = RefRole.writes
+
+  override implicit def writesAtom: Writes[RefRoleAtom] = RefRole.writesAtom
 
   override implicit def uriGenerator: UriGenerator[RefRole] = RefRole
 
@@ -50,16 +52,9 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
     }
   }
 
-  override protected def atomize(output: RefRole): Try[Option[JsValue]] = {
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{tryM, optM}
-    import RefRole.atomicWrites
-    import defaultBindings.RefRoleAtomDescriptor
+  override protected def coatomic(atom: RefRoleAtom): RefRole = RefRole(atom.course map (_.id), atom.role.id, atom.id)
 
-    implicit val ns = repository.namespace
-
-    repository.get[RefRoleAtom](RefRole.generateUri(output)) peek (Json.toJson(_))
-  }
+  override implicit def descriptorAtom: Descriptor[Sesame, RefRoleAtom] = defaultBindings.RefRoleAtomDescriptor
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(refRole.get)

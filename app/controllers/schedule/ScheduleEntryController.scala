@@ -10,25 +10,19 @@ import models.users.User
 import models.{Course, UriGenerator}
 import modules.store.BaseNamespace
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.iteratee.Enumerator
 import play.api.libs.json._
 import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 import store.sparql.select
 import store.sparql.select._
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.Ops.MonadInstances.{optM, tryM}
-import utils.Ops.TraverseInstances.{travO, travT}
-import utils.Ops._
 import utils.RequestOps._
-
 import scala.collection.Map
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object ScheduleEntryController {
   val courseAttribute = "course"
@@ -49,14 +43,21 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     with Secured
     with SessionChecking
     with SecureControllerContext
-    with Chunkable[ScheduleEntry]
-    with Atomic[ScheduleEntry]
-    with SesameRdfSerialisation[ScheduleEntry]
-    with JsonSerialisation[ScheduleEntry, ScheduleEntry] {
+    with Chunked
+    with Stored
+    with RdfSerialisation[ScheduleEntry, ScheduleEntryAtom]
+    with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
+    with ModelConverter[ScheduleEntry, ScheduleEntry]
+    with Consistent[ScheduleEntry, ScheduleEntry]
+    with Basic[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
+
+  override protected def compareModel(input: ScheduleEntry, output: ScheduleEntry): Boolean = input == output
 
   override implicit def reads: Reads[ScheduleEntry] = ScheduleEntry.reads
 
   override implicit def writes: Writes[ScheduleEntry] = ScheduleEntry.writes
+
+  override implicit def writesAtom: Writes[ScheduleEntryAtom] = ScheduleEntry.writesAtom
 
   override implicit def descriptor: Descriptor[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryDescriptor
 
@@ -65,37 +66,70 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkSimple)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course)))
+    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course))
+    retrieveAll[ScheduleEntry]
+      .flatMap(filtered(rebased))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum))
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkAtoms)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course)))
+    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course))
+    retrieveAll[ScheduleEntryAtom]
+      .flatMap(filtered2(rebased, coatomic))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum))
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkSimple)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    retrieveAll[ScheduleEntry]
+      .flatMap(filtered(rebased))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum))
   }
 
   def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    chunkedAll(chunkAtoms)(rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    retrieveAll[ScheduleEntryAtom]
+      .flatMap(filtered2(rebased, coatomic))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum))
   }
 
   def get(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri) (entry))
-    handle(result)(entry => Ok(Json.toJson(entry)).as(mimeType))
+    val url = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+    retrieve[ScheduleEntry](url)
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def getAtomic(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val result = repository.get[ScheduleEntry]((UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)).flatPeek(atomize)
-    handle(result)(json => Ok(json).as(mimeType))
+    val url = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+    retrieve[ScheduleEntryAtom](url)
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
-  def update(course: String, entry: String) = updateEntry(course, entry) { entry =>
-    Success(Ok(Json.toJson(entry)).as(mimeType))
+  def update(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+    validate(request)
+      .when(_.id == UUID.fromString(entry),
+        overwrite0)(
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> s"Id found in body does not match id found in resource ($entry)"
+        )))
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
-  def updateAtomic(course: String, entry: String) = updateEntry(course, entry) { entry =>
-    Success(handle(atomize(entry))(json => Ok(json).as(mimeType)))
+  def updateAtomic(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
+    validate(request)
+      .when(_.id == UUID.fromString(entry),
+        overwrite0)(
+        BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> s"Id found in body does not match id found in resource ($entry)"
+        )))
+      .flatMap(s => retrieve[ScheduleEntryAtom](ScheduleEntry.generateUri(s)))
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def header = Action { implicit request =>
@@ -151,70 +185,9 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     }
   }
 
-  override protected def atomize(output: ScheduleEntry): Try[Option[JsValue]] = {
-    import defaultBindings.ScheduleEntryAtomDescriptor
-    import utils.Ops._
-    import ScheduleEntry.atomicWrites
-    repository.get[ScheduleEntryAtom](ScheduleEntry.generateUri(output)).peek (Json.toJson(_))(tryM, optM)
-  }
+  override implicit def descriptorAtom: Descriptor[Sesame, ScheduleEntryAtom] = defaultBindings.ScheduleEntryAtomDescriptor
 
-  def chunkedAll(chunks: Set[ScheduleEntry] => Enumerator[JsValue])(implicit request: Request[AnyContent]) = {
-    (if (request.queryString.isEmpty)
-      repository.getAll[ScheduleEntry] map chunks
-    else
-      getWithFilter(request.queryString)(Set.empty) map chunks) match {
-      case Success(enum) =>
-        Ok.chunked(enum).as(mimeType)
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
-  }
-
-  private def handle[A](attempt: Try[Option[A]])(toResult: A => Result): Result = attempt match {
-    case Success(Some(element)) =>
-      toResult(element)
-    case Success(None) =>
-      NotFound(Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      ))
-    case Failure(e) =>
-      InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
-  }
-
-  private def updateEntry(course: String, entry: String)(toResult: ScheduleEntry => Try[Result]) = restrictedContext(course)(Update) contentTypedAction { request =>
-    request.body.validate[ScheduleEntry].fold(
-      errors => {
-        BadRequest(Json.obj(
-          "status" -> "KO",
-          "errors" -> JsError.toJson(errors)
-        ))
-      },
-      success => {
-        if (success.id == UUID.fromString(entry))
-          repository.update(success).flatMap(_ => toResult(success)) match {
-            case Success(result) =>
-              result
-            case Failure(e) =>
-              InternalServerError(Json.obj(
-                "status" -> "KO",
-                "errors" -> e.getMessage
-              ))
-          }
-        else
-          BadRequest(Json.obj(
-            "status" -> "KO",
-            "message" -> s"Id found in body (${success.id}) does not match id found in resource ($entry)"
-          ))
-      }
-    )
-  }
+  override protected def fromInput(input: ScheduleEntry, existing: Option[ScheduleEntry]): ScheduleEntry = input
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case GetAll => SecureBlock(restrictionId, scheduleEntry.getAll)
@@ -222,4 +195,6 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     case Update => SecureBlock(restrictionId, scheduleEntry.update)
     case _ => PartialSecureBlock(god)
   }
+
+  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor.id, atom.group.id, atom.id)
 }

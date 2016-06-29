@@ -15,11 +15,13 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[BlacklistProtocol, Blacklist] {
+class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
 
   override implicit def reads: Reads[BlacklistProtocol] = Blacklist.reads
 
   override implicit def writes: Writes[Blacklist] = Blacklist.writes
+
+  override implicit def writesAtom: Writes[Blacklist] = Blacklist.writesAtom
 
   override implicit def uriGenerator: UriGenerator[Blacklist] = Blacklist
 
@@ -38,7 +40,9 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)
 
-  override protected def atomize(output: Blacklist): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
+  override protected def coatomic(atom: Blacklist): Blacklist = atom
+
+  override implicit def descriptorAtom: Descriptor[Sesame, Blacklist] = descriptor
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(blacklist.get)

@@ -8,15 +8,14 @@ import controllers.crud.labwork.LabworkApplicationCRUDController._
 import models.UriGenerator
 import models.labwork.{Labwork, LabworkApplication, LabworkApplicationAtom, LabworkApplicationProtocol}
 import models.security.Permissions._
-import models.users.{Student, User}
+import models.users.User
 import org.joda.time.DateTime
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import store.sparql.{Clause, select}
@@ -34,11 +33,13 @@ object LabworkApplicationCRUDController {
 }
 
 //DateTime format is: yyyy-MM-dd'T'HH:mm
-class LabworkApplicationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] {
+class LabworkApplicationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
   override implicit def reads: Reads[LabworkApplicationProtocol] = LabworkApplication.reads
 
   override implicit def writes: Writes[LabworkApplication] = LabworkApplication.writes
+
+  override implicit def writesAtom: Writes[LabworkApplicationAtom] = LabworkApplication.writesAtom
 
   override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = existing match {
     case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, lapp.timestamp, lapp.id)
@@ -59,22 +60,17 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     queryString.foldRight(Try(all)) {
       case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(v => set.filter(_.labwork == v)))
       case ((`applicantAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(v => set.filter(_.applicant == v)))
-      case ((`friendAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(v => set.filter (_.friends.exists(_ == v))))
-      case ((`dateAttribute`, v), set) => set map (_.filter (_.timestamp.toString("yyyy-MM-dd") == v.head))
+      case ((`friendAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(v => set.filter(_.friends.exists(_ == v))))
+      case ((`dateAttribute`, v), set) => set map (_.filter(_.timestamp.toString("yyyy-MM-dd") == v.head))
       case ((`minTime`, v), t) => t flatMap (set => Try(DateTime.parse(decode(v.head))).map(t => set.filter(_.timestamp.isAfter(t))))
       case ((`maxTime`, v), t) => t flatMap (set => Try(DateTime.parse(decode(v.head))).map(t => set.filter(_.timestamp.isBefore(t))))
       case ((_, _), t) => Failure(new Throwable("Unknown attribute"))
     }
   }
 
-  override protected def atomize(output: LabworkApplication): Try[Option[JsValue]] = {
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{optM, tryM}
-    import defaultBindings.LabworkApplicationAtomDescriptor
-    import LabworkApplication.atomicWrites
-    implicit val ns = repository.namespace
-    repository.get[LabworkApplicationAtom](LabworkApplication.generateUri(output)) peek (Json.toJson(_))
-  }
+  override protected def coatomic(atom: LabworkApplicationAtom): LabworkApplication = LabworkApplication(atom.labwork.id, atom.applicant.id, atom.friends map (_.id), atom.timestamp, atom.id)
+
+  override implicit def descriptorAtom: Descriptor[Sesame, LabworkApplicationAtom] = defaultBindings.LabworkApplicationAtomDescriptor
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(labworkApplication.create)
@@ -90,10 +86,10 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     lazy val prefixes = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select ("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)) .
-        **(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))) .
-        **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))) .
+    (select("id") where {
+      **(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)).
+        **(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))).
+        **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))).
         **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
   }

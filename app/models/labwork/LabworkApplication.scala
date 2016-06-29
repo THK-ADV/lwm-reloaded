@@ -20,7 +20,7 @@ case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: S
 
 case class LabworkApplicationAtom(labwork: Labwork, applicant: Student, friends: Set[Student], timestamp: DateTime, id: UUID) extends UniqueEntity
 
-object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSerialisation[LabworkApplicationProtocol, LabworkApplication] {
+object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSerialisation[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
   override def base: String = "labworkApplications"
 
@@ -28,5 +28,5 @@ object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSeri
 
   override implicit def writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
 
-  implicit def atomicWrites: Writes[LabworkApplicationAtom] = Json.writes[LabworkApplicationAtom]
+  override implicit def writesAtom: Writes[LabworkApplicationAtom] = Json.writes[LabworkApplicationAtom]
 }

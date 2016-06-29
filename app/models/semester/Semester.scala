@@ -23,11 +23,13 @@ case class Semester(label: String, abbreviation: String, start: LocalDate, end: 
 
 case class SemesterProtocol(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate)
 
-object Semester extends UriGenerator[Semester] with JsonSerialisation[SemesterProtocol, Semester] {
+object Semester extends UriGenerator[Semester] with JsonSerialisation[SemesterProtocol, Semester, Semester] {
 
   override implicit def reads: Reads[SemesterProtocol] = Json.reads[SemesterProtocol]
 
   override implicit def writes: Writes[Semester] = Json.writes[Semester]
+
+  override def writesAtom: Writes[Semester] = writes
 
   override def base: String = "semesters"
 }

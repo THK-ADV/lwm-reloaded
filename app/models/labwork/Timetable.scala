@@ -54,7 +54,7 @@ case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, 
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: UUID)
 
-object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable] {
+object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable, TimetableAtom] {
 
   import Blacklist.protocolFormat
   import TimetableEntry.atomicFormat
@@ -65,12 +65,12 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
 
   override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
 
-  implicit def atomicWrites: Writes[TimetableAtom] = Json.writes[TimetableAtom]
+  override implicit def writesAtom: Writes[TimetableAtom] = Json.writes[TimetableAtom]
 
-  implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom](atomicWrites)
+  implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
 }
 
-object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry] {
+object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
 
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
@@ -82,11 +82,11 @@ object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry] 
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
+  override implicit def writesAtom: Writes[TimetableEntryAtom] = Json.writes[TimetableEntryAtom]
+
   implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
 
-  implicit def atomicWrites: Writes[TimetableEntryAtom] = Json.writes[TimetableEntryAtom]
-
-  implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom](atomicWrites)
+  implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom]
 }
 
 object TimetableDateEntry {

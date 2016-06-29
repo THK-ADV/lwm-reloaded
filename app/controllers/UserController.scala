@@ -3,21 +3,20 @@ package controllers
 import java.util.UUID
 
 import controllers.UserController._
-import controllers.crud.{Chunkable, _}
-import models.Degree
+import controllers.crud.{Chunked, _}
+import models.UriGenerator
 import models.security.Permissions
 import models.users.{Employee, Student, StudentAtom, User}
 import modules.store.BaseNamespace
+import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{AnyContent, Controller, Request, Result}
+import play.api.mvc.{Controller, Request}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.bind.Bindings
+import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.Ops.MonadInstances.{optM, tryM}
-import utils.Ops.TraverseInstances._
-import utils.Ops._
+import utils.Ops.MonadInstances.optM
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -43,7 +42,7 @@ object UserController {
         states.foldLeft(set)((set, status) => set filter {
           case Employee(_, _, _, _, s, _) => s == status
           case _ => false
-          }
+        }
         )
       }
       case ((`firstnameAttribute`, firstnames), users) => users map { set =>
@@ -74,191 +73,179 @@ object UserController {
 
 class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
   Controller with
-    Secured with
-    SessionChecking with
-    SecureControllerContext with
-    Filterable[User] with
-    ContentTyped with
-    BaseNamespace with
-    Atomic[User] with
-    Chunkable[User] { self =>
+  Secured with
+  SessionChecking with
+  SecureControllerContext with
+  Filterable[User] with
+  ContentTyped with
+  BaseNamespace with
+  Chunked with
+  Stored with
+  Retrieved[User, User] with
+  RdfSerialisation[User, User] {
 
-  val studentChunker = new Chunkable[Student] with Atomic[Student] {
-    override protected def atomize(output: Student): Try[Option[JsValue]] = self.atomize(output)
-  }
+  implicit def ns: Namespace = repository.namespace
 
-  val employeeChunker = new Chunkable[Employee] with Atomic[Employee] {
-    override protected def atomize(output: Employee): Try[Option[JsValue]] = self.atomize(output)
-  }
+  import defaultBindings.{StudentDescriptor, StudentAtomDescriptor, EmployeeDescriptor}
 
-  val bindings = Bindings[repository.Rdf](namespace)
+  override implicit def descriptor: Descriptor[Sesame, User] = defaultBindings.UserDescriptor
 
-  import bindings.UserDescriptor
-  import bindings.StudentDescriptor
-  import bindings.EmployeeDescriptor
+  override def descriptorAtom: Descriptor[Sesame, User] = descriptor
 
-  def student(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  override implicit def uriGenerator: UriGenerator[User] = User
+
+  def student(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
-    repository.get[Student](uri)
-  } { student =>
-    Ok(Json.toJson(student)).as(mimeType)
+    retrieve[Student](uri)
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
-  def studentAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def studentAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
-    repository.get[Student](uri) flatPeek atomize
-  } { json =>
-    Ok(json).as(mimeType)
+    retrieve[StudentAtom](uri)
+      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
-  def employee(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def employee(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
-    repository.get[Employee](uri)
-  } { employee =>
-    Ok(Json.toJson(employee)).as(mimeType)
+    retrieve[Employee](uri)
+      .mapResult(e => Ok(Json.toJson(e)).as(mimeType))
   }
 
-  def allEmployees(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.getAll[Employee]
-  } { employees =>
-    Ok.chunked(employeeChunker.chunkSimple(employees)).as(mimeType)
+  def allEmployees() = contextFrom(GetAll) action { request =>
+    retrieveAll[Employee]
+      .flatMap(filtered(request))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def allStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.getAll[Student]
-  } { students =>
-    Ok.chunked(studentChunker.chunkSimple(students)).as(mimeType)
+  def allStudents() = contextFrom(GetAll) action { request =>
+    retrieveAll[Student]
+      .flatMap(filtered(request))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def allAtomicStudents(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.getAll[Student]
-  } { students =>
-    Ok.chunked(studentChunker.chunkAtoms(students)).as(mimeType)
+  def allAtomicStudents() = contextFrom(GetAll) action { request =>
+    retrieveAll[StudentAtom]
+      .flatMap { students =>
+        val non = students map coatomic
+        filtered(request)(non)
+          .map(set => students filter (s => set exists (_.id == s.id)))
+      }
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def user(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def user(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}"
-    repository.get[User](uri)
-  } { user =>
-    Ok(Json.toJson(user)).as(mimeType)
+    retrieve[User](uri)
+      .mapResult(u => Ok(Json.toJson(u)).as(mimeType))
   }
 
-  def allUsers(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.getAll[User]
-  } { users =>
-    Ok.chunked(chunkSimple(users)).as(mimeType)
+  def allUsers() = contextFrom(GetAll) action { request =>
+    retrieveAll[User]
+      .flatMap(filtered(request))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def userAtomic(id: String, secureContext: SecureContext = contextFrom(Get)) = one(secureContext) { request =>
+  def userAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "")
-    repository.get[User](uri) flatPeek atomize
-  } { json =>
-    Ok(json).as(mimeType)
+    retrieve[User](uri)
+      .flatMap {
+        case s: Student => retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
+        case e: Employee => Continue(Json.toJson(e))
+      }
+      .mapResult(js => Ok(js).as(mimeType))
   }
 
-  def allUserAtomic(secureContext: SecureContext = contextFrom(GetAll)) = many(secureContext) { request =>
-    repository.getAll[User]
-  } { users =>
-    Ok.chunked(chunkAtoms(users)).as(mimeType)
+  //TODO: This is shit
+  def allUserAtomic() = contextFrom(GetAll) action { request =>
+    retrieveAll[User]
+      .flatMap(filtered(request))
+      .flatMap { set =>
+        set.foldLeft(Return(List.empty[JsValue])) {
+          case (ret, s: Student) =>
+            for {
+              list <- ret
+              elm <- retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
+            } yield list.+:(elm)
+
+          case (ret, e: Employee) => ret map (list => list.+:(Json.toJson(e)))
+          case (ret, _) => ret
+        }
+      }
+      .map(list => chunk(list.toSet))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def buddy(systemId: String, secureContext: SecureContext = contextFrom(Get)) = many(secureContext) { request =>
+  def paired[A](request: Request[A], systemId: String): Return[Set[Student]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.NaturalTrasformations._
 
     val lwm = LWMPrefix[repository.Rdf]
-    val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace)))(SessionController.userId)
+    val currentUser = ((request.session(_)) andThen UUID.fromString andThen (User.generateUri(_)(namespace))) (SessionController.userId)
 
-    val query = select ("student") where {
+    val query = select("student") where {
       **(v("student"), p(lwm.systemId), o(systemId))
     }
 
-    repository.prepareQuery(query).
-      select(_.get("student")).
-      changeTo(_.headOption).
-      transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
-      requestAll(repository.getMany[Student](_)).
-      run
-  } { students => students.find(_.systemId == systemId).fold(
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        ))
-      ) { student =>
-        if (students.groupBy(_.enrollment).size == 1)
-          Ok(Json.obj(
-            "status" -> "OK",
-            "id" -> student.id
-          ))
-        else
-          BadRequest(Json.obj(
-            "status" -> "KO",
-            "message" -> "Students are not part of the same degree"
-          ))
-      }
+    queried {
+      repository.prepareQuery(query).
+        select(_.get("student")).
+        changeTo(_.headOption).
+        transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
+        requestAll(repository.getMany[Student](_))
+    }
   }
 
-  private def gets(secureContext: SecureContext)(user: Request[AnyContent] => Try[Result]) = secureContext action { request =>
-    user(request) match {
-      case Success(result) =>
-        result
-      case Failure(e) =>
+  def buddy(systemId: String) = contextFrom(Get) action { request =>
+    paired(request, systemId)
+      .map { students =>
+        students.find(_.systemId == systemId).fold(
+          NotFound(Json.obj(
+            "status" -> "KO",
+            "message" -> "No such element..."
+          ))
+        ) {
+          student =>
+            if (students.groupBy(_.enrollment).size == 1)
+              Ok(Json.obj(
+                "status" -> "OK",
+                "id" -> student.id
+              ))
+            else
+              BadRequest(Json.obj(
+                "status" -> "KO",
+                "message" -> "Students are not part of the same degree"
+              ))
+        }
+      }
+      .mapResult(identity)
+  }
+
+  def filtered[R, A <: User](request: Request[R])(users: Set[A]): Return[Set[A]] = {
+    withFilter(request.queryString)(users) match {
+      case Success(set) => Continue(set)
+      case Failure(e) => Stop(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
-        ))
-    }
-  }
-
-  private def one[A](secureContext: SecureContext)(user: Request[AnyContent] => Try[Option[A]])(toResult: A => Result) = gets(secureContext) { request =>
-    user(request) map {
-      case Some(a) => toResult(a)
-      case None =>
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        ))
-    }
-  }
-
-  private def many[A <: User](secureContext: SecureContext)(user: Request[AnyContent] => Try[Set[A]])(toResult: Set[A] => Result) = gets(secureContext) { request =>
-    user(request) map { set =>
-      if (request.queryString.isEmpty)
-        toResult(set)
-      else
-        withFilter(request.queryString)(set) match {
-          case Success(filtered) =>
-            toResult(filtered)
-          case Failure(e) =>
-            ServiceUnavailable(Json.obj(
-              "status" -> "KO",
-              "message" -> e.getMessage
-            ))
-        }
+        )))
     }
   }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
-
-  override protected def atomize(output: User): Try[Option[JsValue]] = {
-    import models.users.Student.atomicWrites
-    import bindings.StudentAtomDescriptor
-
-    output match {
-      case student: Student =>
-        implicit val ns = repository.namespace
-        repository.get[StudentAtom](User.generateUri(output)).peek(Json.toJson(_))(tryM, optM)
-
-      case employee: Employee => Success(Some(Json.toJson(employee)))
-    }
-  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(Permissions.user.get)
     case GetAll => PartialSecureBlock(Permissions.user.getAll)
     case _ => PartialSecureBlock(Permissions.god)
   }
+
+  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.id)
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]): Try[Set[User]] = withFilter(queryString)(all)
 }

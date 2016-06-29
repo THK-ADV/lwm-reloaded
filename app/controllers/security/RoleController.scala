@@ -15,11 +15,13 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoleProtocol, Role] {
+class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoleProtocol, Role, Role] {
 
   override implicit def reads: Reads[RoleProtocol] = Role.reads
 
   override implicit def writes: Writes[Role] = Role.writes
+
+  override implicit def writesAtom: Writes[Role] = Role.writesAtom
 
   override implicit def uriGenerator: UriGenerator[Role] = Role
 
@@ -32,11 +34,13 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
     case None => Role(input.label, input.permissions)
   }
 
+  override protected def coatomic(atom: Role): Role = atom
+
+  override implicit def descriptorAtom: Descriptor[Sesame, Role] = descriptor
+
   override protected def compareModel(input: RoleProtocol, output: Role): Boolean = input.permissions == output.permissions
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Role]): Try[Set[Role]] = Success(all)
-
-  override protected def atomize(output: Role): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(role.get)

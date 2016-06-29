@@ -15,10 +15,12 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
+class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree, Degree]{
   override implicit def reads: Reads[DegreeProtocol] = Degree.reads
 
   override implicit def writes: Writes[Degree] = Degree.writes
+
+  override implicit def writesAtom: Writes[Degree] = Degree.writesAtom
 
   override implicit def uriGenerator: UriGenerator[Degree] = Degree
 
@@ -28,6 +30,10 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
     case Some(degree) => Degree(input.label, input.abbreviation, degree.id)
     case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
+
+  override protected def coatomic(atom: Degree): Degree = atom
+
+  override implicit def descriptorAtom: Descriptor[Sesame, Degree] = descriptor
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
@@ -50,8 +56,6 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)
-
-  override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)

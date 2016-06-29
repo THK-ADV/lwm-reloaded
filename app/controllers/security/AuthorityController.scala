@@ -5,16 +5,15 @@ import java.util.UUID
 import controllers.crud._
 import models.security.Permissions._
 import models.security._
-import models.users.{Employee, User}
-import models.{Course, CourseAtom, UriGenerator}
+import models.users.User
+import models.{Course, UriGenerator}
 import org.openrdf.model.Value
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -23,7 +22,7 @@ import utils.Ops.TraverseInstances._
 import utils.Ops._
 
 import scala.collection.Map
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object AuthorityController {
   val userAttribute = "user"
@@ -31,7 +30,7 @@ object AuthorityController {
   val roleAttribute = "role"
 }
 
-class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority] {
+class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority, AuthorityAtom] {
 
   override implicit def uriGenerator: UriGenerator[Authority] = Authority
 
@@ -41,21 +40,18 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
   override implicit def writes: Writes[Authority] = Authority.writes
 
+  override implicit def writesAtom: Writes[AuthorityAtom] = Authority.writesAtom
+
   override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = existing match {
     case Some(authority) => Authority(input.user, input.refRoles, authority.id)
     case None => Authority(input.user, input.refRoles, Authority.randomUUID)
   }
 
+  override protected def coatomic(atom: AuthorityAtom): Authority = Authority(atom.user.id, atom.refRoles map (_.id), atom.id)
+
+  override implicit def descriptorAtom: Descriptor[Sesame, AuthorityAtom] = defaultBindings.AuthorityAtomDescriptor
+
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
-
-  override protected def atomize(output: Authority): Try[Option[JsValue]] = {
-    import utils.Ops._
-    import defaultBindings.AuthorityAtomDescriptor
-    import Authority.writesAtomic
-
-    implicit val ns = repository.namespace
-    repository.get[AuthorityAtom](Authority.generateUri(output)).peek (Json.toJson(_)) (tryM, optM)
-  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Update => PartialSecureBlock(authority.update)
@@ -64,25 +60,10 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case _ => PartialSecureBlock(god)
   }
 
-  // TODO allAtomic should chunk responses by default
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
-    val res = {
-      if (request.queryString.nonEmpty)
-        getWithFilter(request.queryString)(Set.empty) map (set => chunkAtoms(set))
-      else {
-        repository.getAll[Authority] map (set => chunkAtoms(set))
-      }
-    }
-
-    res match {
-      case Success(enum) =>
-        Ok.chunked(enum).as(mimeType)
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        ))
-    }
+    filtered(request)(Set.empty)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.chunked(enum).as(mimeType))
   }
 
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles

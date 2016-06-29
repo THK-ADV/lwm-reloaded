@@ -26,13 +26,15 @@ object AnnotationCRUDController {
   val reportCardEntryAttribute = "reportCardEntry"
 }
 
-class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AnnotationProtocol, Annotation] {
+class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AnnotationProtocol, Annotation, AnnotationAtom] {
 
   override implicit def descriptor: Descriptor[Sesame, Annotation] = defaultBindings.AnnotationDescriptor
 
   override implicit def reads: Reads[AnnotationProtocol] = Annotation.reads
 
   override implicit def writes: Writes[Annotation] = Annotation.writes
+
+  override implicit def writesAtom: Writes[AnnotationAtom] = Annotation.writesAtom
 
   override implicit def uriGenerator: UriGenerator[Annotation] = Annotation
 
@@ -49,14 +51,7 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
     }
   }
 
-  override protected def atomize(output: Annotation): Try[Option[JsValue]] = {
-    import defaultBindings.AnnotationAtomDescriptor
-    import Annotation.atomicWrites
-    import utils.Ops.MonadInstances.{optM, tryM}
-    import utils.Ops._
-    implicit val ns = repository.namespace
-    repository.get[AnnotationAtom](Annotation.generateUri(output)) peek (Json.toJson(_))
-  }
+
 
   override protected def fromInput(input: AnnotationProtocol, existing: Option[Annotation]): Annotation = existing match {
     case Some(annotation) => Annotation(input.student, input.labwork, input.reportCardEntry, input.message, annotation.timestamp, annotation.id)
@@ -70,6 +65,10 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
     case GetAll => SecureBlock(restrictionId, annotation.getAll)
     case Delete => SecureBlock(restrictionId, annotation.delete)
   }
+
+  override protected def coatomic(atom: AnnotationAtom): Annotation = Annotation(atom.student.id, atom.labwork.id, atom.reportCardEntry.id, atom.message, atom.timestamp, atom.id)
+
+  override implicit def descriptorAtom: Descriptor[Sesame, AnnotationAtom] = defaultBindings.AnnotationAtomDescriptor
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Annotation.generateBase))

@@ -27,11 +27,13 @@ object TimetableCRUDController {
   val courseAttribute = "course"
 }
 
-class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable] {
+class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
 
   override implicit def reads: Reads[TimetableProtocol] = Timetable.reads
 
   override implicit def writes: Writes[Timetable] = Timetable.writes
+
+  override implicit def writesAtom: Writes[TimetableAtom] = Timetable.writesAtom
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
@@ -44,7 +46,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
       Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
     case None =>
       Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
-   }
+  }
 
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
@@ -65,7 +67,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
     queryString.foldRight(Try[Set[Timetable]](all)) {
       case ((`courseAttribute`, values), t) =>
-        val query = select ("labworks") where {
+        val query = select("labworks") where {
           **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
             **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
         }
@@ -81,15 +83,6 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     }
   }
 
-  override protected def atomize(output: Timetable): Try[Option[JsValue]] = {
-    import defaultBindings.TimetableAtomDescriptor
-    import Timetable.atomicWrites
-    import utils.Ops._
-    import utils.Ops.MonadInstances.{optM, tryM}
-    implicit val ns = repository.namespace
-    repository.get[TimetableAtom](Timetable.generateUri(output)) peek (Json.toJson(_))
-  }
-
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, timetable.create)
     case Get => SecureBlock(restrictionId, timetable.get)
@@ -97,6 +90,15 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     case Update => SecureBlock(restrictionId, timetable.update)
     case Delete => SecureBlock(restrictionId, timetable.delete)
   }
+
+
+  override protected def coatomic(atom: TimetableAtom): Timetable =
+    Timetable(
+      atom.labwork.id,
+      atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
+      atom.start, atom.localBlacklist, atom.id)
+
+  override implicit def descriptorAtom: Descriptor[Sesame, TimetableAtom] = defaultBindings.TimetableAtomDescriptor
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Timetable.generateBase))
