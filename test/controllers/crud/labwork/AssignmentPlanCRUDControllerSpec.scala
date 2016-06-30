@@ -2,7 +2,7 @@ package controllers.crud.labwork
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models.labwork._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -12,7 +12,6 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
-
 import scala.util.{Failure, Success}
 
 class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
@@ -32,18 +31,38 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = entityToPass
   }
 
-  def entries(s: String): Set[AssignmentEntry] = (0 until 5).map( n =>
-    AssignmentEntry(n, s"${n.toString} to $s", AssignmentEntryType.all)
-  ).toSet
-
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   override val entityToFail: AssignmentPlan = AssignmentPlan(labworkToFail.id, 5, 5, entries("fail"))
 
   override val entityToPass: AssignmentPlan = AssignmentPlan(labworkToPass.id, 5, 5, entries("pass"))
 
+  override val atomizedEntityToPass: AssignmentPlanAtom =
+    AssignmentPlanAtom(
+      labworkToPass,
+      entityToPass.attendance,
+      entityToPass.mandatory,
+      Set.empty[AssignmentEntry],
+      entityToPass.id)
+
+  override val atomizedEntityToFail: AssignmentPlanAtom =
+    AssignmentPlanAtom(
+      labworkToFail,
+      entityToFail.attendance,
+      entityToFail.mandatory,
+      Set.empty[AssignmentEntry],
+      entityToFail.id)
+
+
   override implicit val jsonWrites: Writes[AssignmentPlan] = AssignmentPlan.writes
+
+  override implicit def jsonWritesAtom: Writes[AssignmentPlanAtom] = AssignmentPlan.writesAtom
+
+  def entries(s: String): Set[AssignmentEntry] = (0 until 5).map(n =>
+    AssignmentEntry(n, s"${n.toString} to $s", AssignmentEntryType.all)
+  ).toSet
 
   override val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 
@@ -57,14 +76,14 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     "labwork" -> entityToPass.labwork,
     "attendance" -> entityToPass.attendance,
     "mandatory" -> entityToPass.mandatory,
-    "entries" -> entityToPass.entries.drop(2)
+    "entries" -> Json.toJson(entityToPass.entries.drop(2))
   )
 
   override val inputJson: JsValue = Json.obj(
     "labwork" -> entityToPass.labwork,
     "attendance" -> entityToPass.attendance,
     "mandatory" -> entityToPass.mandatory,
-    "entries" -> entityToPass.entries
+    "entries" -> Json.toJson(entityToPass.entries)
   )
 
   "An AssignmentPlanCRUDControllerSpec also " should {

@@ -17,6 +17,16 @@ import scala.util.Success
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree, Degree] {
   override val entityToPass: Degree = Degree("label to pass", "abbreviation to pass", Degree.randomUUID)
 
+  override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail", Degree.randomUUID)
+
+  override implicit val jsonWrites: Writes[Degree] = Degree.writes
+
+  override val atomizedEntityToPass: Degree = entityToPass
+
+  override val atomizedEntityToFail: Degree = entityToFail
+
+  override val jsonWritesAtom: Writes[Degree] = jsonWrites
+
   override val controller: DegreeCRUDController = new DegreeCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = entityToPass
@@ -25,10 +35,6 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
       case _ => NonSecureBlock
     }
   }
-
-  override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail", Degree.randomUUID)
-
-  override implicit val jsonWrites: Writes[Degree] = Degree.writes
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
@@ -48,6 +54,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
   import ops._
 
   implicit val degreeBinder = DegreeDescriptor.binder
+
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   "A DegreeCRUDControllerSpec also " should {

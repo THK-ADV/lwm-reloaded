@@ -32,15 +32,17 @@ object AuthorityController {
 
 class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority, AuthorityAtom] {
 
-  override implicit def uriGenerator: UriGenerator[Authority] = Authority
+  implicit val ns: Namespace = repository.namespace
 
-  override implicit def descriptor: Descriptor[Sesame, Authority] = defaultBindings.AuthorityDescriptor
+  override implicit val uriGenerator: UriGenerator[Authority] = Authority
 
-  override implicit def reads: Reads[AuthorityProtocol] = Authority.reads
+  override implicit val descriptor: Descriptor[Sesame, Authority] = defaultBindings.AuthorityDescriptor
 
-  override implicit def writes: Writes[Authority] = Authority.writes
+  override implicit val reads: Reads[AuthorityProtocol] = Authority.reads
 
-  override implicit def writesAtom: Writes[AuthorityAtom] = Authority.writesAtom
+  override implicit val writes: Writes[Authority] = Authority.writes
+
+  override implicit val writesAtom: Writes[AuthorityAtom] = Authority.writesAtom
 
   override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = existing match {
     case Some(authority) => Authority(input.user, input.refRoles, authority.id)
@@ -61,9 +63,12 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
-    filtered(request)(Set.empty)
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.chunked(enum).as(mimeType))
+    filtered2(request, coatomic)(Set.empty)
+      .when(_.nonEmpty, set => Continue(set)) {
+        retrieveAll[AuthorityAtom]
+          .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
+      }
+      .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles

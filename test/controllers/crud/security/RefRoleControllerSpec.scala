@@ -2,11 +2,11 @@ package controllers.crud.security
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import controllers.security.RefRoleController
 import models.{CourseAtom, Course}
 import models.security._
-import models.users.{Employee, User}
+import models.users.Employee
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -16,8 +16,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import models.security.Permissions._
-
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole, RefRoleAtom] {
 
@@ -45,7 +44,13 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
 
   override val entityToPass: RefRole = RefRole(Some(courseAtomToPass.id), roleToPass.id, RefRole.randomUUID)
 
+  override val atomizedEntityToPass = RefRoleAtom(Some(courseAtomToPass), roleToPass, entityToPass.id)
+
+  override val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToFail.id)
+
   override implicit val jsonWrites: Writes[RefRole] = RefRole.writes
+
+  override implicit def jsonWritesAtom: Writes[RefRoleAtom] = RefRole.writesAtom
 
   override val mimeType: LwmMimeType = LwmMimeType.refRoleV1Json
 
@@ -62,9 +67,6 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
     "module" -> entityToPass.course,
     "role" -> UUID.randomUUID()
   )
-
-  val atomizedEntityToPass = RefRoleAtom(Some(courseAtomToPass), roleToPass, entityToPass.id)
-  val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToFail.id)
 
   "A RefRoleControllerSpec " should {
 
@@ -86,128 +88,6 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(Set(rr1, rr3))
-    }
-
-    "successfully get a single refrole with course restriction atomized" in {
-      import RefRole.writesAtom
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(atomizedEntityToPass))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/refRoles/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-    }
-
-    "successfully get a single refrole without course restriction atomized" in {
-      import RefRole.writesAtom
-
-      doReturn(Success(Some(entityToFail))).
-        doReturn(Success(Some(atomizedEntityToFail))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/refRoles/${entityToFail.id}"
-      )
-      val result = controller.getAtomic(entityToFail.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToFail)
-    }
-
-    "not get a single refrole atomized when role is not found" in {
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(None)).
-        doReturn(Success(None)).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/refRoles/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
-    }
-
-    "not get a single refrole atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired authority for some reason"
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/authorities/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    "successfully get all refroles atomized" in {
-      import RefRole.writesAtom
-
-      val refRoles = Set(entityToPass, entityToFail)
-
-      when(repository.getAll[RefRole](anyObject())).thenReturn(Success(refRoles))
-
-      doReturn(Success(Some(atomizedEntityToPass))).
-        doReturn(Success(Some(atomizedEntityToFail))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-    }
-
-    "not get all refroles atomized when there is an exception" in {
-      val refRoles = Set(entityToPass, entityToFail)
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      when(repository.getAll[RefRole](anyObject())).thenReturn(Success(refRoles))
-
-      doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
     }
   }
 }

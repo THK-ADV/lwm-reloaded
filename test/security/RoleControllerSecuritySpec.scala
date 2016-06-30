@@ -46,7 +46,7 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Block non restricted context invocations when rv wants to update a role" in new FakeApplication() {

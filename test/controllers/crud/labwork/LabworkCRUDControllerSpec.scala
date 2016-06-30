@@ -2,7 +2,7 @@ package controllers.crud.labwork
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models._
 import models.labwork.{Labwork, LabworkAtom, LabworkProtocol}
 import models.semester.Semester
@@ -18,8 +18,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
-
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtocol, Labwork, LabworkAtom] {
 
@@ -69,6 +68,8 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   override implicit val jsonWrites: Writes[Labwork] = Labwork.writes
 
+  override implicit def jsonWritesAtom: Writes[LabworkAtom] = Labwork.writesAtom
+
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
   override val inputJson: JsValue = Json.obj(
@@ -92,7 +93,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
   )
 
-  val atomizedEntityToPass = LabworkAtom(
+  override val atomizedEntityToPass = LabworkAtom(
     entityToPass.label,
     entityToPass.description,
     semesterToPass,
@@ -103,7 +104,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     entityToPass.id
   )
 
-  val atomizedEntityToFail = LabworkAtom(
+  override val atomizedEntityToFail = LabworkAtom(
     entityToFail.label,
     entityToFail.description,
     semesterToFail,
@@ -592,105 +593,6 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         "status" -> "KO",
         "message" -> "model already exists",
         "id" -> entityToPass.id
-      )
-    }
-
-    s"successfully get a single $entityTypeName atomized" in {
-      import Labwork.writesAtom
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(atomizedEntityToPass))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-    }
-
-    s"not get a single $entityTypeName atomized when one of the atomic models is not found" in {
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(None)).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
-    }
-
-    s"not get a single $entityTypeName atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    s"successfully get all ${plural(entityTypeName)} atomized" in {
-      import Labwork.writesAtom
-
-      when(repository.getAll[Labwork](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
-
-      doReturn(Success(Some(atomizedEntityToPass))).
-        doReturn(Success(Some(atomizedEntityToFail))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-    }
-
-    s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      when(repository.getAll[Labwork](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
-      doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
       )
     }
   }

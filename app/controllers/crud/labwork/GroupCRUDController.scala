@@ -88,31 +88,27 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   def createWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyRange)
       .flatMap(addLots)
-      .map(list => chunk(list.toSet))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(list => Created(Json.toJson(list.toSet)).as(mimeType))
   }
 
   def createWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyCount)
       .flatMap(addLots)
-      .map(list => chunk(list.toSet))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(list => Created(Json.toJson(list.toSet)).as(mimeType))
   }
 
   def createAtomicWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyRange)
       .flatMap(addLots)
       .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(set => Created(Json.toJson(set)).as(mimeType))
   }
 
   def createAtomicWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyCount)
       .flatMap(addLots)
       .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(set => Created(Json.toJson(set)).as(mimeType))
   }
 
   def previewWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
@@ -125,8 +121,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   def previewAtomicWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyCount)
       .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   def previewWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
@@ -139,8 +134,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   def previewAtomicWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     groupBy(request, labwork)(applyRange)
       .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+      .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   private def applyRange(people: Vector[UUID], params: Map[String, Seq[String]]) = {

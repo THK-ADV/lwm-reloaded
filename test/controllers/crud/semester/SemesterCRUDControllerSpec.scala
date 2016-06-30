@@ -1,9 +1,7 @@
 package controllers.crud.semester
 
-import java.util.UUID
-
 import org.joda.time.LocalDate
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models.semester.{SemesterProtocol, Semester}
 import org.joda.time.DateTime
 import org.mockito.Matchers
@@ -25,7 +23,13 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   override val entityToFail: Semester = Semester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
 
-  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
+  override implicit val jsonWrites: Writes[Semester] = Semester.writes
+
+  override val atomizedEntityToPass: Semester = entityToPass
+
+  override val atomizedEntityToFail: Semester = entityToFail
+
+  override val jsonWritesAtom: Writes[Semester] = jsonWrites
 
   override val controller: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
 
@@ -36,7 +40,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
   }
 
-  override implicit val jsonWrites: Writes[Semester] = Semester.writes
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override def entityTypeName: String = "semester"
 

@@ -56,6 +56,8 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
 
   override implicit val jsonWrites: Writes[Annotation] = Annotation.writes
 
+  override implicit def jsonWritesAtom: Writes[AnnotationAtom] = Annotation.writesAtom
+
   override val mimeType: LwmMimeType = LwmMimeType.annotationV1Json
 
   override val updateJson: JsValue = Json.obj(
@@ -74,7 +76,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     "timestamp" -> entityToPass.timestamp
   )
 
-  val atomizedEntityToPass = AnnotationAtom(
+  override val atomizedEntityToPass = AnnotationAtom(
     studentToPass,
     labworkToPass,
     entryToPass,
@@ -83,7 +85,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     entityToPass.id
   )
 
-  val atomizedEntityToFail = AnnotationAtom(
+  override val atomizedEntityToFail = AnnotationAtom(
     studentToFail,
     labworkToFail,
     entryToFail,
@@ -91,6 +93,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     entityToFail.timestamp,
     entityToFail.id
   )
+
 
   "A AnnotationCRUDControllerSpec also " should {
 
@@ -177,108 +180,6 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(Set(fourth))
-    }
-
-    s"successfully get a single annotation atomized" in {
-      import Annotation.writesAtom
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(Some(atomizedEntityToPass))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/annotations/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-    }
-
-    s"not get a single annotation atomized when one of the atomic models is not found" in {
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Success(None)).
-        doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(entryToPass))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/annotations/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
-    }
-
-    s"not get a single annotation atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      doReturn(Success(Some(entityToPass))).
-        doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/annotations/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    s"successfully get all annotations atomized" in {
-      import Annotation.writesAtom
-
-      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
-
-      doReturn(Success(Some(atomizedEntityToPass))).
-        doReturn(Success(Some(atomizedEntityToFail))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/annotations/${entityToPass.id}"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-    }
-
-    s"not get all annotations atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      when(repository.getAll[Annotation](anyObject())).thenReturn(Success(Set(entityToPass, entityToFail)))
-
-      doReturn(Failure(new Exception(errorMessage))).
-        when(repository).get(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/annotations/${entityToPass.id}"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
     }
   }
 }

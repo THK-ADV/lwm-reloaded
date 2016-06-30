@@ -98,7 +98,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "atomize one specific user, regardless of his subcategory" in {
       val degree = Degree("Degree", "DD", Degree.randomUUID)
       val student = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
-
       val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.id)
 
       doReturn(Success(Some(student)))
@@ -176,19 +175,16 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
     "atomize a single student" in {
       val degree = Degree("label", "abbrev")
-      val student = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
-      val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.id)
+      val studentAtom = StudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, UUID.randomUUID())
 
-      doReturn(Success(Some(student)))
-        .doReturn(Success(Some(studentAtom)))
-        .when(repository).get(anyObject())(anyObject())
+      when(repository.get[StudentAtom](anyObject())(anyObject())).thenReturn(Success(Some(studentAtom)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
-        "/atomic/students/" + student.id
+        "/atomic/students/" + studentAtom.id
       )
 
-      val result = controller.studentAtomic(User.generateUri(student)(namespace))(request)
+      val result = controller.studentAtomic(User.generateUri(studentAtom.id)(namespace))(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(studentAtom)
@@ -223,22 +219,13 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "atomize all students" in {
       val degree = Degree("Degree1", "DD1", Degree.randomUUID)
 
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree.id)
-      val student3 = Student("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree.id)
+      val studentAtom1 = StudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, UUID.randomUUID())
+      val studentAtom2 = StudentAtom("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree, UUID.randomUUID())
+      val studentAtom3 = StudentAtom("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree, UUID.randomUUID())
 
-      val studentAtom1 = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree, student1.id)
-      val studentAtom2 = StudentAtom(student2.systemId, student2.lastname, student2.firstname, student2.email, student2.registrationId, degree, student2.id)
-      val studentAtom3 = StudentAtom(student3.systemId, student3.lastname, student3.firstname, student3.email, student3.registrationId, degree, student3.id)
+      val studentAtoms: Set[StudentAtom] = Set(studentAtom1, studentAtom2, studentAtom3)
 
-      val students: Set[Student] = Set(student1, student2, student3)
-
-      when(repository.getAll[Student](anyObject())).thenReturn(Success(students))
-
-      doReturn(Success(Some(studentAtom1))).
-        doReturn(Success(Some(studentAtom2))).
-        doReturn(Success(Some(studentAtom3))).
-        when(repository).get(anyObject())(anyObject())
+      when(repository.getAll[StudentAtom](anyObject())).thenReturn(Success(studentAtoms))
 
       val request = FakeRequest(
         GET,

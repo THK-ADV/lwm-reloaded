@@ -17,7 +17,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.Ops.MonadInstances.optM
-
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
@@ -83,6 +82,8 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   Stored with
   Retrieved[User, User] with
   RdfSerialisation[User, User] {
+
+  import Student.writesAtom
 
   implicit def ns: Namespace = repository.namespace
 

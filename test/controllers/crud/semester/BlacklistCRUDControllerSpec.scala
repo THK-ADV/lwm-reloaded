@@ -26,15 +26,21 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     }
   }
 
-  implicit val blacklistBinder = BlacklistDescriptor.binder
-
   override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates, Blacklist.randomUUID)
 
   override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates, Blacklist.randomUUID)
 
-  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
-
   override implicit val jsonWrites: Writes[Blacklist] = Blacklist.writes
+
+  override val atomizedEntityToPass: Blacklist = entityToPass
+
+  override val atomizedEntityToFail: Blacklist = entityToFail
+
+  override val jsonWritesAtom: Writes[Blacklist] = jsonWrites
+
+  implicit val blacklistBinder = BlacklistDescriptor.binder
+
+  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 

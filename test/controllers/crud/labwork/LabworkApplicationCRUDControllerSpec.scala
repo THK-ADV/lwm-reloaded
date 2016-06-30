@@ -2,9 +2,8 @@ package controllers.crud.labwork
 
 import java.net.URLEncoder
 import java.util.UUID
-
 import controllers.crud.labwork.LabworkApplicationCRUDController._
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models._
 import models.labwork.{Labwork, LabworkApplication, LabworkApplicationAtom, LabworkApplicationProtocol}
 import models.semester.Semester
@@ -18,8 +17,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
-
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
@@ -54,10 +52,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
 
+  override implicit def jsonWritesAtom: Writes[LabworkApplicationAtom] = LabworkApplication.writesAtom
+
   import bindings.LabworkApplicationDescriptor
   import ops._
-
   implicit val labworkApplicationBinder = LabworkApplicationDescriptor.binder
+
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val inputJson: JsValue = Json.obj(
@@ -71,9 +71,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     "applicant" -> entityToPass.applicant,
     "friends" -> (entityToPass.friends + User.randomUUID + User.randomUUID)
   )
+  override val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
 
-  val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
-  val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
+  override val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
 
   val emptyLabworkApps = Set.empty[LabworkApplication]
 
@@ -605,111 +605,5 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     status(result2) shouldBe OK
     contentType(result2) shouldBe Some[String](mimeType)
     contentAsJson(result2) shouldBe Json.toJson(emptyLabworkApps)
-  }
-
-  s"successfully get a single $entityTypeName atomized" in {
-    import LabworkApplication.writesAtom
-
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-    doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(atomizedEntityToPass))).
-      when(repository).get(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-  }
-
-  s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
-    doReturn(Success(Some(entityToPass))).
-      doReturn(Success(None)).
-      when(repository).get(anyObject())(anyObject())
-
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "message" -> "No such element..."
-    )
-  }
-
-  s"not get a single $entityTypeName atomized when there is an exception" in {
-    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-    doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe INTERNAL_SERVER_ERROR
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "errors" -> errorMessage
-    )
-  }
-
-  s"successfully get all ${plural(entityTypeName)} atomized" in {
-    import LabworkApplication.writesAtom
-
-    val labworkApplications = Set(entityToPass, entityToFail)
-
-    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Success(labworkApplications))
-
-    doReturn(Success(Some(atomizedEntityToPass))).
-      doReturn(Success(Some(atomizedEntityToFail))).
-      when(repository).get(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s"
-    )
-    val result = controller.allAtomic()(request)
-
-    status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-  }
-
-  s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
-    val labworkApplications = Set(entityToPass, entityToFail)
-    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Success(labworkApplications))
-
-    doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s"
-    )
-    val result = controller.allAtomic()(request)
-
-    status(result) shouldBe INTERNAL_SERVER_ERROR
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "errors" -> errorMessage
-    )
   }
 }

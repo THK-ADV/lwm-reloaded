@@ -40,6 +40,10 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
 
   def entityToFail: O
 
+  def atomizedEntityToPass: A
+
+  def atomizedEntityToFail: A
+
   def mimeType: LwmMimeType
 
   def controller: AbstractCRUDController[I, O, A]
@@ -51,6 +55,8 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
   val updateJson: JsValue
 
   implicit def jsonWrites: Writes[O]
+
+  implicit def jsonWritesAtom: Writes[A]
 
   def namespace: Namespace = Namespace("http://testNamespace/")
 
@@ -262,9 +268,77 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       )
       val result = controller.update(entityToPass.id.toString)(request)
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
+    }
+
+    s"successfully get a single $entityTypeName atomized" in {
+      when(repository.get[A](anyObject())(anyObject())).thenReturn(Success(Some(atomizedEntityToPass)))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
+    }
+
+    s"not get a single $entityTypeName atomized when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      when(repository.get[A](anyObject())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+      val result = controller.getAtomic(entityToPass.id.toString)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    s"successfully get all ${plural(entityTypeName)} atomized" in {
+      val elements = Set(atomizedEntityToPass, atomizedEntityToFail)
+
+      when(repository.getAll[A](anyObject())).thenReturn(Success(elements))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+    }
+
+    s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {
+      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
+
+      when(repository.getAll[A](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val request = FakeRequest(
+        GET,
+        s"/${entityTypeName}s"
+      )
+      val result = controller.allAtomic()(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     s"not update an existing $entityTypeName when a duplicate occur" in {

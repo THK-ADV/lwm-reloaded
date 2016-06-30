@@ -101,13 +101,13 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def preview(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     evaluate(labwork)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     evaluate(labwork)
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
@@ -163,7 +163,6 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
-
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 

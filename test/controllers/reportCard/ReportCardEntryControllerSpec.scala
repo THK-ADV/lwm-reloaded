@@ -16,7 +16,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.http.HeaderNames
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{ReportCardService, RoleService, SessionHandlingService}
@@ -25,7 +25,6 @@ import store.bind.Bindings
 import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-
 import scala.util.{Failure, Success}
 
 class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -66,7 +65,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   }
 
   "A ReportCardEntryControllerSpec " should {
-/*
+
     "successfully reschedule a student's report card entry" in {
       import ReportCardEntry.writes
 
@@ -207,39 +206,32 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "successfully return a student's report card entries atomized" in {
-      import ReportCardEntry.atomicWrites
+      import ReportCardEntry.writesAtom
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
-      val atomized = atomizedEntries.toVector
-      val json = atomized map (a => Json.toJson(a))
-
-      doReturn(Success(Some(atomized(0)))).
-        doReturn(Success(Some(atomized(1)))).
-        when(repository).get(anyObject())(anyObject())
-
+      when(repository.getMany[ReportCardEntryAtom](anyObject())(anyObject())).thenReturn(Success(atomizedEntries))
       val request = FakeRequest(
         GET,
         s"/atomic/reportCardEntries/student/${student.id}"
       )
 
       val result = controller.getAtomic(student.id.toString)(request)
+      val json = atomizedEntries map (a => Json.toJson(a))
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
       contentAsString(result) shouldBe json.mkString("")
-    } */
+    }
 
-    "return nothing when there is an exception" in {
+    "return stop execution when there is an exception" in {
       val errorMessage = "Oops, something went wrong"
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
-      when(repository.get(anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+      when(repository.getMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
 
       val request = FakeRequest(
         GET,
@@ -248,9 +240,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val result = controller.getAtomic(student.id.toString)(request)
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentAsString(result) shouldBe ""
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
     }
 
     "successfully create report cards for given schedule" in {
@@ -318,7 +312,6 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
         "filter with query" in {
           val realRepo = SesameRepository(namespace)
-          val lwm = LWMPrefix[realRepo.Rdf](realRepo.rdfOps, realRepo.rdfOps)
           val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
           import bindings.{

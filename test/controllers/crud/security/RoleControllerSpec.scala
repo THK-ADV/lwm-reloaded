@@ -1,6 +1,6 @@
 package controllers.crud.security
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import controllers.security.RoleController
 import models.security.{Permission, Role, RoleProtocol}
 import org.w3.banana.PointedGraph
@@ -21,16 +21,21 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, 
       case _ => NonSecureBlock
     }
   }
-
   override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)
 
   override val entityToPass: Role = Role("role to pass", Set(Permission("permission to pass")), Role.randomUUID)
 
+  override implicit val jsonWrites: Writes[Role] = Role.writes
+
+  override val atomizedEntityToPass: Role = entityToPass
+
+  override val atomizedEntityToFail: Role = entityToFail
+
+  override val jsonWritesAtom: Writes[Role] = jsonWrites
+
   implicit val roleBinder = RoleDescriptor.binder
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
-
-  override implicit val jsonWrites: Writes[Role] = Role.writes
 
   override val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 

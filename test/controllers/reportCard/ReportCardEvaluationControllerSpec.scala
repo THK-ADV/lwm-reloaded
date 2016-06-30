@@ -97,10 +97,10 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
 
       val result = controller.get(student.toString)(request)
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "errors" -> errMsg
+        "message" -> errMsg
       )
     }
 
@@ -153,7 +153,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
         s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
       )
 
-      val result = controller.preview(course.toString, labwork.toString)(request).run
+      val result = controller.preview(course.toString, labwork.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
@@ -186,7 +186,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
         s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
       )
 
-      val result = controller.preview(course.toString, labwork.toString)(request).run
+      val result = controller.preview(course.toString, labwork.toString)(request)
 
       status(result) shouldBe NOT_FOUND
     }

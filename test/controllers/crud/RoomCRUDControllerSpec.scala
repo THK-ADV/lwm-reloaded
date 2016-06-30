@@ -1,7 +1,5 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.{Room, RoomProtocol}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -13,13 +11,20 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
 import play.api.test.Helpers._
-
 import scala.util.Success
 
 class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room, Room] {
   override val entityToPass: Room = Room("label to pass", "description to pass", Room.randomUUID)
 
-  override def entityTypeName: String = "room"
+  override val entityToFail: Room = Room("label to fail", "description to fail", Room.randomUUID)
+
+  override implicit val jsonWrites: Writes[Room] = Room.writes
+
+  override val atomizedEntityToPass: Room = entityToPass
+
+  override val atomizedEntityToFail: Room = entityToFail
+
+  override val jsonWritesAtom: Writes[Room] = jsonWrites
 
   override val controller: RoomCRUDController = new RoomCRUDController(repository, sessionService, namespace, roleService) {
 
@@ -30,9 +35,8 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
     }
   }
 
-  override val entityToFail: Room = Room("label to fail", "description to fail", Room.randomUUID)
+  override def entityTypeName: String = "room"
 
-  override implicit val jsonWrites: Writes[Room] = Room.writes
 
   override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 

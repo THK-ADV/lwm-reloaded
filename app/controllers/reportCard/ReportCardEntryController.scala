@@ -78,22 +78,25 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def get(student: String) = contextFrom(Get) action { request =>
     forStudent(student)
+      .flatMap(retrieveLots[ReportCardEntry])
       .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
   def getAtomic(student: String) = contextFrom(Get) action { request =>
     forStudent(student)
-      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
-      .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
+      .flatMap(retrieveLots[ReportCardEntryAtom])
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def all(course: String) = contextFrom(GetAll) action { implicit request =>
+  def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
     filtered(rebased)(Set.empty)
-      .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def allAtomic(course: String) = contextFrom(GetAll) action { implicit request =>
+  def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
     filtered(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
@@ -117,7 +120,6 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
-
 
   def allAtomicFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) action { request =>
     fromScheduleEntry(scheduleEntry)
@@ -307,7 +309,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     }
   }
 
-  private def forStudent(student: String): Return[Set[ReportCardEntry]] = {
+  private def forStudent(student: String): Return[Set[String]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
@@ -324,9 +326,8 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       select(_.get("entries")).
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
-      requestAll(repository.getMany[ReportCardEntry](_)).
       run match {
-      case Success(result) => Continue(result)
+      case Success(result) => Continue(result.toSet)
       case Failure(e) => Stop(
         InternalServerError(Json.obj(
           "status" -> "KO",

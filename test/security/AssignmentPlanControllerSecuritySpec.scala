@@ -84,7 +84,7 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted context invocations when ma wants to get an single assignmentPlan" in new FakeApplication() {

@@ -13,6 +13,7 @@ import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.SesameModule
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent}
 import play.api.test.Helpers._
@@ -25,7 +26,7 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
+class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   val repository = mock[SesameRepository]
   val sessionService = mock[SessionHandlingService]
@@ -38,6 +39,18 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
   val mimeType = Some(LwmMimeType.scheduleEntryV1Json.value)
 
   val controller: ScheduleEntryController = new ScheduleEntryController(repository, sessionService, ns, roleService) {
+
+    override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
+      retrieveAll[ScheduleEntry]
+        .map(set => chunk(set))
+        .mapResult(enum => Ok.stream(enum).as(mimeType))
+    }
+
+    override def allAtomicFrom(course: String): Action[AnyContent] = Action { implicit request =>
+      retrieveAll[ScheduleEntryAtom]
+        .map(set => chunk(set))
+        .mapResult(enum => Ok.stream(enum).as(mimeType))
+    }
 
     override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -59,8 +72,6 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
     val group = Group("label", labwork.id, Set(), e.group)
     ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, e.id)
   }
-
-  //when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
   "A ScheduleEntry controller" should {
 
@@ -92,9 +103,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val entry = entries(labwork.id)(1)
       val atomized = atomizeEntries(entry)
 
-      doReturn(Success(Some(entry.head))).
-        doReturn(Success(Some(atomized.head))).
-        when(repository).get(anyObject())(anyObject())
+      when(repository.get[ScheduleEntryAtom](anyObject())(anyObject())).thenReturn(Success(Some(atomized.head)))
 
       val request = FakeRequest(
         GET,
@@ -127,7 +136,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       status(result) shouldBe OK
       contentType(result) shouldBe mimeType
-      contentAsString(result) shouldBe jsVals.foldLeft("")(_ + _)
+      contentAsString(result) shouldBe jsVals.mkString("")
     }
 
     "get all entries atomised" in {
@@ -139,12 +148,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val entry = entries(labwork.id)(3)
       val atomized = atomizeEntries(entry)
 
-      when(repository.getAll[ScheduleEntry](anyObject())).thenReturn(Success(entry.toSet))
-
-      doReturn(Success(Some(atomized(0)))).
-        doReturn(Success(Some(atomized(1)))).
-        doReturn(Success(Some(atomized(2)))).
-        when(repository).get(anyObject())(anyObject())
+      when(repository.getAll[ScheduleEntryAtom](anyObject())).thenReturn(Success(atomized.toSet))
 
       val request = FakeRequest(
         GET,
@@ -264,8 +268,8 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, supervisor1.id, group1.id)
       val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, supervisor1.id, group1.id)
       val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, supervisor2.id, group2.id)
-      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group1.id)
-      val sentry5 = ScheduleEntry(labwork1.id, start2, end2, date4, room1.id, supervisor1.id, group2.id)
+      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group2.id)
+      val sentry5 = ScheduleEntry(labwork1.id, start3, end2, date2, room1.id, supervisor1.id, group2.id)
       val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, supervisor3.id, group3.id)
 
 
@@ -283,7 +287,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val requestForLabwork = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/${labwork1.id}/entries?labwork=${labwork2.id}"
+        s"/courses/$courseID2/labwork/${labwork2.id}/entries?labwork=${labwork2.id}"
       )
 
       val requestForCourseAndLabwork = FakeRequest(
@@ -328,11 +332,11 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val requestForGroupWithinDateRangeAndSup = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group1.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
+        s"/courses/$courseID2/labwork/${labwork2.id}/entries?group=${group2.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
       )
 
       val resultForCourse = realController.allFrom(courseID.toString)(requestForCourse)
-      val resultForLabwork = realController.allFrom(courseID.toString)(requestForLabwork)
+      val resultForLabwork = realController.allFrom(courseID2.toString)(requestForLabwork)
       val resultForCourseAndLabwork = realController.allFrom(courseID.toString)(requestForCourseAndLabwork)
       val resultForGroup = realController.allFrom(courseID.toString)(requestForGroup)
       val resultForSupervisor = realController.allFrom(courseID.toString)(requestForSupervisor)
@@ -341,19 +345,19 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val resultForDateAndTime = realController.allFrom(courseID.toString)(requestForDateAndTime)
       val resultForMinMax = realController.allFrom(courseID.toString)(requestForMinMax)
       val resultForGroupWithinDateRange = realController.allFrom(courseID.toString)(requestForGroupWithinDateRange)
-      val resultForGroupWithinDateRangeAndSup = realController.allFrom(courseID.toString)(requestForGroupWithinDateRangeAndSup)
+      val resultForGroupWithinDateRangeAndSup = realController.allFrom(courseID2.toString)(requestForGroupWithinDateRangeAndSup)
 
       val valsForCourse = List(Json.toJson(sentry6), Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForLabwork = List(Json.toJson(sentry4), Json.toJson(sentry3))
       val valsForCourseAndLabwork = List(Json.toJson(sentry6))
-      val valsForGroup = List(Json.toJson(sentry4), Json.toJson(sentry2), Json.toJson(sentry1))
+      val valsForGroup = List(Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForSupervisor = List(Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForGroupSupervisor = List(Json.toJson(sentry5))
-      val valsForDate = List(Json.toJson(sentry3), Json.toJson(sentry2))
-      val valsForDateAndTime = List(Json.toJson(sentry3))
-      val valsForMinMax = List(Json.toJson(sentry4), Json.toJson(sentry3), Json.toJson(sentry2))
-      val valsForGroupWithinDateRange = List(Json.toJson(sentry4), Json.toJson(sentry2))
-      val valsForGroupWithinDateRangeAndSup = List(Json.toJson(sentry4))
+      val valsForDate = List(Json.toJson(sentry5), Json.toJson(sentry2))
+      val valsForDateAndTime = List(Json.toJson(sentry5))
+      val valsForMinMax = List(Json.toJson(sentry5), Json.toJson(sentry2))
+      val valsForGroupWithinDateRange = List(Json.toJson(sentry2))
+      val valsForGroupWithinDateRangeAndSup = List(Json.toJson(sentry4), Json.toJson(sentry3))
 
       status(resultForCourse) shouldBe OK
       status(resultForLabwork) shouldBe OK

@@ -275,12 +275,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 
   def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[A]
-      .flatMap { as =>
-        val os = as map coatomic
-        filtered(request)(os) map { fos =>
-          as filter (x => fos exists (_.id == x.id))
-        }
-      }
+      .flatMap(filtered2(request, coatomic))
       .mapResult(as => Ok(Json.toJson(as)).as(mimeType))
   }
 
