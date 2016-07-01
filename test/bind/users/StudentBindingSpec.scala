@@ -11,8 +11,6 @@ import scala.util.{Failure, Success}
 
 class StudentBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{
   StudentDescriptor,
   uuidBinder,

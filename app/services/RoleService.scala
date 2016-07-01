@@ -75,29 +75,30 @@ class RoleService(repository: SesameRepository) extends RoleServiceLike {
     import store.sparql.select._
     import bindings.RefRoleDescriptor
 
-    lazy val rdf = RDFPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
 
-    val refroles =
-      **(v("refrole"), p(rdf.`type`), s(lwm.RefRole)).
-        **(v("refrole"), p(lwm.role), v("role"))
-
-    val query = select ("refrole") where {
-      roleLabels.foldLeft(refroles) { (clause, label) =>
-        clause.optional {
-          **(s("role"), p(lwm.label), o(label))
-        }
+    val queries = roleLabels.map { label =>
+      select("refrole") where {
+        **(v("refrole"), p(rdf.`type`), s(lwm.RefRole)).
+          **(v("refrole"), p(lwm.role), v("role")).
+          **(v("role"), p(lwm.label), o(label))
       }
     }
+    queries.foldLeft(Try(Set.empty[RefRole])) { (tset, query) =>
+      val result =
+        repository.prepareQuery(query)
+          .select(_.get("refrole"))
+          .transform(_.fold(List.empty[Value])(identity))
+          .map(_.stringValue())
+          .requestAll(uris => repository.getMany[RefRole](uris))
+          .run
 
-    repository.prepareQuery(query)
-      .select(_.get("refrole"))
-      .transform(_.fold(List.empty[Value])(identity))
-      .map(_.stringValue())
-      .requestAll(uris => repository.getMany[RefRole](uris))
-      .run
+      for {
+        set <- tset
+        refroles <- result
+      } yield set ++ refroles
+    }
   }
-
-  def refRoleByLabel(roleLabel: String): Try[Option[RefRole]] = refRolesByLabel(roleLabel) map (_.headOption)
 
   override def checkWith(whatToCheck: (Option[UUID], Permission))(checkWith: Authority): Try[Boolean] = whatToCheck match {
     case (optCourse, permission) if permission == Permissions.god => Success(false)

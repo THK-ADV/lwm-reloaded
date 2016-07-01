@@ -10,8 +10,6 @@ import scala.util.{Failure, Success}
 
 class EmployeeBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{
   EmployeeDescriptor,
   uuidBinder

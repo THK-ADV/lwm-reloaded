@@ -38,7 +38,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override implicit val writesAtom: Writes[AssignmentPlanAtom] = AssignmentPlan.writesAtom
 
-  override implicit def uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
+  override implicit val uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
 
   override protected def coatomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.id)
 

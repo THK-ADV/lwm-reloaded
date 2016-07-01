@@ -12,8 +12,6 @@ import scala.util.{Failure, Success}
 
 class AuthorityBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-
   import ops._
   import bindings.{
   AuthorityDescriptor,

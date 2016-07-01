@@ -15,8 +15,9 @@ import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
@@ -70,30 +71,40 @@ object UserController {
   val lastnameAttribute = "lastname"
 }
 
-class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends
-  Controller with
-  Secured with
-  SessionChecking with
-  SecureControllerContext with
-  Filterable[User] with
-  ContentTyped with
-  BaseNamespace with
-  Chunked with
-  Stored with
-  Retrieved[User, User] with
-  RdfSerialisation[User, User] {
+class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends Controller
+  with Secured
+  with SessionChecking
+  with SecureControllerContext
+  with Filterable[User]
+  with ContentTyped
+  with BaseNamespace
+  with Chunked
+  with Stored
+  with Retrieved[User, User]
+  with RdfSerialisation[User, User] {
 
   import Student.writesAtom
-
-  implicit def ns: Namespace = repository.namespace
-
   import defaultBindings.{StudentDescriptor, StudentAtomDescriptor, EmployeeDescriptor}
 
-  override implicit def descriptor: Descriptor[Sesame, User] = defaultBindings.UserDescriptor
+  implicit val ns: Namespace = repository.namespace
 
-  override def descriptorAtom: Descriptor[Sesame, User] = descriptor
+  override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
 
-  override implicit def uriGenerator: UriGenerator[User] = User
+  override implicit val descriptor: Descriptor[Sesame, User] = defaultBindings.UserDescriptor
+
+  override val descriptorAtom: Descriptor[Sesame, User] = descriptor
+
+  override implicit val uriGenerator: UriGenerator[User] = User
+
+  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.id)
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(Permissions.user.get)
+    case GetAll => PartialSecureBlock(Permissions.user.getAll)
+    case _ => PartialSecureBlock(Permissions.god)
+  }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]): Try[Set[User]] = withFilter(queryString)(all)
 
   def student(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
@@ -166,7 +177,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     retrieveAll[User]
       .flatMap(filtered(request))
       .flatMap { set =>
-        set.foldLeft(Return(List.empty[JsValue])) {
+        set.foldLeft(Attempt(List.empty[JsValue])) {
           case (ret, s: Student) =>
             for {
               list <- ret
@@ -181,7 +192,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def paired[A](request: Request[A], systemId: String): Return[Set[Student]] = {
+  def paired[A](request: Request[A], systemId: String): Attempt[Set[Student]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.NaturalTrasformations._
@@ -227,26 +238,14 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .mapResult(identity)
   }
 
-  def filtered[R, A <: User](request: Request[R])(users: Set[A]): Return[Set[A]] = {
-    withFilter(request.queryString)(users) match {
-      case Success(set) => Continue(set)
-      case Failure(e) => Stop(
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        )))
+    def filtered[R, X <: User](request: Request[R])(users: Set[X]): Attempt[Set[X]] = {
+      withFilter(request.queryString)(users) match {
+        case Success(set) => Continue(set)
+        case Failure(e) => Return(
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          )))
+      }
     }
-  }
-
-  override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(Permissions.user.get)
-    case GetAll => PartialSecureBlock(Permissions.user.getAll)
-    case _ => PartialSecureBlock(Permissions.god)
-  }
-
-  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.id)
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]): Try[Set[User]] = withFilter(queryString)(all)
 }

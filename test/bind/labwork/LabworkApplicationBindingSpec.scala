@@ -14,9 +14,6 @@ import scala.util.{Failure, Success}
 class LabworkApplicationBindingSpec extends SesameDbSpec {
 
   import ops._
-
-  val bindings = Bindings[Sesame](repo.namespace)
-
   import bindings.{
   LabworkApplicationDescriptor,
   uuidBinder,

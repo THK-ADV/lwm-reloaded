@@ -10,8 +10,6 @@ import scala.util.Success
 
 class RoleBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-
   val roleWith = Role("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
   val roleWithout = Role("role1", Set())
 

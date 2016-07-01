@@ -15,9 +15,6 @@ import scala.util.{Failure, Success}
 class LabworkBindingSpec extends SesameDbSpec {
 
   import ops._
-
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{LabworkDescriptor, uuidBinder, uuidRefBinder}
 
   implicit val labworkBinder = LabworkDescriptor.binder

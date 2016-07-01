@@ -2,22 +2,20 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.users.{Employee, User}
+import models.users.User
 import models.{Course, CourseAtom, CourseProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{Continue, LwmMimeType, Return}
 import models.security.Permissions._
-import models.security.{Authority, RefRole, Role}
+import models.security.{Authority, RefRole}
 import models.security.Roles._
-import play.api.mvc.{Request, Result}
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -30,22 +28,19 @@ object CourseCRUDController {
 
 class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course, CourseAtom] {
 
-  override implicit def descriptor: Descriptor[Sesame, Course] = defaultBindings.CourseDescriptor
+  override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
-  override implicit def descriptorAtom: Descriptor[Sesame, CourseAtom] = defaultBindings.CourseAtomDescriptor
+  override implicit val descriptor: Descriptor[Sesame, Course] = defaultBindings.CourseDescriptor
 
-  override implicit def uriGenerator: UriGenerator[Course] = Course
+  override implicit val descriptorAtom: Descriptor[Sesame, CourseAtom] = defaultBindings.CourseAtomDescriptor
 
-  override implicit def reads: Reads[CourseProtocol] = Course.reads
+  override implicit val reads: Reads[CourseProtocol] = Course.reads
 
-  override implicit def writes: Writes[Course] = Course.writes
+  override implicit val writes: Writes[Course] = Course.writes
 
-  override implicit def writesAtom: Writes[CourseAtom] = Course.writesAtom
+  override implicit val writesAtom: Writes[CourseAtom] = Course.writesAtom
 
-  override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = existing match {
-    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, course.id)
-    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
-  }
+  override implicit val uriGenerator: UriGenerator[Course] = Course
 
   override protected def coatomic(atom: CourseAtom): Course =
     Course(
@@ -56,15 +51,24 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       atom.semesterIndex,
       atom.id)
 
-  override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
+  override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
+    input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
+  }
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Try[Set[Course]] = {
-    import CourseCRUDController._
+  override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = existing match {
+    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, course.id)
+    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
+  }
 
-    queryString.foldRight(Try[Set[Course]](courses)) {
-      case ((`lecturerAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.lecturer == p)))
-      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
-    }
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(course.get)
+    case GetAll => PartialSecureBlock(course.getAll)
+    case _ => PartialSecureBlock(prime)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Update => SecureBlock(restrictionId, course.update)
+    case _ => PartialSecureBlock(god)
   }
 
   override protected def existsQuery(input: CourseProtocol): (SelectClause, Var) = {
@@ -77,6 +81,15 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         **(v("s"), p(prefixes.lecturer), s(User.generateUri(input.lecturer)(namespace))).
         **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))
+  }
+
+  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Try[Set[Course]] = {
+    import CourseCRUDController._
+
+    queryString.foldRight(Try[Set[Course]](courses)) {
+      case ((`lecturerAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.lecturer == p)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
   }
 
   def updateFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
@@ -121,7 +134,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
      */
     (for {
       roles <- roleService.rolesByLabel(CourseManager, CourseEmployee, CourseAssistant) if roles.nonEmpty
-      rvRefRole <- roleService.refRoleByLabel(RightsManager)
+      rvRefRole <- roleService.refRolesByLabel(RightsManager) map (_.headOption)
       lecturerAuth <- roleService.authorityFor(course.lecturer.toString) if lecturerAuth.isDefined
       refRoles = roles.map(role => RefRole(Some(course.id), role.id))
       mvRefRole = roles.find(_.label == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
@@ -132,26 +145,11 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     } yield course) match {
       case Success(a) => Continue(a)
       case Failure(e) =>
-        Stop(
+        Return(
           InternalServerError(Json.obj(
             "status" -> "KO",
             "errors" -> e.getMessage
           )))
     }
-  }
-
-  override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
-    input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
-  }
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(course.get)
-    case GetAll => PartialSecureBlock(course.getAll)
-    case _ => PartialSecureBlock(prime)
-  }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Update => SecureBlock(restrictionId, course.update)
-    case _ => PartialSecureBlock(god)
   }
 }

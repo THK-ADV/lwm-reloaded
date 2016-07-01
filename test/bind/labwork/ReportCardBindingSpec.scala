@@ -16,8 +16,6 @@ import scala.util.{Failure, Success}
 class ReportCardBindingSpec extends SesameDbSpec {
 
   import ops._
-
-  val bindings = Bindings[Sesame](namespace)
   import bindings.{
   ReportCardEntryDescriptor,
   ReportCardEntryTypeDescriptor,

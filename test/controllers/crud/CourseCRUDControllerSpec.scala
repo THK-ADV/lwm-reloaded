@@ -271,7 +271,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       when(roleService.rolesByLabel(anyObject())).thenReturn(Success(roles))
-      when(roleService.refRoleByLabel(anyObject())).thenReturn(Success(Some(refrole)))
+      when(roleService.refRolesByLabel(anyObject())).thenReturn(Success(Set(refrole)))
       when(roleService.authorityFor(anyObject())).thenReturn(Success(Some(auth)))
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(dummyGraph))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))

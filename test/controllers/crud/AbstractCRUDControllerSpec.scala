@@ -315,11 +315,13 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
         GET,
         s"/${entityTypeName}s"
       )
+
+      val expected = Set(Json.toJson(atomizedEntityToPass), Json.toJson(atomizedEntityToFail))
       val result = controller.allAtomic()(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     s"not get all ${plural(entityTypeName)} atomized when there is an exception" in {

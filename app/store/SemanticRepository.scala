@@ -160,6 +160,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     collect {
       uris
         .map(get0[T])
+        .filter(_.isSuccess)
         .toSet
     }
   }

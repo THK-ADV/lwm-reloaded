@@ -14,9 +14,6 @@ import scala.util.{Failure, Success}
 class GroupBindingSpec extends SesameDbSpec {
 
   import ops._
-
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{
   GroupDescriptor,
   uuidBinder,

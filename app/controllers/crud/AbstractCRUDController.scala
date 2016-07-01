@@ -1,7 +1,6 @@
 package controllers.crud
 
 import java.util.UUID
-
 import models.security.{Permission, Permissions}
 import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
@@ -15,46 +14,12 @@ import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
 import utils.LwmActions._
-import utils.LwmMimeType
+import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
-import utils.Ops.NaturalTrasformations._
-
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-
-object Return {
-  def apply[X](elm: X): Return[X] = Continue(elm)
-}
-
-sealed trait Return[+X] {
-  def map[Y](f: X => Y): Return[Y] = flatMap(f andThen Continue.apply)
-
-  def flatMap[Y](f: X => Return[Y]): Return[Y] = this match {
-    case Continue(a) => f(a)
-    case Stop(r) => Stop(r)
-  }
-
-
-  def when[Y](p: X => Boolean,
-              f: X => Return[Y])
-             (fallback: => Result): Return[Y] = this match {
-    case Continue(a) if p(a) => f(a)
-    case Continue(_) => Stop(fallback)
-    case Stop(r) => Stop(r)
-  }
-
-  def mapResult(f: X => Result): Result = this match {
-    case Continue(x) => f(x)
-    case Stop(r) => r
-  }
-
-}
-
-case class Continue[+X](i: X) extends Return[X]
-
-case class Stop(r: Result) extends Return[Nothing]
-
+import utils.RequestOps._
 
 trait Stored {
   self: BaseNamespace =>
@@ -101,6 +66,7 @@ trait Consistent[I, O] {
   import store.sparql.{NoneClause, Clause, SelectClause}
 
   final def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
+    import utils.Ops.NaturalTrasformations._
     val (clause, key) = existsQuery(input)
 
     clause match {
@@ -231,36 +197,33 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
       .flatMap(existence)
       .flatMap(add)
       .flatMap { o =>
-        val uri = s"$namespace${request.uri}".replace("/atomic", "") + s"/${o.id}"
+        val uri = uriGenerator.generateUri(o)(namespace)
         retrieve[A](uri)
       }
       .mapResult(a => Created(Json.toJson(a)).as(mimeType))
   }
 
   def get(id: String, securedContext: SecureContext = contextFrom(Get)) = securedContext action { request =>
-    val uri = s"$namespace${request.uri}"
+    val uri = asUri(namespace, request)
     retrieve[O](uri)
       .mapResult(o => Ok(Json.toJson(o)).as(mimeType))
   }
 
   def getAtomic(id: String, securedContext: SecureContext = contextFrom(Get)) = securedContext action { request =>
-    val uri = s"$namespace${request.uri}".replace("/atomic", "")
-
+    val uri = asUri(namespace, request)
     retrieve[A](uri)
       .mapResult(a => Ok(Json.toJson(a)).as(mimeType))
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext contentTypedAction { request =>
-    val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
-
+    val uri = asUri(namespace, request)
     validate(request)
       .flatMap(input => replace(uri, input))
       .mapResult(o => Ok(Json.toJson(o)).as(mimeType))
   }
 
   def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { request =>
-    val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
-
+    val uri = asUri(namespace, request)
     validate(request)
       .flatMap(input => replace(uri, input))
       .flatMap(i => retrieve[A](uri))
@@ -276,14 +239,14 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[A]
       .flatMap(filtered2(request, coatomic))
-      .mapResult(as => Ok(Json.toJson(as)).as(mimeType))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { implicit request =>
-    val uri = s"$namespace${request.uri}"
-
+  def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { request =>
+    val uri = asUri(namespace, request)
     remove[O](uri)
-      .mapResult(result => result)
+      .mapResult(identity)
   }
 
   def header = Action { implicit request =>
@@ -296,19 +259,19 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {
   self: Controller with Filterable[O] =>
 
-  def filtered[R](req: Request[R])(os: Set[O]): Return[Set[O]] = {
+  def filtered[R](req: Request[R])(os: Set[O]): Attempt[Set[O]] = {
     if (req.queryString.isEmpty) Continue(os)
     else getWithFilter(req.queryString)(os) match {
       case Success(fs) => Continue(fs)
       case Failure(e) =>
-        Stop(ServiceUnavailable(Json.obj(
+        Return(ServiceUnavailable(Json.obj(
           "status" -> "KO",
           "message" -> e.getMessage
         )))
     }
   }
 
-  def filtered2[R](req: Request[R], f: A => O)(as: Set[A]): Return[Set[A]] = {
+  def filtered2[R](req: Request[R], f: A => O)(as: Set[A]): Attempt[Set[A]] = {
     filtered(req)(as map f)
       .map(fos => as filter (x => fos exists (_.id == x.id)))
   }
@@ -317,24 +280,24 @@ trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {
 trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
   self: Controller with Stored =>
 
-  def optional[X](item: Try[Option[X]]): Return[X] = item match {
+  def optional[X](item: Try[Option[X]]): Attempt[X] = item match {
     case Success(Some(a)) => Continue(a)
-    case Success(None) => Stop(
+    case Success(None) => Return(
       NotFound(Json.obj(
         "status" -> "KO",
         "message" -> "No such element..."
       )))
-    case Failure(e) => Stop(
+    case Failure(e) => Return(
       InternalServerError(Json.obj(
         "status" -> "KO",
         "errors" -> e.getMessage
       )))
   }
 
-  def retrieveLots[X <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, X]): Return[Set[X]] = {
+  def retrieveLots[X <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, X]): Attempt[Set[X]] = {
     repository.getMany[X](uris) match {
       case Success(set) => Continue(set)
-      case Failure(e) => Stop(
+      case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
@@ -342,14 +305,14 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
     }
   }
 
-  def retrieve[X <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, X]): Return[X] = {
+  def retrieve[X <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, X]): Attempt[X] = {
     (optional[X] _ compose repository.get[X]) (uri)
   }
 
-  def retrieveAll[X <: UniqueEntity](implicit descriptor: Descriptor[Rdf, X]): Return[Set[X]] = {
+  def retrieveAll[X <: UniqueEntity](implicit descriptor: Descriptor[Rdf, X]): Attempt[Set[X]] = {
     repository.getAll[X] match {
       case Success(a) => Continue(a)
-      case Failure(e) => Stop(
+      case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
@@ -357,10 +320,10 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
     }
   }
 
-  def queried[F[_], X](t: Transitional[F, X]): Return[F[X]] = {
+  def queried[F[_], X](t: Transitional[F, X]): Attempt[F[X]] = {
     t.run match {
       case Success(a) => Continue(a)
-      case Failure(e) => Stop(
+      case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
@@ -379,7 +342,7 @@ trait Added[I, O <: UniqueEntity, A <: UniqueEntity] {
   def validate(request: Request[JsValue]) = {
     request.body.validate[I].fold(
       errors => {
-        Stop(BadRequest(Json.obj(
+        Return(BadRequest(Json.obj(
           "status" -> "KO",
           "errors" -> JsError.toJson(errors)
         )))
@@ -388,22 +351,22 @@ trait Added[I, O <: UniqueEntity, A <: UniqueEntity] {
     )
   }
 
-  def add(output: O): Return[O] = {
+  def add(output: O): Attempt[O] = {
     repository.add[O](output) match {
       case Success(_) => Continue(output)
       case Failure(e) =>
-        Stop(InternalServerError(Json.obj(
+        Return(InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
         )))
     }
   }
 
-  def addLots(output: TraversableOnce[O]): Return[List[O]] = {
+  def addLots(output: TraversableOnce[O]): Attempt[List[O]] = {
     repository.addMany[O](output) match {
       case Success(_) => Continue(output.toList)
       case Failure(e) =>
-        Stop(InternalServerError(Json.obj(
+        Return(InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
         )))
@@ -419,19 +382,19 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
     with ModelConverter[I, O]
     with Consistent[I, O] =>
 
-  def compare(i: I, o: O): Return[(I, O)] = {
+  def compare(i: I, o: O): Attempt[(I, O)] = {
     if (compareModel(i, o))
-      Stop(Accepted(Json.obj(
+      Return(Accepted(Json.obj(
         "status" -> "KO",
         "message" -> "model already exists",
         "id" -> o.id.toString)))
     else Continue((i, o))
   }
 
-  def overwrite0(item: O): Return[O] = {
+  def overwrite0(item: O): Attempt[O] = {
     repository.update[O, UriGenerator[O]](item) match {
       case Success(_) => Continue(item)
-      case Failure(e) => Stop(
+      case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
@@ -439,9 +402,9 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
     }
   }
 
-  def existence(input: I): Return[O] = exists(input)(repository) match {
+  def existence(input: I): Attempt[O] = exists(input)(repository) match {
     case Success(Some(duplicate)) =>
-      Stop(Accepted(Json.obj(
+      Return(Accepted(Json.obj(
         "status" -> "KO",
         "message" -> "model already exists",
         "id" -> duplicate.toString
@@ -449,7 +412,7 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
     case Success(None) =>
       Continue(fromInput(input))
     case Failure(e) =>
-      Stop(InternalServerError(Json.obj(
+      Return(InternalServerError(Json.obj(
         "status" -> "KO",
         "errors" -> e.getMessage
       )))
@@ -458,25 +421,25 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
   def replace(uri: String, input: I) = {
     repository.get[O](uri) match {
       case Success(Some(o)) if compareModel(input, o) =>
-        Stop(Accepted(Json.obj(
+        Return(Accepted(Json.obj(
           "status" -> "KO",
           "message" -> "model already exists",
           "id" -> o.id.toString)))
       case Success(Some(o)) => overwrite(input, o)
       case Success(None) => existence(input) flatMap add
       case Failure(e) =>
-        Stop(InternalServerError(Json.obj(
+        Return(InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
         )))
     }
   }
 
-  def overwrite(input: I, existing: O): Return[O] = {
+  def overwrite(input: I, existing: O): Attempt[O] = {
     val updated = fromInput(input, Some(existing))
     repository.update[O, UriGenerator[O]](updated) match {
       case Success(_) => Continue(updated)
-      case Failure(e) => Stop(
+      case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> e.getMessage
@@ -485,20 +448,19 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
   }
 }
 
-trait Removed[O <: UniqueEntity, A <: UniqueEntity] {
+trait Removed {
   self: Controller with
-    Stored with
-    RdfSerialisation[O, A] =>
+    Stored =>
 
-  def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Return[Result] = {
+  def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Result] = {
     repository.delete[X](uri) match {
       case Success(_) =>
-        Stop(
+        Return(
           Ok(Json.obj(
             "status" -> "OK"
           )))
       case Failure(e) =>
-        Stop(
+        Return(
           InternalServerError(Json.obj(
             "status" -> "KO",
             "errors" -> e.getMessage
@@ -508,7 +470,7 @@ trait Removed[O <: UniqueEntity, A <: UniqueEntity] {
 
 }
 
-trait Basic[I, O <: UniqueEntity, A <: UniqueEntity] extends Added[I, O, A] with Updated[I, O, A] with Removed[O, A] with Retrieved[O, A] with Filtered[O, A] {
+trait Basic[I, O <: UniqueEntity, A <: UniqueEntity] extends Added[I, O, A] with Updated[I, O, A] with Removed with Retrieved[O, A] with Filtered[O, A] {
   self: Controller
     with Stored
     with RdfSerialisation[O, A]

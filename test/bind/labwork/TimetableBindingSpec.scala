@@ -15,8 +15,6 @@ import scala.util.{Failure, Success}
 
 class TimetableBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{
   TimetableDescriptor,
   TimetableEntryDescriptor,

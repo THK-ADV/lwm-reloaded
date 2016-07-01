@@ -33,17 +33,23 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
     with Filterable[ReportCardEntryType]
     with Basic[ReportCardEntryType, ReportCardEntryType, ReportCardEntryType] {
 
-  override implicit def reads: Reads[ReportCardEntryType] = ReportCardEntryType.reads
-
-  override implicit def writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
-
-  override def writesAtom: Writes[ReportCardEntryType] = ReportCardEntryType.writesAtom
-
-  override implicit def descriptor: Descriptor[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeDescriptor
-
-  override implicit def uriGenerator: UriGenerator[ReportCardEntryType] = ReportCardEntryType
-
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryTypeV1Json
+
+  override implicit val descriptor: Descriptor[Sesame, ReportCardEntryType] = defaultBindings.ReportCardEntryTypeDescriptor
+
+  override val descriptorAtom: Descriptor[Sesame, ReportCardEntryType] = descriptor
+
+  override implicit val reads: Reads[ReportCardEntryType] = ReportCardEntryType.reads
+
+  override implicit val writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
+
+  override val writesAtom: Writes[ReportCardEntryType] = ReportCardEntryType.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[ReportCardEntryType] = ReportCardEntryType
+
+  override protected def compareModel(input: ReportCardEntryType, output: ReportCardEntryType): Boolean = input == output
+
+  override protected def fromInput(input: ReportCardEntryType, existing: Option[ReportCardEntryType]): ReportCardEntryType = input
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case _ => PartialSecureBlock(god)
@@ -53,6 +59,8 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
     case Update => SecureBlock(restrictionId, reportCardEntryType.update)
     case _ => PartialSecureBlock(god)
   }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEntryType]): Try[Set[ReportCardEntryType]] = Success(all)
 
   def update(course: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     validate(request)
@@ -65,16 +73,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
       .mapResult(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
-
-  override protected def compareModel(input: ReportCardEntryType, output: ReportCardEntryType): Boolean = input == output
-
-  override protected def fromInput(input: ReportCardEntryType, existing: Option[ReportCardEntryType]): ReportCardEntryType = input
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEntryType]): Try[Set[ReportCardEntryType]] = Success(all)
-
   def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
-
-  override implicit def descriptorAtom: Descriptor[Sesame, ReportCardEntryType] = descriptor
 }

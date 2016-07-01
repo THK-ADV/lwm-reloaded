@@ -16,8 +16,9 @@ import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
-import utils.{Gen, LwmMimeType}
+import utils.{Attempt, Gen, LwmMimeType}
 import ScheduleController._
+
 import scala.util.Try
 
 object ScheduleController {
@@ -93,21 +94,29 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     with Stored
     with JsonSerialisation[Schedule, Schedule, ScheduleAtom]
     with RdfSerialisation[Schedule, ScheduleAtom]
+    with Removed
     with Added[Schedule, Schedule, ScheduleAtom]
-    with Removed[Schedule, ScheduleAtom]
     with Retrieved[Schedule, ScheduleAtom] {
 
-  override implicit def descriptor: Descriptor[Sesame, Schedule] = defaultBindings.ScheduleDescriptor
-
-  override implicit def uriGenerator: UriGenerator[Schedule] = Schedule
-
-  override implicit def reads: Reads[Schedule] = Schedule.reads
-
-  override implicit def writes: Writes[Schedule] = Schedule.writes
-
-  override implicit def writesAtom: Writes[ScheduleAtom] = Schedule.writesAtom
-
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
+
+  override implicit val descriptor: Descriptor[Sesame, Schedule] = defaultBindings.ScheduleDescriptor
+
+  override implicit val descriptorAtom: Descriptor[Sesame, ScheduleAtom] = defaultBindings.ScheduleAtomDescriptor
+
+  override implicit val reads: Reads[Schedule] = Schedule.reads
+
+  override implicit val writes: Writes[Schedule] = Schedule.writes
+
+  override implicit val writesAtom: Writes[ScheduleAtom] = Schedule.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[Schedule] = Schedule
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, schedule.create)
+    case Delete => SecureBlock(restrictionId, schedule.delete)
+    case _ => PartialSecureBlock(god)
+  }
 
   def create(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     validate(request)
@@ -160,7 +169,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     NoContent.as(mimeType)
   }
 
-  def generate(labwork: String): Return[Gen[ScheduleG, Conflict, Int]] = {
+  def generate(labwork: String): Attempt[Gen[ScheduleG, Conflict, Int]] = {
     import ScheduleController._
     import defaultBindings.{GroupDescriptor, LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
 
@@ -183,11 +192,4 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     optional(genesis)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, schedule.create)
-    case Delete => SecureBlock(restrictionId, schedule.delete)
-    case _ => PartialSecureBlock(god)
-  }
-
-  override implicit def descriptorAtom: Descriptor[Sesame, ScheduleAtom] = defaultBindings.ScheduleAtomDescriptor
 }

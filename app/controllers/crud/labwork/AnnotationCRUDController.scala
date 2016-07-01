@@ -5,20 +5,17 @@ import java.util.UUID
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.labwork._
-import models.users.{Student, User}
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import models.security.Permissions._
-
 import scala.collection.Map
 import scala.util.{Failure, Try}
 import utils.RequestOps._
 import AnnotationCRUDController._
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 
 object AnnotationCRUDController {
   val labworkAttribute = "labwork"
@@ -28,30 +25,23 @@ object AnnotationCRUDController {
 
 class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AnnotationProtocol, Annotation, AnnotationAtom] {
 
-  override implicit def descriptor: Descriptor[Sesame, Annotation] = defaultBindings.AnnotationDescriptor
-
-  override implicit def reads: Reads[AnnotationProtocol] = Annotation.reads
-
-  override implicit def writes: Writes[Annotation] = Annotation.writes
-
-  override implicit def writesAtom: Writes[AnnotationAtom] = Annotation.writesAtom
-
-  override implicit def uriGenerator: UriGenerator[Annotation] = Annotation
-
   override implicit val mimeType: LwmMimeType = LwmMimeType.annotationV1Json
 
+  override implicit val descriptor: Descriptor[Sesame, Annotation] = defaultBindings.AnnotationDescriptor
+
+  override implicit val descriptorAtom: Descriptor[Sesame, AnnotationAtom] = defaultBindings.AnnotationAtomDescriptor
+
+  override implicit val reads: Reads[AnnotationProtocol] = Annotation.reads
+
+  override implicit val writes: Writes[Annotation] = Annotation.writes
+
+  override implicit val writesAtom: Writes[AnnotationAtom] = Annotation.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[Annotation] = Annotation
+
+  override protected def coatomic(atom: AnnotationAtom): Annotation = Annotation(atom.student.id, atom.labwork.id, atom.reportCardEntry.id, atom.message, atom.timestamp, atom.id)
+
   override protected def compareModel(input: AnnotationProtocol, output: Annotation): Boolean = input.message == output.message
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Annotation]): Try[Set[Annotation]] = {
-    queryString.foldRight(Try[Set[Annotation]](all)) {
-      case ((`labworkAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.labwork == id)))
-      case ((`studentAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.student == id)))
-      case ((`reportCardEntryAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.reportCardEntry == id)))
-      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
-
 
   override protected def fromInput(input: AnnotationProtocol, existing: Option[Annotation]): Annotation = existing match {
     case Some(annotation) => Annotation(input.student, input.labwork, input.reportCardEntry, input.message, annotation.timestamp, annotation.id)
@@ -66,9 +56,14 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
     case Delete => SecureBlock(restrictionId, annotation.delete)
   }
 
-  override protected def coatomic(atom: AnnotationAtom): Annotation = Annotation(atom.student.id, atom.labwork.id, atom.reportCardEntry.id, atom.message, atom.timestamp, atom.id)
-
-  override implicit def descriptorAtom: Descriptor[Sesame, AnnotationAtom] = defaultBindings.AnnotationAtomDescriptor
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Annotation]): Try[Set[Annotation]] = {
+    queryString.foldRight(Try[Set[Annotation]](all)) {
+      case ((`labworkAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.labwork == id)))
+      case ((`studentAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.student == id)))
+      case ((`reportCardEntryAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.reportCardEntry == id)))
+      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Annotation.generateBase))

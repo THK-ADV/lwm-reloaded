@@ -1,15 +1,18 @@
 package base
 
 import org.scalatest._
-import org.scalatest.concurrent.{ScalaFutures, Futures}
+import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import org.w3.banana.{RDF, RDFModule}
 import store.Prefixes.LWMPrefix
+import store.bind.Bindings
 import store.{Namespace, SemanticRepository, SesameRepository}
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {
   val lwm = LWMPrefix[Sesame]
   implicit val namespace = Namespace(s"http://testDB/${this.getClass.getSimpleName}")
+
+  val bindings = Bindings[Sesame](namespace)
 
   lazy val repo = SesameRepository(namespace)
 

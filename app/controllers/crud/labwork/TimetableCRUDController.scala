@@ -4,24 +4,21 @@ import java.util.UUID
 
 import controllers.crud.AbstractCRUDController
 import models.labwork._
-import models.users.{Employee, User}
 import models._
 import models.security.Permissions._
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.RequestOps._
-
 import scala.collection.Map
 import scala.util.{Failure, Try}
 import TimetableCRUDController._
-import store.bind.Descriptor.{CompositeClassUris, Descriptor}
+import store.bind.Descriptor.Descriptor
 
 object TimetableCRUDController {
   val courseAttribute = "course"
@@ -29,25 +26,25 @@ object TimetableCRUDController {
 
 class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
 
-  override implicit def reads: Reads[TimetableProtocol] = Timetable.reads
-
-  override implicit def writes: Writes[Timetable] = Timetable.writes
-
-  override implicit def writesAtom: Writes[TimetableAtom] = Timetable.writesAtom
-
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
-  override implicit def uriGenerator: UriGenerator[Timetable] = Timetable
+  override implicit val descriptor: Descriptor[Sesame, Timetable] = defaultBindings.TimetableDescriptor
 
-  override implicit def descriptor: Descriptor[Sesame, Timetable] = defaultBindings.TimetableDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, TimetableAtom] = defaultBindings.TimetableAtomDescriptor
 
-  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
-    case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
-    case None =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
-  }
+  override implicit val reads: Reads[TimetableProtocol] = Timetable.reads
 
+  override implicit val writes: Writes[Timetable] = Timetable.writes
+
+  override implicit val writesAtom: Writes[TimetableAtom] = Timetable.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[Timetable] = Timetable
+
+  override protected def coatomic(atom: TimetableAtom): Timetable =
+    Timetable(
+      atom.labwork.id,
+      atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
+      atom.start, atom.localBlacklist, atom.id)
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
     import models.semester.Blacklist.dateOrd
@@ -57,6 +54,19 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
       input.localBlacklist.toVector.sorted.zip(output.localBlacklist.toVector.sorted).forall(d => d._1.isEqual(d._2))
   }
 
+  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
+    case Some(timetable) =>
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
+    case None =>
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
+  }
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, timetable.create)
+    case Get => SecureBlock(restrictionId, timetable.get)
+    case GetAll => SecureBlock(restrictionId, timetable.getAll)
+    case Update => SecureBlock(restrictionId, timetable.update)
+    case Delete => SecureBlock(restrictionId, timetable.delete)
+  }
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
     import defaultBindings.LabworkDescriptor
     import utils.Ops.MonadInstances.listM
@@ -82,23 +92,6 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, timetable.create)
-    case Get => SecureBlock(restrictionId, timetable.get)
-    case GetAll => SecureBlock(restrictionId, timetable.getAll)
-    case Update => SecureBlock(restrictionId, timetable.update)
-    case Delete => SecureBlock(restrictionId, timetable.delete)
-  }
-
-
-  override protected def coatomic(atom: TimetableAtom): Timetable =
-    Timetable(
-      atom.labwork.id,
-      atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
-      atom.start, atom.localBlacklist, atom.id)
-
-  override implicit def descriptorAtom: Descriptor[Sesame, TimetableAtom] = defaultBindings.TimetableAtomDescriptor
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase(Timetable.generateBase))

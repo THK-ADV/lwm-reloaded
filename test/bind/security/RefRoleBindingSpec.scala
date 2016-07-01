@@ -11,9 +11,6 @@ import store.bind.Bindings
 import scala.util.{Failure, Success}
 
 class RefRoleBindingSpec extends SesameDbSpec {
-
-  val bindings = Bindings[Sesame](namespace)
-
   import bindings.{
   RefRoleDescriptor,
   uuidBinder,

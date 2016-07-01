@@ -18,8 +18,9 @@ import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{Attempt, LwmMimeType}
 import utils.RequestOps._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -45,17 +46,65 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     with ModelConverter[ReportCardEvaluation, ReportCardEvaluation]
     with Basic[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom] {
 
-  override implicit def reads: Reads[ReportCardEvaluation] = ReportCardEvaluation.reads
-
-  override implicit def writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
-
-  override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
-
-  override implicit def uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
-
-  override implicit def descriptor: Descriptor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
-
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
+
+  override implicit val descriptor: Descriptor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
+
+  override implicit val descriptorAtom: Descriptor[Sesame, ReportCardEvaluationAtom] = defaultBindings.ReportCardEvaluationAtomDescriptor
+
+  override implicit val reads: Reads[ReportCardEvaluation] = ReportCardEvaluation.reads
+
+  override implicit val writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
+
+  override implicit val writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
+
+  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
+
+  override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = input
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
+    case Get => SecureBlock(restrictionId, reportCardEvaluation.get)
+    case GetAll => SecureBlock(restrictionId, reportCardEvaluation.getAll)
+    case _ => PartialSecureBlock(god)
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(reportCardEvaluation.get)
+    case _ => PartialSecureBlock(god)
+  }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEvaluation]): Try[Set[ReportCardEvaluation]] = {
+    import store.sparql.select
+    import store.sparql.select._
+    import utils.Ops.MonadInstances.listM
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+
+    queryString.foldLeft(Try(**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEvaluation)))) {
+      case (clause, (`courseAttribute`, courses)) => clause map {
+        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
+      }
+      case (clause, (`labworkAttribute`, labworks)) => clause map {
+        _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labworks.head))))
+      }
+      case (clause, (`studentAttribute`, students)) => clause map {
+        _ append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(students.head))))
+      }
+      case _ => Failure(new Throwable("Unknown attribute"))
+    } flatMap { clause =>
+      val query = select distinct "entries" where clause
+
+      repository.prepareQuery(query)
+        .select(_.get("entries"))
+        .transform(_.fold(List.empty[Value])(identity))
+        .map(_.stringValue())
+        .requestAll(repository.getMany[ReportCardEvaluation](_))
+        .run
+    }
+  }
 
   def create(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     evaluate(labwork)
@@ -114,7 +163,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def evaluate(labwork: String): Return[Set[ReportCardEvaluation]] = {
+  def evaluate(labwork: String): Attempt[Set[ReportCardEvaluation]] = {
     import defaultBindings.{AssignmentPlanDescriptor, ReportCardEntryDescriptor}
     import store.sparql.select
     import store.sparql.select._
@@ -138,54 +187,6 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         assignmentPlan <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
         cards <- cardsPrepared.run
       } yield assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
-    }
-  }
-
-  override implicit def descriptorAtom: Descriptor[Sesame, ReportCardEvaluationAtom] = defaultBindings.ReportCardEvaluationAtomDescriptor
-
-  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
-
-  override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = input
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
-    case Get => SecureBlock(restrictionId, reportCardEvaluation.get)
-    case GetAll => SecureBlock(restrictionId, reportCardEvaluation.getAll)
-    case _ => PartialSecureBlock(god)
-  }
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(reportCardEvaluation.get)
-    case _ => PartialSecureBlock(god)
-  }
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEvaluation]): Try[Set[ReportCardEvaluation]] = {
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    queryString.foldLeft(Try(**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEvaluation)))) {
-      case (clause, (`courseAttribute`, courses)) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
-      }
-      case (clause, (`labworkAttribute`, labworks)) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labworks.head))))
-      }
-      case (clause, (`studentAttribute`, students)) => clause map {
-        _ append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(students.head))))
-      }
-      case _ => Failure(new Throwable("Unknown attribute"))
-    } flatMap { clause =>
-      val query = select distinct "entries" where clause
-
-      repository.prepareQuery(query)
-        .select(_.get("entries"))
-        .transform(_.fold(List.empty[Value])(identity))
-        .map(_.stringValue())
-        .requestAll(repository.getMany[ReportCardEvaluation](_))
-        .run
     }
   }
 }

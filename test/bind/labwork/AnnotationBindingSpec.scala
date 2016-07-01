@@ -15,8 +15,6 @@ import scala.util.{Failure, Success}
 class AnnotationBindingSpec extends SesameDbSpec {
 
   import ops._
-
-  val bindings = Bindings[Sesame](namespace)
   import bindings.{
   AnnotationDescriptor,
   uuidBinder,
