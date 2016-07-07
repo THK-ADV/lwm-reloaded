@@ -95,12 +95,6 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     }
   }
 
-  //TODO: Either make every other controller stream its atoms, or stop streaming authorities all together
-  /*
-   * Because all the other controllers don't chunk their atoms, the AuthorityController is rather impossible to test uniformly with the other controllers.
-   * It has to explicitly override its implementation of this method and provide the same, unchunked version, in the tests.
-   * This has to go.
-   */
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = Action { request =>
     filtered(request)(Set.empty)
       .flatMap { set =>
