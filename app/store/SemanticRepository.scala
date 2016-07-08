@@ -86,22 +86,21 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
 object SesameRepository {
 
-  def apply(folder: Option[File], syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(folder, syncInterval, baseNS)
+  def apply(folder: Option[File], syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(folder, syncInterval)(baseNS)
 
-  def apply(folder: Option[File], baseNS: Namespace) = new SesameRepository(folder, baseNS = baseNS)
+  def apply(folder: Option[File], baseNS: Namespace) = new SesameRepository(folder)(baseNS)
 
-  def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval, baseNS = baseNS)
+  def apply(syncInterval: FiniteDuration, baseNS: Namespace) = new SesameRepository(syncInterval = syncInterval)(baseNS)
 
-  def apply(baseNS: Namespace) = new SesameRepository(baseNS = baseNS)
+  def apply(baseNS: Namespace) = new SesameRepository()(baseNS)
 }
 
-class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds, baseNS: Namespace) extends SemanticRepository with SesameModule with SPARQLQueryEngine {
+class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration = 10.seconds)(implicit val namespace: Namespace) extends SemanticRepository with SesameModule with SPARQLQueryEngine {
 
   import SemanticUtils._
   import ops._
 
-  val ns = makeUri(baseNS.base)
-  implicit val namespace = baseNS
+  val ns = makeUri(namespace.base)
 
   val memStore = folder.fold {
     new MemoryStore()
@@ -165,7 +164,9 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     }
   }
 
-  override def contains(id: String): Boolean = connect { conn =>
+  override def contains(id: String): Boolean = connect { implicit conn => contains0(id) }
+
+  def contains0(id: String)(implicit conn: RepositoryConnection): Boolean = {
     val uri = makeUri(id)
     conn.hasStatement(uri, null, null, false)
   }
@@ -239,10 +240,3 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     rdfStore removeGraph(conn, ns)
   }
 }
-
-sealed trait ValidationResult
-
-case class ValidationError(errors: List[String]) extends ValidationResult
-
-case class ValidationSuccess(graph: Sesame#Graph) extends ValidationResult
-

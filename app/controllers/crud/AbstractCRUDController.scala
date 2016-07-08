@@ -246,7 +246,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { request =>
     val uri = asUri(namespace, request)
     remove[O](uri)
-      .mapResult(identity)
+      .mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 
   def header = Action { implicit request =>
@@ -452,13 +452,9 @@ trait Removed {
   self: Controller with
     Stored =>
 
-  def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Result] = {
+  def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Unit] = {
     repository.delete[X](uri) match {
-      case Success(_) =>
-        Return(
-          Ok(Json.obj(
-            "status" -> "OK"
-          )))
+      case Success(_) => Continue(())
       case Failure(e) =>
         Return(
           InternalServerError(Json.obj(

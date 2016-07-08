@@ -134,7 +134,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { request =>
     val url = (UUID.fromString _ andThen Schedule.generateUri) (schedule)
     remove[Schedule](url)
-      .mapResult(identity)
+      .mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
