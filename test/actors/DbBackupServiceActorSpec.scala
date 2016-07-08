@@ -30,7 +30,6 @@ class DbBackupServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
     "successfully backup given store" in {
       import akka.testkit._
-
       import scala.concurrent.duration._
 
       10.seconds.dilated

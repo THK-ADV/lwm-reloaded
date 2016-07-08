@@ -2,28 +2,17 @@ package modules
 
 import controllers.SessionController
 import modules.store.{ResolversModule, SemanticRepositoryModule}
-import services.{ActorBasedSessionService, LDAPService, LDAPServiceImpl, SessionHandlingService}
-
-trait LDAPModule {
-  def ldap: LDAPService
-}
-
-trait LDAPModuleImpl extends LDAPModule {
-  self: ConfigurationModule =>
-  val bindHost: String = lwmConfig.getString("lwm.bindHost").getOrElse("no bind host set")
-  val bindPort: Int = lwmConfig.getInt("lwm.bindPort").getOrElse(-1)
-  val dn: String = lwmConfig.getString("lwm.bindDN").getOrElse("no dn set")
-
-
-  override def ldap = LDAPServiceImpl(bindHost, bindPort, dn)
-}
+import services.{ActorBasedSessionService, LdapService, LdapServiceImpl, SessionHandlingService}
 
 trait SessionControllerModule {
   self: SessionRepositoryModule =>
+
   def sessionController: SessionController
 }
 
-trait DefaultSessionControllerModuleImpl extends SessionControllerModule{ self: SessionRepositoryModule =>
+trait DefaultSessionControllerModuleImpl extends SessionControllerModule {
+  self: SessionRepositoryModule =>
+
   override def sessionController: SessionController = new SessionController(sessionService)
 }
 
@@ -32,7 +21,7 @@ trait SessionRepositoryModule {
 }
 
 trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule {
-  self: AkkaActorSystemModule with LDAPModule with SemanticRepositoryModule with ResolversModule =>
+  self: AkkaActorSystemModule with LdapModule with SemanticRepositoryModule with ResolversModule =>
 
-  override val sessionService: SessionHandlingService = new ActorBasedSessionService(system, ldap, resolver)
+  override val sessionService: SessionHandlingService = new ActorBasedSessionService(system, ldapService, resolvers)
 }

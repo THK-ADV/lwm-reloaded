@@ -49,7 +49,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override def sessionController: SessionController = controller
+      override val sessionController: SessionController = controller
     }.application
   })
 

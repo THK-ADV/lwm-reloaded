@@ -18,7 +18,7 @@ trait SessionHandlingService {
   def deleteSession(id: UUID): Future[Boolean]
 }
 
-class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, resolvers: Resolvers) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, resolvers: Resolvers) extends SessionHandlingService {
 
   import SessionServiceActor._
   import akka.pattern.ask
@@ -63,7 +63,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LDAPService, 
 
 object SessionServiceActor {
 
-  def props(ldap: LDAPService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
+  def props(ldap: LdapService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
 
   private[services] case class SessionRemovalRequest(id: UUID)
 
@@ -93,7 +93,7 @@ object SessionServiceActor {
 
 }
 
-class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor with ActorLogging {
+class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor with ActorLogging {
 
   import SessionServiceActor._
   import resolvers._
@@ -115,15 +115,13 @@ class SessionServiceActor(ldap: LDAPService)(resolvers: Resolvers) extends Actor
           case Success(Some(userId)) => Future.successful {
             Session(user.toLowerCase, userId)
           }
-          case Success(_) => ldap.attributes(user)(degree).map(missingUserData).flatMap {
+          case Success(_) => ldap.user(user)(degree).map(missingUserData).flatMap {
             case Success(_) => resolve(auth)
             case Failure(t) => Future.failed(t)
           }
           case Failure(e) => Future.failed(e)
         }
-      }
-
-      else Future.failed(new Throwable("Invalid credentials"))
+      } else Future.failed(new Throwable("Invalid credentials"))
 
       ldap.authenticate(user, password).flatMap(resolve).onComplete {
         case Success(session) =>

@@ -27,6 +27,7 @@ case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: Lo
 }
 
 case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
+
 // TODO make them repo ready
 case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
 
@@ -51,7 +52,7 @@ object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisat
   override implicit def writes: Writes[ReportCardEntry] = Json.writes[ReportCardEntry]
 
   override implicit def writesAtom: Writes[ReportCardEntryAtom] = Writes[ReportCardEntryAtom] { entry =>
-    val json = Json.obj(
+    val base = Json.obj(
       "student" -> Json.toJson(entry.student),
       "labwork" -> Json.toJson(entry.labwork),
       "label" -> entry.label,
@@ -59,25 +60,22 @@ object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisat
       "start" -> entry.start.toString,
       "end" -> entry.end.toString,
       "room" -> Json.toJson(entry.room),
-      "entryTypes" -> Json.toJson(entry.entryTypes),
-      "id" -> entry.id.toString
+      "entryTypes" -> Json.toJson(entry.entryTypes)
     )
-
-    entry.rescheduled.fold(json)(rs =>
-      json + ("rescheduled" -> Json.obj(
-        "date" -> rs.date.toString,
-        "start" -> rs.start.toString,
-        "end" -> rs.end.toString,
-        "room" -> Json.toJson(rs.room)))
-    )
+    entry.rescheduled.fold(base)(rs =>
+      base + ("rescheduled" -> Json.toJson(rs)(Rescheduled.writesAtom))
+    ) + ("id" -> Json.toJson(entry.id.toString))
   }
 }
 
 object ReportCardEntryType extends UriGenerator[ReportCardEntryType] with JsonSerialisation[ReportCardEntryType, ReportCardEntryType, ReportCardEntryType] {
 
   def Attendance = ReportCardEntryType(AssignmentEntryType.Attendance.entryType)
+
   def Certificate = ReportCardEntryType(AssignmentEntryType.Certificate.entryType)
+
   def Bonus = ReportCardEntryType(AssignmentEntryType.Bonus.entryType)
+
   def Supplement = ReportCardEntryType(AssignmentEntryType.Supplement.entryType)
 
   def all = Set(Attendance, Certificate, Bonus, Supplement)

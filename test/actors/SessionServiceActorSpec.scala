@@ -11,7 +11,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import services.{LDAPService, SessionServiceActor}
+import services.{LdapService, SessionServiceActor}
 import services.SessionServiceActor.{AuthenticationFailure, AuthenticationSuccess}
 import store.bind.Bindings
 import store.{LwmResolvers, Namespace, SesameRepository}
@@ -27,7 +27,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(ns)
-  val ldap = mock[LDAPService]
+  val ldap = mock[LdapService]
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 
@@ -51,7 +51,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
     "not create a user if an appropriate role has not been found" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.attributes(anyString())(anyObject())).thenReturn(Future.successful(user))
+      when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))
 
       val future = actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")
       val result = Await.result(future, timeout.duration)
@@ -64,11 +64,10 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     }
 
     "create a session when a user is authorized and contains entries" in {
+      import bindings.{ RefRoleDescriptor, RoleDescriptor}
+
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.attributes(anyString())(anyObject())).thenReturn(Future.successful(user))
-      import bindings.{
-      RefRoleDescriptor,
-      RoleDescriptor}
+      when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))
 
       val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
       val employeeRole = Role("Employee", Set(Permissions.course.create, Permissions.timetable.create))

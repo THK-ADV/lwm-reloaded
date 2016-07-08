@@ -57,7 +57,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override def resolver: Resolvers = new Resolvers {
+      override val resolvers: Resolvers = new Resolvers {
         override def username(systemId: String): Try[Option[UUID]] = Success(Some(userId))
 
         override type R = Nothing

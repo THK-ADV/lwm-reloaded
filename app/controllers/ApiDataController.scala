@@ -55,7 +55,7 @@ object ApiDataController {
   val adminRole = Role(Admin, Set(prime))
 }
 
-class ApiDataController(val repository: SesameRepository, val ldap: LDAPServiceImpl, val groupService: GroupServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val reportCardService: ReportCardServiceLike) extends Controller {
+class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceImpl, val groupService: GroupServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val reportCardService: ReportCardServiceLike) extends Controller {
   import repository.ops
   import ApiDataController._
 

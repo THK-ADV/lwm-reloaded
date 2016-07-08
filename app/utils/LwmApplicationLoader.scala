@@ -59,7 +59,7 @@ with AuthorityManagementModule
 with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
-with LDAPModule
+with LdapModule
 with AssetsModule
 with EntryTypeManagementModule
 with ResolversModule
@@ -80,7 +80,8 @@ with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with UserManagementModule
 with AnnotationManagementModule
-with ReportCardEvaluationManagementModule {
+with ReportCardEvaluationManagementModule
+with LdapSyncModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
@@ -126,7 +127,7 @@ with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
 with DefaultRoomManagementModuleImpl
 with DefaultSemesterManagementModuleImpl
-with LDAPModuleImpl
+with LdapModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
@@ -157,3 +158,4 @@ with DefaultAnnotationManagementModuleImpl
 with DefaultReportCardEvaluationManagementModuleImpl
 with DefaultDbFolderImpl
 with DefaultDbBackupModuleImpl
+with DefaultLdapSyncService
