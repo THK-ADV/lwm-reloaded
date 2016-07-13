@@ -6,7 +6,7 @@ import controllers.crud.{SecureControllerContext, SessionChecking, _}
 import controllers.reportCard.ReportCardEvaluationController._
 import models.labwork._
 import models.security.Permissions.{god, reportCardEvaluation}
-import models.users.User
+import models.users.{Student, User}
 import models.{Course, UriGenerator}
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
@@ -17,12 +17,12 @@ import play.api.mvc.Controller
 import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
-import store.{Namespace, SesameRepository}
-import utils.{Attempt, LwmMimeType}
+import store.{Namespace, SemanticUtils, SesameRepository}
+import utils.{Attempt, Return, Continue, LwmMimeType}
 import utils.RequestOps._
 
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object ReportCardEvaluationController {
   val courseAttribute = "course"
@@ -158,7 +158,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     evaluate(labwork)
-      .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
+      .flatMap(atomic)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -187,6 +187,29 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         assignmentPlan <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
         cards <- cardsPrepared.run
       } yield assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
+    }
+  }
+
+
+  def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {
+    import defaultBindings.{LabworkDescriptor, StudentDescriptor}
+
+    SemanticUtils.collect {
+      evals map { eval =>
+        for {
+          optLabwork <- repository.get[Labwork](Labwork.generateUri(eval.labwork))
+          optStudent <- repository.get[Student](User.generateUri(eval.student))
+        } yield for {
+          l <- optLabwork; s <- optStudent
+        } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.id)
+      }
+    } match {
+      case Success(set) => Continue(set)
+      case Failure(e) => Return(InternalServerError(
+        Json.obj(
+          "status" -> "KO",
+          "errors" -> s"Error while generating groups for labwork: ${e.getMessage}"
+        )))
     }
   }
 }

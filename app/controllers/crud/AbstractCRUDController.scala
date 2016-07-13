@@ -1,6 +1,7 @@
 package controllers.crud
 
 import java.util.UUID
+
 import models.security.{Permission, Permissions}
 import models.{UniqueEntity, UriGenerator}
 import modules.store.BaseNamespace
@@ -14,12 +15,13 @@ import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
 import utils.LwmActions._
-import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
+import utils.RequestOps._
+import utils.{Attempt, Continue, LwmMimeType, Return}
+
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-import utils.RequestOps._
 
 trait Stored {
   self: BaseNamespace =>
@@ -63,7 +65,7 @@ trait SessionChecking {
 trait Consistent[I, O] {
 
   import store.sparql.select._
-  import store.sparql.{NoneClause, Clause, SelectClause}
+  import store.sparql.{Clause, NoneClause, SelectClause}
 
   final def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
     import utils.Ops.NaturalTrasformations._
@@ -112,17 +114,17 @@ trait Secured {
 trait SecureControllerContext {
   self: Secured with SessionChecking with ContentTyped =>
 
+  //to be specialized
+  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+
+  //to be specialized
+  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+
   sealed trait Rule
-
-  case object Create extends Rule
-
-  case object Delete extends Rule
-
-  case object GetAll extends Rule
-
-  case object Get extends Rule
-
-  case object Update extends Rule
 
   trait SecureContext {
 
@@ -130,6 +132,12 @@ trait SecureControllerContext {
       restricted = (opt, perms) => SecureAction((opt, perms))(block),
       simple = Action(block)
     )
+
+    def apply[A](restricted: (Option[UUID], Permission) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, permission) => restricted(Some(UUID.fromString(id)), permission)
+      case PartialSecureBlock(permission) => restricted(None, permission)
+      case NonSecureBlock => simple()
+    }
 
     def contentTypedAction(block: Request[JsValue] => Result): Action[JsValue] = apply[JsValue](
       restricted = (opt, perms) => SecureContentTypedAction((opt, perms))(block),
@@ -145,29 +153,23 @@ trait SecureControllerContext {
       restricted = (opt, perms) => SecureContentTypedAction.async((opt, perms))(block),
       simple = ContentTypedAction.async(block)
     )
-
-    def apply[A](restricted: (Option[UUID], Permission) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, permission) => restricted(Some(UUID.fromString(id)), permission)
-      case PartialSecureBlock(permission) => restricted(None, permission)
-      case NonSecureBlock => simple()
-    }
   }
 
   case class SecureBlock(restrictionRef: String, permission: Permission) extends SecureContext
 
   case class PartialSecureBlock(permission: Permission) extends SecureContext
 
+  case object Create extends Rule
+
+  case object Delete extends Rule
+
+  case object GetAll extends Rule
+
+  case object Get extends Rule
+
+  case object Update extends Rule
+
   case object NonSecureBlock extends SecureContext
-
-  //to be specialized
-  protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Permissions.prime)
-  }
-
-  //to be specialized
-  protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Permissions.prime)
-  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Controller
@@ -233,7 +235,8 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   def all(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[O]
       .flatMap(filtered(request))
-      .mapResult(os => Ok(Json.toJson(os)).as(mimeType))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
@@ -259,6 +262,11 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {
   self: Controller with Filterable[O] =>
 
+  def filtered2[R](req: Request[R], f: A => O)(as: Set[A]): Attempt[Set[A]] = {
+    filtered(req)(as map f)
+      .map(fos => as filter (x => fos exists (_.id == x.id)))
+  }
+
   def filtered[R](req: Request[R])(os: Set[O]): Attempt[Set[O]] = {
     if (req.queryString.isEmpty) Continue(os)
     else getWithFilter(req.queryString)(os) match {
@@ -270,29 +278,10 @@ trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {
         )))
     }
   }
-
-  def filtered2[R](req: Request[R], f: A => O)(as: Set[A]): Attempt[Set[A]] = {
-    filtered(req)(as map f)
-      .map(fos => as filter (x => fos exists (_.id == x.id)))
-  }
 }
 
 trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
   self: Controller with Stored =>
-
-  def optional[X](item: Try[Option[X]]): Attempt[X] = item match {
-    case Success(Some(a)) => Continue(a)
-    case Success(None) => Return(
-      NotFound(Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )))
-    case Failure(e) => Return(
-      InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      )))
-  }
 
   def retrieveLots[X <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, X]): Attempt[Set[X]] = {
     repository.getMany[X](uris) match {
@@ -307,6 +296,20 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
 
   def retrieve[X <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, X]): Attempt[X] = {
     (optional[X] _ compose repository.get[X]) (uri)
+  }
+
+  def optional[X](item: Try[Option[X]]): Attempt[X] = item match {
+    case Success(Some(a)) => Continue(a)
+    case Success(None) => Return(
+      NotFound(Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )))
+    case Failure(e) => Return(
+      InternalServerError(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      )))
   }
 
   def retrieveAll[X <: UniqueEntity](implicit descriptor: Descriptor[Rdf, X]): Attempt[Set[X]] = {
@@ -402,22 +405,6 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
     }
   }
 
-  def existence(input: I): Attempt[O] = exists(input)(repository) match {
-    case Success(Some(duplicate)) =>
-      Return(Accepted(Json.obj(
-        "status" -> "KO",
-        "message" -> "model already exists",
-        "id" -> duplicate.toString
-      )))
-    case Success(None) =>
-      Continue(fromInput(input))
-    case Failure(e) =>
-      Return(InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      )))
-  }
-
   def replace(uri: String, input: I) = {
     repository.get[O](uri) match {
       case Success(Some(o)) if compareModel(input, o) =>
@@ -433,6 +420,22 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
           "errors" -> e.getMessage
         )))
     }
+  }
+
+  def existence(input: I): Attempt[O] = exists(input)(repository) match {
+    case Success(Some(duplicate)) =>
+      Return(Accepted(Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> duplicate.toString
+      )))
+    case Success(None) =>
+      Continue(fromInput(input))
+    case Failure(e) =>
+      Return(InternalServerError(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      )))
   }
 
   def overwrite(input: I, existing: O): Attempt[O] = {

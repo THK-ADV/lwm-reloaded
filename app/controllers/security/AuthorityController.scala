@@ -85,7 +85,6 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     } flatMap { clause =>
       val query = select distinct "auth" where clause
 
-      println(query.run)
       repository.prepareQuery(query).
         select(_.get("auth")).
         transform(_.fold(List.empty[Value])(identity)).

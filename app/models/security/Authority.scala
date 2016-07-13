@@ -109,10 +109,9 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
 
   override implicit def writesAtom: Writes[RefRoleAtom] = Writes[RefRoleAtom] { rr =>
     val obj = Json.obj(
-      "role" -> Json.toJson(rr.role),
-      "id" -> rr.id.toString
+      "role" -> Json.toJson(rr.role)
     )
-    rr.course.fold(obj)(course => obj + ("course" -> Json.toJson(course)(Course.writesAtom)))
+    rr.course.fold(obj)(course => obj + ("course" -> Json.toJson(course)(Course.writesAtom))) + ("id" -> Json.toJson(rr.id.toString))
   }
 
 }

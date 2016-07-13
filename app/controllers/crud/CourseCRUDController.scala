@@ -11,12 +11,12 @@ import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
-import utils.{Continue, LwmMimeType, Return}
+import utils.{Continue, LwmMimeType, RequestOps, Return}
 import models.security.Permissions._
 import models.security.{Authority, RefRole}
 import models.security.Roles._
 import store.bind.Descriptor.Descriptor
-
+import utils.RequestOps._
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import store.sparql.select
@@ -26,7 +26,7 @@ object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
 
-class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course, CourseAtom] {
+class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course, CourseAtom] {
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
@@ -104,16 +104,15 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     validate(request)
       .flatMap(existence)
       .flatMap(withRoles)
-      .mapResult(c => Created(Json.toJson(c)).as(mimeType))
+      .mapResult(course => Created(Json.toJson(course)).as(mimeType))
   }
 
   def createAtomicWithRoles(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
-    val uri = s"$namespace${request.uri}".replaceAll("/atomic", "")
     validate(request)
       .flatMap(existence)
       .flatMap(withRoles)
-      .flatMap(a => retrieve[CourseAtom](uri + s"/${a.id}"))
-      .mapResult(ca => Created(Json.toJson(ca)).as(mimeType))
+      .flatMap(course => retrieve[CourseAtom](Course.generateUri(course)))
+      .mapResult(courseAtom => Created(Json.toJson(courseAtom)).as(mimeType))
   }
 
   private def withRoles(course: Course) = {
@@ -145,6 +144,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     } yield course) match {
       case Success(a) => Continue(a)
       case Failure(e) =>
+        println(e)
         Return(
           InternalServerError(Json.obj(
             "status" -> "KO",
