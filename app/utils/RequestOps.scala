@@ -1,6 +1,7 @@
 package utils
 
 import play.api.mvc.Request
+import store.Namespace
 
 object RequestOps {
 
@@ -13,5 +14,9 @@ object RequestOps {
     val queryString = query.foldLeft(request.queryString)(_ + _)
     val headers = request.copy(request.id, request.tags, uri, request.path, request.method, request.version, queryString)
     Request(headers, request.body)
+  }
+
+  def asUri[A](ns: Namespace, request: Request[A]): String = {
+    s"$ns${request.uri}".replaceAll("/atomic", "")
   }
 }

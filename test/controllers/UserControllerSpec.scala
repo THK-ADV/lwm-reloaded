@@ -77,7 +77,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.getAll[User](anyObject())).thenReturn(Success(users))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -97,47 +97,49 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
     "atomize one specific user, regardless of his subcategory" in {
       val degree = Degree("Degree", "DD", Degree.randomUUID)
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+      val student = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
+      val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.id)
 
-      val atom = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree, student1.id)
-
-      doReturn(Success(Some(student1))).doReturn(Success(Some(degree))).when(repository).get(anyObject())(anyObject())
+      doReturn(Success(Some(student)))
+        .doReturn(Success(Some(studentAtom)))
+        .when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         HttpVerbs.GET,
-        "/atomic/users/" + student1.id
+        "/atomic/users/" + student.id
       )
 
-      val result = controller.userAtomic(User.generateUri(student1)(namespace))(request)
+      val result = controller.userAtomic(User.generateUri(student)(namespace))(request)
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(atom)
+      contentAsJson(result) shouldBe Json.toJson(studentAtom)
     }
 
     "atomize all users, regardless of their subcategory" in {
-      val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
+      val degree = Degree("Degree1", "DD1", Degree.randomUUID)
 
-      def jsonAtomic(s: Set[User]): Set[JsValue] = s map {
+      def atomize(s: Set[User]): Set[JsValue] = s map {
         case s: Student =>
-          Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
+          Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree, s.id))
         case e: Employee =>
           Json.toJson(e)
       }
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree1.id)
-      val student3 = Student("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree1.id)
+      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
+      val studentAtom1 = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree, student1.id)
+      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree.id)
+      val studentAtom2 = StudentAtom(student2.systemId, student2.lastname, student2.firstname, student2.email, student2.registrationId, degree, student2.id)
+      val student3 = Student("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree.id)
+      val studentAtom3 = StudentAtom(student3.systemId, student3.lastname, student3.firstname, student3.email, student3.registrationId, degree, student3.id)
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
       val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
 
-      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.getAll[User](anyObject())).thenReturn(Success(users))
+      doReturn(Success(Some(studentAtom1))).
+        doReturn(Success(Some(studentAtom2))).
+        doReturn(Success(Some(studentAtom3))).
+        when(repository).get(anyObject())(anyObject())
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -145,11 +147,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       )
 
       val result = controller.allUserAtomic()(request)
-      val jsonVals = jsonAtomic(users)
+      val expected = atomize(users)
       val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      jsonVals.forall { json =>
+      expected.forall { json =>
         stringResult contains json.toString
       } shouldBe true
     }
@@ -172,31 +174,31 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize a single student" in {
-      val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
-      val atom = StudentAtom(student1.systemId, student1.lastname, student1.firstname, student1.email, student1.registrationId, degree1, student1.id)
+      val degree = Degree("label", "abbrev")
+      val studentAtom = StudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, UUID.randomUUID())
 
-      doReturn(Success(Some(student1))).doReturn(Success(Some(degree1))).when(repository).get(anyObject())(anyObject())
+      when(repository.get[StudentAtom](anyObject())(anyObject())).thenReturn(Success(Some(studentAtom)))
 
       val request = FakeRequest(
         HttpVerbs.GET,
-        "/atomic/students/" + student1.id
+        "/atomic/students/" + studentAtom.id
       )
 
-      val result = controller.studentAtomic(User.generateUri(student1)(namespace))(request)
+      val result = controller.studentAtomic(User.generateUri(studentAtom.id)(namespace))(request)
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(atom)
+      contentAsJson(result) shouldBe Json.toJson(studentAtom)
     }
 
     "get all students" in {
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+      val degree = Degree("label", "abbrev")
+      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
+      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree.id)
+      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", degree.id)
 
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.getAll[Student](anyObject())).thenReturn(Success(students))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -215,33 +217,26 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize all students" in {
-      val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
+      val degree = Degree("Degree1", "DD1", Degree.randomUUID)
 
-      def jsonAtomic(students: Set[Student]): Set[JsValue] = students map { s =>
-        Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
-      }
+      val studentAtom1 = StudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, UUID.randomUUID())
+      val studentAtom2 = StudentAtom("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree, UUID.randomUUID())
+      val studentAtom3 = StudentAtom("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree, UUID.randomUUID())
 
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree1.id)
-      val student3 = Student("ai3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree1.id)
-      val students: Set[Student] = Set(student1, student2, student3)
+      val studentAtoms: Set[StudentAtom] = Set(studentAtom1, studentAtom2, studentAtom3)
 
-      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
+      when(repository.getAll[StudentAtom](anyObject())).thenReturn(Success(studentAtoms))
 
       val request = FakeRequest(
         GET,
         "/atomic/students"
       )
 
+      val expected: Set[JsValue] = Set(studentAtom1, studentAtom2, studentAtom3) map (a => Json.toJson(a))
       val result = controller.allAtomicStudents()(request)
-      val jsonVals = jsonAtomic(students)
-      val stringResult = contentAsString(result)
 
       status(result) shouldBe OK
-      jsonVals.forall { json =>
-        stringResult contains json.toString
-      } shouldBe true
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     "get a single employee" in {
@@ -266,7 +261,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
       val employees: Set[Employee] = Set(employee1, employee2, employee3)
 
-      when(repository.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
+      when(repository.getAll[Employee](anyObject())).thenReturn(Success(employees))
 
       val request = FakeRequest(
         HttpVerbs.GET,
@@ -293,7 +288,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", Degree.randomUUID)
       val students: Set[Student] = Set(student1, student2, student3)
 
-      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
+      when(repository.getAll[Student](anyObject())).thenReturn(Success(students))
 
       val request = FakeRequest(
         GET,
@@ -311,61 +306,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       } shouldBe true
     }
 
-    "get atomized students specific to a particular degree" in {
-      val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
-
-      def jsonAtomic(students: TraversableOnce[Student]): Set[JsValue] = (students map { s =>
-        Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
-      }).toSet
-
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree1.id)
-      val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
-      val students: Set[Student] = Set(student1, student2, student3)
-
-      when(repository.get[Student](anyObject(), anyObject())).thenReturn(Success(students))
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
-
-      val request = FakeRequest(
-        GET,
-        "/atomic/students?degree=" + degree1.id
-      )
-
-      val result = controller.allAtomicStudents()(request)
-      val jsonVals = jsonAtomic(Set(student1, student2))
-      val stringResult = contentAsString(result)
-
-      status(result) shouldBe OK
-      jsonVals.forall { json =>
-        stringResult contains json.toString
-      } shouldBe true
-    }
-
-    "get employees specific to a particular status" in {
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "lecturer")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "employee")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "lecturer")
-      val employees: Set[Employee] = Set(employee1, employee2, employee3)
-      val lecturers: Set[Employee] = Set(employee1, employee3)
-
-      when(repository.get[Employee](anyObject(), anyObject())).thenReturn(Success(employees))
-
-      val request = FakeRequest(
-        HttpVerbs.GET,
-        "/employees?status=lecturer"
-      )
-
-      val result = controller.allUsers()(request)
-
-      val jsonVals = lecturers map (l => Json.toJson(l))
-
-      status(result) shouldBe OK
-      val stringResult = contentAsString(result)
-
-      jsonVals.forall { json =>
-        stringResult contains json.toString
-      } shouldBe true
-    }
 
     "get users specific to some particular filter attribute" in {
       import UserController.{firstnameAttribute, lastnameAttribute, statusAttribute, degreeAttribute, systemIdAttribute}
@@ -388,7 +328,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       val systemIders: Set[Student] = Set(student1, student2)
       val systemIder: Set[Student] = Set(student5)
 
-      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
+      when(repository.getAll[User](anyObject())).thenReturn(Success(users))
 
       val request1 = FakeRequest(
         HttpVerbs.GET,
@@ -474,55 +414,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
       jsonVals6.forall { json =>
         stringResult6 contains json.toString
-      } shouldBe true
-    }
-
-    "get atomized users specific to some particular filter attribute" in {
-      val degree1 = Degree("Degree1", "DD1", Degree.randomUUID)
-
-      def jsonAtomic(students: TraversableOnce[Student]): Set[JsValue] = (students map { s =>
-        Json.toJson(StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, degree1, s.id))
-      }).toSet
-
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
-      val student2 = Student("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", degree1.id)
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "lecturer")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "employee")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "lecturer")
-      val users: Set[User] = Set(student1, student2, student3, employee1, employee2, employee3)
-      val lecturers: Set[Employee] = Set(employee1, employee3)
-      val degreers: Set[Student] = Set(student1, student3)
-
-      when(repository.get[User](anyObject(), anyObject())).thenReturn(Success(users))
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(degree1)))
-
-      val request1 = FakeRequest(
-        HttpVerbs.GET,
-        "/atomic/users?degree=" + degree1.id
-      )
-
-      val request2 = FakeRequest(
-        HttpVerbs.GET,
-        "/atomic/users?status=lecturer"
-      )
-
-      val result1 = controller.allUserAtomic()(request1)
-      val result2 = controller.allUserAtomic()(request2)
-
-      val jsonVals1 = jsonAtomic(degreers)
-      val jsonVals2 = lecturers map (a => Json.toJson(a))
-      val stringResult1 = contentAsString(result1)
-      val stringResult2 = contentAsString(result2)
-
-      status(result1) shouldBe OK
-      jsonVals1.forall { json =>
-        stringResult1 contains json.toString
-      } shouldBe true
-
-      status(result2) shouldBe OK
-      jsonVals2.forall { json =>
-        stringResult2 contains json.toString
       } shouldBe true
     }
 

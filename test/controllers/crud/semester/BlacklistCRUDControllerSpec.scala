@@ -8,16 +8,16 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Writes, JsValue}
 import utils.LwmMimeType
 
-class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist] {
+class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist, Blacklist] {
 
   import ops._
-  import bindings.BlacklistBinding.blacklistBinder
+  import bindings.BlacklistDescriptor
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
 
   override def entityTypeName: String = "blacklist"
 
-  override val controller: AbstractCRUDController[BlacklistProtocol, Blacklist] = new BlacklistCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: BlacklistCRUDController = new BlacklistCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = entityToPass
 
@@ -30,9 +30,17 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates, Blacklist.randomUUID)
 
-  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
-
   override implicit val jsonWrites: Writes[Blacklist] = Blacklist.writes
+
+  override val atomizedEntityToPass: Blacklist = entityToPass
+
+  override val atomizedEntityToFail: Blacklist = entityToFail
+
+  override val jsonWritesAtom: Writes[Blacklist] = jsonWrites
+
+  implicit val blacklistBinder = BlacklistDescriptor.binder
+
+  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   override val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 

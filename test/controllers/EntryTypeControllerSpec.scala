@@ -2,10 +2,9 @@ package controllers
 
 import base.TestBaseDefinition
 import models.labwork.AssignmentEntryType
-import models.labwork.AssignmentEntryType._
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.{RoleService, SessionHandlingService}
@@ -41,7 +40,7 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(expectedEntryType)
+      contentAsJson(result) shouldBe Json.toJson(expectedEntryType)(Writes.set(AssignmentEntryType.writes))
     }
 
     "return the expected content type" in {

@@ -18,9 +18,9 @@ case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, messa
 
 case class AnnotationProtocol(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String)
 
-case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, id: UUID)
+case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, id: UUID) extends UniqueEntity
 
-object Annotation extends UriGenerator[Annotation] with JsonSerialisation[AnnotationProtocol, Annotation] {
+object Annotation extends UriGenerator[Annotation] with JsonSerialisation[AnnotationProtocol, Annotation, AnnotationAtom] {
 
   override def base: String = "annotations"
 
@@ -28,5 +28,5 @@ object Annotation extends UriGenerator[Annotation] with JsonSerialisation[Annota
 
   override implicit def writes: Writes[Annotation] = Json.writes[Annotation]
 
-  implicit def atomicWrites: Writes[AnnotationAtom] = Json.writes[AnnotationAtom]
+  override implicit def writesAtom: Writes[AnnotationAtom] = Json.writes[AnnotationAtom]
 }

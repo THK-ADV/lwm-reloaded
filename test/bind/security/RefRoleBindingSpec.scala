@@ -1,8 +1,9 @@
 package bind.security
 
 import base.SesameDbSpec
-import models.Course
-import models.security.{Role, RefRole}
+import models.{Course, CourseAtom}
+import models.security.{Permission, RefRole, RefRoleAtom, Role}
+import models.users.Employee
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import store.bind.Bindings
@@ -10,11 +11,13 @@ import store.bind.Bindings
 import scala.util.{Failure, Success}
 
 class RefRoleBindingSpec extends SesameDbSpec {
-
-  val bindings = Bindings[Sesame](namespace)
-  import bindings.RefRoleBinding.refRoleBinder
-  import bindings.{uuidBinder, uuidRefBinder}
+  import bindings.{
+  RefRoleDescriptor,
+  uuidBinder,
+  uuidRefBinder}
   import ops._
+
+  implicit val refRoleBinder = RefRoleDescriptor.binder
 
   val refRoleWithCourse = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
 
@@ -63,6 +66,50 @@ class RefRoleBindingSpec extends SesameDbSpec {
           s shouldEqual refRoleWithoutCourse
         case Failure(e) =>
           fail(s"Unable to deserialise refRole graph: $e")
+      }
+    }
+
+    "return a refRole atom based on an RDF graph representation" in {
+      import bindings.{
+      EmployeeDescriptor,
+      CourseDescriptor,
+      RoleDescriptor,
+      RefRoleDescriptor,
+      RefRoleAtomDescriptor}
+
+      val lecturer = Employee("systemId1", "lastname1", "firstname1", "email1", "lecturer")
+      val course = Course("label", "description", "abbr", lecturer.id, 1)
+      val role1 = Role("role1", Set(Permission("1"), Permission("2")))
+      val role2 = Role("role2", Set(Permission("3")))
+      val refrole1 = RefRole(Some(course.id), role1.id)
+      val refrole2 = RefRole(None, role2.id)
+
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+
+      val refroleAtom1 = RefRoleAtom(Some(courseAtom), role1, refrole1.id)
+      val refroleAtom2 = RefRoleAtom(None, role2, refrole2.id)
+
+      repo add lecturer
+      repo add course
+      repo addMany List(role1, role2)
+      repo addMany List(refrole1, refrole2)
+
+      repo.get[RefRoleAtom](RefRole.generateUri(refrole1)) match {
+        case Success(Some(atom)) =>
+          atom shouldEqual refroleAtom1
+        case Success(None) =>
+          fail("There should exist one refrole")
+        case Failure(e) =>
+          fail(s"RefRoleAtom1 could not be deserialised: $e")
+      }
+
+      repo.get[RefRoleAtom](RefRole.generateUri(refrole2)) match {
+        case Success(Some(atom)) =>
+          atom shouldEqual refroleAtom2
+        case Success(None) =>
+          fail("There should exist one refrole")
+        case Failure(e) =>
+          fail(s"RefRoleAtom2 could not be deserialised: $e")
       }
     }
   }

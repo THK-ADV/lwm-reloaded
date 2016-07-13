@@ -97,10 +97,10 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
 
       val result = controller.get(student.toString)(request)
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "errors" -> errMsg
+        "message" -> errMsg
       )
     }
 
@@ -144,8 +144,8 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getManyExpanded[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(Set(ap)))
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap)))
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
 
       val request = FakeRequest(
@@ -177,8 +177,8 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getManyExpanded[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(Set(AssignmentPlan.empty)))
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(AssignmentPlan.empty)))
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
 
       val request = FakeRequest(
@@ -203,8 +203,8 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getManyExpanded[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.get[AssignmentPlan](anyObject(), anyObject())).thenReturn(Success(Set(ap)))
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
+      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap)))
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
       when(repository.addMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(Set(PointedGraph[Rdf](factory.createBNode()))))
 

@@ -10,7 +10,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 class PermissionController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
-  with JsonSerialisation[Permission, Permission]
+  with JsonSerialisation[Permission, Permission, Permission]
   with BaseNamespace
   with Secured
   with SessionChecking
@@ -19,9 +19,11 @@ class PermissionController(val repository: SesameRepository, val sessionService:
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.permissionV1Json
 
-  override implicit def reads: Reads[Permission] = Permission.reads
+  override implicit val reads: Reads[Permission] = Permission.reads
 
-  override implicit def writes: Writes[Permission] = Permission.writes
+  override implicit val writes: Writes[Permission] = Permission.writes
+
+  override val writesAtom: Writes[Permission] = Permission.writesAtom
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
     Ok(Json.toJson(Permissions.all)).as(mimeType)

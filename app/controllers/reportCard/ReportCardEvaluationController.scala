@@ -2,7 +2,7 @@ package controllers.reportCard
 
 import java.util.UUID
 
-import controllers.crud.{Atomic, SecureControllerContext, SessionChecking, _}
+import controllers.crud.{SecureControllerContext, SessionChecking, _}
 import controllers.reportCard.ReportCardEvaluationController._
 import models.labwork._
 import models.security.Permissions.{god, reportCardEvaluation}
@@ -11,14 +11,15 @@ import models.{Course, UriGenerator}
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
-import play.api.mvc.{Controller, Result}
+import play.api.libs.json.{Json, Reads, Writes}
+import play.api.mvc.Controller
 import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import store.bind.Descriptor.Descriptor
+import store.{Namespace, SemanticUtils, SesameRepository}
+import utils.{Attempt, Return, Continue, LwmMimeType}
+import utils.RequestOps._
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -32,154 +33,36 @@ object ReportCardEvaluationController {
 class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
   extends Controller
     with BaseNamespace
-    with JsonSerialisation[ReportCardEvaluation, ReportCardEvaluation]
-    with SesameRdfSerialisation[ReportCardEvaluation]
+    with JsonSerialisation[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]
+    with RdfSerialisation[ReportCardEvaluation, ReportCardEvaluationAtom]
     with ContentTyped
-    with Chunkable[ReportCardEvaluation]
+    with Chunked
     with Secured
     with SessionChecking
     with SecureControllerContext
-    with Atomic[ReportCardEvaluation]
-    with Filterable[ReportCardEvaluation] {
-
-  override implicit def reads: Reads[ReportCardEvaluation] = ReportCardEvaluation.reads
-
-  override implicit def writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
-
-  override implicit def rdfReads: FromPG[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.reportCardEvaluationBinding
-
-  override implicit def classUrisFor: ClassUrisFor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.classUri
-
-  override implicit def uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
-
-  override implicit def rdfWrites: ToPG[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationBinding.reportCardEvaluationBinding
+    with Stored
+    with Filterable[ReportCardEvaluation]
+    with Consistent[ReportCardEvaluation, ReportCardEvaluation]
+    with ModelConverter[ReportCardEvaluation, ReportCardEvaluation]
+    with Basic[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
-  override protected def atomize(output: ReportCardEvaluation): Try[Option[JsValue]] = {
-    import ReportCardEvaluation.atomicWrites
-    import defaultBindings.LabworkBinding.labworkBinder
-    import defaultBindings.StudentBinding.studentBinder
+  override implicit val descriptor: Descriptor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
 
-    for {
-      student <- repository.get[Student](User.generateUri(output.student))
-      labwork <- repository.get[Labwork](Labwork.generateUri(output.labwork))
-    } yield for {
-      s <- student; l <- labwork
-    } yield Json.toJson(
-      ReportCardEvaluationAtom(s, l, output.label, output.bool, output.int, output.id)
-    )
-  }
+  override implicit val descriptorAtom: Descriptor[Sesame, ReportCardEvaluationAtom] = defaultBindings.ReportCardEvaluationAtomDescriptor
 
-  // TODO delete existing evals before adding
-  def create(course: String, labwork: String) = createWith(course, labwork) { evals =>
-    repository.addMany[ReportCardEvaluation](evals) map { _ =>
-      Some(Created.chunked(chunkSimple(evals)).as(mimeType))
-    }
-  }
+  override implicit val reads: Reads[ReportCardEvaluation] = ReportCardEvaluation.reads
 
-  // TODO delete existing evals before adding
-  def createAtomic(course: String, labwork: String) = createWith(course, labwork) { evals =>
-    repository.addMany[ReportCardEvaluation](evals).map { _ =>
-      Some(Created.chunked(chunkAtoms(evals)).as(mimeType))
-    }
-  }
+  override implicit val writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
 
-  def all(course: String, labwork: String) = allWith(course, labwork) { evals =>
-    Success(Some(Ok.chunked(chunkSimple(evals)).as(mimeType)))
-  }
+  override implicit val writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
 
-  def allAtomic(course: String, labwork: String) = allWith(course, labwork) { evals =>
-    Success(Some(Ok.chunked(chunkAtoms(evals)).as(mimeType)))
-  }
+  override implicit val uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
 
-  def get(student: String) = getWith(student) { evals =>
-    Success(Some(Ok.chunked(chunkSimple(evals)).as(mimeType)))
-  }
+  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
 
-  def getAtomic(student: String) = getWith(student) { evals =>
-    Success(Some(Ok.chunked(chunkAtoms(evals)).as(mimeType)))
-  }
-
-  def preview(course: String, labwork: String) = previewWith(course, labwork) { evals =>
-    Success(Some(Ok.chunked(chunkSimple(evals)).as(mimeType)))
-  }
-
-  def previewAtomic(course: String, labwork: String) = previewWith(course, labwork) { evals =>
-    Success(Some(Ok.chunked(chunkAtoms(evals)).as(mimeType)))
-  }
-
-  private def evalsByService(labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = {
-    import defaultBindings.AssignmentPlanBinding._
-    import defaultBindings.ReportCardEntryBinding.reportCardEntryBinder
-    import utils.Ops.MonadInstances.tryM
-    import utils.Ops.TraverseInstances.travO
-    import utils.Ops._
-    import store.sparql.select
-    import store.sparql.select._
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val labworkId = UUID.fromString(labwork)
-    val cardsQuery = select ("cards") where {
-      **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labworkId)))
-    }
-
-    val cardsPrepared = repository.prepareQuery(cardsQuery).
-      select(_.get("cards")).
-      transform(_.fold(List.empty[Value])(vs => vs)).
-      requestAll[Set, ReportCardEntry](vs => repository.getManyExpanded[ReportCardEntry](vs.map(_.stringValue)))
-
-    val result = for {
-      assignmentPlan <- repository.get[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
-      cards <- cardsPrepared.run
-      optEvals = assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
-      result <- optEvals.map(toResult).sequenceM
-    } yield result.flatten
-
-    handleResult(result)
-  }
-
-  private def evalsByRepo(filter: Map[String, Seq[String]])(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = {
-    val result = getWithFilter(filter)(Set.empty) flatMap toResult
-    handleResult(result)
-  }
-
-  private def previewWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(Create) action { implicit request =>
-    evalsByService(labwork)(toResult)
-  }
-
-  private def createWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    evalsByService(labwork)(toResult)
-  }
-
-  private def allWith(course: String, labwork: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = restrictedContext(course)(GetAll) action { implicit request =>
-    evalsByRepo(Map(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(toResult)
-  }
-
-  private def getWith(student: String)(toResult: Set[ReportCardEvaluation] => Try[Option[Result]]) = contextFrom(Get) action { implicit request =>
-    evalsByRepo(Map(studentAttribute -> Seq(student)))(toResult)
-  }
-
-  private def handleResult(result: Try[Option[Result]]) = result match {
-    case Success(s) =>
-      s match {
-        case Some(r) =>
-          r
-        case None =>
-          NotFound(Json.obj(
-            "status" -> "KO",
-            "message" -> "No such element..."
-          ))
-      }
-    case Failure(e) =>
-      InternalServerError(Json.obj(
-        "status" -> "KO",
-        "errors" -> e.getMessage
-      ))
-  }
+  override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = input
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
@@ -196,7 +79,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEvaluation]): Try[Set[ReportCardEvaluation]] = {
     import store.sparql.select
     import store.sparql.select._
-
+    import utils.Ops.MonadInstances.listM
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
@@ -214,11 +97,119 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     } flatMap { clause =>
       val query = select distinct "entries" where clause
 
-      repository.prepareQuery(query).
-        select(_.get("entries")).
-        transform(_.fold(List.empty[String])(_.map(_.stringValue))).
-        requestAll(repository.getMany(_)).
-        run
+      repository.prepareQuery(query)
+        .select(_.get("entries"))
+        .transform(_.fold(List.empty[Value])(identity))
+        .map(_.stringValue())
+        .requestAll(repository.getMany[ReportCardEvaluation](_))
+        .run
+    }
+  }
+
+  def create(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+    evaluate(labwork)
+      .flatMap(set => addLots(set.toList))
+      .mapResult(evals => Created(Json.toJson(evals)).as(mimeType))
+  }
+
+
+  def createAtomic(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+    evaluate(labwork)
+      .flatMap(set => addLots(set.toList))
+      .flatMap(list => retrieveLots[ReportCardEvaluationAtom](list map ReportCardEvaluation.generateUri))
+      .mapResult(evals => Created(Json.toJson(evals)).as(mimeType))
+  }
+
+  def all(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    val rebased = rebase(ReportCardEvaluation.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    filtered(rebased)(Set.empty)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def allAtomic(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
+    val rebased = rebase(ReportCardEvaluation.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    filtered(rebased)(Set.empty)
+      .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def get(student: String) = contextFrom(Get) action { implicit request =>
+    val rebased = rebase(ReportCardEvaluation.generateBase, studentAttribute -> Seq(student))
+    filtered(rebased)(Set.empty)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
+    val rebased = rebase(ReportCardEvaluation.generateBase, studentAttribute -> Seq(student))
+    filtered(rebased)(Set.empty)
+      .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    evaluate(labwork)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    evaluate(labwork)
+      .flatMap(atomic)
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def evaluate(labwork: String): Attempt[Set[ReportCardEvaluation]] = {
+    import defaultBindings.{AssignmentPlanDescriptor, ReportCardEntryDescriptor}
+    import store.sparql.select
+    import store.sparql.select._
+
+    val lwm = LWMPrefix[repository.Rdf]
+    val rdf = RDFPrefix[repository.Rdf]
+
+    val labworkId = UUID.fromString(labwork)
+    val cardsQuery = select("cards") where {
+      **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
+        **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labworkId)))
+    }
+
+    val cardsPrepared = repository.prepareQuery(cardsQuery).
+      select(_.get("cards")).
+      transform(_.fold(List.empty[Value])(vs => vs)).
+      requestAll[Set, ReportCardEntry](vs => repository.getMany[ReportCardEntry](vs.map(_.stringValue)))
+
+    optional {
+      for {
+        assignmentPlan <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labworkId)) // TODO query does not work, there are two objects to expand
+        cards <- cardsPrepared.run
+      } yield assignmentPlan.map(ap => reportCardService.evaluate(ap, cards))
+    }
+  }
+
+
+  def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {
+    import defaultBindings.{LabworkDescriptor, StudentDescriptor}
+
+    SemanticUtils.collect {
+      evals map { eval =>
+        for {
+          optLabwork <- repository.get[Labwork](Labwork.generateUri(eval.labwork))
+          optStudent <- repository.get[Student](User.generateUri(eval.student))
+        } yield for {
+          l <- optLabwork; s <- optStudent
+        } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.id)
+      }
+    } match {
+      case Success(set) => Continue(set)
+      case Failure(e) => Return(InternalServerError(
+        Json.obj(
+          "status" -> "KO",
+          "errors" -> s"Error while generating groups for labwork: ${e.getMessage}"
+        )))
     }
   }
 }

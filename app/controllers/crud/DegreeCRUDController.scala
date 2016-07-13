@@ -1,15 +1,13 @@
 package controllers.crud
 
-import java.util.UUID
-
 import models.security.Permissions._
 import models.{Degree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
-import org.w3.banana.binder.{ClassUrisFor, FromPG, ToPG}
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -17,25 +15,38 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree]{
-  override implicit def reads: Reads[DegreeProtocol] = Degree.reads
+class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree, Degree]{
 
-  override implicit def writes: Writes[Degree] = Degree.writes
+  override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
-  override implicit def rdfReads: FromPG[Sesame, Degree] = defaultBindings.DegreeBinding.degreeBinder
+  override implicit val descriptor: Descriptor[Sesame, Degree] = defaultBindings.DegreeDescriptor
 
-  override implicit def uriGenerator: UriGenerator[Degree] = Degree
+  override val descriptorAtom: Descriptor[Sesame, Degree] = descriptor
 
-  override implicit def rdfWrites: ToPG[Sesame, Degree] = defaultBindings.DegreeBinding.degreeBinder
+  override implicit val reads: Reads[DegreeProtocol] = Degree.reads
 
-  override implicit def classUrisFor: ClassUrisFor[Sesame, Degree] = defaultBindings.DegreeBinding.classUri
+  override implicit val writes: Writes[Degree] = Degree.writes
+
+  override implicit val writesAtom: Writes[Degree] = Degree.writesAtom
+
+  override implicit val uriGenerator: UriGenerator[Degree] = Degree
+
+  override protected def coatomic(atom: Degree): Degree = atom
+
+  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
+    input.label == output.label && input.abbreviation == output.abbreviation
+  }
 
   override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
     case Some(degree) => Degree(input.label, input.abbreviation, degree.id)
     case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
   }
 
-  override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(degree.get)
+    case GetAll => PartialSecureBlock(degree.getAll)
+    case _ => PartialSecureBlock(prime)
+  }
 
   override protected def existsQuery(input: DegreeProtocol): (Clause, select.Var) = {
     lazy val prefixes = LWMPrefix[repository.Rdf]
@@ -51,17 +62,6 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
     }, v("id"))
   }
 
-  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
-    input.label == output.label && input.abbreviation == output.abbreviation
-  }
-
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)
 
-  override protected def atomize(output: Degree): Try[Option[JsValue]] = Success(Some(Json.toJson(output)))
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(degree.get)
-    case GetAll => PartialSecureBlock(degree.getAll)
-    case _ => PartialSecureBlock(prime)
-  }
 }

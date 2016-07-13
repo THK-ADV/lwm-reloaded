@@ -130,7 +130,7 @@ object Ops { self =>
     val start = System.nanoTime()
     val res = f()
     val end = System.nanoTime()
-    println(s"$msg took: ${(end - start) / 1e6}")
+    println(s"$msg took: ${(end - start) / 1e6} ms")
     res
   }
 

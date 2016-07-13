@@ -14,12 +14,16 @@ import scala.util.{Failure, Success}
 class AssignmentPlanBindingSpec extends SesameDbSpec {
 
   import ops._
+  import bindings.{
+  AssignmentEntryDescriptor,
+  AssignmentEntryTypeDescriptor,
+  AssignmentPlanDescriptor,
+  uuidBinder,
+  uuidRefBinder}
 
-  val bindings = Bindings[Sesame](namespace)
-  import bindings.AssignmentEntryBinding.assignmentEntryBinder
-  import bindings.AssignmentEntryTypeBinding.assignmentEntryTypeBinder
-  import bindings.AssignmentPlanBinding.assignmentPlanBinder
-  import bindings.{uuidBinder, uuidRefBinder}
+  implicit val assignmentPlanBinder = AssignmentPlanDescriptor.binder
+  implicit val assignmentEntryBinder = AssignmentEntryDescriptor.binder
+  implicit val assignmentEntryTypeBinder = AssignmentEntryTypeDescriptor.binder
 
   val assignmentPlan = AssignmentPlan(UUID.randomUUID(), 2, 2, Set(
     AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),

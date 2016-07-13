@@ -15,16 +15,10 @@ import scala.util.{Failure, Success}
 class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val bindings = Bindings[Sesame](ns)
-  val lwm = LWMPrefix[Sesame]
-
-  import bindings.EmployeeBinding._
-  import bindings.RefRoleBinding._
-  import bindings.RoleBinding._
-  import bindings.StudentBinding._
-
   val repo = SesameRepository(ns)
+
+  val bindings = Bindings[this.repo.Rdf](ns)
+  val lwm = LWMPrefix[this.repo.Rdf]
 
   val resolver = new LwmResolvers(repo)
   val roleService = new RoleService(repo)
@@ -32,6 +26,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
   "A UsernameResolverSpec " should {
 
     "resolve a given username properly" in {
+      import bindings.StudentDescriptor
+
       val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
@@ -56,6 +52,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "return `None` when username is not found" in {
+      import bindings.StudentDescriptor
+
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
@@ -70,6 +68,12 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "resolve a student, employee and their authorities when non-existent" in {
+      import bindings.{
+      RoleDescriptor,
+      RefRoleDescriptor,
+      StudentDescriptor,
+      EmployeeDescriptor
+      }
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", "status")
 
@@ -122,6 +126,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "stop trying to resolve somebody when other dependencies fail" in {
+      import bindings.StudentDescriptor
+
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
       resolver.missingUserData(student1)
@@ -141,7 +147,12 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "stop and alert back when no appropriate `RefRole` was found" in {
-      import bindings.EmployeeBinding._
+      import bindings.{
+      RoleDescriptor,
+      RefRoleDescriptor,
+      EmployeeDescriptor
+      }
+
       import ops._
       val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val employee = Employee("system id", "last name", "first name", "email", "status")
@@ -160,14 +171,14 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
       resolver.missingUserData(employee) match {
         case Success(g) =>
-          val demployee = g.as[Employee]
+          val demployee = g.as[Employee](EmployeeDescriptor.binder)
           demployee shouldBe Success(employee)
         case Failure(_) => fail("Should've found an appropriate `RefRole` or Role")
       }
     }
 
     "successfully resolve a degrees based on theirs abbreviations" in {
-      import bindings.DegreeBinding.degreeBinder
+      import bindings.DegreeDescriptor
 
       import scala.util.Random.nextInt
 
@@ -183,7 +194,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     }
 
     "throw an exception when degree cant be resolved cause its not found" in {
-      import bindings.DegreeBinding.degreeBinder
+      import bindings.DegreeDescriptor
 
       val degree1 = Degree("label", "abbrev", Degree.randomUUID)
       val degree2 = Degree("label2", "abbrev“", Degree.randomUUID)

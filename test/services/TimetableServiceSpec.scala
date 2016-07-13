@@ -40,7 +40,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
   val globalBlacklist = Set(Blacklist("Profil hoch 2", profileWeek, Blacklist.randomUUID), Blacklist("Weihnachten", christmas, Blacklist.randomUUID))
-  when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(globalBlacklist))
+  when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(globalBlacklist))
 
   "A TimetableService" should {
 

@@ -2,9 +2,8 @@ package controllers.crud.labwork
 
 import java.net.URLEncoder
 import java.util.UUID
-
 import controllers.crud.labwork.LabworkApplicationCRUDController._
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models._
 import models.labwork.{Labwork, LabworkApplication, LabworkApplicationAtom, LabworkApplicationProtocol}
 import models.semester.Semester
@@ -18,10 +17,9 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
+import scala.util.Try
 
-import scala.util.{Failure, Success, Try}
-
-class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication] {
+class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -39,7 +37,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   )
   override val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
-  override val controller: AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication] = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService) {
+  override val controller: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = entityToPass
 
@@ -54,8 +52,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
   override implicit val jsonWrites: Writes[LabworkApplication] = LabworkApplication.writes
 
-  import bindings.LabworkApplicationBinding._
+  override implicit def jsonWritesAtom: Writes[LabworkApplicationAtom] = LabworkApplication.writesAtom
+
+  import bindings.LabworkApplicationDescriptor
   import ops._
+  implicit val labworkApplicationBinder = LabworkApplicationDescriptor.binder
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -70,9 +71,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     "applicant" -> entityToPass.applicant,
     "friends" -> (entityToPass.friends + User.randomUUID + User.randomUUID)
   )
+  override val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
 
-  val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
-  val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
+  override val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
 
   val emptyLabworkApps = Set.empty[LabworkApplication]
 
@@ -92,7 +93,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
       val applications = Set(first, second, third, fourth)
 
-      when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+      when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
       val request = FakeRequest(
         GET,
@@ -117,7 +118,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -141,7 +142,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -163,7 +164,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -190,7 +191,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -217,7 +218,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -240,7 +241,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -264,7 +265,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -288,7 +289,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -311,7 +312,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -335,7 +336,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -359,7 +360,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val fourth = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID), tthen)
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -384,7 +385,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -409,7 +410,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -435,7 +436,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val fourth = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID), after)
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -461,7 +462,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -487,7 +488,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request = FakeRequest(
       GET,
@@ -511,7 +512,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     val fourth = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID), before)
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request1 = FakeRequest(
       GET,
@@ -546,7 +547,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request1 = FakeRequest(
       GET,
@@ -582,7 +583,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
     val applications = Set(first, second, third, fourth)
 
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Try(applications))
+    when(repository.getAll[LabworkApplication](anyObject())).thenReturn(Try(applications))
 
     val request1 = FakeRequest(
       GET,
@@ -604,127 +605,5 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     status(result2) shouldBe OK
     contentType(result2) shouldBe Some[String](mimeType)
     contentAsJson(result2) shouldBe Json.toJson(emptyLabworkApps)
-  }
-
-  s"successfully get a single $entityTypeName atomized" in {
-    import LabworkApplication.atomicWrites
-
-    doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(labworkToPass))).
-      doReturn(Success(Some(applicantToPass))).
-      when(repository).get(anyObject())(anyObject())
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-  }
-
-  s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
-    doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(labworkToPass))).
-      doReturn(Success(None)).
-      when(repository).get(anyObject())(anyObject())
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe NOT_FOUND
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "message" -> "No such element..."
-    )
-  }
-
-  s"not get a single $entityTypeName atomized when there is an exception" in {
-    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-    doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(labworkToPass))).
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
-    when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(friendsToPass))
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s/${entityToPass.id}"
-    )
-    val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-    status(result) shouldBe INTERNAL_SERVER_ERROR
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "errors" -> errorMessage
-    )
-  }
-
-  s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
-    import LabworkApplication.atomicWrites
-
-    val labworkApplications = Set(entityToPass, entityToFail)
-
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
-
-    doReturn(Success(Some(labworkToPass))).
-      doReturn(Success(Some(applicantToPass))).
-      doReturn(Success(Some(labworkToFail))).
-      doReturn(Success(Some(applicantToFail))).
-      when(repository).get(anyObject())(anyObject())
-
-    doReturn(Success(friendsToPass)).
-      doReturn(Success(friendsToFail)).
-      when(repository).getMany(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s"
-    )
-    val result = controller.allAtomic()(request)
-
-    status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-  }
-
-  s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
-    val labworkApplications = Set(entityToPass, entityToFail)
-    val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-    when(repository.get[LabworkApplication](anyObject(), anyObject())).thenReturn(Success(labworkApplications))
-
-    doReturn(Success(Some(labworkToPass))).
-      doReturn(Success(Some(applicantToPass))).
-      doReturn(Success(Some(labworkToFail))).
-      doReturn(Success(Some(applicantToFail))).
-      when(repository).get(anyObject())(anyObject())
-
-    doReturn(Failure(new Exception(errorMessage))).
-      doReturn(Success(friendsToFail)).
-      when(repository).getMany(anyObject())(anyObject())
-
-    val request = FakeRequest(
-      GET,
-      s"/${entityTypeName}s"
-    )
-    val result = controller.allAtomic()(request)
-
-    status(result) shouldBe INTERNAL_SERVER_ERROR
-    contentType(result) shouldBe Some("application/json")
-    contentAsJson(result) shouldBe Json.obj(
-      "status" -> "KO",
-      "errors" -> errorMessage
-    )
   }
 }

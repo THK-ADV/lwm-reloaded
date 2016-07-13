@@ -10,10 +10,13 @@ import scala.util.{Failure, Success}
 
 class RoomBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-  import bindings.uuidBinder
-  import bindings.RoomBinding._
+  import bindings.{
+  RoomDescriptor,
+  uuidBinder
+  }
   import ops._
+
+  implicit val roomBinding = RoomDescriptor.binder
 
   val room = Room("label", "description", Room.randomUUID)
   val roomGraph = (

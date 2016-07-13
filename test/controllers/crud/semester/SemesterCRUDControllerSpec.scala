@@ -1,9 +1,7 @@
 package controllers.crud.semester
 
-import java.util.UUID
-
 import org.joda.time.LocalDate
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models.semester.{SemesterProtocol, Semester}
 import org.joda.time.DateTime
 import org.mockito.Matchers
@@ -19,15 +17,21 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester] {
+class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester, Semester] {
 
   override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
 
   override val entityToFail: Semester = Semester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
 
-  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
+  override implicit val jsonWrites: Writes[Semester] = Semester.writes
 
-  override val controller: AbstractCRUDController[SemesterProtocol, Semester] = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
+  override val atomizedEntityToPass: Semester = entityToPass
+
+  override val atomizedEntityToFail: Semester = entityToFail
+
+  override val jsonWritesAtom: Writes[Semester] = jsonWrites
+
+  override val controller: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
 
     override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = entityToPass
 
@@ -36,7 +40,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
   }
 
-  override implicit val jsonWrites: Writes[Semester] = Semester.writes
+  override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
   override def entityTypeName: String = "semester"
 
@@ -56,8 +60,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     "examStart" -> entityToPass.examStart.plusWeeks(1)
   )
 
-  import bindings.SemesterBinding.semesterBinder
+  import bindings.SemesterDescriptor
   import ops._
+
+  implicit val semesterBinder = SemesterDescriptor.binder
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
@@ -68,7 +74,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val entitiesForYear = Set(semesterWithDate)
       val year = LocalDate.now.getYear
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
 
       val request = FakeRequest(
         GET,
@@ -92,7 +98,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val some = first.start.getYear
       val other = third.start.getYear
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
 
       val request = FakeRequest(
         GET,
@@ -111,7 +117,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = DateTime.now.getYear
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
 
       val request = FakeRequest(
         GET,
@@ -128,7 +134,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
       val year = DateTime.now.getYear
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         GET,
@@ -150,7 +156,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = DateTime.now.getYear
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(entitiesForYear))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
 
       val request = FakeRequest(
         GET,
@@ -171,7 +177,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
       val year = semesterInSS.start.getYear
       val period = "SS"
@@ -195,7 +201,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
       val semesters = Set(firstWS, secondWS, firstSS, secondSS)
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
       val first = firstSS.start.getYear
       val second = secondSS.start.getYear
@@ -217,7 +223,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
       val semesters = Set(semesterInSS, semesterInWS)
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Success(semesters))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
       val year = semesterInSS.start.getYear
       val period = "invalid period"
@@ -240,7 +246,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
       val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
 
-      when(repository.get[Semester](anyObject(), anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.getAll[Semester](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val year = semesterInSS.start.getYear
       val period = "SS"

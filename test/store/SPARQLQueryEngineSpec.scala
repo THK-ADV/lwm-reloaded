@@ -27,7 +27,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
   val prefixes = LWMPrefix[repo.Rdf]
 
   val sparql = new SPARQLQueryEngine with SesameModule {
-    override def connection[A](f: (RepositoryConnection) => A): A = repo.connection(f)
+    override def connect[A](f: (RepositoryConnection) => A): A = repo.connect(f)
   }
 
   "A SPARQL engine" should {
@@ -36,7 +36,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import utils.Ops.MonadInstances.optM
       import utils.Ops.TraverseInstances.travO
       import utils.Ops.NaturalTrasformations._
-      import bindings.StudentBinding._
+      import bindings.StudentDescriptor
 
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
@@ -63,8 +63,10 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
     "transform higher kinds variably" in {
       import utils.Ops.FunctorInstances._
-      import bindings.StudentBinding._
-      import bindings.GroupBinding._
+      import bindings.{
+      StudentDescriptor,
+      GroupDescriptor
+      }
 
       val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)
@@ -94,8 +96,10 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
     "stop execution when an error occurs and propagate it" in {
       import utils.Ops.FunctorInstances._
-      import bindings.StudentBinding._
-      import bindings.GroupBinding._
+      import bindings.{
+      StudentDescriptor,
+      GroupDescriptor
+      }
 
       val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)

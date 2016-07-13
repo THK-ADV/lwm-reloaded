@@ -47,7 +47,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted context invocations when mv wants to create a timetable" in new FakeApplication() {

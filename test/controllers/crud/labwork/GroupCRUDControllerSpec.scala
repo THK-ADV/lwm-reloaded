@@ -11,7 +11,6 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
-import play.api.http.HeaderNames
 import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
@@ -19,7 +18,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group] {
+class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group, GroupAtom] {
 
   val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -52,6 +51,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
   override implicit val jsonWrites: Writes[Group] = Group.writes
 
+  override implicit def jsonWritesAtom: Writes[GroupAtom] = Group.writesAtom
+
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   override val inputJson: JsValue = Json.obj(
@@ -66,17 +67,20 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "members" -> (entityToPass.members + User.randomUUID)
   )
 
-  val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.id)
-  val atomizedEntityToFail = GroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToFail.id)
+  override val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.id)
+  override val atomizedEntityToFail = GroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToFail.id)
 
   override def entityTypeName: String = "group"
 
-  import bindings.GroupBinding._
+  import bindings.GroupDescriptor
   import ops._
+
+  implicit val groupBinder = GroupDescriptor.binder
 
   override def pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
   def applicationIds = Stream.continually(LabworkApplication.randomUUID)
+
   def applications(labwork: UUID) = Stream.continually(LabworkApplication(labwork, User.randomUUID, Set.empty[UUID]))
 
   implicit val groupReads = Json.reads[Group]
@@ -94,7 +98,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -118,7 +122,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -142,7 +146,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -166,7 +170,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -190,7 +194,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -214,7 +218,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -234,8 +238,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "not return groups when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-
       val first = Group("first", Labwork.randomUUID, Set.empty[UUID])
       val second = Group("second", Labwork.randomUUID, Set.empty[UUID])
       val third = Group("third", Labwork.randomUUID, Set.empty[UUID])
@@ -243,7 +245,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       val groups = Set(first, second, third, fourth)
 
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val request = FakeRequest(
         GET,
@@ -285,6 +287,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
 
       status(result) shouldBe CREATED
 
+
       val resultValue = contentAsJson(result).as[JsArray]
       val deserialised = resultValue.value map (_.as[Group])
       val allmembers = deserialised.map(_.members).reduce(_ ++ _)
@@ -302,7 +305,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val max = 20
       val applicantsAmount = 100
       val calculatedGroupSize = (min to max).reduce { (l, r) =>
-        if(l % applicantsAmount < r % applicantsAmount) r else l
+        if (l % applicantsAmount < r % applicantsAmount) r else l
       } + 1
 
       val predictedGroupsNumber = (applicantsAmount / calculatedGroupSize) + 1
@@ -371,7 +374,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       when(groupService.sortApplicantsFor(labwork)).thenReturn(Success(concreteApplicationIds))
       when(groupService.alphabeticalOrdering(anyInt())).thenReturn(('A' to 'Z').map(_.toString).toList)
       when(repository.getMany[LabworkApplication](anyObject())(anyObject())).thenReturn(Try(concreteApplications))
-      when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("could not add to graph")))
+      when(repository.addMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable("Error while creating groups for labwork: could not add to graph")))
 
       val fakeRequest = FakeRequest(
         POST,
@@ -471,116 +474,6 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "errors" -> s"Error while creating groups for labwork: Predicate does not hold for $max"
-      )
-    }
-
-    s"successfully get a single $entityTypeName atomized" in {
-      import Group.atomicWrites
-
-      doReturn(Success(Some(entityToPass))).
-      doReturn(Success(Some(labworkToPass))).
-      when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
-    }
-
-    s"not get a single $entityTypeName atomized when one of the atomized models is not found" in {
-      doReturn(Success(Some(entityToPass))).
-      doReturn(Success(None)).
-      when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe NOT_FOUND
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )
-    }
-
-    s"not get a single $entityTypeName atomized when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      doReturn(Success(Some(entityToPass))).
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).get(anyObject())(anyObject())
-      when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(studentsToPass))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s/${entityToPass.id}"
-      )
-      val result = controller.getAtomic(entityToPass.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
-    }
-
-    s"successfully get all ${fgrammar(entityTypeName)} atomized" in {
-      import Group.atomicWrites
-
-      val groups = Set(entityToPass, entityToFail)
-      val labworks = Set(labworkToPass, labworkToFail)
-
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
-
-      doReturn(Success(Some(labworkToPass))).
-        doReturn(Success(Some(labworkToFail))).
-        when(repository).get(anyObject())(anyObject())
-
-      doReturn(Success(studentsToPass)).
-        doReturn(Success(studentsToFail)).
-        when(repository).getMany(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(atomizedEntityToPass, atomizedEntityToFail))
-    }
-
-    s"not get all ${fgrammar(entityTypeName)} atomized when there is an exception" in {
-      val groups = Set(entityToPass, entityToFail)
-      val errorMessage = s"Oops, cant get the desired $entityTypeName for some reason"
-
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
-      doReturn(Failure(new Exception(errorMessage))).
-      when(repository).getMany(anyObject())(anyObject())
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName}s"
-      )
-      val result = controller.allAtomic()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
       )
     }
   }

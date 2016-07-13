@@ -66,7 +66,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     }._2
   }
 
-  when(repo.get[Blacklist](anyObject(), anyObject())).thenReturn(Success(Set.empty[Blacklist]))
+  when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(Set.empty[Blacklist]))
 
   "A ScheduleService" should {
 

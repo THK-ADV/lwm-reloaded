@@ -83,7 +83,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted invocations when mv wants to delete an annotation" in new FakeApplication {

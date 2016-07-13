@@ -44,7 +44,7 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow non restricted context invocations when rv wants to update an authority" in new FakeApplication() {
@@ -68,7 +68,7 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow non restricted context invocations when rv wants to get a single authority" in new FakeApplication() {

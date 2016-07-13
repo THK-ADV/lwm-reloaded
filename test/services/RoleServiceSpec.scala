@@ -2,20 +2,15 @@ package services
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.SesameDbSpec
 import models.labwork.Labwork
 import models.security._
 import models.semester.Semester
 import models.users.Student
 import models.Degree
-import org.scalatest.WordSpec
-import org.w3.banana.sesame.SesameModule
-import store.bind.Bindings
-import store.{Namespace, SesameRepository}
+import scala.util.{Failure, Success}
 
-import scala.util.Success
-
-class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule {
+class RoleServiceSpec extends SesameDbSpec {
 
   val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
   val insufficientPermissions = Set(Permission("view"), Permission("delete"))
@@ -42,33 +37,29 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
   def unbox(r: RefRole): (Option[UUID], Set[Permission]) = (r.course, roles.find(_.id == r.role).get.permissions)
 
-  val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val repository = SesameRepository(ns)
-
-  val bindings = Bindings(ns)
-
   def authority(refRoles: Set[RefRole]): Authority = Authority(UUID.randomUUID(), refRoles map (_.id))
 
-  def roleService = new RoleService(repository)
+  def roleService = new RoleService(repo)
 
   "A role service" should {
 
     "check refroles properly" in {
-      import bindings.RoleBinding._
-      import bindings.LabworkBinding._
-      import bindings.RefRoleBinding._
+      import bindings.{
+      RoleDescriptor,
+      LabworkDescriptor,
+      RefRoleDescriptor
+      }
       import util.Random.nextInt
 
-      repository.addMany(roles)
-      repository.add(lab1)
-      repository.add(lab2)
-      repository.add(module1UserRole1)
-      repository.add(module1UserRole2)
-      repository.add(module2UserRole2)
-      repository.add(noneModule1Role1)
-      repository.add(noneModule1Role2)
-      repository.add(adminRefRole)
+      repo.addMany(roles)
+      repo.add(lab1)
+      repo.add(lab2)
+      repo.add(module1UserRole1)
+      repo.add(module1UserRole2)
+      repo.add(module2UserRole2)
+      repo.add(noneModule1Role1)
+      repo.add(noneModule1Role2)
+      repo.add(adminRefRole)
 
       val perm1 = role1.permissions.toVector
       val perm2 = role2.permissions.toVector
@@ -99,10 +90,12 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
 
 
     "retrieve authorities properly" in {
-      import bindings.RoleBinding._
-      import bindings.AuthorityBinding._
-      import bindings.StudentBinding._
-      import bindings.RefRoleBinding._
+      import bindings.{
+      RoleDescriptor,
+      AuthorityDescriptor,
+      StudentDescriptor,
+      RefRoleDescriptor
+      }
 
       val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
@@ -111,16 +104,16 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
       val authority1 = Authority(student1.id, Set(module1UserRole1.id, module2UserRole2.id))
       val authority2 = Authority(student2.id, Set(module2UserRole2.id, noneModule1Role1.id))
 
-      repository.add(student1)
-      repository.add(student2)
-      repository.add(student3)
-      repository.add(module1UserRole1)
-      repository.add(module2UserRole2)
-      repository.add(role1)
-      repository.add(role2)
-      repository.add(role3)
-      repository.add(authority1)
-      repository.add(authority2)
+      repo.add(student1)
+      repo.add(student2)
+      repo.add(student3)
+      repo.add(module1UserRole1)
+      repo.add(module2UserRole2)
+      repo.add(role1)
+      repo.add(role2)
+      repo.add(role3)
+      repo.add(authority1)
+      repo.add(authority2)
 
       val result1 = roleService.authorityFor(student1.id.toString)
       val result2 = roleService.authorityFor(student2.id.toString)
@@ -133,6 +126,37 @@ class RoleServiceSpec extends WordSpec with TestBaseDefinition with SesameModule
         case _ => fail("Should have found two of the authorities")
       }
     }
+
+    "retrieve roles by roles label" in {
+      import bindings.RoleDescriptor
+
+      repo.addMany(roles)
+
+      roleService.rolesByLabel("testRole1", "Admin") match {
+        case Success(z) =>
+          z contains role1 shouldBe true
+          z contains role3 shouldBe true
+          z.size shouldBe 2
+        case Failure(e) => fail(s"Could not retrieve role: ${e.getMessage}")
+      }
+    }
+
+    "retrieve refRoles by role label" in {
+      import bindings.{RoleDescriptor, RefRoleDescriptor}
+
+      repo.addMany(roles)
+      repo.addMany(List(module1UserRole1, module1UserRole2, noneModule1Role1, adminRefRole))
+
+      roleService.refRolesByLabel("testRole1", "Admin") match {
+        case Success(z) =>
+          z contains noneModule1Role1 shouldBe true
+          z contains module1UserRole1 shouldBe true
+          z contains adminRefRole shouldBe true
+          z.size shouldBe 3
+        case Failure(e) => fail(s"Could not retrieve refRole: ${e.getMessage}")
+      }
+    }
   }
 
+  override protected def beforeEach(): Unit = repo.connect(_.clear())
 }

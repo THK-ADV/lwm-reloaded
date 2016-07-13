@@ -37,12 +37,11 @@ case class ScheduleEntry(labwork: UUID,
   * Atoms
   */
 
-case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID)
+case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID)
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID) extends UniqueEntity
 
-object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule] {
-
+object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
   import ScheduleEntry.format
 
   lazy val empty = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])
@@ -53,22 +52,22 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, 
 
   override implicit def writes: Writes[Schedule] = Json.writes[Schedule]
 
-  implicit def atomicWrites: Writes[ScheduleAtom] = Json.writes[ScheduleAtom]
+  override implicit def writesAtom: Writes[ScheduleAtom] = Json.writes[ScheduleAtom]
 
-  implicit def setAtomicWrites: Writes[Set[ScheduleAtom]] = Writes.set[ScheduleAtom](atomicWrites)
+  implicit def setAtomicWrites: Writes[Set[ScheduleAtom]] = Writes.set[ScheduleAtom]
 }
 
-object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry] {
+object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
 
   override implicit def reads: Reads[ScheduleEntry] = Json.reads[ScheduleEntry]
 
   override implicit def writes: Writes[ScheduleEntry] = Json.writes[ScheduleEntry]
 
-  implicit def atomicWrites: Writes[ScheduleEntryAtom] = Json.writes[ScheduleEntryAtom]
+  override implicit def writesAtom: Writes[ScheduleEntryAtom] = Json.writes[ScheduleEntryAtom]
 
   implicit def format: Format[ScheduleEntryAtom] = Json.format[ScheduleEntryAtom]
 
-  implicit def setAtomicWrites: Writes[Set[ScheduleEntryAtom]] = Writes.set[ScheduleEntryAtom](atomicWrites)
+  implicit def setAtomicWrites: Writes[Set[ScheduleEntryAtom]] = Writes.set[ScheduleEntryAtom]
 
   override def base: String = "scheduleEntry"
 }

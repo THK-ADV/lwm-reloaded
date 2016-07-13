@@ -10,10 +10,13 @@ import scala.util.{Failure, Success}
 
 class EmployeeBindingSpec extends SesameDbSpec {
 
-  val bindings = Bindings[Sesame](namespace)
-  import bindings.uuidBinder
-  import bindings.EmployeeBinding.employeeBinder
+  import bindings.{
+  EmployeeDescriptor,
+  uuidBinder
+  }
   import ops._
+
+  implicit val employeeBinder = EmployeeDescriptor.binder
 
   val employee = Employee("doe", "Doe", "John", "doe@gm.fh-koeln.de", "employee")
   val employeeGraph = (

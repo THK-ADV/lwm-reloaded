@@ -46,12 +46,12 @@ case class Initial[F[_], A](z: SelectClause)(implicit qe: QueryExecutor[SelectCl
 }
 
 trait SPARQLQueryEngine { self: SesameModule =>
-  def connection[A](f: RepositoryConnection => A): A
+  def connect[A](f: RepositoryConnection => A): A
 
   private implicit val qe: QueryExecutor[SelectClause] = new QueryExecutor[SelectClause] {
     import self.rdfStore.sparqlEngineSyntax._
 
-    override def execute(query: ParsedTupleQuery): Try[Map[String, List[Value]]] = connection { conn =>
+    override def execute(query: ParsedTupleQuery): Try[Map[String, List[Value]]] = connect { conn =>
       conn.executeSelect(query) map { solutions =>
         import scala.collection.JavaConversions._
         solutions.foldRight(Map[String, List[Value]]()){ (l1, r1) =>

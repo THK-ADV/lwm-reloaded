@@ -18,11 +18,12 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
   val ns = Namespace("http://lwm.gm.bloody.norah.de")
   val bind = Bindings[Rdf](ns)
 
+  import bind.UserDescriptor
+  implicit val userBinder = UserDescriptor.binder
+
   "A UserBinding" should {
 
     "serialise and deserialise monomorphic collections of student entries" in {
-      import bind.UserBinding._
-
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
       val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
       val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
@@ -39,8 +40,6 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
     }
 
     "serialise and deserialise monomorphic collections of employee entries" in {
-      import bind.UserBinding._
-
       val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
       val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
       val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
@@ -57,8 +56,6 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
     }
 
     "serilaise and deserialise polymorphic collections of user entries" in {
-      import bind.UserBinding._
-
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
       val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
 

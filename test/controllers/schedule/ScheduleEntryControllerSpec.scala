@@ -13,6 +13,7 @@ import org.openrdf.model.impl.ValueFactoryImpl
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.SesameModule
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent}
 import play.api.test.Helpers._
@@ -25,7 +26,7 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
+class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
   val repository = mock[SesameRepository]
   val sessionService = mock[SessionHandlingService]
@@ -40,11 +41,15 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
   val controller: ScheduleEntryController = new ScheduleEntryController(repository, sessionService, ns, roleService) {
 
     override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      chunkedAll(chunkSimple)
+      retrieveAll[ScheduleEntry]
+        .map(set => chunk(set))
+        .mapResult(enum => Ok.stream(enum).as(mimeType))
     }
 
     override def allAtomicFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      chunkedAll(chunkAtoms)
+      retrieveAll[ScheduleEntryAtom]
+        .map(set => chunk(set))
+        .mapResult(enum => Ok.stream(enum).as(mimeType))
     }
 
     override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -60,7 +65,13 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
     ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   }).toVector
 
-  //when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
+  def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
+    val labwork = Labwork("label", "desc", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false, e.labwork)
+    val room = Room("room", "desc", e.room)
+    val supervisor = Employee("systemid", "lastname", "firstname", "email", "supervisor", e.supervisor)
+    val group = Group("label", labwork.id, Set(), e.group)
+    ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, e.id)
+  }
 
   "A ScheduleEntry controller" should {
 
@@ -89,30 +100,22 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val labwork = Labwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val courseID = UUID.randomUUID()
 
-      val entry = entries(labwork.id)(1).head
-      val group = Group("Label", labwork.id, Set.empty)
-      val supervisor = Employee("systemid", "lastname", "firstname", "email", "status")
-      val room = Room("label", "description")
+      val entry = entries(labwork.id)(1)
+      val atomized = atomizeEntries(entry)
 
-      doReturn(Success(Some(entry))).
-        doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(group))).
-        doReturn(Success(Some(supervisor))).
-        doReturn(Success(Some(room))).
-        when(repository).get(anyObject())(anyObject())
-
-      val scheduleEntry = ScheduleEntryAtom(labwork, entry.start, entry.end, entry.date, room, supervisor, group, entry.id)
+      when(repository.get[ScheduleEntryAtom](anyObject())(anyObject())).thenReturn(Success(Some(atomized.head)))
 
       val request = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/${labwork.id}/atomic/entries/${entry.id}"
+        s"/courses/$courseID/labwork/${labwork.id}/atomic/entries/${entry.head.id}"
       )
 
-      val result = controller.getAtomic(courseID.toString, entry.id.toString)(request)
+      val expected = Json.toJson(atomized.head)
+      val result = controller.getAtomic(courseID.toString, entry.head.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe mimeType
-      contentAsJson(result) shouldBe Json.toJson(scheduleEntry)
+      contentAsJson(result) shouldBe Json.toJson(expected)
     }
 
     "get all entries" in {
@@ -120,15 +123,8 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val courseID = UUID.randomUUID()
 
       val entry = entries(labworkID)(3)
-      val group1 = Group("Label1", labworkID, Set.empty)
-      val group2 = Group("Label2", labworkID, Set.empty)
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
-      val room1 = Room("label1", "description1")
-      val room2 = Room("label1", "description2")
 
-
-      when(repository.get[ScheduleEntry](anyObject(), anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
+      when(repository.getAll[ScheduleEntry](anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
       val request = FakeRequest(
         GET,
         s"/courses/$courseID/labwork/$labworkID/entries"
@@ -140,7 +136,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       status(result) shouldBe OK
       contentType(result) shouldBe mimeType
-      contentAsString(result) shouldBe jsVals.foldLeft("")(_ + _)
+      contentAsString(result) shouldBe jsVals.mkString("")
     }
 
     "get all entries atomised" in {
@@ -150,45 +146,21 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val courseID = UUID.randomUUID()
 
       val entry = entries(labwork.id)(3)
-      val group1 = Group("Label1", labwork.id, Set.empty)
-      val group2 = Group("Label2", labwork.id, Set.empty)
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
-      val room1 = Room("label1", "description1")
-      val room2 = Room("label1", "description2")
+      val atomized = atomizeEntries(entry)
 
-      when(repository.get[ScheduleEntry](anyObject(), anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
-
-      doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(group1))).
-        doReturn(Success(Some(supervisor1))).
-        doReturn(Success(Some(room1))).
-        doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(group2))).
-        doReturn(Success(Some(supervisor1))).
-        doReturn(Success(Some(room1))).
-        doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(group2))).
-        doReturn(Success(Some(supervisor2))).
-        doReturn(Success(Some(room2))).
-        when(repository).get(anyObject())(anyObject())
-
-      val scheduleEntry1 = ScheduleEntryAtom(labwork, entry(0).start, entry(0).end, entry(0).date, room1, supervisor1, group1, entry(0).id)
-      val scheduleEntry2 = ScheduleEntryAtom(labwork, entry(1).start, entry(1).end, entry(1).date, room1, supervisor1, group2, entry(1).id)
-      val scheduleEntry3 = ScheduleEntryAtom(labwork, entry(2).start, entry(2).end, entry(2).date, room2, supervisor2, group2, entry(2).id)
+      when(repository.getAll[ScheduleEntryAtom](anyObject())).thenReturn(Success(atomized.toSet))
 
       val request = FakeRequest(
         GET,
         s"/courses/$courseID/labwork/${labwork.id}/atomic/entries"
       )
 
+      val expected = atomized map (a => Json.toJson(a))
       val result = controller.allAtomicFrom(courseID.toString)(request)
-
-      val jsVals = List(Json.toJson(scheduleEntry1), Json.toJson(scheduleEntry2), Json.toJson(scheduleEntry3))
 
       status(result) shouldBe OK
       contentType(result) shouldBe mimeType
-      contentAsString(result) shouldBe jsVals.foldLeft("")(_ + _)
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
 
@@ -214,40 +186,32 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       contentAsJson(result) shouldBe Json.toJson(entry)
     }
 
-
     "update entries and respond with the atomised atomic version" in {
       import ScheduleEntry.format
-      val entry = entries(UUID.randomUUID())(1).head
-
       val labwork = Labwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val courseID = UUID.randomUUID()
 
+      val entry = entries(labwork.id)(1)
+      val atomized = atomizeEntries(entry)
+
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode("#"))))
 
-      val group = Group("Label1", labwork.id, Set.empty)
-      val supervisor = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val room = Room("label1", "description1")
-
-      doReturn(Success(Some(labwork))).
-        doReturn(Success(Some(group))).
-        doReturn(Success(Some(supervisor))).
-        doReturn(Success(Some(room))).
+      doReturn(Success(Some(atomized.head))).
         when(repository).get(anyObject())(anyObject())
-
-      val scheduleEntry = ScheduleEntryAtom(labwork, entry.start, entry.end, entry.date, room, supervisor, group, entry.id)
 
       val request = FakeRequest(
         PUT,
-        s"/courses/$courseID/labwork/${labwork.id}/entries/${entry.id}",
+        s"/courses/$courseID/atomic/scheduleEntries/${entry.head.id}",
         FakeHeaders(Seq("Content-Type" -> mimeType.get)),
-        Json.toJson(entry)
+        Json.toJson(entry.head)
       )
 
-      val result = controller.updateAtomic(courseID.toString, entry.id.toString)(request)
+      val expected = Json.toJson(atomized.head)
+      val result = controller.updateAtomic(courseID.toString, entry.head.id.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe mimeType
-      contentAsJson(result) shouldBe Json.toJson(scheduleEntry)
+      contentAsJson(result) shouldBe Json.toJson(expected)
     }
 
 
@@ -255,10 +219,6 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val realRepository = SesameRepository(ns)
       val bindings = Bindings[realRepository.Rdf](ns)
       val realController: ScheduleEntryController = new ScheduleEntryController(realRepository, sessionService, ns, roleService) {
-
-        override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
-          chunkedAll(chunkSimple)
-        }
 
         override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
           case _ => NonSecureBlock
@@ -269,11 +229,13 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
         }
       }
 
-      import bindings.GroupBinding._
-      import bindings.LabworkBinding._
-      import bindings.RoomBinding._
-      import bindings.ScheduleEntryBinding._
-      import bindings.UserBinding._
+      import bindings.{
+      GroupDescriptor,
+      RoomDescriptor,
+      ScheduleEntryDescriptor,
+      LabworkDescriptor,
+      EmployeeDescriptor
+      }
 
       val courseID = UUID.randomUUID()
       val courseID2 = UUID.randomUUID()
@@ -306,8 +268,8 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, supervisor1.id, group1.id)
       val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, supervisor1.id, group1.id)
       val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, supervisor2.id, group2.id)
-      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group1.id)
-      val sentry5 = ScheduleEntry(labwork1.id, start2, end2, date4, room1.id, supervisor1.id, group2.id)
+      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group2.id)
+      val sentry5 = ScheduleEntry(labwork1.id, start3, end2, date2, room1.id, supervisor1.id, group2.id)
       val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, supervisor3.id, group3.id)
 
 
@@ -325,7 +287,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val requestForLabwork = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/${labwork1.id}/entries?labwork=${labwork2.id}"
+        s"/courses/$courseID2/labwork/${labwork2.id}/entries?labwork=${labwork2.id}"
       )
 
       val requestForCourseAndLabwork = FakeRequest(
@@ -370,11 +332,11 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
 
       val requestForGroupWithinDateRangeAndSup = FakeRequest(
         GET,
-        s"/courses/$courseID/labwork/${labwork1.id}/entries?group=${group1.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
+        s"/courses/$courseID2/labwork/${labwork2.id}/entries?group=${group2.id}&dateRange=$date2,$date4&supervisor=${supervisor2.id}"
       )
 
       val resultForCourse = realController.allFrom(courseID.toString)(requestForCourse)
-      val resultForLabwork = realController.allFrom(courseID.toString)(requestForLabwork)
+      val resultForLabwork = realController.allFrom(courseID2.toString)(requestForLabwork)
       val resultForCourseAndLabwork = realController.allFrom(courseID.toString)(requestForCourseAndLabwork)
       val resultForGroup = realController.allFrom(courseID.toString)(requestForGroup)
       val resultForSupervisor = realController.allFrom(courseID.toString)(requestForSupervisor)
@@ -383,19 +345,19 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition {
       val resultForDateAndTime = realController.allFrom(courseID.toString)(requestForDateAndTime)
       val resultForMinMax = realController.allFrom(courseID.toString)(requestForMinMax)
       val resultForGroupWithinDateRange = realController.allFrom(courseID.toString)(requestForGroupWithinDateRange)
-      val resultForGroupWithinDateRangeAndSup = realController.allFrom(courseID.toString)(requestForGroupWithinDateRangeAndSup)
+      val resultForGroupWithinDateRangeAndSup = realController.allFrom(courseID2.toString)(requestForGroupWithinDateRangeAndSup)
 
       val valsForCourse = List(Json.toJson(sentry6), Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForLabwork = List(Json.toJson(sentry4), Json.toJson(sentry3))
       val valsForCourseAndLabwork = List(Json.toJson(sentry6))
-      val valsForGroup = List(Json.toJson(sentry4), Json.toJson(sentry2), Json.toJson(sentry1))
+      val valsForGroup = List(Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForSupervisor = List(Json.toJson(sentry5), Json.toJson(sentry2), Json.toJson(sentry1))
       val valsForGroupSupervisor = List(Json.toJson(sentry5))
-      val valsForDate = List(Json.toJson(sentry3), Json.toJson(sentry2))
-      val valsForDateAndTime = List(Json.toJson(sentry3))
-      val valsForMinMax = List(Json.toJson(sentry4), Json.toJson(sentry3), Json.toJson(sentry2))
-      val valsForGroupWithinDateRange = List(Json.toJson(sentry4), Json.toJson(sentry2))
-      val valsForGroupWithinDateRangeAndSup = List(Json.toJson(sentry4))
+      val valsForDate = List(Json.toJson(sentry5), Json.toJson(sentry2))
+      val valsForDateAndTime = List(Json.toJson(sentry5))
+      val valsForMinMax = List(Json.toJson(sentry5), Json.toJson(sentry2))
+      val valsForGroupWithinDateRange = List(Json.toJson(sentry2))
+      val valsForGroupWithinDateRangeAndSup = List(Json.toJson(sentry4), Json.toJson(sentry3))
 
       status(resultForCourse) shouldBe OK
       status(resultForLabwork) shouldBe OK

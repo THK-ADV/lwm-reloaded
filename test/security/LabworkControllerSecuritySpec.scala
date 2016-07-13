@@ -67,7 +67,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted invocations when admin wants to delete a labwork" in new FakeApplication() {
@@ -196,7 +196,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow restricted invocations when ma wants to get a single labwork" in new FakeApplication() {

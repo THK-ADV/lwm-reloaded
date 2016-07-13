@@ -93,7 +93,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Allow invocations when admin wants to update a course" in new FakeApplication() {
@@ -114,7 +114,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
 
       val result = route(request).get
 
-      status(result) shouldBe CREATED
+      status(result) shouldBe OK
     }
 
     "Block invocations when employee wants to update a course" in new FakeApplication() {

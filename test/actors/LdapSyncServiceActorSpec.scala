@@ -68,7 +68,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
   import akka.testkit._
   import scala.concurrent.duration._
-  import bindings.UserBinding._
+  import bindings.UserDescriptor
 
   "A LdapSyncServiceActorSpec" should {
 
@@ -84,8 +84,8 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
         actorRef ! LdapSyncServiceActor.SyncRequest
 
-        awaitAssert {
-          repository.get[User](userBinder, classUri) match {
+        awaitAssert (
+          repository.getAll[User] match {
             case Success(updatedUser) =>
               updatedUser.size shouldBe users.size
 
@@ -99,8 +99,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
             case Failure(e) =>
               fail("there should be some users", e)
-          }
-        }
+          }, 10.seconds)
       }
     }
 
@@ -116,8 +115,8 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
         actorRef ! LdapSyncServiceActor.SyncRequest
 
-        awaitAssert {
-          repository.get[User](userBinder, classUri) match {
+        awaitAssert (
+          repository.getAll[User] match {
             case Success(updatedUser) =>
               updatedUser.size shouldBe users.size
 
@@ -131,8 +130,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
             case Failure(e) =>
               fail("there should be some users", e)
-          }
-        }
+          }, 10.seconds)
       }
     }
 
@@ -144,12 +142,11 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
       when(resolvers.degree(anyObject())).thenReturn(Success(enrollments(nextInt(enrollments.size))))
 
       repository.addMany(users) foreach { _ =>
-        10.seconds.dilated
 
         actorRef ! LdapSyncServiceActor.SyncRequest
 
-        awaitAssert {
-          repository.get[User](userBinder, classUri) match {
+        awaitAssert(
+          repository.getAll[User] match {
             case Success(updatedUser) =>
               updatedUser.size shouldBe users.size
 
@@ -159,12 +156,11 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
               updatedUser.toList map { updated =>
                 users.contains(updated)
-              } count(_ == false) shouldBe numberOfDiffs
+              } count (_ == false) shouldBe numberOfDiffs
 
             case Failure(e) =>
               fail("there should be some users", e)
-          }
-        }
+          }, 10.seconds)
       }
     }
   }
@@ -172,7 +168,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
 
-    repository.connection { conn =>
+    repository.connect { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
   }

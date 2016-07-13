@@ -48,7 +48,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val groupToPass = Group("group to pass", labworkToPass.id, Set(UUID.randomUUID(), UUID.randomUUID()))
   val groupToFail = Group("group to fail", labworkToFail.id, Set(UUID.randomUUID(), UUID.randomUUID()))
 
-  val entriesToPass = (0 until 10).map (n =>
+  val entriesToPass = (0 until 10).map(n =>
     ScheduleEntry(
       labworkToPass.id,
       LocalTime.now.plusHours(n),
@@ -59,7 +59,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       groupToPass.id
     )
   ).toSet
-  val entriesToFail = (0 until 10).map (n =>
+  val entriesToFail = (0 until 10).map(n =>
     ScheduleEntry(
       labworkToFail.id,
       LocalTime.now.plusHours(n),
@@ -137,7 +137,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set(first, second)))
-      when(repository.get[Group](anyObject(), anyObject())).thenReturn(Success(groups))
+      when(repository.getAll[Group](anyObject())).thenReturn(Success(groups))
 
       val result = ScheduleController.competitive(labwork3.id, repository)
 
@@ -155,17 +155,23 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "preview a schedule successfully when there are no competitive schedules" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
+
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
         Schedule(gen.elem.labwork, entries, gen.elem.id)
@@ -176,8 +182,14 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         "/schedules/preview"
       )
 
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(groups))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(plan)))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -193,8 +205,11 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "preview a schedule successfully although there are competitive schedules" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
@@ -214,8 +229,15 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         "/schedules/preview"
       )
 
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(groups))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(plan)))
+        .doReturn(Success(Set.empty[Group]))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
@@ -233,8 +255,11 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "preview a schedule successfully where conflicts are found" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
@@ -259,9 +284,16 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         GET,
         "/schedules/preview"
       )
-      
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).doReturn(Success(Set.empty[Group])).when(repository).get(anyObject(), anyObject())
+
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(groups))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(plan)))
+        .doReturn(Success(Set.empty[Group]))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map("schedules" -> List.empty)))
       when(repository.getMany[Schedule](anyObject())(anyObject())).thenReturn(Success(Set.empty[Schedule]))
@@ -279,8 +311,11 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "not preview a schedule when assignment plan is empty" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
@@ -294,9 +329,15 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         GET,
         "schedules/preview"
       )
-      
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(AssignmentPlan.empty))).when(repository).get(anyObject(), anyObject())
+
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(groups))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(AssignmentPlan.empty)))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -311,8 +352,11 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "not preview a schedule when timetable is empty" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
@@ -325,9 +369,15 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         GET,
         "schedules/preview"
       )
-      
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(groups)).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
+
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(groups))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(plan)))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -342,8 +392,11 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "not preview a schedule when groups are empty" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val labwork = Labwork("", "", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
@@ -358,8 +411,14 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
         "schedules/preview"
       )
 
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Success(Set.empty[Group])).doReturn(Success(Set(timetable))).doReturn(Success(Set(plan))).when(repository).get(anyObject(), anyObject())
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Success(Set.empty[Group]))
+        .doReturn(Success(Set(timetable)))
+        .doReturn(Success(Set(plan)))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(scheduleService.generate(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).thenReturn((gen, 0))
 
@@ -374,9 +433,12 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "not preview a schedule when db errors occur" in {
+      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = Course.randomUUID
-      val labwork = Labwork.randomUUID
+      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val degree = Degree("degree", "abbrev")
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+
 
       val request = FakeRequest(
         GET,
@@ -384,11 +446,17 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       )
 
       val exception = new Exception("Oops, something went wrong")
-      doReturn(Success(Some(labworkToPass))).doReturn(Success(Some(semester))).when(repository).get(anyObject())(anyObject())
-      doReturn(Failure(exception)).doReturn(Failure(exception)).doReturn(Success(Set(AssignmentPlan.empty))).when(repository).get(anyObject(), anyObject())
+      doReturn(Success(Some(labwork)))
+        .when(repository).get(anyObject())(anyObject())
+
+      doReturn(Failure(exception))
+        .doReturn(Failure(exception))
+        .doReturn(Success(Set(AssignmentPlan.empty)))
+        .when(repository).getAll(anyObject())
+
       when(repository.prepareQuery(anyObject())).thenReturn(query)
 
-      val result = controller.preview(course.toString, labwork.toString)(request)
+      val result = controller.preview(course.id.toString, labwork.id.toString)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

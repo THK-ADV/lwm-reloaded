@@ -4,9 +4,10 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
-import models.labwork.{Labwork, LabworkApplication}
+import models.labwork.{Labwork, LabworkApplication, ReportCardEntry, ReportCardEntryType}
 import models.security._
-import models.users.{Employee, Student, User}
+import models.users.{Employee, Student, StudentAtom, User}
+import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -24,9 +25,11 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
   val bindings = Bindings[Sesame](ns)
   val lwm = LWMPrefix[Sesame]
 
-  import bindings.StudentBinding._
-  import bindings.uuidBinder
-  import bindings.uuidRefBinder
+  import bindings.{
+  StudentDescriptor,
+  uuidBinder,
+  uuidRefBinder
+  }
 
   lazy val repo = SesameRepository(ns)
 
@@ -63,7 +66,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       val students = List(student1, student2, student3, student4)
 
       val g = repo.addMany(students)
-      val studentsFromRepo = repo.get[Student]
+      val studentsFromRepo = repo.getAll[Student]
 
       (g, studentsFromRepo) match {
         case (Success(graphs), Success(fromRepo)) =>
@@ -76,7 +79,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "add polymorphic entities" in {
-      import bindings.UserBinding._
+      import bindings.UserDescriptor
 
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
       val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
@@ -90,7 +93,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
       repo.addMany[User](users)
 
-      repo.get[User](userBinder, classUri) match {
+      repo.getAll[User] match {
         case Success(s) => users forall s.contains shouldBe true
         case Failure(e) => fail(s"Retrieval not successful: $e")
       }
@@ -99,95 +102,19 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     "delete an entity" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
 
-      val repoSize = repo.size
-      val graph = repo deleteCascading User.generateUri(student)
+      repo add student
+      repo delete User.generateUri(student)
 
-      graph match {
-        case Success(s) =>
-          repo get User.generateUri(student) map (o => o.isEmpty shouldBe true)
+      val explicitStudent = repo.get[Student](User.generateUri(student))
+
+      explicitStudent match {
+        case Success(Some(s)) =>
+          fail("repo should've deleted the student")
+        case Success(None) =>
+          repo.size shouldBe 0
         case Failure(e) =>
-          fail("repo could not delete the given entity")
+          fail("repo could not return explicit entity")
       }
-    }
-
-    "delete an entity reflectively" in {
-      import bindings.AuthorityBinding._
-      import bindings.RefRoleBinding._
-
-      val user = UUID.randomUUID()
-      val employeeRole = Role("Employee", Permissions.course.all)
-      val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
-
-      val refrole1 = RefRole(None, employeeRole.id)
-      val refrole2 = RefRole(Some(UUID.randomUUID()), studentRole.id)
-      val auth = Authority(user, Set(refrole1.id, refrole2.id))
-
-      repo.addMany[RefRole](List(refrole1, refrole2))
-      repo.add[Authority](auth)
-
-      repo.get[Authority](Authority.generateUri(auth)) match {
-        case Success(Some(auth2)) =>
-          auth2.refRoles.size shouldBe 2
-          List(refrole1, refrole2).forall(a => auth2.refRoles.contains(a.id)) shouldBe true
-        case _ => fail("repo could not retrieve given entity")
-      }
-
-      repo.deleteCascading(RefRole.generateUri(refrole1))
-
-      repo.get[Authority](Authority.generateUri(auth)) match {
-        case Success(Some(auth2)) =>
-          auth2.refRoles.size shouldBe 1
-          auth2.refRoles.head shouldBe refrole2.id
-        case _ => fail("repo could not retrieve the given entity")
-      }
-    }
-
-    "delete an entity non-reflectively" in {
-      import bindings.LabworkApplicationBinding._
-      import bindings.LabworkBinding._
-
-      val applicant = UUID.randomUUID()
-      val lab = Labwork("Labwork", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-      val application = LabworkApplication(lab.id, applicant, Set.empty)
-
-      repo.add(lab)
-      repo.add(application)
-
-      repo.get[LabworkApplication](LabworkApplication.generateUri(application.id)) match {
-        case Success(Some(app)) =>
-          app.labwork shouldBe lab.id
-          app.applicant shouldBe applicant
-          app.friends.isEmpty shouldBe true
-        case _ => fail("repo could not retrieve given entity")
-      }
-      repo.deleteSimple(Labwork.generateUri(lab))
-
-      repo.get[LabworkApplication](LabworkApplication.generateUri(application.id)) match {
-        case Success(Some(app)) =>
-          app.labwork shouldBe lab.id
-          app.applicant shouldBe applicant
-          app.friends.isEmpty shouldBe true
-        case _ => fail("repo could not retrieve given entity")
-      }
-
-      repo.get[Labwork](Labwork.generateUri(lab)) match {
-        case Success(opt) =>
-          opt shouldBe None
-        case _ => fail("repo could not retrieve given entity")
-      }
-    }
-
-    "delete entities" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val studentUri = User.generateUri(student)
-
-      repo.add(student)
-      repo.contains(studentUri) shouldBe true
-
-      repo.deleteCascading(studentUri)
-      repo.contains(studentUri) shouldBe false
-
-      repo should have size 0
     }
 
     "get list of entities" in {
@@ -201,7 +128,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       repo.add(student3)
       repo.add(student4)
 
-      repo.get[Student] match {
+      repo.getAll[Student] match {
         case Success(students) =>
           students should contain theSameElementsAs Set(student1, student2, student3, student4)
         case Failure(e) =>
@@ -209,7 +136,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       }
     }
 
-    "get an explicit entity" in {
+    "get an entity" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       repo add student
 
@@ -225,9 +152,63 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       }
     }
 
+    "delete an arbitrarily nested entity" in {
+      import bindings.{
+      DegreeDescriptor,
+      StudentAtomDescriptor
+      }
+
+      val degree = Degree("label", "abbr")
+      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", degree.id)
+
+      repo add student
+      repo add degree
+
+      repo.delete[StudentAtom](User.generateUri(student))
+
+      val postDegree = repo get[Degree] Degree.generateUri(degree)
+      val postStudent = repo get[Student] User.generateUri(student)
+
+      (postDegree, postStudent) match {
+        case (Success(None), Success(None)) => repo.size shouldBe 0
+        case (Success(Some(_)), _) => fail("one of the entities was not deleted")
+        case (_, Success(Some(_))) => fail("one of the entities was not deleted")
+        case _ => fail(s"entities could not be deleted")
+      }
+    }
+
+    "delete arbitrarily nested entities from many others" in {
+      import bindings.ReportCardEntryDescriptor
+
+      def entries(labwork: UUID, amount: Int): Vector[ReportCardEntry] = (0 to amount).map { i =>
+        ReportCardEntry(UUID.randomUUID(), labwork, s"entry$i", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(),
+          Set(ReportCardEntryType(s"type$i", i % 2 == 0, scala.util.Random.nextInt),
+            ReportCardEntryType(s"type$i", i % 3 == 0, scala.util.Random.nextInt)))
+      }.toVector
+
+      val batch1 = entries(UUID.randomUUID(), 15)
+      val batch2 = entries(UUID.randomUUID(), 15)
+
+      repo addMany batch1
+      repo addMany batch2
+
+      repo.delete[ReportCardEntry](ReportCardEntry.generateUri(batch2.head))
+
+      repo.getAll[ReportCardEntry] match {
+        case Success(ents) =>
+          (batch1 ++ batch2.tail) foreach { elm =>
+            ents contains elm shouldBe true
+          }
+          ents contains batch2.head shouldBe false
+        case Failure(e) => fail(s"could not get entries: ${e.getMessage}")
+      }
+    }
+
     "get a polymorphic entity" in {
-      import bindings.StudentBinding._
-      import bindings.UserBinding._
+      import bindings.{
+      StudentDescriptor,
+      UserDescriptor
+      }
 
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
       val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
@@ -242,7 +223,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       repo.addMany[User](users)
 
       repo.get[Student](User.generateUri(student1.id)) match {
-        case Success(Some(student)) => println(student)
+        case Success(Some(student)) =>
         case _ => fail(s"Retrieval not successful")
       }
     }
@@ -295,7 +276,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
           graph.graph.isIsomorphicWith(expectedGraph) shouldBe true
 
           implicit val generator = User
-          import bindings.UserBinding._
+          import bindings.UserDescriptor
 
           val updated = repo.update[User, UriGenerator[User]](studentUpdated)
           updated match {
@@ -311,9 +292,10 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "update an entity that is referenced by further entities" in {
-      import bindings.RoleBinding._
-      import bindings.RefRoleBinding._
-
+      import bindings.{
+      RoleDescriptor,
+      RefRoleDescriptor
+      }
       val role1 = Role("Role1", Set(Permission("P1")))
       val role2 = Role("Role1", Set(Permission("P1"), Permission("P2")), role1.id)
       val refrole = RefRole(None, role1.id)
@@ -321,7 +303,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       repo.add(role1)
       repo.add(refrole)
 
-      repo.update(role2)(roleBinder, Role)
+      repo.update(role2)(RoleDescriptor, Role)
 
       repo.get[Role](Role.generateUri(role1)) match {
         case Success(Some(role)) => role shouldBe role2

@@ -36,7 +36,7 @@ class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: Ld
 
   val bindings = Bindings[repository.Rdf](repository.namespace)
   implicit val dispatcher: ExecutionContextExecutor = context.system.dispatcher
-  import bindings.UserBinding.{userBinder, classUri}
+  import bindings.UserDescriptor
 
   override def receive: Receive = {
     case SyncRequest =>
@@ -58,11 +58,11 @@ class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: Ld
         }
       }
 
-      repository.get[User](userBinder, classUri) foreach { lwmUsers =>
+      repository.getAll[User] foreach { lwmUsers =>
         ldapService.users(lwmUsers.map(_.systemId.toLowerCase))(resolvers.degree).onComplete {
           case Success(ldapUsers) =>
             difference(lwmUsers, ldapUsers) foreach { user =>
-              repository.update(user)(userBinder, User) match {
+              repository.update(user)(UserDescriptor, User) match {
                 case Success(_) => log.info(s"updated $user")
                 case Failure(e) => log.error(s"failed to update $user. Exception: ${e.getMessage}")
               }

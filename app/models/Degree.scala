@@ -9,11 +9,13 @@ case class Degree(label: String, abbreviation: String, id: UUID = Degree.randomU
 
 case class DegreeProtocol(label: String, abbreviation: String)
 
-object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol, Degree]{
+object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol, Degree, Degree]{
 
   override implicit def reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
 
   override implicit def writes: Writes[Degree] = Json.writes[Degree]
+
+  override implicit def writesAtom: Writes[Degree] = writes
 
   implicit def format: Format[Degree] = Json.format[Degree]
 

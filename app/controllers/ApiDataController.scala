@@ -172,7 +172,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def reportCard(user: String) = Action { request =>
-    import bindings.ReportCardEntryBinding._
+    import bindings.ReportCardEntryDescriptor
     import AssignmentEntryType._
 
     val userId = UUID.fromString(user)
@@ -192,36 +192,36 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def getAdded = Action { request =>
-    import bindings.RoleBinding
-    import bindings.RoomBinding
-    import bindings.EmployeeBinding
-    import bindings.AuthorityBinding
-    import bindings.DegreeBinding
-    import bindings.SemesterBinding
-    import bindings.CourseBinding
-    import bindings.RefRoleBinding
-    import bindings.StudentBinding
-    import bindings.AssignmentPlanBinding
-    import bindings.LabworkBinding
-    import bindings.TimetableBinding
-    import bindings.BlacklistBinding
-    import bindings.LabworkApplicationBinding
+    import bindings.RoleDescriptor
+    import bindings.RoomDescriptor
+    import bindings.EmployeeDescriptor
+    import bindings.AuthorityDescriptor
+    import bindings.DegreeDescriptor
+    import bindings.SemesterDescriptor
+    import bindings.CourseDescriptor
+    import bindings.RefRoleDescriptor
+    import bindings.StudentDescriptor
+    import bindings.AssignmentPlanDescriptor
+    import bindings.LabworkDescriptor
+    import bindings.TimetableDescriptor
+    import bindings.BlacklistDescriptor
+    import bindings.LabworkApplicationDescriptor
 
     (for {
-      rooms <- repository.get[Room](RoomBinding.roomBinder, RoomBinding.classUri)
-      roles <- repository.get[Role](RoleBinding.roleBinder, RoleBinding.classUri)
-      auths <- repository.get[Authority](AuthorityBinding.authorityBinder, AuthorityBinding.classUri)
-      degrees <- repository.get[Degree](DegreeBinding.degreeBinder, DegreeBinding.classUri)
-      semesters <- repository.get[Semester](SemesterBinding.semesterBinder, SemesterBinding.classUri)
-      people <- repository.get[Employee](EmployeeBinding.employeeBinder, EmployeeBinding.classUri)
-      courses <- repository.get[Course](CourseBinding.courseBinder, CourseBinding.classUri)
-      refrole <- repository.get[RefRole](RefRoleBinding.refRoleBinder, RefRoleBinding.classUri)
-      labworks <- repository.get[Labwork](LabworkBinding.labworkBinder, LabworkBinding.classUri)
-      students <- repository.get[Student](StudentBinding.studentBinder, StudentBinding.classUri)
-      plans <- repository.get[AssignmentPlan](AssignmentPlanBinding.assignmentPlanBinder, AssignmentPlanBinding.classUri)
-      timetables <- repository.get[Timetable](TimetableBinding.timetableBinder, TimetableBinding.classUri)
-      blacklists <- repository.get[Blacklist](BlacklistBinding.blacklistBinder, BlacklistBinding.classUri)
-      lApps <- repository.get[LabworkApplication](LabworkApplicationBinding.labworkApplicationBinder, LabworkApplicationBinding.classUri)
+      rooms <- repository.getAll[Room]
+      roles <- repository.getAll[Role]
+      auths <- repository.getAll[Authority]
+      degrees <- repository.getAll[Degree]
+      semesters <- repository.getAll[Semester]
+      people <- repository.getAll[Employee]
+      courses <- repository.getAll[Course]
+      refrole <- repository.getAll[RefRole]
+      labworks <- repository.getAll[Labwork]
+      students <- repository.getAll[Student]
+      plans <- repository.getAll[AssignmentPlan]
+      timetables <- repository.getAll[Timetable]
+      blacklists <- repository.getAll[Blacklist]
+      lApps <- repository.getAll[LabworkApplication]
     } yield {
       List(
         Json.toJson(rooms),
@@ -246,15 +246,12 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def scheduleGen(count: String, labwork: String) = Action { request =>
-    implicit val gb = bindings.GroupBinding.groupBinder
-    implicit val gcu = bindings.GroupBinding.classUri
-    implicit val tb = bindings.TimetableBinding.timetableBinder
-    implicit val tcu = bindings.TimetableBinding.classUri
-    implicit val ab = bindings.AssignmentPlanBinding.assignmentPlanBinder
-    implicit val sb = bindings.SemesterBinding.semesterBinder
-    implicit val abu = bindings.AssignmentPlanBinding.classUri
-    import bindings.ReportCardEntryBinding._
-    import bindings.ScheduleBinding._
+    import bindings.GroupDescriptor
+    import bindings.TimetableDescriptor
+    import bindings.AssignmentPlanDescriptor
+    import bindings.SemesterDescriptor
+    import bindings.ReportCardEntryDescriptor
+    import bindings.ScheduleDescriptor
 
     (for {
       people <- groupService.sortApplicantsFor(UUID.fromString(labwork)) if people.nonEmpty
@@ -263,8 +260,8 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
       zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
       groups = zipped map (t => Group(t._1, UUID.fromString(labwork), t._2.toSet))
       _ <- repository.addMany[Group](groups)
-      timetable <- repository.get[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)))
-      plans <- repository.get[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork)))
+      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)))
+      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == UUID.fromString(labwork)))
       comp <- ScheduleController.competitive(UUID.fromString(labwork), repository)
       semester <- repository.get[Semester](Semester.generateUri(ss16))
     } yield for {
@@ -300,21 +297,21 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def rooms(n: Int) = {
-    import bindings.RoomBinding._
+    import bindings.RoomDescriptor
     def roomgen(n: Int) = Stream.continually(Room(s"R ${nextInt(3)}.${nextInt(9)}${nextInt(9)}${nextInt(9)}", "Desc")).take(n) ++ List(Room("H32-LC", "H32-LC Desc"), Room("H32-BG", "H32-BG Desc"), Room("H32-HA", "H32-HA Desc"))
     roomgen(n) map repository.add[Room]
   }
 
   def roles = {
-    import bindings.RoleBinding._
+    import bindings.RoleDescriptor
     List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
   def people = List(Employee("lwmadmin", "Lwm", "Admin", "", "employee", User.randomUUID))
 
   def authorities = {
-    import bindings.AuthorityBinding._
-    import bindings.EmployeeBinding._
+    import bindings.AuthorityDescriptor
+    import bindings.EmployeeDescriptor
 
     people.map(p => (p, Authority(p.id, Set(adminRefRole.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
@@ -331,7 +328,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def refroles = {
-    import bindings.RefRoleBinding._
+    import bindings.RefRoleDescriptor
     List(
       adminRefRole,
       employeeRefRole,
@@ -347,7 +344,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def degrees = {
-    import bindings.DegreeBinding._
+    import bindings.DegreeDescriptor
 
     List(
       Degree("Allgemeine Informatik", "AI", ai),
@@ -358,7 +355,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def semesters = {
-    import bindings.SemesterBinding._
+    import bindings.SemesterDescriptor
 
     List(
       Semester("Sommersemester 2015", "SS 15", "2015-03-01", "2015-08-31", "2015-07-11", ss15),
@@ -368,7 +365,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def courses = {
-    import bindings.CourseBinding._
+    import bindings.CourseDescriptor
 
     List(
       Course("Mathematik 1", "Konen", "MA 1", konen, 1, ma1Konen),
@@ -381,7 +378,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def employees = {
-    import bindings.EmployeeBinding._
+    import bindings.EmployeeDescriptor
 
     List(
       Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", konen),
@@ -394,7 +391,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def labworks = {
-    import bindings.LabworkBinding._
+    import bindings.LabworkDescriptor
 
     List(
       Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, published = false, ap1WiPrak),
@@ -417,7 +414,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def students = {
-    import bindings.StudentBinding._
+    import bindings.StudentDescriptor
     import scala.util.Random._
 
     (List(
@@ -429,7 +426,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def lApps = {
-    import bindings.LabworkApplicationBinding._
+    import bindings.LabworkApplicationDescriptor
     import scala.util.Random._
 
     val ap1Praks = Vector(ap1MiPrak, ap1AiPrak, ap1TiPrak, ap1WiPrak)
@@ -447,7 +444,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
 
   def plans = {
     import AssignmentEntryType._
-    import bindings.AssignmentPlanBinding._
+    import bindings.AssignmentPlanDescriptor
 
     def ap1Plan(labwork: UUID): AssignmentPlan = {
       val amount = 8
@@ -481,7 +478,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def timetables = {
-    import bindings.TimetableBinding._
+    import bindings.TimetableDescriptor
 
     val ft = DateTimeFormat.forPattern("HH:mm:ss")
     val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
@@ -525,7 +522,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def blacklists = {
-    import bindings.BlacklistBinding._
+    import bindings.BlacklistDescriptor
 
     val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
@@ -539,20 +536,20 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
   
   def defaultRoom = {
-    import bindings.RoomBinding._
+    import bindings.RoomDescriptor
     
     List(Room.default).map(repository.add[Room])
   }
   
   def defaultEmployee = {
-    import bindings.EmployeeBinding._
+    import bindings.EmployeeDescriptor
     
     List(Employee.default).map(repository.add[Employee])
   }
 
 
   def productionDegrees = {
-    import bindings.DegreeBinding._
+    import bindings.DegreeDescriptor
     Await.result(
     ldap.filter("(gidNumber=1)") { vec =>
       vec.filter(z => z.hasAttribute("studyPath") && Option(z.getAttribute("studyPath")).isDefined).map(_.getAttributeValue("studyPath")).distinct
@@ -563,8 +560,8 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   }
 
   def productionAuthorities = {
-    import bindings.EmployeeBinding._
-    import bindings.AuthorityBinding._
+    import bindings.EmployeeDescriptor
+    import bindings.AuthorityDescriptor
     people.map(p => (p, Authority(p.id, Set(adminRefRole.id)))).foldLeft(List[Try[PointedGraph[repository.Rdf]]]()) {
       case (l, (emp, auth)) => l :+ repository.add[Employee](emp) :+ repository.add[Authority](auth)
     }
@@ -573,7 +570,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   def productionRoles = roles
 
   def productionRefRoles = {
-    import bindings.RefRoleBinding._
+    import bindings.RefRoleDescriptor
 
     List(
       adminRefRole,
