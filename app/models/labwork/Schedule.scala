@@ -5,10 +5,10 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models._
 import models.users.Employee
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], id: UUID = Schedule.randomUUID) extends UniqueEntity
+case class Schedule(labwork: UUID, entries: Set[ScheduleEntry], invalidated: Option[DateTime] = None, id: UUID = Schedule.randomUUID) extends UniqueEntity
 
 case class ScheduleEntry(labwork: UUID,
                          start: LocalTime,
@@ -17,11 +17,12 @@ case class ScheduleEntry(labwork: UUID,
                          room: UUID,
                          supervisor: UUID,
                          group: UUID,
+                         invalidated: Option[DateTime] = None,
                          id: UUID = ScheduleEntry.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case ScheduleEntry(l, s, e, d, r, su, g, i) =>
-        l == labwork &&
+    case ScheduleEntry(l, s, e, d, r, su, g, _, i) =>
+      l == labwork &&
         s.isEqual(start) &&
         e.isEqual(end) &&
         d.isEqual(date) &&
@@ -37,11 +38,12 @@ case class ScheduleEntry(labwork: UUID,
   * Atoms
   */
 
-case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], id: UUID) extends UniqueEntity
+case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, id: UUID) extends UniqueEntity
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
+
   import ScheduleEntry.format
 
   lazy val empty = Schedule(UUID.randomUUID, Set.empty[ScheduleEntry])

@@ -7,7 +7,7 @@ import models.labwork._
 object ReportCardService {
 
   private def toReportCardEntryType(types: Set[AssignmentEntryType]): Set[ReportCardEntryType] = {
-    types.map(t => ReportCardEntryType(t.entryType, t.bool, t.int, ReportCardEntryType.randomUUID))
+    types.map(t => ReportCardEntryType(t.entryType, t.bool, t.int))
   }
 }
 

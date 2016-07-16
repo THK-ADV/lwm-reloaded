@@ -3,14 +3,14 @@ package models.semester
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
-import models.{UriGenerator, UniqueEntity}
-import org.joda.time.LocalDate
+import models.{UniqueEntity, UriGenerator}
+import org.joda.time.{DateTime, LocalDate}
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID = Semester.randomUUID) extends UniqueEntity {
+case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, invalidated: Option[DateTime] = None, id: UUID = Semester.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case Semester(l, a, s, e, ex, i) =>
+    case Semester(l, a, s, e, ex, _, i) =>
       l == label &&
       a == abbreviation &&
       s.isEqual(start) &&

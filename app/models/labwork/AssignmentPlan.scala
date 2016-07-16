@@ -4,9 +4,10 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
+import org.joda.time.DateTime
 import play.api.libs.json._
 
-case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
+case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], invalidated: Option[DateTime] = None, id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
 
 case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry])
 
@@ -14,7 +15,7 @@ case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntry
 
 case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
 
-case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID) extends UniqueEntity
+case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
   lazy val empty = AssignmentPlan(UUID.randomUUID(), 0, 0, Set.empty[AssignmentEntry])

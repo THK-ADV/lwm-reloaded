@@ -5,13 +5,13 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{Room, UniqueEntity, UriGenerator}
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json._
 
-case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled] = None, id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity {
+case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled] = None, invalidated: Option[DateTime] = None, id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case ReportCardEntry(s, l, la, d, st, e, r, et, rs, i) =>
+    case ReportCardEntry(s, l, la, d, st, e, r, et, rs, _, i) =>
       s == student &&
         l == labwork &&
         la == label &&
@@ -26,10 +26,10 @@ case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: Lo
   }
 }
 
-case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
+case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, invalidated: Option[DateTime] = None, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
 
 // TODO make them repo ready
-case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, invalidated: Option[DateTime] = None, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
 
 case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
 
@@ -37,11 +37,11 @@ case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: 
   * Atomic
   */
 
-case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], id: UUID) extends UniqueEntity
+case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
-case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, id: UUID) extends UniqueEntity
+case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisation[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
 

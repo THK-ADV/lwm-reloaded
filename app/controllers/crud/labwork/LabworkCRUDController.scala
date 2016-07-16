@@ -56,6 +56,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
       atom.degree.id,
       atom.subscribable,
       atom.published,
+      atom.invalidated,
       atom.id)
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
@@ -64,9 +65,9 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
   override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
     case Some(labwork) =>
-      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, labwork.id)
+      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, labwork.invalidated, labwork.id)
     case None =>
-      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, Labwork.randomUUID)
+      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

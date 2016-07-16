@@ -8,17 +8,17 @@ import models.{UriGenerator, UniqueEntity}
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String, timestamp: DateTime = DateTime.now, id: UUID = Annotation.randomUUID) extends UniqueEntity {
+case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = Annotation.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case Annotation(s, l, r, m, t, i) => s == student && l == labwork && r == reportCardEntry && m == message && t.isEqual(timestamp) && i == id
+    case Annotation(s, l, r, m, t, dt, i) => s == student && l == labwork && r == reportCardEntry && m == message && t.isEqual(timestamp) && i == id
     case _ => false
   }
 }
 
 case class AnnotationProtocol(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String)
 
-case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, id: UUID) extends UniqueEntity
+case class AnnotationAtom(student: Student, labwork: Labwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
 
 object Annotation extends UriGenerator[Annotation] with JsonSerialisation[AnnotationProtocol, Annotation, AnnotationAtom] {
 

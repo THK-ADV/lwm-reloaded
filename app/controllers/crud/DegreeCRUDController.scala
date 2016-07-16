@@ -38,8 +38,8 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
   }
 
   override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
-    case Some(degree) => Degree(input.label, input.abbreviation, degree.id)
-    case None => Degree(input.label, input.abbreviation, Degree.randomUUID)
+    case Some(degree) => Degree(input.label, input.abbreviation, degree.invalidated, degree.id)
+    case None => Degree(input.label, input.abbreviation)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

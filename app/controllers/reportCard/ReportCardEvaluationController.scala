@@ -190,7 +190,6 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
-
   def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {
     import defaultBindings.{LabworkDescriptor, StudentDescriptor}
 
@@ -201,7 +200,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
           optStudent <- repository.get[Student](User.generateUri(eval.student))
         } yield for {
           l <- optLabwork; s <- optStudent
-        } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.id)
+        } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.invalidated, eval.id)
       }
     } match {
       case Success(set) => Continue(set)

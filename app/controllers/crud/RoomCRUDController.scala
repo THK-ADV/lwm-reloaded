@@ -36,8 +36,8 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.description == output.description
 
   override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = existing match {
-    case Some(room) => Room(input.label, input.description, room.id)
-    case None => Room(input.label, input.description, Room.randomUUID)
+    case Some(room) => Room(input.label, input.description, room.invalidated, room.id)
+    case None => Room(input.label, input.description)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

@@ -11,12 +11,11 @@ import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
-import utils.{Continue, LwmMimeType, RequestOps, Return}
+import utils.{Continue, LwmMimeType, Return}
 import models.security.Permissions._
 import models.security.{Authority, RefRole}
 import models.security.Roles._
 import store.bind.Descriptor.Descriptor
-import utils.RequestOps._
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import store.sparql.select
@@ -49,6 +48,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       atom.abbreviation,
       atom.lecturer.id,
       atom.semesterIndex,
+      atom.invalidated,
       atom.id)
 
   override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
@@ -56,8 +56,8 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
   }
 
   override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = existing match {
-    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, course.id)
-    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, Course.randomUUID)
+    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, None, course.id)
+    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -137,7 +137,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       lecturerAuth <- roleService.authorityFor(course.lecturer.toString) if lecturerAuth.isDefined
       refRoles = roles.map(role => RefRole(Some(course.id), role.id))
       mvRefRole = roles.find(_.label == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
-      authority = (lecturerAuth |@| rvRefRole |@| mvRefRole) ((authority, rv, mv) => Authority(authority.user, authority.refRoles + mv.id + rv.id, authority.id))
+      authority = (lecturerAuth |@| rvRefRole |@| mvRefRole) ((authority, rv, mv) => Authority(authority.user, authority.refRoles + mv.id + rv.id, authority.invalidated, authority.id))
       _ <- authority.map(repository.update(_)(AuthorityDescriptor, Authority)).sequenceM
       _ <- repository.add[Course](course)
       _ <- repository.addMany[RefRole](refRoles)

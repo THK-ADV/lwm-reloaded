@@ -80,7 +80,7 @@ object ScheduleController {
 
   def toSchedule(scheduleG: ScheduleG): Schedule = {
     val entries = scheduleG.entries.map(e => ScheduleEntry(scheduleG.labwork, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-    Schedule(scheduleG.labwork, entries, scheduleG.id)
+    Schedule(scheduleG.labwork, entries, None, scheduleG.id)
   }
 }
 

@@ -40,15 +40,15 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override implicit val uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
 
-  override protected def coatomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.id)
+  override protected def coatomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.invalidated, atom.id)
 
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries
   }
 
   override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = existing match {
-    case Some(ap) => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.id)
-    case None => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, AssignmentPlan.randomUUID)
+    case Some(ap) => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.invalidated, ap.id)
+    case None => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

@@ -12,6 +12,7 @@ object Prefixes {
 
     // _
     val id = apply("id")
+    val invalidated = apply("invalidated")
 
     //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role, ReportCardEvaluation
     val label = apply("label")

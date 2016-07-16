@@ -44,7 +44,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     Timetable(
       atom.labwork.id,
       atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
-      atom.start, atom.localBlacklist, atom.id)
+      atom.start, atom.localBlacklist, atom.invalidated, atom.id)
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
     import models.semester.Blacklist.dateOrd
@@ -56,9 +56,9 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
     case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.id)
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.invalidated, timetable.id)
     case None =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, Timetable.randomUUID)
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist)
   }
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, timetable.create)

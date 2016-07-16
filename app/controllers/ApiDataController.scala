@@ -123,7 +123,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
   val randomStudents = {
     val degrees = Vector(ai, mi, ti, wi)
     (0 until 400).map(n =>
-      Student(n.toString, n.toString, n.toString, n.toString, n.toString, degrees(nextInt(degrees.size)), User.randomUUID)
+      Student(n.toString, n.toString, n.toString, n.toString, n.toString, degrees(nextInt(degrees.size)))
     ).toList
   }
 
@@ -273,7 +273,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
       val gen = scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
       gen.map { scheduleG =>
         val s = scheduleG.entries.map(g => ScheduleEntry(scheduleG.labwork, g.start, g.end, g.date, g.room, g.supervisor, g.group.id)).toSet
-        Schedule(scheduleG.labwork, s, scheduleG.id)
+        Schedule(scheduleG.labwork, s)
       }.map(repository.add[Schedule])
 
       gen.map(s => reportCardService.reportCards(s, p)).map(repository.addMany[ReportCardEntry](_))
@@ -307,7 +307,7 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     List(adminRole, studentRole, employeeRole, mvRole, maRole, assistantRole, rvRole) map repository.add[Role]
 }
 
-  def people = List(Employee("lwmadmin", "Lwm", "Admin", "", "employee", User.randomUUID))
+  def people = List(Employee("lwmadmin", "Lwm", "Admin", "", "employee"))
 
   def authorities = {
     import bindings.AuthorityDescriptor
@@ -347,10 +347,10 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import bindings.DegreeDescriptor
 
     List(
-      Degree("Allgemeine Informatik", "AI", ai),
-      Degree("Medieninformatik", "MI", mi),
-      Degree("Technische Informatik", "TI", ti),
-      Degree("Wirtschaftsinformatik", "WI", wi)
+      Degree("Allgemeine Informatik", "AI", None, ai),
+      Degree("Medieninformatik", "MI", None, mi),
+      Degree("Technische Informatik", "TI", None, ti),
+      Degree("Wirtschaftsinformatik", "WI", None, wi)
     ).map(repository.add[Degree])
   }
 
@@ -358,9 +358,9 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import bindings.SemesterDescriptor
 
     List(
-      Semester("Sommersemester 2015", "SS 15", "2015-03-01", "2015-08-31", "2015-07-11", ss15),
-      Semester("Wintersemester 2015/2016", "WS 15/16", "2015-09-01", "2016-02-29", "2016-02-01", ws1516),
-      Semester("Sommersemester 2016", "SS 16", "2016-03-01", "2016-08-31", "2016-07-11", ss16)
+      Semester("Sommersemester 2015", "SS 15", "2015-03-01", "2015-08-31", "2015-07-11", None, ss15),
+      Semester("Wintersemester 2015/2016", "WS 15/16", "2015-09-01", "2016-02-29", "2016-02-01", None, ws1516),
+      Semester("Sommersemester 2016", "SS 16", "2016-03-01", "2016-08-31", "2016-07-11", None, ss16)
     ).map(repository.add[Semester])
   }
 
@@ -368,12 +368,12 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import bindings.CourseDescriptor
 
     List(
-      Course("Mathematik 1", "Konen", "MA 1", konen, 1, ma1Konen),
-      Course("Mathematik 1", "Giannakopoulos", "MA 1", giannakopoulos, 1, ma1Giannakopoulos),
-      Course("Mathematik 2", "Schmitter", "MA 2", schmitter, 2, ma2Schmitter),
-      Course("Algorithmen und Programmierung 1", "Victor", "AP 1", victor, 1, ap1Victor),
-      Course("Computergrafik und Animation", "Eisemann", "CGA", eisemann, 3, cgaEisemann),
-      Course("Algorithmen und Programmierung 2", "Kohls", "AP 2", kohls, 2, ap2Kohls)
+      Course("Mathematik 1", "Konen", "MA 1", konen, 1, None, ma1Konen),
+      Course("Mathematik 1", "Giannakopoulos", "MA 1", giannakopoulos, 1, None, ma1Giannakopoulos),
+      Course("Mathematik 2", "Schmitter", "MA 2", schmitter, 2, None, ma2Schmitter),
+      Course("Algorithmen und Programmierung 1", "Victor", "AP 1", victor, 1, None, ap1Victor),
+      Course("Computergrafik und Animation", "Eisemann", "CGA", eisemann, 3, None, cgaEisemann),
+      Course("Algorithmen und Programmierung 2", "Kohls", "AP 2", kohls, 2, None, ap2Kohls)
     ).map(repository.add[Course])
   }
 
@@ -381,12 +381,12 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import bindings.EmployeeDescriptor
 
     List(
-      Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", konen),
-      Employee("giannakopoulos", "giannakopoulos", "fotios", "fotios.giannakopoulos@fh-koeln.de", "lecturer", giannakopoulos),
-      Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", "lecturer", schmitter),
-      Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", "lecturer", victor),
-      Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", "lecturer", eisemann),
-      Employee("kohls", "kohls", "christian", "christian.kohls@fh-koeln.de", "lecturer", kohls)
+      Employee("konen", "konen", "wolle", "wolle.konen@fh-koeln.de", "lecturer", None, konen),
+      Employee("giannakopoulos", "giannakopoulos", "fotios", "fotios.giannakopoulos@fh-koeln.de", "lecturer", None, giannakopoulos),
+      Employee("schmitter", "schmitter", "ane", "ane.schmitter@fh-koeln.de", "lecturer", None, schmitter),
+      Employee("victor", "victor", "frank", "frank.victor@fh-koeln.de", "lecturer", None, victor),
+      Employee("eisemann", "eisemann", "martin", "martin.eisemann@fh-koeln.de", "lecturer", None, eisemann),
+      Employee("kohls", "kohls", "christian", "christian.kohls@fh-koeln.de", "lecturer", None, kohls)
     ).map(repository.add[Employee])
   }
 
@@ -394,22 +394,22 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import bindings.LabworkDescriptor
 
     List(
-      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, published = false, ap1WiPrak),
-      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, subscribable = false, published = false, ap1AiPrak),
-      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, subscribable = false, published = false, ap1MiPrak),
-      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, subscribable = false, published = false, ap1TiPrak),
-      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, subscribable = false, published = false, ap2WiPrak),
-      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, published = false, ap2AiPrak),
-      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, published = false, ap2MiPrak),
-      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, published = false, ap2TiPrak),
-      Labwork("ma1 wi", "giannakopoulos", ws1516, ma1Giannakopoulos, wi, subscribable = false, published = false, ma1WiPrak),
-      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, published = false, ma1AiPrak),
-      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, published = false, ma1MiPrak),
-      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, published = false, ma1TiPrak),
-      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, subscribable = false, published = false, ma2AiPrak),
-      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, subscribable = false, published = false, ma2MiPrak),
-      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, subscribable = false, published = false, ma2TiPrak),
-      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, subscribable = false, published = false, cgaMiPrak)
+      Labwork("ap1 wi", "victor adv", ws1516, ap1Victor, wi, subscribable = false, published = false, None, ap1WiPrak),
+      Labwork("ap1 ai", "victor adv", ws1516, ap1Victor, ai, subscribable = false, published = false, None, ap1AiPrak),
+      Labwork("ap1 mi", "victor adv", ws1516, ap1Victor, mi, subscribable = false, published = false, None, ap1MiPrak),
+      Labwork("ap1 ti", "victor adv", ws1516, ap1Victor, ti, subscribable = false, published = false, None, ap1TiPrak),
+      Labwork("ap2 wi", "kohls adv", ss15, ap2Kohls, wi, subscribable = false, published = false, None, ap2WiPrak),
+      Labwork("ap2 ai", "kohls adv", ss15, ap2Kohls, ai, subscribable = false, published = false, None, ap2AiPrak),
+      Labwork("ap2 mi", "kohls adv", ss15, ap2Kohls, mi, subscribable = false, published = false, None, ap2MiPrak),
+      Labwork("ap2 ti", "kohls adv", ss15, ap2Kohls, ti, subscribable = false, published = false, None, ap2TiPrak),
+      Labwork("ma1 wi", "giannakopoulos", ws1516, ma1Giannakopoulos, wi, subscribable = false, published = false, None, ma1WiPrak),
+      Labwork("ma1 ai", "konen breiderhoff", ws1516, ma1Konen, ai, subscribable = false, published = false, None, ma1AiPrak),
+      Labwork("ma1 mi", "konen breiderhoff", ws1516, ma1Konen, mi, subscribable = false, published = false, None, ma1MiPrak),
+      Labwork("ma1 ti", "konen breiderhoff", ws1516, ma1Konen, ti, subscribable = false, published = false, None, ma1TiPrak),
+      Labwork("ma2 ai", "schmitter breiderhoff", ss15, ma2Schmitter, ai, subscribable = false, published = false, None, ma2AiPrak),
+      Labwork("ma2 mi", "schmitter breiderhoff", ss15, ma2Schmitter, mi, subscribable = false, published = false, None, ma2MiPrak),
+      Labwork("ma2 ti", "schmitter breiderhoff", ss15, ma2Schmitter, ti, subscribable = false, published = false, None, ma2TiPrak),
+      Labwork("cga mi", "eisemann adv", ws1516, cgaEisemann, mi, subscribable = false, published = false, None, cgaMiPrak)
     ).map(repository.add[Labwork])
   }
 
@@ -418,10 +418,10 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     import scala.util.Random._
 
     (List(
-      Student("gmId dobrynin", "alex", "dobrynin", "dobrynin@gm.th-koeln.de", "111111", mi, alexStudent),
-      Student("gmId muesse", "uwe", "muesse", "muesse@gm.th-koeln.de", "222222", mi, uweStudent),
-      Student("gmId avram", "robert", "avram", "avram@gm.th-koeln.de", "333333", mi, robertStudent),
-      Student("gmId hahn", "christian", "hahn", "hahn@gm.th-koeln.de", "444444", mi, christianStudent)
+      Student("gmId dobrynin", "alex", "dobrynin", "dobrynin@gm.th-koeln.de", "111111", mi, None, alexStudent),
+      Student("gmId muesse", "uwe", "muesse", "muesse@gm.th-koeln.de", "222222", mi, None, uweStudent),
+      Student("gmId avram", "robert", "avram", "avram@gm.th-koeln.de", "333333", mi, None, robertStudent),
+      Student("gmId hahn", "christian", "hahn", "hahn@gm.th-koeln.de", "444444", mi, None, christianStudent)
     ) ++ randomStudents).map(repository.add[Student])
   }
 
@@ -516,8 +516,8 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     )
 
     List(
-      Timetable(ap1MiPrak, ap1MiEntries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID),
-      Timetable(ma1MiPrak, ma1MiEntries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      Timetable(ap1MiPrak, ap1MiEntries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime]),
+      Timetable(ma1MiPrak, ma1MiEntries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
     ).map(repository.add[Timetable])
   }
 
@@ -530,8 +530,8 @@ class ApiDataController(val repository: SesameRepository, val ldap: LdapServiceI
     val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
 
     List(
-      Blacklist("Profil hoch 2", profileWeek, Blacklist.randomUUID),
-      Blacklist("Weihnachten", christmas, Blacklist.randomUUID)
+      Blacklist("Profil hoch 2", profileWeek),
+      Blacklist("Weihnachten", christmas)
     ).map(repository.add[Blacklist])
   }
   

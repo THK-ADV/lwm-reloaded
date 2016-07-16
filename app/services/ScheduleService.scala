@@ -63,7 +63,7 @@ object ScheduleService {
 
   def randomGroup(implicit groups: Vector[Group]): Group = groups(nextInt(groups.size))
 
-  def replaceGroup(s: Group)(f: Set[UUID] => Set[UUID]): Group = Group(s.label, s.labwork, f(s.members), s.id)
+  def replaceGroup(s: Group)(f: Set[UUID] => Set[UUID]): Group = Group(s.label, s.labwork, f(s.members), s.invalidated, s.id)
 
   def replaceSchedule(s: ScheduleG)(f: ScheduleEntryG => ScheduleEntryG): ScheduleG = ScheduleG(s.labwork, s.entries map f, s.id)
 

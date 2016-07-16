@@ -49,12 +49,12 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
 
   override implicit val uriGenerator: UriGenerator[LabworkApplication] = LabworkApplication
 
-  override protected def coatomic(atom: LabworkApplicationAtom): LabworkApplication = LabworkApplication(atom.labwork.id, atom.applicant.id, atom.friends map (_.id), atom.timestamp, atom.id)
+  override protected def coatomic(atom: LabworkApplicationAtom): LabworkApplication = LabworkApplication(atom.labwork.id, atom.applicant.id, atom.friends map (_.id), atom.timestamp, atom.invalidated, atom.id)
 
   override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = input.friends == output.friends
 
   override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = existing match {
-    case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, lapp.timestamp, lapp.id)
+    case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, lapp.timestamp, lapp.invalidated, lapp.id)
     case None => LabworkApplication(input.labwork, input.applicant, input.friends)
   }
 

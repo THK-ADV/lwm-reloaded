@@ -5,13 +5,14 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{UniqueEntity, UriGenerator}
+import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Group(label: String, labwork: UUID, members: Set[UUID], id: UUID = Group.randomUUID) extends UniqueEntity
+case class Group(label: String, labwork: UUID, members: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = Group.randomUUID) extends UniqueEntity
 
 case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
-case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], id: UUID) extends UniqueEntity
+case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group, GroupAtom] {
 

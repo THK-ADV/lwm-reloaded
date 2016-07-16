@@ -34,7 +34,7 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
   override protected def compareModel(input: RoleProtocol, output: Role): Boolean = input.permissions == output.permissions
 
   override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = existing match {
-    case Some(role) => Role(input.label, input.permissions, role.id)
+    case Some(role) => Role(input.label, input.permissions, role.invalidated, role.id)
     case None => Role(input.label, input.permissions)
   }
 

@@ -39,12 +39,12 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
 
   override implicit val uriGenerator: UriGenerator[Annotation] = Annotation
 
-  override protected def coatomic(atom: AnnotationAtom): Annotation = Annotation(atom.student.id, atom.labwork.id, atom.reportCardEntry.id, atom.message, atom.timestamp, atom.id)
+  override protected def coatomic(atom: AnnotationAtom): Annotation = Annotation(atom.student.id, atom.labwork.id, atom.reportCardEntry.id, atom.message, atom.timestamp, atom.invalidated, atom.id)
 
   override protected def compareModel(input: AnnotationProtocol, output: Annotation): Boolean = input.message == output.message
 
   override protected def fromInput(input: AnnotationProtocol, existing: Option[Annotation]): Annotation = existing match {
-    case Some(annotation) => Annotation(input.student, input.labwork, input.reportCardEntry, input.message, annotation.timestamp, annotation.id)
+    case Some(annotation) => Annotation(input.student, input.labwork, input.reportCardEntry, input.message, annotation.timestamp, annotation.invalidated, annotation.id)
     case None => Annotation(input.student, input.labwork, input.reportCardEntry, input.message)
   }
 

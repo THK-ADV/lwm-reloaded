@@ -36,8 +36,8 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
   override implicit def writesAtom: Writes[Semester] = Semester.writesAtom
 
   override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = existing match {
-    case Some(semester) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.id)
-    case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, Semester.randomUUID)
+    case Some(semester) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.invalidated, semester.id)
+    case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, None, Semester.randomUUID)
   }
 
   override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
