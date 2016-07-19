@@ -5,14 +5,12 @@ import java.util.UUID
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.security.Permissions._
-import models.security.RefRole
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
-import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-
+import base.StreamHandler._
 import scala.concurrent.Future
 import scala.util.Success
 
@@ -23,8 +21,6 @@ class RefRoleControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all refroles" in new FakeApplication() {
-      import RefRole.writes
-
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
       when(roleService.checkWith((None, refRole.getAll))(FakeAdminAuth)).thenReturn(Success(true))
 
@@ -39,7 +35,7 @@ class RefRoleControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[RefRole])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Allow non restricted context invocations when rv wants to get a single refrole" in new FakeApplication() {

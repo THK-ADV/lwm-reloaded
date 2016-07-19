@@ -3,22 +3,19 @@ package bind
 import base.SesameDbSpec
 import models.Degree
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class DegreeBindingSpec extends SesameDbSpec {
 
   import bindings.{
   DegreeDescriptor,
-  uuidBinder
-  }
+  dateTimeBinder,
+  uuidBinder}
   import ops._
 
   implicit val degreeBinder = DegreeDescriptor.binder
 
-  val degree = Degree("degree", "abbreviation", Degree.randomUUID)
+  val degree = Degree("degree", "abbreviation")
   val degreeGraph = (
     URI(Degree.generateUri(degree)).a(lwm.Degree)
       -- lwm.label ->- degree.label

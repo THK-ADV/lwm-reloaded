@@ -8,9 +8,6 @@ import models.users.{Employee, User}
 import models.{Degree, Room}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class TimetableBindingSpec extends SesameDbSpec {
@@ -30,13 +27,14 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   val timetableEntry1 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
   val timetableEntry2 = TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)
-  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
     .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.entries).->-(timetable.entries)
     .--(lwm.start).->-(timetable.start)
     .--(lwm.blacklist).->-(timetable.localBlacklist)
+    .--(lwm.invalidated).->-(timetable.invalidated)
     .--(lwm.id).->-(timetable.id).graph
 
   val timetableEntryGraph = URI("#").a(lwm.TimetableEntry)
@@ -107,7 +105,7 @@ class TimetableBindingSpec extends SesameDbSpec {
       val timetableAtom = TimetableAtom(labwork, Set(
         TimetableEntryAtom(supervisor1, room1, degree, timetableEntry1.dayIndex, timetableEntry1.start, timetableEntry1.end),
         TimetableEntryAtom(supervisor2, room2, degree, timetableEntry2.dayIndex, timetableEntry2.start, timetableEntry2.end)
-      ), timetable.start, timetable.localBlacklist, timetable.id)
+      ), timetable.start, timetable.localBlacklist, timetable.invalidated, timetable.id)
 
       repo add labwork
       repo addMany List(room1, room2)
@@ -119,6 +117,7 @@ class TimetableBindingSpec extends SesameDbSpec {
         case Success(Some(atom)) =>
           atom.labwork shouldEqual timetableAtom.labwork
           atom.start isEqual timetableAtom.start shouldBe true
+          atom.invalidated shouldEqual timetableAtom.invalidated
           atom.id shouldEqual timetableAtom.id
           atom.entries shouldBe timetableAtom.entries
 

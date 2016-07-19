@@ -5,32 +5,33 @@ import models.{Course, CourseAtom}
 import models.security.{Permission, RefRole, RefRoleAtom, Role}
 import models.users.Employee
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class RefRoleBindingSpec extends SesameDbSpec {
+
   import bindings.{
   RefRoleDescriptor,
+  dateTimeBinder,
   uuidBinder,
   uuidRefBinder}
   import ops._
 
   implicit val refRoleBinder = RefRoleDescriptor.binder
 
-  val refRoleWithCourse = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
+  val refRoleWithCourse = RefRole(Some(Course.randomUUID), Role.randomUUID)
 
-  val refRoleWithoutCourse = RefRole(None, Role.randomUUID, RefRole.randomUUID)
+  val refRoleWithoutCourse = RefRole(None, Role.randomUUID)
 
   val refRoleGraphWithCourse = URI(RefRole.generateUri(refRoleWithCourse)).a(lwm.RefRole)
     .--(lwm.course).->-(refRoleWithCourse.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.role).->-(refRoleWithCourse.role)(ops, uuidRefBinder(Role.splitter))
+    .--(lwm.invalidated).->-(refRoleWithCourse.invalidated)
     .--(lwm.id).->-(refRoleWithCourse.id).graph
 
   val refRoleGraphWithoutCourse = URI(RefRole.generateUri(refRoleWithoutCourse)).a(lwm.RefRole)
     .--(lwm.course).->-(refRoleWithoutCourse.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.role).->-(refRoleWithoutCourse.role)(ops, uuidRefBinder(Role.splitter))
+    .--(lwm.invalidated).->-(refRoleWithoutCourse.invalidated)
     .--(lwm.id).->-(refRoleWithoutCourse.id).graph
 
   "A RefRoleBindingSpec" should {
@@ -84,10 +85,10 @@ class RefRoleBindingSpec extends SesameDbSpec {
       val refrole1 = RefRole(Some(course.id), role1.id)
       val refrole2 = RefRole(None, role2.id)
 
-      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.invalidated, course.id)
 
-      val refroleAtom1 = RefRoleAtom(Some(courseAtom), role1, refrole1.id)
-      val refroleAtom2 = RefRoleAtom(None, role2, refrole2.id)
+      val refroleAtom1 = RefRoleAtom(Some(courseAtom), role1, refrole1.invalidated, refrole1.id)
+      val refroleAtom2 = RefRoleAtom(None, role2, refrole2.invalidated, refrole2.id)
 
       repo add lecturer
       repo add course

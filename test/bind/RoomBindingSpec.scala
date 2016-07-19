@@ -12,13 +12,13 @@ class RoomBindingSpec extends SesameDbSpec {
 
   import bindings.{
   RoomDescriptor,
-  uuidBinder
-  }
+  dateTimeBinder,
+  uuidBinder}
   import ops._
 
   implicit val roomBinding = RoomDescriptor.binder
 
-  val room = Room("label", "description", Room.randomUUID)
+  val room = Room("label", "description")
   val roomGraph = (
     URI(Room.generateUri(room)).a(lwm.Room)
       -- lwm.label ->- room.label

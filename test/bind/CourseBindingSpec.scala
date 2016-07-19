@@ -3,10 +3,7 @@ package bind
 import base.SesameDbSpec
 import models.{Course, CourseAtom}
 import models.users.{Employee, User}
-import store.bind.Bindings
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-
 import scala.util.{Failure, Success}
 
 class CourseBindingSpec extends SesameDbSpec {
@@ -14,18 +11,20 @@ class CourseBindingSpec extends SesameDbSpec {
   import bindings.{
   CourseDescriptor,
   uuidBinder,
+  dateTimeBinder,
   uuidRefBinder}
   import ops._
 
   implicit val courseBinder = CourseDescriptor.binder
 
-  val course = Course("Algorithmen und Programmierung", "AP Victor", "AP", User.randomUUID, 1, Course.randomUUID)
+  val course = Course("Algorithmen und Programmierung", "AP Victor", "AP", User.randomUUID, 1)
   val courseGraph = URI(Course.generateUri(course)).a(lwm.Course)
     .--(lwm.label).->-(course.label)
     .--(lwm.description).->-(course.description)
     .--(lwm.abbreviation).->-(course.abbreviation)
     .--(lwm.lecturer).->-(course.lecturer)(ops, uuidRefBinder(User.splitter))
     .--(lwm.semesterIndex).->-(course.semesterIndex)
+    .--(lwm.invalidated).->-(course.invalidated)
     .--(lwm.id).->-(course.id).graph
 
   "A CourseBindingSpec" should {
@@ -55,7 +54,7 @@ class CourseBindingSpec extends SesameDbSpec {
 
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
       val course = Course("course", "description", "abbr", lecturer.id, 2)
-      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.invalidated, course.id)
 
       repo add lecturer
       repo add course

@@ -53,7 +53,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       import ReportCardEntryType._
 
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
+      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
 
@@ -67,13 +67,13 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
       val result = controller.update(course, entryType.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(toUpdate)
     }
 
     "not update when there is an inconsistency" in {
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
+      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
 
       val request = FakeRequest(
         PUT,
@@ -113,7 +113,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
     "not update a report card entry type when there is an exception" in {
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.id)
+      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
       val course = UUID.randomUUID()
       val errorMessage = "Oops, something went wrong"
 

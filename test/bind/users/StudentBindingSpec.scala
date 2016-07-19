@@ -3,19 +3,16 @@ package bind.users
 import base.SesameDbSpec
 import models.Degree
 import models.users.{Student, StudentAtom, User}
-import store.bind.Bindings
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-
 import scala.util.{Failure, Success}
 
 class StudentBindingSpec extends SesameDbSpec {
 
   import bindings.{
   StudentDescriptor,
+  dateTimeBinder,
   uuidBinder,
-  uuidRefBinder
-  }
+  uuidRefBinder}
   import ops._
 
   implicit val studentBinder = StudentDescriptor.binder
@@ -28,6 +25,7 @@ class StudentBindingSpec extends SesameDbSpec {
     .--(lwm.registrationId).->-(student.registrationId)
     .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
     .--(lwm.email).->-(student.email)
+    .--(lwm.invalidated).->-(student.invalidated)
     .--(lwm.id).->-(student.id).graph
 
   "A StudentBinding" should {
@@ -59,7 +57,7 @@ class StudentBindingSpec extends SesameDbSpec {
       val degree = Degree("degree", "abbrev")
       val student = Student("systemid", "lastname", "firstname", "email", "regid", degree.id)
 
-      val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.id)
+      val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.invalidated, student.id)
 
       repo add degree
       repo add student

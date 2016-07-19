@@ -5,8 +5,6 @@ import models.{Course, CourseAtom, Degree}
 import models.security._
 import models.users.{Employee, Student, User}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
@@ -15,6 +13,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
   import ops._
   import bindings.{
   AuthorityDescriptor,
+  dateTimeBinder,
   uuidBinder,
   uuidRefBinder}
 
@@ -22,17 +21,19 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
 
-  val authorityForCourse1 = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
+  val authorityForCourse1 = RefRole(Some(Course.randomUUID), Role.randomUUID)
 
-  val authorityForCourse2 = RefRole(Some(Course.randomUUID), Role.randomUUID, RefRole.randomUUID)
+  val authorityForCourse2 = RefRole(Some(Course.randomUUID), Role.randomUUID)
 
-  val authWith = Authority(student.id, Set(authorityForCourse1.id, authorityForCourse2.id), Authority.randomUUID)
-  val authWithout = Authority(student.id, Set.empty, Authority.randomUUID)
+  val authWith = Authority(student.id, Set(authorityForCourse1.id, authorityForCourse2.id))
+  val authWithout = Authority(student.id, Set.empty)
 
   val authorityGraph = URI(Authority.generateUri(authWith)).a(lwm.Authority)
-    .--(lwm.id).->-(authWith.id)
     .--(lwm.privileged).->-(authWith.user)(ops, uuidRefBinder(User.splitter))
-    .--(lwm.refroles).->-(authWith.refRoles)(ops, uuidRefBinder(RefRole.splitter)).graph
+    .--(lwm.refroles).->-(authWith.refRoles)(ops, uuidRefBinder(RefRole.splitter))
+    .--(lwm.invalidated).->-(authWith.invalidated)
+    .--(lwm.id).->-(authWith.id).graph
+
 
   "An authority" should {
     "return a RDF graph representation of an Authority" in {
@@ -83,11 +84,11 @@ class AuthorityBindingSpec extends SesameDbSpec {
       val refrole2 = RefRole(None, role2.id)
       val authority = Authority(student.id, Set(refrole1.id, refrole2.id))
 
-      val courseAtom = CourseAtom(course1.label, course1.description, course1.abbreviation, lecturer, course1.semesterIndex, course1.id)
+      val courseAtom = CourseAtom(course1.label, course1.description, course1.abbreviation, lecturer, course1.semesterIndex, course1.invalidated, course1.id)
       val authorityAtom = AuthorityAtom(student, Set(
-        RefRoleAtom(Some(courseAtom), role1, refrole1.id),
-        RefRoleAtom(None, role2, refrole2.id)
-      ), authority.id)
+        RefRoleAtom(Some(courseAtom), role1, refrole1.invalidated, refrole1.id),
+        RefRoleAtom(None, role2, refrole2.invalidated, refrole2.id)
+      ), authority.invalidated, authority.id)
 
       repo add authority
       repo addMany List(role1, role2)

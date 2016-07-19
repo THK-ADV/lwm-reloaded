@@ -17,6 +17,7 @@ import play.api.test.Helpers._
 import utils.LwmMimeType
 import models.security.Permissions._
 import scala.util.Success
+import base.StreamHandler._
 
 class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, RefRole, RefRoleAtom] {
 
@@ -35,18 +36,18 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
   }
 
   val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
-  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1, Course.randomUUID)
-  val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.id)
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1)
+  val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.invalidated, courseToPass.id)
   val roleToPass = Role("role to pass", labwork.all)
   val roleToFail = Role("role to fail", course.all)
 
-  override val entityToFail: RefRole = RefRole(None, roleToFail.id, RefRole.randomUUID)
+  override val entityToFail: RefRole = RefRole(None, roleToFail.id)
 
-  override val entityToPass: RefRole = RefRole(Some(courseAtomToPass.id), roleToPass.id, RefRole.randomUUID)
+  override val entityToPass: RefRole = RefRole(Some(courseAtomToPass.id), roleToPass.id)
 
-  override val atomizedEntityToPass = RefRoleAtom(Some(courseAtomToPass), roleToPass, entityToPass.id)
+  override val atomizedEntityToPass = RefRoleAtom(Some(courseAtomToPass), roleToPass, entityToPass.invalidated, entityToPass.id)
 
-  override val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToFail.id)
+  override val atomizedEntityToFail = RefRoleAtom(None, roleToFail, entityToPass.invalidated, entityToFail.id)
 
   override implicit val jsonWrites: Writes[RefRole] = RefRole.writes
 
@@ -84,10 +85,11 @@ class RefRoleControllerSpec extends AbstractCRUDControllerSpec[RefRoleProtocol, 
         s"/refRoles?${RefRoleController.courseAttribute}=$course"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(rr1), Json.toJson(rr3))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(rr1, rr3))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
   }
 }

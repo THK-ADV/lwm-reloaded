@@ -71,7 +71,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       val result = controller.get(student.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
 
       val jsValues = toJson(evals)
       val content = contentAsString(result)
@@ -122,7 +122,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       val result = controller.all(course.toString, labwork.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
 
       val jsValues = toJson(evals)
       val content = contentAsString(result)
@@ -156,7 +156,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       val result = controller.preview(course.toString, labwork.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
 
       val jsValues = toJson(evals)
       val content = contentAsString(result)
@@ -218,7 +218,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
       val result = controller.create(course.toString, labwork.toString)(request)
 
       status(result) shouldBe CREATED
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
 
       val jsValues = toJson(evals)
       val content = contentAsString(result)

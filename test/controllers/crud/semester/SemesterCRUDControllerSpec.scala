@@ -14,14 +14,15 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
+import base.StreamHandler._
 
 import scala.util.{Failure, Success}
 
 class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester, Semester] {
 
-  override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+  override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now)
 
-  override val entityToFail: Semester = Semester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+  override val entityToFail: Semester = Semester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now)
 
   override implicit val jsonWrites: Writes[Semester] = Semester.writes
 
@@ -70,8 +71,9 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
   "A SemesterCRUDController also " should {
 
     "successfully return all semesters for a year" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterWithDate = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val entitiesForYear = Set(semesterWithDate)
+
       val year = LocalDate.now.getYear
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
@@ -82,17 +84,18 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       )
 
       val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val expected = entitiesForYear map (e => Json.toJson(e))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(entitiesForYear)
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "successfully return all semesters for many years" in {
-      val first = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val second = Semester("label", "abbrev", LocalDate.now.plusYears(1), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val third = Semester("label", "abbrev", LocalDate.now.plusYears(2), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val fourth = Semester("label", "abbrev", LocalDate.now.plusYears(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val first = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+      val second = Semester("label", "abbrev", LocalDate.now.plusYears(1), LocalDate.now, LocalDate.now)
+      val third = Semester("label", "abbrev", LocalDate.now.plusYears(2), LocalDate.now, LocalDate.now)
+      val fourth = Semester("label", "abbrev", LocalDate.now.plusYears(3), LocalDate.now, LocalDate.now)
 
       val entitiesForYear = Set(first, second, third, fourth)
       val some = first.start.getYear
@@ -104,16 +107,17 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${some.toString},${other.toString}"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Seq(first, third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return semesters for a year when there is no match" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(1), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(1), LocalDate.now, LocalDate.now)
+      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = DateTime.now.getYear
 
@@ -123,11 +127,11 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${year.toString}"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Semester])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "not return semesters for a year when there is an exception" in {
@@ -140,7 +144,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${year.toString}"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
@@ -151,8 +155,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "not return semesters when there is an invalid query" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now)
+      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(3), LocalDate.now, LocalDate.now)
       val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
       val year = DateTime.now.getYear
 
@@ -162,7 +166,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?invalid=${year.toString}"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
@@ -173,8 +177,8 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     "successfully return all semesters for a specific period" in {
-      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
+      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
@@ -186,18 +190,19 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${year.toString}&period=$period"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(semesterInSS))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(semesterInSS))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "successfully return all semesters in different years for a specific period" in {
-      val firstWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val secondWS = Semester("label", "abbrev", LocalDate.now.plusYears(2).withMonthOfYear(12), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val firstSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val secondSS = Semester("label", "abbrev", LocalDate.now.plusYears(3).withMonthOfYear(5), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val firstWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
+      val secondWS = Semester("label", "abbrev", LocalDate.now.plusYears(2).withMonthOfYear(12), LocalDate.now, LocalDate.now)
+      val firstSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
+      val secondSS = Semester("label", "abbrev", LocalDate.now.plusYears(3).withMonthOfYear(5), LocalDate.now, LocalDate.now)
 
       val semesters = Set(firstWS, secondWS, firstSS, secondSS)
 
@@ -211,16 +216,17 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${first.toString},${second.toString}&period=$period"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(firstSS), Json.toJson(secondSS))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(firstSS, secondSS))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return semesters for a specific period when there is not match" in {
-      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
+      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
       val semesters = Set(semesterInSS, semesterInWS)
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
@@ -232,7 +238,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s?year=${year.toString}&period=$period"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
@@ -244,7 +250,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     "not return semesters for a specific period when there is an exception" in {
       val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
@@ -255,7 +261,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
         GET,
         s"/${entityTypeName.toLowerCase}s/${year.toString}/$period"
       )
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

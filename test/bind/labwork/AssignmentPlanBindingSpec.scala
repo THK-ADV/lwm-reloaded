@@ -6,8 +6,6 @@ import base.SesameDbSpec
 import models.labwork.AssignmentEntryType._
 import models.labwork.{AssignmentEntry, AssignmentPlan, Labwork}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
@@ -18,6 +16,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   AssignmentEntryDescriptor,
   AssignmentEntryTypeDescriptor,
   AssignmentPlanDescriptor,
+  dateTimeBinder,
   uuidBinder,
   uuidRefBinder}
 
@@ -38,6 +37,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
       -- lwm.attendance ->- assignmentPlan.attendance
       -- lwm.mandatory ->- assignmentPlan.mandatory
       -- lwm.entries ->- assignmentPlan.entries
+      -- lwm.invalidated ->- assignmentPlan.invalidated
       -- lwm.id ->- assignmentPlan.id
     ).graph
 

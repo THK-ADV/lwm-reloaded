@@ -66,11 +66,11 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   }).toVector
 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
-    val labwork = Labwork("label", "desc", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false, e.labwork)
-    val room = Room("room", "desc", e.room)
-    val supervisor = Employee("systemid", "lastname", "firstname", "email", "supervisor", e.supervisor)
-    val group = Group("label", labwork.id, Set(), e.group)
-    ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, e.id)
+    val labwork = Labwork("label", "desc", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false, None, e.labwork)
+    val room = Room("room", "desc", None, e.room)
+    val supervisor = Employee("systemid", "lastname", "firstname", "email", "supervisor", None, e.supervisor)
+    val group = Group("label", labwork.id, Set(), None, e.group)
+    ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, None, e.id)
   }
 
   "A ScheduleEntry controller" should {

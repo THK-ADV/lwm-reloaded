@@ -68,7 +68,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       )).get
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       session(result).data.keys should contain (SessionController.sessionId)
       session(result).data.keys should contain (SessionController.userId)
       session(result).data.keys should contain (Security.username)
@@ -88,7 +88,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       )).get
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
 
       session(result).data.keys should contain (SessionController.userId)
       session(result).data.get(SessionController.userId) shouldBe Some(validUuid.toString)

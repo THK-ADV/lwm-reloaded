@@ -16,6 +16,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import scala.util.Success
+import base.StreamHandler._
 
 class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable, TimetableAtom] {
 
@@ -28,8 +29,8 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
-  val degreeToPass = Degree("label to pass", "abbrev to pass", Degree.randomUUID)
-  val degreeToFail = Degree("label to fail", "abbrev to fail", Degree.randomUUID)
+  val degreeToPass = Degree("label to pass", "abbrev to pass")
+  val degreeToFail = Degree("label to fail", "abbrev to fail")
 
   val entriesToPass = (0 until 10).map(n =>
     TimetableEntry(
@@ -67,9 +68,9 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
   }
 
-  override val entityToFail: Timetable = Timetable(labworkToFail.id, entriesToFail, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+  override val entityToFail: Timetable = Timetable(labworkToFail.id, entriesToFail, LocalDate.now, Set.empty[DateTime])
 
-  override val entityToPass: Timetable = Timetable(labworkToPass.id, entriesToPass, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+  override val entityToPass: Timetable = Timetable(labworkToPass.id, entriesToPass, LocalDate.now, Set.empty[DateTime])
 
   override implicit val jsonWrites: Writes[Timetable] = Timetable.writes
 
@@ -106,6 +107,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     toTimetableEntryAtom(entriesToPass)(roomToPass, supervisorToPass, degreeToPass),
     entityToPass.start,
     entityToPass.localBlacklist,
+    entityToPass.invalidated,
     entityToPass.id
   )
 
@@ -114,6 +116,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     toTimetableEntryAtom(entriesToFail)(roomToFail, supervisorToFail, degreeToFail),
     entityToFail.start,
     entityToFail.localBlacklist,
+    entityToPass.invalidated,
     entityToFail.id
   )
 
@@ -125,14 +128,14 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
 
-      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
 
       when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
@@ -144,10 +147,11 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
         s"/$entityTypeName?${TimetableCRUDController.courseAttribute}=$course"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(tt1), Json.toJson(tt2), Json.toJson(tt5), Json.toJson(tt7), Json.toJson(tt8))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(tt1, tt2, tt5, tt7, tt8))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
   }
 }

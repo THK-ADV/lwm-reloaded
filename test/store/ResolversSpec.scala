@@ -182,7 +182,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
       import scala.util.Random.nextInt
 
-      val degrees = (0 until 10).map(i => Degree(i.toString, i.toString, Degree.randomUUID)).toList
+      val degrees = (0 until 10).map(i => Degree(i.toString, i.toString)).toList
       repo.addMany[Degree](degrees)
 
       val result = (0 until 8).map(_ => resolver.degree(degrees(nextInt(degrees.size)).abbreviation)).toList
@@ -196,8 +196,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "throw an exception when degree cant be resolved cause its not found" in {
       import bindings.DegreeDescriptor
 
-      val degree1 = Degree("label", "abbrev", Degree.randomUUID)
-      val degree2 = Degree("label2", "abbrev“", Degree.randomUUID)
+      val degree1 = Degree("label", "abbrev")
+      val degree2 = Degree("label2", "abbrev")
       val abbreviation = "not existent"
 
       repo.addMany[Degree](List(degree1, degree2))

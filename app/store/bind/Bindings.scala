@@ -646,7 +646,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
         .pointsAt(LabworkDescriptor.references)
-        .pointsAt(TimetableEntryDescriptor.references)
+        .pointsAt(TimetableEntryAtomDescriptor.references)
 
     private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
     private val entries = set[TimetableEntryAtom](lwm.entries)(TimetableEntryAtomDescriptor.binder)

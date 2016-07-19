@@ -2,6 +2,7 @@ package controllers.crud.labwork
 
 import java.util.UUID
 
+import base.StreamHandler
 import controllers.crud.AbstractCRUDControllerSpec
 import models.labwork._
 import org.mockito.Matchers._
@@ -12,6 +13,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
+import StreamHandler._
 import scala.util.{Failure, Success}
 
 class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
@@ -45,6 +47,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       entityToPass.attendance,
       entityToPass.mandatory,
       Set.empty[AssignmentEntry],
+      entityToPass.invalidated,
       entityToPass.id)
 
   override val atomizedEntityToFail: AssignmentPlanAtom =
@@ -53,6 +56,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       entityToFail.attendance,
       entityToFail.mandatory,
       Set.empty[AssignmentEntry],
+      entityToPass.invalidated,
       entityToFail.id)
 
 
@@ -102,10 +106,11 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
         s"/${entityTypeName.toLowerCase}s?${AssignmentPlanCRUDController.labworkAttribute}=$labwork"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(ap1), Json.toJson(ap3))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(ap1, ap3))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return all assignment plans for a given labwork when there is an exception" in {
@@ -151,10 +156,11 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
         s"/${entityTypeName.toLowerCase}s?${AssignmentPlanCRUDController.courseAttribute}=$course"
       )
       val result = controller.all()(request)
+      val expected = Set(ap1, ap4, ap5, ap7, ap8) map (e => Json.toJson(e))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(ap1, ap4, ap5, ap7, ap8))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return an empty json when there are no assignment plans for a given course" in {
@@ -173,8 +179,8 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[AssignmentPlan])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "not return assignment plans when there is an invalid query attribute" in {

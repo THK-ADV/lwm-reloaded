@@ -79,7 +79,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeMvAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, FakeCourse))
+      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
       
       val request = FakeRequest(
         PUT,
@@ -100,7 +100,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, FakeCourse))
+      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
       
       val request = FakeRequest(
         PUT,
@@ -121,7 +121,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeEmployeeAuth)).thenReturn(Success(false))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, FakeCourse))
+      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
 
       val request = FakeRequest(
         PUT,

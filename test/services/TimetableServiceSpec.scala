@@ -29,7 +29,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
   val weeks = Weeks.weeks(30)
-  val degree = Degree("degree", "abbrev", Degree.randomUUID)
+  val degree = Degree("degree", "abbrev")
   val tEntries = Set(
     TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
     TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
@@ -39,13 +39,13 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   )
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
-  val globalBlacklist = Set(Blacklist("Profil hoch 2", profileWeek, Blacklist.randomUUID), Blacklist("Weihnachten", christmas, Blacklist.randomUUID))
+  val globalBlacklist = Set(Blacklist("Profil hoch 2", profileWeek), Blacklist("Weihnachten", christmas))
   when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(globalBlacklist))
 
   "A TimetableService" should {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with global blacklists applied" in {
-      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime])
       val aEntries = (0 until 7).map {
         case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
         case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
@@ -79,7 +79,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with global blacklists applied" in {
-      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty[DateTime])
       val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
       val plan = AssignmentPlan(timetable.labwork, aEntries.size, aEntries.size, aEntries)
       val members = (0 until 20).map(_ => User.randomUUID).toSet
@@ -117,7 +117,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         fdt.parseDateTime("30/11/2015 17:00:00")
       )
 
-      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist, Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist)
       val aEntries = (0 until 7).map {
         case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
         case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)

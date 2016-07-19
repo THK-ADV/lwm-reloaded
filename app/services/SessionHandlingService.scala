@@ -123,8 +123,7 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
         }
       } else Future.failed(new Throwable("Invalid credentials"))
 
-      /*ldap.authenticate(user, password).flatMap(resolve)*/
-      resolve(true).onComplete {
+      ldap.authenticate(user, password).flatMap(resolve).onComplete {
         case Success(session) =>
           sessions = sessions + (session.username -> session)
           requester ! AuthenticationSuccess(session)

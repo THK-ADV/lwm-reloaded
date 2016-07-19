@@ -14,7 +14,7 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
-
+import base.StreamHandler._
 import scala.concurrent.Future
 import scala.util.Success
 
@@ -41,7 +41,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Group])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Allow restricted invocations when mv wants to create a group" in new FakeApplication() {

@@ -12,8 +12,8 @@ class EmployeeBindingSpec extends SesameDbSpec {
 
   import bindings.{
   EmployeeDescriptor,
-  uuidBinder
-  }
+  dateTimeBinder,
+  uuidBinder}
   import ops._
 
   implicit val employeeBinder = EmployeeDescriptor.binder
@@ -26,6 +26,7 @@ class EmployeeBindingSpec extends SesameDbSpec {
       -- lwm.firstname ->- employee.firstname
       -- lwm.email ->- employee.email
       -- lwm.status ->- employee.status
+      -- lwm.invalidated ->- employee.invalidated
       -- lwm.id ->- employee.id
     ).graph
 

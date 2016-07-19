@@ -2,7 +2,7 @@ package controllers.reportCard
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.{StreamHandler, TestBaseDefinition}
 import models.{Course, Room}
 import models.labwork._
 import models.users.Student
@@ -20,11 +20,11 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.{ReportCardService, RoleService, SessionHandlingService}
-import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
+import StreamHandler._
 import scala.util.{Failure, Success}
 
 class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -47,7 +47,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   ).toSet
   val atomizedEntries = entries.map { e =>
     val rescheduledAtom = RescheduledAtom(e.date, e.start, e.end, room)
-    ReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, Some(rescheduledAtom), e.id)
+    ReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, Some(rescheduledAtom), e.invalidated, e.id)
   }
 
   val entry = entries.head
@@ -71,7 +71,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val rescheduledEntry = {
         val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
@@ -85,14 +85,14 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val result = controller.update(course, entry.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(rescheduledEntry)
     }
 
     "not update when there is an inconsistency" in {
       val rescheduledEntry = {
         val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       val request = FakeRequest(
@@ -125,7 +125,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val errorMessage = "Oops, something went wrong"
       val rescheduledEntry = {
         val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.id)
+        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
@@ -160,7 +160,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val result = controller.get(student.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(entries)
     }
 
@@ -178,7 +178,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val result = controller.get(student.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(Set.empty[ReportCardEntry])
     }
 
@@ -310,100 +310,90 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       )
     }
 
-        "filter with query" in {
-          val realRepo = SesameRepository(namespace)
-          val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
+    "filter with query" in {
+      val realRepo = SesameRepository(namespace)
+      val bindings: Bindings[Sesame] = Bindings[Sesame](namespace)
 
-          import bindings.{
-          ReportCardEntryDescriptor,
-          ScheduleEntryDescriptor,
-          CourseDescriptor,
-          LabworkDescriptor
-          }
-          val localController = new ReportCardEntryController(realRepo, sessionService, namespace, roleService, reportCardService) {
-            override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-              case _ => NonSecureBlock
-            }
-
-            override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-              case _ => NonSecureBlock
-            }
-          }
-
-          val course1 = Course("", "", "", UUID.randomUUID, 1, UUID.randomUUID)
-
-          val student1 = UUID.randomUUID()
-          val labwork1 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
-          val date1 = LocalDate.now
-          val (start1, end1) = (LocalTime.parse(LocalTime.now.toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(2).toString("HH:mm")))
-          val room1 = UUID.randomUUID()
-
-          val student2 = UUID.randomUUID()
-          val labwork2 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
-          val date2 = LocalDate.now plusDays 2
-          val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
-          val room2 = UUID.randomUUID()
-
-          val student3 = UUID.randomUUID()
-
-          val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
-          val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
-          val entry1 = ReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
-          val entry2 = ReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
-          val entry3 = ReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
-          val entry4 = ReportCardEntry(student3, labwork1.id, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
-            Some(Rescheduled(date1, start2, end2, room2)))
-
-          realRepo addMany List(course1)
-          realRepo addMany List(labwork1, labwork2)
-          realRepo addMany List(entry1, entry2, entry3, entry4)
-          realRepo addMany List(scheduleEntry1, scheduleEntry2)
-
-          val requestWithDate = FakeRequest(
-            GET,
-            s"/courses/${course1.id}/reportCardEntries?date=$date1"
-          )
-
-          val requestWithTime = FakeRequest(
-            GET,
-            s"/courses/${course1.id}/reportCardEntries?start=$start1"
-          )
-
-          val requestWithDateAndTimeAndRoom = FakeRequest(
-            GET,
-            s"/courses/${course1.id}/reportCardEntries?date=$date1&start=$start1&room=$room1"
-          )
-
-          val requestWithScheduleEntry = FakeRequest(
-            GET,
-            s"/courses/${course1.id}/scheduleEntries/${scheduleEntry1.id}/reportCardEntries"
-          )
-
-          val result1 = localController.all(course1.id.toString)(requestWithDate)
-          val result2 = localController.all(course1.id.toString)(requestWithTime)
-          val result3 = localController.all(course1.id.toString)(requestWithDateAndTimeAndRoom)
-          val result4 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry1.id.toString)(requestWithScheduleEntry)
-          val result5 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry2.id.toString)(requestWithScheduleEntry)
-          val expected1 = List(entry1, entry3, entry4)
-          val expected2 = List(entry1, entry2, entry4)
-          val expected3 = List(entry1, entry4)
-          val expected4 = List(entry4, entry1)
-          val expected5 = List(entry3, entry4)
-
-          def consistent(s: String)(l: List[ReportCardEntry]): Boolean = {
-            val jss = Json.parse(s)
-            val entry = Json.fromJson[ReportCardEntry](jss).get
-            l contains entry
-          }
-
-          List(result1, result2, result3, result4, result5).zip(List(expected1, expected2, expected3, expected4, expected5)) foreach {
-            case (result, expected) =>
-              contentAsString(result).split("\\}\\{").toVector forall { s =>
-                if (s endsWith "}") consistent("{" + s)(expected)
-                else if (s startsWith "{") consistent(s + "}")(expected)
-                else consistent(s"{$s}")(expected)
-              } shouldBe true
-          }
+      import bindings.{
+      ReportCardEntryDescriptor,
+      ScheduleEntryDescriptor,
+      CourseDescriptor,
+      LabworkDescriptor
+      }
+      val localController = new ReportCardEntryController(realRepo, sessionService, namespace, roleService, reportCardService) {
+        override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+          case _ => NonSecureBlock
         }
+
+        override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+          case _ => NonSecureBlock
+        }
+      }
+
+      val course1 = Course("", "", "", UUID.randomUUID, 1)
+
+      val student1 = UUID.randomUUID()
+      val labwork1 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
+      val date1 = LocalDate.now
+      val (start1, end1) = (LocalTime.parse(LocalTime.now.toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(2).toString("HH:mm")))
+      val room1 = UUID.randomUUID()
+
+      val student2 = UUID.randomUUID()
+      val labwork2 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
+      val date2 = LocalDate.now plusDays 2
+      val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
+      val room2 = UUID.randomUUID()
+
+      val student3 = UUID.randomUUID()
+
+      val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
+      val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
+      val entry1 = ReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
+      val entry2 = ReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
+      val entry3 = ReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
+      val entry4 = ReportCardEntry(student3, labwork1.id, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
+        Some(Rescheduled(date1, start2, end2, room2)))
+
+      realRepo addMany List(course1)
+      realRepo addMany List(labwork1, labwork2)
+      realRepo addMany List(entry1, entry2, entry3, entry4)
+      realRepo addMany List(scheduleEntry1, scheduleEntry2)
+
+      val requestWithDate = FakeRequest(
+        GET,
+        s"/courses/${course1.id}/reportCardEntries?date=$date1"
+      )
+
+      val requestWithTime = FakeRequest(
+        GET,
+        s"/courses/${course1.id}/reportCardEntries?start=$start1"
+      )
+
+      val requestWithDateAndTimeAndRoom = FakeRequest(
+        GET,
+        s"/courses/${course1.id}/reportCardEntries?date=$date1&start=$start1&room=$room1"
+      )
+
+      val requestWithScheduleEntry = FakeRequest(
+        GET,
+        s"/courses/${course1.id}/scheduleEntries/${scheduleEntry1.id}/reportCardEntries"
+      )
+
+      val result1 = localController.all(course1.id.toString)(requestWithDate)
+      val result2 = localController.all(course1.id.toString)(requestWithTime)
+      val result3 = localController.all(course1.id.toString)(requestWithDateAndTimeAndRoom)
+      val result4 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry1.id.toString)(requestWithScheduleEntry)
+      val result5 = localController.allFromScheduleEntry(course1.id.toString, scheduleEntry2.id.toString)(requestWithScheduleEntry)
+      val expected1 = Set(entry1, entry3, entry4)
+      val expected2 = Set(entry1, entry2, entry4)
+      val expected3 = Set(entry1, entry4)
+      val expected4 = Set(entry4, entry1)
+      val expected5 = Set(entry3, entry4)
+
+      List(result1, result2, result3, result4, result5) zip List(expected1, expected2, expected3, expected4, expected5) foreach {
+        case (result, expected) =>
+          typedContentFromStream[ReportCardEntry](result) shouldBe expected
+      }
+    }
   }
 }

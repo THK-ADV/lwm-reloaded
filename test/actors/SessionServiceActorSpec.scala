@@ -64,7 +64,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     }
 
     "create a session when a user is authorized and contains entries" in {
-      import bindings.{ RefRoleDescriptor, RoleDescriptor}
+      import bindings.{RefRoleDescriptor, RoleDescriptor}
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))

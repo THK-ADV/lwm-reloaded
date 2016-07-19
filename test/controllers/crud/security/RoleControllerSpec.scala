@@ -21,9 +21,9 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, 
       case _ => NonSecureBlock
     }
   }
-  override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")), Role.randomUUID)
+  override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")))
 
-  override val entityToPass: Role = Role("role to pass", Set(Permission("permission to pass")), Role.randomUUID)
+  override val entityToPass: Role = Role("role to pass", Set(Permission("permission to pass")))
 
   override implicit val jsonWrites: Writes[Role] = Role.writes
 
