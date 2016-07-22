@@ -75,9 +75,9 @@ object Descriptor {
       go(Nil, List((b, this)))
     }
 
-    def contraDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)(f)((_, _) => Nil)
+    def leftDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)(f)((_, _) => Nil)
 
-    def coDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)((_, _) => Nil)(f)
+    def rightDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)((_, _) => Nil)(f)
   }
 
   trait Descriptor[Rdf <: RDF, T] {
