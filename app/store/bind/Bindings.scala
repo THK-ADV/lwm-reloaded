@@ -85,7 +85,9 @@ object Descriptor {
 
     def classUris: ClassUrisFor[Rdf, T]
 
-    def references: Ref[Rdf#URI]
+    def references: Ref[Rdf#URI] = Ref(clazz)
+
+    def branching: Ref[Rdf#URI] = Ref(clazz)
 
     def binder: PGBinder[Rdf, T]
   }
@@ -185,7 +187,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, User] = classUrisFor[User](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     override val binder: PGBinder[Rdf, User] = new PGBinder[Rdf, User] {
       override def fromPG(pointed: PointedGraph[Rdf]): Try[User] = {
@@ -203,8 +204,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.User
 
     override val classUris: ClassUrisFor[Rdf, Student] = classUrisFor[Student](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -242,8 +241,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Employee] = classUrisFor[Employee](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
-
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val systemId = property[String](lwm.systemId)
@@ -260,8 +257,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.LabworkApplication
 
     override val classUris: ClassUrisFor[Rdf, LabworkApplication] = classUrisFor[LabworkApplication](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val applicant = property[UUID](lwm.applicant)(uuidRefBinder(User.splitter))
@@ -299,8 +294,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Role] = classUrisFor[Role](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
-
     private val label = property[String](lwm.label)
     private val permissions = set[Permission](lwm.permissions)
 
@@ -314,8 +307,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.RefRole
 
     override val classUris: ClassUrisFor[Rdf, RefRole] = classUrisFor[RefRole](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
     private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
@@ -348,8 +339,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.Authority
 
     override val classUris: ClassUrisFor[Rdf, Authority] = classUrisFor[Authority](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val privileged = property[UUID](lwm.privileged)(uuidRefBinder(User.splitter))
     private val refroles = set[UUID](lwm.refroles)(uuidRefBinder(RefRole.splitter))
@@ -385,6 +374,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt AssignmentEntryTypeDescriptor.references
 
+    override val branching: Ref[Rdf#URI] = references
+
     private val index = property[Int](lwm.index)
     private val label = property[String](lwm.label)
     private val duration = property[Int](lwm.duration)
@@ -398,8 +389,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.AssignmentEntryType
 
     override val classUris: ClassUrisFor[Rdf, AssignmentEntryType] = classUrisFor[AssignmentEntryType](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val entryType = property[String](lwm.entryType)
     private val bool = property[Boolean](lwm.bool)
@@ -416,6 +405,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val classUris: ClassUrisFor[Rdf, AssignmentPlan] = classUrisFor[AssignmentPlan](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt AssignmentEntryDescriptor.references
+
+    override val branching: Ref[Rdf#URI] = references
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val attendance = property[Int](lwm.attendance)
@@ -452,16 +443,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Labwork] = classUrisFor[Labwork](clazz)
 
-    override val references: Ref[Rdf#URI] =
+    override val branching: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointedAt(AssignmentPlanDescriptor.clazz)
-        .pointedAt(GroupDescriptor.clazz)
-        .pointedAt(ScheduleDescriptor.clazz)
-        .pointedAt(ReportCardEntryDescriptor.clazz)
-        .pointedAt(ReportCardEvaluationDescriptor.clazz)
-        .pointedAt(TimetableDescriptor.clazz)
-        .pointedAt(LabworkApplicationDescriptor.clazz)
-        .pointedAt(AnnotationDescriptor.clazz)
+        .pointedAt(AssignmentPlanDescriptor.branching)
+        .pointedAt(GroupDescriptor.branching)
+        .pointedAt(ScheduleDescriptor.branching)
+        .pointedAt(ReportCardEntryDescriptor.branching)
+        .pointedAt(ReportCardEvaluationDescriptor.branching)
+        .pointedAt(TimetableDescriptor.branching)
+        .pointedAt(LabworkApplicationDescriptor.branching)
+        .pointedAt(AnnotationDescriptor.branching)
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -506,7 +497,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Course] = classUrisFor[Course](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz) pointedAt LabworkDescriptor.references
+    override val branching: Ref[Rdf#URI] =
+      Ref(clazz)
+        .pointedAt(LabworkDescriptor.branching)
+        .pointedAt(RefRoleDescriptor.branching)
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -524,7 +518,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, CourseAtom] = classUrisFor[CourseAtom](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz).pointsAt(EmployeeDescriptor.references)
+    override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt EmployeeDescriptor.references
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -542,7 +536,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Degree] = classUrisFor[Degree](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
+    override val branching: Ref[Rdf#URI] =
+      Ref(clazz)
+        .pointedAt(TimetableEntryDescriptor.branching)
+        .pointedAt(LabworkDescriptor.branching)
 
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
@@ -555,8 +552,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.Group
 
     override val classUris: ClassUrisFor[Rdf, Group] = classUrisFor[Group](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val label = property[String](lwm.label)
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
@@ -592,7 +587,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Room] = classUrisFor[Room](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
+    override val branching: Ref[Rdf#URI] =
+      Ref(clazz)
+        .pointedAt(ScheduleEntryDescriptor.branching)
+        .pointedAt(ReportCardEntryDescriptor.branching)
+        .pointedAt(TimetableEntryDescriptor.branching)
+
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -607,7 +607,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Semester] = classUrisFor[Semester](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
+    override val branching: Ref[Rdf#URI] = Ref(clazz) pointedAt LabworkDescriptor.branching
 
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
@@ -626,6 +626,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val classUris: ClassUrisFor[Rdf, Timetable] = classUrisFor[Timetable](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt TimetableEntryDescriptor.references
+
+    override val branching: Ref[Rdf#URI] = references
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val entries = set[TimetableEntry](lwm.entries)(TimetableEntryDescriptor.binder)
@@ -663,8 +665,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.TimetableEntry
 
     override val classUris: ClassUrisFor[Rdf, TimetableEntry] = classUrisFor[TimetableEntry](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
@@ -708,6 +708,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt ScheduleEntryDescriptor.references
 
+    override val branching: Ref[Rdf#URI] = references
+
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val entries = set[ScheduleEntry](lwm.entries)(ScheduleEntryDescriptor.binder)
 
@@ -738,8 +740,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.ScheduleEntry
 
     override val classUris: ClassUrisFor[Rdf, ScheduleEntry] = classUrisFor[ScheduleEntry](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
     private val start = property[LocalTime](lwm.start)
@@ -786,8 +786,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, Blacklist] = classUrisFor[Blacklist](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
-
     private val label = property[String](lwm.label)
     private val dates = set[DateTime](lwm.dates)
 
@@ -808,6 +806,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       Ref(clazz)
         .pointsAt(ReportCardEntryTypeDescriptor.references)
         .pointsAt(RescheduledDescriptor.references)
+
+    override val branching: Ref[Rdf#URI] = references pointedAt AnnotationDescriptor.branching
 
     private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))
@@ -862,8 +862,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, ReportCardEntryType] = classUrisFor[ReportCardEntryType](clazz)
 
-    override val references: Ref[Rdf#URI] = Ref(clazz)
-
     private val entryType = property[String](lwm.entryType)
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
@@ -877,8 +875,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.Rescheduled
 
     override val classUris: ClassUrisFor[Rdf, Rescheduled] = classUrisFor[Rescheduled](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
@@ -953,8 +949,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val clazz: Rdf#URI = lwm.ReportCardEvaluation
 
     override val classUris: ClassUrisFor[Rdf, ReportCardEvaluation] = classUrisFor[ReportCardEvaluation](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
 
     private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(Labwork.splitter))

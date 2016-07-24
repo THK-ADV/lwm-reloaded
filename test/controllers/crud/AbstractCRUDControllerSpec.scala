@@ -207,7 +207,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.delete(anyString())(anyObject())).thenReturn(Success(()))
+      when(repository.invalidate(anyString())(anyObject())).thenReturn(Success(()))
 
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
@@ -223,7 +223,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
 
     s"not delete an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
-      when(repository.delete(anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.invalidate(anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         DELETE,

@@ -102,32 +102,27 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
   val graph = new Graph[Rdf, RepositoryConnection] {
 
-    override type AnyNode = Rdf#NodeAny
+    override val anyURI: Rdf#URI = ANY
 
-    override val anyNode: AnyNode = ANY
+    override val anyNode: Rdf#Node = ANY
 
-    override def triples(u: URI)(implicit conn: RepositoryConnection): Vector[Statement] = vectorise(conn.getStatements(u, anyNode, anyNode, false))
+    override def triples(u: Rdf#URI)(implicit conn: RepositoryConnection): Vector[Statement] = vectorise(conn.getStatements(u, anyURI, anyNode, false))
 
-    override def subjects(p: URI, o: Value)(implicit conn: RepositoryConnection): Vector[URI] = vectorise(conn.getStatements(anyNode, p, o, false)) map (r => asUri(r.getSubject))
+    override def subjects(p: Rdf#URI, o: Rdf#Node)(implicit conn: RepositoryConnection): Vector[URI] = vectorise(conn.getStatements(anyURI, p, o, false)) map (r => asUri(r.getSubject))
 
-    override def contains(s: URI, p: URI, o: Value)(implicit conn: RepositoryConnection): Boolean = conn.hasStatement(s, p, o, false)
+    override def contains(s: Rdf#URI, p: Rdf#URI, o: Rdf#Node)(implicit conn: RepositoryConnection): Boolean = conn.hasStatement(s, p, o, false)
 
     override def asUri(node: Rdf#Node): Rdf#URI = ops.makeUri(node.stringValue())
-
-    override def objects(s: Rdf#URI)(implicit conn: RepositoryConnection): Vector[Rdf#Node] = triples(s) map (_.getObject)
-
-    override def subjects(o: Rdf#Node)(implicit conn: RepositoryConnection): Vector[Rdf#URI] = subjects(anyNode, o)
   }
 
-  override def add[T <: UniqueEntity](entity: T)(implicit descriptor: Descriptor[Rdf, T]): Try[PointedGraph[Rdf]] = transact { implicit conn => add0[T](entity) }
+  override def add[T <: UniqueEntity](entity: T)(implicit descriptor: Descriptor[Rdf, T]): Try[PointedGraph[Rdf]] = transact { implicit conn => insert[T](entity) }
 
-  override def delete[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit] = transact { implicit conn => delete0[T](uri) }
-
+  override def delete[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit] = transact { implicit conn => remove[T](uri) }
 
   override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[PointedGraph[Rdf]]] = transact {
     implicit conn =>
       entities
-        .map(add0[T])
+        .map(insert[T])
         .sequence
         .map(_.toSet)
   }
@@ -136,72 +131,64 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     implicit conn =>
       val entityUri = idGenerator.generateUri(entity)
       for {
-        _ <- delete0[T](entityUri)
-        entityGraph <- add0[T](entity)
+        _ <- remove[T](entityUri)
+        entityGraph <- insert[T](entity)
       } yield entityGraph
   }
 
-  override def get[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Option[T]] = connect { implicit conn =>
-    get0[T](uri)(node => !graph.hasProperty(node, lwm.invalidated))
-  }
+  override def get[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Option[T]] = connect { implicit conn => valids[T](makeUri(uri)) }
 
   override def getAll[T <: UniqueEntity](implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
     collect {
-      graph.subjects(rdf.`type`, descriptor.references.root)
-        .map(subject => get0[T](subject.stringValue())(node => !graph.hasProperty(node, lwm.invalidated)))
+      graph.allOfType(descriptor.references.root)
+        .map(valids[T])
         .filter(_.isSuccess)
         .toSet
     }
   }
-
 
   override def getMany[T <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
     collect {
       uris
-        .map(subject => get0[T](subject)(node => !graph.hasProperty(node, lwm.invalidated)))
+        .map(s => valids[T](makeUri(s)))
         .filter(_.isSuccess)
         .toSet
     }
   }
 
-  def vget[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Option[T]] = connect { implicit conn =>
-    get0[T](uri)(_ => true)
-  }
+  def deepGet[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Option[T]] = connect { implicit conn => all[T](makeUri(uri)) }
 
-  def vgetAll[T <: UniqueEntity](implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
+  def deepGetAll[T <: UniqueEntity](implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
     collect {
-      graph.subjects(rdf.`type`, descriptor.references.root)
-        .map(subject => get0[T](subject.stringValue())(_ => true))
+      graph.allOfType(descriptor.references.root)
+        .map(all[T])
         .filter(_.isSuccess)
         .toSet
     }
   }
 
-  def vgetMany[T <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
+  def deepGetMany[T <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[T]] = connect { implicit conn =>
     collect {
       uris
-        .map(subject => get0[T](subject)(_ => true))
+        .map(s => all[T](makeUri(s)))
         .filter(_.isSuccess)
         .toSet
     }
   }
 
-
   def invalidate[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit] = transact { implicit conn =>
-    implicit val refs = descriptor.references
+    implicit val branching = descriptor.branching
     val bindings = Bindings[Rdf](namespace)
     Try {
-      graph
-        .unfold(makeUri(uri))(s => graph.hasProperty(s, lwm.invalidated))
+      graph.validNodes(makeUri(uri))
         .foreach { node =>
-          val url = makeUri(node.stringValue())
           val pointer = bindings.dateTimeBinder.toPG(DateTime.now).pointer
-          conn.add(url, lwm.invalidated, pointer)
+          conn.add(node, lwm.invalidated, pointer, ns)
         }
     }
   }
 
-  override def contains(id: String): Boolean = connect { implicit conn => contains0(id) }
+  override def contains(id: String): Boolean = connect { implicit conn => has(makeUri(id)) }
 
   def size: Int = connect(_.size().toInt)
 
@@ -225,34 +212,41 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     res
   }
 
-  private def contains0(uri: String)(implicit conn: RepositoryConnection): Boolean = graph.contains(makeUri(uri), graph.anyNode, graph.anyNode)
+  private def has(uri: Rdf#URI)(implicit conn: RepositoryConnection): Boolean = graph containsURI uri
 
-  private def delete0[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[Unit] = {
+  private def remove[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[Unit] = {
     implicit val types = descriptor.references
     implicit val lwm = LWMPrefix[Rdf]
-
-    graph.induce(makeUri(uri))(node => !graph.hasProperty(node, lwm.invalidated))
-      .fold(Try(())) { pointed =>
-        pointed
-          .graph
-          .triples
-          .map(triple => Try(conn.remove(triple.getSubject, triple.getPredicate, triple.getObject)))
-          .sequence
-          .map(_ => ())
-      }
+    Try {
+      graph.validSubgraph(makeUri(uri))
+        .fold(()) { pointed =>
+          pointed
+            .graph
+            .triples
+            .foreach(triple => conn.remove(triple.getSubject, triple.getPredicate, triple.getObject))
+        }
+    }
   }
 
-  private def get0[T <: UniqueEntity](uri: String)(p: Rdf#URI => Boolean)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[Option[T]] = {
-    if (contains0(uri)) {
-      implicit val refs = descriptor.references
-      implicit val binder = descriptor.binder
-      graph.induce(makeUri(uri))(p)
-        .map(_.as[T])
+  private def valids[T <: UniqueEntity](uri: Rdf#URI)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[Option[T]] = {
+    implicit val refs = descriptor.references
+    if (has(uri)) {
+      graph.validSubgraph(uri)
+        .map(_.as[T](descriptor.binder))
         .sequenceM
     } else Success(None)
   }
 
-  private def add0[T <: UniqueEntity](entity: T)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[PointedGraph[Rdf]] = {
+  private def all[T <: UniqueEntity](uri: Rdf#URI)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[Option[T]] = {
+    implicit val refs = descriptor.references
+    if (has(uri)) {
+      graph.subgraph(uri)
+        .map(_.as[T](descriptor.binder))
+        .sequenceM
+    } else Success(None)
+  }
+
+  private def insert[T <: UniqueEntity](entity: T)(implicit descriptor: Descriptor[Rdf, T], conn: RepositoryConnection): Try[PointedGraph[Rdf]] = {
     for {
       pointed <- Try(entity.toPG(descriptor.binder))
       _ <- rdfStore appendToGraph(conn, ns, pointed.graph)
@@ -270,16 +264,12 @@ abstract class Graph[Rdf <: RDF, Connection](implicit ops: RDFOps[Rdf]) {
   import ops._
 
   lazy val rdf = RDFPrefix[Rdf]
+  lazy val lwm = LWMPrefix[Rdf]
 
-  type AnyNode <: Rdf#Node
-
-  def anyNode: AnyNode
-
-  def objects(s: Rdf#URI)(implicit conn: Connection): Vector[Rdf#Node]
+  def anyNode: Rdf#Node
+  def anyURI: Rdf#URI
 
   def subjects(p: Rdf#URI, o: Rdf#Node)(implicit conn: Connection): Vector[Rdf#URI]
-
-  def subjects(o: Rdf#Node)(implicit conn: Connection): Vector[Rdf#URI]
 
   def asUri(node: Rdf#Node): Rdf#URI
 
@@ -287,53 +277,71 @@ abstract class Graph[Rdf <: RDF, Connection](implicit ops: RDFOps[Rdf]) {
 
   def triples(u: Rdf#URI)(implicit conn: Connection): Vector[Rdf#Triple]
 
+  def triplesWhere(u: Rdf#URI)(p: Rdf#Node => Boolean)(implicit conn: Connection): Vector[Rdf#Triple] = triples(u) filter { triple =>
+    val (_, _, o) = ops.fromTriple(triple)
+    p(o)
+  }
+
+  def containsURI(s: Rdf#URI)(implicit conn: Connection): Boolean = contains(s, anyURI, anyNode)
+
+  def subjects(o: Rdf#Node)(implicit conn: Connection): Vector[Rdf#URI] = subjects(anyURI, o)
+
+  def objects(s: Rdf#URI)(implicit conn: Connection): Vector[Rdf#Node] = triples(s) map (triple => ops.fromTriple(triple)._3)
+
   def hasProperty(s: Rdf#URI, p: Rdf#URI)(implicit conn: Connection): Boolean = contains(s, p, anyNode)
 
   def asNode(uri: Rdf#URI): Rdf#Node = uri
 
   def branches(t: Rdf#URI)(implicit conn: Connection): Vector[Rdf#URI] = objects(t) filter (_.isURI) map asUri
 
-  def pointed(u: Rdf#URI)(implicit conn: Connection): Iterable[Rdf#Triple] => PointedGraph[Rdf] = ops.makeGraph _ andThen (PointedGraph[Rdf](u, _))
+  def pointed(u: Rdf#URI): Iterable[Rdf#Triple] => PointedGraph[Rdf] = ops.makeGraph _ andThen (PointedGraph[Rdf](u, _))
 
   def allOfType(typeTag: Rdf#URI)(implicit conn: Connection): Vector[Rdf#URI] = subjects(rdf.`type`, typeTag)
 
   def isOfType(node: Rdf#URI, typeTag: Rdf#URI)(implicit conn: Connection): Boolean = contains(node, rdf.`type`, typeTag)
 
+  def validSubgraph(uri: Rdf#URI)(implicit refs: Ref[Rdf#URI], conn: Connection): Option[PointedGraph[Rdf]] = induce(uri)(n => !hasProperty(n, lwm.invalidated))
+
+  def invalidSubgraph(uri: Rdf#URI)(implicit refs: Ref[Rdf#URI], conn: Connection): Option[PointedGraph[Rdf]] = induce(uri)(n => hasProperty(n, lwm.invalidated))
+
+  def subgraph(uri: Rdf#URI)(implicit refs: Ref[Rdf#URI], conn: Connection): Option[PointedGraph[Rdf]] = induce(uri)(_ => true)
+
+  def validNodes(uri: Rdf#URI)(implicit refs: Ref[Rdf#URI], conn: Connection): List[Rdf#URI] = unfold(uri)(n => !hasProperty(n, lwm.invalidated))
+
   def induce(uri: Rdf#URI)(p: Rdf#URI => Boolean)(implicit refs: Ref[Rdf#URI], conn: Connection): Option[PointedGraph[Rdf]] = {
-    val objs = memoize[Rdf](branches)
+    val objs = memoize(branches)
     if (p(uri))
-      Some(pointed(uri)(conn) {
+      Some(pointed(uri) {
         refs
           .leftDeref(uri) { (root, ref) => objs(root).filter(node => isOfType(node, ref)).toList }
           .filter(p)
-          .flatMap(triples)
+          .flatMap(triplesWhere(_)(node => p(asUri(node))))
       })
     else None
   }
 
   def deduce(uri: Rdf#URI)(p: Rdf#URI => Boolean)(implicit refs: Ref[Rdf#URI], conn: Connection): Option[PointedGraph[Rdf]] = {
-    val subjs = memoize[Rdf](subjects)
+    val subjs = memoize(subjects)
     if (p(uri)) {
-      Some(pointed(uri)(conn) {
+      Some(pointed(uri) {
         refs
           .rightDeref(uri) { (root, ref) => subjs(root).filter(node => isOfType(node, ref)).toList }
           .filter(p)
           .flatMap(triples)
       })
     } else None
-
   }
 
   def unfold(uri: Rdf#URI)(p: Rdf#URI => Boolean)(implicit refs: Ref[Rdf#URI], conn: Connection): List[Rdf#URI] = {
-    val objs = memoize[Rdf](branches)
-    val subjs = memoize[Rdf](subjects)
+    val objs = memoize(branches)
+    val subjs = memoize(subjects)
 
     refs
       .deref(uri) { (root, ref) => objs(root).filter(node => isOfType(node, ref)).toList } { (root, ref) => subjs(root).filter(node => isOfType(node, ref)).toList }
       .filter(p)
   }
 
-  private def memoize[Rdf <: RDF](f: Rdf#URI => Vector[Rdf#URI]) = {
+  private def memoize(f: Rdf#URI => Vector[Rdf#URI]) = {
     val store = scala.collection.mutable.Map[Rdf#URI, Vector[Rdf#URI]]()
     (key: Rdf#URI) =>
       if (store contains key) store(key)
