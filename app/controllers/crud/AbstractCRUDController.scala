@@ -59,7 +59,7 @@ trait ModelConverter[I, O] {
 }
 
 trait SessionChecking {
-  implicit val sessionService: SessionHandlingService
+  implicit def sessionService: SessionHandlingService
 }
 
 trait Consistent[I, O] {
@@ -95,11 +95,11 @@ trait Chunked {
 }
 
 trait ContentTyped {
-  implicit val mimeType: LwmMimeType
+  implicit def mimeType: LwmMimeType
 }
 
 trait Secured {
-  implicit val roleService: RoleService
+  implicit def roleService: RoleService
 }
 
 /**

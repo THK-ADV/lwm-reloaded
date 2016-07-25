@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import models.Session
+import models.{InvalidSession, Session, ValidSession}
 import store.Resolvers
 
 import scala.concurrent.Future
@@ -32,16 +32,18 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, 
 
   override def newSession(user: String, password: String): Future[Session] = {
     val promise = concurrent.Promise[Session]()
-    (ref ? SessionRequest(user, password)).mapTo[AuthenticationResponse].onComplete {
+    (ref ? SessionRequest(user, password)).mapTo[Authentication].onComplete {
       case Success(response) =>
         response match {
-          case AuthenticationSuccess(session) =>
+          case Authenticated(session) =>
             promise.success(session)
-          case AuthenticationFailure(message) =>
-            promise.failure(new RuntimeException(message))
+          case NotAuthenticated(invalid) =>
+            promise.success(invalid)
+          case AuthenticationError(error) =>
+            promise.failure(error)
         }
-      case Failure(t) =>
-        promise.failure(t)
+      case Failure(error) =>
+        promise.failure(error)
     }
     promise.future
   }
@@ -85,11 +87,13 @@ object SessionServiceActor {
 
   private[SessionServiceActor] case object Update
 
-  private[services] trait AuthenticationResponse
+  sealed trait Authentication
 
-  case class AuthenticationSuccess(session: Session) extends AuthenticationResponse
+  case class Authenticated(session: ValidSession) extends Authentication
 
-  case class AuthenticationFailure(message: String) extends AuthenticationResponse
+  case class NotAuthenticated(invalid: InvalidSession) extends Authentication
+
+  case class AuthenticationError(error: Throwable) extends Authentication
 
 }
 
@@ -102,7 +106,7 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
 
   implicit val dispatcher = context.system.dispatcher
 
-  var sessions: Map[String, Session] = Map.empty
+  var sessions: Map[String, ValidSession] = Map.empty
 
   context.system.scheduler.schedule(5.seconds, 10.seconds, self, Update)
 
@@ -113,7 +117,7 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
       def resolve(auth: Boolean): Future[Session] = if (auth) {
         username(user) match {
           case Success(Some(userId)) => Future.successful {
-            Session(user.toLowerCase, userId)
+            ValidSession(user.toLowerCase, userId)
           }
           case Success(_) => ldap.user(user)(degree).map(missingUserData).flatMap {
             case Success(_) => resolve(auth)
@@ -121,14 +125,16 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
           }
           case Failure(e) => Future.failed(e)
         }
-      } else Future.failed(new Throwable("Invalid credentials"))
+      } else Future.successful(InvalidSession("Invalid credentials"))
 
       ldap.authenticate(user, password).flatMap(resolve).onComplete {
-        case Success(session) =>
-          sessions = sessions + (session.username -> session)
-          requester ! AuthenticationSuccess(session)
+        case Success(session @ ValidSession(username, _, _, _)) =>
+          sessions = sessions + (username -> session)
+          requester ! Authenticated(session)
+        case Success(invalid @ InvalidSession(_)) =>
+          requester ! NotAuthenticated(invalid)
         case Failure(e) =>
-          requester ! AuthenticationFailure(e.getMessage)
+          requester ! AuthenticationError(e)
       }
 
     case ValidationRequest(id) =>

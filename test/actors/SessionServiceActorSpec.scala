@@ -12,7 +12,7 @@ import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import services.{LdapService, SessionServiceActor}
-import services.SessionServiceActor.{AuthenticationFailure, AuthenticationSuccess}
+import services.SessionServiceActor.{Authenticated, Authentication, AuthenticationError, NotAuthenticated}
 import store.bind.Bindings
 import store.{LwmResolvers, Namespace, SesameRepository}
 
@@ -39,12 +39,11 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     "block unauthorized users" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(false))
 
-
-      val future = actorRef ? SessionServiceActor.SessionRequest("", "")
+      val future = (actorRef ? SessionServiceActor.SessionRequest("", "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)
 
       result match {
-        case a: AuthenticationFailure => a.message shouldBe "Invalid credentials"
+        case NotAuthenticated(invalid) => invalid.message shouldBe "Invalid credentials"
         case _ => fail("Should not return a success")
       }
     }
@@ -53,12 +52,12 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))
 
-      val future = actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")
+      val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)
 
       result match {
-        case a: AuthenticationFailure =>
-          a.message shouldBe "No appropriate RefRole or Role found while resolving user"
+        case AuthenticationError(error) =>
+          error.getMessage shouldBe "No appropriate RefRole or Role found while resolving user"
         case _ => fail("Should not return a success")
       }
     }
@@ -81,13 +80,13 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
       repository.add[RefRole](refrole1)
       repository.add[RefRole](refrole2)
 
-      val future = actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")
+      val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)
 
       result match {
-        case a: AuthenticationSuccess =>
-          a.session.userId shouldBe user.id
-          a.session.username shouldBe user.systemId
+        case Authenticated(session) =>
+          session.userId shouldBe user.id
+          session.username shouldBe user.systemId
         case _ => fail("Should not return a failure")
       }
     }

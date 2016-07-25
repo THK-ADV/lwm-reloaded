@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{Login, Session}
+import models.{Login, ValidSession}
 import modules._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -36,7 +36,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
     val service = mock[SessionHandlingService]
 
-    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(Session(loginToPass.username, validUuid)))
+    when(service.newSession(loginToPass.username, loginToPass.password)).thenReturn(Future.successful(ValidSession(loginToPass.username, validUuid)))
     when(service.newSession(loginToFail.username, loginToFail.password)).thenReturn(Future.failed(invalidCredentialException))
     when(service.isValid(validUuid)).thenReturn(Future.successful(true))
     when(service.deleteSession(validUuid)).thenReturn(Future.successful(true))

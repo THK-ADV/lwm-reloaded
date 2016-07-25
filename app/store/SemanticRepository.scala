@@ -119,21 +119,19 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
   override def delete[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit] = transact { implicit conn => remove[T](uri) }
 
-  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[PointedGraph[Rdf]]] = transact {
-    implicit conn =>
-      entities
-        .map(insert[T])
-        .sequence
-        .map(_.toSet)
+  override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[PointedGraph[Rdf]]] = transact { implicit conn =>
+    entities
+      .map(insert[T])
+      .sequence
+      .map(_.toSet)
   }
 
-  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit descriptor: Descriptor[Rdf, T], idGenerator: G): Try[PointedGraph[Rdf]] = transact {
-    implicit conn =>
-      val entityUri = idGenerator.generateUri(entity)
-      for {
-        _ <- remove[T](entityUri)
-        entityGraph <- insert[T](entity)
-      } yield entityGraph
+  override def update[T <: UniqueEntity, G <: UriGenerator[T]](entity: T)(implicit descriptor: Descriptor[Rdf, T], idGenerator: G): Try[PointedGraph[Rdf]] = transact { implicit conn =>
+    val entityUri = idGenerator.generateUri(entity)
+    for {
+      _ <- remove[T](entityUri)
+      entityGraph <- insert[T](entity)
+    } yield entityGraph
   }
 
   override def get[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Option[T]] = connect { implicit conn => valids[T](makeUri(uri)) }
@@ -192,7 +190,7 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
 
   def size: Int = connect(_.size().toInt)
 
-  override def close() = {
+  override def close(): Unit = {
     repo.shutDown()
   }
 
@@ -253,9 +251,8 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     } yield pointed
   }
 
-  override private[store] def reset(): Try[Unit] = transact {
-    conn =>
-      rdfStore removeGraph(conn, ns)
+  override private[store] def reset(): Try[Unit] = transact { conn =>
+    rdfStore removeGraph(conn, ns)
   }
 }
 

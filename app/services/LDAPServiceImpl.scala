@@ -9,6 +9,7 @@ import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
 import models.users.{Employee, Student, User}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 trait LdapService {
@@ -34,9 +35,12 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
   connectionOptions.setUseSynchronousMode(true)
 
   def authenticate(user: String, password: String): Future[Boolean] = bind() { connection ⇒
-    val bindRequest = new SimpleBindRequest(bindDN(user), password)
-    val bindResult = connection.bind(bindRequest)
-    Success(bindResult.getResultCode == ResultCode.SUCCESS)
+    Try(connection.bind(bindDN(user), password))
+      .map(_.getResultCode == ResultCode.SUCCESS)
+      .recoverWith {
+        case e: LDAPException if e.getResultCode == ResultCode.INVALID_CREDENTIALS => Success(false)
+        case NonFatal(e) => Failure(e)
+      }
   }
 
   def filter[B](predicate: String)(f: List[SearchResultEntry] => B): Future[B] = bind(bindUsername, bindPassword) { connection =>
