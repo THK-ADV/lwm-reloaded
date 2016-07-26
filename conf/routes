@@ -250,11 +250,8 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                           controllers.SessionController.header
 
 # APIData
-GET           /api/populateProd                                                   controllers.ApiDataController.populateProduction
-GET           /api/populate                                                       controllers.ApiDataController.populate
-GET           /api/added                                                          controllers.ApiDataController.getAdded
-GET           /api/labwork/:l/schedule/:count                                     controllers.ApiDataController.scheduleGen(count, l)
-GET           /api/reportCard/:user                                               controllers.ApiDataController.reportCard(user)
+GET           /api/auths                                                          controllers.ApiDataController.refRolesToAuths
+GET           /api/auths2                                                          controllers.ApiDataController.auths2
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                       controllers.Assets.at(path="/public", file)

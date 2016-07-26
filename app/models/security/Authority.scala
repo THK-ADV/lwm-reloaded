@@ -8,6 +8,56 @@ import models.{Course, CourseAtom, UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json._
 
+// TODO REMEMBER TO KILL
+case class Authority(user: UUID, refRoles: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = Authority.randomUUID) extends UniqueEntity
+
+case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
+
+case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+
+case class RefRole(course: Option[UUID] = None, role: UUID, invalidated: Option[DateTime] = None, id: UUID = RefRole.randomUUID) extends UniqueEntity
+
+case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
+
+case class RefRoleAtom(course: Option[CourseAtom], role: Role, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+
+object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProtocol, RefRole, RefRoleAtom] {
+  override def base: String = "refRoles"
+
+  override implicit def reads: Reads[RefRoleProtocol] = Json.reads[RefRoleProtocol]
+
+  override implicit def writes: Writes[RefRole] = Json.writes[RefRole]
+
+  override implicit def writesAtom: Writes[RefRoleAtom] = Writes[RefRoleAtom] { rr =>
+    val obj = Json.obj(
+      "role" -> Json.toJson(rr.role)
+    )
+    rr.course.fold(obj)(course => obj + ("course" -> Json.toJson(course)(Course.writesAtom))) + ("id" -> Json.toJson(rr.id.toString))
+  }
+}
+
+object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority, AuthorityAtom] {
+  def empty = Authority(UUID.randomUUID(), Set.empty)
+
+  override def base: String = "authorities"
+
+  override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
+
+  override implicit def writes: Writes[Authority] = Json.writes[Authority]
+
+  override implicit def writesAtom: Writes[AuthorityAtom] = Writes[AuthorityAtom] { o =>
+    def toJson(userjs: JsValue): JsValue = Json.obj(
+      "user" -> userjs,
+      "refRoles" -> Json.toJson(o.refRoles)(setWrites(RefRole.writesAtom)),
+      "id" -> s"${o.id}"
+    )
+    o.user match {
+      case student: Student => toJson(Json.toJson(student))
+      case employee: Employee => toJson(Json.toJson(employee))
+    }
+  }
+}
+
 /**
   * Structure linking a user to his/her respective authority in the system.
   * `Authority` is created in order to separate concerns between user data and
@@ -15,38 +65,16 @@ import play.api.libs.json._
   * It abstracts over the set of all partial permissions a user has in the system.
   *
   * @param user     The referenced user
-  * @param refRoles User roles relative to a module
+  * @param course   Referenced course/module
+  * @param role     Reference to `Role` Instance of that course/module
   * @param id       Unique id of the `Authority`
   */
 
+case class Authority2(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = Authority.randomUUID) extends UniqueEntity
 
-case class Authority(user: UUID, refRoles: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = Authority.randomUUID) extends UniqueEntity
+case class AuthorityProtocol2(user: UUID, role: UUID, course: Option[UUID] = None)
 
-case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
-
-case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-/**
-  * Structure binding a particular module to a particular `Role`(or set of permissions).
-  * `RefRole`s bind `Role`s and modules together.
-  * This in turn grants users specific permissions in specific cases.
-  * i.e:
-  * AP1 -> Coworker
-  * BS -> Student
-  *
-  * Because `Role`s need to be independent, they are only referenced in this graph.
-  * Directly integrating them in the `RefRole` graph would mean that, upon deletion,
-  * the `Role`s themselves would also be deleted.
-  *
-  * @param course Referenced course/module
-  * @param role   Reference to `Role` Instance of that course/module
-  * @param id     Unique id of the `RefRole`
-  */
-case class RefRole(course: Option[UUID] = None, role: UUID, invalidated: Option[DateTime] = None, id: UUID = RefRole.randomUUID) extends UniqueEntity
-
-case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
-
-case class RefRoleAtom(course: Option[CourseAtom], role: Role, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class AuthorityAtom2(user: User, role: Role, course: Option[CourseAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 /**
   * Structure abstracting over a set of unary `Permission`s.
@@ -101,40 +129,38 @@ object Role extends UriGenerator[Role] with JsonSerialisation[RoleProtocol, Role
   override def base: String = "roles"
 }
 
-object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProtocol, RefRole, RefRoleAtom] {
-  override def base: String = "refRoles"
+object Authority2 extends UriGenerator[Authority2] with JsonSerialisation[AuthorityProtocol2, Authority2, AuthorityAtom2] {
+  lazy val empty = Authority2(UUID.randomUUID, UUID.randomUUID)
 
-  override implicit def reads: Reads[RefRoleProtocol] = Json.reads[RefRoleProtocol]
+  override def base: String = "authorities2"
 
-  override implicit def writes: Writes[RefRole] = Json.writes[RefRole]
+  override implicit def reads: Reads[AuthorityProtocol2] = Json.reads[AuthorityProtocol2]
 
-  override implicit def writesAtom: Writes[RefRoleAtom] = Writes[RefRoleAtom] { rr =>
-    val obj = Json.obj(
-      "role" -> Json.toJson(rr.role)
-    )
-    rr.course.fold(obj)(course => obj + ("course" -> Json.toJson(course)(Course.writesAtom))) + ("id" -> Json.toJson(rr.id.toString))
-  }
+  override implicit def writes: Writes[Authority2] = Json.writes[Authority2]
 
-}
-
-object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority, AuthorityAtom] {
-  def empty = Authority(UUID.randomUUID(), Set.empty)
-
-  override def base: String = "authorities"
-
-  override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
-
-  override implicit def writes: Writes[Authority] = Json.writes[Authority]
-
-  override implicit def writesAtom: Writes[AuthorityAtom] = Writes[AuthorityAtom] { o =>
-      def toJson(userjs: JsValue): JsValue = Json.obj(
-        "user" -> userjs,
-        "refRoles" -> Json.toJson(o.refRoles)(setWrites(RefRole.writesAtom)),
-        "id" -> s"${o.id}"
+  override implicit def writesAtom: Writes[AuthorityAtom2] = Writes[AuthorityAtom2] { authority =>
+    def toJson(userJs: JsValue): JsObject = {
+      def basic(user: JsValue): JsObject = Json.obj(
+        "user" -> user,
+        "role" -> Json.toJson(authority.role)
       )
-      o.user match {
-        case student: Student => toJson(Json.toJson(student))
-        case employee: Employee => toJson(Json.toJson(employee))
+
+      def withCourse(jsObject: JsObject): JsObject = {
+        authority.course.fold(jsObject)(course => jsObject + ("course" -> Json.toJson(course)(Course.writesAtom)))
       }
+
+      def withInvalidated(jsObject: JsObject): JsObject = {
+        authority.invalidated.fold(jsObject)(timestamp => jsObject + ("withInvalidated" -> Json.toJson(timestamp)))
+      }
+
+      def withId(jsObject: JsObject): JsObject = jsObject + ("id" -> Json.toJson(authority.id.toString))
+
+      (basic _ andThen withCourse andThen withInvalidated andThen withId)(userJs)
+    }
+
+    authority.user match {
+      case student: Student => toJson(Json.toJson(student))
+      case employee: Employee => toJson(Json.toJson(employee))
+    }
   }
 }

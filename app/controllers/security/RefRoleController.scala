@@ -45,9 +45,10 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(refRole.get)
+    /*case Get => PartialSecureBlock(refRole.get)
     case GetAll => PartialSecureBlock(refRole.getAll)
-    case _ => PartialSecureBlock(god)
+    case _ => PartialSecureBlock(god)*/
+    case _ => NonSecureBlock
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[RefRole]): Try[Set[RefRole]] = {

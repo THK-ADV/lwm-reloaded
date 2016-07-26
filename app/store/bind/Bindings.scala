@@ -303,6 +303,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
 
+  // TODO KILL
   implicit lazy val RefRoleDescriptor: Descriptor[Rdf, RefRole] = new Descriptor[Rdf, RefRole] {
     override val clazz: Rdf#URI = lwm.RefRole
 
@@ -316,6 +317,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(RefRole.generateUri(refRole)))(course, role, invalidated, id)(RefRole.apply, RefRole.unapply) withClasses classUris
   }
 
+  // TODO KILL
   implicit lazy val RefRoleAtomDescriptor: Descriptor[Rdf, RefRoleAtom] = new Descriptor[Rdf, RefRoleAtom] {
     override val clazz: Rdf#URI = lwm.RefRole
 
@@ -334,7 +336,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(RefRole.generateUri(refRole.id)))(course, role, invalidated, id)(RefRoleAtom.apply, RefRoleAtom.unapply) withClasses classUris
   }
 
-
+  // TODO KILL
   implicit lazy val AuthorityDescriptor: Descriptor[Rdf, Authority] = new Descriptor[Rdf, Authority] {
     override val clazz: Rdf#URI = lwm.Authority
 
@@ -348,7 +350,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(Authority.generateUri(auth)))(privileged, refroles, invalidated, id)(Authority.apply, Authority.unapply) withClasses classUris
   }
 
-
+  // TOOD KILL
   implicit lazy val AuthorityAtomDescriptor: Descriptor[Rdf, AuthorityAtom] = new Descriptor[Rdf, AuthorityAtom] {
     override val clazz: Rdf#URI = lwm.Authority
 
@@ -365,6 +367,40 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val binder: PGBinder[Rdf, AuthorityAtom] =
       pgbWithId[AuthorityAtom](
         auth => makeUri(Authority.generateUri(auth.id)))(privileged, refrole, invalidated, id)(AuthorityAtom.apply, AuthorityAtom.unapply) withClasses classUris
+  }
+
+  implicit lazy val Authority2Descriptor: Descriptor[Rdf, Authority2] = new Descriptor[Rdf, Authority2] {
+    override val clazz: Rdf#URI = lwm.Authority
+
+    override val classUris: ClassUrisFor[Rdf, Authority2] = classUrisFor[Authority2](clazz)
+
+    private val privileged = property[UUID](lwm.privileged)(uuidRefBinder(User.splitter))
+    private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
+
+    override val binder: PGBinder[Rdf, Authority2] =
+      pgbWithId[Authority2](auth =>
+        makeUri(Authority2.generateUri(auth)))(privileged, role, course, invalidated, id)(Authority2.apply, Authority2.unapply) withClasses classUris
+  }
+
+  implicit lazy val AuthorityAtom2Descriptor: Descriptor[Rdf, AuthorityAtom2] = new Descriptor[Rdf, AuthorityAtom2] {
+    override val clazz: Rdf#URI = lwm.Authority
+
+    override val classUris: ClassUrisFor[Rdf, AuthorityAtom2] = classUrisFor[AuthorityAtom2](clazz)
+
+    override val references: Ref[Rdf#URI] =
+      Ref(clazz)
+        .pointsAt(UserDescriptor.references)
+        .pointsAt(CourseAtomDescriptor.references)
+        .pointsAt(RoleDescriptor.references)
+
+    private val privileged = property[User](lwm.privileged)(UserDescriptor.binder)
+    private val course = optional[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
+    private val role = property[Role](lwm.role)(RoleDescriptor.binder)
+
+    override val binder: PGBinder[Rdf, AuthorityAtom2] =
+      pgbWithId[AuthorityAtom2](
+        auth => makeUri(Authority2.generateUri(auth.id)))(privileged, role, course, invalidated, id)(AuthorityAtom2.apply, AuthorityAtom2.unapply) withClasses classUris
   }
 
   implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, AssignmentEntry] = new Descriptor[Rdf, AssignmentEntry] {

@@ -54,10 +54,11 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Update => PartialSecureBlock(authority.update)
+    /*case Update => PartialSecureBlock(authority.update)
     case GetAll => PartialSecureBlock(authority.getAll)
     case Get => PartialSecureBlock(authority.get)
-    case _ => PartialSecureBlock(god)
+    case _ => PartialSecureBlock(god)*/
+    case _ => NonSecureBlock
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = {
