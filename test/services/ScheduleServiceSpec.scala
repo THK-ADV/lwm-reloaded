@@ -50,7 +50,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val timetableService = new TimetableService(blacklistService)
   val scheduleService = new ScheduleService(timetableService)
 
-  val semester = Semester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4), Semester.randomUUID)
+  val semester = Semester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
   val weeks = Weeks.weeksBetween(semester.start, semester.examStart)
 
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
@@ -74,7 +74,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "populate initial schedules any times" in {
       val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime])
       val plan = assignmentPlan(5)
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty)).toSet
 
@@ -194,12 +194,12 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val plan = assignmentPlan(5)
       val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
 
       val groups = Set(
-        Group("A", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("B", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID),
-        Group("C", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)
+        Group("A", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)),
+        Group("B", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)),
+        Group("C", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))
       )
       val existing = Vector.empty[ScheduleG]
 
@@ -213,10 +213,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are some other schedules" in {
       val plan = assignmentPlan(8)
-      val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val mi = Degree("mi", "abbrev")
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
+      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
@@ -253,11 +253,11 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val students = (0 until 300).map(_ => User.randomUUID).toVector
-      val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
-      val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
+      val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
+      val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
 
       val extrapolatedAp1 = timetableService.extrapolateTimetableByWeeks(ap1T, weeks, plan, ap1G)
       val extrapolatedMa1 = timetableService.extrapolateTimetableByWeeks(ma1T, weeks, plan, ma1G)
@@ -409,9 +409,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate an initial collision free schedule instantly" in {
       val ap1Plan = assignmentPlan(8)
-      val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val mi = Degree("mi", "abbrev")
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
 
       val ap1Entries = Set(
@@ -440,9 +440,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
       import scala.util.Random._
       val students = (0 until 200).map(_ => User.randomUUID).toVector
-      val ap1G = shuffle(students).take(200).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
+      val ap1G = shuffle(students).take(200).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan)
@@ -464,10 +464,10 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "generate a schedule with minimal or no collisions considering one existing competitive schedule and more density" in {
       val ap1Plan = assignmentPlan(8)
       val ma1Plan = assignmentPlan(4, 2)
-      val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val mi = Degree("mi", "abbrev")
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
+      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
 
@@ -504,11 +504,11 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val students = (0 until 200).map(_ => User.randomUUID).toVector
-      val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
-      val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
+      val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
+      val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan),
@@ -533,11 +533,11 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1Plan = assignmentPlan(8)
       val ma1Plan = assignmentPlan(4, 2)
       val gdvkPlan = assignmentPlan(4)
-      val mi = Degree("mi", "abbrev", Degree.randomUUID)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val gdvk = Course("gdvk", "c3", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val mi = Degree("mi", "abbrev")
+      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
+      val gdvk = Course("gdvk", "c3", "abbrev", User.randomUUID, 1)
+      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, mi.id)
       val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, mi.id)
       val gdvkPrak = Labwork("gdvkPrak", "desc3", semester1.id, gdvk.id, mi.id)
@@ -580,13 +580,13 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val students = (0 until 200).map(_ => User.randomUUID).toVector
-      val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet, Group.randomUUID)).toSet
-      val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet, Group.randomUUID)).toSet
-      val gdvkG = shuffle(students).take(150).grouped(30).map(s => Group("", gdvkPrak.id, s.toSet, Group.randomUUID)).toSet
+      val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
+      val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toSet
+      val gdvkG = shuffle(students).take(150).grouped(30).map(s => Group("", gdvkPrak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
-      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Set.empty[DateTime], Timetable.randomUUID)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
+      val gdvkT = Timetable(gdvkPrak.id, gdvkEntries, fd.parseLocalDate("30/10/2015"), Set.empty[DateTime])
 
       val result = gen(Vector(
         (ap1T, ap1G, ap1Plan),

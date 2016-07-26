@@ -17,7 +17,7 @@ import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.RequestOps._
 
-import scala.collection.{GenTraversable, Map}
+import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 object GroupCRUDController {
@@ -34,11 +34,9 @@ object GroupCRUDController {
   }) + 1
 }
 
-class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
+class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
 
-  implicit val ns: Namespace = repository.namespace
-
-  override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   override implicit val descriptor: Descriptor[Sesame, Group] = defaultBindings.GroupDescriptor
 
@@ -52,15 +50,15 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   override implicit val writesAtom: Writes[GroupAtom] = Group.writesAtom
 
-  override protected def coatomic(atom: GroupAtom): Group = Group(atom.label, atom.labwork.id, atom.members map (_.id), atom.id)
+  override protected def coatomic(atom: GroupAtom): Group = Group(atom.label, atom.labwork.id, atom.members map (_.id), atom.invalidated, atom.id)
 
   override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
     input.label == output.label && input.members == output.members
   }
 
   override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = existing match {
-    case Some(group) => Group(input.label, input.labwork, input.members, group.id)
-    case None => Group(input.label, input.labwork, input.members, Group.randomUUID)
+    case Some(group) => Group(input.label, input.labwork, input.members, group.invalidated, group.id)
+    case None => Group(input.label, input.labwork, input.members)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -194,7 +192,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
         for {
           optLabwork <- repository.get[Labwork](Labwork.generateUri(group.labwork))
           students <- repository.getMany[Student](group.members map User.generateUri)
-        } yield optLabwork map (GroupAtom(group.label, _, students, group.id))
+        } yield optLabwork map (GroupAtom(group.label, _, students, group.invalidated, group.id))
       }
     } match {
       case Success(set) => Continue(set)

@@ -15,9 +15,9 @@ import play.api.test.Helpers._
 import scala.util.Success
 
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree, Degree] {
-  override val entityToPass: Degree = Degree("label to pass", "abbreviation to pass", Degree.randomUUID)
+  override val entityToPass: Degree = Degree("label to pass", "abbreviation to pass")
 
-  override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail", Degree.randomUUID)
+  override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail")
 
   override implicit val jsonWrites: Writes[Degree] = Degree.writes
 

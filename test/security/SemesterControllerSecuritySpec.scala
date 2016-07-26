@@ -30,7 +30,7 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       )
 
       val request = FakeRequest(
@@ -53,7 +53,7 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkWith((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       )
 
       val request = FakeRequest(

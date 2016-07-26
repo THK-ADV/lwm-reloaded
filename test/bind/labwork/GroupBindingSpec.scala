@@ -6,9 +6,6 @@ import base.SesameDbSpec
 import models.labwork.{Group, GroupAtom, Labwork}
 import models.users.{Student, User}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class GroupBindingSpec extends SesameDbSpec {
@@ -17,15 +14,17 @@ class GroupBindingSpec extends SesameDbSpec {
   import bindings.{
   GroupDescriptor,
   uuidBinder,
+  dateTimeBinder,
   uuidRefBinder}
 
   implicit val groupBinder = GroupDescriptor.binder
 
-  val group = Group("Label", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID), Group.randomUUID)
+  val group = Group("Label", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID))
   val groupGraph = URI(Group.generateUri(group)).a(lwm.Group)
     .--(lwm.label).->-(group.label)
     .--(lwm.labwork).->-(group.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.members).->-(group.members)(ops, uuidRefBinder(User.splitter))
+    .--(lwm.invalidated).->-(group.invalidated)
     .--(lwm.id).->-(group.id).graph
 
   "A GroupBindingSpec" should {
@@ -60,7 +59,7 @@ class GroupBindingSpec extends SesameDbSpec {
       val student2 = Student("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
       val group = Group("label", labwork.id, Set(student1.id, student2.id))
 
-      val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.id)
+      val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.invalidated, group.id)
 
       repo.add[Labwork](labwork)
       repo.add[Student](student1)

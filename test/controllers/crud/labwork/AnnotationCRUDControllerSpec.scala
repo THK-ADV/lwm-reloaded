@@ -2,7 +2,7 @@ package controllers.crud.labwork
 
 import java.util.UUID
 
-import controllers.crud.{AbstractCRUDController, AbstractCRUDControllerSpec}
+import controllers.crud.AbstractCRUDControllerSpec
 import models.labwork._
 import models.users.Student
 import org.joda.time.{LocalTime, LocalDate}
@@ -14,8 +14,8 @@ import play.api.test.Helpers._
 import utils.LwmMimeType
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-
-import scala.util.{Failure, Success}
+import base.StreamHandler._
+import scala.util.Success
 
 class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[AnnotationProtocol, Annotation, AnnotationAtom] {
 
@@ -82,6 +82,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     entryToPass,
     entityToPass.message,
     entityToPass.timestamp,
+    entityToPass.invalidated,
     entityToPass.id
   )
 
@@ -91,6 +92,7 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
     entryToFail,
     entityToFail.message,
     entityToFail.timestamp,
+    entityToPass.invalidated,
     entityToFail.id
   )
 
@@ -112,10 +114,11 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
         s"/annotations?${AnnotationCRUDController.labworkAttribute}=$labwork"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(second), Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(second, third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all annotations for a given student" in {
@@ -133,10 +136,11 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
         s"/annotations?${AnnotationCRUDController.studentAttribute}=$student"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all annotations for a given report card entry" in {
@@ -154,10 +158,11 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
         s"/annotations?${AnnotationCRUDController.reportCardEntryAttribute}=$reportCardEntry"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all annotations for a given student in a certain labwork" in {
@@ -176,10 +181,11 @@ class AnnotationCRUDControllerSpec extends AbstractCRUDControllerSpec[Annotation
         s"/annotations?${AnnotationCRUDController.studentAttribute}=$student&${AnnotationCRUDController.labworkAttribute}=$labwork"
       )
       val result = controller.all()(request)
+      val expected = Set(Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
   }
 }

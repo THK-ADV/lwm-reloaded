@@ -36,8 +36,8 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
   }
 
   override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
-    case Some(blacklist) => Blacklist(input.label, input.dates, blacklist.id)
-    case None => Blacklist(input.label, input.dates, Blacklist.randomUUID)
+    case Some(blacklist) => Blacklist(input.label, input.dates, blacklist.invalidated, blacklist.id)
+    case None => Blacklist(input.label, input.dates, None, Blacklist.randomUUID)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

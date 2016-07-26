@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
-
+import base.StreamHandler._
 import scala.concurrent.Future
 import scala.util.Success
 
@@ -32,7 +32,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(
@@ -57,7 +57,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(
@@ -126,9 +126,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       status(result) shouldBe NOT_FOUND
     }
 
-    "Allow restricted context invocations when ma wants to get all timetables which belongs to him" in new FakeApplication() {
-      import Timetable.writes
-
+    "Allow restricted context invocations when ma wants to get all timetables which belong to him" in new FakeApplication() {
       when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), timetable.getAll))(FakeMaAuth)).thenReturn(Success(true))
 
@@ -143,7 +141,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Timetable])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Block restricted context invocations when ma wants to create timetable" in new FakeApplication() {
@@ -153,7 +151,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
       when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], UUID.randomUUID())
+        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(

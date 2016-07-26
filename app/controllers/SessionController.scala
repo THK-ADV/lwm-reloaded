@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import controllers.crud.{ContentTyped, SessionChecking}
-import models.{Login, Session}
+import models.{InvalidSession, Login, ValidSession}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
 import services.SessionHandlingService
@@ -34,12 +34,17 @@ class SessionController(val sessionService: SessionHandlingService) extends Cont
       },
       success => {
         sessionService.newSession(success.username.toLowerCase, success.password).map {
-          case s: Session =>
+          case ValidSession(username, userId, id, _) =>
             Ok.withSession(
-              SessionController.sessionId -> s.id.toString,
-              SessionController.userId -> s.userId.toString,
-              Security.username -> s.username
+              SessionController.sessionId -> id.toString,
+              SessionController.userId -> userId.toString,
+              Security.username -> username
             ).as(mimeType)
+          case InvalidSession(message) =>
+            Unauthorized(Json.obj(
+              "status" -> "KO",
+              "message" -> message
+            ))
         }.recover {
           case NonFatal(e) =>
             InternalServerError(Json.obj(

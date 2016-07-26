@@ -35,13 +35,13 @@ class RefRoleController(val repository: SesameRepository, val sessionService: Se
 
   override implicit val uriGenerator: UriGenerator[RefRole] = RefRole
 
-  override protected def coatomic(atom: RefRoleAtom): RefRole = RefRole(atom.course map (_.id), atom.role.id, atom.id)
+  override protected def coatomic(atom: RefRoleAtom): RefRole = RefRole(atom.course map (_.id), atom.role.id, atom.invalidated, atom.id)
 
   override protected def compareModel(input: RefRoleProtocol, output: RefRole): Boolean = input.role == output.role
 
   override protected def fromInput(input: RefRoleProtocol, existing: Option[RefRole]): RefRole = existing match {
-    case Some(refRole) => RefRole(input.course, input.role, refRole.id)
-    case None => RefRole(input.course, input.role, RefRole.randomUUID)
+    case Some(refRole) => RefRole(input.course, input.role, refRole.invalidated, refRole.id)
+    case None => RefRole(input.course, input.role)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

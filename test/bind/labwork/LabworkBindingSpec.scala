@@ -7,15 +7,13 @@ import models.users.Employee
 import models.{Course, CourseAtom, Degree}
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class LabworkBindingSpec extends SesameDbSpec {
 
   import ops._
-  import bindings.{LabworkDescriptor, uuidBinder, uuidRefBinder}
+  import bindings.{LabworkDescriptor, uuidBinder, uuidRefBinder, dateTimeBinder}
 
   implicit val labworkBinder = LabworkDescriptor.binder
   val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -27,6 +25,7 @@ class LabworkBindingSpec extends SesameDbSpec {
     .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(Degree.splitter))
     .--(lwm.subscribable).->-(labwork.subscribable)
     .--(lwm.published).->-(labwork.published)
+    .--(lwm.invalidated).->-(labwork.invalidated)
     .--(lwm.id).->-(labwork.id).graph
 
   "A LabworkBinding" should {
@@ -63,8 +62,8 @@ class LabworkBindingSpec extends SesameDbSpec {
       val degree = Degree("degree", "abbr")
       val labwork = Labwork("labwork", "description", semester.id, course.id, degree.id, false, false)
 
-      val courseAtom = CourseAtom("course", "description", "abbr", employee, 1, course.id)
-      val labworkAtom = LabworkAtom("labwork", "description", semester, courseAtom, degree, labwork.subscribable, labwork.published, labwork.id)
+      val courseAtom = CourseAtom("course", "description", "abbr", employee, 1, course.invalidated, course.id)
+      val labworkAtom = LabworkAtom("labwork", "description", semester, courseAtom, degree, labwork.subscribable, labwork.published, labwork.invalidated, labwork.id)
 
       repo add semester
       repo add employee

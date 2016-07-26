@@ -26,9 +26,9 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     }
   }
 
-  override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates, Blacklist.randomUUID)
+  override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates)
 
-  override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates, Blacklist.randomUUID)
+  override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates)
 
   override implicit val jsonWrites: Writes[Blacklist] = Blacklist.writes
 

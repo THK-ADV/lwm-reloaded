@@ -3,9 +3,10 @@ package models
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
+import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Degree(label: String, abbreviation: String, id: UUID = Degree.randomUUID) extends UniqueEntity
+case class Degree(label: String, abbreviation: String, invalidated: Option[DateTime] = None, id: UUID = Degree.randomUUID) extends UniqueEntity
 
 case class DegreeProtocol(label: String, abbreviation: String)
 

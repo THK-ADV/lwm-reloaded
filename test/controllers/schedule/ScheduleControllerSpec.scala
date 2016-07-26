@@ -103,8 +103,8 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   "A ScheduleCRUDController also" should {
 
     "return empty list of scheduleG's when there are no competitive schedules" in {
-      val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-      val course = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
+      val semester = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = Course("label", "desc", "abbreviation", User.randomUUID, 1)
       val labwork = Labwork("label", "description", semester.id, course.id, Degree.randomUUID)
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
@@ -120,15 +120,15 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     }
 
     "return scheduleG's when there are competitive schedules" in {
-      val course1 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
-      val course2 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
-      val course3 = Course("label", "desc", "abbreviation", User.randomUUID, 1, Course.randomUUID)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val course1 = Course("label", "desc", "abbreviation", User.randomUUID, 1)
+      val course2 = Course("label", "desc", "abbreviation", User.randomUUID, 1)
+      val course3 = Course("label", "desc", "abbreviation", User.randomUUID, 1)
+      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val labwork1 = Labwork("label", "description", semester1.id, course1.id, Degree.randomUUID)
       val labwork2 = Labwork("label", "description", semester1.id, course2.id, Degree.randomUUID)
       val labwork3 = Labwork("label", "description", semester1.id, course3.id, Degree.randomUUID)
 
-      val groups = (0 until 3).map(n => Group(n.toString, Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      val groups = (0 until 3).map(n => Group(n.toString, Labwork.randomUUID, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
 
       val first = Schedule(labwork1.id, Set.empty[ScheduleEntry])
       val second = Schedule(labwork2.id, Set.empty[ScheduleEntry])
@@ -146,7 +146,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
           s should not be empty
           s.size shouldBe 2
 
-          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], sg.id))
+          val schedules = s.map(sg => Schedule(sg.labwork, Set.empty[ScheduleEntry], None, sg.id))
           schedules.contains(first) shouldBe true
           schedules.contains(second) shouldBe true
           schedules.contains(third) shouldBe false
@@ -156,16 +156,16 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "preview a schedule successfully when there are no competitive schedules" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime])
 
-      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
 
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
@@ -174,7 +174,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, None, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -206,22 +206,22 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "preview a schedule successfully although there are competitive schedules" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      ), LocalDate.now, Set.empty[DateTime])
+      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, None, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -256,15 +256,15 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "preview a schedule successfully where conflicts are found" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      ), LocalDate.now, Set.empty[DateTime])
+      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List(
@@ -277,7 +277,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       )
       val schedule = {
         val entries = gen.elem.entries.map(e => ScheduleEntry(labwork.id, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
-        Schedule(gen.elem.labwork, entries, gen.elem.id)
+        Schedule(gen.elem.labwork, entries, None, gen.elem.id)
       }
 
       val request = FakeRequest(
@@ -312,14 +312,14 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "not preview a schedule when assignment plan is empty" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      ), LocalDate.now, Set.empty[DateTime])
+      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
@@ -353,13 +353,13 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "not preview a schedule when timetable is empty" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
-      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
-      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID), Group.randomUUID)).toSet
+      val timetable = Timetable(labwork.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
@@ -393,14 +393,14 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "not preview a schedule when groups are empty" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
         TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
-      ), LocalDate.now, Set.empty[DateTime], Timetable.randomUUID)
+      ), LocalDate.now, Set.empty[DateTime])
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),
         Evaluation[Conflict, Int](List.empty[Conflict], 0)
@@ -434,10 +434,10 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
 
     "not preview a schedule when db errors occur" in {
       val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
-      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-      val course = CourseAtom("", "", "", lecturer, 2, UUID.randomUUID())
+      val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+      val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
       val degree = Degree("degree", "abbrev")
-      val labwork = LabworkAtom("", "", semester, course, degree, false, false, UUID.randomUUID())
+      val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
 
 
       val request = FakeRequest(

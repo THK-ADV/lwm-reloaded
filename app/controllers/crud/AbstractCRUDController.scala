@@ -59,7 +59,7 @@ trait ModelConverter[I, O] {
 }
 
 trait SessionChecking {
-  implicit val sessionService: SessionHandlingService
+  implicit def sessionService: SessionHandlingService
 }
 
 trait Consistent[I, O] {
@@ -95,11 +95,11 @@ trait Chunked {
 }
 
 trait ContentTyped {
-  implicit val mimeType: LwmMimeType
+  implicit def mimeType: LwmMimeType
 }
 
 trait Secured {
-  implicit val roleService: RoleService
+  implicit def roleService: RoleService
 }
 
 /**
@@ -170,6 +170,7 @@ trait SecureControllerContext {
   case object Update extends Rule
 
   case object NonSecureBlock extends SecureContext
+
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Controller
@@ -248,7 +249,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 
   def delete(id: String, securedContext: SecureContext = contextFrom(Delete)) = securedContext action { request =>
     val uri = asUri(namespace, request)
-    remove[O](uri)
+    invalidate[O](uri)
       .mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 
@@ -457,6 +458,18 @@ trait Removed {
 
   def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Unit] = {
     repository.delete[X](uri) match {
+      case Success(_) => Continue(())
+      case Failure(e) =>
+        Return(
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          )))
+    }
+  }
+
+  def invalidate[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Unit] = {
+    repository.invalidate[X](uri) match {
       case Success(_) => Continue(())
       case Failure(e) =>
         Return(

@@ -14,7 +14,7 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
-
+import base.StreamHandler._
 import scala.concurrent.Future
 import scala.util.Success
 
@@ -151,8 +151,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow restricted invocations when mv wants to get a all labworks which belongs to him" in new FakeApplication() {
-      import Labwork.writes
-      
+
       when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), labwork.getAll))(FakeMvAuth)).thenReturn(Success(true))
 
@@ -167,7 +166,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Allow restricted invocations when mv wants to update a labwork which belongs to him" in new FakeApplication() {
@@ -217,8 +216,6 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow restricted invocations when ma wants to get all labwork which belongs to him" in new FakeApplication() {
-      import Labwork.writes
-
       when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), labwork.getAll))(FakeMaAuth)).thenReturn(Success(true))
 
@@ -233,7 +230,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Allow restricted invocations when hk wants to get a single labwork " in new FakeApplication() {
@@ -288,8 +285,6 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow non restricted invocations when student wants to get all labworks where he can apply for" in new FakeApplication() {
-      import Labwork.writes
-
       when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
       when(roleService.checkWith((None, labwork.getAll))(FakeStudentAuth)).thenReturn(Success(true))
 
@@ -304,7 +299,7 @@ class LabworkControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
       val result = route(request).get
 
       status(result) shouldBe OK
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "Block non restricted invocations when employee wants to get a single labwork" in new FakeApplication {

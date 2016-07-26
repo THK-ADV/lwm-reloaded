@@ -13,13 +13,14 @@ class SemesterBindingSpec extends SesameDbSpec {
 
   import bindings.{
   SemesterDescriptor,
+  dateTimeBinder,
   uuidBinder,
   localDateBinder}
   import ops._
 
   implicit val semesterBinder = SemesterDescriptor.binder
 
-  val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5), Semester.randomUUID)
+  val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5))
   val semesterGraph = (
     URI(Semester.generateUri(semester)).a(lwm.Semester)
       -- lwm.label ->- semester.label
@@ -27,6 +28,7 @@ class SemesterBindingSpec extends SesameDbSpec {
       -- lwm.start ->- semester.start
       -- lwm.end->- semester.end
       -- lwm.examStart ->- semester.examStart
+      -- lwm.invalidated ->- semester.invalidated
       -- lwm.id ->- semester.id
     ).graph
 

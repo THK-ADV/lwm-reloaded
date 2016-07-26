@@ -14,9 +14,9 @@ import play.api.test.Helpers._
 import scala.util.Success
 
 class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room, Room] {
-  override val entityToPass: Room = Room("label to pass", "description to pass", Room.randomUUID)
+  override val entityToPass: Room = Room("label to pass", "description to pass")
 
-  override val entityToFail: Room = Room("label to fail", "description to fail", Room.randomUUID)
+  override val entityToFail: Room = Room("label to fail", "description to fail")
 
   override implicit val jsonWrites: Writes[Room] = Room.writes
 

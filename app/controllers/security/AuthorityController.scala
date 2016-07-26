@@ -28,9 +28,7 @@ object AuthorityController {
   val roleAttribute = "role"
 }
 
-class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority, AuthorityAtom] {
-
-  implicit val ns: Namespace = repository.namespace
+class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority, AuthorityAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
@@ -46,13 +44,13 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
   override implicit val uriGenerator: UriGenerator[Authority] = Authority
 
-  override protected def coatomic(atom: AuthorityAtom): Authority = Authority(atom.user.id, atom.refRoles map (_.id), atom.id)
+  override protected def coatomic(atom: AuthorityAtom): Authority = Authority(atom.user.id, atom.refRoles map (_.id), atom.invalidated, atom.id)
 
   override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.refRoles == output.refRoles
 
   override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = existing match {
-    case Some(authority) => Authority(input.user, input.refRoles, authority.id)
-    case None => Authority(input.user, input.refRoles, Authority.randomUUID)
+    case Some(authority) => Authority(input.user, input.refRoles, authority.invalidated, authority.id)
+    case None => Authority(input.user, input.refRoles)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -68,7 +66,6 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     import store.sparql.select._
 
     val lwm = LWMPrefix[repository.Rdf]
-    implicit val ns = repository.namespace
     val clause: Clause = **(v("auth"), p(lwm.refroles), v("refs"))
 
     queryString.foldRight(Try(clause)) {

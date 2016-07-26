@@ -42,8 +42,8 @@ class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: Ld
     case SyncRequest =>
       def difference(current: Set[User], newest: Set[User]): Set[User] = {
         def equalizeId(from: User, to: User): Option[User] = (from, to) match {
-          case (s1: Student, s2: Student) => Some(Student(s2.systemId, s2.lastname, s2.firstname, s2.email, s2.registrationId, s2.enrollment, s1.id))
-          case (e1: Employee, e2: Employee) => Some(Employee(e2.systemId, e2.lastname, e2.firstname, e2.email, e2.status, e1.id))
+          case (s1: Student, s2: Student) => Some(Student(s2.systemId, s2.lastname, s2.firstname, s2.email, s2.registrationId, s2.enrollment, s1.invalidated, s1.id))
+          case (e1: Employee, e2: Employee) => Some(Employee(e2.systemId, e2.lastname, e2.firstname, e2.email, e2.status, e1.invalidated, e1.id))
           case _ => None
         }
 

@@ -44,7 +44,7 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
       val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(permissions)
     }
 
@@ -57,7 +57,7 @@ class PermissionControllerSpec extends WordSpec with TestBaseDefinition {
       val result = controller.header()(request)
 
       status(result) shouldBe NO_CONTENT
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsString(result) shouldBe empty
     }
   }

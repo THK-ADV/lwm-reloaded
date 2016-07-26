@@ -19,7 +19,7 @@ import store.bind.Descriptor.Descriptor
 import store.sparql.select
 import store.sparql.select._
 import store.{Namespace, SesameRepository}
-import utils.{Continue, LwmMimeType}
+import utils.LwmMimeType
 import utils.RequestOps._
 
 import scala.collection.Map
@@ -66,7 +66,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
 
   override implicit val uriGenerator: UriGenerator[ScheduleEntry] = ScheduleEntry
 
-  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor.id, atom.group.id, atom.id)
+  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor.id, atom.group.id, atom.invalidated, atom.id)
 
   override protected def compareModel(input: ScheduleEntry, output: ScheduleEntry): Boolean = input == output
 

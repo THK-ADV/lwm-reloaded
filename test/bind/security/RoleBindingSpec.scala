@@ -3,9 +3,6 @@ package bind.security
 import base.SesameDbSpec
 import models.security.{Permission, Role}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.Success
 
 class RoleBindingSpec extends SesameDbSpec {
@@ -15,18 +12,19 @@ class RoleBindingSpec extends SesameDbSpec {
 
   import bindings.{
   RoleDescriptor,
+  dateTimeBinder,
   permissionBinder,
-  uuidBinder
-  }
+  uuidBinder}
   import ops._
 
   implicit val roleBinder = RoleDescriptor.binder
 
   val roleGraph = (
     URI(Role.generateUri(roleWith)).a(lwm.Role)
-      -- lwm.id ->- roleWith.id
       -- lwm.label ->- roleWith.label
       -- lwm.permissions ->- roleWith.permissions
+      -- lwm.id ->- roleWith.id
+      -- lwm.invalidated ->- roleWith.invalidated
     ).graph
 
   "A Role" should {

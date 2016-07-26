@@ -18,6 +18,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import scala.util.Try
+import base.StreamHandler._
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
@@ -71,9 +72,9 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
     "applicant" -> entityToPass.applicant,
     "friends" -> (entityToPass.friends + User.randomUUID + User.randomUUID)
   )
-  override val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.id)
+  override val atomizedEntityToPass = LabworkApplicationAtom(labworkToPass, applicantToPass, friendsToPass, entityToPass.timestamp, entityToPass.invalidated, entityToPass.id)
 
-  override val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToFail.id)
+  override val atomizedEntityToFail = LabworkApplicationAtom(labworkToFail, applicantToFail, friendsToFail, entityToFail.timestamp, entityToPass.invalidated, entityToFail.id)
 
   val emptyLabworkApps = Set.empty[LabworkApplication]
 
@@ -100,11 +101,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
         s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
   }
 
@@ -125,11 +127,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first), Json.toJson(third))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "not return applications for a labwork when there is no match" in {
@@ -149,11 +152,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$labworkAttribute=${labwork.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe emptyJson
   }
 
   "not return applications when there is an invalid query attribute" in {
@@ -171,7 +174,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?unknownAttribute=attributeValue"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe SERVICE_UNAVAILABLE
     contentType(result) shouldBe Some("application/json")
@@ -198,7 +201,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$labworkAttribute=invalidParameterValue"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe SERVICE_UNAVAILABLE
     contentType(result) shouldBe Some("application/json")
@@ -225,11 +228,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$applicantAttribute=${applicant.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
   "return all corresponding applications for a given applicant" in {
     val applicant = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID)
@@ -248,11 +252,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$applicantAttribute=${applicant.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first), Json.toJson(third))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "not return applications for an applicant when there is no match" in {
@@ -272,11 +277,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$applicantAttribute=${applicant.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe emptyJson
   }
 
   "return the corresponding application for a given friend" in {
@@ -296,11 +301,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$friendAttribute=${friend.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
   "return all corresponding applications for a given friend" in {
     val friend = Student("id", "lastname", "firstname", "email", "registrationId", Degree.randomUUID)
@@ -319,11 +325,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$friendAttribute=${friend.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first), Json.toJson(third))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "not return applications for a friend  when there is no match" in {
@@ -343,11 +350,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$friendAttribute=${friend.id.toString}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe emptyJson
   }
 
   "return the corresponding application for a given date" in {
@@ -367,11 +374,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$dateAttribute=${time.toString("yyyy-MM-dd")}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "return all corresponding applications for a given date" in {
@@ -392,12 +400,13 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$dateAttribute=${now.toString("yyyy-MM-dd")}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first), Json.toJson(third))
 
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "not return applications for a date when there is no match" in {
@@ -417,11 +426,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$dateAttribute=${time.toString("yyyy-MM-dd")}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe emptyJson
   }
 
 
@@ -443,11 +452,12 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$minTime=${encode(now.toString("yyyy-MM-dd'T'HH:mm"))}&$maxTime=${encode(shortly.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first))
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "return all corresponding applications for a given dateTime range" in {
@@ -469,12 +479,13 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$minTime=${encode(now.toString("yyyy-MM-dd'T'HH:mm"))}&$maxTime=${encode(shortly.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
+    val expected = Set(Json.toJson(first), Json.toJson(third))
 
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe expected
   }
 
   "not return applications for a dateTime range when there is no match" in {
@@ -495,11 +506,11 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$minTime=${encode(time.toString("yyyy-MM-dd'T'HH:mm"))}&$maxTime=${encode(shortly.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request)
+    val result = controller.all()(request)
 
     status(result) shouldBe OK
-    contentType(result) shouldBe Some[String](mimeType)
-    contentAsJson(result) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result) shouldBe Some(mimeType.value)
+    contentFromStream(result) shouldBe emptyJson
   }
 
   "return the corresponding application for a given min or max time bound" in {
@@ -524,16 +535,19 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$maxTime=${encode(now.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result1 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request1)
-    val result2 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request2)
+    val result1 = controller.all()(request1)
+    val result2 = controller.all()(request2)
+
+    val expected1 = Set(Json.toJson(first))
+    val expected2 = Set(Json.toJson(second), Json.toJson(third), Json.toJson(fourth))
 
     status(result1) shouldBe OK
-    contentType(result1) shouldBe Some[String](mimeType)
-    contentAsJson(result1) shouldBe Json.toJson(Set(first))
+    contentType(result1) shouldBe Some(mimeType.value)
+    contentFromStream(result1) shouldBe expected1
 
     status(result2) shouldBe OK
-    contentType(result2) shouldBe Some[String](mimeType)
-    contentAsJson(result2) shouldBe Json.toJson(Set(second, third, fourth))
+    contentType(result2) shouldBe Some(mimeType.value)
+    contentFromStream(result2) shouldBe expected2
   }
 
   "return all corresponding applications for a given min or max time bound" in {
@@ -559,17 +573,20 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$maxTime=${encode(now.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result1 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request1)
-    val result2 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request2)
+    val result1 = controller.all()(request1)
+    val result2 = controller.all()(request2)
+
+    val expected1 = Set(Json.toJson(first), Json.toJson(third))
+    val expected2 = Set(Json.toJson(second), Json.toJson(fourth))
 
 
     status(result1) shouldBe OK
-    contentType(result1) shouldBe Some[String](mimeType)
-    contentAsJson(result1) shouldBe Json.toJson(Set(first, third))
+    contentType(result1) shouldBe Some(mimeType.value)
+    contentFromStream(result1) shouldBe expected1
 
     status(result2) shouldBe OK
-    contentType(result2) shouldBe Some[String](mimeType)
-    contentAsJson(result2) shouldBe Json.toJson(Set(second, fourth))
+    contentType(result2) shouldBe Some(mimeType.value)
+    contentFromStream(result2) shouldBe expected2
   }
 
   "not return applications for a min or max bound when there is no match" in {
@@ -595,15 +612,15 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
       s"/${entityTypeName}s?$maxTime=${encode(before.toString("yyyy-MM-dd'T'HH:mm"))}"
     )
 
-    val result1 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request1)
-    val result2 = controller.asInstanceOf[LabworkApplicationCRUDController].all()(request2)
+    val result1 = controller.all()(request1)
+    val result2 = controller.all()(request2)
 
     status(result1) shouldBe OK
-    contentType(result1) shouldBe Some[String](mimeType)
-    contentAsJson(result1) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result1) shouldBe Some(mimeType.value)
+    contentFromStream(result1) shouldBe emptyJson
 
     status(result2) shouldBe OK
-    contentType(result2) shouldBe Some[String](mimeType)
-    contentAsJson(result2) shouldBe Json.toJson(emptyLabworkApps)
+    contentType(result2) shouldBe Some(mimeType.value)
+    contentFromStream(result2) shouldBe emptyJson
   }
 }

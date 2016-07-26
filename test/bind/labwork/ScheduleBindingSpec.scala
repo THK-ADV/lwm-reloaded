@@ -8,9 +8,6 @@ import models.labwork._
 import models.users.{Employee, User}
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class ScheduleBindingSpec extends SesameDbSpec {
@@ -18,6 +15,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
   import bindings.{
   ScheduleDescriptor,
   ScheduleEntryDescriptor,
+  dateTimeBinder,
   localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
   import ops._
 
@@ -31,6 +29,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
   val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
     .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(Labwork.splitter))
     .--(lwm.entries).->-(schedule.entries)
+    .--(lwm.invalidated).->-(schedule.invalidated)
     .--(lwm.id).->-(schedule.id).graph
 
   val scheduleEntryGraph = URI(ScheduleEntry.generateUri(scheduleEntry)).a(lwm.ScheduleEntry)
@@ -41,6 +40,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
     .--(lwm.room).->-(scheduleEntry.room)(ops, uuidRefBinder(Room.splitter))
     .--(lwm.supervisor).->-(scheduleEntry.supervisor)(ops, uuidRefBinder(User.splitter))
     .--(lwm.group).->-(scheduleEntry.group)(ops, uuidRefBinder(Group.splitter))
+    .--(lwm.invalidated).->-(scheduleEntry.invalidated)
     .--(lwm.id).->-(scheduleEntry.id).graph
 
   "A ScheduleBindingSpec " should {
@@ -102,9 +102,9 @@ class ScheduleBindingSpec extends SesameDbSpec {
       val schedule = Schedule(labwork.id, Set(scheduleEntry1, scheduleEntry2))
 
       val scheduleAtom = ScheduleAtom(labwork, Set(
-        ScheduleEntryAtom(labwork, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, supervisor1, group1, scheduleEntry1.id),
-        ScheduleEntryAtom(labwork, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, supervisor2, group2, scheduleEntry2.id)
-      ), schedule.id)
+        ScheduleEntryAtom(labwork, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, supervisor1, group1, scheduleEntry1.invalidated, scheduleEntry1.id),
+        ScheduleEntryAtom(labwork, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, supervisor2, group2, scheduleEntry2.invalidated, scheduleEntry2.id)
+      ), schedule.invalidated, schedule.id)
 
 
       repo add labwork

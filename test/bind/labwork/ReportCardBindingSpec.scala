@@ -8,9 +8,6 @@ import models.labwork._
 import models.users.User
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
-
 import scala.util.{Failure, Success}
 
 class ReportCardBindingSpec extends SesameDbSpec {
@@ -19,6 +16,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   import bindings.{
   ReportCardEntryDescriptor,
   ReportCardEntryTypeDescriptor,
+  dateTimeBinder,
   localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
 
   implicit val reportCardEntryBinder = ReportCardEntryDescriptor.binder
@@ -30,7 +28,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
   val reportCardEntry = {
     val first = entries.head
     val rescheduled = Rescheduled(LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID)
-    ReportCardEntry(first.student, first.labwork, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.id)
+    ReportCardEntry(first.student, first.labwork, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.invalidated, first.id)
   }
   val entryType = ReportCardEntryType.Attendance
 
@@ -44,14 +42,16 @@ class ReportCardBindingSpec extends SesameDbSpec {
     .--(lwm.room).->-(reportCardEntry.room)(ops, uuidRefBinder(Room.splitter))
     .--(lwm.entryTypes).->-(reportCardEntry.entryTypes)
     .--(lwm.rescheduled).->-(reportCardEntry.entryTypes)
+    .--(lwm.invalidated).->-(reportCardEntry.invalidated)
     .--(lwm.id).->-(reportCardEntry.id).graph
 
   val typeGraph = (URI(ReportCardEntryType.generateUri(entryType)).a(lwm.ReportCardEntryType)
     -- lwm.entryType ->- entryType.entryType
     -- lwm.bool ->- entryType.bool
     -- lwm.int ->- entryType.int
+    -- lwm.invalidated ->- entryType.invalidated
     -- lwm.id ->- entryType.id
-  ).graph
+    ).graph
 
   "A ReportCardBindingSpec " should {
 

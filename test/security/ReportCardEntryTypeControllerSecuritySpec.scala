@@ -25,7 +25,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
   val id = UUID.randomUUID
   val json = {
     import ReportCardEntryType._
-    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0, id))
+    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0, None, id))
   }
 
   "A ReportCardEntryTypeControllerSecuritySpec " should {

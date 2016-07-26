@@ -34,13 +34,13 @@ object UserController {
     queryString.foldRight(Try(all)) {
       case ((`degreeAttribute`, degrees), users) => users flatMap { set =>
         Try(UUID.fromString(degrees.head)) map (degree => set filter {
-          case Student(_, _, _, _, _, e, _) => e == degree
+          case Student(_, _, _, _, _, e, _, _) => e == degree
           case _ => false
         })
       }
       case ((`statusAttribute`, states), users) => users map { set =>
         states.foldLeft(set)((set, status) => set filter {
-          case Employee(_, _, _, _, s, _) => s == status
+          case Employee(_, _, _, _, s, _, _) => s == status
           case _ => false
         }
         )
@@ -96,7 +96,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   override implicit val uriGenerator: UriGenerator[User] = User
 
-  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.id)
+  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.invalidated, atom.id)
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(Permissions.user.get)

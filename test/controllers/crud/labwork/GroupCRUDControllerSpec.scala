@@ -15,7 +15,7 @@ import play.api.libs.json.{JsArray, JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import utils.LwmMimeType
-
+import base.StreamHandler._
 import scala.util.{Failure, Success, Try}
 
 class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group, GroupAtom] {
@@ -32,7 +32,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     Student("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID())
   )
 
-  override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id), Group.randomUUID)
+  override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id))
 
   override val controller: GroupCRUDController = new GroupCRUDController(repository, sessionService, namespace, roleService, groupService) {
 
@@ -47,7 +47,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
   }
 
-  override val entityToFail: Group = Group("label to fail", labworkToFail.id, studentsToFail.map(_.id), Group.randomUUID)
+  override val entityToFail: Group = Group("label to fail", labworkToFail.id, studentsToFail.map(_.id))
 
   override implicit val jsonWrites: Writes[Group] = Group.writes
 
@@ -67,8 +67,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "members" -> (entityToPass.members + User.randomUUID)
   )
 
-  override val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.id)
-  override val atomizedEntityToFail = GroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToFail.id)
+  override val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.invalidated, entityToPass.id)
+  override val atomizedEntityToFail = GroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToPass.invalidated, entityToFail.id)
 
   override def entityTypeName: String = "group"
 
@@ -105,11 +105,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(second))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(second))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding groups for a given labwork" in {
@@ -129,11 +130,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(third), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(third, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     "return all corresponding groups for a given student" in {
@@ -153,11 +155,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.studentAttribute}=$student"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     "return all corresponding groups for a given group label" in {
@@ -177,11 +180,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labelAttribute}=$label"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     "not return groups for a labwork when there is no match" in {
@@ -201,11 +205,11 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?${GroupCRUDController.labworkAttribute}=${labwork.id.toString}"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Group])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentAsString(result) shouldBe ""
     }
 
     "not return groups when there is an invalid query attribute" in {
@@ -225,7 +229,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}s?invalidAttribute=${labwork.id.toString}"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
@@ -252,7 +256,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         s"/${entityTypeName.toLowerCase}invalidParameter?${GroupCRUDController.labworkAttribute}=$invalidParameter"
       )
 
-      val result = controller.asInstanceOf[GroupCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")

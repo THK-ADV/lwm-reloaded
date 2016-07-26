@@ -7,8 +7,6 @@ import base.SesameDbSpec
 import models.labwork.{Annotation, AnnotationAtom, Labwork, ReportCardEntry}
 import models.users.{Student, User}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
@@ -29,6 +27,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
     .--(lwm.reportCardEntry).->-(annotation.reportCardEntry)(ops, uuidRefBinder(ReportCardEntry.splitter))
     .--(lwm.message).->-(annotation.message)
     .--(lwm.timestamp).->-(annotation.timestamp)
+    .--(lwm.invalidated).->-(annotation.invalidated)
     .--(lwm.id).->-(annotation.id).graph
 
   "A AnnotationBindingSpec " should {
@@ -62,7 +61,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
       val labwork = Labwork("label", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val reportCardEntry = ReportCardEntry(student.id, labwork.id, "label", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), Set.empty)
       val annot = Annotation(student.id, labwork.id, reportCardEntry.id, "message")
-      val annotAtom = AnnotationAtom(student, labwork, reportCardEntry, annot.message, annot.timestamp, annot.id)
+      val annotAtom = AnnotationAtom(student, labwork, reportCardEntry, annot.message, annot.timestamp, annot.invalidated, annot.id)
 
       repo.add(student)
       repo.add(labwork)

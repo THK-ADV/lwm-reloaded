@@ -297,7 +297,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
       RefRoleDescriptor
       }
       val role1 = Role("Role1", Set(Permission("P1")))
-      val role2 = Role("Role1", Set(Permission("P1"), Permission("P2")), role1.id)
+      val role2 = Role("Role1", Set(Permission("P1"), Permission("P2")), role1.invalidated, role1.id)
       val refrole = RefRole(None, role1.id)
 
       repo.add(role1)

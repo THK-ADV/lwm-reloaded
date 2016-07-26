@@ -1,6 +1,6 @@
 package controllers.crud
 
-import base.TestBaseDefinition
+import base.{StreamHandler, TestBaseDefinition}
 import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -80,7 +80,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.create()(request)
 
       status(result) shouldBe CREATED
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldEqual Json.toJson(entityToPass)
     }
 
@@ -168,7 +168,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.get(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
@@ -181,10 +181,11 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
         s"/${entityTypeName}s"
       )
       val result = controller.all()(request)
+      val expected = allEntities map (entity => Json.toJson(entity))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(allEntities)
+      contentType(result) shouldBe Some(mimeType.value)
+      contentAsString(result) shouldBe expected.mkString("")
     }
 
     s"not get all ${plural(entityTypeName)} when there is an exception" in {
@@ -206,7 +207,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
     }
 
     s"successfully delete an existing $entityTypeName" in {
-      when(repository.delete(anyString())(anyObject())).thenReturn(Success(()))
+      when(repository.invalidate(anyString())(anyObject())).thenReturn(Success(()))
 
       val expectedPassModel = s"""{"status":"OK","id":"${namespace.base}${if(entityTypeName.endsWith("y")) entityTypeName.take(entityTypeName.length - 1) + "ie" else entityTypeName}s/${entityToPass.id}"}"""
       val request = FakeRequest(
@@ -222,7 +223,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
 
     s"not delete an existing $entityTypeName when there is an exception" in {
       val errorMessage = s"Oops, cant delete the desired $entityTypeName for some reason"
-      when(repository.delete(anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+      when(repository.invalidate(anyString())(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
 
       val request = FakeRequest(
         DELETE,
@@ -251,7 +252,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
@@ -269,7 +270,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.update(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(entityToPass)
     }
 
@@ -283,7 +284,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.getAtomic(entityToPass.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsJson(result) shouldBe Json.toJson(atomizedEntityToPass)
     }
 
@@ -320,7 +321,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.allAtomic()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsString(result) shouldBe expected.mkString("")
     }
 
@@ -411,7 +412,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
       val result = controller.header()(request)
 
       status(result) shouldBe NO_CONTENT
-      contentType(result) shouldBe Some[String](mimeType)
+      contentType(result) shouldBe Some(mimeType.value)
       contentAsString(result) shouldBe empty
     }
   }

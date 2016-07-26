@@ -3,13 +3,14 @@ package models.users
 import java.util.UUID
 
 import controllers.crud.JsonSerialisation
+import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, Reads, Writes}
 
-case class Employee(systemId: String, lastname: String, firstname: String, email: String, status: String, id: UUID = User.randomUUID) extends User
+case class Employee(systemId: String, lastname: String, firstname: String, email: String, status: String, invalidated: Option[DateTime] = None, id: UUID = User.randomUUID) extends User
 
 object Employee extends JsonSerialisation[Employee, Employee, Employee] {
 
-  lazy val default = Employee("n.a.", "n.a.", "n.a", "n.a.", "n.a", User.randomUUID)
+  lazy val default = Employee("n.a.", "n.a.", "n.a", "n.a.", "n.a")
 
   override implicit def reads: Reads[Employee] = Json.reads[Employee]
 

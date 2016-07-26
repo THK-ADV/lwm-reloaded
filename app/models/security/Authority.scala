@@ -5,6 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.users.{Employee, Student, User}
 import models.{Course, CourseAtom, UniqueEntity, UriGenerator}
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 /**
@@ -19,11 +20,11 @@ import play.api.libs.json._
   */
 
 
-case class Authority(user: UUID, refRoles: Set[UUID], id: UUID = Authority.randomUUID) extends UniqueEntity
+case class Authority(user: UUID, refRoles: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = Authority.randomUUID) extends UniqueEntity
 
 case class AuthorityProtocol(user: UUID, refRoles: Set[UUID])
 
-case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID) extends UniqueEntity
+case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 /**
   * Structure binding a particular module to a particular `Role`(or set of permissions).
@@ -41,11 +42,11 @@ case class AuthorityAtom(user: User, refRoles: Set[RefRoleAtom], id: UUID) exten
   * @param role   Reference to `Role` Instance of that course/module
   * @param id     Unique id of the `RefRole`
   */
-case class RefRole(course: Option[UUID] = None, role: UUID, id: UUID = RefRole.randomUUID) extends UniqueEntity
+case class RefRole(course: Option[UUID] = None, role: UUID, invalidated: Option[DateTime] = None, id: UUID = RefRole.randomUUID) extends UniqueEntity
 
 case class RefRoleProtocol(course: Option[UUID] = None, role: UUID)
 
-case class RefRoleAtom(course: Option[CourseAtom], role: Role, id: UUID) extends UniqueEntity
+case class RefRoleAtom(course: Option[CourseAtom], role: Role, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 /**
   * Structure abstracting over a set of unary `Permission`s.
@@ -56,7 +57,7 @@ case class RefRoleAtom(course: Option[CourseAtom], role: Role, id: UUID) extends
   * @param permissions The unary permissions of that `Role`
   */
 
-case class Role(label: String, permissions: Set[Permission], id: UUID = Role.randomUUID) extends UniqueEntity
+case class Role(label: String, permissions: Set[Permission], invalidated: Option[DateTime] = None, id: UUID = Role.randomUUID) extends UniqueEntity
 
 case class RoleProtocol(label: String, permissions: Set[Permission])
 
@@ -117,7 +118,7 @@ object RefRole extends UriGenerator[RefRole] with JsonSerialisation[RefRoleProto
 }
 
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority, AuthorityAtom] {
-  def empty = Authority(UUID.randomUUID(), Set.empty, UUID.randomUUID())
+  def empty = Authority(UUID.randomUUID(), Set.empty)
 
   override def base: String = "authorities"
 

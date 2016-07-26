@@ -31,7 +31,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     Json.toJson(
       ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType], Some(
         Rescheduled(LocalDate.now.plusDays(1), LocalTime.now.plusHours(1), LocalTime.now.plusHours(1), UUID.randomUUID)),
-      id)
+        None, id)
     )
   }
 

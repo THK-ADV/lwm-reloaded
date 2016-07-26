@@ -17,27 +17,28 @@ import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
+import base.StreamHandler._
 import utils.LwmMimeType
 import scala.util.Success
 
 class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtocol, Labwork, LabworkAtom] {
 
-  val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
-  val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+  val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
 
   val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
   val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
 
-  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1, Course.randomUUID)
-  val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", employeeToFail.id, 1, Course.randomUUID)
+  val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1)
+  val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", employeeToFail.id, 1)
 
   def toAtom(course: Course): CourseAtom = {
     def employee(id: UUID): Employee = if (id == employeeToPass.id) employeeToPass else employeeToFail
-    CourseAtom(course.label, course.description, course.abbreviation, employee(course.lecturer), course.semesterIndex, course.id)
+    CourseAtom(course.label, course.description, course.abbreviation, employee(course.lecturer), course.semesterIndex, course.invalidated, course.id)
   }
 
-  val degreeToPass = Degree("label to pass", "abbrev to pass", Degree.randomUUID)
-  val degreeToFail = Degree("label to fail", "abbrev to fail", Degree.randomUUID)
+  val degreeToPass = Degree("label to pass", "abbrev to pass")
+  val degreeToFail = Degree("label to fail", "abbrev to fail")
 
   override val entityToPass: Labwork = Labwork(
     "label to pass",
@@ -101,6 +102,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     degreeToPass,
     entityToPass.subscribable,
     entityToPass.published,
+    entityToPass.invalidated,
     entityToPass.id
   )
 
@@ -112,6 +114,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     degreeToFail,
     entityToFail.subscribable,
     entityToFail.published,
+    entityToPass.invalidated,
     entityToFail.id
   )
 
@@ -125,7 +128,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   "A LabworkCRUDControllerSpec also " should {
 
     "return the corresponding labwork for a given course" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -140,15 +143,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=${course.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(second))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(second))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given course" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -163,15 +167,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=${course.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(second), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(second, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return labworks for a course when there is no match" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -186,15 +191,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=${course.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "not return labworks when there is an invalid query attribute" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -209,7 +214,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?unknownAttribute=${course.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
@@ -236,7 +241,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=$invalidParameter"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
@@ -247,7 +252,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return the corresponding labwork for a given degree" in {
-      val degree = Degree("label", "description", Degree.randomUUID)
+      val degree = Degree("label", "description")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -262,15 +267,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.degreeAttribute}=${degree.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given degree" in {
-      val degree = Degree("label", "description", Degree.randomUUID)
+      val degree = Degree("label", "description")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -285,15 +291,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.degreeAttribute}=${degree.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return labworks for a degree when there is no match" in {
-      val degree = Degree("label", "description", Degree.randomUUID)
+      val degree = Degree("label", "description")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -308,15 +315,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.degreeAttribute}=${degree.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "return the corresponding labwork for a given semester" in {
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -332,14 +339,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
       )
 
       val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val expected = Set(Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given semester" in {
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, Degree.randomUUID)
@@ -354,15 +362,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.semesterAttribute}=${semester.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(third), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(third, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "not return labworks for a semester when there is no match" in {
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
@@ -377,16 +386,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.semesterAttribute}=${semester.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "return all corresponding labworks for a given course and degree" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val degree = Degree("label", "abbrev", Degree.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
+      val degree = Degree("label", "abbrev")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, degree.id)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, course.id, degree.id)
@@ -401,16 +410,17 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=${course.id.toString}&${LabworkCRUDController.degreeAttribute}=${degree.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first, third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given course and semester" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", semester.id, course.id, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", semester.id, course.id, Degree.randomUUID)
@@ -425,16 +435,17 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.courseAttribute}=${course.id.toString}&${LabworkCRUDController.semesterAttribute}=${semester.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(second), Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(second, third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given degree and semester" in {
-      val degree = Degree("label", "abbrev", Degree.randomUUID)
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val degree = Degree("label", "abbrev")
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", semester.id, Course.randomUUID, degree.id)
       val second = Labwork("label 2", "description 2", semester.id, Course.randomUUID, degree.id)
       val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, Degree.randomUUID)
@@ -449,17 +460,18 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.degreeAttribute}=${degree.id.toString}&${LabworkCRUDController.semesterAttribute}=${semester.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(second), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first, second, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks for a given degree, course and semester" in {
-      val course = Course("label", "desc", "abbrev", User.randomUUID, 1, Course.randomUUID)
-      val degree = Degree("label", "abbrev", Degree.randomUUID)
-      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now, Semester.randomUUID)
+      val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
+      val degree = Degree("label", "abbrev")
+      val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", semester.id, course.id, degree.id)
       val second = Labwork("label 2", "description 2", semester.id, Course.randomUUID, degree.id)
       val third = Labwork("label 3", "description 3", semester.id, course.id, Degree.randomUUID)
@@ -474,15 +486,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}s?${LabworkCRUDController.degreeAttribute}=${degree.id.toString}&${LabworkCRUDController.semesterAttribute}=${semester.id.toString}&${LabworkCRUDController.courseAttribute}=${course.id.toString}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(first), Json.toJson(fourth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(first, fourth))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return all corresponding labworks where a given student can apply for" in {
-      val degree = Degree("label", "abbrev", Degree.randomUUID)
+      val degree = Degree("label", "abbrev")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = true)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, degree.id, subscribable = true)
@@ -495,15 +508,16 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}/degrees/${degree.id}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].allWithDegree(degree.id.toString)(request)
+      val result = controller.allWithDegree(degree.id.toString)(request)
+      val expected = Set(Json.toJson(third))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set(third))
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
     }
 
     "return no labworks when there is nothing to apply for" in {
-      val degree = Degree("label", "abbrev", Degree.randomUUID)
+      val degree = Degree("label", "abbrev")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, degree.id)
@@ -516,11 +530,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}/degrees/${degree.id}"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].allWithDegree(degree.id.toString)(request)
+      val result = controller.allWithDegree(degree.id.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[Labwork])
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe emptyJson
     }
 
     "return all corresponding labworks which schedules are published" in {
@@ -540,13 +554,15 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
         s"/${entityTypeName.toLowerCase}?${LabworkCRUDController.publishedAttribute}=true"
       )
 
-      val result = controller.asInstanceOf[LabworkCRUDController].all()(request)
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(second), Json.toJson(third), Json.toJson(fifth))
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      Set(second, third, fifth).forall { l =>
-        contentAsString(result) contains Json.toJson(l).toString
-      } shouldBe true
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
+//      Set(second, third, fifth).forall { l =>
+//        contentAsString(result) contains Json.toJson(l).toString
+//      } shouldBe true
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {

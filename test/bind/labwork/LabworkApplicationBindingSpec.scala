@@ -6,8 +6,6 @@ import base.SesameDbSpec
 import models.labwork._
 import models.users.{Student, User}
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
@@ -32,6 +30,7 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
     .--(lwm.applicant).->-(application.applicant)(ops, uuidRefBinder(User.splitter))
     .--(lwm.timestamp).->-(application.timestamp)
     .--(lwm.friends).->-(application.friends)(ops, uuidRefBinder(User.splitter))
+    .--(lwm.invalidated).->-(application.invalidated)
     .--(lwm.id).->-(application.id).graph
 
   "A LabworkApplicationBinding" should {
@@ -67,7 +66,7 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
       val student2 = Student("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
       val application = LabworkApplication(labwork.id, student1.id, Set(student2.id))
 
-      val applicationAtom = LabworkApplicationAtom(labwork, student1, Set(student2), application.timestamp, application.id)
+      val applicationAtom = LabworkApplicationAtom(labwork, student1, Set(student2), application.timestamp, application.invalidated, application.id)
 
       repo.add[Labwork](labwork)
       repo.add[Student](student1)
