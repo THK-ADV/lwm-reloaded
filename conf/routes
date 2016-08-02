@@ -84,6 +84,7 @@ POST          /semesters                                                        
 PUT           /semesters/:id                                                      controllers.crud.semester.SemesterCRUDController.update(id)
 GET           /semesters                                                          controllers.crud.semester.SemesterCRUDController.all()
 GET           /semesters/:id                                                      controllers.crud.semester.SemesterCRUDController.get(id)
+GET           /semesters/current                                                  controllers.crud.semester.SemesterCRUDController.current()
 DELETE        /semesters/:id                                                      controllers.crud.semester.SemesterCRUDController.delete(id)
 HEAD          /semesters                                                          controllers.crud.semester.SemesterCRUDController.header
 
