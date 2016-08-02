@@ -5,13 +5,10 @@
 GET           /                                                                   controllers.HomepageController.index
 
 # Degree
-POST          /degrees                                                            controllers.crud.DegreeCRUDController.create()
-POST          /atomic/degrees                                                     controllers.crud.CourseCRUDController.createAtomic()
 PUT           /degrees/:id                                                        controllers.crud.DegreeCRUDController.update(id)
 PUT           /atomic/degrees/:id                                                 controllers.crud.DegreeCRUDController.updateAtomic(id)
 GET           /degrees                                                            controllers.crud.DegreeCRUDController.all()
 GET           /degrees/:id                                                        controllers.crud.DegreeCRUDController.get(id)
-DELETE        /degrees/:id                                                        controllers.crud.DegreeCRUDController.delete(id)
 HEAD          /degrees                                                            controllers.crud.DegreeCRUDController.header
 
 # Course

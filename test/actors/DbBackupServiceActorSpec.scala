@@ -44,8 +44,8 @@ class DbBackupServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
           case Some(folder) =>
             folder.getAbsolutePath.contains(srcFolder) shouldBe true
             folder.getAbsolutePath.contains(s"${srcFolder}_${LocalDateTime.now.toString("yyyy-MM-dd_HH:mm")}") shouldBe true
-            folder.listFiles().nonEmpty shouldBe true
-            folder.listFiles().forall(_.getName.endsWith(".data")) shouldBe true
+            folder.listFiles.nonEmpty shouldBe true
+            folder.listFiles.forall(_.getName.endsWith(".data")) shouldBe true
 
           case None => fail("there should be a least one backup")
         }

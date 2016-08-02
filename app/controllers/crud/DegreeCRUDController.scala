@@ -45,7 +45,8 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)
     case GetAll => PartialSecureBlock(degree.getAll)
-    case _ => PartialSecureBlock(prime)
+    case Update => PartialSecureBlock(prime)
+    case _ => PartialSecureBlock(god)
   }
 
   override protected def existsQuery(input: DegreeProtocol): (Clause, select.Var) = {
