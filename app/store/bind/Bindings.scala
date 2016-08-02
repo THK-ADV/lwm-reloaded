@@ -303,51 +303,19 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
 
-  implicit lazy val RefRoleDescriptor: Descriptor[Rdf, RefRole] = new Descriptor[Rdf, RefRole] {
-    override val clazz: Rdf#URI = lwm.RefRole
-
-    override val classUris: ClassUrisFor[Rdf, RefRole] = classUrisFor[RefRole](clazz)
-
-    private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
-    private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
-
-    override val binder: PGBinder[Rdf, RefRole] =
-      pgbWithId[RefRole](refRole =>
-        makeUri(RefRole.generateUri(refRole)))(course, role, invalidated, id)(RefRole.apply, RefRole.unapply) withClasses classUris
-  }
-
-  implicit lazy val RefRoleAtomDescriptor: Descriptor[Rdf, RefRoleAtom] = new Descriptor[Rdf, RefRoleAtom] {
-    override val clazz: Rdf#URI = lwm.RefRole
-
-    override val classUris: ClassUrisFor[Rdf, RefRoleAtom] = classUrisFor[RefRoleAtom](clazz)
-
-    override val references: Ref[Rdf#URI] =
-      Ref(clazz)
-        .pointsAt(CourseAtomDescriptor.references)
-        .pointsAt(RoleDescriptor.references)
-
-    private val course = optional[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
-    private val role = property[Role](lwm.role)(RoleDescriptor.binder)
-
-    override val binder: PGBinder[Rdf, RefRoleAtom] =
-      pgbWithId[RefRoleAtom](refRole =>
-        makeUri(RefRole.generateUri(refRole.id)))(course, role, invalidated, id)(RefRoleAtom.apply, RefRoleAtom.unapply) withClasses classUris
-  }
-
-
   implicit lazy val AuthorityDescriptor: Descriptor[Rdf, Authority] = new Descriptor[Rdf, Authority] {
     override val clazz: Rdf#URI = lwm.Authority
 
     override val classUris: ClassUrisFor[Rdf, Authority] = classUrisFor[Authority](clazz)
 
     private val privileged = property[UUID](lwm.privileged)(uuidRefBinder(User.splitter))
-    private val refroles = set[UUID](lwm.refroles)(uuidRefBinder(RefRole.splitter))
+    private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
 
     override val binder: PGBinder[Rdf, Authority] =
       pgbWithId[Authority](auth =>
-        makeUri(Authority.generateUri(auth)))(privileged, refroles, invalidated, id)(Authority.apply, Authority.unapply) withClasses classUris
+        makeUri(Authority.generateUri(auth)))(privileged, role, course, invalidated, id)(Authority.apply, Authority.unapply) withClasses classUris
   }
-
 
   implicit lazy val AuthorityAtomDescriptor: Descriptor[Rdf, AuthorityAtom] = new Descriptor[Rdf, AuthorityAtom] {
     override val clazz: Rdf#URI = lwm.Authority
@@ -357,14 +325,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
         .pointsAt(UserDescriptor.references)
-        .pointsAt(RefRoleAtomDescriptor.references)
+        .pointsAt(CourseAtomDescriptor.references)
+        .pointsAt(RoleDescriptor.references)
 
     private val privileged = property[User](lwm.privileged)(UserDescriptor.binder)
-    private val refrole = set[RefRoleAtom](lwm.refroles)(RefRoleAtomDescriptor.binder)
+    private val course = optional[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
+    private val role = property[Role](lwm.role)(RoleDescriptor.binder)
 
     override val binder: PGBinder[Rdf, AuthorityAtom] =
       pgbWithId[AuthorityAtom](
-        auth => makeUri(Authority.generateUri(auth.id)))(privileged, refrole, invalidated, id)(AuthorityAtom.apply, AuthorityAtom.unapply) withClasses classUris
+        auth => makeUri(Authority.generateUri(auth.id)))(privileged, role, course, invalidated, id)(AuthorityAtom.apply, AuthorityAtom.unapply) withClasses classUris
   }
 
   implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, AssignmentEntry] = new Descriptor[Rdf, AssignmentEntry] {
@@ -500,7 +470,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val branching: Ref[Rdf#URI] =
       Ref(clazz)
         .pointedAt(LabworkDescriptor.branching)
-        .pointedAt(RefRoleDescriptor.branching)
+        .pointedAt(AuthorityDescriptor.branching)
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -983,7 +953,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(ReportCardEvaluation.generateUri(eval.id)))(student, labwork, label, bool, int, invalidated, id)(ReportCardEvaluationAtom.apply, ReportCardEvaluationAtom.unapply) withClasses classUris
 
   }
-
 }
 
 object Bindings {

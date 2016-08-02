@@ -43,7 +43,7 @@ class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {self
   "A SecureControllerContext" should {
 
     "use default context block, if none other is provided" in {
-      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(Success(false))
+      when(roleService.checkAuthority(anyObject())(anyObject())).thenReturn(Success(false))
 
       val fakeRequest = FakeRequest("GET", "/")
 

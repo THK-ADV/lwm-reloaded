@@ -47,7 +47,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
   override implicit val uriGenerator: UriGenerator[Labwork] = Labwork
 
-  override protected def coatomic(atom: LabworkAtom): Labwork =
+  override protected def coAtomic(atom: LabworkAtom): Labwork =
     Labwork(
       atom.label,
       atom.description,

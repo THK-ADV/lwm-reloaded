@@ -30,8 +30,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted invocations when mv wants to create an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.create))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         POST,
@@ -49,8 +49,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when ma wants to create an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.create))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.create))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         POST,
@@ -68,8 +68,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when ma wants to update an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.update))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.update))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
@@ -87,8 +87,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when mv wants to delete an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.delete))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.delete))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         DELETE,
@@ -104,8 +104,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when hk wants to get all annotation for his labwork" in new FakeApplication {
-      when(roleService.authorityFor(FakeHk.toString)).thenReturn(Success(Some(FakeHkAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.getAll))(FakeHkAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeHk)).thenReturn(Success(Set(FakeHkAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.getAll))(FakeHkAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -121,8 +121,8 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Block restricted invocations when student wants to get his annotations" in new FakeApplication {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((Some(FakeCourse), annotation.get))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), annotation.get))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,

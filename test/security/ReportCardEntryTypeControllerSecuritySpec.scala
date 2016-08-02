@@ -24,15 +24,16 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
   val id = UUID.randomUUID
   val json = {
-    import ReportCardEntryType._
-    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = true, 0, None, id))
+    import models.labwork.ReportCardEntryType._
+    import scala.util.Random.nextBoolean
+    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = nextBoolean, 0, None, id))
   }
 
   "A ReportCardEntryTypeControllerSecuritySpec " should {
 
     "Allow restricted context invocations when admin wants to update a report card entry type" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.update))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), reportCardEntryType.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
@@ -50,8 +51,8 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
     }
 
     "Allow restricted context invocations when mv wants to update a report card entry type" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.update))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), reportCardEntryType.update))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
@@ -69,8 +70,8 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
     }
 
     "Allow restricted context invocations when hk wants to update a report card entry type" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.update))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), reportCardEntryType.update))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         PUT,
@@ -88,8 +89,8 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
     }
 
     "Block restricted context invocations when student wants to update his own report card entry type" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((Some(FakeCourse), reportCardEntryType.update))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), reportCardEntryType.update))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         PUT,

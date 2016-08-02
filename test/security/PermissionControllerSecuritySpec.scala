@@ -24,8 +24,8 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     "Allow non restricted context invocations when admin wants to get all permissions" in new FakeApplication() {
       import models.security.Permission.writes
 
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, Permissions.prime))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, Permissions.prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -42,8 +42,8 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Block non restricted context invocations when mv wants to get all permissions" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((None, Permissions.prime))(FakeMvAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((None, Permissions.prime))(FakeMvAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,

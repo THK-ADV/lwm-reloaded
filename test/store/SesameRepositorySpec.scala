@@ -2,36 +2,18 @@ package store
 
 import java.util.UUID
 
-import base.TestBaseDefinition
+import base.SesameDbSpec
 import models._
-import models.labwork.{Labwork, LabworkApplication, ReportCardEntry, ReportCardEntryType}
-import models.security._
+import models.labwork.{ReportCardEntry, ReportCardEntryType}
 import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.{LocalDate, LocalTime}
-import org.scalatest.WordSpec
-import org.w3.banana.sesame.{Sesame, SesameModule}
-import store.Prefixes.LWMPrefix
-import store.bind.Bindings
-import security.Permissions
 
 import scala.util.{Failure, Success}
 
-class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameModule {
+class SesameRepositorySpec extends SesameDbSpec {
 
+  import bindings.{StudentDescriptor, uuidBinder, uuidRefBinder}
   import ops._
-
-  implicit val ns = Namespace("http://lwm.gm.fh-koeln.de/")
-
-  val bindings = Bindings[Sesame](ns)
-  val lwm = LWMPrefix[Sesame]
-
-  import bindings.{
-  StudentDescriptor,
-  uuidBinder,
-  uuidRefBinder
-  }
-
-  lazy val repo = SesameRepository(ns)
 
   "Sesame Repository" should {
 
@@ -153,10 +135,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "delete an arbitrarily nested entity" in {
-      import bindings.{
-      DegreeDescriptor,
-      StudentAtomDescriptor
-      }
+      import bindings.{DegreeDescriptor, StudentAtomDescriptor}
 
       val degree = Degree("label", "abbr")
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", degree.id)
@@ -205,10 +184,7 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
     }
 
     "get a polymorphic entity" in {
-      import bindings.{
-      StudentDescriptor,
-      UserDescriptor
-      }
+      import bindings.{StudentDescriptor, UserDescriptor}
 
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
       val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
@@ -288,35 +264,6 @@ class SesameRepositorySpec extends WordSpec with TestBaseDefinition with SesameM
 
         case Failure(e) =>
           fail(s"Student could not be added to graph: $e")
-      }
-    }
-
-    "update an entity that is referenced by further entities" in {
-      import bindings.{
-      RoleDescriptor,
-      RefRoleDescriptor
-      }
-      val role1 = Role("Role1", Set(Permission("P1")))
-      val role2 = Role("Role1", Set(Permission("P1"), Permission("P2")), role1.invalidated, role1.id)
-      val refrole = RefRole(None, role1.id)
-
-      repo.add(role1)
-      repo.add(refrole)
-
-      repo.update(role2)(RoleDescriptor, Role)
-
-      repo.get[Role](Role.generateUri(role1)) match {
-        case Success(Some(role)) => role shouldBe role2
-        case _ => fail("repo could not retrieve the given entity")
-      }
-
-      repo.get[RefRole](RefRole.generateUri(refrole)) match {
-        case Success(Some(ref)) =>
-          repo.get[Role](Role.generateUri(ref.role)) match {
-            case Success(Some(role)) => role shouldBe role2
-            case _ => fail("repo could not retrieve inner entity")
-          }
-        case _ => fail("repo could not retrieve the given entity")
       }
     }
 

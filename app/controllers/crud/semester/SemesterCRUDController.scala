@@ -55,7 +55,7 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     }, v("id"))
   }
 
-  override protected def coatomic(atom: Semester): Semester = atom
+  override protected def coAtomic(atom: Semester): Semester = atom
 
   override implicit def descriptorAtom: Descriptor[Sesame, Semester] = descriptor
 

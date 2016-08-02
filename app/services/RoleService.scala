@@ -5,26 +5,22 @@ import java.util.UUID
 import models.security._
 import models.users.User
 import org.openrdf.model.Value
-import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
-import store.sparql.NoneClause
-import utils.Ops._
 import utils.Ops.MonadInstances._
-import utils.Ops.TraverseInstances._
 
 import scala.util.{Success, Try}
 
 trait RoleServiceLike {
 
   /**
-    * Retrieves the authority of a particular user.
+    * Retrieves the authorities of a particular user.
     *
     * @param userId User ID
-    * @return User's possible authority
+    * @return User's possible authorities
     */
-  def authorityFor(userId: String): Try[Option[Authority]]
+  def authorities(userId: UUID): Try[Set[Authority]]
 
   /**
     * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
@@ -33,89 +29,58 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkWith(checkee: (Option[UUID], Permission))(checker: Authority): Try[Boolean]
+  def checkAuthority(checkee: (Option[UUID], Permission))(checker: Authority*): Try[Boolean]
 }
 
-class RoleService(repository: SesameRepository) extends RoleServiceLike {
+class RoleService(private val repository: SesameRepository) extends RoleServiceLike {
 
   import repository._
 
   private val lwm = LWMPrefix[Rdf]
   private val bindings = Bindings[Rdf](namespace)
 
-
-  override def authorityFor(userId: String): Try[Option[Authority]] = {
+  override def authorities(userId: UUID): Try[Set[Authority]] = {
+    import bindings.AuthorityDescriptor
     import store.sparql.select
     import store.sparql.select._
-    import utils.Ops.NaturalTrasformations._
-    import bindings.AuthorityDescriptor
 
-    val useruri = User.generateUri(UUID.fromString(userId))
-    val result = repository.prepareQuery {
-      select("auth") where {
-        **(v("auth"), p(lwm.privileged), s(useruri))
-      }
+    val query = select("auth") where {
+      **(v("auth"), p(lwm.privileged), s(User.generateUri(userId)))
     }
 
-    result.
+    repository.prepareQuery(query).
       select(_.get("auth")).
-      changeTo(_.headOption).
-      request(uri => repository.get[Authority](uri.stringValue())).
+      transform(_.fold(List.empty[Value])(identity)).
+      map(_.stringValue).
+      requestAll[Set, Authority](repository.getMany[Authority]).
       run
   }
 
   def rolesByLabel(labels: String*): Try[Set[Role]] = {
     import bindings.RoleDescriptor
-    repository.getAll[Role]
-      .map(_ filter (role => labels contains role.label))
+
+    repository.getAll[Role].map(_.filter(role => labels contains role.label))
   }
 
-  def refRolesByLabel(roleLabels: String*): Try[Set[RefRole]] = {
-    import store.sparql.select
-    import store.sparql.select._
-    import bindings.RefRoleDescriptor
-
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val queries = roleLabels.map { label =>
-      select("refrole") where {
-        **(v("refrole"), p(rdf.`type`), s(lwm.RefRole)).
-          **(v("refrole"), p(lwm.role), v("role")).
-          **(v("role"), p(lwm.label), o(label))
-      }
-    }
-    queries.foldLeft(Try(Set.empty[RefRole])) { (tset, query) =>
-      val result =
-        repository.prepareQuery(query)
-          .select(_.get("refrole"))
-          .transform(_.fold(List.empty[Value])(identity))
-          .map(_.stringValue())
-          .requestAll(uris => repository.getMany[RefRole](uris))
-          .run
-
-      for {
-        set <- tset
-        refroles <- result
-      } yield set ++ refroles
-    }
-  }
-
-  override def checkWith(whatToCheck: (Option[UUID], Permission))(checkWith: Authority): Try[Boolean] = whatToCheck match {
-    case (optCourse, permission) if permission == Permissions.god => Success(false)
+  override def checkAuthority(whatToCheck: (Option[UUID], Permission))(checkWith: Authority*): Try[Boolean] = whatToCheck match {
+    case (_, permission) if permission == Permissions.god => Success(false)
     case (optCourse, permission) =>
-      import bindings.RefRoleDescriptor
       import bindings.RoleDescriptor
 
-      (for {
-        roles <- repository.getAll[Role]
-        admin = roles.filter(_.label == Roles.Admin)
-        refRoles <- repository.getMany[RefRole](checkWith.refRoles map RefRole.generateUri)
-      } yield {
-        if (refRoles.exists(refrole => admin.exists(_.id == refrole.role))) Success(true)
-        else for {
-          optRef <- Try(refRoles.filter(_.course == optCourse))
-          optRole <- Try(optRef) flatMap (ref => repository.getMany[Role](ref.map(rr => Role.generateUri(rr.role))))
-        } yield optRole.exists(_.permissions.contains(permission))
-      }).flatten
+      def isAdmin(roles: Set[Role]) = {
+        val adminRole = roles.find(_.label == Roles.Admin)
+        checkWith.exists(auth => adminRole.exists(_.id == auth.role))
+      }
+
+      def rolesByCourse(roles: Set[Role]) = {
+        val courseRelatedAuthorities = checkWith.filter(_.course == optCourse)
+        roles.filter(role => courseRelatedAuthorities.exists(_.role == role.id))
+      }
+
+      def hasPermission(roles: Set[Role]) = roles.exists(_.permissions contains permission)
+
+      repository.getAll[Role] map { roles =>
+        isAdmin(roles) || (rolesByCourse _ andThen hasPermission)(roles)
+      }
   }
 }

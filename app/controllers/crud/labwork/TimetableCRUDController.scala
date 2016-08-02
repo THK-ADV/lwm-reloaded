@@ -40,7 +40,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit val uriGenerator: UriGenerator[Timetable] = Timetable
 
-  override protected def coatomic(atom: TimetableAtom): Timetable =
+  override protected def coAtomic(atom: TimetableAtom): Timetable =
     Timetable(
       atom.labwork.id,
       atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),

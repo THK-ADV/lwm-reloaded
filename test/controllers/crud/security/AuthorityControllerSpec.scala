@@ -30,15 +30,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
   }
 
-
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
-
-  val refRoleIdToPass1 = RefRole.randomUUID
-  val refRoleIdToPass2 = RefRole.randomUUID
-  val refRoleIdToFail1 = RefRole.randomUUID
-  val refRoleIdToFail2 = RefRole.randomUUID
 
   val courseToPass = Course("Course2", "Description", "Abbrev", employeeToPass.id, 0)
   val courseToFail = Course("Course1", "Description", "Abbrev", employeeToFail.id, 0)
@@ -51,48 +45,31 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   val role3 = Role("role3", Set(degree.get, degree.getAll))
   val role4 = Role("role4", Set(authority.get, authority.getAll))
 
-  val refRolesAtomicToPass = Set(
-    RefRoleAtom(None, role1, None, refRoleIdToPass1),
-    RefRoleAtom(Some(courseAtomToPass), role2, None, refRoleIdToPass1)
-  )
-
-  val refRolesAtomicToFail = Set(
-    RefRoleAtom(None, role3, None, refRoleIdToPass1),
-    RefRoleAtom(Some(courseAtomToFail), role4, None, refRoleIdToPass1)
-  )
-
-  val refRolesToPass = Set(
-    RefRole(None, role1.id, None, refRoleIdToPass1),
-    RefRole(Some(courseToPass.id), role2.id, None, refRoleIdToPass1)
-  )
-  val refRolesToFail = Set(
-    RefRole(None, role3.id, None, refRoleIdToPass1),
-    RefRole(Some(courseToFail.id), role4.id, None, refRoleIdToPass1)
-  )
-
-
   override val entityToPass: Authority = Authority(
     studentToPass.id,
-    refRolesToPass.map(_.id))
+    role1.id
+  )
 
   override val entityToFail: Authority = Authority(
     employeeToFail.id,
-    refRolesToFail.map(_.id))
+    role2.id
+  )
 
   override val atomizedEntityToPass = AuthorityAtom(
     studentToPass,
-    refRolesAtomicToPass,
+    role1,
+    Some(courseAtomToPass),
     entityToPass.invalidated,
     entityToPass.id
   )
 
   override val atomizedEntityToFail = AuthorityAtom(
     employeeToFail,
-    refRolesAtomicToFail,
+    role2,
+    Some(courseAtomToFail),
     entityToFail.invalidated,
     entityToFail.id
   )
-
 
   import bindings.AuthorityDescriptor
   import ops._
@@ -108,21 +85,19 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
   override val inputJson: JsValue = Json.obj(
     "user" -> entityToPass.user,
-    "refRoles" -> entityToPass.refRoles
+    "role" -> entityToPass.role,
+    "course" -> entityToPass.course
   )
 
   override val updateJson: JsValue = Json.obj(
     "user" -> entityToPass.user,
-    "refRoles" -> (entityToPass.refRoles + RefRole.randomUUID)
+    "role" -> role3.id
   )
 
   "A AuthorityControllerSpec " should {
 
     "filter through nested levels of graphs" in {
-
-      import bindings.{
-      AuthorityDescriptor,
-      RefRoleDescriptor}
+      import bindings.{AuthorityDescriptor, RoleDescriptor, EmployeeDescriptor, CourseDescriptor}
 
       val realRepo = SesameRepository(namespace)
 
@@ -136,79 +111,59 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
         }
       }
 
-      val role1 = UUID.randomUUID()
-      val role2 = UUID.randomUUID()
+      val role1 = Role("", Set.empty)
+      val role2 = Role("", Set.empty)
 
-      val user1 = UUID.randomUUID()
-      val user2 = UUID.randomUUID()
-      val user3 = UUID.randomUUID()
+      val user1 = Employee("", "", "", "", "")
+      val user2 = Employee("", "", "", "", "")
+      val user3 = Employee("", "", "", "", "")
 
-      val course1 = UUID.randomUUID()
-      val course2 = UUID.randomUUID()
+      val course1 = Course("", "", "", UUID.randomUUID, 1)
+      val course2 = Course("", "", "", UUID.randomUUID, 2)
 
-      val refrole1 = RefRole(Some(course1), role1)
-      val refrole2 = RefRole(None, role2)
-      val refrole3 = RefRole(Some(course2), role1)
+      val auth1 = Authority(user1.id, role1.id, Some(course1.id))
+      val auth2 = Authority(user1.id, role2.id)
+      val auth3 = Authority(user2.id, role2.id)
+      val auth4 = Authority(user3.id, role1.id, Some(course1.id))
+      val auth5 = Authority(user3.id, role1.id, Some(course2.id))
 
-      val auth1 = Authority(user1, Set(refrole1.id, refrole2.id))
-      val auth2 = Authority(user2, Set(refrole2.id))
-      val auth3 = Authority(user3, Set(refrole1.id, refrole3.id))
-
-      realRepo.addMany[RefRole](List(refrole1, refrole2, refrole3))
-      realRepo.addMany[Authority](List(auth1, auth2, auth3))
+      realRepo.addMany[Authority](List(auth1, auth2, auth3, auth4, auth5))
+      realRepo.addMany[Role](List(role1, role2))
+      realRepo.addMany[Employee](List(user1, user2, user3))
+      realRepo.addMany[Course](List(course1, course2))
 
       val requestWithCourse = FakeRequest(
         GET,
         s"/${
           entityTypeName
-        }s?course=$course2"
+        }s?course=${course2.id}"
       )
 
       val requestWithCourseAndRole = FakeRequest(
         GET,
         s"/${
           entityTypeName
-        }s?course=$course1&role=$role1"
+        }s?course=${course1.id}&role=${role1.id}"
       )
 
       val requestWithUser = FakeRequest(
         GET,
         s"/${
           entityTypeName
-        }s?user=$user3"
-      )
-
-      val requestManyCourses = FakeRequest(
-        GET,
-        s"/${
-          entityTypeName
-        }s?course=$course2&course=$course1"
-      )
-
-      val requestManyCoursesAndRole = FakeRequest(
-        GET,
-        s"/${
-          entityTypeName
-        }s?course=$course2&course=$course1&role=$role1"
+        }s?user=${user3.id}"
       )
 
       val result1 = localController.all()(requestWithCourse)
       val result2 = localController.all()(requestWithCourseAndRole)
       val result3 = localController.all()(requestWithUser)
-      val result4 = localController.all()(requestManyCourses)
-      val result5 = localController.all()(requestManyCoursesAndRole)
 
-      val expected1 = Set(Json.toJson(auth3))
-      val expected2 = Set(Json.toJson(auth1), Json.toJson(auth3))
-      val expected3 = Set(Json.toJson(auth3))
-      val expected4 = Set(Json.toJson(auth3))
-      val expected5 = Set(Json.toJson(auth3))
+      val expected1 = Set(Json.toJson(auth5))
+      val expected2 = Set(Json.toJson(auth1), Json.toJson(auth4))
+      val expected3 = Set(Json.toJson(auth4), Json.toJson(auth5))
 
       contentFromStream(result1) shouldBe expected1
       contentFromStream(result2) shouldBe expected2
       contentFromStream(result3) shouldBe expected3
-      contentFromStream(result4) shouldBe expected4
-      contentFromStream(result5) shouldBe expected5
     }
   }
 }

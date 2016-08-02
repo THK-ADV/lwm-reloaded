@@ -3,10 +3,9 @@ package store
 import java.util.UUID
 
 import models.Degree
-import models.security.{Authority, RefRole, Role, Roles}
+import models.security.{Authority, Role, Roles}
 import models.users.{Employee, Student, User}
 import org.w3.banana.{PointedGraph, RDFPrefix}
-import org.w3.banana.binder.ToPG
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
@@ -21,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 trait Resolvers {
   type R <: org.w3.banana.RDF
 
-  def username(systemId: String): Try[Option[UUID]]
+  def userId(systemId: String): Try[Option[UUID]]
 
   def missingUserData[A <: User](v: A): Try[PointedGraph[R]]
 
@@ -37,47 +36,51 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   val rdf = RDFPrefix[Sesame]
   val bindings = Bindings(repository.namespace)
 
-  override def username(systemId: String): Try[Option[UUID]] = {
-    repository.prepareQuery {
-      select("id") where {
-        **(v("s"), p(prefix.systemId), o(systemId)).
-          **(v("s"), p(prefix.id), v("id"))
-      }
-    }.select(_.get("id")).
+  override def userId(systemId: String): Try[Option[UUID]] = {
+    val query = select("id") where {
+      **(v("s"), p(prefix.systemId), o(systemId)).
+        **(v("s"), p(prefix.id), v("id"))
+    }
+
+    repository.prepareQuery(query).
+      select(_.get("id")).
       changeTo(_.headOption).
       map(value => UUID.fromString(value.stringValue())).
       run
   }
 
-  override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = {
-    import bindings.
-    {AuthorityDescriptor,
-    RefRoleDescriptor,
-    RoleDescriptor,
-    StudentDescriptor,
-    EmployeeDescriptor}
+  /**
+    * missingUserData hat zwei verantwortlichkeiten
+    * erstens, es sucht die passende rolle und fügt eine authority hinzu
+    * zweitens, es füngt den user als solches hinzu
+    * das ist verwirrend, es wäre besser, wenn ldap.user(user)(degree) KEINEN lwm.models.user zurückgibt, sondern einen LdapUser
+    * dieser LdapUser wird mit missingUserData um eine Auth und dem Degree angereichert. Danach werden auth und user in die db geworfen
+    * beispiel: ldap.user(user) map (missingUserData) map (createAuthAndUser)
+    * dandruch wird auch die degree funtkion aus dem ldap wegoptimiert. die hat auch nichts dazu zu tun, das sind lwm details
+    * @param user
+    * @tparam A
+    * @return
+    */
+  override def missingUserData[A <: User](user: A): Try[PointedGraph[Sesame]] = {
+    import bindings.{AuthorityDescriptor, RoleDescriptor, StudentDescriptor, EmployeeDescriptor}
 
-    def f[Z <: User](entity: Z)(p: Role => Boolean)(implicit descriptor: Descriptor[Rdf, Z]): Try[PointedGraph[Sesame]] =
-      for {
-        roles <- repository.getAll[Role]
-        refroles <- repository.getAll[RefRole]
-        refrole = for {
-          role <- roles.find(p)
-          refrole <- refroles.find(_.role == role.id)
-        } yield refrole
-        user <- refrole match {
-          case Some(refRole) =>
+    def createAuthAndUser[B <: User](entity: B)(p: Role => Boolean)(implicit descriptor: Descriptor[Rdf, B]) = {
+      repository.getAll[Role] flatMap { roles =>
+        roles.find(p) match {
+          case Some(role) =>
             for {
-              user <- repository.add[Z](entity)
-              _ <- repository.add[Authority](Authority(v.id, Set(refRole.id)))
-            } yield user
-          case _ => Failure(new Throwable("No appropriate RefRole or Role found while resolving user"))
+              userPg <- repository.add[B](entity)
+              _ <- repository.add[Authority](Authority(entity.id, role.id))
+            } yield userPg
+          case None =>
+            Failure(new Throwable("No appropriate RefRole or Role found while resolving user"))
         }
-      } yield user
+      }
+    }
 
-    v match {
-      case s: Student => f(s)(_.label == Roles.Student)
-      case e: Employee => f(e)(_.label == Roles.Employee)
+    user match {
+      case s: Student => createAuthAndUser(s)(_.label == Roles.Student)
+      case e: Employee => createAuthAndUser(e)(_.label == Roles.Employee)
     }
   }
 
@@ -97,6 +100,7 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
       request[Option, Degree](value => repository.get[Degree](value.stringValue())).
       transform(_.fold[Try[Degree]](Failure(new Throwable(s"No viable degree found for abbreviation $abbreviation")))(Success(_))).
       map(_.id).
-      run.flatten
+      run.
+      flatten
   }
 }

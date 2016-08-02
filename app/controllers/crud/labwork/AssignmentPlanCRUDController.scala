@@ -40,7 +40,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
   override implicit val uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
 
-  override protected def coatomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.invalidated, atom.id)
+  override protected def coAtomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.invalidated, atom.id)
 
   override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries

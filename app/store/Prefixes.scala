@@ -64,7 +64,6 @@ object Prefixes {
 
     // RefRole, Role, Authority
     val role = apply("role")
-    val refroles = apply("refRoles")
     val permissions = apply("permissions")
     val privileged = apply("privileged")
 

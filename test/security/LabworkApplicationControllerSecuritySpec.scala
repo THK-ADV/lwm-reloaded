@@ -18,7 +18,6 @@ import utils.LwmMimeType
 import scala.concurrent.Future
 import scala.util.Success
 
-
 class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDefinition with SecurityBaseDefinition { 
   
   "A LabworkApplicationControllerSecuritySpec " should {
@@ -26,10 +25,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all labwork applications" in new FakeApplication() {
-      import LabworkApplication.writes
+      import models.labwork.LabworkApplication.writes
       
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, labworkApplication.create))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.create))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
         LabworkApplication(UUID.randomUUID(), UUID.randomUUID(), Set(UUID.randomUUID(), UUID.randomUUID()))
@@ -51,8 +50,8 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Allow non restricted context invocations when admin wants to delete an labwork applications" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, labworkApplication.delete))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.delete))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         DELETE,
@@ -68,10 +67,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Allow non restricted context invocations when student wants to create an labwork applications" in new FakeApplication() {
-      import LabworkApplication.writes
+      import models.labwork.LabworkApplication.writes
 
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, labworkApplication.create))(FakeStudentAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.create))(FakeStudentAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
         LabworkApplication(UUID.randomUUID(), UUID.randomUUID(), Set(UUID.randomUUID(), UUID.randomUUID()))
@@ -93,8 +92,8 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Allow non restricted context invocations when student wants to delete an labwork applications" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, labworkApplication.delete))(FakeStudentAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.delete))(FakeStudentAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         DELETE,
@@ -110,8 +109,8 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Block non restricted context invocations when student wants to get all labwork applications" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
-      when(roleService.checkWith((None, labworkApplication.getAll))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.getAll))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,
@@ -127,8 +126,8 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Block non restricted context invocations when ma wants to get all labwork applications" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((None, labworkApplication.getAll))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.getAll))(FakeMaAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,
@@ -144,10 +143,10 @@ class LabworkApplicationControllerSecuritySpec extends WordSpec with TestBaseDef
     }
 
     "Block non restricted context invocations when ma wants to create an labwork applications" in new FakeApplication() {
-      import LabworkApplication.writes
+      import models.labwork.LabworkApplication.writes
 
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((None, labworkApplication.create))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((None, labworkApplication.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
         LabworkApplication(UUID.randomUUID(), UUID.randomUUID(), Set(UUID.randomUUID(), UUID.randomUUID()))

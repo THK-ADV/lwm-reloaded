@@ -25,8 +25,8 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Block any non restricted context invocations even when user is admin because route is not found" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, god))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, god))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -42,10 +42,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Allow restricted context invocations when admin wants to create an assignmentPlan" in new FakeApplication() {
-      import AssignmentPlan.writes
+      import models.labwork.AssignmentPlan.writes
 
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((Some(FakeCourse), assignmentPlan.create))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.create))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(AssignmentPlan.empty)
 
@@ -65,10 +65,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Allow restricted context invocations when mv wants to update an assignmentPlan" in new FakeApplication() {
-      import AssignmentPlan.writes
+      import models.labwork.AssignmentPlan.writes
 
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), assignmentPlan.update))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.update))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(AssignmentPlan.empty)
 
@@ -88,8 +88,8 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Allow restricted context invocations when ma wants to get an single assignmentPlan" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), assignmentPlan.get))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -105,10 +105,10 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Block restricted context invocations when ma wants to update an assignmentPlan" in new FakeApplication() {
-      import AssignmentPlan.writes
+      import models.labwork.AssignmentPlan.writes
 
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), assignmentPlan.update))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.update))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(AssignmentPlan.empty)
 

@@ -12,31 +12,31 @@ import utils.DefaultLwmApplication
 
 trait FakeAuthority {
 
-  val FakeCourse = UUID.randomUUID()
-  val FakeLabwork = UUID.randomUUID()
+  val FakeCourse = UUID.randomUUID
+  val FakeLabwork = UUID.randomUUID
   val FakeCourseUri = s"/courses/$FakeCourse"
   val FakeLabworkUri = s"labworks/$FakeLabwork"
 
-  val FakeAdmin = UUID.randomUUID()
-  val FakeAdminAuth = Authority(FakeAdmin, Set(UUID.randomUUID()))
+  val FakeAdmin = UUID.randomUUID
+  val FakeAdminAuth = Authority(FakeAdmin, UUID.randomUUID)
 
-  val FakeRv = UUID.randomUUID()
-  val FakeRvAuth = Authority(FakeRv, Set(UUID.randomUUID()))
+  val FakeRv = UUID.randomUUID
+  val FakeRvAuth = Authority(FakeRv, UUID.randomUUID)
 
-  val FakeMv = UUID.randomUUID()
-  val FakeMvAuth = Authority(FakeMv, Set(UUID.randomUUID()))
+  val FakeMv = UUID.randomUUID
+  val FakeMvAuth = Authority(FakeMv, UUID.randomUUID)
 
-  val FakeMa = UUID.randomUUID()
-  val FakeMaAuth = Authority(FakeMa, Set(UUID.randomUUID()))
+  val FakeMa = UUID.randomUUID
+  val FakeMaAuth = Authority(FakeMa, UUID.randomUUID)
 
-  val FakeHk = UUID.randomUUID()
-  val FakeHkAuth = Authority(FakeHk, Set(UUID.randomUUID()))
+  val FakeHk = UUID.randomUUID
+  val FakeHkAuth = Authority(FakeHk, UUID.randomUUID)
 
-  val FakeEmployee = UUID.randomUUID()
-  val FakeEmployeeAuth =  Authority(FakeEmployee, Set(UUID.randomUUID()))
+  val FakeEmployee = UUID.randomUUID
+  val FakeEmployeeAuth =  Authority(FakeEmployee, UUID.randomUUID)
 
-  val FakeStudent = UUID.randomUUID()
-  val FakeStudentAuth =  Authority(FakeStudent, Set(UUID.randomUUID()))
+  val FakeStudent = UUID.randomUUID
+  val FakeStudentAuth =  Authority(FakeStudent, UUID.randomUUID)
 }
 
 trait SecurityBaseDefinition extends FakeAuthority { self =>

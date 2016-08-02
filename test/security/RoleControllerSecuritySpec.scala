@@ -26,8 +26,8 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
     "Allow non restricted context invocations when admin wants to update a role" in new FakeApplication() {
       import models.security.Permission.writes
 
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
-      when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.obj(
         "label" -> "admin",
@@ -52,8 +52,8 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
     "Block non restricted context invocations when rv wants to update a role" in new FakeApplication() {
       import models.security.Permission.writes
 
-      when(roleService.authorityFor(FakeRv.toString)).thenReturn(Success(Some(FakeRvAuth)))
-      when(roleService.checkWith((None, prime))(FakeRvAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
+      when(roleService.checkAuthority((None, prime))(FakeRvAuth)).thenReturn(Success(false))
 
       val json = Json.obj(
         "label" -> "admin",
@@ -76,8 +76,8 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
     }
 
     "Allow non restricted context invocations when rv wants to get a single authority" in new FakeApplication() {
-      when(roleService.authorityFor(FakeRv.toString)).thenReturn(Success(Some(FakeRvAuth)))
-      when(roleService.checkWith((None, role.get))(FakeRvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
+      when(roleService.checkAuthority((None, role.get))(FakeRvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,

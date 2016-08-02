@@ -95,18 +95,6 @@ GET           /roles                                                            
 DELETE        /roles/:id                                                          controllers.security.RoleController.delete(id)
 HEAD          /roles                                                              controllers.security.RoleController.header
 
-# RefRole
-POST          /refRoles                                                           controllers.security.RefRoleController.create()
-POST          /atomic/refRoles                                                    controllers.security.RefRoleController.createAtomic()
-PUT           /refRoles/:id                                                       controllers.security.RefRoleController.update(id)
-PUT           /atomic/refRoles/:id                                                controllers.security.RefRoleController.updateAtomic(id)
-GET           /refRoles                                                           controllers.security.RefRoleController.all()
-GET           /atomic/refRoles                                                    controllers.security.RefRoleController.allAtomic()
-GET           /refRoles/:id                                                       controllers.security.RefRoleController.get(id)
-GET           /atomic/refRoles/:id                                                controllers.security.RefRoleController.getAtomic(id)
-DELETE        /refRoles/:id                                                       controllers.security.RefRoleController.delete(id)
-HEAD          /refRoles                                                           controllers.security.RefRoleController.header
-
 # Authority
 POST          /authorities                                                        controllers.security.AuthorityController.create()
 POST          /atomic/authorities                                                 controllers.security.AuthorityController.createAtomic()
@@ -250,11 +238,7 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                           controllers.SessionController.header
 
 # APIData
-GET           /api/populateProd                                                   controllers.ApiDataController.populateProduction
-GET           /api/populate                                                       controllers.ApiDataController.populate
-GET           /api/added                                                          controllers.ApiDataController.getAdded
-GET           /api/labwork/:l/schedule/:count                                     controllers.ApiDataController.scheduleGen(count, l)
-GET           /api/reportCard/:user                                               controllers.ApiDataController.reportCard(user)
+GET           /api/hello                                                          controllers.ApiDataController.hello
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                       controllers.Assets.at(path="/public", file)
