@@ -32,22 +32,22 @@ object LwmActions {
   object SecureAction {
 
     def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkWith(ps)(authorities:_*))(roleService, sessionService)(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*))(roleService, sessionService)(block)
     }
 
     def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkWith(ps)(authorities:_*)).async(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*)).async(block)
     }
   }
 
   object SecureContentTypedAction {
 
     def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkWith(ps)(authorities:_*))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkWith(ps)(authorities:_*)).async(LwmBodyParser.parseWith(mimeType))(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*)).async(LwmBodyParser.parseWith(mimeType))(block)
     }
   }
 }
@@ -97,7 +97,7 @@ case class Authorized(roleService: RoleServiceLike) extends ActionFunction[IdReq
   override def invokeBlock[A](request: IdRequest[A], block: (AuthRequest[A]) => Future[Result]): Future[Result] = {
     def f = block compose (AuthRequest.apply[A] _).curried(request)
 
-    roleService.authorityFor(UUID.fromString(request.userId)) match {
+    roleService.authorities(UUID.fromString(request.userId)) match {
       case Success(authorities) =>
         if (authorities.nonEmpty)
           f(authorities.toSeq)

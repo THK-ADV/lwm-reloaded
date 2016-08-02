@@ -18,9 +18,6 @@ class RoleServiceSpec extends SesameDbSpec {
   val module1 = UUID.randomUUID
   val module2 = UUID.randomUUID
 
-  val lab1 = Labwork("lab1", "", Semester.randomUUID, module1, Degree.randomUUID) // TODO ???
-  val lab2 = Labwork("lab2", "", Semester.randomUUID, module2, Degree.randomUUID) // TODO ???
-
   val role1 = Role("testRole1", sufficientPermissions)
   val role2 = Role("testRole2", insufficientPermissions)
   val role3 = Role("Admin", Set(Permissions.prime))
@@ -48,12 +45,12 @@ class RoleServiceSpec extends SesameDbSpec {
       val perm1 = role1.permissions.toVector
       val perm2 = role2.permissions.toVector
 
-      val result1 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(module1UserRole2)
-      val result2 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(module1UserRole1, module2UserRole2)
-      val result3 = roleService.checkWith((None, perm1(nextInt(perm1.size))))(module1UserRole1, noneModule1Role1, module2UserRole2)
-      val result4 = roleService.checkWith((Some(module1), perm1(nextInt(perm1.size))))(adminRefRole)
-      val result5 = roleService.checkWith((Some(module2), perm2(nextInt(perm2.size))))(module1UserRole1)
-      val result6 = roleService.checkWith((Some(UUID.randomUUID()), perm1(nextInt(perm1.size))))(adminRefRole)
+      val result1 = roleService.checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(module1UserRole2)
+      val result2 = roleService.checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(module1UserRole1, module2UserRole2)
+      val result3 = roleService.checkAuthority((None, perm1(nextInt(perm1.size))))(module1UserRole1, noneModule1Role1, module2UserRole2)
+      val result4 = roleService.checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(adminRefRole)
+      val result5 = roleService.checkAuthority((Some(module2), perm2(nextInt(perm2.size))))(module1UserRole1)
+      val result6 = roleService.checkAuthority((Some(UUID.randomUUID()), perm1(nextInt(perm1.size))))(adminRefRole)
 
       for {
         r1 <- result1
@@ -88,9 +85,9 @@ class RoleServiceSpec extends SesameDbSpec {
       repo.addMany(List(role1, role2, role3))
       repo.addMany(List(authority1, authority2, authority3, authority4))
 
-      val result1 = roleService.authorityFor(student1.id)
-      val result2 = roleService.authorityFor(student2.id)
-      val result3 = roleService.authorityFor(student3.id)
+      val result1 = roleService.authorities(student1.id)
+      val result2 = roleService.authorities(student2.id)
+      val result3 = roleService.authorities(student3.id)
 
       (result1, result2, result3) match {
         case (Success(r1), Success(r2), Success(r3)) =>

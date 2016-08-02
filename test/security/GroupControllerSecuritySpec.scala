@@ -24,8 +24,8 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted invocations when admin wants to get all groups" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
-      when(roleService.checkWith((Some(FakeCourse), group.getAll))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), group.getAll))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -42,8 +42,8 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
     }
 
     "Allow restricted invocations when mv wants to create a group" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), group.create))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), group.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         POST,
@@ -59,8 +59,8 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
     }
 
     "Allow restricted invocations when mv wants to get a single group" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), group.get))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), group.get))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -76,8 +76,8 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
     }
 
     "Allow restricted invocations when ma wants to get a single group" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), group.get))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), group.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -93,8 +93,8 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
     }
 
     "Block restricted invocations when ma wants to get all group" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), group.getAll))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), group.getAll))(FakeMaAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,

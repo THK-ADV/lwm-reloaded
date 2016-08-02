@@ -68,8 +68,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
       val auth = Authority(userID, role1.id, Some(module1))
 
-      when(roleService.authorityFor(anyObject())).thenReturn(Success(Set(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(true))
+      when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
+      when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(true))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
       val action = SecureAction((Some(module1), sufficientPermissions.head)) {
@@ -132,8 +132,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
       val auth = Authority(userID, role2.id, Some(module1))
 
-      when(roleService.authorityFor(anyObject())).thenReturn(Success(Set(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
+      when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
+      when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
       val action = SecureAction((Some(module1), sufficientPermissions.head)) {
@@ -154,8 +154,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
       val auth = Authority(userID, role2.id, Some(module2))
 
-      when(roleService.authorityFor(anyObject())).thenReturn(Success(Set(auth)))
-      when(roleService.checkWith((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
+      when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
+      when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
       val action = SecureAction((Some(module1), sufficientPermissions.head)) {
@@ -177,8 +177,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       implicit val mimeType = LwmMimeType.loginV1Json
 
       val perm = Permission("No permission")
-      when(roleService.checkWith(anyObject())(anyObject())).thenReturn(Success(true))
-      when(roleService.authorityFor(anyObject())).thenReturn(Success(Set(Authority(userID, role2.id, Some(module1)))))
+      when(roleService.checkAuthority(anyObject())(anyObject())).thenReturn(Success(true))
+      when(roleService.authorities(anyObject())).thenReturn(Success(Set(Authority(userID, role2.id, Some(module1)))))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
       val action = SecureContentTypedAction((None, perm)) {

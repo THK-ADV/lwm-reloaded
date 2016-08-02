@@ -29,8 +29,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     "Allow restricted context invocations when admin wants to update a timetable" in new FakeApplication() {
       import models.labwork.Timetable.writes
       
-      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
         Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
@@ -54,8 +54,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     "Allow restricted context invocations when mv wants to create a timetable" in new FakeApplication() {
       import models.labwork.Timetable.writes
 
-      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
         Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
@@ -77,8 +77,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when mv wants to delete a timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.delete))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.delete))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         DELETE,
@@ -94,8 +94,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when mv wants to get a single timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.get))(FakeMvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.get))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -111,8 +111,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when ma wants to get a single timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.get))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -128,8 +128,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when ma wants to get all timetables which belong to him" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.getAll))(FakeMaAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.getAll))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,
@@ -148,8 +148,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     "Block restricted context invocations when ma wants to create timetable" in new FakeApplication() {
       import models.labwork.Timetable.writes
       
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
         Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
@@ -171,8 +171,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block restricted context invocations when ma wants to delete timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.delete))(FakeMaAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.delete))(FakeMaAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         DELETE,
@@ -188,8 +188,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block restricted context invocations when students wants to get a single timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.get))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.get))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,
@@ -205,8 +205,8 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block restricted context invocations when employee wants to get a single timetable" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
-      when(roleService.checkWith((Some(FakeCourse), timetable.get))(FakeEmployeeAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
+      when(roleService.checkAuthority((Some(FakeCourse), timetable.get))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         GET,

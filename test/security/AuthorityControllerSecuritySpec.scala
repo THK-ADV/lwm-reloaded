@@ -24,8 +24,8 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to update an authority" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
-      when(roleService.checkWith((None, authority.update))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, authority.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.obj(
         "user" -> UUID.randomUUID(),
@@ -49,8 +49,8 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow non restricted context invocations when rv wants to update an authority" in new FakeApplication() {
-      when(roleService.authorityFor(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
-      when(roleService.checkWith((None, authority.update))(FakeRvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
+      when(roleService.checkAuthority((None, authority.update))(FakeRvAuth)).thenReturn(Success(true))
 
       val json = Json.obj(
         "user" -> UUID.randomUUID(),
@@ -74,8 +74,8 @@ class AuthorityControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow non restricted context invocations when rv wants to get a single authority" in new FakeApplication() {
-      when(roleService.authorityFor(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
-      when(roleService.checkWith((None, authority.get))(FakeRvAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
+      when(roleService.checkAuthority((None, authority.get))(FakeRvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         GET,

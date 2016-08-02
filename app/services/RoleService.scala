@@ -9,19 +9,18 @@ import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
 import utils.Ops.MonadInstances._
-import utils.Ops.TraverseInstances._
 
 import scala.util.{Success, Try}
 
 trait RoleServiceLike {
 
   /**
-    * Retrieves the authority of a particular user.
+    * Retrieves the authorities of a particular user.
     *
     * @param userId User ID
-    * @return User's possible authority
+    * @return User's possible authorities
     */
-  def authorityFor(userId: UUID): Try[Set[Authority]]
+  def authorities(userId: UUID): Try[Set[Authority]]
 
   /**
     * Checks if the `checker` is allowed to pass the restrictions defined in `checkee`
@@ -30,7 +29,7 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkWith(checkee: (Option[UUID], Permission))(checker: Authority*): Try[Boolean]
+  def checkAuthority(checkee: (Option[UUID], Permission))(checker: Authority*): Try[Boolean]
 }
 
 class RoleService(private val repository: SesameRepository) extends RoleServiceLike {
@@ -40,7 +39,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
   private val lwm = LWMPrefix[Rdf]
   private val bindings = Bindings[Rdf](namespace)
 
-  override def authorityFor(userId: UUID): Try[Set[Authority]] = {
+  override def authorities(userId: UUID): Try[Set[Authority]] = {
     import bindings.AuthorityDescriptor
     import store.sparql.select
     import store.sparql.select._
@@ -63,7 +62,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
     repository.getAll[Role].map(_.filter(role => labels contains role.label))
   }
 
-  override def checkWith(whatToCheck: (Option[UUID], Permission))(checkWith: Authority*): Try[Boolean] = whatToCheck match {
+  override def checkAuthority(whatToCheck: (Option[UUID], Permission))(checkWith: Authority*): Try[Boolean] = whatToCheck match {
     case (_, permission) if permission == Permissions.god => Success(false)
     case (optCourse, permission) =>
       import bindings.RoleDescriptor
@@ -73,7 +72,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
         checkWith.exists(auth => adminRole.exists(_.id == auth.role))
       }
 
-      def rolesFilteredByCourse(roles: Set[Role]) = {
+      def rolesByCourse(roles: Set[Role]) = {
         val courseRelatedAuthorities = checkWith.filter(_.course == optCourse)
         roles.filter(role => courseRelatedAuthorities.exists(_.role == role.id))
       }
@@ -81,10 +80,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
       def hasPermission(roles: Set[Role]) = roles.exists(_.permissions contains permission)
 
       repository.getAll[Role] map { roles =>
-        if (isAdmin(roles))
-          true
-        else
-          (rolesFilteredByCourse _ andThen hasPermission)(roles)
+        isAdmin(roles) || (rolesByCourse _ andThen hasPermission)(roles)
       }
   }
 }

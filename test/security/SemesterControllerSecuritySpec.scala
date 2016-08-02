@@ -26,8 +26,8 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow invocations when user is admin" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
-      when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
         Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
@@ -49,8 +49,8 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block invocations when user not an admin" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
-      when(roleService.checkWith((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
+      when(roleService.checkAuthority((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
         Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
@@ -72,8 +72,8 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow invocations when employee wants to get all semesters" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
-      when(roleService.checkWith((None, semester.getAll))(FakeEmployeeAuth)).thenReturn(Success(true))
+      when(roleService.authorities(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
+      when(roleService.checkAuthority((None, semester.getAll))(FakeEmployeeAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
         "GET",
@@ -89,8 +89,8 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block invocations when student wants to get all semesters" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
-      when(roleService.checkWith((None, semester.getAll))(FakeStudentAuth)).thenReturn(Success(false))
+      when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
+      when(roleService.checkAuthority((None, semester.getAll))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
         "GET",

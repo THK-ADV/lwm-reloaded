@@ -6,7 +6,6 @@ import models.Degree
 import models.security.{Authority, Role, Roles}
 import models.users.{Employee, Student, User}
 import org.w3.banana.{PointedGraph, RDFPrefix}
-import org.w3.banana.binder.ToPG
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
@@ -50,13 +49,18 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
       run
   }
 
-  // TODO missingUserData hat zwei verantwortlichkeiten
-  // TODO erstens, es sucht die passende rolle und fügt eine authority hinzu
-  // TODO zweitens, es füngt den user als solches hinzu
-  // TODO das ist verwirrend, es wäre besser, wenn ldap.user(user)(degree) KEINEN lwm.models.user zurückgibt, sondern einen LdapUser
-  // TODO dieser LdapUser wird mit missingUserData um eine Auth und dem Degree angereichert. Danach werden auth und user in die db geworfen
-  // TODO beispiel: ldap.user(user) map (missingUserData) map (createAuthAndUser)
-  // TODO dandruch wird auch die degree funtkion aus dem ldap wegoptimiert. die hat auch nichts dazu zu tun, das sind lwm details
+  /**
+    * missingUserData hat zwei verantwortlichkeiten
+    * erstens, es sucht die passende rolle und fügt eine authority hinzu
+    * zweitens, es füngt den user als solches hinzu
+    * das ist verwirrend, es wäre besser, wenn ldap.user(user)(degree) KEINEN lwm.models.user zurückgibt, sondern einen LdapUser
+    * dieser LdapUser wird mit missingUserData um eine Auth und dem Degree angereichert. Danach werden auth und user in die db geworfen
+    * beispiel: ldap.user(user) map (missingUserData) map (createAuthAndUser)
+    * dandruch wird auch die degree funtkion aus dem ldap wegoptimiert. die hat auch nichts dazu zu tun, das sind lwm details
+    * @param user
+    * @tparam A
+    * @return
+    */
   override def missingUserData[A <: User](user: A): Try[PointedGraph[Sesame]] = {
     import bindings.{AuthorityDescriptor, RoleDescriptor, StudentDescriptor, EmployeeDescriptor}
 

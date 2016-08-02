@@ -267,36 +267,6 @@ class SesameRepositorySpec extends SesameDbSpec {
       }
     }
 
-    /* TODO alternative dazu?!
-    "update an entity that is referenced by further entities" in {
-      import bindings.{
-      RoleDescriptor,
-      RefRoleDescriptor
-      }
-      val role1 = Role("Role1", Set(Permission("P1")))
-      val role2 = Role("Role1", Set(Permission("P1"), Permission("P2")), role1.invalidated, role1.id)
-      val refrole = RefRole(None, role1.id)
-
-      repo.add(role1)
-      repo.add(refrole)
-
-      repo.update(role2)(RoleDescriptor, Role)
-
-      repo.get[Role](Role.generateUri(role1)) match {
-        case Success(Some(role)) => role shouldBe role2
-        case _ => fail("repo could not retrieve the given entity")
-      }
-
-      repo.get[RefRole](RefRole.generateUri(refrole)) match {
-        case Success(Some(ref)) =>
-          repo.get[Role](Role.generateUri(ref.role)) match {
-            case Success(Some(role)) => role shouldBe role2
-            case _ => fail("repo could not retrieve inner entity")
-          }
-        case _ => fail("repo could not retrieve the given entity")
-      }
-    }*/
-
     "contains an entity" in {
       val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
       val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID)

@@ -82,7 +82,7 @@ object Role extends UriGenerator[Role] with JsonSerialisation[RoleProtocol, Role
 object Authority extends UriGenerator[Authority] with JsonSerialisation[AuthorityProtocol, Authority, AuthorityAtom] {
   lazy val empty = Authority(UUID.randomUUID, UUID.randomUUID)
 
-  override def base: String = "authorities2"
+  override def base: String = "authorities"
 
   override implicit def reads: Reads[AuthorityProtocol] = Json.reads[AuthorityProtocol]
 
