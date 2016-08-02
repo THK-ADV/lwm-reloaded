@@ -26,9 +26,9 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a schedule entry" in new FakeApplication() {
-      import ScheduleEntry.writes
+      import models.labwork.ScheduleEntry.writes
 
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val entry = ScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
@@ -48,9 +48,9 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when mv wants to create a schedule" in new FakeApplication() {
-      import Schedule.writes
+      import models.labwork.Schedule.writes
 
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), schedule.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
@@ -73,7 +73,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when mv wants to delete a schedule" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), schedule.delete))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -90,7 +90,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when mv wants to get a single schedule entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -107,7 +107,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when ma wants to get a single schedule entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -124,7 +124,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when ma wants to get all schedule entries" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.getAll))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -141,9 +141,9 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when ma wants to create schedule" in new FakeApplication() {
-      import Schedule.writes
+      import models.labwork.Schedule.writes
 
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), schedule.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
@@ -166,7 +166,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when ma wants to delete schedule" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), schedule.delete))(FakeMaAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
@@ -183,7 +183,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when students wants to get a single schedule entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
@@ -200,7 +200,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when employee wants to get a single schedule entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((Some(FakeCourse), scheduleEntry.get))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(

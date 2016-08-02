@@ -31,7 +31,7 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
 
   override implicit val uriGenerator: UriGenerator[Room] = Room
 
-  override protected def coatomic(atom: Room): Room = atom
+  override protected def coAtomic(atom: Room): Room = atom
 
   override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.description == output.description
 

@@ -13,7 +13,7 @@ import store.sparql.SelectClause
 import store.{Namespace, SesameRepository}
 import utils.{Continue, LwmMimeType, Return}
 import models.security.Permissions._
-import models.security.{Authority, RefRole}
+import models.security.Authority
 import models.security.Roles._
 import store.bind.Descriptor.Descriptor
 import scala.collection.Map
@@ -41,7 +41,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
 
   override implicit val uriGenerator: UriGenerator[Course] = Course
 
-  override protected def coatomic(atom: CourseAtom): Course =
+  override protected def coAtomic(atom: CourseAtom): Course =
     Course(
       atom.label,
       atom.description,
@@ -49,7 +49,8 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       atom.lecturer.id,
       atom.semesterIndex,
       atom.invalidated,
-      atom.id)
+      atom.id
+    )
 
   override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
     input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
@@ -83,12 +84,12 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     }, v("id"))
   }
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(courses: Set[Course]): Try[Set[Course]] = {
-    import CourseCRUDController._
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Course]): Try[Set[Course]] = {
+    import controllers.crud.CourseCRUDController._
 
-    queryString.foldRight(Try[Set[Course]](courses)) {
-      case ((`lecturerAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.lecturer == p)))
-      case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
+    queryString.foldLeft(Try(all)) {
+      case (courses, (`lecturerAttribute`, lecturers)) => courses flatMap (set => Try(UUID.fromString(lecturers.head)).map(p => set.filter(_.lecturer == p)))
+      case (_, (_, _)) => Failure(new Throwable("Unknown attribute"))
     }
   }
 
@@ -115,36 +116,26 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       .mapResult(courseAtom => Created(Json.toJson(courseAtom)).as(mimeType))
   }
 
+  /**
+    * When you create a course, you also expand the lecturer's authority up to RightsManager and CourseManager
+    *
+    * @param course which is associated
+    * @return
+    */
   private def withRoles(course: Course) = {
-    import defaultBindings.{RefRoleDescriptor, AuthorityDescriptor}
+    import defaultBindings.AuthorityDescriptor
 
-    import utils.Ops.MonadInstances._
-    import utils.Ops.TraverseInstances._
-    import utils.Ops._
-    import scalaz.syntax.applicative._
-
-    /*
-     * When you create a course, you also create the refroles associated with that course
-     * and proceed to expand the lecturer's authority up to RightsManager and CourseManager
-     *  => Create CourseManager, CourseEmployee, CourseAssistant for new Course
-     *  => Update Lecturer Authority with RightsManager and CourseManager
-     *
-     *  TODO: There should be a better way of doing this bloody thing
-     */
     (for {
-      roles <- roleService.rolesByLabel(CourseManager, CourseEmployee, CourseAssistant) if roles.nonEmpty
-      rvRefRole <- roleService.refRolesByLabel(RightsManager) map (_.headOption)
-      lecturerAuth <- roleService.authorityFor(course.lecturer.toString) if lecturerAuth.isDefined
-      refRoles = roles.map(role => RefRole(Some(course.id), role.id))
-      mvRefRole = roles.find(_.label == CourseManager).flatMap(r => refRoles.find(_.role == r.id))
-      authority = (lecturerAuth |@| rvRefRole |@| mvRefRole) ((authority, rv, mv) => Authority(authority.user, authority.refRoles + mv.id + rv.id, authority.invalidated, authority.id))
-      _ <- authority.map(repository.update(_)(AuthorityDescriptor, Authority)).sequenceM
+      roles <- roleService.rolesByLabel(CourseManager, RightsManager) if roles.nonEmpty
+      authorities = roles.map { role =>
+        val optCourse = if (role.label == CourseManager) Some(course.id) else None
+        Authority(course.lecturer, role.id, optCourse)
+      }
+      _ <- repository.addMany[Authority](authorities)
       _ <- repository.add[Course](course)
-      _ <- repository.addMany[RefRole](refRoles)
     } yield course) match {
-      case Success(a) => Continue(a)
+      case Success(c) => Continue(c)
       case Failure(e) =>
-        println(e)
         Return(
           InternalServerError(Json.obj(
             "status" -> "KO",

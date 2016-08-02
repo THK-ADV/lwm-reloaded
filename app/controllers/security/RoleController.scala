@@ -29,7 +29,7 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
 
   override implicit val uriGenerator: UriGenerator[Role] = Role
 
-  override protected def coatomic(atom: Role): Role = atom
+  override protected def coAtomic(atom: Role): Role = atom
 
   override protected def compareModel(input: RoleProtocol, output: Role): Boolean = input.permissions == output.permissions
 

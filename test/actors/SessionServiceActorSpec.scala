@@ -5,7 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import base.TestBaseDefinition
 import models.Degree
-import models.security.{Permissions, RefRole, Role}
+import models.security._
 import models.users.Student
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
@@ -63,22 +63,16 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     }
 
     "create a session when a user is authorized and contains entries" in {
-      import bindings.{RefRoleDescriptor, RoleDescriptor}
+      import bindings.RoleDescriptor
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))
 
-      val studentRole = Role("Student", Set(Permissions.labworkApplication.create))
-      val employeeRole = Role("Employee", Set(Permissions.course.create, Permissions.timetable.create))
-
-      val refrole1 = RefRole(None, studentRole.id)
-      val refrole2 = RefRole(None, employeeRole.id)
+      val studentRole = Role(Roles.Student, Set(Permissions.labworkApplication.create))
+      val employeeRole = Role(Roles.Employee, Set(Permissions.course.create, Permissions.timetable.create))
 
       repository.add[Role](studentRole)
       repository.add[Role](employeeRole)
-
-      repository.add[RefRole](refrole1)
-      repository.add[RefRole](refrole2)
 
       val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)

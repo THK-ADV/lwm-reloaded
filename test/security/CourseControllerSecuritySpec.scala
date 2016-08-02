@@ -25,7 +25,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow invocations when student wants to get a single course" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((None, course.get))(FakeStudentAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -42,7 +42,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Block invocations when student wants to get all courses" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((None, course.getAll))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
@@ -59,7 +59,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Allow invocations when employee wants to get all courses" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((None, course.getAll))(FakeEmployeeAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -76,7 +76,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Allow invocations when a dedicated mv wants to update a course" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
@@ -97,7 +97,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Allow invocations when admin wants to update a course" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
@@ -118,7 +118,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Block invocations when employee wants to update a course" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((Some(FakeCourse), course.update))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
@@ -139,7 +139,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Block invocations when either student, employee or mv wants to create a course" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val json = Json.obj(
@@ -166,7 +166,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     }
 
     "Allow remaining invocations when user is an admin" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(

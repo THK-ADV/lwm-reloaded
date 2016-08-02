@@ -31,7 +31,7 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
 
   override implicit val uriGenerator: UriGenerator[Degree] = Degree
 
-  override protected def coatomic(atom: Degree): Degree = atom
+  override protected def coAtomic(atom: Degree): Degree = atom
 
   override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
     input.label == output.label && input.abbreviation == output.abbreviation

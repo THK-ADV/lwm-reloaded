@@ -29,7 +29,7 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit val uriGenerator: UriGenerator[Blacklist] = Blacklist
 
-  override protected def coatomic(atom: Blacklist): Blacklist = atom
+  override protected def coAtomic(atom: Blacklist): Blacklist = atom
 
   override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
     input.label == output.label && input.dates == output.dates

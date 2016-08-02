@@ -1,8 +1,9 @@
 package invalidation.security
 
+import java.util.UUID
+
 import base.SesameDbSpec
 import models.security.Authority
-import models.users.User
 
 import scala.util.Random._
 import scala.util.Success
@@ -11,7 +12,12 @@ class AuthorityInvalidation extends SesameDbSpec {
 
   "An Authority invalidation" should {
 
-    def auths: Stream[Authority] = Stream.continually(Authority(User.randomUUID, Set()))
+    def auths: Stream[Authority] = {
+      import scala.util.Random.nextBoolean
+
+      val optCourse = if (nextBoolean) Some(UUID.randomUUID) else None
+      Stream.continually(Authority(UUID.randomUUID, UUID.randomUUID, optCourse))
+    }
 
     "invalidate the authority" in {
       import bindings.AuthorityDescriptor

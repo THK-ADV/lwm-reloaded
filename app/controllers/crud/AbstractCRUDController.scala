@@ -25,7 +25,9 @@ import scala.util.{Failure, Success, Try}
 
 trait Stored {
   self: BaseNamespace =>
+
   type Rdf = Sesame
+
   val defaultBindings: Bindings[Rdf] = Bindings[Sesame](namespace)
 
   def repository: SesameRepository
@@ -124,8 +126,6 @@ trait SecureControllerContext {
     case _ => PartialSecureBlock(Permissions.prime)
   }
 
-  sealed trait Rule
-
   trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
@@ -158,6 +158,8 @@ trait SecureControllerContext {
   case class SecureBlock(restrictionRef: String, permission: Permission) extends SecureContext
 
   case class PartialSecureBlock(permission: Permission) extends SecureContext
+
+  sealed trait Rule
 
   case object Create extends Rule
 
@@ -242,7 +244,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 
   def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[A]
-      .flatMap(filtered2(request, coatomic))
+      .flatMap(filtered2(request, coAtomic))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -257,7 +259,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
     NoContent.as(mimeType)
   }
 
-  protected def coatomic(atom: A): O
+  protected def coAtomic(atom: A): O
 }
 
 trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {

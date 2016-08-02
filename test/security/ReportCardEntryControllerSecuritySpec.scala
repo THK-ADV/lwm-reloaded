@@ -26,11 +26,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
   val id = UUID.randomUUID
   val json = {
-    import ReportCardEntry.writes
+    import models.labwork.ReportCardEntry.writes
 
     Json.toJson(
-      ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType], Some(
-        Rescheduled(LocalDate.now.plusDays(1), LocalTime.now.plusHours(1), LocalTime.now.plusHours(1), UUID.randomUUID)),
+      ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType],
+        Some(Rescheduled(LocalDate.now.plusDays(1), LocalTime.now.plusHours(1), LocalTime.now.plusHours(1), UUID.randomUUID)),
         None, id)
     )
   }
@@ -38,7 +38,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
   "A ReportCardEntryControllerSecuritySpec " should {
 
     "Allow non restricted context invocations when admin wants to reschedule a report card entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -57,7 +57,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     }
 
     "Allow restricted context invocations when mv wants to reschedule a report card entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -76,7 +76,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     }
 
     "Allow restricted context invocations when ma wants to reschedule a report card entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -95,7 +95,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     }
 
     "Block restricted context invocations when student wants to reschedule his own report card entry" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((Some(FakeCourse), reportCardEntry.update))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(
@@ -114,7 +114,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     }
 
     "Allow non restricted context invocations when student wants to get his report card entries" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((None, reportCardEntry.get))(FakeStudentAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -131,7 +131,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
     }
 
     "Allow restricted context invocations when mv wants to get all report cards with filter" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), reportCardEntry.getAll))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(

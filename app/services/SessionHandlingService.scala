@@ -115,7 +115,7 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
       val requester = sender()
 
       def resolve(auth: Boolean): Future[Session] = if (auth) {
-        username(user) match {
+        userId(user) match {
           case Success(Some(userId)) => Future.successful {
             ValidSession(user.toLowerCase, userId)
           }

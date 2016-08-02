@@ -30,7 +30,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted invocations when mv wants to create an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -49,7 +49,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when ma wants to create an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.create))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -68,7 +68,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when ma wants to update an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.update))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -87,7 +87,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when mv wants to delete an annotation" in new FakeApplication {
-      when(roleService.authorityFor(FakeMv.toString)).thenReturn(Success(Some(FakeMvAuth)))
+      when(roleService.authorityFor(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.delete))(FakeMvAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -104,7 +104,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Allow restricted invocations when hk wants to get all annotation for his labwork" in new FakeApplication {
-      when(roleService.authorityFor(FakeHk.toString)).thenReturn(Success(Some(FakeHkAuth)))
+      when(roleService.authorityFor(FakeHk)).thenReturn(Success(Set(FakeHkAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.getAll))(FakeHkAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -121,7 +121,7 @@ class AnnotationControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     }
 
     "Block restricted invocations when student wants to get his annotations" in new FakeApplication {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((Some(FakeCourse), annotation.get))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(

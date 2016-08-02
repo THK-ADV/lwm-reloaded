@@ -54,7 +54,6 @@ with SemesterManagementModule
 with SessionRepositoryModule
 with SecurityManagementModule
 with RoleManagementModule
-with RefRoleManagementModule
 with AuthorityManagementModule
 with PermissionManagementModule
 with SessionControllerModule
@@ -95,7 +94,6 @@ with LdapSyncModule {
     roomManagementController,
     semesterManagementController,
     roleManagementController,
-    refRoleManagementController,
     authorityManagementController,
     permissionManagementController,
     labworkApplicationController,
@@ -131,7 +129,6 @@ with LdapModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
 with DefaultRoleManagementModule
-with DefaultRefRoleManagementModuleImpl
 with DefaultAuthorityManagementModuleImpl
 with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl

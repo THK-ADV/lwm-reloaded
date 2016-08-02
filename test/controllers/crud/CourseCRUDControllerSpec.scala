@@ -2,7 +2,7 @@ package controllers.crud
 
 import java.util.UUID
 
-import models.security.{Authority, RefRole, Role, Roles}
+import models.security.{Authority, Role, Roles}
 import models.users.{User, Employee}
 import models.{Course, CourseAtom, CourseProtocol}
 import org.mockito.Matchers._
@@ -263,24 +263,20 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "create a course whilst also creating its respective security models" in {
-      def role(r: String) = Role(r, Set.empty)
+      def role(label: String) = Role(label, Set.empty)
 
       implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
+
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
-      val roles = Set(role(Roles.RightsManager), role(Roles.CourseEmployee), role(Roles.CourseManager), role(Roles.CourseAssistant))
-      val refrole = RefRole(None, roles.head.id)
+      val roles = Set(role(Roles.RightsManager), role(Roles.CourseManager))
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
-      val auth = Authority.empty
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       when(roleService.rolesByLabel(anyObject())).thenReturn(Success(roles))
-      when(roleService.refRolesByLabel(anyObject())).thenReturn(Success(Set(refrole)))
-      when(roleService.authorityFor(anyObject())).thenReturn(Success(Some(auth)))
-      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(dummyGraph))
+      when(repository.addMany[Authority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
-      when(repository.addMany[RefRole](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
 
       val request = FakeRequest(
         POST,
@@ -292,7 +288,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       val result = controller.createWithRoles()(request)
 
       status(result) shouldBe CREATED
-      contentType(result) shouldBe Some(mimeType.value)
+      contentType(result) shouldBe Some[String](mimeType)
     }
 
 

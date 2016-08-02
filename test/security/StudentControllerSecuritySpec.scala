@@ -21,7 +21,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when user is an admin" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((None, user.get))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -38,7 +38,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow non restricted context invocations when employee wants to get a single student" in new FakeApplication() {
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((None, user.get))(FakeEmployeeAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -55,8 +55,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow non restricted context invocations when employee wants to get all students" in new FakeApplication() {
-
-      when(roleService.authorityFor(FakeEmployee.toString)).thenReturn(Success(Some(FakeEmployeeAuth)))
+      when(roleService.authorityFor(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkWith((None, user.getAll))(FakeEmployeeAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -73,7 +72,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Allow non restricted context invocations when student wants to get a single student" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((None, user.get))(FakeStudentAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -90,7 +89,7 @@ class StudentControllerSecuritySpec extends WordSpec with TestBaseDefinition wit
     }
 
     "Block non restricted context invocations when student wants to get all students" in new FakeApplication() {
-      when(roleService.authorityFor(FakeStudent.toString)).thenReturn(Success(Some(FakeStudentAuth)))
+      when(roleService.authorityFor(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
       when(roleService.checkWith((None, user.getAll))(FakeStudentAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(

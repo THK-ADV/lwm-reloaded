@@ -25,9 +25,9 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to create a blacklist" in new FakeApplication() {
-      import Blacklist.writes
+      import models.semester.Blacklist.writes
       
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(Blacklist.empty)
@@ -48,7 +48,7 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow non restricted context invocations when admin wants to get a single blacklist" in new FakeApplication() {
-      when(roleService.authorityFor(FakeAdmin.toString)).thenReturn(Success(Some(FakeAdminAuth)))
+      when(roleService.authorityFor(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkWith((None, blacklist.get))(FakeAdminAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -65,7 +65,7 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow non restricted context invocations when ma wants to get a single blacklist" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((None, blacklist.get))(FakeMaAuth)).thenReturn(Success(true))
 
       val request = FakeRequest(
@@ -82,7 +82,7 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block non restricted context invocations when ma wants to get all blacklists" in new FakeApplication() {
-      when(roleService.authorityFor(FakeMa.toString)).thenReturn(Success(Some(FakeMaAuth)))
+      when(roleService.authorityFor(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkWith((None, prime))(FakeMaAuth)).thenReturn(Success(false))
 
       val request = FakeRequest(

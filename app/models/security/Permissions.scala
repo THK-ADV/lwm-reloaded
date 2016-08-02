@@ -59,13 +59,6 @@ object Permissions {
     lazy val all = Set(update, getAll, get)
   }
 
-  object refRole {
-    val getAll = Permission("RefRole:getAll")
-    val get = Permission("RefRole:get")
-
-    lazy val all = Set(getAll, get)
-  }
-
   object role {
     val getAll = Permission("Role:getAll")
     val get = Permission("Role:get")
@@ -178,7 +171,7 @@ object Permissions {
   }
 
   lazy val all = room.all ++ degree.all ++ course.all ++
-    labwork.all ++ labworkApplication.all ++ authority.all ++ refRole.all ++
+    labwork.all ++ labworkApplication.all ++ authority.all ++
     role.all ++ schedule.all ++ timetable.all ++ semester.all ++ group.all ++
     user.all ++ blacklist.all ++ entryType.all ++ reportCardEntry.all ++
     reportCardEntryType.all ++ reportCardEvaluation.all ++ assignmentPlan.all ++

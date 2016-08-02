@@ -50,7 +50,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   override implicit val writesAtom: Writes[GroupAtom] = Group.writesAtom
 
-  override protected def coatomic(atom: GroupAtom): Group = Group(atom.label, atom.labwork.id, atom.members map (_.id), atom.invalidated, atom.id)
+  override protected def coAtomic(atom: GroupAtom): Group = Group(atom.label, atom.labwork.id, atom.members map (_.id), atom.invalidated, atom.id)
 
   override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
     input.label == output.label && input.members == output.members
