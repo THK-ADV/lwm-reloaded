@@ -4,7 +4,7 @@ import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
 import models.semester.{Semester, SemesterProtocol}
-import org.joda.time.{Interval, LocalDate}
+import org.joda.time.Interval
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
@@ -37,17 +37,18 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
   }
 
   override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
-    lazy val rdf = RDFPrefix[repository.Rdf]
     import store.sparql.select
     import store.sparql.select._
 
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
     (select ("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Semester)) .
-        **(v("s"), p(prefixes.label), o(input.label)) .
-        **(v("s"), p(prefixes.start), o(input.start)) .
-        **(v("s"), p(prefixes.end), o(input.end)) .
-        **(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(lwm.Semester)) .
+        **(v("s"), p(lwm.label), o(input.label)) .
+        **(v("s"), p(lwm.start), o(input.start)) .
+        **(v("s"), p(lwm.end), o(input.end)) .
+        **(v("s"), p(lwm.id), v("id"))
     }, v("id"))
   }
 
@@ -65,7 +66,7 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     case _ => PartialSecureBlock(prime)
   }
 
-  def current = contextFrom(Get) action { request =>
+  def current = contextFrom(Get) action { implicit request =>
     import models.semester.Semester.writes
 
     retrieveAll[Semester](descriptor).

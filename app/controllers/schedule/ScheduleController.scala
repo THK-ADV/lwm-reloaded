@@ -84,6 +84,7 @@ object ScheduleController {
   }
 }
 
+// TODO inherit from AbstractCRUDController
 class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike)
   extends Controller
     with BaseNamespace
@@ -132,8 +133,8 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { request =>
-    val url = (UUID.fromString _ andThen Schedule.generateUri) (schedule)
-    remove[Schedule](url)
+    val uri = (UUID.fromString _ andThen Schedule.generateUri) (schedule)
+    remove[Schedule](uri)
       .mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 

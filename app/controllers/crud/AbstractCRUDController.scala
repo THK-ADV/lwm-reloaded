@@ -10,13 +10,12 @@ import play.api.libs.iteratee.{Enumeratee, Enumerator}
 import play.api.libs.json._
 import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
-import store.SesameRepository
+import store.{Namespace, SesameRepository}
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
 import utils.LwmActions._
 import utils.Ops.MonadInstances.optM
-import utils.RequestOps._
 import utils.{Attempt, Continue, LwmMimeType, Return}
 
 import scala.collection.Map
@@ -88,6 +87,36 @@ trait Consistent[I, O] {
   protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
 
   protected def compareModel(input: I, output: O): Boolean
+}
+
+trait RequestRebase {
+
+  final def rebase[A, B <: UniqueEntity](implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+    rebase0(None)
+  }
+
+  final def rebase[A, B <: UniqueEntity](id: String)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+    rebase0(Some(UUID.fromString(id)))
+  }
+
+  final def rebase[A, B <: UniqueEntity](query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+    rebase0(None, query:_*)
+  }
+
+  final def rebase[A, B <: UniqueEntity](id: String, query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+    rebase0(Some(UUID.fromString(id)), query:_*)
+  }
+
+  private def rebase0[A, B <: UniqueEntity](id: Option[UUID], query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+    val uri = id.fold(uriGenerator.generateBase)(uuid => uriGenerator.generateBase(uuid))
+    val queryString = query.foldLeft(request.queryString)(_ + _)
+    val headers = request.copy(request.id, request.tags, uri, request.path, request.method, request.version, queryString)
+    Request(headers, request.body)
+  }
+
+  final def asUri[A](ns: Namespace, request: Request[A]): String = {
+    s"$ns${request.uri}".replaceAll("/atomic", "")
+  }
 }
 
 trait Chunked {
@@ -186,6 +215,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   with SessionChecking
   with SecureControllerContext
   with Consistent[I, O]
+  with RequestRebase
   with Chunked
   with Stored
   with Basic[I, O, A] {

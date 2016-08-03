@@ -16,6 +16,7 @@ import models.security.Permissions._
 import models.security.Authority
 import models.security.Roles._
 import store.bind.Descriptor.Descriptor
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import store.sparql.select
@@ -41,16 +42,16 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
 
   override implicit val uriGenerator: UriGenerator[Course] = Course
 
-  override protected def coAtomic(atom: CourseAtom): Course =
-    Course(
-      atom.label,
-      atom.description,
-      atom.abbreviation,
-      atom.lecturer.id,
-      atom.semesterIndex,
-      atom.invalidated,
-      atom.id
-    )
+  override protected def coAtomic(atom: CourseAtom): Course = Course(
+    atom.label,
+    atom.description,
+    atom.abbreviation,
+    atom.lecturer.id,
+    atom.semesterIndex,
+    atom.invalidated,
+    atom.id
+  )
+
 
   override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
     input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
@@ -73,14 +74,14 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
   }
 
   override protected def existsQuery(input: CourseProtocol): (SelectClause, Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Course)).
-        **(v("s"), p(prefixes.label), o(input.label)).
-        **(v("s"), p(prefixes.lecturer), s(User.generateUri(input.lecturer)(namespace))).
-        **(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(lwm.Course)).
+        **(v("s"), p(lwm.label), o(input.label)).
+        **(v("s"), p(lwm.lecturer), s(User.generateUri(input.lecturer)(namespace))).
+        **(v("s"), p(lwm.id), v("id"))
     }, v("id"))
   }
 
@@ -93,22 +94,22 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     }
   }
 
-  def updateFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    super.update(course, NonSecureBlock)(request)
+  def updateFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(course, NonSecureBlock)(rebase(course))
   }
 
-  def updateAtomicFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    super.updateAtomic(course, NonSecureBlock)(request)
+  def updateAtomicFrom(course: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    updateAtomic(course, NonSecureBlock)(rebase(course))
   }
 
-  def createWithRoles(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
+  def createWithRoles = contextFrom(Create) contentTypedAction { request =>
     validate(request)
       .flatMap(existence)
       .flatMap(withRoles)
-      .mapResult(course => Created(Json.toJson(course)).as(mimeType))
+      .mapResult{ course => println(course); Created(Json.toJson(course)).as(mimeType) }
   }
 
-  def createAtomicWithRoles(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
+  def createAtomicWithRoles = contextFrom(Create) contentTypedAction { request =>
     validate(request)
       .flatMap(existence)
       .flatMap(withRoles)

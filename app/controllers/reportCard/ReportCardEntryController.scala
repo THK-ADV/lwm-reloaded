@@ -17,7 +17,6 @@ import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
-import utils.RequestOps._
 import models.security.Permissions.{god, reportCardEntry}
 import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, NoneClause, SelectClause}
@@ -35,7 +34,7 @@ object ReportCardEntryController {
   val startAttribute = "start"
   val endAttribute = "end"
 }
-
+// TODO inherit from AbstractCRUDController
 class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
   extends Controller
     with BaseNamespace
@@ -50,7 +49,8 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     with ModelConverter[ReportCardEntry, ReportCardEntry]
     with Consistent[ReportCardEntry, ReportCardEntry]
     with Filterable[ReportCardEntry]
-    with Basic[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
+    with Basic[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom]
+    with RequestRebase {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 
@@ -161,14 +161,16 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   }
 
   def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
+    val rebased = rebase(courseAttribute -> Seq(course))
+
     filtered(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ReportCardEntry.generateBase, courseAttribute -> Seq(course))
+    val rebased = rebase(courseAttribute -> Seq(course))
+
     filtered(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
       .map(set => chunk(set))

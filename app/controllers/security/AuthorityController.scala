@@ -54,7 +54,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case Some(authority) => Authority(input.user, input.role, input.course, authority.invalidated, authority.id)
     case None => Authority(input.user, input.role, input.course)
   }
-
+  // TODO update => create and delete
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Update => PartialSecureBlock(authority.update)
     case GetAll => PartialSecureBlock(authority.getAll)

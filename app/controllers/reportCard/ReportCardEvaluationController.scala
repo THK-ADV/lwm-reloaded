@@ -19,7 +19,6 @@ import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Return, Continue, LwmMimeType}
-import utils.RequestOps._
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -30,21 +29,7 @@ object ReportCardEvaluationController {
   val studentAttribute = "student"
 }
 
-class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
-  extends Controller
-    with BaseNamespace
-    with JsonSerialisation[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]
-    with RdfSerialisation[ReportCardEvaluation, ReportCardEvaluationAtom]
-    with ContentTyped
-    with Chunked
-    with Secured
-    with SessionChecking
-    with SecureControllerContext
-    with Stored
-    with Filterable[ReportCardEvaluation]
-    with Consistent[ReportCardEvaluation, ReportCardEvaluation]
-    with ModelConverter[ReportCardEvaluation, ReportCardEvaluation]
-    with Basic[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom] {
+class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike) extends AbstractCRUDController[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
@@ -60,7 +45,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   override implicit val uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
 
-  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
+  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = false
 
   override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = input
 
@@ -80,8 +65,9 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
+
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
 
     queryString.foldLeft(Try(**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEvaluation)))) {
       case (clause, (`courseAttribute`, courses)) => clause map {
@@ -106,21 +92,24 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
-  def create(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
+  /*def create(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     evaluate(labwork)
       .flatMap(set => addLots(set.toList))
       .mapResult(evals => Created(Json.toJson(evals)).as(mimeType))
   }
-
 
   def createAtomic(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     evaluate(labwork)
       .flatMap(set => addLots(set.toList))
       .flatMap(list => retrieveLots[ReportCardEvaluationAtom](list map ReportCardEvaluation.generateUri))
       .mapResult(evals => Created(Json.toJson(evals)).as(mimeType))
+  }*/
+
+  def allForm(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
-  def all(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
+  /*def all(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(ReportCardEvaluation.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
     filtered(rebased)(Set.empty)
       .map(set => chunk(set))
@@ -148,7 +137,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
-  }
+  }*/
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
     evaluate(labwork)
@@ -211,4 +200,14 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         )))
     }
   }
+
+  override protected def coAtomic(atom: ReportCardEvaluationAtom): ReportCardEvaluation = ReportCardEvaluation(
+    atom.student.id,
+    atom.labwork.id,
+    atom.label,
+    atom.bool,
+    atom.int,
+    atom.invalidated,
+    atom.id
+  )
 }

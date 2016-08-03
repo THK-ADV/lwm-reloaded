@@ -12,10 +12,8 @@ GET           /degrees/:id                                                      
 HEAD          /degrees                                                            controllers.crud.DegreeCRUDController.header
 
 # Course
-POST          /courses                                                            controllers.crud.CourseCRUDController.create()
-POST          /atomic/courses                                                     controllers.crud.CourseCRUDController.createAtomic()
-POST          /courses/roles                                                      controllers.crud.CourseCRUDController.createWithRoles()
-POST          /atomic/courses/roles                                               controllers.crud.CourseCRUDController.createAtomicWithRoles()
+POST          /courses                                                            controllers.crud.CourseCRUDController.createWithRoles()
+POST          /atomic/courses                                                     controllers.crud.CourseCRUDController.createAtomicWithRoles()
 PUT           /courses/:id                                                        controllers.crud.CourseCRUDController.updateFrom(id)
 PUT           /atomic/courses/:id                                                 controllers.crud.CourseCRUDController.updateAtomicFrom(id)
 GET           /courses                                                            controllers.crud.CourseCRUDController.all()
@@ -189,10 +187,10 @@ GET           /reportCardEvaluations/student/:s                                 
 GET           /atomic/reportCardEvaluations/student/:s                            controllers.reportCard.ReportCardEvaluationController.getAtomic(s)
 
 # ReportCardEvaluation restricted
-POST          /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.create(c, l)
-POST          /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.createAtomic(c, l)
-GET           /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.all(c, l)
-GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.allAtomic(c, l)
+# POST          /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.create(c, l)
+# POST          /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.createAtomic(c, l)
+# GET           /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.all(c, l)
+# GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.allAtomic(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview               controllers.reportCard.ReportCardEvaluationController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations/preview        controllers.reportCard.ReportCardEvaluationController.previewAtomic(c, l)
 

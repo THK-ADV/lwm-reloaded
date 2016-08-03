@@ -18,7 +18,6 @@ import store.sparql.select._
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.RequestOps._
 
 import scala.collection.Map
 import scala.util.{Failure, Try}
@@ -107,22 +106,28 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(rebase(AssignmentPlan.generateBase))
+    create(NonSecureBlock)(rebase)
   }
+
+  // TODO createAtomic
 
   def updateFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    update(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
+
+  // TODO allAtomic
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(AssignmentPlan.generateBase, courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
+  // TODO getAtomic
+
   def getFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    get(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
 
   def deleteFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    delete(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
 }

@@ -14,10 +14,9 @@ import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.RequestOps._
 import scala.collection.Map
 import scala.util.{Failure, Try}
-import TimetableCRUDController._
+import controllers.crud.labwork.TimetableCRUDController._
 import store.bind.Descriptor.Descriptor
 
 object TimetableCRUDController {
@@ -40,11 +39,11 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override implicit val uriGenerator: UriGenerator[Timetable] = Timetable
 
-  override protected def coAtomic(atom: TimetableAtom): Timetable =
-    Timetable(
-      atom.labwork.id,
-      atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
-      atom.start, atom.localBlacklist, atom.invalidated, atom.id)
+  override protected def coAtomic(atom: TimetableAtom): Timetable = Timetable(
+    atom.labwork.id,
+    atom.entries map (entry => TimetableEntry(entry.supervisor.id, entry.room.id, entry.degree.id, entry.dayIndex, entry.start, entry.end)),
+    atom.start, atom.localBlacklist, atom.invalidated, atom.id
+  )
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
     import models.semester.Blacklist.dateOrd
@@ -72,6 +71,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     import utils.Ops.MonadInstances.listM
     import store.sparql.select
     import store.sparql.select._
+
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -94,38 +94,38 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(rebase(Timetable.generateBase))
+    create(NonSecureBlock)(rebase)
   }
 
   def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    createAtomic(NonSecureBlock)(rebase(Timetable.generateBase))
+    createAtomic(NonSecureBlock)(rebase)
   }
 
   def updateFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+    update(timetable, NonSecureBlock)(rebase(timetable))
   }
 
   def updateAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    updateAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+    updateAtomic(timetable, NonSecureBlock)(rebase(timetable))
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Timetable.generateBase, courseAttribute -> Seq(course)))
+    allAtomic(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+    get(timetable, NonSecureBlock)(rebase(timetable))
   }
 
   def getAtomicFrom(course: String, timetable: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    getAtomic(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+    getAtomic(timetable, NonSecureBlock)(rebase(timetable))
   }
 
   def deleteFrom(course: String, timetable: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(timetable, NonSecureBlock)(rebase(Timetable.generateBase(UUID.fromString(timetable))))
+    delete(timetable, NonSecureBlock)(rebase(timetable))
   }
 }

@@ -18,6 +18,7 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
+// TODO inherit from AbstractCRUDController
 class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
   extends Controller
     with BaseNamespace
