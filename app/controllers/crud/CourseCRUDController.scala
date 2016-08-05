@@ -136,12 +136,11 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
       _ <- repository.add[Course](course)
     } yield course) match {
       case Success(c) => Continue(c)
-      case Failure(e) =>
-        Return(
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          )))
+      case Failure(e) => Return(
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        )))
     }
   }
 }

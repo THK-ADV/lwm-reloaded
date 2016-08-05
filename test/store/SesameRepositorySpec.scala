@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models._
-import models.labwork.{ReportCardEntry, ReportCardEntryType}
+import models.labwork.{ReportCardEntry, ReportCardEntryType, ReportCardEvaluation}
 import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.{LocalDate, LocalTime}
 
@@ -278,6 +278,33 @@ class SesameRepositorySpec extends SesameDbSpec {
 
       didContainStudent shouldBe true
       didContainAnotherStudent shouldBe false
+    }
+
+    "delete many properly" in {
+      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+
+      repo addMany students.toList
+
+      repo deleteMany (students map User.generateUri) match {
+        case Success(s) =>
+          students count { student =>
+            !(repo contains User.generateUri(student))
+          } shouldBe students.size
+          repo.size shouldBe 0
+        case Failure(e) =>
+          fail(s"Deletion should succeed", e)
+      }
+    }
+
+    "try to delete many, even when there is nothing to delete" in {
+      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+
+      repo deleteMany (students map User.generateUri) match {
+        case Success(s) =>
+          s contains Unit shouldBe true
+        case Failure(e) =>
+          fail(s"Deletion should succeed", e)
+      }
     }
   }
 

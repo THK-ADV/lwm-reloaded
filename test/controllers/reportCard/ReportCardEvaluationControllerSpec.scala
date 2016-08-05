@@ -2,41 +2,37 @@ package controllers.reportCard
 
 import java.util.UUID
 
-import base.TestBaseDefinition
-import models.labwork.{AssignmentPlan, ReportCardEntry, ReportCardEvaluation}
-import org.joda.time.{LocalDate, LocalTime}
-import org.openrdf.model.impl.ValueFactoryImpl
-import org.scalatest.WordSpec
-import org.mockito.Mockito.when
-import org.scalatest.mock.MockitoSugar._
-import org.w3.banana.sesame.SesameModule
-import play.api.test.Helpers._
-import play.api.test.{FakeHeaders, FakeRequest}
-import services.{ReportCardService, RoleService, SessionHandlingService}
-import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
-import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import base.StreamHandler._
+import controllers.crud.AbstractCRUDControllerSpec
+import models.labwork._
+import models.users.Student
+import org.joda.time.DateTime
 import org.mockito.Matchers._
+import org.mockito.Mockito.when
 import org.openrdf.model.Value
+import org.scalatest.mock.MockitoSugar._
 import org.w3.banana.PointedGraph
-import play.api.libs.json.Json
+import org.w3.banana.sesame.Sesame
+import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.test.FakeRequest
+import play.api.test.Helpers._
+import services.ReportCardService
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
+class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
 
-  val repository = mock[SesameRepository]
-  val roleService = mock[RoleService]
   val reportCardService = mock[ReportCardService]
-  val namespace = Namespace("http://lwm.gm.th-koeln.de")
-  val sessionService = mock[SessionHandlingService]
-  val factory = ValueFactoryImpl.getInstance()
-  val qe = mock[QueryExecutor[SelectClause]]
-  val query = QueryEngine.empty(qe)
 
   val mimeType = LwmMimeType.reportCardEvaluationV1Json
 
   val controller: ReportCardEvaluationController = new ReportCardEvaluationController(repository, sessionService, namespace, roleService, reportCardService) {
+
+    override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = entityToPass
+
+    override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
+
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
@@ -46,6 +42,70 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
     }
   }
 
+  import bindings.ReportCardEvaluationDescriptor
+  import ops._
+
+  implicit val binder = ReportCardEvaluationDescriptor.binder
+
+  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+
+  val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
+  val studentToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())
+
+  override val entityToPass: ReportCardEvaluation = ReportCardEvaluation(studentToPass.id, labworkToPass.id, "label to pass", bool = true, 2)
+  override val entityToFail: ReportCardEvaluation = ReportCardEvaluation(studentToFail.id, labworkToFail.id, "label to fail", bool = false, 2)
+
+  override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
+
+  override val atomizedEntityToPass: ReportCardEvaluationAtom = ReportCardEvaluationAtom(
+    studentToPass,
+    labworkToPass,
+    entityToPass.label,
+    entityToPass.bool,
+    entityToPass.int,
+    entityToPass.timestamp,
+    entityToPass.invalidated,
+    entityToPass.id
+  )
+
+  override val atomizedEntityToFail: ReportCardEvaluationAtom = ReportCardEvaluationAtom(
+    studentToFail,
+    labworkToFail,
+    entityToFail.label,
+    entityToFail.bool,
+    entityToFail.int,
+    entityToFail.timestamp,
+    entityToFail.invalidated,
+    entityToFail.id
+  )
+
+  override def entityTypeName: String = "reportCardEvaluation"
+
+  override val inputJson: JsValue = Json.obj(
+    "student" -> entityToPass.student,
+    "labwork" -> entityToPass.labwork,
+    "label" -> entityToPass.label,
+    "bool" -> entityToPass.bool,
+    "int" -> entityToPass.int,
+    "timestamp" -> entityToPass.timestamp,
+    "id" -> entityToPass.id
+  )
+
+  override val updateJson: JsValue = Json.obj(
+    "student" -> entityToPass.student,
+    "labwork" -> entityToPass.labwork,
+    "label" -> entityToPass.label,
+    "bool" -> !entityToPass.bool,
+    "int" -> (entityToPass.int + 2),
+    "timestamp" -> DateTime.now,
+    "id" -> entityToPass.id
+  )
+
+  override implicit def jsonWrites: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
+
+  override implicit def jsonWritesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
+
   def evaluations(student: UUID = UUID.randomUUID, labwork: UUID = UUID.randomUUID) = (0 until 4).map { i =>
     ReportCardEvaluation(student, labwork, i.toString, bool = true, i)
   }.toSet
@@ -53,7 +113,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
   def toJson(entries: Set[ReportCardEvaluation]) = entries.map(e => Json.toJson(e))
 
   "A ReportCardEvaluationControllerSpec " should {
-    /* apply changes
+
     "successfully return report card evaluations for a given student" in {
       val student = UUID.randomUUID
       val evals = evaluations(student)
@@ -72,13 +132,7 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-
-      val jsValues = toJson(evals)
-      val content = contentAsString(result)
-
-      jsValues.forall { json =>
-        content contains json.toString
-      } shouldBe true
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
     "not return report card evaluations when there is an exception" in {
@@ -119,113 +173,15 @@ class ReportCardEvaluationControllerSpec extends WordSpec with TestBaseDefinitio
         s"/courses/$course/labworks/$labwork/reportCardEvaluations"
       )
 
-      val result = controller.all(course.toString, labwork.toString)(request)
+      val result = controller.allFrom(course.toString, labwork.toString)(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-
-      val jsValues = toJson(evals)
-      val content = contentAsString(result)
-
-      jsValues.forall { json =>
-        content contains json.toString
-      } shouldBe true
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
-    "successfully preview all report card evaluations for a given course and labwork" in {
-      val course = UUID.randomUUID
-      val labwork = UUID.randomUUID
-      val evals = evaluations(UUID.randomUUID, labwork)
-      val cardEntries = (0 until 4).map { i =>
-        ReportCardEntry(UUID.randomUUID, labwork, i.toString, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty)
-      }.toSet
-      val ap = AssignmentPlan(labwork, 0, 0, Set.empty)
+    // TODO test preview
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap)))
-      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
-
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
-      )
-
-      val result = controller.preview(course.toString, labwork.toString)(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-
-      val jsValues = toJson(evals)
-      val content = contentAsString(result)
-
-      jsValues.forall { json =>
-        content contains json.toString
-      } shouldBe true
-    }
-
-    "not preview report card evaluations when something is not found" in {
-      val course = UUID.randomUUID
-      val labwork = UUID.randomUUID
-      val evals = evaluations(UUID.randomUUID, labwork)
-      val cardEntries = (0 until 4).map { i =>
-        ReportCardEntry(UUID.randomUUID, labwork, i.toString, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty)
-      }.toSet
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(AssignmentPlan.empty)))
-      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
-
-      val request = FakeRequest(
-        GET,
-        s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
-      )
-
-      val result = controller.preview(course.toString, labwork.toString)(request)
-
-      status(result) shouldBe NOT_FOUND
-    }
-
-    "successfully create report card evaluations for a given course and labwork" in {
-      val course = UUID.randomUUID
-      val labwork = UUID.randomUUID
-      val evals = evaluations(UUID.randomUUID, labwork)
-      val cardEntries = (0 until 4).map { i =>
-        ReportCardEntry(UUID.randomUUID, labwork, i.toString, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty)
-      }.toSet
-      val ap = AssignmentPlan(labwork, 0, 0, Set.empty)
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(cardEntries))
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap)))
-      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
-      when(repository.addMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(Set(PointedGraph[Rdf](factory.createBNode()))))
-
-      val request = FakeRequest(
-        POST,
-        s"/courses/$course/labworks/$labwork/reportCardEvaluations",
-        FakeHeaders(Seq("Content-Type" -> mimeType)),
-        Json.toJson("")
-      )
-
-      val result = controller.create(course.toString, labwork.toString)(request)
-
-      status(result) shouldBe CREATED
-      contentType(result) shouldBe Some(mimeType.value)
-
-      val jsValues = toJson(evals)
-      val content = contentAsString(result)
-
-      jsValues.forall { json =>
-        content contains json.toString
-      } shouldBe true
-    }*/
+    // TODO test create
   }
 }

@@ -187,10 +187,10 @@ GET           /reportCardEvaluations/student/:s                                 
 GET           /atomic/reportCardEvaluations/student/:s                            controllers.reportCard.ReportCardEvaluationController.getAtomic(s)
 
 # ReportCardEvaluation restricted
-# POST          /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.create(c, l)
-# POST          /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.createAtomic(c, l)
-# GET           /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.all(c, l)
-# GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.allAtomic(c, l)
+POST          /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.createFrom(c, l)
+POST          /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.createAtomicFrom(c, l)
+GET           /courses/:c/labworks/:l/reportCardEvaluations                       controllers.reportCard.ReportCardEvaluationController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                controllers.reportCard.ReportCardEvaluationController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview               controllers.reportCard.ReportCardEvaluationController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations/preview        controllers.reportCard.ReportCardEvaluationController.previewAtomic(c, l)
 

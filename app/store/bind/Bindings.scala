@@ -7,16 +7,16 @@ import models.labwork._
 import models.security._
 import models.semester.{Blacklist, Semester}
 import models.users.{Employee, Student, StudentAtom, User}
-import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana._
 import org.w3.banana.binder.{ClassUrisFor, PGBinder, RecordBinder}
 import store.Namespace
 import store.Prefixes.LWMPrefix
+import store.bind.Descriptor._
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
-import Descriptor._
 
 object PropertyEnhancer {
 
@@ -51,16 +51,28 @@ object PropertyEnhancer {
 
 object Descriptor {
 
+  trait Descriptor[Rdf <: RDF, T] {
+    def clazz: Rdf#URI
+
+    def classUris: ClassUrisFor[Rdf, T]
+
+    def references: Ref[Rdf#URI] = Ref(clazz)
+
+    def branching: Ref[Rdf#URI] = Ref(clazz)
+
+    def binder: PGBinder[Rdf, T]
+  }
+
   final case class Ref[+A](root: A, references: List[Ref[A]] = Nil, referenced: List[Ref[A]] = Nil) {
-    def pointsAt[AA >: A](that: Ref[AA]): Ref[AA] = Ref(root, that :: references, referenced)
-
-    def pointedAt[AA >: A](by: Ref[AA]): Ref[AA] = Ref(root, references, by :: referenced)
-
     def pointsAt[AA >: A](that: AA): Ref[AA] = pointsAt(Ref(that))
+
+    def pointsAt[AA >: A](that: Ref[AA]): Ref[AA] = Ref(root, that :: references, referenced)
 
     def pointedAt[AA >: A](that: AA): Ref[AA] = pointedAt(Ref(that))
 
-    def zipWith[AA >: A, B](refs: List[Ref[AA]])(f: AA => List[B]): List[(B, Ref[AA])] = refs flatMap { ref => f(ref.root) map ((_, ref)) }
+    def pointedAt[AA >: A](by: Ref[AA]): Ref[AA] = Ref(root, references, by :: referenced)
+
+    def leftDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)(f)((_, _) => Nil)
 
     def deref[B](b: B)(f: (B, A) => List[B])(g: (B, A) => List[B]): List[B] = {
       @annotation.tailrec
@@ -75,21 +87,9 @@ object Descriptor {
       go(Nil, List((b, this)))
     }
 
-    def leftDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)(f)((_, _) => Nil)
+    def zipWith[AA >: A, B](refs: List[Ref[AA]])(f: AA => List[B]): List[(B, Ref[AA])] = refs flatMap { ref => f(ref.root) map ((_, ref)) }
 
     def rightDeref[B](b: B)(f: (B, A) => List[B]): List[B] = deref(b)((_, _) => Nil)(f)
-  }
-
-  trait Descriptor[Rdf <: RDF, T] {
-    def clazz: Rdf#URI
-
-    def classUris: ClassUrisFor[Rdf, T]
-
-    def references: Ref[Rdf#URI] = Ref(clazz)
-
-    def branching: Ref[Rdf#URI] = Ref(clazz)
-
-    def binder: PGBinder[Rdf, T]
   }
 
 }
@@ -98,89 +98,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   import ops._
   import recordBinder._
-
-  val lwm = LWMPrefix[Rdf]
-  val rdf = RDFPrefix[Rdf]
-  val xsd = XSDPrefix[Rdf]
-
-  def innerUri: Rdf#URI = makeUri(s"$baseNs/${newUri("#")}")
-
-  implicit val uuidBinder = new PGBinder[Rdf, UUID] {
-    override def toPG(t: UUID): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString, xsd.string))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[UUID] = {
-      pointed.pointer.as[String].map { value =>
-        UUID.fromString(value)
-      }
-    }
-  }
-
-  implicit def uuidRefBinder(splitter: URLSplit[UUID]): PGBinder[Rdf, UUID] = new PGBinder[Rdf, UUID] {
-    override def toPG(t: UUID): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeUri(splitter.to(t)))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[UUID] = {
-      pointed.pointer.as[Rdf#URI].map { value =>
-        splitter.from(value.toString)
-      }
-    }
-  }
-
-  implicit val dateTimeBinder = new PGBinder[Rdf, DateTime] {
-    val formatter = ISODateTimeFormat.dateTime()
-
-    override def toPG(t: DateTime): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(formatter.print(t), xsd.dateTime))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[DateTime] = {
-      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
-        case (stringVal, uri, optLang) => DateTime.parse(stringVal)
-      }
-    }
-  }
-
-  implicit val localDateBinder = new PGBinder[Rdf, LocalDate] {
-    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
-    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
-      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
-        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
-      }
-    }
-  }
-
-  implicit val localTimeBinder = new PGBinder[Rdf, LocalTime] {
-    // LocalTime.toString formats to HH:mm:ms:mms
-    override def toPG(t: LocalTime): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.toString, lwm.localTime))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
-      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
-        case (stringVal, uri, optLang) => LocalTime.parse(stringVal)
-      }
-    }
-  }
-
-  implicit val permissionBinder = new PGBinder[Rdf, Permission] {
-    override def toPG(t: Permission): PointedGraph[Rdf] = {
-      PointedGraph(ops.makeLiteral(t.value, xsd.string))
-    }
-
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[Permission] = {
-      pointed.pointer.as[String].map(Permission.apply)
-    }
-  }
-
-  val id = property[UUID](lwm.id)
-  val invalidated = optional[DateTime](lwm.invalidated)
 
   implicit lazy val UserDescriptor: Descriptor[Rdf, User] = new Descriptor[Rdf, User] {
     override val clazz: Rdf#URI = lwm.User
@@ -199,7 +116,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       }
     }
   }
-
   implicit lazy val StudentDescriptor: Descriptor[Rdf, Student] = new Descriptor[Rdf, Student] {
     override val clazz: Rdf#URI = lwm.User
 
@@ -216,7 +132,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Student](student =>
         makeUri(User.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(Student.apply, Student.unapply) withClasses classUris
   }
-
   implicit lazy val StudentAtomDescriptor: Descriptor[Rdf, StudentAtom] = new Descriptor[Rdf, StudentAtom] {
     override val clazz: Rdf#URI = lwm.User
 
@@ -235,7 +150,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[StudentAtom](student =>
         makeUri(User.generateUri(student.id)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(StudentAtom.apply, StudentAtom.unapply) withClasses classUris
   }
-
   implicit lazy val EmployeeDescriptor: Descriptor[Rdf, Employee] = new Descriptor[Rdf, Employee] {
     override val clazz: Rdf#URI = lwm.User
 
@@ -252,7 +166,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(User.generateUri(employee)))(systemId, lastname, firstname, email, status, invalidated, id)(Employee.apply, Employee.unapply) withClasses classUris
 
   }
-
   implicit lazy val LabworkApplicationDescriptor: Descriptor[Rdf, LabworkApplication] = new Descriptor[Rdf, LabworkApplication] {
     override val clazz: Rdf#URI = lwm.LabworkApplication
 
@@ -267,7 +180,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[LabworkApplication](application =>
         makeUri(LabworkApplication.generateUri(application)))(labwork, applicant, friends, timestamp, invalidated, id)(LabworkApplication.apply, LabworkApplication.unapply) withClasses classUris
   }
-
   implicit lazy val LabworkApplicationAtomDescriptor: Descriptor[Rdf, LabworkApplicationAtom] = new Descriptor[Rdf, LabworkApplicationAtom] {
     override val clazz: Rdf#URI = lwm.LabworkApplication
 
@@ -288,7 +200,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(LabworkApplication.generateUri(application.id)))(labwork, applicant, friends, timestamp, invalidated, id)(LabworkApplicationAtom.apply, LabworkApplicationAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val RoleDescriptor: Descriptor[Rdf, Role] = new Descriptor[Rdf, Role] {
     override val clazz: Rdf#URI = lwm.Role
 
@@ -302,7 +213,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(Role.generateUri(role)))(label, permissions, invalidated, id)(Role.apply, Role.unapply) withClasses classUris
 
   }
-
   implicit lazy val AuthorityDescriptor: Descriptor[Rdf, Authority] = new Descriptor[Rdf, Authority] {
     override val clazz: Rdf#URI = lwm.Authority
 
@@ -316,7 +226,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Authority](auth =>
         makeUri(Authority.generateUri(auth)))(privileged, role, course, invalidated, id)(Authority.apply, Authority.unapply) withClasses classUris
   }
-
   implicit lazy val AuthorityAtomDescriptor: Descriptor[Rdf, AuthorityAtom] = new Descriptor[Rdf, AuthorityAtom] {
     override val clazz: Rdf#URI = lwm.Authority
 
@@ -336,7 +245,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[AuthorityAtom](
         auth => makeUri(Authority.generateUri(auth.id)))(privileged, role, course, invalidated, id)(AuthorityAtom.apply, AuthorityAtom.unapply) withClasses classUris
   }
-
   implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, AssignmentEntry] = new Descriptor[Rdf, AssignmentEntry] {
     override val clazz: Rdf#URI = lwm.AssignmentEntry
 
@@ -354,7 +262,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val binder: PGBinder[Rdf, AssignmentEntry] =
       pgbWithId[AssignmentEntry](_ => innerUri)(index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUris
   }
-
   implicit lazy val AssignmentEntryTypeDescriptor: Descriptor[Rdf, AssignmentEntryType] = new Descriptor[Rdf, AssignmentEntryType] {
     override val clazz: Rdf#URI = lwm.AssignmentEntryType
 
@@ -367,8 +274,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val binder: PGBinder[Rdf, AssignmentEntryType] =
       pgbWithId[AssignmentEntryType](_ => innerUri)(entryType, bool, int)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUris
   }
-
-
   implicit lazy val AssignmentPlanDescriptor: Descriptor[Rdf, AssignmentPlan] = new Descriptor[Rdf, AssignmentPlan] {
     override val clazz: Rdf#URI = lwm.AssignmentPlan
 
@@ -387,7 +292,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[AssignmentPlan](aPlan =>
         makeUri(AssignmentPlan.generateUri(aPlan)))(labwork, attendance, mandatory, entries, invalidated, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUris
   }
-
   implicit lazy val AssignmentPlanAtomDescriptor: Descriptor[Rdf, AssignmentPlanAtom] = new Descriptor[Rdf, AssignmentPlanAtom] {
     override val clazz: Rdf#URI = lwm.AssignmentPlan
 
@@ -407,7 +311,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[AssignmentPlanAtom](aPlan =>
         makeUri(AssignmentPlan.generateUri(aPlan.id)))(labwork, attendance, mandatory, entries, invalidated, id)(AssignmentPlanAtom.apply, AssignmentPlanAtom.unapply) withClasses classUris
   }
-
   implicit lazy val LabworkDescriptor: Descriptor[Rdf, Labwork] = new Descriptor[Rdf, Labwork] {
     override val clazz: Rdf#URI = lwm.Labwork
 
@@ -436,7 +339,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Labwork](labwork =>
         makeUri(Labwork.generateUri(labwork)))(label, description, semester, course, degree, subscribable, published, invalidated, id)(Labwork.apply, Labwork.unapply) withClasses classUris
   }
-
   implicit lazy val LabworkAtomDescriptor: Descriptor[Rdf, LabworkAtom] = new Descriptor[Rdf, LabworkAtom] {
     override val clazz: Rdf#URI = lwm.Labwork
 
@@ -461,7 +363,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         atom => makeUri(Labwork.generateUri(atom.id)))(label, description, semester, course, degree, subscribable, published, invalidated, id)(LabworkAtom.apply, LabworkAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val CourseDescriptor: Descriptor[Rdf, Course] = new Descriptor[Rdf, Course] {
     override val clazz: Rdf#URI = lwm.Course
 
@@ -482,7 +383,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Course](course =>
         makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(Course.apply, Course.unapply) withClasses classUris
   }
-
   implicit lazy val CourseAtomDescriptor: Descriptor[Rdf, CourseAtom] = new Descriptor[Rdf, CourseAtom] {
     override val clazz: Rdf#URI = lwm.Course
 
@@ -500,7 +400,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[CourseAtom](atom =>
         makeUri(Course.generateUri(atom.id)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(CourseAtom.apply, CourseAtom.unapply) withClasses classUris
   }
-
   implicit lazy val DegreeDescriptor: Descriptor[Rdf, Degree] = new Descriptor[Rdf, Degree] {
     override val clazz: Rdf#URI = lwm.Degree
 
@@ -517,7 +416,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val binder: PGBinder[Rdf, Degree] =
       pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, abbreviation, invalidated, id)(Degree.apply, Degree.unapply) withClasses classUris
   }
-
   implicit lazy val GroupDescriptor: Descriptor[Rdf, Group] = new Descriptor[Rdf, Group] {
     override val clazz: Rdf#URI = lwm.Group
 
@@ -531,8 +429,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Group](group =>
         makeUri(Group.generateUri(group)))(label, labwork, members, invalidated, id)(Group.apply, Group.unapply) withClasses classUris
   }
-
-
   implicit lazy val GroupAtomDescriptor: Descriptor[Rdf, GroupAtom] = new Descriptor[Rdf, GroupAtom] {
     override val clazz: Rdf#URI = lwm.Group
 
@@ -551,7 +447,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[GroupAtom](group =>
         makeUri(Group.generateUri(group.id)))(label, labwork, members, invalidated, id)(GroupAtom.apply, GroupAtom.unapply) withClasses classUris
   }
-
   implicit lazy val RoomDescriptor: Descriptor[Rdf, Room] = new Descriptor[Rdf, Room] {
     override val clazz: Rdf#URI = lwm.Room
 
@@ -571,7 +466,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Room](room =>
         makeUri(Room.generateUri(room)))(label, description, invalidated, id)(Room.apply, Room.unapply) withClasses classUris
   }
-
   implicit lazy val SemesterDescriptor: Descriptor[Rdf, Semester] = new Descriptor[Rdf, Semester] {
     override val clazz: Rdf#URI = lwm.Semester
 
@@ -589,7 +483,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Semester](semester =>
         makeUri(Semester.generateUri(semester)))(label, abbreviation, start, end, examStart, invalidated, id)(Semester.apply, Semester.unapply) withClasses classUris
   }
-
   implicit lazy val TimetableDescriptor: Descriptor[Rdf, Timetable] = new Descriptor[Rdf, Timetable] {
     override val clazz: Rdf#URI = lwm.Timetable
 
@@ -608,8 +501,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Timetable](timetable =>
         makeUri(Timetable.generateUri(timetable)))(labwork, entries, start, blacklist, invalidated, id)(Timetable.apply, Timetable.unapply) withClasses classUris
   }
-
-
   implicit lazy val TimetableAtomDescriptor: Descriptor[Rdf, TimetableAtom] = new Descriptor[Rdf, TimetableAtom] {
     override val clazz: Rdf#URI = lwm.Timetable
 
@@ -630,7 +521,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(Timetable.generateUri(timetable.id)))(labwork, entries, start, blacklist, invalidated, id)(TimetableAtom.apply, TimetableAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val TimetableEntryDescriptor: Descriptor[Rdf, TimetableEntry] = new Descriptor[Rdf, TimetableEntry] {
     override val clazz: Rdf#URI = lwm.TimetableEntry
 
@@ -647,7 +537,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[TimetableEntry](
         _ => innerUri)(supervisor, room, degree, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUris
   }
-
   implicit lazy val TimetableEntryAtomDescriptor: Descriptor[Rdf, TimetableEntryAtom] = new Descriptor[Rdf, TimetableEntryAtom] {
     override val clazz: Rdf#URI = lwm.TimetableEntry
 
@@ -670,7 +559,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[TimetableEntryAtom](
         _ => innerUri)(supervisor, room, degree, dayIndex, start, end)(TimetableEntryAtom.apply, TimetableEntryAtom.unapply) withClasses classUris
   }
-
   implicit lazy val ScheduleDescriptor: Descriptor[Rdf, Schedule] = new Descriptor[Rdf, Schedule] {
     override val clazz: Rdf#URI = lwm.Schedule
 
@@ -687,7 +575,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Schedule](schedule =>
         makeUri(Schedule.generateUri(schedule)))(labwork, entries, invalidated, id)(Schedule.apply, Schedule.unapply) withClasses classUris
   }
-
   implicit lazy val ScheduleAtomDescriptor: Descriptor[Rdf, ScheduleAtom] = new Descriptor[Rdf, ScheduleAtom] {
     override val clazz: Rdf#URI = lwm.Schedule
 
@@ -705,7 +592,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[ScheduleAtom](schedule =>
         makeUri(Schedule.generateUri(schedule.id)))(labwork, entries, invalidated, id)(ScheduleAtom.apply, ScheduleAtom.unapply) withClasses classUris
   }
-
   implicit lazy val ScheduleEntryDescriptor: Descriptor[Rdf, ScheduleEntry] = new Descriptor[Rdf, ScheduleEntry] {
     override val clazz: Rdf#URI = lwm.ScheduleEntry
 
@@ -724,7 +610,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(ScheduleEntry.generateUri(sentry)))(labwork, start, end, date, room, supervisor, group, invalidated, id)(ScheduleEntry.apply, ScheduleEntry.unapply) withClasses classUris
 
   }
-
   implicit lazy val ScheduleEntryAtomDescriptor: Descriptor[Rdf, ScheduleEntryAtom] = new Descriptor[Rdf, ScheduleEntryAtom] {
     override val clazz: Rdf#URI = lwm.ScheduleEntry
 
@@ -750,7 +635,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(ScheduleEntry.generateUri(sentry.id)))(labwork, start, end, date, room, supervisor, group, invalidated, id)(ScheduleEntryAtom.apply, ScheduleEntryAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val BlacklistDescriptor: Descriptor[Rdf, Blacklist] = new Descriptor[Rdf, Blacklist] {
     override val clazz: Rdf#URI = lwm.Blacklist
 
@@ -763,7 +647,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Blacklist](blacklist => makeUri(Blacklist.generateUri(blacklist)))(label, dates, invalidated, id)(Blacklist.apply, Blacklist.unapply) withClasses classUris
 
   }
-
   implicit lazy val ReportCardEntryDescriptor: Descriptor[Rdf, ReportCardEntry] = new Descriptor[Rdf, ReportCardEntry] {
 
     import PropertyEnhancer._
@@ -794,7 +677,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(ReportCardEntry.generateUri(reportCardEntry))))(ops)(student, labwork, label, date, start, end, room, types, rescheduled, invalidated, id)(ReportCardEntry.apply, ReportCardEntry.unapply) withClasses classUris
 
   }
-
   implicit lazy val ReportCardEntryAtomDescriptor: Descriptor[Rdf, ReportCardEntryAtom] = new Descriptor[Rdf, ReportCardEntryAtom] {
 
     import PropertyEnhancer._
@@ -826,7 +708,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(ReportCardEntry.generateUri(reportCardEntry.id))))(ops)(student, labwork, label, date, start, end, room, types, rescheduled, invalidated, id)(ReportCardEntryAtom.apply, ReportCardEntryAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val ReportCardEntryTypeDescriptor: Descriptor[Rdf, ReportCardEntryType] = new Descriptor[Rdf, ReportCardEntryType] {
     override val clazz: Rdf#URI = lwm.ReportCardEntryType
 
@@ -840,7 +721,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[ReportCardEntryType](reportCardEntryType =>
         makeUri(ReportCardEntryType.generateUri(reportCardEntryType)))(entryType, bool, int, invalidated, id)(ReportCardEntryType.apply, ReportCardEntryType.unapply) withClasses classUris
   }
-
   implicit lazy val RescheduledDescriptor: Descriptor[Rdf, Rescheduled] = new Descriptor[Rdf, Rescheduled] {
     override val clazz: Rdf#URI = lwm.Rescheduled
 
@@ -855,7 +735,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[Rescheduled](
         _ => innerUri)(date, start, end, room)(Rescheduled.apply, Rescheduled.unapply) withClasses classUris
   }
-
   implicit lazy val RescheduledAtomDescriptor: Descriptor[Rdf, RescheduledAtom] = new Descriptor[Rdf, RescheduledAtom] {
     override val clazz: Rdf#URI = lwm.Rescheduled
 
@@ -872,7 +751,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[RescheduledAtom](
         _ => innerUri)(date, start, end, room)(RescheduledAtom.apply, RescheduledAtom.unapply) withClasses classUris
   }
-
   implicit lazy val AnnotationDescriptor: Descriptor[Rdf, Annotation] = new Descriptor[Rdf, Annotation] {
     override val clazz: Rdf#URI = lwm.Annotation
 
@@ -891,7 +769,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(Annotation.generateUri(annotation)))(student, labwork, reportCardEntry, message, timestamp, invalidated, id)(Annotation.apply, Annotation.unapply) withClasses classUris
 
   }
-
   implicit lazy val AnnotationAtomDescriptor: Descriptor[Rdf, AnnotationAtom] = new Descriptor[Rdf, AnnotationAtom] {
     override val clazz: Rdf#URI = lwm.Annotation
 
@@ -914,7 +791,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(Annotation.generateUri(annotation.id)))(student, labwork, reportCardEntry, message, timestamp, invalidated, id)(AnnotationAtom.apply, AnnotationAtom.unapply) withClasses classUris
 
   }
-
   implicit lazy val ReportCardEvaluationDescriptor: Descriptor[Rdf, ReportCardEvaluation] = new Descriptor[Rdf, ReportCardEvaluation] {
     override val clazz: Rdf#URI = lwm.ReportCardEvaluation
 
@@ -925,13 +801,13 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
+    private val timestamp = property[DateTime](lwm.timestamp)
 
     override val binder: PGBinder[Rdf, ReportCardEvaluation] =
       pgbWithId[ReportCardEvaluation](eval =>
-        makeUri(ReportCardEvaluation.generateUri(eval)))(student, labwork, label, bool, int, invalidated, id)(ReportCardEvaluation.apply, ReportCardEvaluation.unapply) withClasses classUris
+        makeUri(ReportCardEvaluation.generateUri(eval)))(student, labwork, label, bool, int, timestamp, invalidated, id)(ReportCardEvaluation.apply, ReportCardEvaluation.unapply) withClasses classUris
 
   }
-
   implicit lazy val ReportCardEvaluationAtomDescriptor: Descriptor[Rdf, ReportCardEvaluationAtom] = new Descriptor[Rdf, ReportCardEvaluationAtom] {
     override val clazz: Rdf#URI = lwm.ReportCardEvaluation
 
@@ -947,11 +823,88 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
+    private val timestamp = property[DateTime](lwm.timestamp)
 
     override val binder: PGBinder[Rdf, ReportCardEvaluationAtom] =
       pgbWithId[ReportCardEvaluationAtom](eval =>
-        makeUri(ReportCardEvaluation.generateUri(eval.id)))(student, labwork, label, bool, int, invalidated, id)(ReportCardEvaluationAtom.apply, ReportCardEvaluationAtom.unapply) withClasses classUris
+        makeUri(ReportCardEvaluation.generateUri(eval.id)))(student, labwork, label, bool, int, timestamp, invalidated, id)(ReportCardEvaluationAtom.apply, ReportCardEvaluationAtom.unapply) withClasses classUris
 
+  }
+  val lwm = LWMPrefix[Rdf]
+  val rdf = RDFPrefix[Rdf]
+  val xsd = XSDPrefix[Rdf]
+  implicit val uuidBinder = new PGBinder[Rdf, UUID] {
+    override def toPG(t: UUID): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString, xsd.string))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[UUID] = {
+      pointed.pointer.as[String].map { value =>
+        UUID.fromString(value)
+      }
+    }
+  }
+  implicit val dateTimeBinder = new PGBinder[Rdf, DateTime] {
+    val formatter = ISODateTimeFormat.dateTime()
+
+    override def toPG(t: DateTime): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(formatter.print(t), xsd.dateTime))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[DateTime] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => DateTime.parse(stringVal)
+      }
+    }
+  }
+  implicit val localDateBinder = new PGBinder[Rdf, LocalDate] {
+    // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
+    override def toPG(t: LocalDate): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString(), lwm.localDate))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalDate] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalDate.parse(stringVal)
+      }
+    }
+  }
+  implicit val localTimeBinder = new PGBinder[Rdf, LocalTime] {
+    // LocalTime.toString formats to HH:mm:ms:mms
+    override def toPG(t: LocalTime): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.toString, lwm.localTime))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[LocalTime] = {
+      pointed.pointer.as[Rdf#Literal].map(ops.fromLiteral).map {
+        case (stringVal, uri, optLang) => LocalTime.parse(stringVal)
+      }
+    }
+  }
+  implicit val permissionBinder = new PGBinder[Rdf, Permission] {
+    override def toPG(t: Permission): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeLiteral(t.value, xsd.string))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[Permission] = {
+      pointed.pointer.as[String].map(Permission.apply)
+    }
+  }
+  val id = property[UUID](lwm.id)
+  val invalidated = optional[DateTime](lwm.invalidated)
+
+  def innerUri: Rdf#URI = makeUri(s"$baseNs/${newUri("#")}")
+
+  implicit def uuidRefBinder(splitter: URLSplit[UUID]): PGBinder[Rdf, UUID] = new PGBinder[Rdf, UUID] {
+    override def toPG(t: UUID): PointedGraph[Rdf] = {
+      PointedGraph(ops.makeUri(splitter.to(t)))
+    }
+
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[UUID] = {
+      pointed.pointer.as[Rdf#URI].map { value =>
+        splitter.from(value.toString)
+      }
+    }
   }
 }
 
