@@ -25,11 +25,11 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDa
   }
 }
 
-case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
+case class TimetableEntry(supervisor: UUID, room: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
 
   override def equals(that: scala.Any): Boolean = that match {
-    case TimetableEntry(sup2, room2, degree2, dayIndex2, start2, end2) =>
-      supervisor == sup2 && room == room2 && degree2 == degree && dayIndex2 == dayIndex && start2.isEqual(start) && end2.isEqual(end)
+    case TimetableEntry(sup2, room2, dayIndex2, start2, end2) =>
+      supervisor == sup2 && room == room2 && dayIndex2 == dayIndex && start2.isEqual(start) && end2.isEqual(end)
     case _ => false
   }
 }
@@ -46,7 +46,7 @@ case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start:
 
 case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class TimetableEntryAtom(supervisor: Employee, room: Room, dayIndex: Int, start: LocalTime, end: LocalTime)
 
 /**
   * Helper

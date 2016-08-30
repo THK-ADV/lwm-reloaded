@@ -3,9 +3,9 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Degree, Room}
+import models.Room
 import models.labwork._
-import models.users.{Student, User}
+import models.users.User
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.Random._
@@ -25,7 +25,7 @@ class RoomInvalidation extends SesameDbSpec {
       else ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, User.randomUUID, Group.randomUUID)
     }
 
-    def tte(room: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, room, Degree.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte(room: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, room, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(room: UUID): Stream[Timetable] = Stream.continually {
       if (nextBoolean()) Timetable(Labwork.randomUUID, (tte(room) take 20).toSet, LocalDate.now, Set())
@@ -35,12 +35,7 @@ class RoomInvalidation extends SesameDbSpec {
 
 
     "invalidate a room and referencing schedule, report card and timetable entries" in {
-      import bindings.{
-      RoomDescriptor,
-      ReportCardEntryDescriptor,
-      ScheduleEntryDescriptor,
-      TimetableDescriptor
-      }
+      import bindings.{ReportCardEntryDescriptor, RoomDescriptor, ScheduleEntryDescriptor, TimetableDescriptor}
 
       val room = Room("Room", "Description")
       val reportCardEntries = (rce(room.id) take 100).toSet

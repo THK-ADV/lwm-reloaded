@@ -29,13 +29,12 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
   val weeks = Weeks.weeks(30)
-  val degree = Degree("degree", "abbrev")
   val tEntries = Set(
-    TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-    TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
-    TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
-    TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
-    TimetableEntry(User.randomUUID, Room.randomUUID, degree.id, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
+    TimetableEntry(User.randomUUID, Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+    TimetableEntry(User.randomUUID, Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
+    TimetableEntry(User.randomUUID, Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
+    TimetableEntry(User.randomUUID, Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
+    TimetableEntry(User.randomUUID, Room.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
   )
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet

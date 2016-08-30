@@ -162,7 +162,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime])
 
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
@@ -212,7 +212,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime])
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
@@ -262,7 +262,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime])
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
@@ -317,7 +317,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       val degree = Degree("degree", "abbrev")
       val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime])
       val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
       val gen = Gen[ScheduleG, Conflict, Int](
@@ -399,7 +399,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
       val labwork = LabworkAtom("", "", semester, course, degree, false, false, None, Labwork.randomUUID)
       val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
       val timetable = Timetable(labwork.id, Set(
-        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
+        TimetableEntry(UUID.randomUUID(), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
       ), LocalDate.now, Set.empty[DateTime])
       val gen = Gen[ScheduleG, Conflict, Int](
         ScheduleG(labwork.id, emptyVector, Schedule.randomUUID),

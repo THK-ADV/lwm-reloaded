@@ -16,11 +16,10 @@ class DegreeInvalidation extends SesameDbSpec {
 
 
   "A Degree invalidation" should {
-    def tte(degree: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, degree, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
-    def tt(degree: UUID): Stream[Timetable] = Stream.continually {
-      if (nextBoolean()) Timetable(Labwork.randomUUID, (tte(degree) take 20).toSet, LocalDate.now, Set())
-      else Timetable(Labwork.randomUUID, (tte(Degree.randomUUID) take 20).toSet, LocalDate.now, Set())
+    def tt: Stream[Timetable] = Stream.continually {
+      Timetable(Labwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set())
     }
 
     def labs(degree: UUID): Stream[Labwork] = Stream.continually {
@@ -86,7 +85,7 @@ class DegreeInvalidation extends SesameDbSpec {
       val schedules = labworks flatMap (l => (scheds(l.id) take 20).toSet)
       val reportCardEntries = labworks flatMap (l => (rce(l.id) take 20).toSet)
       val reportCardEvaluations = labworks flatMap (l => (rceval(l.id) take 20).toSet)
-      val timetables = labworks flatMap (l => (tt(l.id) take 10).toSet)
+      val timetables = labworks flatMap (_ => (tt take 10).toSet)
       val applications = labworks flatMap (l => (labapp(l.id) take 20).toSet)
       val refApps = applications filterNot (a => refLabs exists (_.id == a.labwork))
       val annotations = labworks flatMap (l => (annot(l.id) take 20).toSet)

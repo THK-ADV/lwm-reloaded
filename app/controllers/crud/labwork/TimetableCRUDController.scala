@@ -41,7 +41,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def coAtomic(atom: TimetableAtom): Timetable = Timetable(
     atom.labwork.id,
-    atom.entries map (entry => TimetableEntry(entry.supervisor.id, entry.room.id, entry.degree.id, entry.dayIndex, entry.start, entry.end)),
+    atom.entries map (entry => TimetableEntry(entry.supervisor.id, entry.room.id, entry.dayIndex, entry.start, entry.end)),
     atom.start, atom.localBlacklist, atom.invalidated, atom.id
   )
 

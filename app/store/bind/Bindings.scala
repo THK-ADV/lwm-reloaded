@@ -528,14 +528,13 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
-    private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
 
     override val binder: PGBinder[Rdf, TimetableEntry] =
       pgbWithId[TimetableEntry](
-        _ => innerUri)(supervisor, room, degree, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUris
+        _ => innerUri)(supervisor, room, dayIndex, start, end)(TimetableEntry.apply, TimetableEntry.unapply) withClasses classUris
   }
   implicit lazy val TimetableEntryAtomDescriptor: Descriptor[Rdf, TimetableEntryAtom] = new Descriptor[Rdf, TimetableEntryAtom] {
     override val clazz: Rdf#URI = lwm.TimetableEntry
@@ -546,18 +545,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       Ref(clazz)
         .pointsAt(EmployeeDescriptor.references)
         .pointsAt(RoomDescriptor.references)
-        .pointsAt(DegreeDescriptor.references)
 
     private val supervisor = property[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
-    private val degree = property[Degree](lwm.degree)(DegreeDescriptor.binder)
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
 
     override val binder: PGBinder[Rdf, TimetableEntryAtom] =
       pgbWithId[TimetableEntryAtom](
-        _ => innerUri)(supervisor, room, degree, dayIndex, start, end)(TimetableEntryAtom.apply, TimetableEntryAtom.unapply) withClasses classUris
+        _ => innerUri)(supervisor, room, dayIndex, start, end)(TimetableEntryAtom.apply, TimetableEntryAtom.unapply) withClasses classUris
   }
   implicit lazy val ScheduleDescriptor: Descriptor[Rdf, Schedule] = new Descriptor[Rdf, Schedule] {
     override val clazz: Rdf#URI = lwm.Schedule

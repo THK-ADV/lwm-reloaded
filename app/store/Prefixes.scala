@@ -17,7 +17,7 @@ object Prefixes {
     //Labwork, Course, Degree, Group, Room, Semester, AssignmentEntry, ReportCardEntry, Role, ReportCardEvaluation
     val label = apply("label")
 
-    // Labwork, LabworkApplication, Room, Degree, TimetableEntry, RefRole, Annotation, ReportCardEvaluation
+    // Labwork, LabworkApplication, Room, Degree, RefRole, Annotation, ReportCardEvaluation
     val description = apply("description")
     val assignmentPlan = apply("assignmentPlan")
     val semester = apply("semester")

@@ -29,14 +29,10 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
-  val degreeToPass = Degree("label to pass", "abbrev to pass")
-  val degreeToFail = Degree("label to fail", "abbrev to fail")
-
   val entriesToPass = (0 until 10).map(n =>
     TimetableEntry(
       supervisorToPass.id,
       roomToPass.id,
-      degreeToPass.id,
       Weekday.toDay(n).index,
       LocalTime.now.plusHours(n),
       LocalTime.now.plusHours(n)
@@ -46,7 +42,6 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     TimetableEntry(
       supervisorToFail.id,
       roomToFail.id,
-      degreeToFail.id,
       Weekday.toDay(n).index,
       LocalTime.now.plusHours(n),
       LocalTime.now.plusHours(n)
@@ -98,13 +93,13 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     "localBlacklist" -> entityToPass.localBlacklist
   )
 
-  private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: Room, supervisor: Employee, degree: Degree): Set[TimetableEntryAtom] = {
-    entries.map(e => TimetableEntryAtom(supervisor, room, degree, e.dayIndex, e.start, e.end))
+  private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: Room, supervisor: Employee): Set[TimetableEntryAtom] = {
+    entries.map(e => TimetableEntryAtom(supervisor, room, e.dayIndex, e.start, e.end))
   }
 
   override val atomizedEntityToPass = TimetableAtom(
     labworkToPass,
-    toTimetableEntryAtom(entriesToPass)(roomToPass, supervisorToPass, degreeToPass),
+    toTimetableEntryAtom(entriesToPass)(roomToPass, supervisorToPass),
     entityToPass.start,
     entityToPass.localBlacklist,
     entityToPass.invalidated,
@@ -113,7 +108,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   override val atomizedEntityToFail = TimetableAtom(
     labworkToFail,
-    toTimetableEntryAtom(entriesToFail)(roomToFail, supervisorToFail, degreeToFail),
+    toTimetableEntryAtom(entriesToFail)(roomToFail, supervisorToFail),
     entityToFail.start,
     entityToFail.localBlacklist,
     entityToPass.invalidated,

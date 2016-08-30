@@ -3,7 +3,7 @@ package invalidation.labwork
 import base.SesameDbSpec
 import models.labwork.{Labwork, Timetable, TimetableEntry}
 import models.users.User
-import models.{Degree, Room}
+import models.Room
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.Random._
@@ -13,7 +13,7 @@ class TimetableInvalidation extends SesameDbSpec {
 
   "A Timetable invalidation" should {
 
-    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt: Stream[Timetable] = Stream.continually(Timetable(Labwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set()))
 
