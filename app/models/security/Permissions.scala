@@ -52,11 +52,12 @@ object Permissions {
   }
 
   object authority {
-    val update = Permission("Authority:update")
+    val create = Permission("Authority:create")
+    val delete = Permission("Authority:delete")
     val getAll = Permission("Authority:getAll")
     val get = Permission("Authority:get")
 
-    lazy val all = Set(update, getAll, get)
+    lazy val all = Set(create, delete, getAll, get)
   }
 
   object role {

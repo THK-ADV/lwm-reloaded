@@ -16,13 +16,12 @@ import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.sparql.Clause
-import store.sparql.select._
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{LwmMimeType, Return}
 import utils.Ops.MonadInstances.listM
 
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object AuthorityController {
   val userAttribute = "user"
@@ -54,9 +53,10 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case Some(authority) => Authority(input.user, input.role, input.course, authority.invalidated, authority.id)
     case None => Authority(input.user, input.role, input.course)
   }
-  // TODO update => create and delete
+
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Update => PartialSecureBlock(authority.update)
+    case Create => PartialSecureBlock(authority.create)
+    case Delete => PartialSecureBlock(authority.delete)
     case GetAll => PartialSecureBlock(authority.getAll)
     case Get => PartialSecureBlock(authority.get)
     case _ => PartialSecureBlock(god)
@@ -95,7 +95,33 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     }
   }
 
-  override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = Action { request =>
+  def delete(id: String) = contextFrom(Delete) action { request =>
+    import controllers.security.AuthorityController.userAttribute
+    import models.security.Roles.{Employee, Student}
+    import utils.Ops._
+    import utils.Ops.TraverseInstances.travO
+    import utils.Ops.MonadInstances.tryM
+
+    val uri = asUri(namespace, request)
+
+    val basicRole = for {
+      auth <- repository.get[Authority](uri)
+      others <- auth.map(a => getWithFilter(Map(userAttribute -> Seq(a.user.toString)))(Set.empty).map(_.filterNot(_.id == a.id))).sequenceM
+      atoms <- others.map(auths => repository.getMany[AuthorityAtom](auths map Authority.generateUri)).sequenceM
+    } yield atoms.map(_.exists(a => a.role.label == Employee || a.role.label == Student))
+
+    optional(basicRole).flatMap { hasBasic =>
+      if (hasBasic)
+        remove[Authority](uri)
+      else
+        Return(PreconditionFailed(Json.obj(
+          "status" -> "KO",
+          "message" -> s"The user associated with $id have to remain with at least one basic role, namely $Student or $Employee"
+        )))
+    }.mapResult(_ => Ok(Json.obj("status" -> "OK")))
+  }
+
+  override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
     filtered(request)(Set.empty)
       .flatMap { set =>
         if (set.nonEmpty)

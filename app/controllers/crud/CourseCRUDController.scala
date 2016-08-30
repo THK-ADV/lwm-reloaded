@@ -106,7 +106,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     validate(request)
       .flatMap(existence)
       .flatMap(withRoles)
-      .mapResult{ course => println(course); Created(Json.toJson(course)).as(mimeType) }
+      .mapResult(course => Created(Json.toJson(course)).as(mimeType))
   }
 
   def createAtomicWithRoles = contextFrom(Create) contentTypedAction { request =>

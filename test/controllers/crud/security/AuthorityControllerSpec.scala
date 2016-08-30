@@ -16,6 +16,11 @@ import play.api.test.Helpers._
 import store.SesameRepository
 import utils.LwmMimeType
 import base.StreamHandler._
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.openrdf.model.Value
+
+import scala.util.Success
 
 class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority, AuthorityAtom] {
 
@@ -40,7 +45,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.invalidated, courseToPass.id)
   val courseAtomToFail = CourseAtom(courseToFail.label, courseToFail.description, courseToFail.abbreviation, employeeToFail, courseToFail.semesterIndex, courseToPass.invalidated, courseToFail.id)
 
-  val role1 = Role("role1", Set(user.get, user.getAll))
+  val role1 = Role(Roles.Admin, Set(user.get, user.getAll))
   val role2 = Role("role2", Set(course.get, course.create, course.getAll))
   val role3 = Role("role3", Set(degree.get, degree.getAll))
   val role4 = Role("role4", Set(authority.get, authority.getAll))
@@ -93,6 +98,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     "user" -> entityToPass.user,
     "role" -> role3.id
   )
+
+  def role(label: String) = Role(label, Set.empty)
 
   "A AuthorityControllerSpec " should {
 
@@ -164,6 +171,87 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       contentFromStream(result1) shouldBe expected1
       contentFromStream(result2) shouldBe expected2
       contentFromStream(result3) shouldBe expected3
+    }
+
+    "successfully delete an authority when there is at least one basic role left" in {
+      val atoms = Set(
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.Student), None, None, UUID.randomUUID),
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseAssistant), Some(courseAtomToPass), None, UUID.randomUUID),
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseManager), Some(courseAtomToFail), None, UUID.randomUUID)
+      )
+      val auths = atoms.map(atom => Authority(atom.user.id, atom.role.id, atom.course.map(_.id), atom.invalidated, atom.id))
+
+      when(repository.get[Authority](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      doReturn(Success(auths + entityToPass)).doReturn(Success(atoms)).when(repository).getMany(anyObject())(anyObject())
+      when(repository.delete[Authority](anyObject())(anyObject())).thenReturn(Success(()))
+
+      val request = FakeRequest(
+        DELETE,
+        s"/${entityTypeName}s/${entityToPass.id}"
+      )
+
+      val result = controller.delete(entityToPass.id.toString)(request)
+
+      status(result) shouldBe OK
+      contentAsJson(result) shouldBe Json.obj("status" -> "OK")
+    }
+
+    "not delete an authority when he has only one basic role left" in {
+      val auth = Authority(entityToPass.user, role(Roles.Student).id, None, None, entityToPass.id)
+      val atoms = Set(
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.Admin), None, None, UUID.randomUUID),
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseAssistant), Some(courseAtomToPass), None, UUID.randomUUID),
+        AuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseManager), Some(courseAtomToFail), None, UUID.randomUUID)
+      )
+      val auths = atoms.map(atom => Authority(atom.user.id, atom.role.id, atom.course.map(_.id), atom.invalidated, atom.id))
+
+      when(repository.get[Authority](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      doReturn(Success(auths + auth)).doReturn(Success(atoms)).when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        DELETE,
+        s"/${entityTypeName}s/${auth.id}"
+      )
+
+      val result = controller.delete(auth.id.toString)(request)
+
+      status(result) shouldBe PRECONDITION_FAILED
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"The user associated with ${auth.id.toString} have to remain with at least one basic role, namely ${Roles.Student} or ${Roles.Employee}"
+      )
+    }
+
+    "not delete an authority when it is the only one" in {
+      val auth = Authority(entityToPass.user, role(Roles.Student).id, None, None, entityToPass.id)
+
+      when(repository.get[Authority](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      doReturn(Success(Set(auth))).doReturn(Success(Set.empty)).when(repository).getMany(anyObject())(anyObject())
+
+      val request = FakeRequest(
+        DELETE,
+        s"/${entityTypeName}s/${auth.id}"
+      )
+
+      val result = controller.delete(auth.id.toString)(request)
+
+      status(result) shouldBe PRECONDITION_FAILED
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"The user associated with ${auth.id.toString} have to remain with at least one basic role, namely ${Roles.Student} or ${Roles.Employee}"
+      )
     }
   }
 }

@@ -94,8 +94,6 @@ HEAD          /roles                                                            
 # Authority
 POST          /authorities                                                        controllers.security.AuthorityController.create()
 POST          /atomic/authorities                                                 controllers.security.AuthorityController.createAtomic()
-PUT           /authorities/:id                                                    controllers.security.AuthorityController.update(id)
-PUT           /atomic/authorities/:id                                             controllers.security.AuthorityController.updateAtomic(id)
 GET           /authorities                                                        controllers.security.AuthorityController.all()
 GET           /atomic/authorities                                                 controllers.security.AuthorityController.allAtomic()
 GET           /authorities/:id                                                    controllers.security.AuthorityController.get(id)
