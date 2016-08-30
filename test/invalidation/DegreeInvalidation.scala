@@ -16,7 +16,7 @@ class DegreeInvalidation extends SesameDbSpec {
 
 
   "A Degree invalidation" should {
-    def tte(degree: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, degree, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte(degree: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, degree, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(degree: UUID): Stream[Timetable] = Stream.continually {
       if (nextBoolean()) Timetable(Labwork.randomUUID, (tte(degree) take 20).toSet, LocalDate.now, Set())

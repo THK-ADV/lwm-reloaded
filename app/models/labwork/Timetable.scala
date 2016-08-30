@@ -25,7 +25,7 @@ case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDa
   }
 }
 
-case class TimetableEntry(supervisor: UUID, room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
+case class TimetableEntry(supervisor: Set[UUID], room: UUID, degree: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
 
   override def equals(that: scala.Any): Boolean = that match {
     case TimetableEntry(sup2, room2, degree2, dayIndex2, start2, end2) =>
@@ -46,13 +46,13 @@ case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start:
 
 case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class TimetableEntryAtom(supervisor: Employee, room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class TimetableEntryAtom(supervisor: Set[Employee], room: Room, degree: Degree, dayIndex: Int, start: LocalTime, end: LocalTime)
 
 /**
   * Helper
   */
 
-case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: UUID)
+case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: Set[UUID])
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable, TimetableAtom] {
 

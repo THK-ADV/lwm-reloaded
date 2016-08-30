@@ -636,7 +636,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val classUris: ClassUrisFor[Rdf, TimetableEntry] = classUrisFor[TimetableEntry](clazz)
 
-    private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
+    private val supervisor = set[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
     private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
     private val dayIndex = property[Int](lwm.dayIndex)
@@ -659,7 +659,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(RoomDescriptor.references)
         .pointsAt(DegreeDescriptor.references)
 
-    private val supervisor = property[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
     private val degree = property[Degree](lwm.degree)(DegreeDescriptor.binder)
     private val dayIndex = property[Int](lwm.dayIndex)
@@ -716,7 +716,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val end = property[LocalTime](lwm.end)
     private val date = property[LocalDate](lwm.date)
     private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
-    private val supervisor = property[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
+    private val supervisor = set[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
     override val binder: PGBinder[Rdf, ScheduleEntry] =
@@ -739,7 +739,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
-    private val supervisor = property[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
     private val group = property[Group](lwm.group)(GroupDescriptor.binder)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)

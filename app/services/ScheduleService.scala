@@ -19,7 +19,7 @@ import utils.Evaluation._
 
 case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
 case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: UUID, group: Group)
+case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: Group)
 
 trait ScheduleServiceLike {
   def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG]
