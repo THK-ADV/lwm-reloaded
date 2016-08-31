@@ -31,7 +31,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   val entriesToPass = (0 until 10).map(n =>
     TimetableEntry(
-      supervisorToPass.id,
+      Set(supervisorToPass.id),
       roomToPass.id,
       Weekday.toDay(n).index,
       LocalTime.now.plusHours(n),
@@ -40,7 +40,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   ).toSet
   val entriesToFail = (0 until 10).map(n =>
     TimetableEntry(
-      supervisorToFail.id,
+      Set(supervisorToFail.id),
       roomToFail.id,
       Weekday.toDay(n).index,
       LocalTime.now.plusHours(n),
@@ -94,7 +94,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   )
 
   private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: Room, supervisor: Employee): Set[TimetableEntryAtom] = {
-    entries.map(e => TimetableEntryAtom(supervisor, room, e.dayIndex, e.start, e.end))
+    entries.map(e => TimetableEntryAtom(Set(supervisor), room, e.dayIndex, e.start, e.end))
   }
 
   override val atomizedEntityToPass = TimetableAtom(
@@ -114,7 +114,6 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     entityToPass.invalidated,
     entityToFail.id
   )
-
 
   "A TimetableCRUDControllerSpec also " should {
 

@@ -14,9 +14,8 @@ import scala.util.{Failure, Success}
 
 class DegreeInvalidation extends SesameDbSpec {
 
-
   "A Degree invalidation" should {
-    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt: Stream[Timetable] = Stream.continually {
       Timetable(Labwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set())

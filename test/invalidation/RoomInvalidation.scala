@@ -21,11 +21,11 @@ class RoomInvalidation extends SesameDbSpec {
     }
 
     def sce(room: UUID): Stream[ScheduleEntry] = Stream.continually {
-      if (nextBoolean()) ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, User.randomUUID, Group.randomUUID)
-      else ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, User.randomUUID, Group.randomUUID)
+      if (nextBoolean()) ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, Set(User.randomUUID), Group.randomUUID)
+      else ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, Set(User.randomUUID), Group.randomUUID)
     }
 
-    def tte(room: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, room, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte(room: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), room, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(room: UUID): Stream[Timetable] = Stream.continually {
       if (nextBoolean()) Timetable(Labwork.randomUUID, (tte(room) take 20).toSet, LocalDate.now, Set())

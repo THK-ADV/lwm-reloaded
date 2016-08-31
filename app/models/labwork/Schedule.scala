@@ -15,7 +15,7 @@ case class ScheduleEntry(labwork: UUID,
                          end: LocalTime,
                          date: LocalDate,
                          room: UUID,
-                         supervisor: UUID,
+                         supervisor: Set[UUID],
                          group: UUID,
                          invalidated: Option[DateTime] = None,
                          id: UUID = ScheduleEntry.randomUUID) extends UniqueEntity {
@@ -40,7 +40,7 @@ case class ScheduleEntry(labwork: UUID,
 
 case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Employee, group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[Employee], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
 

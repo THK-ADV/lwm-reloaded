@@ -67,7 +67,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
 
   override implicit val uriGenerator: UriGenerator[ScheduleEntry] = ScheduleEntry
 
-  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor.id, atom.group.id, atom.invalidated, atom.id)
+  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor map (_.id), atom.group.id, atom.invalidated, atom.id)
 
   override protected def compareModel(input: ScheduleEntry, output: ScheduleEntry): Boolean = input == output
 

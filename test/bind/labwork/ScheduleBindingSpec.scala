@@ -23,7 +23,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
   implicit val scheduleEntryBinder = ScheduleEntryDescriptor.binder
 
   val labwork = UUID.randomUUID()
-  val scheduleEntry = ScheduleEntry(labwork, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val scheduleEntry = ScheduleEntry(labwork, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), Set.empty[UUID], UUID.randomUUID())
   val schedule = Schedule(labwork, Set(scheduleEntry))
 
   val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
@@ -97,13 +97,13 @@ class ScheduleBindingSpec extends SesameDbSpec {
       val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
       val group1 = Group("group1", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
       val group2 = Group("group2", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
-      val scheduleEntry1 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room1.id, supervisor1.id, group1.id)
-      val scheduleEntry2 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room2.id, supervisor2.id, group2.id)
+      val scheduleEntry1 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room1.id, Set(supervisor1.id), group1.id)
+      val scheduleEntry2 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room2.id, Set(supervisor2.id), group2.id)
       val schedule = Schedule(labwork.id, Set(scheduleEntry1, scheduleEntry2))
 
       val scheduleAtom = ScheduleAtom(labwork, Set(
-        ScheduleEntryAtom(labwork, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, supervisor1, group1, scheduleEntry1.invalidated, scheduleEntry1.id),
-        ScheduleEntryAtom(labwork, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, supervisor2, group2, scheduleEntry2.invalidated, scheduleEntry2.id)
+        ScheduleEntryAtom(labwork, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, Set(supervisor1), group1, scheduleEntry1.invalidated, scheduleEntry1.id),
+        ScheduleEntryAtom(labwork, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, Set(supervisor2), group2, scheduleEntry2.invalidated, scheduleEntry2.id)
       ), schedule.invalidated, schedule.id)
 
 
