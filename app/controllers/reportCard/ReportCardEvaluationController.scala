@@ -90,6 +90,8 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
+  // TODO explict create
+
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
     evaluate(labwork)
       .flatMap(deleteBy(labwork, _))

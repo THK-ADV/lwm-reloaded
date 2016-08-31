@@ -89,25 +89,25 @@ trait Consistent[I, O] {
   protected def compareModel(input: I, output: O): Boolean
 }
 
-trait RequestRebase {
+trait RequestRebase[O <: UniqueEntity] {
 
-  final def rebase[A, B <: UniqueEntity](implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+  final def rebase[A](implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
     rebase0(None)
   }
 
-  final def rebase[A, B <: UniqueEntity](id: String)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+  final def rebase[A](id: String)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
     rebase0(Some(UUID.fromString(id)))
   }
 
-  final def rebase[A, B <: UniqueEntity](query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
-    rebase0(None, query:_*)
+  final def rebase[A](query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(None, query)
   }
 
-  final def rebase[A, B <: UniqueEntity](id: String, query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
-    rebase0(Some(UUID.fromString(id)), query:_*)
+  final def rebase[A](id: String, query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(Some(UUID.fromString(id)), query)
   }
 
-  private def rebase0[A, B <: UniqueEntity](id: Option[UUID], query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[B]): Request[A] = {
+  private def rebase0[A](id: Option[UUID], query: Seq[(String, Seq[String])] = Seq())(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
     val uri = id.fold(uriGenerator.generateBase)(uuid => uriGenerator.generateBase(uuid))
     val queryString = query.foldLeft(request.queryString)(_ + _)
     val headers = request.copy(request.id, request.tags, uri, request.path, request.method, request.version, queryString)
@@ -215,7 +215,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   with SessionChecking
   with SecureControllerContext
   with Consistent[I, O]
-  with RequestRebase
+  with RequestRebase[O]
   with Chunked
   with Stored
   with Basic[I, O, A] {

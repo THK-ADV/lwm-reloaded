@@ -51,7 +51,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     with ModelConverter[ScheduleEntry, ScheduleEntry]
     with Consistent[ScheduleEntry, ScheduleEntry]
     with Basic[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
-    with RequestRebase {
+    with RequestRebase[ScheduleEntry] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
 

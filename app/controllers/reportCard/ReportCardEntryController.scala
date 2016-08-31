@@ -50,7 +50,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     with Consistent[ReportCardEntry, ReportCardEntry]
     with Filterable[ReportCardEntry]
     with Basic[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom]
-    with RequestRebase {
+    with RequestRebase[ReportCardEntry] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 

@@ -96,28 +96,16 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   def delete(id: String) = contextFrom(Delete) action { request =>
-    import controllers.security.AuthorityController.userAttribute
     import models.security.Roles.{Employee, Student}
-    import utils.Ops._
-    import utils.Ops.TraverseInstances.travO
-    import utils.Ops.MonadInstances.tryM
 
     val uri = asUri(namespace, request)
 
-    val basicRole = for {
-      auth <- repository.get[Authority](uri)
-      others <- auth.map(a => getWithFilter(Map(userAttribute -> Seq(a.user.toString)))(Set.empty).map(_.filterNot(_.id == a.id))).sequenceM
-      atoms <- others.map(auths => repository.getMany[AuthorityAtom](auths map Authority.generateUri)).sequenceM
-    } yield atoms.map(_.exists(a => a.role.label == Employee || a.role.label == Student))
-
-    optional(basicRole).flatMap { hasBasic =>
-      if (hasBasic)
-        remove[Authority](uri)
-      else
-        Return(PreconditionFailed(Json.obj(
-          "status" -> "KO",
-          "message" -> s"The user associated with $id have to remain with at least one basic role, namely $Student or $Employee"
-        )))
+    optional(repository.get[AuthorityAtom](uri)).
+      when(auth => !(auth.role.label == Employee || auth.role.label == Student), _ => invalidate[Authority](uri)) {
+      PreconditionFailed(Json.obj(
+        "status" -> "KO",
+        "message" -> s"The user associated with $id have to remain with at least one basic role, namely $Student or $Employee"
+      ))
     }.mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 
