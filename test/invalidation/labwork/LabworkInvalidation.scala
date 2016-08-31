@@ -16,7 +16,7 @@ class LabworkInvalidation extends SesameDbSpec {
 
   "A labwork invalidation" should {
 
-    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(User.randomUUID, Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(labwork: UUID): Stream[Timetable] = Stream.continually {
       if (nextBoolean()) Timetable(labwork, (tte take 20).toSet, LocalDate.now, Set())

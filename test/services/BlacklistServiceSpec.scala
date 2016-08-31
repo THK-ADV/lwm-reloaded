@@ -5,6 +5,7 @@ import java.util.UUID
 import base.TestBaseDefinition
 import models.labwork.{TimetableDateEntry, Weekday}
 import models.semester.Blacklist
+import models.users.User
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 import org.mockito.Matchers._
@@ -37,7 +38,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, UUID.randomUUID)
+        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, Set(User.randomUUID))
       }.toVector
 
       val local = Set.empty[DateTime]
@@ -63,7 +64,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         val start = LocalTime.now.withHourOfDay(nextInt(19))
         val end = start.plusHours(nextInt(3))
 
-        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, UUID.randomUUID)
+        TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, Set(User.randomUUID))
       }.toVector
 
       val global1 = Blacklist("global 1", entries.slice(0, 10).map(toDateTime).toSet)

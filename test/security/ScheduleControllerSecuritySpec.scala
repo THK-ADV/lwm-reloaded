@@ -31,7 +31,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), scheduleEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val entry = ScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val entry = ScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, Set(UUID.randomUUID), UUID.randomUUID)
       val request = FakeRequest(
         PUT,
         s"$FakeCourseUri/scheduleEntries/${entry.id}",

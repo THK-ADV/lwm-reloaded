@@ -43,7 +43,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   override protected def coAtomic(atom: TimetableAtom): Timetable =
     Timetable(
       atom.labwork.id,
-      atom.entries map (te => TimetableEntry(te.supervisor.id, te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
+      atom.entries map (te => TimetableEntry(te.supervisor map (_.id), te.room.id, te.degree.id, te.dayIndex, te.start, te.end)),
       atom.start, atom.localBlacklist, atom.invalidated, atom.id)
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {

@@ -62,13 +62,13 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   }
 
   def entries(labwork: UUID): Int => Vector[ScheduleEntry] = amount => ((0 until amount) map { _ =>
-    ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+    ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, UUID.randomUUID(), Set(UUID.randomUUID()), UUID.randomUUID())
   }).toVector
 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
     val labwork = Labwork("label", "desc", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)
-    val supervisor = Employee("systemid", "lastname", "firstname", "email", "supervisor", None, e.supervisor)
+    val supervisor = e.supervisor map (Employee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
     val group = Group("label", labwork.id, Set(), None, e.group)
     ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, None, e.id)
   }
@@ -265,12 +265,12 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val date3 = LocalDate.now plusDays 2
       val date4 = LocalDate.now plusDays 4
 
-      val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, supervisor1.id, group1.id)
-      val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, supervisor1.id, group1.id)
-      val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, supervisor2.id, group2.id)
-      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, supervisor2.id, group2.id)
-      val sentry5 = ScheduleEntry(labwork1.id, start3, end2, date2, room1.id, supervisor1.id, group2.id)
-      val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, supervisor3.id, group3.id)
+      val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, Set(supervisor1.id), group1.id)
+      val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, Set(supervisor1.id), group1.id)
+      val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, Set(supervisor2.id), group2.id)
+      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, Set(supervisor2.id), group2.id)
+      val sentry5 = ScheduleEntry(labwork1.id, start3, end2, date2, room1.id, Set(supervisor1.id), group2.id)
+      val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, Set(supervisor3.id), group3.id)
 
 
       realRepository addMany List(labwork1, labwork2, labwork3)

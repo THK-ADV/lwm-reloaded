@@ -5,6 +5,7 @@ import java.util.UUID
 import base.TestBaseDefinition
 import models.labwork._
 import ReportCardEntryType._
+import models.users.User
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
@@ -47,7 +48,7 @@ object ReportCardServiceSpec {
     val initial = (0 until amount).map { n =>
       val start = LocalTime.now.plusHours(n)
 
-      ScheduleEntryG(start, start.plusHours(n), LocalDate.now.plusWeeks(n), UUID.randomUUID(), UUID.randomUUID(), group(20))
+      ScheduleEntryG(start, start.plusHours(n), LocalDate.now.plusWeeks(n), UUID.randomUUID(), Set(User.randomUUID), group(20))
     }.toVector
 
     val see = (0 until aps).foldLeft(Vector.empty[ScheduleEntryG]) { (vec, i) =>

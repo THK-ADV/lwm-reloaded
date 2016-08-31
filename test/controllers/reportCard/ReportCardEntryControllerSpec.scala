@@ -5,7 +5,7 @@ import java.util.UUID
 import base.{StreamHandler, TestBaseDefinition}
 import models.{Course, Room}
 import models.labwork._
-import models.users.Student
+import models.users.{Student, User}
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -25,6 +25,7 @@ import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import StreamHandler._
+
 import scala.util.{Failure, Success}
 
 class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -346,8 +347,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val student3 = UUID.randomUUID()
 
-      val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, UUID.randomUUID(), UUID.randomUUID())
-      val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, UUID.randomUUID(), UUID.randomUUID())
+      val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, Set(User.randomUUID), UUID.randomUUID())
+      val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, Set(User.randomUUID), UUID.randomUUID())
       val entry1 = ReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
       val entry2 = ReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
       val entry3 = ReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
