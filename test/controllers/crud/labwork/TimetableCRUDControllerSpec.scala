@@ -119,8 +119,8 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
     "return all timetables for a given course" in {
       val course = UUID.randomUUID
-      val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab1 = Labwork("lab1", "lab1", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = Labwork("lab2", "lab2", UUID.randomUUID, course, UUID.randomUUID)
 
       val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
@@ -142,6 +142,37 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       )
       val result = controller.all()(request)
       val expected = Set(Json.toJson(tt1), Json.toJson(tt2), Json.toJson(tt5), Json.toJson(tt7), Json.toJson(tt8))
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some(mimeType.value)
+      contentFromStream(result) shouldBe expected
+    }
+
+    "return all timetables for a given labwork" in {
+      val lab1 = Labwork("lab1", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab2 = Labwork("lab2", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab3 = Labwork("lab3", "lab3", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab4 = Labwork("lab4", "lab4", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+
+      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt5 = Timetable(lab3.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt7 = Timetable(lab4.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt8 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+
+      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
+        tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
+      )))
+
+      val request = FakeRequest(
+        GET,
+        s"/$entityTypeName?${TimetableCRUDController.labworkAttribute}=${lab3.id}"
+      )
+      val result = controller.all()(request)
+      val expected = Set(Json.toJson(tt5))
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)

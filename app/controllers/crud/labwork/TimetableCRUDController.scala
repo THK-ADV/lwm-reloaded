@@ -22,9 +22,10 @@ import scala.util.{Failure, Try}
 
 object TimetableCRUDController {
   val courseAttribute = "course"
+  val labworkAttribute = "labwork"
 }
 
-class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
+class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
@@ -115,10 +116,12 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     queryString.foldRight(Try[Set[Timetable]](all)) {
-      case ((`courseAttribute`, values), t) =>
+      case ((`labworkAttribute`, labworks), timetables) =>
+        timetables flatMap (set => Try(UUID.fromString(labworks.head)) map (id => set.filter(_.labwork == id)))
+      case ((`courseAttribute`, courses), timetables) =>
         val query = select("labworks") where {
           **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
-            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
         }
 
         repository.prepareQuery(query).
@@ -126,7 +129,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
           requestAll(repository.getMany[Labwork]).
-          requestAll[Set, Timetable](labworks => t.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
+          requestAll[Set, Timetable](labworks => timetables.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
           run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
