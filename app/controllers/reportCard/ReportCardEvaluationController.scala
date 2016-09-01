@@ -90,55 +90,75 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
-  // TODO explict create
-
-  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    evaluate(labwork)
-      .flatMap(deleteBy(labwork, _))
-      .flatMap(addLots)
-      .map(evals => chunk(evals.toSet))
-      .mapResult(enum => Created.stream(enum).as(mimeType))
+  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    filtered(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
+      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
+      flatMap(_ => evaluate(labwork)).
+      flatMap(addLots).
+      map(evals => chunk(evals.toSet)).
+      mapResult(enum => Created.stream(enum).as(mimeType))
   }
 
-  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    evaluate(labwork)
-      .flatMap(deleteBy(labwork, _))
-      .flatMap(addLots)
-      .map(_.toSet)
-      .flatMap(atomic)
-      .map(atoms => chunk(atoms))
-      .mapResult(enum => Created.stream(enum).as(mimeType))
+  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    filtered(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
+      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
+      flatMap(_ => evaluate(labwork)).
+      flatMap(addLots).
+      map(_.toSet).
+      flatMap(atomic).
+      map(atoms => chunk(atoms)).
+      mapResult(enum => Created.stream(enum).as(mimeType))
+  }
+
+  def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    filtered(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
+      when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
+        PreconditionFailed(Json.obj(
+          "status" -> "KO",
+          "message" -> s"More than ${ReportCardEntryType.all.size} reportcard evaluations found for $student"
+        ))
+      }.map(_ => reportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).
+      flatMap(addLots).
+      map(evals => chunk(evals.toSet)).
+      mapResult(enum => Created.stream(enum).as(mimeType))
+  }
+
+  def createAtomicForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
+    filtered(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
+      when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
+        PreconditionFailed(Json.obj(
+          "status" -> "KO",
+          "message" -> s"More than ${ReportCardEntryType.all.size} reportcard evaluations found for $student"
+        ))
+      }.map(_ => reportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).
+      flatMap(addLots).
+      map(_.toSet).
+      flatMap(atomic).
+      map(atoms => chunk(atoms)).
+      mapResult(enum => Created.stream(enum).as(mimeType))
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
-
-    filtered(rebased)(Set.empty)
+    filtered(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
-
-    filtered(rebased)(Set.empty)
+    filtered(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def get(student: String) = contextFrom(Get) action { implicit request =>
-    val rebased = rebase(studentAttribute -> Seq(student))
-
-    filtered(rebased)(Set.empty)
+    filtered(rebase(studentAttribute -> Seq(student)))(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
-    val rebased = rebase(studentAttribute -> Seq(student))
-
-    filtered(rebased)(Set.empty)
+    filtered(rebase(studentAttribute -> Seq(student)))(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
@@ -205,28 +225,6 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         cards <- reportCards.run
       } yield plan.map(reportCardService.evaluate(_, cards))
     }
-  }
-
-  private def deleteBy(labwork: String, evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluation]] = {
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    lazy val lwm = LWMPrefix[repository.Rdf]
-    lazy val rdf = RDFPrefix[repository.Rdf]
-
-    val query = select ("evals") where {
-      **(v("evals"), p(rdf.`type`), s(lwm.ReportCardEvaluation)).
-        **(v("evals"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labwork))))
-    }
-
-    queried {
-      repository.prepareQuery(query)
-      .select(_.get("evals"))
-      .transform(_.fold(List.empty[Value])(identity))
-      .map(_.stringValue())
-      .requestAll(repository.deleteMany[ReportCardEvaluation])
-    } map (_ => evals)
   }
 
   private def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {

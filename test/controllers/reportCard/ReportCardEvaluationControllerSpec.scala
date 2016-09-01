@@ -8,18 +8,20 @@ import models.labwork._
 import models.users.Student
 import org.joda.time.DateTime
 import org.mockito.Matchers._
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{doReturn, when}
+import org.mockito.stubbing.OngoingStubbing
 import org.openrdf.model.Value
 import org.scalatest.mock.MockitoSugar._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
+import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.test.FakeRequest
+import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import services.ReportCardService
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
 
@@ -106,8 +108,8 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
   override implicit def jsonWritesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
 
-  def evaluations(student: UUID = UUID.randomUUID, labwork: UUID = UUID.randomUUID) = (0 until 4).map { i =>
-    ReportCardEvaluation(student, labwork, i.toString, bool = true, i)
+  def evaluations(student: UUID = UUID.randomUUID, labwork: UUID = UUID.randomUUID) = (0 until 20).map { i =>
+    ReportCardEvaluation(student, labwork, i.toString, i % 2 == 0, i % 10)
   }.toSet
 
   def toJson(entries: Set[ReportCardEvaluation]) = entries.map(e => Json.toJson(e))
@@ -118,10 +120,8 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       val student = UUID.randomUUID
       val evals = evaluations(student)
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(evals))
+      whenFiltered(evals)
+
 
       val request = FakeRequest(
         GET,
@@ -131,7 +131,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       val result = controller.get(student.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
+      contentType(result) shouldBe Some[String](mimeType)
       contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
@@ -158,15 +158,19 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       )
     }
 
+    def whenFiltered(evals: Set[ReportCardEvaluation]): OngoingStubbing[Try[Set[ReportCardEvaluation]]] = {
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      when(repository.getMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(evals))
+    }
+
     "successfully return all report card evaluations for a given course and labwork" in {
       val course = UUID.randomUUID
       val labwork = UUID.randomUUID
       val evals = evaluations(UUID.randomUUID, labwork)
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(evals))
+      whenFiltered(evals)
 
       val request = FakeRequest(
         GET,
@@ -176,12 +180,180 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       val result = controller.allFrom(course.toString, labwork.toString)(request)
 
       status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
+      contentType(result) shouldBe Some[String](mimeType)
       contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
-    // TODO test preview
+    def whenPreview(evals: Set[ReportCardEvaluation]): OngoingStubbing[Set[ReportCardEvaluation]] = {
+      doReturn(query).when(repository).prepareQuery(anyObject())
+      doReturn(Success(
+        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      )).doReturn(Success(
+        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+      )).when(qe).execute(anyObject())
 
-    // TODO test create
+      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
+
+      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
+    }
+
+    "successfully preview report card evaluations for a given labwork" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val evals = evaluations(UUID.randomUUID, labwork)
+
+      whenPreview(evals)
+
+      val request = FakeRequest(
+        GET,
+        s"/courses/$course/labworks/$labwork/reportCardEvaluations/preview"
+      )
+
+      val result = controller.preview(course.toString, labwork.toString)(request)
+
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
+    }
+
+    def whenDeleteAndCreate(deleted: Set[Unit], added: Set[ReportCardEvaluation]): OngoingStubbing[Try[Set[PointedGraph[Sesame]]]] = {
+      when(repository.deleteMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(deleted))
+      when(repository.addMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(added.map(_.toPG)))
+    }
+
+    "successfully create report card evaluations for a given labwork" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val evals = evaluations(UUID.randomUUID, labwork)
+
+      doReturn(query).when(repository).prepareQuery(anyObject())
+      doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
+        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      )).doReturn(Success(
+        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+      )).when(qe).execute(anyObject())
+
+      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      doReturn(Success(Set.empty)).doReturn(Success(evals)).when(repository).getMany(anyObject())(anyObject())
+
+      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
+
+      whenDeleteAndCreate(Set.empty[Unit], evals)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/labworks/$labwork/reportCardEvaluations",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createFrom(course.toString, labwork.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
+    }
+
+    "successfully delete and create new report card evaluations for a given labwork" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val evals = evaluations(UUID.randomUUID, labwork)
+
+      doReturn(query).when(repository).prepareQuery(anyObject())
+      doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
+        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+      )).doReturn(Success(
+        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+      )).when(qe).execute(anyObject())
+
+      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      doReturn(Success(evals)).doReturn(Success(evals)).when(repository).getMany(anyObject())(anyObject())
+
+      when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
+
+      whenDeleteAndCreate(evals.map(_ => ()), evals)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/labworks/$labwork/reportCardEvaluations",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createFrom(course.toString, labwork.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
+    }
+
+    "successfully create report card evaluations for a given student explicitly" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val student = UUID.randomUUID
+      val evals = evaluations(student, labwork).take(ReportCardEntryType.all.size)
+
+      whenFiltered(Set.empty)
+      whenDeleteAndCreate(Set.empty[Unit], evals)
+      when(reportCardService.evaluateExplicit(anyObject(), anyObject())).thenReturn(evals)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/labworks/$labwork/students/$student/reportCardEvaluations",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createForStudent(course.toString, labwork.toString, student.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
+    }
+
+    "successfully delete and create new report card evaluations for a given student explicitly" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val student = UUID.randomUUID
+      val evals = evaluations(student, labwork).take(ReportCardEntryType.all.size)
+
+      whenFiltered(evals)
+      whenDeleteAndCreate(evals.map(_ => ()), evals)
+      when(reportCardService.evaluateExplicit(anyObject(), anyObject())).thenReturn(evals)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/labworks/$labwork/students/$student/reportCardEvaluations",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createForStudent(course.toString, labwork.toString, student.toString)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
+    }
+
+    "not create report card evaluations for a given student explicitly when preconditon fails for some reason" in {
+      val course = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val student = UUID.randomUUID
+      val evals = evaluations(student, labwork)
+
+      whenFiltered(evals)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/labworks/$labwork/students/$student/reportCardEvaluations",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.obj("" -> "")
+      )
+
+      val result = controller.createForStudent(course.toString, labwork.toString, student.toString)(request)
+
+      status(result) shouldBe PRECONDITION_FAILED
+    }
   }
 }

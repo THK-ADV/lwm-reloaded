@@ -345,6 +345,15 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
       )))
   }
 
+  def attempt[X](item: Try[X]): Attempt[X] = item match {
+    case Success(s) => Continue(s)
+    case Failure(e) => Return(
+      InternalServerError(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      )))
+  }
+
   def retrieveAll[X <: UniqueEntity](implicit descriptor: Descriptor[Rdf, X]): Attempt[Set[X]] = {
     repository.getAll[X] match {
       case Success(a) => Continue(a)
@@ -491,6 +500,18 @@ trait Removed {
   def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Unit] = {
     repository.delete[X](uri) match {
       case Success(_) => Continue(())
+      case Failure(e) =>
+        Return(
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          )))
+    }
+  }
+
+  def removeLots[X <: UniqueEntity](uris: TraversableOnce[String])(implicit desc: Descriptor[Rdf, X]): Attempt[Set[Unit]] = {
+    repository.deleteMany[X](uris) match {
+      case Success(s) => Continue(s)
       case Failure(e) =>
         Return(
           InternalServerError(Json.obj(
