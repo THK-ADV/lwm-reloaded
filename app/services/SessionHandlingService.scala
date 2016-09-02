@@ -7,7 +7,7 @@ import models.{InvalidSession, Session, ValidSession}
 import store.Resolvers
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
 
 trait SessionHandlingService {
 
@@ -31,59 +31,29 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, 
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String, password: String): Future[Session] = {
-    val promise = concurrent.Promise[Session]()
-    (ref ? SessionRequest(user, password)).mapTo[Authentication].onComplete {
-      case Success(response) =>
-        response match {
-          case Authenticated(session) =>
-            promise.success(session)
-          case NotAuthenticated(invalid) =>
-            promise.success(invalid)
-          case AuthenticationError(error) =>
-            promise.failure(error)
-        }
-      case Failure(error) =>
-        promise.failure(error)
-    }
-    promise.future
+    (ref ? SessionRequest(user, password))
+      .mapTo[Authentication]
+      .flatMap {
+        case Authenticated(valid) => Future.successful(valid)
+        case NotAuthenticated(invalid) => Future.successful(invalid)
+        case AuthenticationError(error) => Future.failed(error)
+      }
   }
 
-  override def isValid(id: UUID): Future[Boolean] = (ref ? ValidationRequest(id)).map {
-    case ValidationSuccess =>
-      true
-    case ValidationFailure(reason) =>
-      false
-  }
+  override def isValid(id: UUID): Future[Boolean] = (ref ? ValidationRequest(id)).mapTo[Boolean]
 
-  override def deleteSession(id: UUID): Future[Boolean] = (ref ? SessionRemovalRequest(id)).map {
-    case RemovalSuccessful =>
-      true
-    case RemovalFailure(reason) =>
-      false
-  }
+  override def deleteSession(id: UUID): Future[Boolean] = (ref ? SessionRemovalRequest(id)).mapTo[Boolean]
 }
 
 object SessionServiceActor {
 
   def props(ldap: LdapService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
 
-  private[services] case class SessionRemovalRequest(id: UUID)
-
-  private[services] sealed trait RemovalResponse
-
-  private[services] case class RemovalFailure(reason: String) extends RuntimeException(reason) with RemovalResponse
-
-  private[services] case object RemovalSuccessful extends RemovalResponse
-
   case class SessionRequest(user: String, password: String)
 
+  private[services] case class SessionRemovalRequest(id: UUID)
+
   private[services] case class ValidationRequest(id: UUID)
-
-  private[services] sealed trait ValidationResponse
-
-  private[services] case object ValidationSuccess extends ValidationResponse
-
-  private[services] case class ValidationFailure(reason: String) extends RuntimeException(reason) with ValidationResponse
 
   private[SessionServiceActor] case object Update
 
@@ -106,57 +76,61 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
 
   implicit val dispatcher = context.system.dispatcher
 
-  var sessions: Map[String, ValidSession] = Map.empty
-
   context.system.scheduler.schedule(5.seconds, 10.seconds, self, Update)
 
-  override def receive: Receive = {
+  override def receive: Receive = sessionHandling(Map())
+
+  def sessionHandling(sessions: Map[String, ValidSession]): Receive = {
     case SessionRequest(user, password) =>
       val requester = sender()
 
-      def resolve(auth: Boolean): Future[Session] = if (auth) {
-        userId(user) match {
-          case Success(Some(userId)) => Future.successful {
-            ValidSession(user.toLowerCase, userId)
-          }
-          case Success(_) => ldap.user(user)(degree).map(missingUserData).flatMap {
-            case Success(_) => resolve(auth)
-            case Failure(t) => Future.failed(t)
-          }
-          case Failure(e) => Future.failed(e)
+      ldap.authenticate(user, password)
+        .flatMap(isAuthorized => resolve(user, isAuthorized))
+        .map {
+          case valid@ValidSession(username, _, _, _) => (sessions + (username -> valid), Authenticated(valid))
+          case invalid@InvalidSession(_) => (sessions, NotAuthenticated(invalid))
         }
-      } else Future.successful(InvalidSession("Invalid credentials"))
+        .recover {
+          case NonFatal(error) => (sessions, AuthenticationError(error))
+        }
+        .onSuccess {
+          case ((ns, response)) =>
+            requester ! response
+            context.become(sessionHandling(ns))
+        }
 
-      ldap.authenticate(user, password).flatMap(resolve).onComplete {
-        case Success(session @ ValidSession(username, _, _, _)) =>
-          sessions = sessions + (username -> session)
-          requester ! Authenticated(session)
-        case Success(invalid @ InvalidSession(_)) =>
-          requester ! NotAuthenticated(invalid)
-        case Failure(e) =>
-          requester ! AuthenticationError(e)
-      }
 
     case ValidationRequest(id) =>
-      sessions.find(_._2.id == id) match {
-        case Some((user, session)) =>
-          sender() ! ValidationSuccess
-
-        case None =>
-          sender() ! ValidationFailure("Unknown session id.")
-      }
+      val requester = sender()
+      requester ! sessions.exists(_._2.id == id)
 
     case SessionRemovalRequest(id) =>
-      sessions.find { case (user, session) => session.id == id } match {
-        case Some((user, session)) =>
-          sessions -= user
-          sender() ! RemovalSuccessful
-        case None =>
-          sender() ! RemovalFailure("Unknown session id.")
-      }
+      val requester = sender()
+      val (ns, response) =
+        sessions.find(_._2.id == id)
+          .map(t => (sessions - t._1, true))
+          .getOrElse((sessions, false))
+
+      requester ! response
+      context.become(sessionHandling(ns))
 
     case Update =>
-      sessions = sessions.filter(_._2.expirationDate.isAfterNow)
+      context.become(sessionHandling(sessions.filter(_._2.expirationDate.isAfterNow)))
+  }
+
+  def resolve(systemId: String, isAuthorized: Boolean): Future[Session] = {
+    if (isAuthorized) {
+      for {
+        someUser <- Future.fromTry(userId(systemId))
+        session <- someUser.fold {
+          ldap.user(systemId)(degree)
+            .flatMap(user => Future.fromTry(missingUserData(user)))
+            .flatMap(_ => resolve(systemId, isAuthorized))
+        } { uid =>
+          Future.successful(ValidSession(systemId, uid))
+        }
+      } yield session
+    } else Future.successful(InvalidSession("Invalid credentials"))
   }
 
 }
