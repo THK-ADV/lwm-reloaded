@@ -218,5 +218,15 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
         case supp if supp.label == Supplement.entryType => supp.bool shouldBe false
       }
     }
+
+    "successfully pass a student explicitly" in {
+      val student = UUID.randomUUID
+      val labwork = UUID.randomUUID
+      val result = reportCardService.evaluateExplicit(student, labwork)
+
+      result.forall(eval => eval.student == student && eval.labwork == labwork) shouldBe true
+      result.size shouldBe ReportCardEntryType.all.size
+      result.forall(eval => ReportCardEntryType.all.count(_.entryType == eval.label) == 1) shouldBe true
+    }
   }
 }

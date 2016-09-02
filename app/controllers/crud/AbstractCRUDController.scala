@@ -10,13 +10,12 @@ import play.api.libs.iteratee.{Enumeratee, Enumerator}
 import play.api.libs.json._
 import play.api.mvc._
 import services.{RoleService, SessionHandlingService}
-import store.SesameRepository
+import store.{Namespace, SesameRepository}
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
 import utils.LwmActions._
 import utils.Ops.MonadInstances.optM
-import utils.RequestOps._
 import utils.{Attempt, Continue, LwmMimeType, Return}
 
 import scala.collection.Map
@@ -88,6 +87,36 @@ trait Consistent[I, O] {
   protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
 
   protected def compareModel(input: I, output: O): Boolean
+}
+
+trait RequestRebase[O <: UniqueEntity] {
+
+  final def rebase[A](implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(None)
+  }
+
+  final def rebase[A](id: String)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(Some(UUID.fromString(id)))
+  }
+
+  final def rebase[A](query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(None, query)
+  }
+
+  final def rebase[A](id: String, query: (String, Seq[String])*)(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    rebase0(Some(UUID.fromString(id)), query)
+  }
+
+  private def rebase0[A](id: Option[UUID], query: Seq[(String, Seq[String])] = Seq())(implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
+    val uri = id.fold(uriGenerator.generateBase)(uuid => uriGenerator.generateBase(uuid))
+    val queryString = query.foldLeft(request.queryString)(_ + _)
+    val headers = request.copy(request.id, request.tags, uri, request.path, request.method, request.version, queryString)
+    Request(headers, request.body)
+  }
+
+  final def asUri[A](ns: Namespace, request: Request[A]): String = {
+    s"$ns${request.uri}".replaceAll("/atomic", "")
+  }
 }
 
 trait Chunked {
@@ -186,6 +215,7 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   with SessionChecking
   with SecureControllerContext
   with Consistent[I, O]
+  with RequestRebase[O]
   with Chunked
   with Stored
   with Basic[I, O, A] {
@@ -308,6 +338,15 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
         "status" -> "KO",
         "message" -> "No such element..."
       )))
+    case Failure(e) => Return(
+      InternalServerError(Json.obj(
+        "status" -> "KO",
+        "errors" -> e.getMessage
+      )))
+  }
+
+  def attempt[X](item: Try[X]): Attempt[X] = item match {
+    case Success(s) => Continue(s)
     case Failure(e) => Return(
       InternalServerError(Json.obj(
         "status" -> "KO",
@@ -461,6 +500,18 @@ trait Removed {
   def remove[X <: UniqueEntity](uri: String)(implicit desc: Descriptor[Rdf, X]): Attempt[Unit] = {
     repository.delete[X](uri) match {
       case Success(_) => Continue(())
+      case Failure(e) =>
+        Return(
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> e.getMessage
+          )))
+    }
+  }
+
+  def removeLots[X <: UniqueEntity](uris: TraversableOnce[String])(implicit desc: Descriptor[Rdf, X]): Attempt[Set[Unit]] = {
+    repository.deleteMany[X](uris) match {
+      case Success(s) => Continue(s)
       case Failure(e) =>
         Return(
           InternalServerError(Json.obj(

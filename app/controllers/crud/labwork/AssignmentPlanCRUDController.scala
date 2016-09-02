@@ -1,6 +1,7 @@
 package controllers.crud.labwork
 
 import java.util.UUID
+
 import controllers.crud.AbstractCRUDController
 import controllers.crud.labwork.AssignmentPlanCRUDController._
 import models._
@@ -13,9 +14,11 @@ import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
+import store.sparql.select._
+import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.RequestOps._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -24,7 +27,7 @@ object AssignmentPlanCRUDController {
   val courseAttribute = "course"
 }
 
-class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
+class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 
@@ -77,7 +80,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
       case ((`courseAttribute`, values), t) =>
         val query = select("labworks") where {
           **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
-            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))(namespace)))
+            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
         }
 
         repository.prepareQuery(query).
@@ -91,23 +94,40 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     }
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(rebase(AssignmentPlan.generateBase))
+  override protected def existsQuery(input: AssignmentPlanProtocol): (Clause, select.Var) = {
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    (select("id") where {
+      **(v("s"), p(rdf.`type`), s(lwm.AssignmentPlan)).
+        **(v("s"), p(lwm.labwork), s(Labwork.generateUri(input.labwork))).
+        **(v("s"), p(lwm.id), v("id"))
+    }, v("id"))
   }
+
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase)
+  }
+
+  // TODO createAtomic
 
   def updateFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    update(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
+
+  // TODO allAtomic
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(AssignmentPlan.generateBase, courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
+  // TODO getAtomic
+
   def getFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    get(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
 
   def deleteFrom(course: String, assignmentPlan: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(assignmentPlan, NonSecureBlock)(rebase(AssignmentPlan.generateBase(UUID.fromString(assignmentPlan))))
+    delete(assignmentPlan, NonSecureBlock)(rebase(assignmentPlan))
   }
 }

@@ -3,30 +3,24 @@ package bind.labwork
 import java.util.UUID
 
 import base.SesameDbSpec
+import models.Room
 import models.labwork._
 import models.users.{Employee, User}
-import models.{Degree, Room}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
+
 import scala.util.{Failure, Success}
 
 class TimetableBindingSpec extends SesameDbSpec {
 
-  import bindings.{
-  TimetableDescriptor,
-  TimetableEntryDescriptor,
-  localDateBinder,
-  localTimeBinder,
-  uuidBinder,
-  uuidRefBinder,
-  dateTimeBinder}
+  import bindings.{TimetableDescriptor, TimetableEntryDescriptor, dateTimeBinder, localDateBinder, localTimeBinder, uuidBinder, uuidRefBinder}
   import ops._
 
   implicit val timetableBinder = TimetableDescriptor.binder
   implicit val timetableEntryBinder = TimetableEntryDescriptor.binder
 
-  val timetableEntry1 = TimetableEntry(Set.empty[UUID], Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now)
-  val timetableEntry2 = TimetableEntry(Set.empty[UUID], Room.randomUUID, Degree.randomUUID, 2, LocalTime.now, LocalTime.now)
+  val timetableEntry1 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now)
+  val timetableEntry2 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 2, LocalTime.now, LocalTime.now)
   val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
@@ -40,7 +34,6 @@ class TimetableBindingSpec extends SesameDbSpec {
   val timetableEntryGraph = URI("#").a(lwm.TimetableEntry)
     .--(lwm.supervisor).->-(timetableEntry1.supervisor)(ops, uuidRefBinder(User.splitter))
     .--(lwm.room).->-(timetableEntry1.room)(ops, uuidRefBinder(Room.splitter))
-    .--(lwm.degree).->-(timetableEntry1.degree)(ops, uuidRefBinder(Degree.splitter))
     .--(lwm.dayIndex).->-(timetableEntry1.dayIndex)
     .--(lwm.start).->-(timetableEntry1.start)
     .--(lwm.end).->-(timetableEntry1.end).graph
@@ -82,35 +75,26 @@ class TimetableBindingSpec extends SesameDbSpec {
     }
 
     "return a timetable atom based on an RDF representation" in {
-      import bindings.{
-      LabworkDescriptor,
-      RoomDescriptor,
-      DegreeDescriptor,
-      EmployeeDescriptor,
-      TimetableDescriptor,
-      TimetableAtomDescriptor
-      }
+      import bindings.{EmployeeDescriptor, LabworkDescriptor, RoomDescriptor, TimetableAtomDescriptor, TimetableDescriptor}
 
       val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false)
-      val degree = Degree("degree", "abbr")
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
       val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
 
-      val timetableEntry1 = TimetableEntry(Set(supervisor1.id, supervisor2.id), room1.id, degree.id, 1, LocalTime.now, LocalTime.now)
-      val timetableEntry2 = TimetableEntry(Set(supervisor2.id), room2.id, degree.id, 4, LocalTime.now, LocalTime.now)
+      val timetableEntry1 = TimetableEntry(Set(supervisor1.id), room1.id, 1, LocalTime.now, LocalTime.now)
+      val timetableEntry2 = TimetableEntry(Set(supervisor2.id), room2.id, 4, LocalTime.now, LocalTime.now)
       val timetable = Timetable(labwork.id, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set(DateTime.now, DateTime.now))
 
       val timetableAtom = TimetableAtom(labwork, Set(
-        TimetableEntryAtom(Set(supervisor1, supervisor2), room1, degree, timetableEntry1.dayIndex, timetableEntry1.start, timetableEntry1.end),
-        TimetableEntryAtom(Set(supervisor2), room2, degree, timetableEntry2.dayIndex, timetableEntry2.start, timetableEntry2.end)
+        TimetableEntryAtom(Set(supervisor1), room1, timetableEntry1.dayIndex, timetableEntry1.start, timetableEntry1.end),
+        TimetableEntryAtom(Set(supervisor2), room2, timetableEntry2.dayIndex, timetableEntry2.start, timetableEntry2.end)
       ), timetable.start, timetable.localBlacklist, timetable.invalidated, timetable.id)
 
       repo add labwork
       repo addMany List(room1, room2)
       repo addMany List(supervisor1, supervisor2)
-      repo add degree
       repo add timetable
 
       repo.get[TimetableAtom](Timetable.generateUri(timetable)) match {

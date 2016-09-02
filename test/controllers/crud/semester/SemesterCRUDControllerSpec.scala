@@ -1,9 +1,8 @@
 package controllers.crud.semester
 
-import org.joda.time.LocalDate
+import org.joda.time.{DateTime, Interval, LocalDate}
 import controllers.crud.AbstractCRUDControllerSpec
-import models.semester.{SemesterProtocol, Semester}
-import org.joda.time.DateTime
+import models.semester.{Semester, SemesterProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -15,6 +14,7 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import base.StreamHandler._
+import org.joda.time.format.DateTimeFormat
 
 import scala.util.{Failure, Success}
 
@@ -70,205 +70,39 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
   "A SemesterCRUDController also " should {
 
-    "successfully return all semesters for a year" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val entitiesForYear = Set(semesterWithDate)
+    "successfully return current semester" in {
+      import models.semester.Semester.reads
 
-      val year = LocalDate.now.getYear
+      val template = {
+        val start = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5)
+        Semester("template", "template", start, start.plusMonths(6), start.plusMonths(5))
+      }
 
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${year.toString}"
-      )
-
-      val result = controller.asInstanceOf[SemesterCRUDController].all()(request)
-      val expected = entitiesForYear map (e => Json.toJson(e))
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe expected
-    }
-
-    "successfully return all semesters for many years" in {
-      val first = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val second = Semester("label", "abbrev", LocalDate.now.plusYears(1), LocalDate.now, LocalDate.now)
-      val third = Semester("label", "abbrev", LocalDate.now.plusYears(2), LocalDate.now, LocalDate.now)
-      val fourth = Semester("label", "abbrev", LocalDate.now.plusYears(3), LocalDate.now, LocalDate.now)
-
-      val entitiesForYear = Set(first, second, third, fourth)
-      val some = first.start.getYear
-      val other = third.start.getYear
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${some.toString},${other.toString}"
-      )
-      val result = controller.all()(request)
-      val expected = Set(Json.toJson(first), Json.toJson(third))
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe expected
-    }
-
-    "not return semesters for a year when there is no match" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(1), LocalDate.now, LocalDate.now)
-      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now)
-      val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
-      val year = DateTime.now.getYear
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${year.toString}"
-      )
-      val result = controller.all()(request)
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe emptyJson
-    }
-
-    "not return semesters for a year when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val year = DateTime.now.getYear
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${year.toString}"
-      )
-      val result = controller.all()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> s"$errorMessage"
-      )
-    }
-
-    "not return semesters when there is an invalid query" in {
-      val semesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(2), LocalDate.now, LocalDate.now)
-      val anotherSemesterWithDate = Semester("label", "abbrev", LocalDate.now.minusYears(3), LocalDate.now, LocalDate.now)
-      val entitiesForYear = Set(semesterWithDate, anotherSemesterWithDate)
-      val year = DateTime.now.getYear
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(entitiesForYear))
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?invalid=${year.toString}"
-      )
-      val result = controller.all()(request)
-
-      status(result) shouldBe SERVICE_UNAVAILABLE
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "Unknown attribute"
-      )
-    }
-
-    "successfully return all semesters for a specific period" in {
-      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
-      val semesters = Set(semesterInSS, semesterInWS)
+      val semesters = (0 until 20).foldLeft((Set.empty[Semester], template)) {
+        case ((vector, prev), i) =>
+          val current = Semester(i.toString, i.toString, prev.end.plusDays(1), prev.end.plusDays(1).plusMonths(6), prev.end.plusDays(1).plusMonths(5))
+          (vector + current, current)
+      }._1
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
-      val year = semesterInSS.start.getYear
-      val period = "SS"
-
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}s?year=${year.toString}&period=$period"
+        s"/${entityTypeName.toLowerCase}/current"
       )
-      val result = controller.all()(request)
-      val expected = Set(Json.toJson(semesterInSS))
+
+      val result = controller.asInstanceOf[SemesterCRUDController].current()(request)
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe expected
-    }
 
-    "successfully return all semesters in different years for a specific period" in {
-      val firstWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
-      val secondWS = Semester("label", "abbrev", LocalDate.now.plusYears(2).withMonthOfYear(12), LocalDate.now, LocalDate.now)
-      val firstSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
-      val secondSS = Semester("label", "abbrev", LocalDate.now.plusYears(3).withMonthOfYear(5), LocalDate.now, LocalDate.now)
-
-      val semesters = Set(firstWS, secondWS, firstSS, secondSS)
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
-
-      val first = firstSS.start.getYear
-      val second = secondSS.start.getYear
-      val period = "SS"
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${first.toString},${second.toString}&period=$period"
-      )
-      val result = controller.all()(request)
-      val expected = Set(Json.toJson(firstSS), Json.toJson(secondSS))
-
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe expected
-    }
-
-    "not return semesters for a specific period when there is not match" in {
-      val semesterInWS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(10), LocalDate.now, LocalDate.now)
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
-      val semesters = Set(semesterInSS, semesterInWS)
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
-
-      val year = semesterInSS.start.getYear
-      val period = "invalid period"
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s?year=${year.toString}&period=$period"
-      )
-      val result = controller.all()(request)
-
-      status(result) shouldBe SERVICE_UNAVAILABLE
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> "Unknown attribute"
-      )
-    }
-
-    "not return semesters for a specific period when there is an exception" in {
-      val errorMessage = s"Oops, cant get the desired semesters for a year for some reason"
-      val semesterInSS = Semester("label", "abbrev", LocalDate.now.withMonthOfYear(3), LocalDate.now, LocalDate.now)
-
-      when(repository.getAll[Semester](anyObject())).thenReturn(Failure(new Exception(errorMessage)))
-
-      val year = semesterInSS.start.getYear
-      val period = "SS"
-
-      val request = FakeRequest(
-        GET,
-        s"/${entityTypeName.toLowerCase}s/${year.toString}/$period"
-      )
-      val result = controller.all()(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
+      contentAsJson(result).as[List[SemesterProtocol]] match {
+        case semester :: Nil =>
+          val now = LocalDate.now
+          semester.start.isBefore(now) && semester.end.isAfter(now) shouldBe true
+        case _ :: tail => fail(s"only one semester expected but found $tail")
+        case _ => fail("can't serialize semester")
+      }
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {

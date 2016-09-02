@@ -63,6 +63,8 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def delete[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit]
 
+  def deleteMany[T <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[Unit]]
+
   def contains(id: String): Boolean
 
   def close(): Unit
@@ -122,6 +124,13 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
   override def addMany[T <: UniqueEntity](entities: TraversableOnce[T])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[PointedGraph[Rdf]]] = transact { implicit conn =>
     entities
       .map(insert[T])
+      .sequence
+      .map(_.toSet)
+  }
+
+  override def deleteMany[T <: UniqueEntity](uris: TraversableOnce[String])(implicit descriptor: Descriptor[Rdf, T]): Try[Set[Unit]] = transact { implicit conn =>
+    uris
+      .map(remove[T])
       .sequence
       .map(_.toSet)
   }
