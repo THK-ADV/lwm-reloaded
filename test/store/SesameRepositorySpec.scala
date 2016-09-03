@@ -93,7 +93,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         case Success(Some(s)) =>
           fail("repo should've deleted the student")
         case Success(None) =>
-          repo.size shouldBe 0
+          repo.size.get shouldBe 0
         case Failure(e) =>
           fail("repo could not return explicit entity")
       }
@@ -149,7 +149,7 @@ class SesameRepositorySpec extends SesameDbSpec {
       val postStudent = repo get[Student] User.generateUri(student)
 
       (postDegree, postStudent) match {
-        case (Success(None), Success(None)) => repo.size shouldBe 0
+        case (Success(None), Success(None)) => repo.size.get shouldBe 0
         case (Success(Some(_)), _) => fail("one of the entities was not deleted")
         case (_, Success(Some(_))) => fail("one of the entities was not deleted")
         case _ => fail(s"entities could not be deleted")
@@ -276,16 +276,16 @@ class SesameRepositorySpec extends SesameDbSpec {
       val didContainStudent = repo contains User.generateUri(student)
       val didContainAnotherStudent = repo contains User.generateUri(anotherStudent)
 
-      didContainStudent shouldBe true
-      didContainAnotherStudent shouldBe false
+      didContainStudent.get shouldBe true
+      didContainAnotherStudent.get shouldBe false
     }
   }
 
   override protected def beforeEach(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 
   override protected def beforeAll(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 }

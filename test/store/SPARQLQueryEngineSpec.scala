@@ -1,20 +1,22 @@
 package store
 
 import java.util.UUID
+
 import base.TestBaseDefinition
 import models.Degree
 import models.labwork.Group
-import models.users.{User, Student}
+import models.users.{Student, User}
 import org.openrdf.model.Value
 import org.openrdf.repository.RepositoryConnection
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
-import store.sparql.{SelectClause, SPARQLQueryEngine}
+import store.sparql.{SPARQLQueryEngine, SelectClause}
 import store.sparql.select._
 import store.sparql.select
-import scala.util.Success
+
+import scala.util.{Success, Try}
 
 class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
@@ -27,7 +29,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
   val prefixes = LWMPrefix[repo.Rdf]
 
   val sparql = new SPARQLQueryEngine with SesameModule {
-    override def connect[A](f: (RepositoryConnection) => A): A = repo.connect(f)
+    override def connect[A](f: (RepositoryConnection) => Try[A]): Try[A] = repo.connect(f)
   }
 
   "A SPARQL engine" should {
@@ -140,10 +142,10 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
   }
 
   override protected def beforeEach(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 
   override protected def beforeAll(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 }

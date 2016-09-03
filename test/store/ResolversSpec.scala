@@ -32,7 +32,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
       val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
 
-      val previousSize = repo.size
+      val previousSize = repo.size.get
 
       repo.add(student1)
       repo.add(student2)
@@ -43,7 +43,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       result match {
         case Success(Some(uuid)) =>
           previousSize shouldEqual 0
-          repo.size > previousSize shouldBe true
+          repo.size.get > previousSize shouldBe true
           uuid shouldEqual student1.id
         case Success(None) =>
           fail("uuid is none")

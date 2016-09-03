@@ -5,7 +5,7 @@ import java.io.File
 import info.aduna.iteration.Iterations
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
-import org.openrdf.model.{Statement, URI, Value}
+import org.openrdf.model.{Statement, URI}
 import org.openrdf.repository.sail.SailRepository
 import org.openrdf.repository.{RepositoryConnection, RepositoryResult}
 import org.openrdf.sail.memory.MemoryStore
@@ -20,8 +20,10 @@ import utils.Ops.MonadInstances._
 
 import scala.concurrent.duration._
 import scala.language.{higherKinds, postfixOps}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 import utils.Ops.TraverseInstances.travO
+
+import scalaz.Reader
 
 object SemanticUtils {
   def collect[A](set: Set[Try[Option[A]]]): Try[Set[A]] = {
@@ -63,7 +65,7 @@ trait SemanticRepository extends RDFModule with RDFOpsModule {
 
   def delete[T <: UniqueEntity](uri: String)(implicit descriptor: Descriptor[Rdf, T]): Try[Unit]
 
-  def contains(id: String): Boolean
+  def contains(id: String): Try[Boolean]
 
   def close(): Unit
 
@@ -186,29 +188,56 @@ class SesameRepository(folder: Option[File] = None, syncInterval: FiniteDuration
     }
   }
 
-  override def contains(id: String): Boolean = connect { implicit conn => has(makeUri(id)) }
+  override def contains(id: String): Try[Boolean] = connect { implicit conn => Success(has(makeUri(id))) }
 
-  def size: Int = connect(_.size().toInt)
+  def size: Try[Int] = connect(conn => Success(conn.size().toInt))
 
   override def close(): Unit = {
     repo.shutDown()
   }
 
-  override def connect[A](f: (RepositoryConnection) => A): A = {
-    val conn = repo.getConnection
-    val res = f(conn)
-    conn.close()
-    res
+  type Transaction[A] = Reader[RepositoryConnection, Try[A]]
+
+  def begin: Transaction[Unit] = Reader(conn => Try(conn.begin()))
+
+  def commit: Transaction[Unit] = Reader(conn => Try(conn.commit()))
+
+  def rollback: Transaction[Unit] = Reader(conn => Try(conn.rollback()))
+
+  def release: Transaction[Unit] = Reader(conn => Try(conn.close()))
+
+  def continue[A, B, C](prev: Try[A])(next: RepositoryConnection => Try[B])(comb: (A, B) => C): Transaction[C] = Reader { conn =>
+    for {
+      a <- prev
+      b <- next(conn)
+    } yield comb(a, b)
   }
 
-  private def transact[A](f: RepositoryConnection => A): A = {
-    val connection = repo.getConnection
-    connection.begin()
-    val res = f(connection)
-    connection.commit()
-    connection.close()
-    res
+  def handle[A](t: Try[A]): Transaction[A] = t match {
+    case Success(a) => commit map (_ map (_ => a))
+    case f@Failure(_) => rollback map (_ flatMap (_ => f))
   }
+
+  override def connect[A](f: (RepositoryConnection) => Try[A]): Try[A] = {
+    Try(repo.getConnection) flatMap {
+      (for {
+        result <- continue(Success(()))(f)((_, a) => a)
+        closed <- release
+        done = closed flatMap (_ => result)
+      } yield done).run
+    }
+  }
+
+  private def transact[A](f: RepositoryConnection => Try[A]): Try[A] =
+    Try(repo.getConnection) flatMap {
+      (for {
+        start <- begin
+        transaction <- continue(start)(f)((_, a) => a)
+        handled <- handle(transaction)
+        closed <- release
+        done = closed flatMap (_ => handled)
+      } yield done).run
+    }
 
   private def has(uri: Rdf#URI)(implicit conn: RepositoryConnection): Boolean = graph containsURI uri
 
@@ -264,6 +293,7 @@ abstract class Graph[Rdf <: RDF, Connection](implicit ops: RDFOps[Rdf]) {
   lazy val lwm = LWMPrefix[Rdf]
 
   def anyNode: Rdf#Node
+
   def anyURI: Rdf#URI
 
   def subjects(p: Rdf#URI, o: Rdf#Node)(implicit conn: Connection): Vector[Rdf#URI]

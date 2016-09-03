@@ -8,7 +8,8 @@ import models.security._
 import models.semester.Semester
 import models.users.Student
 import models.Degree
-import scala.util.{Failure, Success}
+
+import scala.util.{Failure, Success, Try}
 
 class RoleServiceSpec extends SesameDbSpec {
 
@@ -113,5 +114,5 @@ class RoleServiceSpec extends SesameDbSpec {
     }
   }
 
-  override protected def beforeEach(): Unit = repo.connect(_.clear())
+  override protected def beforeEach(): Unit = repo.connect(conn => Try(conn.clear())).get
 }

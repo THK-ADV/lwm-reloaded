@@ -46,7 +46,7 @@ case class Initial[F[_], A](z: SelectClause)(implicit qe: QueryExecutor[SelectCl
 }
 
 trait SPARQLQueryEngine { self: SesameModule =>
-  def connect[A](f: RepositoryConnection => A): A
+  def connect[A](f: RepositoryConnection => Try[A]): Try[A]
 
   private implicit val qe: QueryExecutor[SelectClause] = new QueryExecutor[SelectClause] {
     import self.rdfStore.sparqlEngineSyntax._
