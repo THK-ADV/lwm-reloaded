@@ -18,7 +18,6 @@ import store.sparql.select._
 import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.RequestOps._
 
 import scala.collection.Map
 import scala.util.{Failure, Try}
@@ -47,17 +46,17 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
   override implicit val uriGenerator: UriGenerator[Labwork] = Labwork
 
-  override protected def coAtomic(atom: LabworkAtom): Labwork =
-    Labwork(
-      atom.label,
-      atom.description,
-      atom.semester.id,
-      atom.course.id,
-      atom.degree.id,
-      atom.subscribable,
-      atom.published,
-      atom.invalidated,
-      atom.id)
+  override protected def coAtomic(atom: LabworkAtom): Labwork = Labwork(
+    atom.label,
+    atom.description,
+    atom.semester.id,
+    atom.course.id,
+    atom.degree.id,
+    atom.subscribable,
+    atom.published,
+    atom.invalidated,
+    atom.id
+  )
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
     input.label == output.label && input.description == output.description && input.subscribable == output.subscribable && input.published == output.published
@@ -85,15 +84,15 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   override protected def existsQuery(input: LabworkProtocol): (Clause, select.Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
+    lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
     (select("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Labwork)).
-        **(v("s"), p(prefixes.semester), s(Semester.generateUri(input.semester)(namespace))).
-        **(v("s"), p(prefixes.course), s(Course.generateUri(input.course)(namespace))).
-        **(v("s"), p(prefixes.degree), s(Degree.generateUri(input.degree)(namespace))).
-        **(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(lwm.Labwork)).
+        **(v("s"), p(lwm.semester), s(Semester.generateUri(input.semester)(namespace))).
+        **(v("s"), p(lwm.course), s(Course.generateUri(input.course)(namespace))).
+        **(v("s"), p(lwm.degree), s(Degree.generateUri(input.degree)(namespace))).
+        **(v("s"), p(lwm.id), v("id"))
     }, v("id"))
   }
 
@@ -109,46 +108,46 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(rebase(Labwork.generateBase))
+    create(NonSecureBlock)(rebase)
   }
 
   def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    createAtomic(NonSecureBlock)(rebase(Labwork.generateBase))
+    createAtomic(NonSecureBlock)(rebase)
   }
 
   def updateFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+    update(labwork, NonSecureBlock)(rebase(labwork))
   }
 
   def updateAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    updateAtomic(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+    updateAtomic(labwork, NonSecureBlock)(rebase(labwork))
   }
 
   def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+    delete(labwork, NonSecureBlock)(rebase(labwork))
   }
 
   def getFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+    get(labwork, NonSecureBlock)(rebase(labwork))
   }
 
   def getAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    getAtomic(labwork, NonSecureBlock)(rebase(Labwork.generateBase(UUID.fromString(labwork))))
+    getAtomic(labwork, NonSecureBlock)(rebase(labwork))
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(Labwork.generateBase, courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, courseAttribute -> Seq(course)))
+    allAtomic(NonSecureBlock)(rebase(courseAttribute -> Seq(course)))
   }
 
   def allWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(Labwork.generateBase, degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
+    all(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
   }
 
   def allAtomicWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Labwork.generateBase, degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
+    allAtomic(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
   }
 }

@@ -15,8 +15,7 @@ import scala.util.{Failure, Success}
 class LabworkInvalidation extends SesameDbSpec {
 
   "A labwork invalidation" should {
-
-    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, Degree.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(labwork: UUID): Stream[Timetable] = Stream.continually {
       if (nextBoolean()) Timetable(labwork, (tte take 20).toSet, LocalDate.now, Set())
@@ -44,8 +43,8 @@ class LabworkInvalidation extends SesameDbSpec {
     }
 
     def rceval(labwork: UUID): Stream[ReportCardEvaluation] = Stream.continually {
-      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", true, 0)
-      else ReportCardEvaluation(User.randomUUID, Labwork.randomUUID, "Label", true, 0)
+      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
+      else ReportCardEvaluation(User.randomUUID, Labwork.randomUUID, "Label", bool = true, 0)
     }
 
     def labapp(labwork: UUID): Stream[LabworkApplication] = Stream.continually {

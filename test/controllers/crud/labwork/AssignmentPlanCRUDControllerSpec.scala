@@ -10,10 +10,12 @@ import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.test.FakeRequest
+import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.LwmMimeType
 import StreamHandler._
+import play.api.http.HeaderNames
+
 import scala.util.{Failure, Success}
 
 class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
@@ -199,6 +201,53 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "message" -> "Unknown attribute"
+      )
+    }
+
+    s"handle this model issue when creating a new assignmentplan which already exists" in {
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
+        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+      )))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}s",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        inputJson
+      )
+      val result = controller.create()(request)
+
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
+      )
+    }
+
+    s"neither create or update an existing assignmentplan when resource does not exists although body would lead to duplication" in {
+      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(None))
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map(
+        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+      )))
+
+      val request = FakeRequest(
+        PUT,
+        s"/${entityTypeName}s/${entityToPass.id}",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        updateJson
+      )
+      val result = controller.update(entityToPass.id.toString)(request)
+
+      status(result) shouldBe ACCEPTED
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "model already exists",
+        "id" -> entityToPass.id
       )
     }
   }

@@ -8,6 +8,10 @@ import models.{Room, UniqueEntity, UriGenerator}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json._
 
+/**
+  * ReportCard
+  */
+
 case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], rescheduled: Option[Rescheduled] = None, invalidated: Option[DateTime] = None, id: UUID = ReportCardEntry.randomUUID) extends UniqueEntity {
 
   override def equals(that: scala.Any): Boolean = that match {
@@ -28,8 +32,7 @@ case class ReportCardEntry(student: UUID, labwork: UUID, label: String, date: Lo
 
 case class ReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, invalidated: Option[DateTime] = None, id: UUID = ReportCardEntryType.randomUUID) extends UniqueEntity
 
-// TODO make them repo ready
-case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, invalidated: Option[DateTime] = None, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = ReportCardEvaluation.randomUUID) extends UniqueEntity
 
 case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
 
@@ -41,7 +44,11 @@ case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
-case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+
+/**
+  * Companions
+  */
 
 object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisation[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
 

@@ -279,6 +279,33 @@ class SesameRepositorySpec extends SesameDbSpec {
       didContainStudent.get shouldBe true
       didContainAnotherStudent.get shouldBe false
     }
+
+    "delete many properly" in {
+      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+
+      repo addMany students.toList
+
+      repo deleteMany (students map User.generateUri) match {
+        case Success(s) =>
+          students count { student =>
+            !(repo contains User.generateUri(student) getOrElse false)
+          } shouldBe students.size
+          repo.size.get shouldBe 0
+        case Failure(e) =>
+          fail(s"Deletion should succeed", e)
+      }
+    }
+
+    "try to delete many, even when there is nothing to delete" in {
+      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+
+      repo deleteMany (students map User.generateUri) match {
+        case Success(s) =>
+          s contains Unit shouldBe true
+        case Failure(e) =>
+          fail(s"Deletion should succeed", e)
+      }
+    }
   }
 
   override protected def beforeEach(): Unit = {

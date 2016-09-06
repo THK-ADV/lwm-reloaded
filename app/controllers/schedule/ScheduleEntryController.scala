@@ -20,7 +20,6 @@ import store.sparql.select
 import store.sparql.select._
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
-import utils.RequestOps._
 
 import scala.collection.Map
 import scala.util.{Failure, Try}
@@ -36,6 +35,7 @@ object ScheduleEntryController {
   val dateRangeAttribute = "dateRange"
 }
 
+// TODO inherit from AbstractCRUDController
 class ScheduleEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
   extends Controller
     with BaseNamespace
@@ -50,7 +50,8 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
     with ModelConverter[ScheduleEntry, ScheduleEntry]
     with Consistent[ScheduleEntry, ScheduleEntry]
-    with Basic[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
+    with Basic[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
+    with RequestRebase[ScheduleEntry] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
 
@@ -129,14 +130,16 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course))
+    val rebased = rebase(courseAttribute -> Seq(course))
+
     filtered(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course))
+    val rebased = rebase(courseAttribute -> Seq(course))
+
     filtered(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
       .map(set => chunk(set))
@@ -144,14 +147,16 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+
     filtered(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    val rebased = rebase(ScheduleEntry.generateBase, courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+    val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
+
     filtered(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
       .map(set => chunk(set))
@@ -159,14 +164,16 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def get(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val url = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
-    retrieve[ScheduleEntry](url)
+    val uri = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+
+    retrieve[ScheduleEntry](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def getAtomic(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val url = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
-    retrieve[ScheduleEntryAtom](url)
+    val uri = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+
+    retrieve[ScheduleEntryAtom](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 

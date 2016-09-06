@@ -33,9 +33,7 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
 
   override protected def coAtomic(atom: Degree): Degree = atom
 
-  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = {
-    input.label == output.label && input.abbreviation == output.abbreviation
-  }
+  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = input.label == output.label
 
   override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
     case Some(degree) => Degree(input.label, input.abbreviation, degree.invalidated, degree.id)
@@ -45,7 +43,8 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)
     case GetAll => PartialSecureBlock(degree.getAll)
-    case _ => PartialSecureBlock(prime)
+    case Update => PartialSecureBlock(prime)
+    case _ => PartialSecureBlock(god)
   }
 
   override protected def existsQuery(input: DegreeProtocol): (Clause, select.Var) = {
@@ -56,7 +55,6 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
 
     (select ("id") where {
       **(v("s"), p(rdf.`type`), s(prefixes.Degree)) .
-        **(v("s"), p(prefixes.label), o(input.label)) .
         **(v("s"), p(prefixes.abbreviation), o(input.abbreviation)).
         **(v("s"), p(prefixes.id), v("id"))
     }, v("id"))

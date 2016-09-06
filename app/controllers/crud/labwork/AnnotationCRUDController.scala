@@ -13,8 +13,7 @@ import utils.LwmMimeType
 import models.security.Permissions._
 import scala.collection.Map
 import scala.util.{Failure, Try}
-import utils.RequestOps._
-import AnnotationCRUDController._
+import controllers.crud.labwork.AnnotationCRUDController._
 import store.bind.Descriptor.Descriptor
 
 object AnnotationCRUDController {
@@ -66,38 +65,38 @@ class AnnotationCRUDController(val repository: SesameRepository, val sessionServ
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(rebase(Annotation.generateBase))
+    create(NonSecureBlock)(rebase)
   }
 
   def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    createAtomic(NonSecureBlock)(rebase(Annotation.generateBase))
+    createAtomic(NonSecureBlock)(rebase)
   }
 
   def updateFrom(course: String, labwork: String, annotation: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(annotation, NonSecureBlock)(rebase(Annotation.generateBase(UUID.fromString(annotation))))
+    update(annotation, NonSecureBlock)(rebase(annotation))
   }
 
   def updateAtomicFrom(course: String, labwork: String, annotation: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    updateAtomic(annotation, NonSecureBlock)(rebase(Annotation.generateBase(UUID.fromString(annotation))))
+    updateAtomic(annotation, NonSecureBlock)(rebase(annotation))
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(Annotation.generateBase, labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
   def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(Annotation.generateBase, labworkAttribute -> Seq(labwork)))
+    allAtomic(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
   def getFrom(course: String, labwork: String, annotation: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(annotation, NonSecureBlock)(rebase(Annotation.generateBase(UUID.fromString(annotation))))
+    get(annotation, NonSecureBlock)(rebase(annotation))
   }
 
   def getAtomicFrom(course: String, labwork: String, annotation: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    getAtomic(annotation, NonSecureBlock)(rebase(Annotation.generateBase(UUID.fromString(annotation))))
+    getAtomic(annotation, NonSecureBlock)(rebase(annotation))
   }
 
   def deleteFrom(course: String, labwork: String, annotation: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(annotation, NonSecureBlock)(rebase(Annotation.generateBase(UUID.fromString(annotation))))
+    delete(annotation, NonSecureBlock)(rebase(annotation))
   }
 }

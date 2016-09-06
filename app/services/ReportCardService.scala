@@ -16,6 +16,8 @@ trait ReportCardServiceLike {
   def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry]
 
   def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation]
+
+  def evaluateExplicit(student: UUID, labwork: UUID): Set[ReportCardEvaluation]
 }
 
 class ReportCardService extends ReportCardServiceLike {
@@ -66,5 +68,9 @@ class ReportCardService extends ReportCardServiceLike {
       folder(Bonus)(e => (true, e.foldMap(0, _.int)(_ + _))),
       folder(Supplement)(e => (e.foldMap(true, _.bool)(_ && _), 0))
     )
+  }
+
+  def evaluateExplicit(student: UUID, labwork: UUID): Set[ReportCardEvaluation] = {
+    ReportCardEntryType.all.map(entryType => ReportCardEvaluation(student, labwork, entryType.entryType, bool = true, 0))
   }
 }

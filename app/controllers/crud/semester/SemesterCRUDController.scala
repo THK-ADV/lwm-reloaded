@@ -4,9 +4,10 @@ import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
 import models.semester.{Semester, SemesterProtocol}
+import org.joda.time.Interval
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
@@ -15,12 +16,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Failure, Success, Try}
-
-object SemesterCRUDController {
-  val yearAttribute = "year"
-  val periodAttribute = "period"
-}
+import scala.util.{Success, Try}
 
 class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester, Semester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
@@ -41,17 +37,18 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
   }
 
   override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
-    lazy val rdf = RDFPrefix[repository.Rdf]
     import store.sparql.select
     import store.sparql.select._
 
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
     (select ("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Semester)) .
-        **(v("s"), p(prefixes.label), o(input.label)) .
-        **(v("s"), p(prefixes.start), o(input.start)) .
-        **(v("s"), p(prefixes.end), o(input.end)) .
-        **(v("s"), p(prefixes.id), v("id"))
+      **(v("s"), p(rdf.`type`), s(lwm.Semester)) .
+        **(v("s"), p(lwm.label), o(input.label)) .
+        **(v("s"), p(lwm.start), o(input.start)) .
+        **(v("s"), p(lwm.end), o(input.end)) .
+        **(v("s"), p(lwm.id), v("id"))
     }, v("id"))
   }
 
@@ -63,34 +60,19 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     input.abbreviation == output.abbreviation && input.examStart.isEqual(output.examStart)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
-    val attributes = List(queryString.get(SemesterCRUDController.yearAttribute), queryString.get(SemesterCRUDController.periodAttribute))
-
-    def filterByYears(years: Seq[String], semesters: Set[Semester]): Set[Semester] = {
-      years.head.split(",").toSet[String].flatMap(year => semesters.filter(sem => sem.start.getYear.toString.equals(year)))
-    }
-
-    def filterByPeriod(period: Seq[String], semesters: Set[Semester]): Try[Set[Semester]] = {
-      period.head match {
-        case ss if ss.toLowerCase.equals("ss") =>
-          Success(semesters.filter(sem => sem.start.getMonthOfYear <= 6))
-        case ws if ws.toLowerCase.equals("ws") =>
-          Success(semesters.filter(sem => sem.start.getMonthOfYear > 6))
-        case _ => Failure(new Throwable("Unknown attribute"))
-      }
-    }
-
-    attributes match {
-      case List(Some(years), None) => Success(filterByYears(years, all))
-      case List(Some(years), Some(period)) => filterByPeriod(period, filterByYears(years, all))
-      case List(None, Some(period)) => filterByPeriod(period, all)
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(semester.get)
     case GetAll => PartialSecureBlock(semester.getAll)
     case _ => PartialSecureBlock(prime)
   }
+
+  def current = contextFrom(Get) action { implicit request =>
+    import models.semester.Semester.writes
+
+    retrieveAll[Semester](descriptor).
+      map(_.filter(semester => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow)).
+      mapResult(semesters => Ok(Json.toJson(semesters)).as(mimeType))
+  }
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = Success(all)
 }

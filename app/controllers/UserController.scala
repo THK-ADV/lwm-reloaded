@@ -108,18 +108,21 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   def student(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
+
     retrieve[Student](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def studentAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
+
     retrieve[StudentAtom](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def employee(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
+
     retrieve[Employee](uri)
       .mapResult(e => Ok(Json.toJson(e)).as(mimeType))
   }
@@ -151,6 +154,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   def user(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}"
+
     retrieve[User](uri)
       .mapResult(u => Ok(Json.toJson(u)).as(mimeType))
   }
@@ -164,6 +168,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   def userAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "")
+
     retrieve[User](uri)
       .flatMap {
         case s: Student => retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))

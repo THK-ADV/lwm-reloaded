@@ -6,6 +6,7 @@ import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.Course
 import models.security.Permissions._
+import models.security.{Role, Roles}
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -23,6 +24,36 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
   "A CourseControllerSecuritySpec " should {
 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
+
+    "Allow invocations when admin wants to create a course" in new FakeApplication() {
+      val roles = Set(Role(Roles.RightsManager, Set.empty), Role(Roles.CourseManager, Set.empty))
+
+      when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
+      when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
+      when(roleService.rolesByLabel(Matchers.anyObject())).thenReturn(Success(roles))
+
+      val json = Json.obj(
+        "label" -> "",
+        "description" -> "",
+        "abbreviation" -> "",
+        "lecturer" -> UUID.randomUUID,
+        "semesterIndex" -> 1
+      )
+
+      val request = FakeRequest(
+        POST,
+        "/courses",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.courseV1Json)),
+        json
+      ).withSession(
+        SessionController.userId -> FakeAdmin.toString,
+        SessionController.sessionId -> UUID.randomUUID.toString
+      )
+
+      val result = route(request).get
+
+      status(result) shouldBe CREATED
+    }
 
     "Allow invocations when student wants to get a single course" in new FakeApplication() {
       when(roleService.authorities(FakeStudent)).thenReturn(Success(Set(FakeStudentAuth)))
@@ -126,33 +157,6 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       val request = FakeRequest(
         PUT,
         s"/courses/$FakeCourse",
-        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.courseV1Json)),
-        json
-      ).withSession(
-        SessionController.userId -> FakeEmployee.toString,
-        SessionController.sessionId -> UUID.randomUUID.toString
-      )
-
-      val result = route(request).get
-
-      status(result) shouldBe UNAUTHORIZED
-    }
-
-    "Block invocations when either student, employee or mv wants to create a course" in new FakeApplication() {
-      when(roleService.authorities(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
-      when(roleService.checkAuthority((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
-
-      val json = Json.obj(
-        "label" -> "",
-        "description" -> "",
-        "abbreviation" -> "",
-        "lecturer" -> "",
-        "semesterIndex" -> 1
-      )
-
-      val request = FakeRequest(
-        POST,
-        "/courses",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> LwmMimeType.courseV1Json)),
         json
       ).withSession(
