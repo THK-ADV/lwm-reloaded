@@ -332,17 +332,22 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
   }
 
   def optional[X](item: Try[Option[X]]): Attempt[X] = item match {
-    case Success(Some(a)) => Continue(a)
-    case Success(None) => Return(
-      NotFound(Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      )))
+    case Success(s) => optional2(s)
     case Failure(e) => Return(
       InternalServerError(Json.obj(
         "status" -> "KO",
         "errors" -> e.getMessage
       )))
+  }
+
+  def optional2[X](opt: Option[X]): Attempt[X] = opt match {
+    case Some(s) => Continue(s)
+    case None =>
+      Return(
+        NotFound(Json.obj(
+          "status" -> "KO",
+          "message" -> "No such element..."
+        )))
   }
 
   def attempt[X](item: Try[X]): Attempt[X] = item match {
