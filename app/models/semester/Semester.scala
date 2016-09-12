@@ -34,6 +34,6 @@ object Semester extends UriGenerator[Semester] with JsonSerialisation[SemesterPr
   override def base: String = "semesters"
 
   def findCurrent(semesters: Set[Semester]): Option[Semester] = semesters.find { semester =>
-    new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow()
+    new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow
   }
 }

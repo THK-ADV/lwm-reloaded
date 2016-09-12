@@ -4,17 +4,12 @@ import base.SesameDbSpec
 import models.semester.Blacklist
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
 class BlacklistBindingSpec extends SesameDbSpec {
 
-  import bindings.{
-  BlacklistDescriptor,
-  uuidBinder,
-  dateTimeBinder}
+  import bindings.{BlacklistDescriptor, dateTimeBinder, uuidBinder}
   import ops._
 
   implicit val blacklistBinder = BlacklistDescriptor.binder

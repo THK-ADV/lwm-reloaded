@@ -4,10 +4,10 @@ import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
 import models.semester.{Blacklist, BlacklistProtocol, Semester}
-import org.joda.time.{DateTime, Interval}
+import org.joda.time.Interval
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{BlacklistServiceLike, RoleService, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Success, Try}
 
-class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
+class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
@@ -52,17 +52,11 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)
 
   def createFor(year: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
-    import play.api.libs.ws.ning._
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    (for { // TODO refactor to attempt, refactor to blacklistservice
-      sslClient <- Future.successful(NingWSClient())
-      response <- sslClient.url(s"http://feiertage.jarmedia.de/api/?jahr=$year&nur_land=NW").get
-      pattern = "(\"datum\":\".*?\")".r
-      dates = (pattern findAllMatchIn response.json.toString map (matches => DateTime.parse(matches.matched.split(":")(1).replace("\"", "")))).toSet
-      blacklist = Blacklist(s"NRW Feiertage $year", dates)
+    (for { // TODO refactor to attempt
+      blacklist <- blacklistService.fetchByYear(year)
       _ <- Future.fromTry(repository.add[Blacklist](blacklist))
-      _ <- Future.successful(sslClient.close())
     } yield Created(Json.toJson(blacklist)(writes)).as(mimeType)) recover {
       case NonFatal(t) => InternalServerError(Json.obj(
         "status" -> "KO",

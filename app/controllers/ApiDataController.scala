@@ -1,7 +1,6 @@
 package controllers
 
 import models.semester.Blacklist
-import org.joda.time.DateTime
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
 import play.api.libs.json.Json
@@ -10,8 +9,6 @@ import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
 
-import scala.concurrent.Future
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 class ApiDataController(private val repository: SesameRepository) extends Controller {
@@ -50,7 +47,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     Ok
   }
 
-  def removeBlacklists = Action { implicit request =>
+  def removeBlacklists() = Action { implicit request =>
     import bindings.BlacklistDescriptor
 
     val result = repository.getAll[Blacklist] flatMap { blacklists =>
