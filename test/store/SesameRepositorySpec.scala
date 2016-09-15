@@ -306,6 +306,15 @@ class SesameRepositorySpec extends SesameDbSpec {
           fail(s"Deletion should succeed", e)
       }
     }
+
+    "rollback transactions" in {
+      val validStudents = (0 until 2) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val invalidStudents = (0 until 3) map (i => Student(null, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val students = validStudents ++ invalidStudents
+
+      repo addMany students
+      repo.getAll[Student].get shouldBe Set.empty
+    }
   }
 
   override protected def beforeEach(): Unit = {

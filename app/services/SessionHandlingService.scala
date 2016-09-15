@@ -2,10 +2,10 @@ package services
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import models.{InvalidSession, Session, ValidSession}
 import store.Resolvers
-
+import akka.pattern.pipe
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
@@ -51,11 +51,11 @@ object SessionServiceActor {
 
   case class SessionRequest(user: String, password: String)
 
-  private[services] case class SessionRemovalRequest(id: UUID)
-
-  private[services] case class ValidationRequest(id: UUID)
-
   private[SessionServiceActor] case object Update
+
+  case class SessionRemovalRequest(id: UUID)
+
+  case class ValidationRequest(id: UUID)
 
   sealed trait Authentication
 
@@ -64,6 +64,8 @@ object SessionServiceActor {
   case class NotAuthenticated(invalid: InvalidSession) extends Authentication
 
   case class AuthenticationError(error: Throwable) extends Authentication
+
+  private[services] case class Processed(receiver: ActorRef, session: Map[String, ValidSession], response: Authentication)
 
 }
 
@@ -78,27 +80,25 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
 
   context.system.scheduler.schedule(5.seconds, 10.seconds, self, Update)
 
-  override def receive: Receive = sessionHandling(Map())
+  override def receive: Receive = sessionHandling(Map.empty)
 
   def sessionHandling(sessions: Map[String, ValidSession]): Receive = {
     case SessionRequest(user, password) =>
       val requester = sender()
-
       ldap.authenticate(user, password)
         .flatMap(isAuthorized => resolve(user, isAuthorized))
         .map {
-          case valid@ValidSession(username, _, _, _) => (sessions + (username -> valid), Authenticated(valid))
-          case invalid@InvalidSession(_) => (sessions, NotAuthenticated(invalid))
+          case valid@ValidSession(username, _, _, _) => Processed(requester, sessions + (username -> valid), Authenticated(valid))
+          case invalid@InvalidSession(_) => Processed(requester, sessions, NotAuthenticated(invalid))
         }
         .recover {
-          case NonFatal(error) => (sessions, AuthenticationError(error))
+          case NonFatal(error) => Processed(requester, sessions, AuthenticationError(error))
         }
-        .onSuccess {
-          case ((ns, response)) =>
-            requester ! response
-            context.become(sessionHandling(ns))
-        }
+        .pipeTo(self)
 
+    case Processed(receiver, ns, response) =>
+      receiver ! response
+      context become sessionHandling(ns)
 
     case ValidationRequest(id) =>
       val requester = sender()
@@ -112,10 +112,10 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
           .getOrElse((sessions, false))
 
       requester ! response
-      context.become(sessionHandling(ns))
+      context become sessionHandling(ns)
 
     case Update =>
-      context.become(sessionHandling(sessions.filter(_._2.expirationDate.isAfterNow)))
+      context become sessionHandling(sessions.filter(_._2.expirationDate.isAfterNow))
   }
 
   def resolve(systemId: String, isAuthorized: Boolean): Future[Session] = {

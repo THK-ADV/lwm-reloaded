@@ -32,24 +32,25 @@ object LwmActions {
   object SecureAction {
 
     def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*))(roleService, sessionService)(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*))(roleService, sessionService)(block)
     }
 
     def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*)).async(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*)).async(block)
     }
   }
 
   object SecureContentTypedAction {
 
     def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
     def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
-      securedAction(authorities => roleService.checkAuthority(ps)(authorities:_*)).async(LwmBodyParser.parseWith(mimeType))(block)
+      securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*)).async(LwmBodyParser.parseWith(mimeType))(block)
     }
   }
+
 }
 
 case class AuthRequest[A](private val unwrapped: Request[A], authorities: Seq[Authority]) extends WrappedRequest[A](unwrapped)
@@ -98,16 +99,14 @@ case class Authorized(roleService: RoleServiceLike) extends ActionFunction[IdReq
     def f = block compose (AuthRequest.apply[A] _).curried(request)
 
     roleService.authorities(UUID.fromString(request.userId)) match {
-      case Success(authorities) =>
-        if (authorities.nonEmpty)
-          f(authorities.toSeq)
-        else
-          Future.successful {
-            Unauthorized(Json.obj(
-              "status" -> "KO",
-              "message" -> s"No authority found for ${request.userId}"
-            ))
-          }
+      case Success(authorities) if authorities.nonEmpty => f(authorities.toSeq)
+      case Success(_) =>
+        Future.successful {
+          Unauthorized(Json.obj(
+            "status" -> "KO",
+            "message" -> s"No authority found for ${request.userId}"
+          ))
+        }
       case Failure(e) =>
         Future.successful {
           InternalServerError(Json.obj(
