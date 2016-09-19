@@ -9,7 +9,7 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
 
 case class Blacklist(label: String, dates: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = Blacklist.randomUUID) extends UniqueEntity {
 
-  import Blacklist.dateOrd
+  import models.semester.Blacklist.dateOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case Blacklist(l, e, _, i) => l == label && dates.toVector.sorted.zip(e.toVector.sorted).forall(d => d._1.isEqual(d._2)) && id == i
@@ -18,7 +18,7 @@ case class Blacklist(label: String, dates: Set[DateTime], invalidated: Option[Da
 }
 
 case class BlacklistProtocol(label: String, dates: Set[DateTime]) {
-  import Blacklist.dateOrd
+  import models.semester.Blacklist.dateOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case BlacklistProtocol(l, e) => l == label && dates.toVector.sorted.zip(e.toVector.sorted).forall(d => d._1.isEqual(d._2))

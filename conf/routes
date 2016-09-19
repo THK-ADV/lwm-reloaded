@@ -157,8 +157,10 @@ DELETE        /courses/:c/timetables/:id                                        
 
 # Blacklist
 POST          /blacklists                                                             controllers.crud.semester.BlacklistCRUDController.create()
+POST          /blacklists/year/:year                                                  controllers.crud.semester.BlacklistCRUDController.createFor(year)
 PUT           /blacklists/:id                                                         controllers.crud.semester.BlacklistCRUDController.update(id)
 GET           /blacklists                                                             controllers.crud.semester.BlacklistCRUDController.all()
+GET           /blacklists/current                                                     controllers.crud.semester.BlacklistCRUDController.allCurrent()
 GET           /blacklists/:id                                                         controllers.crud.semester.BlacklistCRUDController.get(id)
 DELETE        /blacklists/:id                                                         controllers.crud.semester.BlacklistCRUDController.delete(id)
 HEAD          /blacklists                                                             controllers.crud.semester.BlacklistCRUDController.header
@@ -234,7 +236,9 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                               controllers.SessionController.header
 
 # APIData
-GET           /api/hello                                                              controllers.ApiDataController.hello
+GET           /api/patch/timetableEntry                                               controllers.ApiDataController.patchTimetableEntry
+GET           /api/remove/blacklists                                                  controllers.ApiDataController.removeBlacklists
+
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
