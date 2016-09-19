@@ -44,7 +44,7 @@ case class ReportCardEntryAtom(student: Student, labwork: Labwork, label: String
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
-case class ReportCardEvaluationAtom(student: Student, labwork: Labwork, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ReportCardEvaluationAtom(student: Student, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 /**
   * Companions
@@ -104,7 +104,19 @@ object ReportCardEvaluation extends UriGenerator[ReportCardEvaluation] with Json
 
   override implicit def writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
 
-  override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = Json.writes[ReportCardEvaluationAtom]
+  override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = Writes[ReportCardEvaluationAtom] { eval =>
+    val base = Json.obj(
+      "student" -> Json.toJson(eval.student),
+      "labwork" -> Json.toJson(eval.labwork)(Labwork.writesAtom),
+      "label" -> eval.label,
+      "bool" -> eval.bool,
+      "int" -> eval.int,
+      "timestamp" -> eval.timestamp
+    )
+    eval.invalidated.fold(base)(invalid =>
+      base + ("invalidated" -> Json.toJson(invalid))
+    ) + ("id" -> Json.toJson(eval.id.toString))
+  }
 
 }
 
