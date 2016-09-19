@@ -6,6 +6,23 @@ import org.joda.time.DateTime
 
 import scala.concurrent.Future
 
+sealed trait BlacklistDate {
+  def date: DateTime
+
+  def matching(timetableDateEntry: TimetableDateEntry) = this match {
+    case EntireDate(entire) =>
+      timetableDateEntry.date.isEqual(entire.toLocalDate)
+    case PartialDate(partial) =>
+      val startDate = timetableDateEntry.date.toDateTime(timetableDateEntry.start)
+      val endDate = timetableDateEntry.date.toDateTime(timetableDateEntry.end)
+      startDate.isEqual(partial) || partial.isAfter(startDate) && partial.isBefore(endDate)
+  }
+}
+
+case class EntireDate(date: DateTime) extends BlacklistDate
+
+case class PartialDate(date: DateTime) extends BlacklistDate
+
 object BlacklistService {
 
   def legalHolidayLabel(year: String) = s"NRW Feiertage $year"
@@ -15,26 +32,14 @@ object BlacklistService {
 
 trait BlacklistServiceLike {
 
-  def applyBlacklist(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry]
+  def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry]
 
   def fetchByYear(year: String): Future[Blacklist]
 }
 
 class BlacklistService extends BlacklistServiceLike {
 
-  override def applyBlacklist(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry] = {
-    def checkLocal(dateEntry: TimetableDateEntry, blacklist: DateTime): Boolean = {
-      if (blacklist.getHourOfDay == 0)
-        dateEntry.date.isEqual(blacklist.toLocalDate)
-      else {
-        val startDate = dateEntry.date.toDateTime(dateEntry.start)
-        val endDate = dateEntry.date.toDateTime(dateEntry.end)
-        startDate.isEqual(blacklist) || blacklist.isAfter(startDate) && blacklist.isBefore(endDate)
-      }
-    }
-
-    entries.filterNot(e => blacklists.exists(bl => checkLocal(e, bl)))
-  }
+  override def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry] = (lift _ andThen filterNot(entries))(blacklists)
 
   override def fetchByYear(year: String): Future[Blacklist] = {
     import services.BlacklistService._
@@ -50,4 +55,11 @@ class BlacklistService extends BlacklistServiceLike {
       _ <- Future.successful(sslClient.close())
     } yield Blacklist(legalHolidayLabel(year), dates)
   }
+
+  private def lift(blacklist: Set[DateTime]): Set[BlacklistDate] = blacklist map {
+    case entire if entire.getHourOfDay == 0 => EntireDate(entire)
+    case partial => PartialDate(partial)
+  }
+
+  private def filterNot(entries: Vector[TimetableDateEntry])(blacklists: Set[BlacklistDate]) = entries filterNot (entry => blacklists exists(_.matching(entry)))
 }

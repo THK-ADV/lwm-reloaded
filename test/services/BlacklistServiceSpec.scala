@@ -37,7 +37,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       val entries = timetableDateEntries
       val blacklists = Set.empty[DateTime]
 
-      val result = blacklistService.applyBlacklist(entries, blacklists)
+      val result = blacklistService.filterBy(entries, blacklists)
 
       blacklists.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe blacklists.size
       result.map(toLocalDateTime).intersect(blacklists.map(_.toLocalDateTime).toVector) shouldBe empty
@@ -55,7 +55,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         entries.slice(10, 20).map(toDateTime).toSet ++
         entries.slice(20, 30).map(toDateTime).toSet
 
-      val result = blacklistService.applyBlacklist(entries, blacklists)
+      val result = blacklistService.filterBy(entries, blacklists)
 
       blacklists.count(l => entries.exists(_.start.isEqual(l.toLocalTime))) shouldBe blacklists.size
       result.map(toLocalDateTime).intersect(blacklists.map(_.toLocalDateTime).toVector) shouldBe empty
@@ -91,7 +91,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
         DateTime.now.withDayOfMonth(DAY_OTHER + 1).withTime(16, 0, 0, 0)
       )
 
-      val result = blacklistService.applyBlacklist(entries, blacklists)
+      val result = blacklistService.filterBy(entries, blacklists)
 
       result.map(toLocalDateTime).exists(_.getDayOfMonth == DAY_TWO) shouldBe false
       result.map(toLocalDateTime).count(_.getDayOfMonth == DAY_ONE) shouldBe entries.map(toLocalDateTime).count(_.getDayOfMonth == DAY_ONE) - DAY_TWO

@@ -20,7 +20,7 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
         vec ++ nextWeek
     }
 
-    val filtered = blacklistService.applyBlacklist(extrapolated, timetable.localBlacklist)
+    val filtered = blacklistService.filterBy(extrapolated, timetable.localBlacklist)
 
     takeAppointments(filtered, assignmentPlan, groups.size) match {
       case enough if enough.size >= appointments => enough
