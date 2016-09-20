@@ -11,6 +11,8 @@ import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 
+import scala.util.Try
+
 class ApiDataController(private val repository: SesameRepository) extends Controller {
 
   implicit val ns = repository.namespace
@@ -41,7 +43,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     def lookAt = repository.connect(conn => repository.sparqlOps.parseSelect(check) flatMap (s => conn.executeSelect(s)))
 
     lookAt map (s =>  println(s map (_.getValue("v"))))
-    repository.connect(_.prepareUpdate(QueryLanguage.SPARQL, update).execute())
+    repository.connect(c => Try(c.prepareUpdate(QueryLanguage.SPARQL, update).execute()))
     lookAt map (s =>  println(s map (_.getValue("v"))))
 
     Ok

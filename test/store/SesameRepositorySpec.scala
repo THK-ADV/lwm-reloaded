@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models._
-import models.labwork.{ReportCardEntry, ReportCardEntryType, ReportCardEvaluation}
+import models.labwork.{ReportCardEntry, ReportCardEntryType}
 import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.{LocalDate, LocalTime}
 
@@ -93,7 +93,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         case Success(Some(s)) =>
           fail("repo should've deleted the student")
         case Success(None) =>
-          repo.size shouldBe 0
+          repo.size.get shouldBe 0
         case Failure(e) =>
           fail("repo could not return explicit entity")
       }
@@ -149,7 +149,7 @@ class SesameRepositorySpec extends SesameDbSpec {
       val postStudent = repo get[Student] User.generateUri(student)
 
       (postDegree, postStudent) match {
-        case (Success(None), Success(None)) => repo.size shouldBe 0
+        case (Success(None), Success(None)) => repo.size.get shouldBe 0
         case (Success(Some(_)), _) => fail("one of the entities was not deleted")
         case (_, Success(Some(_))) => fail("one of the entities was not deleted")
         case _ => fail(s"entities could not be deleted")
@@ -276,8 +276,8 @@ class SesameRepositorySpec extends SesameDbSpec {
       val didContainStudent = repo contains User.generateUri(student)
       val didContainAnotherStudent = repo contains User.generateUri(anotherStudent)
 
-      didContainStudent shouldBe true
-      didContainAnotherStudent shouldBe false
+      didContainStudent.get shouldBe true
+      didContainAnotherStudent.get shouldBe false
     }
 
     "delete many properly" in {
@@ -288,9 +288,9 @@ class SesameRepositorySpec extends SesameDbSpec {
       repo deleteMany (students map User.generateUri) match {
         case Success(s) =>
           students count { student =>
-            !(repo contains User.generateUri(student))
+            !(repo contains User.generateUri(student) getOrElse false)
           } shouldBe students.size
-          repo.size shouldBe 0
+          repo.size.get shouldBe 0
         case Failure(e) =>
           fail(s"Deletion should succeed", e)
       }
@@ -306,13 +306,22 @@ class SesameRepositorySpec extends SesameDbSpec {
           fail(s"Deletion should succeed", e)
       }
     }
+
+    "rollback transactions" in {
+      val validStudents = (0 until 2) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val invalidStudents = (0 until 3) map (i => Student(null, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val students = validStudents ++ invalidStudents
+
+      repo addMany students
+      repo.getAll[Student].get shouldBe Set.empty
+    }
   }
 
   override protected def beforeEach(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 
   override protected def beforeAll(): Unit = {
-    repo.reset().foreach(r => assert(repo.size == 0))
+    repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 }

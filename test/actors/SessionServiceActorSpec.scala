@@ -6,9 +6,10 @@ import akka.util.Timeout
 import base.TestBaseDefinition
 import models.Degree
 import models.security._
-import models.users.Student
+import models.users.{Student, User}
 import org.mockito.Matchers._
-import org.mockito.Mockito.when
+import org.mockito.Mockito
+import org.mockito.Mockito.{when, doReturn}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import services.{LdapService, SessionServiceActor}
@@ -83,6 +84,30 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
           session.username shouldBe user.systemId
         case _ => fail("Should not return a failure")
       }
+    }
+
+    "keep track of sessions within a closure" in {
+      import bindings.RoleDescriptor
+
+      val user1 = Student("mi1111", "lastname1", "firstname1", "email1", "regid1", User.randomUUID)
+      val user2 = Student("mi1112", "lastname2", "firstname2", "email2", "regid2", User.randomUUID)
+
+      when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
+      doReturn(Future.successful(user1))
+        .doReturn(Future.successful(user2))
+        .when(ldap).user(anyString())(anyObject())
+
+      val studentRole = Role(Roles.Student, Set(Permissions.labworkApplication.create))
+      val employeeRole = Role(Roles.Employee, Set(Permissions.course.create, Permissions.timetable.create))
+
+      repository.add[Role](studentRole)
+      repository.add[Role](employeeRole)
+
+      val auth1 = Await.result((actorRef ? SessionServiceActor.SessionRequest(user1.systemId, "")).mapTo[Authenticated], timeout.duration)
+      val auth2 = Await.result((actorRef ? SessionServiceActor.SessionRequest(user2.systemId, "")).mapTo[Authenticated], timeout.duration)
+      val existence = Await.result((actorRef ? SessionServiceActor.ValidationRequest(auth2.session.id)).mapTo[Boolean], timeout.duration)
+
+      existence shouldBe true
     }
   }
 
