@@ -68,10 +68,11 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
 
   def current = contextFrom(Get) action { implicit request =>
     import models.semester.Semester.writes
+    import models.semester.Semester.findCurrent
 
     retrieveAll[Semester](descriptor).
-      map(_.filter(semester => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow)).
-      mapResult(semesters => Ok(Json.toJson(semesters)).as(mimeType))
+      flatMap(semesters => optional2(findCurrent(semesters))).
+      mapResult(semester => Ok(Json.toJson(semester)).as(mimeType))
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = Success(all)

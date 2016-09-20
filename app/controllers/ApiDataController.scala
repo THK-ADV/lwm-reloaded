@@ -1,10 +1,15 @@
 package controllers
 
+import models.semester.Blacklist
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
+import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
+import store.bind.Bindings
+
+import scala.util.{Failure, Success}
 
 import scala.util.Try
 
@@ -12,7 +17,9 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
 
   implicit val ns = repository.namespace
 
-  def hello = Action { implicit request =>
+  private val bindings = Bindings[repository.Rdf](repository.namespace)
+
+  def patchTimetableEntry = Action { implicit request =>
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
@@ -40,5 +47,24 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     lookAt map (s =>  println(s map (_.getValue("v"))))
 
     Ok
+  }
+
+  def removeBlacklists() = Action { implicit request =>
+    import bindings.BlacklistDescriptor
+
+    val result = repository.getAll[Blacklist] flatMap { blacklists =>
+      repository.deleteMany[Blacklist](blacklists map Blacklist.generateUri)
+    }
+
+    result match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "message" -> s"deleted ${s.size} elements"
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
   }
 }

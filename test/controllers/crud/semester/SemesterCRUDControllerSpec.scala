@@ -18,6 +18,22 @@ import org.joda.time.format.DateTimeFormat
 
 import scala.util.{Failure, Success}
 
+object SemesterCRUDControllerSpec {
+
+  def populate = {
+    val template = {
+      val start = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5)
+      Semester("template", "template", start, start.plusMonths(6), start.plusMonths(5))
+    }
+
+    (0 until 20).foldLeft((Set.empty[Semester], template)) {
+      case ((vector, prev), i) =>
+        val current = Semester(i.toString, i.toString, prev.end.plusDays(1), prev.end.plusDays(1).plusMonths(6), prev.end.plusDays(1).plusMonths(5))
+        (vector + current, current)
+    }._1
+  }
+}
+
 class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester, Semester] {
 
   override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now)
@@ -72,17 +88,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     "successfully return current semester" in {
       import models.semester.Semester.reads
-
-      val template = {
-        val start = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5)
-        Semester("template", "template", start, start.plusMonths(6), start.plusMonths(5))
-      }
-
-      val semesters = (0 until 20).foldLeft((Set.empty[Semester], template)) {
-        case ((vector, prev), i) =>
-          val current = Semester(i.toString, i.toString, prev.end.plusDays(1), prev.end.plusDays(1).plusMonths(6), prev.end.plusDays(1).plusMonths(5))
-          (vector + current, current)
-      }._1
+      val semesters = SemesterCRUDControllerSpec.populate
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
@@ -92,17 +98,11 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       )
 
       val result = controller.asInstanceOf[SemesterCRUDController].current()(request)
+      val current = semesters.filter(semester => semester.start.isBefore(LocalDate.now) && semester.end.isAfter(LocalDate.now))
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-
-      contentAsJson(result).as[List[SemesterProtocol]] match {
-        case semester :: Nil =>
-          val now = LocalDate.now
-          semester.start.isBefore(now) && semester.end.isAfter(now) shouldBe true
-        case _ :: tail => fail(s"only one semester expected but found $tail")
-        case _ => fail("can't serialize semester")
-      }
+      contentFromStream(result) shouldBe current.map(s => Json.toJson(s))
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {

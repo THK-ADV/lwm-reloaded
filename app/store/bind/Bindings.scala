@@ -813,10 +813,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
         .pointsAt(StudentDescriptor.references)
-        .pointsAt(LabworkDescriptor.references)
+        .pointsAt(LabworkAtomDescriptor.references)
 
     private val student = property[Student](lwm.student)(StudentDescriptor.binder)
-    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val label = property[String](lwm.label)
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)

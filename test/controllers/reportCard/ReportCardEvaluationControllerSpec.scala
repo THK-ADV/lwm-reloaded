@@ -4,9 +4,11 @@ import java.util.UUID
 
 import base.StreamHandler._
 import controllers.crud.AbstractCRUDControllerSpec
+import models.{Course, CourseAtom, Degree}
 import models.labwork._
-import models.users.Student
-import org.joda.time.DateTime
+import models.semester.Semester
+import models.users.{Employee, Student}
+import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers._
 import org.mockito.Mockito.{doReturn, when}
 import org.mockito.stubbing.OngoingStubbing
@@ -49,8 +51,20 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
   implicit val binder = ReportCardEvaluationDescriptor.binder
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+
+  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+  val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
+
+  val degreeToPass = Degree("label to pass", "abbrev to pass")
+  val degreeToFail = Degree("label to fail", "abbrev to fail")
+
+  val courseToPass = CourseAtom("label to pass", "desc to pass", "abbrev to pass", employeeToPass, 1, None, UUID.randomUUID)
+  val courseToFail = CourseAtom("label to fail", "desc to fail", "abbrev to fail", employeeToFail, 1, None, UUID.randomUUID)
+
+  val labworkToPass = LabworkAtom("label to pass", "desc to pass", semesterToPass, courseToPass, degreeToPass, subscribable = false, published = false, None, UUID.randomUUID)
+  val labworkToFail = LabworkAtom("label to fail", "desc to fail", semesterToFail, courseToFail, degreeToFail, subscribable = false, published = false, None, UUID.randomUUID)
 
   val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val studentToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())

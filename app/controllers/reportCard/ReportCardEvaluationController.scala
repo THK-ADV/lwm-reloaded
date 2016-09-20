@@ -228,12 +228,12 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   private def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {
-    import defaultBindings.{LabworkDescriptor, StudentDescriptor}
+    import defaultBindings.{LabworkAtomDescriptor, StudentDescriptor}
 
     SemanticUtils.collect {
       evals map { eval =>
         for {
-          optLabwork <- repository.get[Labwork](Labwork.generateUri(eval.labwork))
+          optLabwork <- repository.get[LabworkAtom](Labwork.generateUri(eval.labwork))
           optStudent <- repository.get[Student](User.generateUri(eval.student))
         } yield for {
           l <- optLabwork; s <- optStudent

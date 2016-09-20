@@ -4,21 +4,16 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models.labwork._
-import models.semester.{Blacklist, Semester}
+import models.semester.Semester
 import models.users.User
 import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime, Weeks}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
-import org.scalatest.mock.MockitoSugar.mock
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import store.SesameRepository
 import utils.{Evaluation, Gen}
 
 import scala.language.postfixOps
 import scala.util.Random._
-import scala.util.Success
 import utils.Ops.MonoidInstances._
 
 object ScheduleServiceSpec {
@@ -43,10 +38,9 @@ object ScheduleServiceSpec {
 }
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
-  import ScheduleServiceSpec._
+  import services.ScheduleServiceSpec._
   
-  val repo = mock[SesameRepository]
-  val blacklistService = new BlacklistService(repo)
+  val blacklistService = new BlacklistService
   val timetableService = new TimetableService(blacklistService)
   val scheduleService = new ScheduleService(timetableService)
 
@@ -65,8 +59,6 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         (comp ++ Vector(result._1.elem), Vector((result._1, result._2)))
     }._2
   }
-
-  when(repo.getAll[Blacklist](anyObject())).thenReturn(Success(Set.empty[Blacklist]))
 
   "A ScheduleService" should {
 
