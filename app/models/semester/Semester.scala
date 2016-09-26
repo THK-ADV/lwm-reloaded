@@ -35,7 +35,7 @@ object Semester extends UriGenerator[Semester] with JsonSerialisation[SemesterPr
 
   implicit def format: Format[Semester] = Json.format[Semester]
 
-  def currentPredicate(semester: Semester): Boolean = {
+  def isCurrent(semester: Semester): Boolean = {
     new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow
   }
 }

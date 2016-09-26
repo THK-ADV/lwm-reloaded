@@ -71,10 +71,10 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
     import controllers.crud.semester.SemesterCRUDController._
-    import models.semester.Semester.currentPredicate
+    import models.semester.Semester.isCurrent
 
     queryString.foldLeft(Try(all)) {
-      case (set, (`selectAttribute`, current)) if current.head == currentValue => set map (_.filter(currentPredicate))
+      case (set, (`selectAttribute`, current)) if current.head == currentValue => set map (_.filter(isCurrent))
       case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${other.head}"))
       case _ => Failure(new Throwable("Unknown attribute"))
     }

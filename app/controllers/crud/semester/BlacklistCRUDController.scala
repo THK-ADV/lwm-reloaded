@@ -56,15 +56,16 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = {
     import controllers.crud.semester.BlacklistCRUDController._
-    import models.semester.Semester.currentPredicate
+    import models.semester.Semester.isCurrent
     import defaultBindings.SemesterDescriptor
 
     queryString.foldLeft(Try(all)) {
       case (set, (`selectAttribute`, current)) if current.head == currentValue =>
         for {
-          semesters <- repository.getAll[Semester].map(_.find(currentPredicate))
+          semesters <- repository.getAll[Semester]
+          currentSemester = semesters.find(isCurrent)
           blacklists <- set
-        } yield semesters.fold(Set.empty[Blacklist]) { semester =>
+        } yield currentSemester.fold(Set.empty[Blacklist]) { semester =>
           blacklists.map { blacklist =>
             blacklist.copy(blacklist.label, blacklist.dates.filter(date => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).contains(date)))
           }.filter(_.dates.nonEmpty)

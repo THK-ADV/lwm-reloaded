@@ -91,7 +91,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
     "return all blacklists in current semester" in {
       import controllers.crud.semester.BlacklistCRUDController._
-      import models.semester.Semester.currentPredicate
+      import models.semester.Semester.isCurrent
 
       val semesters = SemesterCRUDControllerSpec.populate
       val blacklists = (0 until 10).map { i =>
@@ -114,7 +114,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
       val validResult = controller.all()(validRequest)
       val invalidResult = controller.all()(invalidRequest)
 
-      val currentSemester = semesters.find(currentPredicate)
+      val currentSemester = semesters.find(isCurrent)
       val currentBlacklists = currentSemester.map { semester =>
         blacklists.foldLeft(Set.empty[Blacklist]) {
           case (set, bl) =>
