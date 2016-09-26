@@ -568,9 +568,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Labwork.generateUri(entityToPass)))
       )))
-
+      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
       val request = FakeRequest(
         POST,
         s"/${entityTypeName}s",
@@ -589,10 +589,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     s"neither create n'or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
-      when(repository.get[Labwork](anyObject())(anyObject())).thenReturn(Success(None))
+      doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Labwork.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

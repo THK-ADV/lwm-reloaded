@@ -66,18 +66,17 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     case GetAll => PartialSecureBlock(labworkApplication.getAll)
   }
 
-  override protected def existsQuery(input: LabworkApplicationProtocol): (Clause, select.Var) = {
+  override protected def existsQuery(input: LabworkApplicationProtocol): Clause = {
     import store.sparql.select._
 
     lazy val prefixes = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select("id") where {
+    select("s") where {
       **(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)).
         **(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))).
-        **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace))).
-        **(v("s"), p(prefixes.id), v("id"))
-    }, v("id"))
+        **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace)))
+    }
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[LabworkApplication]): Try[Set[LabworkApplication]] = {

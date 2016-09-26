@@ -9,7 +9,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
-import store.sparql.SelectClause
+import store.sparql.{Clause, SelectClause, select}
 import store.{Namespace, SesameRepository}
 import utils.{Continue, LwmMimeType, Return}
 import models.security.Permissions._
@@ -19,7 +19,6 @@ import store.bind.Descriptor.Descriptor
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
-import store.sparql.select
 import store.sparql.select._
 
 object CourseCRUDController {
@@ -73,16 +72,15 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def existsQuery(input: CourseProtocol): (SelectClause, Var) = {
+  override protected def existsQuery(input: CourseProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select("id") where {
+    select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.Course)).
         **(v("s"), p(lwm.label), o(input.label)).
-        **(v("s"), p(lwm.lecturer), s(User.generateUri(input.lecturer)(namespace))).
-        **(v("s"), p(lwm.id), v("id"))
-    }, v("id"))
+        **(v("s"), p(lwm.lecturer), s(User.generateUri(input.lecturer)(namespace)))
+    }
   }
 
   override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Course]): Try[Set[Course]] = {

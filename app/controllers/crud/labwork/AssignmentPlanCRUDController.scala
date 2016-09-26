@@ -94,15 +94,14 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     }
   }
 
-  override protected def existsQuery(input: AssignmentPlanProtocol): (Clause, select.Var) = {
+  override protected def existsQuery(input: AssignmentPlanProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select("id") where {
+    select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.AssignmentPlan)).
-        **(v("s"), p(lwm.labwork), s(Labwork.generateUri(input.labwork))).
-        **(v("s"), p(lwm.id), v("id"))
-    }, v("id"))
+        **(v("s"), p(lwm.labwork), s(Labwork.generateUri(input.labwork)))
+    }
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>

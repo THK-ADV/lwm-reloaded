@@ -17,6 +17,7 @@ case class LabworkAtom(label: String, description: String, semester: Semester, c
 object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork, LabworkAtom] {
 
   import Course.atomicFormat
+  import models.semester.Semester._
 
   override implicit def reads: Reads[LabworkProtocol] = Json.reads[LabworkProtocol]
 

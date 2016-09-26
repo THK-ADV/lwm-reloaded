@@ -62,7 +62,6 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, 
 object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
 
   import models.labwork.Labwork.formatAtom
-  import models.semester.Semester.format
 
   override implicit def reads: Reads[ScheduleEntry] = Json.reads[ScheduleEntry]
 

@@ -83,17 +83,16 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     case Delete => PartialSecureBlock(prime)
   }
 
-  override protected def existsQuery(input: LabworkProtocol): (Clause, select.Var) = {
+  override protected def existsQuery(input: LabworkProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select("id") where {
+    select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.Labwork)).
         **(v("s"), p(lwm.semester), s(Semester.generateUri(input.semester)(namespace))).
         **(v("s"), p(lwm.course), s(Course.generateUri(input.course)(namespace))).
-        **(v("s"), p(lwm.degree), s(Degree.generateUri(input.degree)(namespace))).
-        **(v("s"), p(lwm.id), v("id"))
-    }, v("id"))
+        **(v("s"), p(lwm.degree), s(Degree.generateUri(input.degree)(namespace)))
+    }
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {

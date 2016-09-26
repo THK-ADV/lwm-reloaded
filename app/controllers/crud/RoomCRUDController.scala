@@ -46,15 +46,14 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
     case _ => PartialSecureBlock(prime)
   }
 
-  override protected def existsQuery(input: RoomProtocol): (Clause, select.Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
+  override protected def existsQuery(input: RoomProtocol): Clause = {
+    lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Room)).
-        **(v("s"), p(prefixes.label), o(input.label)).
-        **(v("s"), p(prefixes.id), v("id"))
-    }, v("id"))
+    select("id") where {
+      **(v("s"), p(rdf.`type`), s(lwm.Room)).
+        **(v("s"), p(lwm.label), o(input.label))
+    }
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Try[Set[Room]] = Success(all)

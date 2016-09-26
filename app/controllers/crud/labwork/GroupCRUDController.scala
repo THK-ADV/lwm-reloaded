@@ -69,7 +69,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {
-    import GroupCRUDController._
+    import controllers.crud.labwork.GroupCRUDController._
 
     queryString.foldRight(Try[Set[Group]](all)) {
       case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))

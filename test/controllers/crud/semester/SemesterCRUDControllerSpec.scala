@@ -122,8 +122,9 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
       )))
+      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -143,10 +144,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     s"neither create or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
-      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(None))
+      doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

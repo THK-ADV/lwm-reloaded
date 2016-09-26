@@ -40,20 +40,19 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, None, Semester.randomUUID)
   }
 
-  override protected def existsQuery(input: SemesterProtocol): (Clause, select.Var) = {
+  override protected def existsQuery(input: SemesterProtocol): Clause = {
     import store.sparql.select
     import store.sparql.select._
 
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    (select ("id") where {
+    select ("id") where {
       **(v("s"), p(rdf.`type`), s(lwm.Semester)) .
         **(v("s"), p(lwm.label), o(input.label)) .
         **(v("s"), p(lwm.start), o(input.start)) .
-        **(v("s"), p(lwm.end), o(input.end)) .
-        **(v("s"), p(lwm.id), v("id"))
-    }, v("id"))
+        **(v("s"), p(lwm.end), o(input.end))
+    }
   }
 
   override protected def coAtomic(atom: Semester): Semester = atom
