@@ -63,28 +63,27 @@ trait SessionChecking {
   implicit def sessionService: SessionHandlingService
 }
 
-trait Consistent[I, O] {
+trait Consistent[I, O <: UniqueEntity] {
 
-  import store.sparql.select._
   import store.sparql.{Clause, NoneClause, SelectClause}
 
-  final def exists(input: I)(repository: SesameRepository): Try[Option[UUID]] = {
+  final def exists(input: I)(repository: SesameRepository)(implicit descriptor: Descriptor[repository.Rdf, O]): Try[Option[O]] = {
     import utils.Ops.NaturalTrasformations._
-    val (clause, key) = existsQuery(input)
+    import utils.Ops.TraverseInstances.travO
 
-    clause match {
+    existsQuery(input) match {
       case select@SelectClause(_, _) =>
         repository.prepareQuery(select).
-          select(_.get(key.v)).
+          select(_.get("s")).
           changeTo(_.headOption).
-          map(value => UUID.fromString(value.stringValue())).
+          request(uri => repository.get[O](uri.stringValue())).
           run
 
       case _ => Success(None)
     }
   }
 
-  protected def existsQuery(input: I): (Clause, Var) = (NoneClause, v(""))
+  protected def existsQuery(input: I): Clause = NoneClause
 
   protected def compareModel(input: I, output: O): Boolean
 }
@@ -474,7 +473,7 @@ trait Updated[I, O <: UniqueEntity, A <: UniqueEntity] {
       Return(Accepted(Json.obj(
         "status" -> "KO",
         "message" -> "model already exists",
-        "id" -> duplicate.toString
+        "id" -> duplicate.id.toString
       )))
     case Success(None) =>
       Continue(fromInput(input))

@@ -88,28 +88,43 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     "successfully return current semester" in {
       import models.semester.Semester.reads
+      import controllers.crud.semester.SemesterCRUDController._
       val semesters = SemesterCRUDControllerSpec.populate
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
-      val request = FakeRequest(
+      val validRequest = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}/current"
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=$currentValue"
       )
 
-      val result = controller.asInstanceOf[SemesterCRUDController].current()(request)
+      val invalidRequest = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=not_current"
+      )
+
+      val validResult = controller.all()(validRequest)
+      val invalidResult = controller.all()(invalidRequest)
       val current = semesters.filter(semester => semester.start.isBefore(LocalDate.now) && semester.end.isAfter(LocalDate.now))
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe current.map(s => Json.toJson(s))
+      status(validResult) shouldBe OK
+      contentType(validResult) shouldBe Some(mimeType.value)
+      contentFromStream(validResult) shouldBe current.map(s => Json.toJson(s))
+
+      status(invalidResult) shouldBe SERVICE_UNAVAILABLE
+      contentType(invalidResult) shouldBe Some("application/json")
+      contentAsJson(invalidResult) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Value of $selectAttribute should be $currentValue, but was not_current"
+      )
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
       )))
+      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -129,10 +144,10 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     }
 
     s"neither create or update an existing $entityTypeName when resource does not exists although body would lead to duplication" in {
-      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(None))
+      doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "id" -> List(factory.createLiteral(entityToPass.id.toString))
+        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

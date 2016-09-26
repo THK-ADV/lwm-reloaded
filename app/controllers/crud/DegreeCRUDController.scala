@@ -47,17 +47,17 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def existsQuery(input: DegreeProtocol): (Clause, select.Var) = {
-    lazy val prefixes = LWMPrefix[repository.Rdf]
+  override protected def existsQuery(input: DegreeProtocol): Clause = {
+    lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
+
     import store.sparql.select
     import store.sparql.select._
 
-    (select ("id") where {
-      **(v("s"), p(rdf.`type`), s(prefixes.Degree)) .
-        **(v("s"), p(prefixes.abbreviation), o(input.abbreviation)).
-        **(v("s"), p(prefixes.id), v("id"))
-    }, v("id"))
+    select ("s") where {
+      **(v("s"), p(rdf.`type`), s(lwm.Degree)) .
+        **(v("s"), p(lwm.abbreviation), o(input.abbreviation))
+    }
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)

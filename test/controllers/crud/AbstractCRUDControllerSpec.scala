@@ -58,7 +58,7 @@ abstract class AbstractCRUDControllerSpec[I, O <: UniqueEntity, A <: UniqueEntit
 
   implicit def jsonWritesAtom: Writes[A]
 
-  def namespace: Namespace = Namespace("http://testNamespace/")
+  implicit def namespace: Namespace = Namespace("http://testNamespace/")
 
   def plural(s: String): String = if(s.endsWith("y")) s.take(s.length - 1) + "ies" else s + "s"
 

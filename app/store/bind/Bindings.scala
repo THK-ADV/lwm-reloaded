@@ -614,12 +614,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(LabworkDescriptor.references)
+        .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(RoomDescriptor.references)
         .pointsAt(EmployeeDescriptor.references)
         .pointsAt(GroupDescriptor.references)
 
-    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
     private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
     private val group = property[Group](lwm.group)(GroupDescriptor.binder)

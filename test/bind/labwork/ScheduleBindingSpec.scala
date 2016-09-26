@@ -3,11 +3,13 @@ package bind.labwork
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.Room
+import models.{Course, CourseAtom, Degree, Room}
 import models.labwork._
+import models.semester.Semester
 import models.users.{Employee, User}
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
+
 import scala.util.{Failure, Success}
 
 class ScheduleBindingSpec extends SesameDbSpec {
@@ -83,6 +85,9 @@ class ScheduleBindingSpec extends SesameDbSpec {
       import bindings.{
       LabworkDescriptor,
       RoomDescriptor,
+      SemesterDescriptor,
+      CourseDescriptor,
+      DegreeDescriptor,
       EmployeeDescriptor,
       GroupDescriptor,
       ScheduleEntryDescriptor,
@@ -90,7 +95,15 @@ class ScheduleBindingSpec extends SesameDbSpec {
       ScheduleAtomDescriptor
       }
 
-      val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false)
+      val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+      val employee = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+      val course = Course("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
+      val degree = Degree("label to pass", "abbrev to pass")
+
+      val labwork = Labwork("labwork", "description", semester.id, courseAtom.id, degree.id, subscribable = false, published = false)
+      val labworkAtom = LabworkAtom(labwork.label, labwork.description, semester, courseAtom, degree, labwork.subscribable, labwork.subscribable, labwork.invalidated, labwork.id)
+
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
       val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
@@ -102,12 +115,16 @@ class ScheduleBindingSpec extends SesameDbSpec {
       val schedule = Schedule(labwork.id, Set(scheduleEntry1, scheduleEntry2))
 
       val scheduleAtom = ScheduleAtom(labwork, Set(
-        ScheduleEntryAtom(labwork, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, Set(supervisor1), group1, scheduleEntry1.invalidated, scheduleEntry1.id),
-        ScheduleEntryAtom(labwork, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, Set(supervisor2), group2, scheduleEntry2.invalidated, scheduleEntry2.id)
+        ScheduleEntryAtom(labworkAtom, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, Set(supervisor1), group1, scheduleEntry1.invalidated, scheduleEntry1.id),
+        ScheduleEntryAtom(labworkAtom, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, Set(supervisor2), group2, scheduleEntry2.invalidated, scheduleEntry2.id)
       ), schedule.invalidated, schedule.id)
 
 
       repo add labwork
+      repo add semester
+      repo add employee
+      repo add course
+      repo add degree
       repo addMany List(room1, room2)
       repo addMany List(supervisor1, supervisor2)
       repo addMany List(group1, group2)

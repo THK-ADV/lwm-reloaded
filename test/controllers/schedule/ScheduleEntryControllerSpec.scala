@@ -3,8 +3,10 @@ package controllers.schedule
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Room
+import models.{CourseAtom, Degree, Room}
 import models.labwork._
+import models.security.Permissions.labwork
+import models.semester.Semester
 import models.users.Employee
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
@@ -66,11 +68,16 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   }).toVector
 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
-    val labwork = Labwork("label", "desc", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false, None, e.labwork)
+    val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+    val employee = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+    val courseAtom = CourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
+    val degree = Degree("label to pass", "abbrev to pass")
+
+    val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, false, published = false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)
     val supervisor = e.supervisor map (Employee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
-    val group = Group("label", labwork.id, Set(), None, e.group)
-    ScheduleEntryAtom(labwork, e.start, e.end, e.date, room, supervisor, group, None, e.id)
+    val group = Group("label", labworkAtom.id, Set(), None, e.group)
+    ScheduleEntryAtom(labworkAtom, e.start, e.end, e.date, room, supervisor, group, None, e.id)
   }
 
   "A ScheduleEntry controller" should {
