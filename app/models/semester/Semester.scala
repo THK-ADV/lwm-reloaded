@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.{DateTime, Interval, LocalDate}
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Format, Json, Reads, Writes}
 
 case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, invalidated: Option[DateTime] = None, id: UUID = Semester.randomUUID) extends UniqueEntity {
 
@@ -32,6 +32,8 @@ object Semester extends UriGenerator[Semester] with JsonSerialisation[SemesterPr
   override def writesAtom: Writes[Semester] = writes
 
   override def base: String = "semesters"
+
+  implicit def format: Format[Semester] = Json.format[Semester]
 
   def currentPredicate(semester: Semester): Boolean = {
     new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow

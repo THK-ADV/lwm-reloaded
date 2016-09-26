@@ -40,7 +40,7 @@ case class ScheduleEntry(labwork: UUID,
 
 case class ScheduleAtom(labwork: Labwork, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: Labwork, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[Employee], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ScheduleEntryAtom(labwork: LabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[Employee], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
 
@@ -60,6 +60,9 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, 
 }
 
 object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
+
+  import models.labwork.Labwork.formatAtom
+  import models.semester.Semester.format
 
   override implicit def reads: Reads[ScheduleEntry] = Json.reads[ScheduleEntry]
 

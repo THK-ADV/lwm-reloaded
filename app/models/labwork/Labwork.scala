@@ -26,5 +26,7 @@ object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProto
 
   implicit def format: Format[Labwork] = Json.format[Labwork]
 
+  implicit def formatAtom: Format[LabworkAtom] = Json.format[LabworkAtom]
+
   override def base: String = "labworks"
 }
