@@ -4,10 +4,9 @@ import controllers.crud.AbstractCRUDController
 import models.UriGenerator
 import models.security.Permissions._
 import models.semester.{Semester, SemesterProtocol}
-import org.joda.time.Interval
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
@@ -16,7 +15,12 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 import scala.collection.Map
-import scala.util.{Success, Try}
+import scala.util.{Failure, Try}
+
+object SemesterCRUDController {
+  val selectAttribute = "select"
+  val currentValue = "current"
+}
 
 class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester, Semester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
@@ -66,14 +70,14 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     case _ => PartialSecureBlock(prime)
   }
 
-  def current = contextFrom(Get) action { implicit request =>
-    import models.semester.Semester.writes
-    import models.semester.Semester.findCurrent
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
+    import controllers.crud.semester.SemesterCRUDController._
+    import models.semester.Semester.currentPredicate
 
-    retrieveAll[Semester](descriptor).
-      flatMap(semesters => optional2(findCurrent(semesters))).
-      mapResult(semester => Ok(Json.toJson(semester)).as(mimeType))
+    queryString.foldLeft(Try(all)) {
+      case (set, (`selectAttribute`, current)) if current.head == currentValue => set map (_.filter(currentPredicate))
+      case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${other.head}"))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
   }
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = Success(all)
 }

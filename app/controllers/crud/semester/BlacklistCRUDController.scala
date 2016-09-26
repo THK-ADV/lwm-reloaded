@@ -2,7 +2,7 @@ package controllers.crud.semester
 
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
-import models.security.Permissions._
+import models.security.Permissions.{semester, _}
 import models.semester.{Blacklist, BlacklistProtocol, Semester}
 import org.joda.time.Interval
 import org.w3.banana.sesame.Sesame
@@ -15,7 +15,12 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
+
+object BlacklistCRUDController {
+  val selectAttribute = "select"
+  val currentValue = "current"
+}
 
 class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
 
@@ -49,7 +54,25 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
     case _ => PartialSecureBlock(prime)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = Success(all)
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = {
+    import controllers.crud.semester.BlacklistCRUDController._
+    import models.semester.Semester.currentPredicate
+    import defaultBindings.SemesterDescriptor
+
+    queryString.foldLeft(Try(all)) {
+      case (set, (`selectAttribute`, current)) if current.head == currentValue =>
+        for {
+          semesters <- repository.getAll[Semester].map(_.find(currentPredicate))
+          blacklists <- set
+        } yield semesters.fold(Set.empty[Blacklist]) { semester =>
+          blacklists.map { blacklist =>
+            blacklist.copy(blacklist.label, blacklist.dates.filter(date => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).contains(date)))
+          }.filter(_.dates.nonEmpty)
+        }
+      case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${other.head}"))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   def createFor(year: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,17 +86,5 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
         "message" -> t.getMessage
       ))
     }
-  }
-
-  def allCurrent = contextFrom(Get) action { implicit request =>
-    import models.semester.Semester.findCurrent
-    import defaultBindings.SemesterDescriptor
-
-    (for {
-      semester <- retrieveAll[Semester].flatMap(semesters => optional2(findCurrent(semesters)))
-      blacklists <- retrieveAll[Blacklist]
-    } yield blacklists.map { bl =>
-      bl.copy(bl.label, bl.dates.filter(date => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).contains(date)))
-    }.filter(_.dates.nonEmpty)).map(set => chunk(set)(writes)).mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 }

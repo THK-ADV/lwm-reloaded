@@ -90,21 +90,31 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     }
 
     "return all blacklists in current semester" in {
+      import controllers.crud.semester.BlacklistCRUDController._
+      import models.semester.Semester.currentPredicate
+
       val semesters = SemesterCRUDControllerSpec.populate
       val blacklists = (0 until 10).map { i =>
         import scala.util.Random._
         Blacklist(i.toString, (0 until 10).map(_ => DateTime.now.withMonthOfYear(nextInt(11) + 1).withDayOfMonth(nextInt(27) + 1).plusYears(if (nextBoolean) nextInt(2) + 1 * 1 else nextInt(2) + 1 * -1)).toSet)
       }.toSet
 
-     doReturn(Success(semesters)).doReturn(Success(blacklists)).when(repository).getAll(anyObject())
+     doReturn(Success(blacklists)).doReturn(Success(semesters)).when(repository).getAll(anyObject())
 
-      val request = FakeRequest(
+      val validRequest = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}/current"
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=$currentValue"
       )
 
-      val result = controller.allCurrent()(request)
-      val currentSemester = Semester.findCurrent(semesters)
+      val invalidRequest = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=not_current"
+      )
+
+      val validResult = controller.all()(validRequest)
+      val invalidResult = controller.all()(invalidRequest)
+
+      val currentSemester = semesters.find(currentPredicate)
       val currentBlacklists = currentSemester.map { semester =>
         blacklists.foldLeft(Set.empty[Blacklist]) {
           case (set, bl) =>
@@ -113,9 +123,16 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
         }
       }
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some[String](mimeType)
-      contentFromStream(result) shouldBe currentBlacklists.fold(Set.empty[JsValue])(set => set.map(s => Json.toJson(s)))
+      status(validResult) shouldBe OK
+      contentType(validResult) shouldBe Some[String](mimeType)
+      contentFromStream(validResult) shouldBe currentBlacklists.fold(Set.empty[JsValue])(set => set.map(s => Json.toJson(s)))
+
+      status(invalidResult) shouldBe SERVICE_UNAVAILABLE
+      contentType(invalidResult) shouldBe Some("application/json")
+      contentAsJson(invalidResult) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Value of $selectAttribute should be $currentValue, but was not_current"
+      )
     }
   }
 }

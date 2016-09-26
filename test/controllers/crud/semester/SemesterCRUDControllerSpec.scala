@@ -88,21 +88,35 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
 
     "successfully return current semester" in {
       import models.semester.Semester.reads
+      import controllers.crud.semester.SemesterCRUDController._
       val semesters = SemesterCRUDControllerSpec.populate
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
 
-      val request = FakeRequest(
+      val validRequest = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}/current"
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=$currentValue"
       )
 
-      val result = controller.asInstanceOf[SemesterCRUDController].current()(request)
+      val invalidRequest = FakeRequest(
+        GET,
+        s"/${entityTypeName.toLowerCase}?$selectAttribute=not_current"
+      )
+
+      val validResult = controller.all()(validRequest)
+      val invalidResult = controller.all()(invalidRequest)
       val current = semesters.filter(semester => semester.start.isBefore(LocalDate.now) && semester.end.isAfter(LocalDate.now))
 
-      status(result) shouldBe OK
-      contentType(result) shouldBe Some(mimeType.value)
-      contentFromStream(result) shouldBe current.map(s => Json.toJson(s))
+      status(validResult) shouldBe OK
+      contentType(validResult) shouldBe Some(mimeType.value)
+      contentFromStream(validResult) shouldBe current.map(s => Json.toJson(s))
+
+      status(invalidResult) shouldBe SERVICE_UNAVAILABLE
+      contentType(invalidResult) shouldBe Some("application/json")
+      contentAsJson(invalidResult) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Value of $selectAttribute should be $currentValue, but was not_current"
+      )
     }
 
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
