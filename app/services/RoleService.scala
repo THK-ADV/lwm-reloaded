@@ -67,20 +67,24 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
     case (optCourse, permission) =>
       import bindings.RoleDescriptor
 
-      def isAdmin(roles: Set[Role]) = {
-        val adminRole = roles.find(_.label == Roles.Admin)
-        checkWith.exists(auth => adminRole.exists(_.id == auth.role))
-      }
+      def isAdmin(roles: Set[Role]) = roles
+        .find(_.label == Roles.Admin)
+        .exists { admin =>
+          checkWith.exists(_.role == admin.id)
+        }
 
-      def rolesByCourse(roles: Set[Role]) = {
-        val courseRelatedAuthorities = checkWith.filter(_.course == optCourse)
-        roles.filter(role => courseRelatedAuthorities.exists(_.role == role.id))
-      }
+      def rolesByCourse(roles: Set[Role]) = checkWith
+        .filter(_.course == optCourse)
+        .flatMap { authority =>
+          roles.filter(_.id == authority.role)
+        }
+        .toSet
 
       def hasPermission(roles: Set[Role]) = roles.exists(_.permissions contains permission)
 
       repository.getAll[Role] map { roles =>
-        isAdmin(roles) || (rolesByCourse _ andThen hasPermission)(roles)
+        isAdmin(roles) || (rolesByCourse _ andThen hasPermission) (roles)
       }
   }
+
 }

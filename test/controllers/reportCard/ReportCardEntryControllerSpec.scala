@@ -198,11 +198,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val result = controller.get(student.id.toString)(request)
 
-      status(result) shouldBe INTERNAL_SERVER_ERROR
+      status(result) shouldBe SERVICE_UNAVAILABLE
       contentType(result) shouldBe Some("application/json")
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "errors" -> errorMsg
+        "message" -> errorMsg
       )
     }
 
@@ -212,7 +212,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntryAtom](anyObject())(anyObject())).thenReturn(Success(atomizedEntries))
+      doReturn(Success(entries))
+        .doReturn(Success(atomizedEntries))
+        .when(repository)
+        .getMany(anyObject())(anyObject())
+
       val request = FakeRequest(
         GET,
         s"/atomic/reportCardEntries/student/${student.id}"
@@ -224,28 +228,6 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
       contentAsString(result) shouldBe json.mkString("")
-    }
-
-    "return stop execution when there is an exception" in {
-      val errorMessage = "Oops, something went wrong"
-
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany(anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
-
-      val request = FakeRequest(
-        GET,
-        s"/atomic/reportCardEntries/student/${student.id}"
-      )
-
-      val result = controller.getAtomic(student.id.toString)(request)
-
-      status(result) shouldBe INTERNAL_SERVER_ERROR
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "errors" -> errorMessage
-      )
     }
 
     "successfully create report cards for given schedule" in {

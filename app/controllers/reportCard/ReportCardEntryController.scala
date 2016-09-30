@@ -34,6 +34,7 @@ object ReportCardEntryController {
   val startAttribute = "start"
   val endAttribute = "end"
 }
+
 // TODO inherit from AbstractCRUDController
 class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
   extends Controller
@@ -147,15 +148,18 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     }
   }
 
-  def get(student: String) = contextFrom(Get) action { request =>
-    forStudent(student)
-      .flatMap(retrieveLots[ReportCardEntry])
+  def get(student: String) = contextFrom(Get) action { implicit request =>
+    val rebased = rebase(studentAttribute -> Seq(student))
+
+    filtered(rebased)(Set.empty)
       .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
-  def getAtomic(student: String) = contextFrom(Get) action { request =>
-    forStudent(student)
-      .flatMap(retrieveLots[ReportCardEntryAtom])
+  def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
+    val rebased = rebase(studentAttribute -> Seq(student))
+
+    filtered(rebased)(Set.empty)
+      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -308,33 +312,6 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     (getEntries(entryQuery) |@| getEntries(rescheduledQuery)) (_ ++ _) match {
       case Success(entries) =>
         Continue(entries)
-      case Failure(e) => Return(
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> e.getMessage
-        )))
-    }
-  }
-
-  private def forStudent(student: String): Attempt[Set[String]] = {
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val query = select("entries") where {
-      **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(student))))
-    }
-
-    repository.prepareQuery(query).
-      select(_.get("entries")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue()).
-      run match {
-      case Success(result) => Continue(result.toSet)
       case Failure(e) => Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
