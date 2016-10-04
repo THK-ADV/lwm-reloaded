@@ -20,6 +20,7 @@ import utils.{Attempt, Continue, LwmMimeType, Return}
 
 import scala.collection.Map
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 trait Stored {

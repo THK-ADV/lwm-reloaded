@@ -2,7 +2,7 @@ package modules
 
 import controllers.UserController
 import modules.security.SecurityManagementModule
-import store.{BaseNamespace, SemanticRepositoryModule}
+import modules.store.{BaseNamespace, ResolversModule, SemanticRepositoryModule}
 
 trait UserManagementModule {
 
@@ -10,7 +10,7 @@ trait UserManagementModule {
 }
 
 trait DefaultUserManagementModule extends UserManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with BaseNamespace with SessionRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with BaseNamespace with SessionRepositoryModule with ResolversModule with LdapModule =>
 
-  override def userController: UserController = new UserController(roleService, sessionService, repository, namespace)
+  override def userController: UserController = new UserController(roleService, sessionService, repository, namespace, resolvers, ldapService)
 }

@@ -18,11 +18,10 @@ import utils.Ops.NaturalTrasformations._
 import scala.util.{Failure, Success, Try}
 
 trait Resolvers {
-  type R <: org.w3.banana.RDF
 
   def userId(systemId: String): Try[Option[UUID]]
 
-  def missingUserData[A <: User](v: A): Try[PointedGraph[R]]
+  def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]]
 
   def degree(abbreviation: String): Try[UUID]
 }
@@ -31,7 +30,6 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
 
   import repository._
 
-  override type R = SesameModule#Rdf
   val prefix = LWMPrefix[Sesame]
   val rdf = RDFPrefix[Sesame]
   val bindings = Bindings(repository.namespace)

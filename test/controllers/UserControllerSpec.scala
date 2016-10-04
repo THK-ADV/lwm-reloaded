@@ -2,43 +2,55 @@ package controllers
 
 import java.util.UUID
 
+import base.StreamHandler._
 import base.TestBaseDefinition
+import controllers.UserController.writes
 import models.Degree
+import models.users.Student._
 import models.users.{Employee, Student, StudentAtom, User}
 import org.mockito.Matchers._
-import org.openrdf.model.Value
-import org.scalatest.WordSpec
 import org.mockito.Mockito._
+import org.openrdf.model.Value
+import org.openrdf.model.impl.ValueFactoryImpl
+import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import org.w3.banana.sesame.SesameModule
-import play.api.{Application, ApplicationLoader}
+import org.w3.banana.PointedGraph
+import org.w3.banana.sesame.{Sesame, SesameModule}
 import play.api.ApplicationLoader.Context
-import play.api.test.{FakeRequest, WithApplicationLoader}
-import play.api.http.HttpVerbs
+import play.api.http.{HeaderNames, HttpVerbs}
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
-import services.{RoleService, SessionHandlingService}
+import play.api.test.{FakeHeaders, FakeRequest, WithApplicationLoader}
+import play.api.{Application, ApplicationLoader}
+import services.{LdapService, RoleService, SessionHandlingService}
 import store.bind.Bindings
 import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
-import store.{Namespace, SesameRepository}
-import Student._
-import utils.DefaultLwmApplication
-import UserController.writes
-import scala.util.Success
-import base.StreamHandler._
+import store.{Namespace, Resolvers, SesameRepository}
+import utils.{DefaultLwmApplication, LwmMimeType}
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
+  import controllers.UserController.writes
+
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
+  val resolvers = mock[Resolvers]
+  val ldapService = mock[LdapService]
   val sessionService = mock[SessionHandlingService]
   val qe = mock[QueryExecutor[SelectClause]]
   val query = QueryEngine.empty(qe)
 
   val namespace = Namespace("http://lwm.gm.th-koeln.de")
   val bindings = Bindings[repository.Rdf](namespace)
+  val mimeType = LwmMimeType.userV1Json
 
-  val controller: UserController = new UserController(roleService, sessionService, repository, namespace) {
+  val degree = UUID.randomUUID
+  val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
+
+  val controller: UserController = new UserController(roleService, sessionService, repository, namespace, resolvers, ldapService) {
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -289,7 +301,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
 
     "get users specific to some particular filter attribute" in {
-      import UserController.{firstnameAttribute, lastnameAttribute, statusAttribute, degreeAttribute, systemIdAttribute}
+      import UserController.{degreeAttribute, firstnameAttribute, lastnameAttribute, statusAttribute, systemIdAttribute}
 
       val degree = UUID.randomUUID()
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree)
@@ -375,8 +387,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "successfully return requested buddy by his system id" in new FakeApp {
-      val degree = UUID.randomUUID
-      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
       val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
 
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
@@ -400,8 +410,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "not return requested buddy by his system id when degree doesn't match" in new FakeApp {
-      val degree = UUID.randomUUID
-      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
       val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", UUID.randomUUID)
 
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set(currentUser, buddy)))
@@ -425,8 +433,6 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "not return requested buddy when he is not found by his system id" in new FakeApp {
-      val degree = UUID.randomUUID
-      val currentUser = Student("systemId current", "last name current", "first name current", "email current", "regId current", degree)
       val buddy = Student("systemIdBuddy", "last name buddy", "first name buddy", "email buddy", "regId buddy", degree)
 
       when(repository.getMany[Student](anyObject())(anyObject())).thenReturn(Success(Set.empty[Student]))
@@ -446,6 +452,101 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
         "message" -> "No such element..."
+      )
+    }
+
+    "successfully create a user by systemId" in new FakeApp {
+      val systemId = "test"
+      val user = Employee(systemId, "lastname", "firstname", "email", User.employeeType)
+
+      when(resolvers.userId(anyObject())).thenReturn(Success(None))
+      when(ldapService.user(anyObject())(anyObject())).thenReturn(Future.successful(user))
+      when(resolvers.missingUserData(anyObject())).thenReturn(Success(PointedGraph[Sesame](ValueFactoryImpl.getInstance().createBNode())))
+
+      val request = FakeRequest(
+        POST,
+        s"/users/systemId/$systemId",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson("")
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = controller.create(systemId)(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(user)
+    }
+
+    "not create a user when already exists" in new FakeApp {
+      val systemId = "test"
+      val id = UUID.randomUUID
+
+      when(resolvers.userId(anyObject())).thenReturn(Success(Some(id)))
+
+      val request = FakeRequest(
+        POST,
+        s"/users/systemId/$systemId",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson("")
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = controller.create(systemId)(request)
+
+      status(result) shouldBe BAD_REQUEST
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> s"Requested user with systemId $systemId already exists. Id is $id"
+      )
+    }
+
+    "fail creating user when ldap dies" in new FakeApp {
+      val systemId = "test"
+      val errorMessage = "Oops, something went wrong"
+
+      when(resolvers.userId(anyObject())).thenReturn(Success(None))
+      when(ldapService.user(anyObject())(anyObject())).thenReturn(Future.failed(new Exception(errorMessage)))
+
+      val request = FakeRequest(
+        POST,
+        s"/users/systemId/$systemId",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson("")
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = controller.create(systemId)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
+      )
+    }
+
+    "fail create user when db dies" in new FakeApp {
+      val systemId = "test"
+      val user = Employee(systemId, "lastname", "firstname", "email", User.employeeType)
+      val errorMessage = "Oops, something went wrong"
+
+      when(resolvers.userId(anyObject())).thenReturn(Success(None))
+      when(ldapService.user(anyObject())(anyObject())).thenReturn(Future.successful(user))
+      when(resolvers.missingUserData(anyObject())).thenReturn(Failure(new Exception(errorMessage)))
+
+      val request = FakeRequest(
+        POST,
+        s"/users/systemId/$systemId",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson("")
+      ).withSession(SessionController.userId -> currentUser.id.toString)
+
+      val result = controller.create(systemId)(request)
+
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      contentType(result) shouldBe Some("application/json")
+      contentAsJson(result) shouldBe Json.obj(
+        "status" -> "KO",
+        "errors" -> errorMessage
       )
     }
   }
