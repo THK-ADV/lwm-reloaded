@@ -125,7 +125,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     import defaultBindings.AuthorityDescriptor
 
     (for {
-      roles <- roleService.rolesByLabel(CourseManager, RightsManager) if roles.nonEmpty
+      roles <- roleService.rolesForCourse(course.lecturer) if roles.nonEmpty
       authorities = roles.map { role =>
         val optCourse = if (role.label == CourseManager) Some(course.id) else None
         Authority(course.lecturer, role.id, optCourse)

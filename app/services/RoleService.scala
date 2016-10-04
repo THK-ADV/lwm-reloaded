@@ -62,6 +62,15 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
     repository.getAll[Role].map(_.filter(role => labels contains role.label))
   }
 
+  def rolesForCourse(userId: UUID): Try[Set[Role]] = {
+    import models.security.Roles.{CourseManager, RightsManager}
+
+    for {
+      userAuths <- authorities(userId)
+      roles <- rolesByLabel(CourseManager, RightsManager)
+    } yield roles.filterNot(role => role.label == RightsManager && userAuths.exists(_.role == role.id))
+  }
+
   override def checkAuthority(whatToCheck: (Option[UUID], Permission))(checkWith: Authority*): Try[Boolean] = whatToCheck match {
     case (_, permission) if permission == Permissions.god => Success(false)
     case (optCourse, permission) =>

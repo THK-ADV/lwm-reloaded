@@ -263,19 +263,19 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       )
     }
 
-    "create a course whilst also creating its respective security models" in {
-      def role(label: String) = Role(label, Set.empty)
+    implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
 
-      implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
+    "create a course whilst also creating its respective security models" in {
+      val rm = Role(Roles.RightsManager, Set.empty)
+      val cm = Role(Roles.CourseManager, Set.empty)
 
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
-      val roles = Set(role(Roles.RightsManager), role(Roles.CourseManager))
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
-      when(roleService.rolesByLabel(anyObject())).thenReturn(Success(roles))
+      when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(rm, cm)))
       when(repository.addMany[Authority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
 
@@ -292,15 +292,39 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       contentType(result) shouldBe Some[String](mimeType)
     }
 
+    "skip adding rights-manager when already exists" in {
+      val cm = Role(Roles.CourseManager, Set.empty)
 
-    "stop the creation when the appropriate roles haven't been found" in {
-      implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
-      val roles = Set.empty[Role]
+      val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(roleService.rolesByLabel(anyObject())).thenReturn(Success(roles))
+
+      when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(cm)))
+      when(repository.addMany[Authority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
+      when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
+
+      val request = FakeRequest(
+        POST,
+        s"/${entityTypeName}sWithRights",
+        FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
+        Json.toJson(course)
+      )
+
+      val result = controller.createWithRoles()(request)
+
+      status(result) shouldBe CREATED
+      contentType(result) shouldBe Some[String](mimeType)
+    }
+
+    "stop the creation when the appropriate roles haven't been found" in {
+      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+
+      when(repository.prepareQuery(anyObject())).thenReturn(query)
+      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+
+      when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set.empty[Role]))
 
       val request = FakeRequest(
         POST,

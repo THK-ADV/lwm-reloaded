@@ -6,7 +6,7 @@ import base.SesameDbSpec
 import models.labwork.Labwork
 import models.security._
 import models.semester.Semester
-import models.users.Student
+import models.users.{Employee, Student, User}
 import models.Degree
 
 import scala.util.{Failure, Success, Try}
@@ -110,6 +110,52 @@ class RoleServiceSpec extends SesameDbSpec {
           r contains role3 shouldBe true
           r.size shouldBe 2
         case Failure(e) => fail(s"Could not retrieve role: ${e.getMessage}")
+      }
+    }
+
+    "filter roles for lecturer when he is not rights manager already" in {
+      import bindings.{RoleDescriptor, AuthorityDescriptor}
+
+      val cm = Role(Roles.CourseManager, Set.empty)
+      val emp = Role(Roles.Employee, Set.empty)
+      val rm = Role(Roles.RightsManager, Set.empty)
+
+      val employee = Employee("systemId", "lastname", "firstname", "email", User.employeeType)
+      val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
+        Authority(employee.id, UUID.randomUUID, Some(UUID.randomUUID)),
+        Authority(employee.id, emp.id)
+      )
+
+      repo addMany Set(cm, emp, rm)
+      repo addMany authorities
+
+      roleService.rolesForCourse(employee.id) match {
+        case Success(set) =>
+          set shouldBe Set(cm, rm)
+        case Failure(e) => fail("There should be some roles for lecturer but was not", e)
+      }
+    }
+
+    "filter roles for lecturer when he is rights manager already" in {
+      import bindings.{RoleDescriptor, AuthorityDescriptor}
+
+      val cm = Role(Roles.CourseManager, Set.empty)
+      val emp = Role(Roles.Employee, Set.empty)
+      val rm = Role(Roles.RightsManager, Set.empty)
+
+      val employee = Employee("systemId", "lastname", "firstname", "email", User.employeeType)
+      val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
+        Authority(employee.id, rm.id, None),
+        Authority(employee.id, emp.id)
+      )
+
+      repo addMany Set(cm, emp, rm)
+      repo addMany authorities
+
+      roleService.rolesForCourse(employee.id) match {
+        case Success(set) =>
+          set shouldBe Set(cm)
+        case Failure(e) => fail("There should be some roles for lecturer but was not", e)
       }
     }
   }

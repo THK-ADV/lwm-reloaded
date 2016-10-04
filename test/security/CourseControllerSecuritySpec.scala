@@ -30,7 +30,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
-      when(roleService.rolesByLabel(Matchers.anyObject())).thenReturn(Success(roles))
+      when(roleService.rolesForCourse(Matchers.anyObject())).thenReturn(Success(roles))
 
       val json = Json.obj(
         "label" -> "",
