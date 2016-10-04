@@ -22,6 +22,7 @@ import utils.{DefaultLwmApplication, LwmMimeType}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 import org.mockito.Matchers._
+import org.w3.banana.sesame.Sesame
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -54,9 +55,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
       override val resolvers: Resolvers = new Resolvers {
         override def userId(systemId: String): Try[Option[UUID]] = Success(Some(userID))
 
-        override type R = Nothing
-
-        override def missingUserData[A <: User](v: A): Try[PointedGraph[R]] = Failure(new Throwable("Not invoked"))
+        override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = Failure(new Throwable("Not invoked"))
 
         override def degree(abbreviation: String): Try[UUID] = Failure(new Throwable("Not invoked"))
       }

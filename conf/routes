@@ -132,8 +132,8 @@ HEAD          /scheduleEntries                                                  
 # ScheduleEntries restriced
 GET           /courses/:c/scheduleEntries                                             controllers.schedule.ScheduleEntryController.allFrom(c)
 GET           /courses/:c/atomic/scheduleEntries                                      controllers.schedule.ScheduleEntryController.allAtomicFrom(c)
-GET           /courses/:c/labworks/:l/scheduleEntries                                  controllers.schedule.ScheduleEntryController.allFromLabwork(c, l)
-GET           /courses/:c/labworks/:l/atomic/scheduleEntries                           controllers.schedule.ScheduleEntryController.allAtomicFromLabwork(c, l)
+GET           /courses/:c/labworks/:l/scheduleEntries                                 controllers.schedule.ScheduleEntryController.allFromLabwork(c, l)
+GET           /courses/:c/labworks/:l/atomic/scheduleEntries                          controllers.schedule.ScheduleEntryController.allAtomicFromLabwork(c, l)
 
 GET           /courses/:c/scheduleEntries/:id                                         controllers.schedule.ScheduleEntryController.get(c, id)
 GET           /courses/:c/atomic/scheduleEntries/:id                                  controllers.schedule.ScheduleEntryController.getAtomic(c, id)
@@ -215,6 +215,7 @@ DELETE        /courses/:c/labworks/:l/annotations/:id                           
 HEAD          /annotations                                                            controllers.crud.labwork.AnnotationCRUDController.header
 
 # Users
+POST          /users/systemId/:systemId                                               controllers.UserController.create(systemId)
 GET           /users                                                                  controllers.UserController.allUsers()
 GET           /users/:id                                                              controllers.UserController.user(id)
 GET           /atomic/users                                                           controllers.UserController.allUserAtomic()

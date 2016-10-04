@@ -11,14 +11,16 @@ import modules.store.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Controller, Request}
-import services.{RoleService, SessionHandlingService}
+import services.{LdapService, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
-import store.{Namespace, SesameRepository}
+import store.{Namespace, Resolvers, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
 
 import scala.collection.Map
+import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -71,7 +73,7 @@ object UserController {
   val lastnameAttribute = "lastname"
 }
 
-class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace) extends Controller
+class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace, val resolvers: Resolvers, val ldapService: LdapService) extends Controller
   with Secured
   with SessionChecking
   with SecureControllerContext
@@ -101,6 +103,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(Permissions.user.get)
     case GetAll => PartialSecureBlock(Permissions.user.getAll)
+    case Create => PartialSecureBlock(Permissions.prime)
     case _ => PartialSecureBlock(Permissions.god)
   }
 
@@ -243,14 +246,41 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .mapResult(identity)
   }
 
-    def filtered[R, X <: User](request: Request[R])(users: Set[X]): Attempt[Set[X]] = {
-      withFilter(request.queryString)(users) match {
-        case Success(set) => Continue(set)
-        case Failure(e) => Return(
-          InternalServerError(Json.obj(
-            "status" -> "KO",
-            "errors" -> e.getMessage
-          )))
-      }
+  def create(systemId: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    resolvers.userId(systemId) match {
+      case Success(Some(uuid)) =>
+        Future.successful(BadRequest(Json.obj(
+          "status" -> "KO",
+          "message" -> s"Requested user with systemId $systemId already exists. Id is $uuid"
+        )))
+      case Success(None) =>
+        ldapService.user(systemId)(resolvers.degree) flatMap { user =>
+          Future.fromTry(resolvers.missingUserData(user).map(_ => Created(Json.toJson(user)).as(mimeType)))
+        } recover {
+          case NonFatal(t) =>
+            InternalServerError(Json.obj(
+              "status" -> "KO",
+              "errors" -> t.getMessage
+            ))
+        }
+      case Failure(e) =>
+        Future.successful(InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        )))
     }
+  }
+
+  def filtered[R, X <: User](request: Request[R])(users: Set[X]): Attempt[Set[X]] = {
+    withFilter(request.queryString)(users) match {
+      case Success(set) => Continue(set)
+      case Failure(e) => Return(
+        InternalServerError(Json.obj(
+          "status" -> "KO",
+          "errors" -> e.getMessage
+        )))
+    }
+  }
 }
