@@ -215,7 +215,7 @@ DELETE        /courses/:c/labworks/:l/annotations/:id                           
 HEAD          /annotations                                                            controllers.crud.labwork.AnnotationCRUDController.header
 
 # Users
-POST          /users/systemId/:systemId                                               controllers.UserController.create(systemId)
+PUT           /users/systemId/:systemId                                               controllers.UserController.createOrUpdate(systemId)
 GET           /users                                                                  controllers.UserController.allUsers()
 GET           /users/:id                                                              controllers.UserController.user(id)
 GET           /atomic/users                                                           controllers.UserController.allUserAtomic()
