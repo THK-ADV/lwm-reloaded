@@ -464,40 +464,41 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
       when(resolvers.missingUserData(anyObject())).thenReturn(Success(PointedGraph[Sesame](ValueFactoryImpl.getInstance().createBNode())))
 
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/users/systemId/$systemId",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson("")
       ).withSession(SessionController.userId -> currentUser.id.toString)
 
-      val result = controller.create(systemId)(request)
+      val result = controller.createOrUpdate(systemId)(request)
 
       status(result) shouldBe CREATED
       contentType(result) shouldBe Some[String](mimeType)
       contentAsJson(result) shouldBe Json.toJson(user)
     }
 
-    "not create a user when already exists" in new FakeApp {
+    "update a user when already exists" in new FakeApp {
       val systemId = "test"
       val id = UUID.randomUUID
+      val user = Employee(systemId, "lastname", "firstname", "email", User.employeeType)
+      val updated = Employee(user.systemId, user.lastname, user.firstname, user.email, user.status, user.invalidated, id)
 
       when(resolvers.userId(anyObject())).thenReturn(Success(Some(id)))
+      when(ldapService.user(anyObject())(anyObject())).thenReturn(Future.successful(user))
+      when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[Sesame](ValueFactoryImpl.getInstance().createBNode())))
 
       val request = FakeRequest(
-        POST,
+        PUT,
         s"/users/systemId/$systemId",
         FakeHeaders(Seq(HeaderNames.CONTENT_TYPE -> mimeType)),
         Json.toJson("")
       ).withSession(SessionController.userId -> currentUser.id.toString)
 
-      val result = controller.create(systemId)(request)
+      val result = controller.createOrUpdate(systemId)(request)
 
-      status(result) shouldBe BAD_REQUEST
-      contentType(result) shouldBe Some("application/json")
-      contentAsJson(result) shouldBe Json.obj(
-        "status" -> "KO",
-        "message" -> s"Requested user with systemId $systemId already exists. Id is $id"
-      )
+      status(result) shouldBe OK
+      contentType(result) shouldBe Some[String](mimeType)
+      contentAsJson(result) shouldBe Json.toJson(updated)
     }
 
     "fail creating user when ldap dies" in new FakeApp {
@@ -514,7 +515,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         Json.toJson("")
       ).withSession(SessionController.userId -> currentUser.id.toString)
 
-      val result = controller.create(systemId)(request)
+      val result = controller.createOrUpdate(systemId)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")
@@ -540,7 +541,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
         Json.toJson("")
       ).withSession(SessionController.userId -> currentUser.id.toString)
 
-      val result = controller.create(systemId)(request)
+      val result = controller.createOrUpdate(systemId)(request)
 
       status(result) shouldBe INTERNAL_SERVER_ERROR
       contentType(result) shouldBe Some("application/json")

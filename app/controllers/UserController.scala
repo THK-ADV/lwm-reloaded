@@ -10,7 +10,7 @@ import models.users.{Employee, Student, StudentAtom, User}
 import modules.store.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Controller, Request}
+import play.api.mvc.{Controller, Request, Result}
 import services.{LdapService, RoleService, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
@@ -246,25 +246,38 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .mapResult(identity)
   }
 
-  def create(systemId: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
+  // TODO expand future to attempt
+  def createOrUpdate(systemId: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global
+
+    def ldap(f: User => Try[Result]): Future[Result] = {
+      (for {
+        ldapUser <- ldapService.user(systemId)(resolvers.degree)
+        result <- Future.fromTry(f(ldapUser))
+      } yield result) recover {
+        case NonFatal(t) =>
+          InternalServerError(Json.obj(
+            "status" -> "KO",
+            "errors" -> t.getMessage
+          ))
+      }
+    }
 
     resolvers.userId(systemId) match {
       case Success(Some(uuid)) =>
-        Future.successful(BadRequest(Json.obj(
-          "status" -> "KO",
-          "message" -> s"Requested user with systemId $systemId already exists. Id is $uuid"
-        )))
-      case Success(None) =>
-        ldapService.user(systemId)(resolvers.degree) flatMap { user =>
-          Future.fromTry(resolvers.missingUserData(user).map(_ => Created(Json.toJson(user)).as(mimeType)))
-        } recover {
-          case NonFatal(t) =>
-            InternalServerError(Json.obj(
-              "status" -> "KO",
-              "errors" -> t.getMessage
-            ))
+        def adapt(user: User, id: UUID): User = user match {
+          case s: Student => Student(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, s.enrollment, s.invalidated, id)
+          case e: Employee => Employee(e.systemId, e.lastname, e.firstname, e.email, e.status, e.invalidated, id)
         }
+
+        ldap { user =>
+          val u = adapt(user, uuid)
+          repository.update(u).map(_ => Ok(Json.toJson(u)).as(mimeType))
+        }
+
+      case Success(None) =>
+        ldap (user => resolvers.missingUserData(user).map(_ => Created(Json.toJson(user)).as(mimeType)))
+
       case Failure(e) =>
         Future.successful(InternalServerError(Json.obj(
           "status" -> "KO",
