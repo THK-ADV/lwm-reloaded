@@ -92,11 +92,9 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   )
 
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
-    import models.semester.Blacklist.dateOrd
-
-    input.start == output.start &&
+    input.start.isEqual(output.start) &&
       input.entries == output.entries &&
-      input.localBlacklist.toVector.sorted.zip(output.localBlacklist.toVector.sorted).forall(d => d._1.isEqual(d._2))
+      input.localBlacklist.diff(output.localBlacklist).isEmpty
   }
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
