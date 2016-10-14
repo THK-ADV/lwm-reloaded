@@ -172,10 +172,10 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   }
 
   private def applyRange(people: Vector[UUID], params: Map[String, Seq[String]]) = {
-    def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
+    def range(min: Int, max: Int, s: Int): Int = (min to max) reduce { (prev, curr) =>
       if (prev % s < curr % s) curr
       else prev
-    }) + 1
+    }
 
     for {
       min <- Try(params(minAttribute).head.toInt)
