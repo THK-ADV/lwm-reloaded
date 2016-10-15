@@ -2,12 +2,13 @@ package models.labwork
 
 import java.util.UUID
 
+import controllers.UserController
 import controllers.crud.JsonSerialisation
 import models._
 import models.semester.Blacklist
-import models.users.Employee
+import models.users.{Employee, User}
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 import services.ScheduleEntryG
 
 case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = Timetable.randomUUID) extends UniqueEntity {
@@ -46,7 +47,7 @@ case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start:
 
 case class TimetableAtom(labwork: Labwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class TimetableEntryAtom(supervisor: Set[Employee], room: Room, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class TimetableEntryAtom(supervisor: Set[User], room: Room, dayIndex: Int, start: LocalTime, end: LocalTime)
 
 /**
   * Helper
@@ -57,7 +58,8 @@ case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTim
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable, TimetableAtom] {
 
   import Blacklist.protocolFormat
-  import TimetableEntry.atomicFormat
+  //import TimetableEntry.atomicFormat
+  //import controllers.UserController.userFormat
 
   override def base: String = "timetables"
 
@@ -65,16 +67,31 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
 
   override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
 
-  override implicit def writesAtom: Writes[TimetableAtom] = Json.writes[TimetableAtom]
+  override implicit def writesAtom: Writes[TimetableAtom] = new Writes[TimetableAtom] {
+    override def writes(o: TimetableAtom): JsValue = {
+      val a = Json.obj(
+        "labwork" -> Labwork.writes.writes(o.labwork),
+        "entries" -> JsArray(o.entries map TimetableEntry.writesAtom.writes toSeq),
+        "start" -> o.start,
+        "localBlacklist" -> JsArray(o.localBlacklist map (e => JsString(e.getMillis.toString)) toSeq)
+      )
+
+      o.invalidated.fold(a)(d => a + ("invalidated" -> JsString(d.toString()))) + ("id" -> JsString(o.id.toString))
+    }
+  }
 
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
 }
 
 object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
 
+  import controllers.UserController._
+
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
   implicit val timeOrd = TimetableDateEntry.localTimeOrd
+
+  //implicit val fSet: Format[Set[User]] = setFormat[User](userFormat)
 
   implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
 
@@ -82,9 +99,17 @@ object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, 
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
-  override implicit def writesAtom: Writes[TimetableEntryAtom] = Json.writes[TimetableEntryAtom]
+  override implicit def writesAtom: Writes[TimetableEntryAtom] = new Writes[TimetableEntryAtom] {
+    override def writes(o: TimetableEntryAtom): JsValue = Json.obj(
+      "supervisor" -> JsArray(o.supervisor map UserController.writes.writes toSeq),
+      "room" -> Room.writes.writes(o.room),
+      "dayIndex" -> o.dayIndex,
+      "start" -> o.start,
+      "end" -> o.end
+    )
+  }
 
-  implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
+  //implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
 
   implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom]
 }

@@ -543,10 +543,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(EmployeeDescriptor.references)
+        .pointsAt(UserDescriptor.references)
         .pointsAt(RoomDescriptor.references)
 
-    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
@@ -616,12 +616,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       Ref(clazz)
         .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(RoomDescriptor.references)
-        .pointsAt(EmployeeDescriptor.references)
+        .pointsAt(UserDescriptor.references)
         .pointsAt(GroupDescriptor.references)
 
     private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
-    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
     private val group = property[Group](lwm.group)(GroupDescriptor.binder)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)

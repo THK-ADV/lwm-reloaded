@@ -175,7 +175,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     def range(min: Int, max: Int, s: Int): Int = ((min to max) reduce { (prev, curr) =>
       if (prev % s < curr % s) curr
       else prev
-    }) + 1
+    })
 
     for {
       min <- Try(params(minAttribute).head.toInt)
@@ -216,7 +216,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
       mapped = zipped map (t => Group(t._1, UUID.fromString(labwork), t._2.toSet))
     } yield mapped) match {
       case Success(a) => Continue(a.toSet)
-      case Failure(e) => Return(
+      case Failure(e) => e.printStackTrace(); Return(
         InternalServerError(Json.obj(
           "status" -> "KO",
           "errors" -> s"Error while creating groups for labwork: ${e.getMessage}"
