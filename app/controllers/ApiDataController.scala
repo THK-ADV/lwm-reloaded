@@ -1,6 +1,11 @@
 package controllers
 
+import java.util.UUID
+
+import models.UriGenerator
+import models.labwork.{ReportCardEntry, Schedule, ScheduleEntry, Timetable}
 import models.semester.Blacklist
+import org.joda.time.{DateTimeConstants, LocalDate, LocalTime}
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
 import play.api.libs.json.Json
@@ -10,7 +15,6 @@ import store.SesameRepository
 import store.bind.Bindings
 
 import scala.util.{Failure, Success}
-
 import scala.util.Try
 
 class ApiDataController(private val repository: SesameRepository) extends Controller {
@@ -60,6 +64,36 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       case Success(s) => Ok(Json.obj(
         "status" -> "OK",
         "message" -> s"deleted ${s.size} elements"
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def patchEntries(labwork: String) = Action { implicit request =>
+    import bindings.{ScheduleDescriptor, ReportCardEntryDescriptor}
+
+    val result = for {
+      schedule <- repository.getAll[Schedule]
+      reportCard <- repository.getAll[ReportCardEntry]
+      ktnSchedule = schedule.filter(_.labwork == UUID.fromString(labwork))
+      ktnReportCards = reportCard.filter(e => e.labwork == UUID.fromString(labwork) && (e.date.getDayOfWeek == DateTimeConstants.WEDNESDAY && e.start.getHourOfDay == 14))
+      scheduleApplied = ktnSchedule.map(s => Schedule(s.labwork, s.entries.map {
+        case wednesday if wednesday.date.getDayOfWeek == DateTimeConstants.WEDNESDAY && wednesday.start.getHourOfDay == 14 =>
+          ScheduleEntry(wednesday.labwork, wednesday.start.minusHours(3), wednesday.end.minusHours(3), wednesday.date, wednesday.room, wednesday.supervisor, wednesday.group, wednesday.invalidated, wednesday.id)
+        case other => other
+      }, s.invalidated, s.id))
+      reportCardApplied = ktnReportCards.map(c => ReportCardEntry(c.student, c.labwork, c.label, c.date, c.start.minusHours(3), c.end.minusHours(3), c.room, c.entryTypes, c.rescheduled, c.invalidated, c.id))
+      updateScheduleOk = scheduleApplied.map(s => repository.update[Schedule, UriGenerator[Schedule]](s)(ScheduleDescriptor, Schedule))
+      updateReportCardOk = reportCardApplied.map(r => repository.update[ReportCardEntry, UriGenerator[ReportCardEntry]](r)(ReportCardEntryDescriptor, ReportCardEntry))
+    } yield updateScheduleOk.map(_.isSuccess).reduce(_ && _) && updateReportCardOk.map(_.isSuccess).reduce(_ && _)
+
+    result match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "message" -> s
       ))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",

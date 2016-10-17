@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud._
 import models.labwork._
-import models.security.Permissions.{god, schedule}
+import models.security.Permissions.{god, prime, schedule}
 import models.UriGenerator
 import modules.store.BaseNamespace
 import org.openrdf.model.Value
@@ -19,7 +19,7 @@ import store.{Namespace, SesameRepository}
 import utils.{Attempt, Gen, LwmMimeType}
 import ScheduleController._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object ScheduleController {
 
@@ -116,7 +116,23 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, schedule.create)
     case Delete => SecureBlock(restrictionId, schedule.delete)
+    case Get => PartialSecureBlock(prime)
     case _ => PartialSecureBlock(god)
+  }
+
+  // TODO proper implementation
+  def get(course: String, labwork: String) = restrictedContext(course)(Get) action { request =>
+    repository.getAll[Schedule].map(_.find(_.labwork == UUID.fromString(labwork))) match {
+      case Success(Some(s)) => Ok(Json.toJson(s)).as(mimeType)
+      case Success(None) => NotFound(Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
   }
 
   def create(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
@@ -188,7 +204,10 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       p <- plans if p.entries.nonEmpty
       s <- semester
       g <- if (groups.nonEmpty) Some(groups) else None
-    } yield scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
+    } yield {
+      println(t)
+      scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
+    }
 
     optional(genesis)
   }

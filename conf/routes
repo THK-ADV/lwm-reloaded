@@ -122,6 +122,7 @@ HEAD          /schedules                                                        
 # Schedule restricted
 POST          /courses/:c/schedules                                                   controllers.schedule.ScheduleController.create(c)
 POST          /courses/:c/atomic/schedules                                            controllers.schedule.ScheduleController.createAtomic(c)
+GET           /courses/:c/labworks/:l/schedules                                       controllers.schedule.ScheduleController.get(c, l)
 GET           /courses/:c/labworks/:l/schedules/preview                               controllers.schedule.ScheduleController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.schedule.ScheduleController.previewAtomic(c, l)
 DELETE        /courses/:c/schedules/:id                                               controllers.schedule.ScheduleController.delete(c,id)
@@ -230,14 +231,14 @@ GET           /students/buddies/:systemId                                       
 
 # Sessions
 POST          /sessions                                                               controllers.SessionController.login
-GET           /sessions                                                               controllers.SessionController.valid
+GET           /sessions                                                                controllers.SessionController.valid
 DELETE        /sessions                                                               controllers.SessionController.logout
 HEAD          /sessions                                                               controllers.SessionController.header
 
 # APIData
 GET           /api/patch/timetableEntry                                               controllers.ApiDataController.patchTimetableEntry
 GET           /api/remove/blacklists                                                  controllers.ApiDataController.removeBlacklists
-
+GET           /api/patch/entries/:l                                                   controllers.ApiDataController.patchEntries(l)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

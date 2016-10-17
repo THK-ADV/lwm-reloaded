@@ -32,6 +32,14 @@ object UserController {
     }
   }
 
+//  implicit val userFormat: Format[User] = new Format[User] {
+//    override def writes(o: User): JsValue = writes(o)
+//
+//    override def reads(json: JsValue): JsResult[User] = {
+//      json.validate[Employee] orElse json.validate[Student]
+//    }
+//  }
+
   private def withFilter[A <: User](queryString: Map[String, Seq[String]])(all: Set[A]): Try[Set[A]] = {
     queryString.foldRight(Try(all)) {
       case ((`degreeAttribute`, degrees), users) => users flatMap { set =>
