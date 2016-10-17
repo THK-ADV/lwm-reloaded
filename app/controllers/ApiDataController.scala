@@ -3,9 +3,9 @@ package controllers
 import java.util.UUID
 
 import models.UriGenerator
-import models.labwork.{ReportCardEntry, Schedule, ScheduleEntry, Timetable}
-import models.semester.Blacklist
-import org.joda.time.{DateTimeConstants, LocalDate, LocalTime}
+import models.labwork._
+import models.semester.{Blacklist, Semester}
+import org.joda.time.{DateTimeConstants, Interval, LocalDate, LocalTime}
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
 import play.api.libs.json.Json
@@ -70,6 +70,27 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
         "message" -> e.getMessage
       ))
     }
+  }
+
+  def foo() = Action { request =>
+    import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
+
+    val a = for {
+      semester <- repository.getAll[Semester]
+      currentSemester = semester.find(Semester.isCurrent).get
+      labworks <- repository.getAll[Labwork].map(_.filter(_.semester == currentSemester.id))
+      cards <- repository.getAll[ReportCardEntry].map(_.filter(c => labworks.exists(_.id == c.labwork)))
+      byStudents = cards.groupBy(_.student)
+    } yield byStudents.mapValues(e => e.map(ee => new Interval(ee.date.toDateTime(ee.start), ee.date.toDateTime(ee.end))))
+
+    a.get.reduce { (left, right) =>
+      val overlaps = left._2.forall(i => right._2.forall(ii => i.overlaps(ii)))
+      if (overlaps) println("bad")
+      left
+    }
+
+
+    Ok
   }
 
   def patchEntries(labwork: String) = Action { implicit request =>

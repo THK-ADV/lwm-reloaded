@@ -579,10 +579,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(LabworkDescriptor.references)
+        .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(ScheduleEntryAtomDescriptor.references)
 
-    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val entries = set[ScheduleEntryAtom](lwm.entries)(ScheduleEntryAtomDescriptor.binder)
 
     override val binder: PGBinder[Rdf, ScheduleAtom] =

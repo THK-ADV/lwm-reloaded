@@ -22,44 +22,37 @@ import ScheduleController._
 import scala.util.{Failure, Success, Try}
 
 object ScheduleController {
-
+  // TODO EXCLUDE SELF
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
-    scheduleFor(labwork, repository) map { set =>
-      set.flatMap(schedule => toScheduleG(schedule, repository))
-    }
-  }
 
-  private def scheduleFor(labwork: UUID, repository: SesameRepository): Try[Set[Schedule]] = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     val bindings = Bindings[repository.Rdf](repository.namespace)
+    implicit val ns = repository.namespace
 
-    import bindings.ScheduleDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops._
-    import MonadInstances.listM
+    import bindings.{LabworkAtomDescriptor, ScheduleAtomDescriptor}
 
-    lazy val id = Labwork.generateUri(labwork)(repository.namespace)
-
-    val query = select distinct "schedules" where {
-      **(s(id), p(lwm.course), v("courseid")).
-        **(s(id), p(lwm.semester), v("semester")).
-        **(v("course"), p(lwm.id), v("courseid")).
-        **(v("course"), p(lwm.semesterIndex), v("semesterIndex")).
-        **(v("labwork"), p(lwm.semester), v("semester")).
-        **(v("labwork"), p(lwm.course), v("course2id")).
-        **(v("course2"), p(lwm.id), v("course2id")).
-        **(v("course2"), p(lwm.semesterIndex), v("semesterIndex")).
-        **(v("labwork"), p(lwm.id), v("labworkid")).
-        **(v("schedules"), p(lwm.labwork), v("labworkid"))
+    for {
+      all <- repository.getAll[ScheduleAtom]
+      labwork <- repository.get[LabworkAtom](Labwork.generateUri(labwork))
+      res = labwork.fold(Set.empty[ScheduleAtom]) { item =>
+        all
+          .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
+          .filter(_.labwork.semester.id == item.semester.id)
+          .filter(_.labwork.degree.id == item.degree.id)
+            .filterNot(_.labwork.id == item.id)
+      }
+    } yield res map { atom =>
+      ScheduleG(atom.labwork.id,
+        atom.entries.map(e =>
+          ScheduleEntryG(
+            e.start,
+            e.end,
+            e.date,
+            e.room.id,
+            e.supervisor map (_.id),
+            e.group)).toVector
+        , atom.id)
     }
-
-    repository.prepareQuery(query).
-      select(_.get("schedules")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue()).
-      requestAll(repository.getMany[Schedule]).
-      run
   }
 
   def toScheduleG(schedule: Schedule, repository: SesameRepository): Option[ScheduleG] = {
@@ -205,11 +198,27 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       s <- semester
       g <- if (groups.nonEmpty) Some(groups) else None
     } yield {
-      println(t)
-      scheduleGenesisService.generate(t, g, p, s, comp.toVector)._1
+      comp.foreach(s => println(s.labwork))
+      val gen = scheduleGenesisService.generate(t, g, p, s, comp.toVector)
+      val newGroups = gen._1.elem.entries.map(_.group)
+      printGroup(groups, newGroups)
+
+      val b = newGroups.map(g => repository.update[Group, UriGenerator[Group]](g)(GroupDescriptor, Group)).map(_.isSuccess).reduce(_ && _)
+      val c = repository.getAll[Group].map(_.filter(_.labwork == UUID.fromString(labwork))).get
+      printGroup(c, newGroups)
+      println(s"final ${gen._1.evaluate.err.size} :: ${gen._2} :: $b")
+      gen._1
     }
 
     optional(genesis)
   }
 
+  def printGroup(g1: Set[Group], g2: Vector[Group]): Unit = {
+    g1.toVector.sortBy(_.label).zip(g2.distinct.sortBy(_.label)).foreach {
+      case (l, r) =>
+        println(s" ${l.label} :: ${r.label} :: ${l.id == r.id}")
+        l.members.toVector.sorted zip r.members.toVector.sorted foreach (t => println(s"${t._1} :: ${t._2} :: ${t._1 == t._2}"))
+        println("=========")
+    }
+  }
 }

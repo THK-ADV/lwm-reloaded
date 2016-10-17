@@ -45,6 +45,7 @@ trait JsonSerialisation[I, O, A] {
 
   implicit def setWrites[X](implicit w: Writes[X]): Writes[Set[X]] = Writes.set[X]
 
+/*
   implicit def setFormat[X](implicit w: Format[X]): Format[Set[X]] = new Format[Set[X]] {
     override def writes(o: Set[X]): JsValue = JsArray(o.map(w.writes).toSeq)
 
@@ -56,6 +57,7 @@ trait JsonSerialisation[I, O, A] {
       Reads.traversableReads[Set, X].reads(json)
     }
   }
+*/
 
   implicit def reads: Reads[I]
 

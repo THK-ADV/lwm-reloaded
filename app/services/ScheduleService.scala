@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import models.labwork._
-import org.joda.time.{LocalDate, LocalTime, Weeks}
+import org.joda.time._
 import utils.{Gen, Genesis}
 import utils.TypeClasses._
 
@@ -78,7 +78,10 @@ object ScheduleService {
   )
 
   def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-    left.date.isEqual(right.date) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
+    val leftSlot = new Interval(left.date.toDateTime(left.start), left.date.toDateTime(left.end))
+    val rightSlot = new Interval(right.date.toDateTime(right.start), right.date.toDateTime(right.end))
+
+    leftSlot overlaps rightSlot
   }
 
   def exchange(left: UUID, right: UUID, s: ScheduleG) = replaceSchedule(s)(replaceEntry(_)(replaceGroup(_)(swap(_)(left, right))))

@@ -3,8 +3,9 @@ package utils
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 import scala.language.{higherKinds, implicitConversions}
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 import scalaz._
+import play.api.libs.json._
 
 object Ops { self =>
 
@@ -58,8 +59,8 @@ object Ops { self =>
       implicit val travT: Traverse[Try] = new Traverse[Try] {
         override def traverseImpl[G[_], A, B](fa: Try[A])(f: (A) => G[B])(implicit ap: Applicative[G]): G[Try[B]] = {
           fa match {
-            case util.Success(a) => ap.map(f(a))(Try(_))
-            case util.Failure(e) => ap.point(Try(throw e))
+            case Success(a) => ap.map(f(a))(Try(_))
+            case Failure(e) => ap.point(Try(throw e))
           }
         }
       }
@@ -148,6 +149,10 @@ object Ops { self =>
     def mergePeek[B](f: A => G[B])(implicit F1: Functor[F], M: Monad[G]): F[G[B]] = self.mergePeek(F)(f)
     def bipeek[B, C](F2: F[G[B]])(f: (A, B) => C)(implicit A1: Applicative[F], A2: Applicative[G]): F[G[C]] = self.bipeek(F, F2)(f)
     def flatPeek[B](f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = self.flatPeek(F)(f)
+  }
+
+  implicit class JsPathX(p: JsPath) {
+    def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] = Writes.at[Set[A]](p)(Writes.set(w))
   }
 }
 
