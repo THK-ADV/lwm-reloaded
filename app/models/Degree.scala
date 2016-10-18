@@ -18,7 +18,7 @@ object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol
 
   override implicit def writesAtom: Writes[Degree] = writes
 
-  implicit def format: Format[Degree] = Json.format[Degree]
+  //implicit def format: Format[Degree] = Json.format[Degree]
 
   override def base: String = "degrees"
 }

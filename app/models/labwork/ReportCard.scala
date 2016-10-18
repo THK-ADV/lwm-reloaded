@@ -7,6 +7,8 @@ import models.users.Student
 import models.{Room, UniqueEntity, UriGenerator}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 /**
   * ReportCard
@@ -58,21 +60,23 @@ object ReportCardEntry extends UriGenerator[ReportCardEntry] with JsonSerialisat
 
   override implicit def writes: Writes[ReportCardEntry] = Json.writes[ReportCardEntry]
 
-  override implicit def writesAtom: Writes[ReportCardEntryAtom] = Writes[ReportCardEntryAtom] { entry =>
-    val base = Json.obj(
-      "student" -> Json.toJson(entry.student),
-      "labwork" -> Json.toJson(entry.labwork),
-      "label" -> entry.label,
-      "date" -> entry.date.toString,
-      "start" -> entry.start.toString,
-      "end" -> entry.end.toString,
-      "room" -> Json.toJson(entry.room),
-      "entryTypes" -> Json.toJson(entry.entryTypes)
-    )
-    entry.rescheduled.fold(base)(rs =>
-      base + ("rescheduled" -> Json.toJson(rs)(Rescheduled.writesAtom))
-    ) + ("id" -> Json.toJson(entry.id.toString))
-  }
+  override implicit def writesAtom: Writes[ReportCardEntryAtom] = ReportCardEntryAtom.writesAtom
+}
+
+object ReportCardEntryAtom{
+  implicit def writesAtom: Writes[ReportCardEntryAtom] = (
+    (JsPath \ "student").write[Student] and
+      (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "label").write[String] and
+      (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[Room](Room.writes)  and
+      (JsPath \ "entryTypes").writeSet[ReportCardEntryType] and
+      (JsPath \ "rescheduled").write[Option[RescheduledAtom]] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(ReportCardEntryAtom.unapply))
 }
 
 object ReportCardEntryType extends UriGenerator[ReportCardEntryType] with JsonSerialisation[ReportCardEntryType, ReportCardEntryType, ReportCardEntryType] {
@@ -104,20 +108,21 @@ object ReportCardEvaluation extends UriGenerator[ReportCardEvaluation] with Json
 
   override implicit def writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
 
-  override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = Writes[ReportCardEvaluationAtom] { eval =>
-    val base = Json.obj(
-      "student" -> Json.toJson(eval.student),
-      "labwork" -> Json.toJson(eval.labwork)(Labwork.writesAtom),
-      "label" -> eval.label,
-      "bool" -> eval.bool,
-      "int" -> eval.int,
-      "timestamp" -> eval.timestamp
-    )
-    eval.invalidated.fold(base)(invalid =>
-      base + ("invalidated" -> Json.toJson(invalid))
-    ) + ("id" -> Json.toJson(eval.id.toString))
-  }
+  override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluationAtom.writesAtom
 
+}
+
+object ReportCardEvaluationAtom{
+  implicit def writesAtom: Writes[ReportCardEvaluationAtom] = (
+    (JsPath \ "student").write[Student] and
+      (JsPath \ "labwork").write[LabworkAtom] and
+      (JsPath \ "label").write[String] and
+      (JsPath \ "bool").write[Boolean] and
+      (JsPath \ "int").write[Int] and
+      (JsPath \ "timestamp").write[DateTime] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(ReportCardEvaluationAtom.unapply))
 }
 
 object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled, RescheduledAtom] {
@@ -126,5 +131,14 @@ object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled, Reschedul
 
   override implicit def writes: Writes[Rescheduled] = Json.writes[Rescheduled]
 
-  override implicit def writesAtom: Writes[RescheduledAtom] = Json.writes[RescheduledAtom]
+  override implicit def writesAtom: Writes[RescheduledAtom] = RescheduledAtom.writesAtom
+}
+
+object RescheduledAtom{
+  implicit def writesAtom: Writes[RescheduledAtom] = (
+    (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[Room](Room.writes)
+    )(unlift(RescheduledAtom.unapply))
 }

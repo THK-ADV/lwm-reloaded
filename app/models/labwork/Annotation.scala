@@ -4,9 +4,11 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.users.Student
-import models.{UriGenerator, UniqueEntity}
+import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = Annotation.randomUUID) extends UniqueEntity {
 
@@ -28,5 +30,17 @@ object Annotation extends UriGenerator[Annotation] with JsonSerialisation[Annota
 
   override implicit def writes: Writes[Annotation] = Json.writes[Annotation]
 
-  override implicit def writesAtom: Writes[AnnotationAtom] = Json.writes[AnnotationAtom]
+  override implicit def writesAtom: Writes[AnnotationAtom] = AnnotationAtom.writesAtom;
+}
+
+object AnnotationAtom{
+  implicit def writesAtom: Writes[AnnotationAtom] = (
+    (JsPath \ "student").write[Student] and
+      (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "reportCardEntry").write[ReportCardEntry] and
+      (JsPath \ "message").write[String] and
+      (JsPath \ "timestamp").write[DateTime] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(AnnotationAtom.unapply))
 }

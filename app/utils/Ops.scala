@@ -1,5 +1,7 @@
 package utils
 
+import play.api.libs.json.{JsPath, OWrites, Writes}
+
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 import scala.language.{higherKinds, implicitConversions}
@@ -149,5 +151,10 @@ object Ops { self =>
     def bipeek[B, C](F2: F[G[B]])(f: (A, B) => C)(implicit A1: Applicative[F], A2: Applicative[G]): F[G[C]] = self.bipeek(F, F2)(f)
     def flatPeek[B](f: A => F[G[B]])(implicit MF: Monad[F], MG: Monad[G], TF: Traverse[F], TG: Traverse[G]): F[G[B]] = self.flatPeek(F)(f)
   }
+
+  implicit class JsPathX(p: JsPath) {
+    def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] = Writes.at[Set[A]](p)(Writes.set(w))
+  }
+
 }
 

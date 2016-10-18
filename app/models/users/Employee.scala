@@ -18,5 +18,5 @@ object Employee extends JsonSerialisation[Employee, Employee, Employee] {
 
   override implicit def writesAtom: Writes[Employee] = writes
 
-  implicit def format: Format[Employee] = Json.format[Employee]
+  //implicit def format: Format[Employee] = Json.format[Employee]
 }

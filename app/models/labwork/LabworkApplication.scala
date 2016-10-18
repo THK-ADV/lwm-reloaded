@@ -6,7 +6,9 @@ import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = LabworkApplication.randomUUID) extends UniqueEntity {
 
@@ -28,5 +30,15 @@ object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSeri
 
   override implicit def writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
 
-  override implicit def writesAtom: Writes[LabworkApplicationAtom] = Json.writes[LabworkApplicationAtom]
+  override implicit def writesAtom: Writes[LabworkApplicationAtom] = LabworkApplicationAtom.writesAtom
+}
+object LabworkApplicationAtom{
+  implicit def writesAtom: Writes[LabworkApplicationAtom] = (
+    (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "applicant").write[Student] and
+      (JsPath \ "friends").writeSet[Student] and
+      (JsPath \ "timestamp").write[DateTime] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(LabworkApplicationAtom.unapply))
 }

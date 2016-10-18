@@ -6,6 +6,8 @@ import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], invalidated: Option[DateTime] = None, id: UUID = AssignmentPlan.randomUUID) extends UniqueEntity
 
@@ -24,9 +26,20 @@ object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisatio
 
   override implicit def writes: Writes[AssignmentPlan] = Json.writes[AssignmentPlan]
 
-  override implicit def writesAtom: Writes[AssignmentPlanAtom] = Json.writes[AssignmentPlanAtom]
+  override implicit def writesAtom: Writes[AssignmentPlanAtom] = AssignmentPlanAtom.writesAtom;
 
   override def base: String = "assignmentPlans"
+}
+
+object AssignmentPlanAtom{
+  implicit def writesAtom: Writes[AssignmentPlanAtom] = (
+      (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "attendance").write[Int] and
+      (JsPath \ "mandatory").write[Int] and
+      (JsPath \ "entries").writeSet[AssignmentEntry] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(AssignmentPlanAtom.unapply))
 }
 
 object AssignmentEntry extends JsonSerialisation[AssignmentEntry, AssignmentEntry, AssignmentEntry] {

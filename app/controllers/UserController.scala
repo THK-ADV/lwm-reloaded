@@ -24,11 +24,10 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserController {
-
   implicit val writes: Writes[User] = new Writes[User] {
     override def writes(user: User): JsValue = user match {
       case student: Student => Json.toJson(student)
-      case employee: Employee => Json.toJson(employee)
+      case employee: Employee => Json.toJson(employee)(Employee.writes)
     }
   }
 

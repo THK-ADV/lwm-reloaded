@@ -7,8 +7,10 @@ import models._
 import models.semester.Blacklist
 import models.users.Employee
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 import services.ScheduleEntryG
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = Timetable.randomUUID) extends UniqueEntity {
 
@@ -56,8 +58,8 @@ case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTim
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable, TimetableAtom] {
 
-  import Blacklist.protocolFormat
-  import TimetableEntry.atomicFormat
+  //import Blacklist.protocolFormat
+  //import TimetableEntry.atomicFormat
 
   override def base: String = "timetables"
 
@@ -65,9 +67,20 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
 
   override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
 
-  override implicit def writesAtom: Writes[TimetableAtom] = Json.writes[TimetableAtom]
+  override implicit def writesAtom: Writes[TimetableAtom] = TimetableAtom.writesAtom
 
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
+}
+
+object TimetableAtom{
+  implicit def writesAtom: Writes[TimetableAtom] = (
+    (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "entries").writeSet[TimetableEntryAtom] and
+      (JsPath \ "start").write[LocalDate] and
+      (JsPath \ "localBlacklist").writeSet[DateTime] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(TimetableAtom.unapply))
 }
 
 object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
@@ -76,17 +89,27 @@ object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, 
 
   implicit val timeOrd = TimetableDateEntry.localTimeOrd
 
-  implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
+  //implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
 
   override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
-  override implicit def writesAtom: Writes[TimetableEntryAtom] = Json.writes[TimetableEntryAtom]
+  override implicit def writesAtom: Writes[TimetableEntryAtom] = TimetableEntryAtom.writesAtom
 
-  implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
+  //implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
 
   implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom]
+}
+
+object TimetableEntryAtom{
+  implicit def writesAtom: Writes[TimetableEntryAtom] = (
+    (JsPath \ "supervisor").writeSet[Employee](Employee.writes) and
+      (JsPath \ "room").write[Room](Room.writes)  and
+      (JsPath \ "dayIndex").write[Int] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime]
+    )(unlift(TimetableEntryAtom.unapply))
 }
 
 object TimetableDateEntry {
