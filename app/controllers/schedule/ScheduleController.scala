@@ -7,27 +7,23 @@ import models.labwork._
 import models.security.Permissions.{god, prime, schedule}
 import models.UriGenerator
 import modules.store.BaseNamespace
-import org.openrdf.model.Value
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Action, Controller}
 import services._
-import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{Attempt, Gen, LwmMimeType}
-import ScheduleController._
 
 import scala.util.{Failure, Success, Try}
 
 object ScheduleController {
-  // TODO EXCLUDE SELF
+
   def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
 
-    lazy val lwm = LWMPrefix[repository.Rdf]
-    val bindings = Bindings[repository.Rdf](repository.namespace)
     implicit val ns = repository.namespace
+    val bindings = Bindings[repository.Rdf](repository.namespace)
 
     import bindings.{LabworkAtomDescriptor, ScheduleAtomDescriptor}
 
@@ -78,7 +74,7 @@ object ScheduleController {
 }
 
 // TODO inherit from AbstractCRUDController
-class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike)
+class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
   extends Controller
     with BaseNamespace
     with ContentTyped
@@ -148,6 +144,8 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    import controllers.schedule.ScheduleController.toSchedule
+
     generate(labwork)
       .map(_ map toSchedule)
       .mapResult { gen =>
@@ -160,6 +158,8 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+    import controllers.schedule.ScheduleController.toSchedule
+
     generate(labwork)
       .map(_ map toSchedule)
       .flatMap { gen =>
@@ -179,19 +179,19 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     NoContent.as(mimeType)
   }
 
-  def generate(labwork: String): Attempt[Gen[ScheduleG, Conflict, Int]] = {
-    import ScheduleController._
-    import defaultBindings.{GroupDescriptor, LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
+  private def generate(labwork: String, strategy: Strategy): Attempt[Gen[ScheduleG, Conflict, Int]] = {
+    import controllers.schedule.ScheduleController._
+    import defaultBindings.{LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
 
-    val id = UUID.fromString(labwork)
+    val labId = UUID.fromString(labwork)
 
     val genesis = for {
-      lab <- repository.get[LabworkAtom](Labwork.generateUri(UUID.fromString(labwork)))
+      lab <- repository.get[LabworkAtom](Labwork.generateUri(labId))
       semester = lab map (_.semester)
-      groups <- repository.getAll[Group].map(_.filter(_.labwork == id))
-      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == id))
-      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == id))
-      comp <- competitive(id, repository)
+      groups <- groupService.groupBy(labId, strategy)
+      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
+      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labId))
+      comp <- competitive(labId, repository)
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
@@ -203,10 +203,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       val newGroups = gen._1.elem.entries.map(_.group)
       printGroup(groups, newGroups)
 
-      val b = newGroups.map(g => repository.update[Group, UriGenerator[Group]](g)(GroupDescriptor, Group)).map(_.isSuccess).reduce(_ && _)
-      val c = repository.getAll[Group].map(_.filter(_.labwork == UUID.fromString(labwork))).get
-      printGroup(c, newGroups)
-      println(s"final ${gen._1.evaluate.err.size} :: ${gen._2} :: $b")
+      println(s"final ${gen._1.evaluate.err.size} :: ${gen._2}")
       gen._1
     }
 

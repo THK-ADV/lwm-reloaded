@@ -10,8 +10,7 @@ import models.security.Permissions._
 import models.users.{Student, User}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.Request
-import services.{GroupServiceLike, RoleService, SessionHandlingService}
+import services.{Count, GroupServiceLike, Range, RoleService, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
@@ -23,6 +22,7 @@ object GroupCRUDController {
   val labworkAttribute = "labwork"
   val studentAttribute = "student"
   val labelAttribute = "label"
+
   val countAttribute = "value"
   val minAttribute = "min"
   val maxAttribute = "max"
@@ -55,17 +55,13 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     case None => Group(input.label, input.labwork, input.members)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(group.get)
-    case _ => PartialSecureBlock(god)
-  }
-
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, group.create)
-    case Update => SecureBlock(restrictionId, group.update)
-    case Delete => SecureBlock(restrictionId, group.delete)
-    case Get => SecureBlock(restrictionId, group.get)
-    case GetAll => SecureBlock(restrictionId, group.getAll)
+    //case Update => SecureBlock(restrictionId, group.update)
+    //case Delete => SecureBlock(restrictionId, group.delete)
+    //case Get => SecureBlock(restrictionId, group.get)
+    //case GetAll => SecureBlock(restrictionId, group.getAll)
+    case _ => PartialSecureBlock(god)
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {
@@ -79,7 +75,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     }
   }
 
-  // TODO get rid
+  /*// TODO get rid
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(request)
   }
@@ -141,18 +137,18 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
       .flatMap(addLots)
       .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
       .mapResult(set => Created(Json.toJson(set)).as(mimeType))
-  }
+  }*/
 
   def previewWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import models.labwork.Group.protocolWrites
 
-    groupBy(labwork)(applyCount)
+    attempt(groupService.groupBy(labwork, Count(request.queryString(countAttribute).head)))
       .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   def previewAtomicWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyCount)
+    attempt(groupService.groupBy(labwork, Count(request.queryString(countAttribute).head)))
       .flatMap(atomic)
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
@@ -160,31 +156,21 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   def previewWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import models.labwork.Group.protocolWrites
 
-    groupBy(labwork)(applyRange)
+    attempt(groupService.groupBy(labwork, Range(request.queryString(minAttribute).head, request.queryString(maxAttribute).head)))
       .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   def previewAtomicWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyRange)
+    attempt(groupService.groupBy(labwork, Range(request.queryString(minAttribute).head, request.queryString(maxAttribute).head)))
       .flatMap(atomic)
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
-  private def applyRange(people: Vector[UUID], params: Map[String, Seq[String]]) = {
-    def range(min: Int, max: Int, s: Int): Int = (min to max) reduce { (prev, curr) =>
-      if (prev % s < curr % s) curr
-      else prev
-    }
+  def strategy(query: Map[String, Seq[String]]) = {
+    val a = query(countAttribute)
 
-    for {
-      min <- Try(params(minAttribute).head.toInt)
-      max <- Try(params(maxAttribute).head.toInt) if min <= max
-    } yield range(min, max, people.size)
-  }
-
-  private def applyCount(people: Vector[UUID], params: Map[String, Seq[String]]) = {
-    Try(params(countAttribute).head.toInt) map (count => (people.size / count) + 1)
+    a
   }
 
   def atomic(groups: Set[Group]): Attempt[Set[GroupAtom]] = {
@@ -203,23 +189,6 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
         Json.obj(
           "status" -> "KO",
           "errors" -> s"Error while generating groups for labwork: ${e.getMessage}"
-        )))
-    }
-  }
-
-  def groupBy[A](labwork: String)(f: (Vector[UUID], Map[String, Seq[String]]) => Try[Int])(implicit request: Request[A]): Attempt[Set[Group]] = {
-    (for {
-      people <- groupService sortApplicantsFor UUID.fromString(labwork) if people.nonEmpty
-      groupSize <- f(people, request.queryString)
-      grouped = people.grouped(groupSize).toList
-      zipped = groupService.alphabeticalOrdering(grouped.size) zip grouped
-      mapped = zipped map (t => Group(t._1, UUID.fromString(labwork), t._2.toSet))
-    } yield mapped) match {
-      case Success(a) => Continue(a.toSet)
-      case Failure(e) => e.printStackTrace(); Return(
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "errors" -> s"Error while creating groups for labwork: ${e.getMessage}"
         )))
     }
   }

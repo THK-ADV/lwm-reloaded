@@ -5,7 +5,7 @@ import java.util.UUID
 import models.UriGenerator
 import models.labwork._
 import models.semester.{Blacklist, Semester}
-import org.joda.time.{DateTimeConstants, Interval, LocalDate, LocalTime}
+import org.joda.time.{DateTimeConstants, Interval}
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
 import play.api.libs.json.Json
@@ -72,10 +72,10 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     }
   }
 
-  def foo() = Action { request =>
+  def collisionsForCurrentLabworks() = Action { request =>
     import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
 
-    val a = for {
+    val result = for {
       semester <- repository.getAll[Semester]
       currentSemester = semester.find(Semester.isCurrent).get
       labworks <- repository.getAll[Labwork].map(_.filter(_.semester == currentSemester.id))
@@ -83,12 +83,11 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       byStudents = cards.groupBy(_.student)
     } yield byStudents.mapValues(e => e.map(ee => new Interval(ee.date.toDateTime(ee.start), ee.date.toDateTime(ee.end))))
 
-    a.get.reduce { (left, right) =>
+    result.get.reduce { (left, right) =>
       val overlaps = left._2.forall(i => right._2.forall(ii => i.overlaps(ii)))
       if (overlaps) println("bad")
       left
     }
-
 
     Ok
   }

@@ -85,7 +85,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     val rdf = RDFPrefix[repository.Rdf]
 
     val startClause = **(v("entries"), p(rdf.`type`), s(lwm.ScheduleEntry))
-
+    // TODO appending queries are broken
     queryString.foldRight(Try(startClause)) {
       case ((`courseAttribute`, values), clause) => clause map {
         _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
