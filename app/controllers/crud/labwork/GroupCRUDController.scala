@@ -10,7 +10,7 @@ import models.security.Permissions._
 import models.users.{Student, User}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import services.{Count, GroupServiceLike, Range, RoleService, SessionHandlingService}
+import services._
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
@@ -23,9 +23,21 @@ object GroupCRUDController {
   val studentAttribute = "student"
   val labelAttribute = "label"
 
-  val countAttribute = "value"
+  val countAttribute = "count"
   val minAttribute = "min"
   val maxAttribute = "max"
+
+  def fromQueryString(queryString: Map[String, Seq[String]]) = {
+    def valueOf(attribute: String) = queryString.get(attribute).flatMap(_.headOption)
+
+    valueOf(countAttribute).fold[Option[Strategy]] {
+      valueOf(minAttribute).zip(valueOf(maxAttribute)).map {
+        case ((min, max)) => Range(min, max)
+      }.headOption
+    } { count =>
+      Some(Count(count))
+    }
+  }
 }
 
 class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
@@ -57,10 +69,6 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, group.create)
-    //case Update => SecureBlock(restrictionId, group.update)
-    //case Delete => SecureBlock(restrictionId, group.delete)
-    //case Get => SecureBlock(restrictionId, group.get)
-    //case GetAll => SecureBlock(restrictionId, group.getAll)
     case _ => PartialSecureBlock(god)
   }
 
@@ -75,102 +83,20 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     }
   }
 
-  /*// TODO get rid
-  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    create(NonSecureBlock)(request)
-  }
-
-  // TODO get rid
-  def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    createAtomic(NonSecureBlock)(request)
-  }
-
-  def updateFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    update(group, NonSecureBlock)(rebase(group))
-  }
-
-  def updateAtomicFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
-    updateAtomic(group, NonSecureBlock)(rebase(group))
-  }
-
-  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
-  }
-
-  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
-  }
-
-  def getFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    get(group, NonSecureBlock)(rebase(group))
-  }
-
-  def getAtomicFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
-    getAtomic(group, NonSecureBlock)(rebase(group))
-  }
-
-  def deleteFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
-    delete(group, NonSecureBlock)(rebase(group))
-  }
-
-  def createWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyRange)
-      .flatMap(addLots)
-      .mapResult(list => Created(Json.toJson(list.toSet)).as(mimeType))
-  }
-
-  def createWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyCount)
-      .flatMap(addLots)
-      .mapResult(list => Created(Json.toJson(list.toSet)).as(mimeType))
-  }
-
-  def createAtomicWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyRange)
-      .flatMap(addLots)
-      .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .mapResult(set => Created(Json.toJson(set)).as(mimeType))
-  }
-
-  def createAtomicWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    groupBy(labwork)(applyCount)
-      .flatMap(addLots)
-      .flatMap(list => retrieveLots[GroupAtom](list map Group.generateUri))
-      .mapResult(set => Created(Json.toJson(set)).as(mimeType))
-  }*/
-
-  def previewWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import models.labwork.Group.protocolWrites
 
-    attempt(groupService.groupBy(labwork, Count(request.queryString(countAttribute).head)))
+    optional2(fromQueryString(request.queryString))
+      .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
       .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
-  def previewAtomicWithCount(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    attempt(groupService.groupBy(labwork, Count(request.queryString(countAttribute).head)))
+  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
+    optional2(fromQueryString(request.queryString))
+      .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
       .flatMap(atomic)
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
-  }
-
-  def previewWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    import models.labwork.Group.protocolWrites
-
-    attempt(groupService.groupBy(labwork, Range(request.queryString(minAttribute).head, request.queryString(maxAttribute).head)))
-      .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
-      .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
-  }
-
-  def previewAtomicWithRange(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    attempt(groupService.groupBy(labwork, Range(request.queryString(minAttribute).head, request.queryString(maxAttribute).head)))
-      .flatMap(atomic)
-      .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
-  }
-
-  def strategy(query: Map[String, Seq[String]]) = {
-    val a = query(countAttribute)
-
-    a
   }
 
   def atomic(groups: Set[Group]): Attempt[Set[GroupAtom]] = {

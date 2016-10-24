@@ -24,25 +24,9 @@ DELETE        /courses/:id                                                      
 HEAD          /courses                                                                controllers.crud.CourseCRUDController.header
 
 # Group
+GET           /courses/:c/labworks/:l/groups/preview                                  controllers.crud.labwork.GroupCRUDController.preview(c, l)
+GET           /courses/:c/labworks/:l/atomic/groups/preview                           controllers.crud.labwork.GroupCRUDController.previewAtomic(c, l)
 HEAD          /groups                                                                 controllers.crud.labwork.GroupCRUDController.header
-
-# POST          /courses/:c/labworks/:l/atomic/groups/count                             controllers.crud.labwork.GroupCRUDController.createAtomicWithCount(c, l)
-# POST          /courses/:c/labworks/:l/atomic/groups/range                             controllers.crud.labwork.GroupCRUDController.createAtomicWithRange(c, l)
-# POST          /courses/:c/labworks/:l/groups/count                                    controllers.crud.labwork.GroupCRUDController.createWithCount(c, l)
-# POST          /courses/:c/labworks/:l/groups/range                                    controllers.crud.labwork.GroupCRUDController.createWithRange(c, l)
-# POST          /courses/:c/labworks/:l/groups                                          controllers.crud.labwork.GroupCRUDController.createFrom(c, l)
-# POST          /courses/:c/labworks/:l/atomic/groups                                   controllers.crud.labwork.GroupCRUDController.createAtomicFrom(c, l)
-# PUT           /courses/:c/labworks/:l/groups/:id                                      controllers.crud.labwork.GroupCRUDController.updateFrom(c, l, id)
-# PUT           /courses/:c/labworks/:l/atomic/groups/:id                               controllers.crud.labwork.GroupCRUDController.updateAtomicFrom(c, l, id)
-# GET           /courses/:c/labworks/:l/groups                                          controllers.crud.labwork.GroupCRUDController.allFrom(c, l)
-# GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.crud.labwork.GroupCRUDController.allAtomicFrom(c, l)
-# GET           /courses/:c/labworks/:l/groups/:id                                      controllers.crud.labwork.GroupCRUDController.getFrom(c, l, id)
-# GET           /courses/:c/labworks/:l/atomic/groups/:id                               controllers.crud.labwork.GroupCRUDController.getAtomicFrom(c, l, id)
-GET           /courses/:c/labworks/:l/groups/preview/count                            controllers.crud.labwork.GroupCRUDController.previewWithCount(c, l)
-GET           /courses/:c/labworks/:l/atomic/groups/preview/count                     controllers.crud.labwork.GroupCRUDController.previewAtomicWithCount(c, l)
-GET           /courses/:c/labworks/:l/groups/preview/range                            controllers.crud.labwork.GroupCRUDController.previewWithRange(c, l)
-GET           /courses/:c/labworks/:l/atomic/groups/preview/range                     controllers.crud.labwork.GroupCRUDController.previewAtomicWithRange(c, l)
-# DELETE        /courses/:c/labworks/:l/groups/:id                                      controllers.crud.labwork.GroupCRUDController.deleteFrom(c, l, id)
 
 # Labwork
 GET           /labworks/degrees/:degree                                               controllers.crud.labwork.LabworkCRUDController.allWithDegree(degree)

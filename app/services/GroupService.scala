@@ -8,7 +8,7 @@ import utils.PreferenceSort
 import scala.util.Try
 import scalaz.StreamT._
 
-sealed trait Strategy { // TODO test
+sealed trait Strategy {
   def apply(people: Vector[UUID]) = this match {
     case Count(value) =>
       Try(value.toInt) map (count => (people.size / count) + 1)
@@ -23,6 +23,7 @@ sealed trait Strategy { // TODO test
       } yield range(min, max, people.size)
   }
 }
+
 case class Count(value: String) extends Strategy
 case class Range(min: String, max: String) extends Strategy
 
@@ -32,7 +33,7 @@ trait GroupServiceLike {
 
   def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
 
-  //THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
+  // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
   def sortApplicantsFor(labwork: UUID): Try[Vector[UUID]]
 
   def groupBy(labwork: UUID, strategy: Strategy): Try[Set[Group]]

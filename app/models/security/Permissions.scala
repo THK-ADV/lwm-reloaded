@@ -101,10 +101,6 @@ object Permissions {
 
   object group {
     val create = Permission("Group:create")
-    //val update = Permission("Group:update")
-    //val delete = Permission("Group:delete")
-    //val get = Permission("Group:get")
-    //al getAll = Permission("Group:getAll")
 
     lazy val all = Set(create)
   }

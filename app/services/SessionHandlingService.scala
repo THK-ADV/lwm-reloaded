@@ -85,7 +85,7 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
   def sessionHandling(sessions: Map[String, ValidSession]): Receive = {
     case SessionRequest(user, password) =>
       val requester = sender()
-      Future.successful(true)
+      ldap.authenticate(user, password)
         .flatMap(isAuthorized => resolve(user, isAuthorized))
         .map {
           case valid@ValidSession(username, _, _, _) => Processed(requester, sessions + (username -> valid), Authenticated(valid))

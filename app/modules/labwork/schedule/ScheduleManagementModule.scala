@@ -17,7 +17,7 @@ trait ScheduleServiceManagementModule {
 trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
   self: LwmApplication with TimetableServiceManagementModule =>
 
-  lazy val scheduleService: ScheduleGenesisServiceLike = new ScheduleService(timetableService)
+  lazy val scheduleService: ScheduleGenesisServiceLike = new ScheduleService(20, 100, 10, timetableService)
 }
 
 trait ScheduleManagementModule {

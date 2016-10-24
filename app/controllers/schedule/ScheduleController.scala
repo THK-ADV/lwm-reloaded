@@ -9,7 +9,7 @@ import models.UriGenerator
 import modules.store.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.{Action, Controller, Request}
 import services._
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
@@ -19,37 +19,6 @@ import utils.{Attempt, Gen, LwmMimeType}
 import scala.util.{Failure, Success, Try}
 
 object ScheduleController {
-
-  def competitive(labwork: UUID, repository: SesameRepository): Try[Set[ScheduleG]] = {
-
-    implicit val ns = repository.namespace
-    val bindings = Bindings[repository.Rdf](repository.namespace)
-
-    import bindings.{LabworkAtomDescriptor, ScheduleAtomDescriptor}
-
-    for {
-      all <- repository.getAll[ScheduleAtom]
-      labwork <- repository.get[LabworkAtom](Labwork.generateUri(labwork))
-      res = labwork.fold(Set.empty[ScheduleAtom]) { item =>
-        all
-          .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
-          .filter(_.labwork.semester.id == item.semester.id)
-          .filter(_.labwork.degree.id == item.degree.id)
-            .filterNot(_.labwork.id == item.id)
-      }
-    } yield res map { atom =>
-      ScheduleG(atom.labwork.id,
-        atom.entries.map(e =>
-          ScheduleEntryG(
-            e.start,
-            e.end,
-            e.date,
-            e.room.id,
-            e.supervisor map (_.id),
-            e.group)).toVector
-        , atom.id)
-    }
-  }
 
   def toScheduleG(schedule: Schedule, repository: SesameRepository): Option[ScheduleG] = {
     val bindings = Bindings[repository.Rdf](repository.namespace)
@@ -71,6 +40,10 @@ object ScheduleController {
     val entries = scheduleG.entries.map(e => ScheduleEntry(scheduleG.labwork, e.start, e.end, e.date, e.room, e.supervisor, e.group.id)).toSet
     Schedule(scheduleG.labwork, entries, None, scheduleG.id)
   }
+
+  val popAttribute = "pops"
+  val genAttribute = "gens"
+  val eliteAttribute = "elites"
 }
 
 // TODO inherit from AbstractCRUDController
@@ -143,10 +116,12 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       .mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
 
-  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import controllers.schedule.ScheduleController.toSchedule
+    import controllers.crud.labwork.GroupCRUDController.fromQueryString
 
-    generate(labwork)
+    optional2(fromQueryString(request.queryString))
+      .flatMap(strategy => generate(labwork, strategy))
       .map(_ map toSchedule)
       .mapResult { gen =>
         Ok(Json.obj(
@@ -157,10 +132,12 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       }
   }
 
-  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { request =>
+  def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import controllers.schedule.ScheduleController.toSchedule
+    import controllers.crud.labwork.GroupCRUDController.fromQueryString
 
-    generate(labwork)
+    optional2(fromQueryString(request.queryString))
+      .flatMap(strategy => generate(labwork, strategy))
       .map(_ map toSchedule)
       .flatMap { gen =>
         retrieve[ScheduleAtom](Schedule.generateUri(gen.elem))
@@ -179,38 +156,45 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     NoContent.as(mimeType)
   }
 
-  private def generate(labwork: String, strategy: Strategy): Attempt[Gen[ScheduleG, Conflict, Int]] = {
+  private def generate[A](labwork: String, groupStrategy: Strategy)(implicit request: Request[A]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
     import controllers.schedule.ScheduleController._
     import defaultBindings.{LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
+
+    def extract(query: Map[String, Seq[String]])(key: String) = query.get(key).flatMap(_.headOption).map(_.toInt)
 
     val labId = UUID.fromString(labwork)
 
     val genesis = for {
       lab <- repository.get[LabworkAtom](Labwork.generateUri(labId))
       semester = lab map (_.semester)
-      groups <- groupService.groupBy(labId, strategy)
+      groups <- groupService.groupBy(labId, groupStrategy)
       timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
       plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labId))
-      comp <- competitive(labId, repository)
+      all <- repository.getAll[ScheduleAtom]
+      comp = scheduleGenesisService.competitive(lab, all)
+      valueOf = extract(request.queryString) _
+      pop = valueOf(popAttribute)
+      gen = valueOf(genAttribute)
+      elite = valueOf(eliteAttribute)
     } yield for {
       t <- timetable if t.entries.nonEmpty
       p <- plans if p.entries.nonEmpty
       s <- semester
       g <- if (groups.nonEmpty) Some(groups) else None
     } yield {
-      comp.foreach(s => println(s.labwork))
-      val gen = scheduleGenesisService.generate(t, g, p, s, comp.toVector)
-      val newGroups = gen._1.elem.entries.map(_.group)
+      comp.foreach(s => println(s"comp :: ${s.labwork}"))
+      val genesis = scheduleGenesisService.generate(t, g, p, s, comp.toVector, pop, gen, elite)
+      val newGroups = genesis._1.elem.entries.map(_.group)
       printGroup(groups, newGroups)
 
-      println(s"final ${gen._1.evaluate.err.size} :: ${gen._2}")
-      gen._1
+      println(s"final conflicts ${genesis._1.evaluate.err.size} :: fitness ${genesis._2}")
+      genesis._1
     }
 
     optional(genesis)
   }
 
-  def printGroup(g1: Set[Group], g2: Vector[Group]): Unit = {
+  def printGroup(g1: Set[Group], g2: Vector[Group]) {
     g1.toVector.sortBy(_.label).zip(g2.distinct.sortBy(_.label)).foreach {
       case (l, r) =>
         println(s" ${l.label} :: ${r.label} :: ${l.id == r.id}")
