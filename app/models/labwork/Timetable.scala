@@ -5,15 +5,16 @@ import java.util.UUID
 import controllers.UserController
 import controllers.crud.JsonSerialisation
 import models._
-import models.semester.Blacklist
-import models.users.{Employee, User}
+import models.users.User
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
 import services.ScheduleEntryG
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = Timetable.randomUUID) extends UniqueEntity {
 
-  import Blacklist.dateOrd
+  import models.semester.Blacklist.dateOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case Timetable(l2, e2, s2, bl2, _, id2) =>
@@ -57,61 +58,51 @@ case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTim
 
 object Timetable extends UriGenerator[Timetable] with JsonSerialisation[TimetableProtocol, Timetable, TimetableAtom] {
 
-  import Blacklist.protocolFormat
-  //import TimetableEntry.atomicFormat
-  //import controllers.UserController.userFormat
-
   override def base: String = "timetables"
 
   override implicit def reads: Reads[TimetableProtocol] = Json.reads[TimetableProtocol]
 
   override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
 
-  override implicit def writesAtom: Writes[TimetableAtom] = new Writes[TimetableAtom] {
-    override def writes(o: TimetableAtom): JsValue = {
-      val a = Json.obj(
-        "labwork" -> Labwork.writes.writes(o.labwork),
-        "entries" -> JsArray(o.entries map TimetableEntry.writesAtom.writes toSeq),
-        "start" -> o.start,
-        "localBlacklist" -> JsArray(o.localBlacklist map (e => JsString(e.getMillis.toString)) toSeq)
-      )
-
-      o.invalidated.fold(a)(d => a + ("invalidated" -> JsString(d.toString()))) + ("id" -> JsString(o.id.toString))
-    }
-  }
+  override implicit def writesAtom: Writes[TimetableAtom] = TimetableAtom.writesAtom
 
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
 }
 
-object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
+object TimetableAtom{
+  implicit def writesAtom: Writes[TimetableAtom] = (
+    (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "entries").writeSet[TimetableEntryAtom] and
+      (JsPath \ "start").write[LocalDate] and
+      (JsPath \ "localBlacklist").writeSet[DateTime] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(TimetableAtom.unapply))
+}
 
-  import controllers.UserController._
+object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
 
   implicit val dateOrd = TimetableDateEntry.localDateOrd
 
   implicit val timeOrd = TimetableDateEntry.localTimeOrd
 
-  //implicit val fSet: Format[Set[User]] = setFormat[User](userFormat)
-
-  implicit def format: Format[TimetableEntry] = Json.format[TimetableEntry]
-
   override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
-  override implicit def writesAtom: Writes[TimetableEntryAtom] = new Writes[TimetableEntryAtom] {
-    override def writes(o: TimetableEntryAtom): JsValue = Json.obj(
-      "supervisor" -> JsArray(o.supervisor map UserController.writes.writes toSeq),
-      "room" -> Room.writes.writes(o.room),
-      "dayIndex" -> o.dayIndex,
-      "start" -> o.start,
-      "end" -> o.end
-    )
-  }
-
-  //implicit def atomicFormat: Format[TimetableEntryAtom] = Json.format[TimetableEntryAtom]
+  override implicit def writesAtom: Writes[TimetableEntryAtom] = TimetableEntryAtom.writesAtom
 
   implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom]
+}
+
+object TimetableEntryAtom{
+  implicit def writesAtom: Writes[TimetableEntryAtom] = (
+    (JsPath \ "supervisor").writeSet[User](UserController.writes) and
+      (JsPath \ "room").write[Room](Room.writes)  and
+      (JsPath \ "dayIndex").write[Int] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime]
+    )(unlift(TimetableEntryAtom.unapply))
 }
 
 object TimetableDateEntry {

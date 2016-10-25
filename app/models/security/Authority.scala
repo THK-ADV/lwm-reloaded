@@ -7,6 +7,8 @@ import models.users.{Employee, Student, User}
 import models.{Course, CourseAtom, UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 /**
   * Structure linking a user to his/her respective authority in the system.
@@ -88,29 +90,17 @@ object Authority extends UriGenerator[Authority] with JsonSerialisation[Authorit
 
   override implicit def writes: Writes[Authority] = Json.writes[Authority]
 
-  override implicit def writesAtom: Writes[AuthorityAtom] = Writes[AuthorityAtom] { authority =>
-    def toJson(userJs: JsValue): JsObject = {
-      def basic(user: JsValue): JsObject = Json.obj(
-        "user" -> user,
-        "role" -> Json.toJson(authority.role)
-      )
+  override implicit def writesAtom: Writes[AuthorityAtom] =AuthorityAtom.writesAtom
+}
 
-      def withCourse(jsObject: JsObject): JsObject = {
-        authority.course.fold(jsObject)(course => jsObject + ("course" -> Json.toJson(course)(Course.writesAtom)))
-      }
+object AuthorityAtom{
+  import controllers.UserController.writes
 
-      def withInvalidated(jsObject: JsObject): JsObject = {
-        authority.invalidated.fold(jsObject)(timestamp => jsObject + ("withInvalidated" -> Json.toJson(timestamp)))
-      }
-
-      def withId(jsObject: JsObject): JsObject = jsObject + ("id" -> Json.toJson(authority.id.toString))
-
-      (basic _ andThen withCourse andThen withInvalidated andThen withId)(userJs)
-    }
-
-    authority.user match {
-      case student: Student => toJson(Json.toJson(student))
-      case employee: Employee => toJson(Json.toJson(employee))
-    }
-  }
+  implicit def writesAtom: Writes[AuthorityAtom] = (
+    (JsPath \ "user").write[User] and
+      (JsPath \ "role").write[Role] and
+      (JsPath \ "course").write[Option[CourseAtom]] and
+      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "id").write[UUID]
+    )(unlift(AuthorityAtom.unapply))
 }
