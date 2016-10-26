@@ -73,8 +73,8 @@ object ReportCardEntryAtom{
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[Room](Room.writes)  and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType] and
-      (JsPath \ "rescheduled").write[Option[RescheduledAtom]] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "rescheduled").writeNullable[RescheduledAtom] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(ReportCardEntryAtom.unapply))
 }
@@ -120,7 +120,7 @@ object ReportCardEvaluationAtom{
       (JsPath \ "bool").write[Boolean] and
       (JsPath \ "int").write[Int] and
       (JsPath \ "timestamp").write[DateTime] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(ReportCardEvaluationAtom.unapply))
 }

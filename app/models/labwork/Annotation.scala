@@ -40,7 +40,7 @@ object AnnotationAtom{
       (JsPath \ "reportCardEntry").write[ReportCardEntry] and
       (JsPath \ "message").write[String] and
       (JsPath \ "timestamp").write[DateTime] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(AnnotationAtom.unapply))
 }

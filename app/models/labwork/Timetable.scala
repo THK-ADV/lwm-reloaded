@@ -75,7 +75,7 @@ object TimetableAtom{
       (JsPath \ "entries").writeSet[TimetableEntryAtom] and
       (JsPath \ "start").write[LocalDate] and
       (JsPath \ "localBlacklist").writeSet[DateTime] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(TimetableAtom.unapply))
 }

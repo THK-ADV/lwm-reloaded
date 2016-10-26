@@ -41,8 +41,4 @@ object Blacklist extends UriGenerator[Blacklist] with JsonSerialisation[Blacklis
   override implicit def writes: Writes[Blacklist] = Json.writes[Blacklist]
 
   override implicit def writesAtom: Writes[Blacklist] = writes
-
-  //implicit def format: Format[Blacklist] = Json.format[Blacklist]
-
-  //implicit def protocolFormat: Format[BlacklistProtocol] = Json.format[BlacklistProtocol]
 }

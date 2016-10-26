@@ -29,7 +29,7 @@ object StudentAtom{
       (JsPath \ "email").write[String] and
       (JsPath \ "registrationId").write[String] and
       (JsPath \ "enrollment").write[Degree](Degree.writes) and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(StudentAtom.unapply))
 }

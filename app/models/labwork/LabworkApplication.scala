@@ -38,7 +38,7 @@ object LabworkApplicationAtom{
       (JsPath \ "applicant").write[Student] and
       (JsPath \ "friends").writeSet[Student] and
       (JsPath \ "timestamp").write[DateTime] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(LabworkApplicationAtom.unapply))
 }

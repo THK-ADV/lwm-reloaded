@@ -99,8 +99,8 @@ object AuthorityAtom{
   implicit def writesAtom: Writes[AuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[Role] and
-      (JsPath \ "course").write[Option[CourseAtom]] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "course").writeNullable[CourseAtom] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(AuthorityAtom.unapply))
 }

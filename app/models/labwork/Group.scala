@@ -37,7 +37,7 @@ object GroupAtom{
       (JsPath \ "label").write[String] and
       (JsPath \ "labwork").write[Labwork] and
       (JsPath \ "members").writeSet[Student] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(GroupAtom.unapply))
 }

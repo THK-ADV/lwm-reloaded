@@ -37,7 +37,7 @@ object AssignmentPlanAtom{
       (JsPath \ "attendance").write[Int] and
       (JsPath \ "mandatory").write[Int] and
       (JsPath \ "entries").writeSet[AssignmentEntry] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(AssignmentPlanAtom.unapply))
 }

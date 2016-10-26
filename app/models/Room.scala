@@ -20,7 +20,5 @@ object Room extends UriGenerator[Room] with JsonSerialisation[RoomProtocol, Room
 
   override implicit def writesAtom: Writes[Room] = writes
 
-  //implicit def format: Format[Room] = Json.format[Room]
-
   override def base: String = "rooms"
 }

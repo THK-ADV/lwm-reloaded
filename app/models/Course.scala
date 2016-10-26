@@ -16,15 +16,12 @@ case class CourseProtocol(label: String, description: String, abbreviation: Stri
 case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: Employee, semesterIndex: Int, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
 
 object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol, Course, CourseAtom] {
-  //import models.users.Employee._
 
   override implicit def reads: Reads[CourseProtocol] = Json.reads[CourseProtocol]
 
   override implicit def writes: Writes[Course] = Json.writes[Course]
 
   override implicit def writesAtom: Writes[CourseAtom] = CourseAtom.writesAtom
-
-  //implicit def atomicFormat: Format[CourseAtom] = Json.format[CourseAtom]
 
   override def base: String = "courses"
 }
@@ -36,7 +33,7 @@ object CourseAtom{
       (JsPath \ "abbreviation").write[String] and
       (JsPath \ "lecturer").write[Employee](Employee.writes) and
       (JsPath \ "semesterIndex").write[Int] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(CourseAtom.unapply))
 }

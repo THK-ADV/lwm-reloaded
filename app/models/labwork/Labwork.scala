@@ -43,7 +43,7 @@ object LabworkAtom{
       (JsPath \ "degree").write[Degree] (Degree.writes) and
       (JsPath \ "subscribable").write[Boolean] and
       (JsPath \ "published").write[Boolean] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(LabworkAtom.unapply))
 }

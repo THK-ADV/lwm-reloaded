@@ -64,7 +64,7 @@ object ScheduleAtom{
   implicit def writesAtom: Writes[ScheduleAtom] = (
       (JsPath \ "labwork").write[LabworkAtom] and
       (JsPath \ "entries").writeSet[ScheduleEntryAtom] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(ScheduleAtom.unapply))
 }
@@ -92,7 +92,7 @@ object ScheduleEntryAtom{
       (JsPath \ "room").write[Room](Room.writes) and
       (JsPath \ "supervisor").writeSet[User](UserController.writes) and
       (JsPath \ "group").write[Group] and
-      (JsPath \ "invalidated").write[Option[DateTime]] and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     )(unlift(ScheduleEntryAtom.unapply))
 }
