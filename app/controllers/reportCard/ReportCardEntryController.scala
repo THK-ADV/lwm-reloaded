@@ -20,7 +20,7 @@ import utils.{Attempt, Continue, LwmMimeType, Return}
 import models.security.Permissions.{god, reportCardEntry}
 import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, NoneClause, SelectClause}
-import ReportCardEntryController._
+import controllers.reportCard.ReportCardEntryController._
 
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
@@ -288,7 +288,6 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         **(s(scheduleEntryUri), p(lwm.start), v("start")).
         **(s(scheduleEntryUri), p(lwm.end), v("end")).
         **(v("entries"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        **(v("entries"), p(lwm.labwork), v("labwork")).
         **(v("entries"), p(lwm.room), v("room")).
         **(v("entries"), p(lwm.date), v("date")).
         **(v("entries"), p(lwm.start), v("start")).

@@ -132,6 +132,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       }
   }
 
+  // TODO there is no preview atomic yet
   def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import controllers.schedule.ScheduleController.toSchedule
     import controllers.crud.labwork.GroupCRUDController.fromQueryString
@@ -139,10 +140,6 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     optional2(fromQueryString(request.queryString))
       .flatMap(strategy => generate(labwork, strategy))
       .map(_ map toSchedule)
-      .flatMap { gen =>
-        retrieve[ScheduleAtom](Schedule.generateUri(gen.elem))
-          .map(atom => gen.map(_ => atom))
-      }
       .mapResult { gen =>
         Ok(Json.obj(
           "status" -> "OK",
