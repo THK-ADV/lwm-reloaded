@@ -28,13 +28,11 @@ object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, G
 
   implicit def protocolWrites: Writes[GroupProtocol] = Json.writes[GroupProtocol]
 
-  //implicit def format: Format[Group] = Json.format[Group]
-
   override def base: String = "groups"
 }
 
 object GroupAtom{
-  //label: String, labwork: Labwork, members: Set[Student], invalidated: Option[DateTime] = None, id: UUID
+
   implicit def writesAtom: Writes[GroupAtom] = (
       (JsPath \ "label").write[String] and
       (JsPath \ "labwork").write[Labwork] and

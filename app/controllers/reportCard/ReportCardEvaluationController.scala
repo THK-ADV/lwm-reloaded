@@ -91,7 +91,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filtered(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
+    filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
       flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
       flatMap(_ => evaluate(labwork)).
       flatMap(addLots).
@@ -100,7 +100,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filtered(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
+    filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
       flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
       flatMap(_ => evaluate(labwork)).
       flatMap(addLots).
@@ -111,7 +111,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filtered(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
+    filter(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
       when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
         PreconditionFailed(Json.obj(
           "status" -> "KO",
@@ -124,7 +124,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def createAtomicForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filtered(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
+    filter(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
       when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
         PreconditionFailed(Json.obj(
           "status" -> "KO",
@@ -139,26 +139,26 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    filtered(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
+    filter(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
-    filtered(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
+    filter(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def get(student: String) = contextFrom(Get) action { implicit request =>
-    filtered(rebase(studentAttribute -> Seq(student)))(Set.empty)
+    filter(rebase(studentAttribute -> Seq(student)))(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
-    filtered(rebase(studentAttribute -> Seq(student)))(Set.empty)
+    filter(rebase(studentAttribute -> Seq(student)))(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))

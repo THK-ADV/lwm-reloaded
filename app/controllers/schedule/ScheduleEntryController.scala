@@ -132,7 +132,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   def allFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -140,7 +140,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   def allAtomicFrom(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
@@ -149,7 +149,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -157,7 +157,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   def allAtomicFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))

@@ -27,7 +27,7 @@ object GroupCRUDController {
   val minAttribute = "min"
   val maxAttribute = "max"
 
-  def fromQueryString(queryString: Map[String, Seq[String]]) = {
+  def strategyFrom(queryString: Map[String, Seq[String]]) = {
     def valueOf(attribute: String) = queryString.get(attribute).flatMap(_.headOption)
 
     valueOf(countAttribute).fold[Option[Strategy]] {
@@ -69,6 +69,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, group.create)
+    case GetAll => SecureBlock(restrictionId, group.getAll)
     case _ => PartialSecureBlock(god)
   }
 
@@ -86,17 +87,25 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import models.labwork.Group.protocolWrites
 
-    optional2(fromQueryString(request.queryString))
+    optional2(strategyFrom(request.queryString))
       .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
       .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
   def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    optional2(fromQueryString(request.queryString))
+    optional2(strategyFrom(request.queryString))
       .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
       .flatMap(atomic)
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
+  }
+
+  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    all(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
+  }
+
+  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    allAtomic(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
   def atomic(groups: Set[Group]): Attempt[Set[GroupAtom]] = {

@@ -151,14 +151,14 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   def get(student: String) = contextFrom(Get) action { implicit request =>
     val rebased = rebase(studentAttribute -> Seq(student))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .mapResult(entries => Ok(Json.toJson(entries)).as(mimeType))
   }
 
   def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
     val rebased = rebase(studentAttribute -> Seq(student))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
@@ -167,7 +167,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   def all(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -175,7 +175,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   def allAtomic(course: String) = restrictedContext(course)(GetAll) action { implicit request =>
     val rebased = rebase(courseAttribute -> Seq(course))
 
-    filtered(rebased)(Set.empty)
+    filter(rebased)(Set.empty)
       .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))

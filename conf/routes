@@ -24,6 +24,8 @@ DELETE        /courses/:id                                                      
 HEAD          /courses                                                                controllers.crud.CourseCRUDController.header
 
 # Group
+GET           /courses/:c/labworks/:l/groups                                          controllers.crud.labwork.GroupCRUDController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.crud.labwork.GroupCRUDController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/groups/preview                                  controllers.crud.labwork.GroupCRUDController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/groups/preview                           controllers.crud.labwork.GroupCRUDController.previewAtomic(c, l)
 HEAD          /groups                                                                 controllers.crud.labwork.GroupCRUDController.header
@@ -104,12 +106,13 @@ HEAD          /labworkApplications                                              
 HEAD          /schedules                                                              controllers.schedule.ScheduleController.header
 
 # Schedule restricted
-POST          /courses/:c/schedules                                                   controllers.schedule.ScheduleController.create(c)
-POST          /courses/:c/atomic/schedules                                            controllers.schedule.ScheduleController.createAtomic(c)
-GET           /courses/:c/labworks/:l/schedules                                       controllers.schedule.ScheduleController.get(c, l)
+POST          /courses/:c/schedules                                                   controllers.schedule.ScheduleController.createFrom(c)
+POST          /courses/:c/atomic/schedules                                            controllers.schedule.ScheduleController.createAtomicFrom(c)
+GET           /courses/:c/labworks/:l/schedules                                       controllers.schedule.ScheduleController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.schedule.ScheduleController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/schedules/preview                               controllers.schedule.ScheduleController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.schedule.ScheduleController.previewAtomic(c, l)
-DELETE        /courses/:c/schedules/:id                                               controllers.schedule.ScheduleController.delete(c,id)
+DELETE        /courses/:c/schedules/:id                                               controllers.schedule.ScheduleController.deleteFrom(c,id)
 
 # ScheduleEntries
 HEAD          /scheduleEntries                                                        controllers.schedule.ScheduleEntryController.header

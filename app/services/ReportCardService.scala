@@ -7,7 +7,7 @@ import models.labwork._
 object ReportCardService {
 
   private def toReportCardEntryType(types: Set[AssignmentEntryType]): Set[ReportCardEntryType] = {
-    types.map(t => ReportCardEntryType(t.entryType)) // TODO create from scratch, dont rely on t
+    types.map(t => ReportCardEntryType(t.entryType))
   }
 }
 

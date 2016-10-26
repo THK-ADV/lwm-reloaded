@@ -278,13 +278,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val range = Map(minAttribute -> Seq(minValue), maxAttribute -> Seq(maxValue))
       val broken = Map("wrongAttribute" -> Seq("broken"))
 
-      fromQueryString(count) match {
+      strategyFrom(count) match {
         case Some(c: Count) => c.value shouldBe countValue
         case Some(_) => fail("strategy type should be count but was strategy")
         case None => fail("there should be at least one attribute")
       }
 
-      fromQueryString(range) match {
+      strategyFrom(range) match {
         case Some(r: Range) =>
           r.min shouldBe minValue
           r.max shouldBe maxValue
@@ -292,7 +292,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
         case None => fail("there should be at least one attribute")
       }
 
-      fromQueryString(broken) should not be defined
+      strategyFrom(broken) should not be defined
     }
 
     "preview groups given some arbitrary group size and range" in {

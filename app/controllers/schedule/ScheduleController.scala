@@ -4,19 +4,22 @@ import java.util.UUID
 
 import controllers.crud._
 import models.labwork._
-import models.security.Permissions.{god, prime, schedule}
+import models.security.Permissions.{god, schedule}
 import models.UriGenerator
-import modules.store.BaseNamespace
+import org.openrdf.model.Value
+import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
-import play.api.mvc.{Action, Controller, Request}
+import play.api.mvc.{Action, Request}
 import services._
+import store.Prefixes.LWMPrefix
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{Attempt, Gen, LwmMimeType}
 
-import scala.util.{Failure, Success, Try}
+import scala.collection.Map
+import scala.util.{Failure, Try}
 
 object ScheduleController {
 
@@ -41,25 +44,18 @@ object ScheduleController {
     Schedule(scheduleG.labwork, entries, None, scheduleG.id)
   }
 
+  val labworkAttribute = "labwork"
+
   val popAttribute = "pops"
   val genAttribute = "gens"
   val eliteAttribute = "elites"
 }
 
-// TODO inherit from AbstractCRUDController
+// TODO ScheduleProtocol, ScheduleG -> ScheduleAtom, PUT for Schedules
 class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
-  extends Controller
-    with BaseNamespace
-    with ContentTyped
-    with Secured
-    with SessionChecking
-    with SecureControllerContext
-    with Stored
-    with JsonSerialisation[Schedule, Schedule, ScheduleAtom]
-    with RdfSerialisation[Schedule, ScheduleAtom]
-    with Removed
-    with Added[Schedule, Schedule, ScheduleAtom]
-    with Retrieved[Schedule, ScheduleAtom] {
+  extends AbstractCRUDController[Schedule, Schedule, ScheduleAtom] {
+
+  import controllers.schedule.ScheduleController._
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
 
@@ -78,50 +74,35 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, schedule.create)
     case Delete => SecureBlock(restrictionId, schedule.delete)
-    case Get => PartialSecureBlock(prime)
+    case Get => SecureBlock(restrictionId, schedule.get)
     case _ => PartialSecureBlock(god)
   }
 
-  // TODO proper implementation
-  def get(course: String, labwork: String) = restrictedContext(course)(Get) action { request =>
-    repository.getAll[Schedule].map(_.find(_.labwork == UUID.fromString(labwork))) match {
-      case Success(Some(s)) => Ok(Json.toJson(s)).as(mimeType)
-      case Success(None) => NotFound(Json.obj(
-        "status" -> "KO",
-        "message" -> "No such element..."
-      ))
-      case Failure(e) => InternalServerError(Json.obj(
-        "status" -> "KO",
-        "message" -> e.getMessage
-      ))
-    }
+  def allFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    filteredOnly(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
-  def create(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    validate(request)
-      .flatMap(add)
-      .mapResult(s => Created(Json.toJson(s)).as(mimeType))
+  def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    filteredAtomicOnly(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
-  def createAtomic(course: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    validate(request)
-      .flatMap(add)
-      .flatMap(s => retrieve[ScheduleAtom](Schedule.generateUri(s)))
-      .mapResult(s => Created(Json.toJson(s)).as(mimeType))
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    create(NonSecureBlock)(rebase)
   }
 
-  def delete(course: String, schedule: String) = restrictedContext(course)(Delete) action { request =>
-    val uri = (UUID.fromString _ andThen Schedule.generateUri) (schedule)
-    remove[Schedule](uri)
-      .mapResult(_ => Ok(Json.obj("status" -> "OK")))
+  def createAtomicFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
+    createAtomic(NonSecureBlock)(rebase)
+  }
+
+  def deleteFrom(course: String, schedule: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(schedule, NonSecureBlock)(rebase(schedule))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    import controllers.schedule.ScheduleController.toSchedule
-    import controllers.crud.labwork.GroupCRUDController.fromQueryString
+    import controllers.crud.labwork.GroupCRUDController.strategyFrom
 
-    optional2(fromQueryString(request.queryString))
-      .flatMap(strategy => generate(labwork, strategy))
+    optional2(strategyFrom(request.queryString))
+      .flatMap(generate(labwork, _))
       .map(_ map toSchedule)
       .mapResult { gen =>
         Ok(Json.obj(
@@ -134,11 +115,10 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
 
   // TODO there is no preview atomic yet
   def previewAtomic(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    import controllers.schedule.ScheduleController.toSchedule
-    import controllers.crud.labwork.GroupCRUDController.fromQueryString
+    import controllers.crud.labwork.GroupCRUDController.strategyFrom
 
-    optional2(fromQueryString(request.queryString))
-      .flatMap(strategy => generate(labwork, strategy))
+    optional2(strategyFrom(request.queryString))
+      .flatMap(generate(labwork, _))
       .map(_ map toSchedule)
       .mapResult { gen =>
         Ok(Json.obj(
@@ -149,11 +129,11 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       }
   }
 
-  def header = Action { implicit request =>
+  override def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
 
-  private def generate[A](labwork: String, groupStrategy: Strategy)(implicit request: Request[A]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
+  private def generate[R](labwork: String, groupStrategy: Strategy)(implicit request: Request[R]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
     import controllers.schedule.ScheduleController._
     import defaultBindings.{LabworkAtomDescriptor, TimetableDescriptor, AssignmentPlanDescriptor}
 
@@ -199,4 +179,40 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
         println("=========")
     }
   }
+
+  override protected def coAtomic(atom: ScheduleAtom): Schedule = Schedule(
+    atom.labwork.id,
+    atom.entries.map(a => ScheduleEntry(a.labwork.id, a.start, a.end, a.date, a.room.id, a.supervisor map (_.id), a.group.id, a.invalidated, a.id)),
+    atom.invalidated,
+    atom.id
+  )
+
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Schedule]): Try[Set[Schedule]] = {
+    import store.sparql.select
+    import store.sparql.select._
+    import utils.Ops.MonadInstances.listM
+
+    lazy val lwm = LWMPrefix[repository.Rdf]
+    lazy val rdf = RDFPrefix[repository.Rdf]
+
+    queryString.foldLeft(Try(**(v("schedules"), p(rdf.`type`), s(lwm.Schedule)))) {
+      case (clause, (`labworkAttribute`, labworks)) => clause map {
+        _ append **(v("schedules"), p(lwm.labwork), o(Labwork.generateUri(UUID.fromString(labworks.head))))
+      }
+      case _ => Failure(new Throwable("Unknown attribute"))
+    } flatMap { clause =>
+      val query = select distinct "schedules" where clause
+
+      repository.prepareQuery(query)
+        .select(_.get("schedules"))
+        .transform(_.fold(List.empty[Value])(identity))
+        .map(_.stringValue())
+        .requestAll(repository.getMany[Schedule](_))
+        .run
+    }
+  }
+
+  override protected def compareModel(input: Schedule, output: Schedule): Boolean = false
+
+  override protected def fromInput(input: Schedule, existing: Option[Schedule]): Schedule = Schedule(input.labwork, input.entries, input.invalidated, existing.fold(UUID.randomUUID)(_.id))
 }

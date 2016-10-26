@@ -110,7 +110,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
   }
 
   override def allAtomic(securedContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = securedContext action { request =>
-    filtered(request)(Set.empty)
+    filter(request)(Set.empty)
       .flatMap { set =>
         if (set.nonEmpty)
           retrieveLots[AuthorityAtom](set map Authority.generateUri)

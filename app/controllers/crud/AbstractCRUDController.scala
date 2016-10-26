@@ -20,7 +20,6 @@ import utils.{Attempt, Continue, LwmMimeType, Return}
 
 import scala.collection.Map
 import scala.concurrent.Future
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 trait Stored {
@@ -44,20 +43,6 @@ trait RdfSerialisation[T <: UniqueEntity, A <: UniqueEntity] {
 trait JsonSerialisation[I, O, A] {
 
   implicit def setWrites[X](implicit w: Writes[X]): Writes[Set[X]] = Writes.set[X]
-
-/*
-  implicit def setFormat[X](implicit w: Format[X]): Format[Set[X]] = new Format[Set[X]] {
-    override def writes(o: Set[X]): JsValue = JsArray(o.map(w.writes).toSeq)
-
-
-    override def reads(json: JsValue): JsResult[Set[X]] = {
-      implicit val r = new Reads[X] {
-        override def reads(json: JsValue): JsResult[X] = w.reads(json)
-      }
-      Reads.traversableReads[Set, X].reads(json)
-    }
-  }
-*/
 
   implicit def reads: Reads[I]
 
@@ -281,14 +266,28 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 
   def all(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[O]
-      .flatMap(filtered(request))
+      .flatMap(filter(request))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomic(securedContext: SecureContext = contextFrom(GetAll)) = securedContext action { request =>
     retrieveAll[A]
-      .flatMap(filtered2(request, coAtomic))
+      .flatMap(filter2(request, coAtomic))
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def filteredOnly(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { request =>
+    filter(request)(Set.empty[O])
+      .map(set => chunk(set))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def filteredAtomicOnly(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { request =>
+    filter(request)(Set.empty[O])
+      .map(_.map(o => uriGenerator.generateUri(o)(namespace)))
+      .flatMap(retrieveLots[A])
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -309,20 +308,22 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 trait Filtered[O <: UniqueEntity, A <: UniqueEntity] {
   self: Controller with Filterable[O] =>
 
-  def filtered2[R](req: Request[R], f: A => O)(as: Set[A]): Attempt[Set[A]] = {
-    filtered(req)(as map f)
+  def filter2[R](req: Request[R], f: A => O)(as: Set[A]): Attempt[Set[A]] = {
+    filter(req)(as map f)
       .map(fos => as filter (x => fos exists (_.id == x.id)))
   }
 
-  def filtered[R](req: Request[R])(os: Set[O]): Attempt[Set[O]] = {
-    if (req.queryString.isEmpty) Continue(os)
-    else getWithFilter(req.queryString)(os) match {
-      case Success(fs) => Continue(fs)
-      case Failure(e) =>
-        Return(ServiceUnavailable(Json.obj(
-          "status" -> "KO",
-          "message" -> e.getMessage
-        )))
+  def filter[R](req: Request[R])(os: Set[O]): Attempt[Set[O]] = {
+    if (req.queryString.isEmpty)
+      Continue(os)
+    else
+      getWithFilter(req.queryString)(os) match {
+        case Success(fs) => Continue(fs)
+        case Failure(e) =>
+          Return(ServiceUnavailable(Json.obj(
+            "status" -> "KO",
+            "message" -> e.getMessage
+          )))
     }
   }
 }
@@ -345,7 +346,7 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
     (optional[X] _ compose repository.get[X]) (uri)
   }
 
-  def optional[X](item: Try[Option[X]]): Attempt[X] = item match {
+  def optional[X](tryOpt: Try[Option[X]]): Attempt[X] = tryOpt match {
     case Success(s) => optional2(s)
     case Failure(e) => Return(
       InternalServerError(Json.obj(
@@ -356,12 +357,11 @@ trait Retrieved[O <: UniqueEntity, A <: UniqueEntity] {
 
   def optional2[X](opt: Option[X]): Attempt[X] = opt match {
     case Some(s) => Continue(s)
-    case None =>
-      Return(
-        NotFound(Json.obj(
-          "status" -> "KO",
-          "message" -> "No such element..."
-        )))
+    case None => Return(
+      NotFound(Json.obj(
+        "status" -> "KO",
+        "message" -> "No such element..."
+      )))
   }
 
   def attempt[X](item: Try[X]): Attempt[X] = item match {

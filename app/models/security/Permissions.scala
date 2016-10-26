@@ -70,8 +70,9 @@ object Permissions {
   object schedule {
     val create = Permission("Schedule:create")
     val delete = Permission("Schedule:delete")
+    val get = Permission("Schedule:get")
 
-    lazy val all = Set(create, delete)
+    lazy val all = Set(create, delete, get)
   }
 
   object scheduleEntry {
@@ -101,8 +102,9 @@ object Permissions {
 
   object group {
     val create = Permission("Group:create")
+    val getAll = Permission("Group:getAll")
 
-    lazy val all = Set(create)
+    lazy val all = Set(create, getAll)
   }
 
   object user {
