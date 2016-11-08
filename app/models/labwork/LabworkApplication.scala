@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import utils.Ops.JsPathX
 
@@ -28,7 +28,17 @@ object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSeri
 
   override implicit def reads: Reads[LabworkApplicationProtocol] = Json.reads[LabworkApplicationProtocol]
 
-  override implicit def writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
+  override implicit def writes: Writes[LabworkApplication] = new Writes[LabworkApplication] {
+    override def writes(o: LabworkApplication): JsValue = {
+      val json = Json.obj(
+        "labwork" -> o.labwork,
+        "applicant" -> o.applicant,
+        "friends" -> o.friends,
+        "timestamp" -> o.timestamp.toString(Timetable.pattern))
+
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 
   override implicit def writesAtom: Writes[LabworkApplicationAtom] = LabworkApplicationAtom.writesAtom
 }

@@ -106,23 +106,38 @@ object ReportCardEvaluation extends UriGenerator[ReportCardEvaluation] with Json
 
   override implicit def reads: Reads[ReportCardEvaluation] = Json.reads[ReportCardEvaluation]
 
-  override implicit def writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
+  override implicit def writes: Writes[ReportCardEvaluation] = new Writes[ReportCardEvaluation] {
+    override def writes(o: ReportCardEvaluation): JsValue = {
+      val json = Json.obj(
+
+          "student" -> o.student,
+          "labwork" -> o.labwork,
+          "label" -> o.label,
+          "bool" -> o.bool,
+          "int" -> o.int,
+          "timestamp" -> o.timestamp.toString(Timetable.pattern))
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 
   override implicit def writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluationAtom.writesAtom
 
 }
 
 object ReportCardEvaluationAtom{
-  implicit def writesAtom: Writes[ReportCardEvaluationAtom] = (
-    (JsPath \ "student").write[Student] and
-      (JsPath \ "labwork").write[LabworkAtom] and
-      (JsPath \ "label").write[String] and
-      (JsPath \ "bool").write[Boolean] and
-      (JsPath \ "int").write[Int] and
-      (JsPath \ "timestamp").write[DateTime] and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    )(unlift(ReportCardEvaluationAtom.unapply))
+  implicit def writesAtom: Writes[ReportCardEvaluationAtom] = new Writes[ReportCardEvaluationAtom] {
+    override def writes(o: ReportCardEvaluationAtom): JsValue = {
+      val json = Json.obj(
+        "student" -> o.student,
+        "labwork" -> o.labwork,
+        "label" -> o.label,
+        "bool" -> o.bool,
+        "int" -> o.int,
+        "timestamp" -> o.timestamp.toString(Timetable.pattern))
+
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 }
 
 object Rescheduled extends JsonSerialisation[Rescheduled, Rescheduled, RescheduledAtom] {

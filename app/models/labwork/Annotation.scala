@@ -6,7 +6,7 @@ import controllers.crud.JsonSerialisation
 import models.users.Student
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import utils.Ops.JsPathX
 
@@ -28,9 +28,19 @@ object Annotation extends UriGenerator[Annotation] with JsonSerialisation[Annota
 
   override implicit def reads: Reads[AnnotationProtocol] = Json.reads[AnnotationProtocol]
 
-  override implicit def writes: Writes[Annotation] = Json.writes[Annotation]
+  override implicit def writes: Writes[Annotation] = new Writes[Annotation] {
+    override def writes(o: Annotation): JsValue = {
+      val json = Json.obj(
+        "stundent" -> o.student,
+        "labwork" -> o.labwork,
+        "reportCardEntry" -> o.reportCardEntry,
+        "message" -> o.message,
+        "timestamp" -> o.timestamp.toString(Timetable.pattern))
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 
-  override implicit def writesAtom: Writes[AnnotationAtom] = AnnotationAtom.writesAtom;
+  override implicit def writesAtom: Writes[AnnotationAtom] = AnnotationAtom.writesAtom
 }
 
 object AnnotationAtom{

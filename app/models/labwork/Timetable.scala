@@ -6,6 +6,8 @@ import controllers.UserController
 import controllers.crud.JsonSerialisation
 import models._
 import models.users.User
+import org.joda.time
+import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
 import services.ScheduleEntryG
@@ -40,7 +42,7 @@ case class TimetableEntry(supervisor: Set[UUID], room: UUID, dayIndex: Int, star
   * Protocol
   */
 
-case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime])
+case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[String])
 
 /**
   * Atom
@@ -62,22 +64,44 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
 
   override implicit def reads: Reads[TimetableProtocol] = Json.reads[TimetableProtocol]
 
-  override implicit def writes: Writes[Timetable] = Json.writes[Timetable]
+  override implicit def writes: Writes[Timetable] = new Writes[Timetable] {
+    override def writes(o: Timetable): JsValue = {
+      val json = Json.obj(
+        "labwork" -> o.labwork,
+        "entries" -> o.entries,
+        "start" -> o.start,
+        "localBlacklist" -> o.localBlacklist.map(_.toString(pattern))
+      )
+
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 
   override implicit def writesAtom: Writes[TimetableAtom] = TimetableAtom.writesAtom
 
   implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
+
+  lazy val pattern = "yyyy-MM-dd'T'HH:mm"
+
+  def toDateTime(string: String) = DateTime.parse(string, DateTimeFormat.forPattern(pattern))
+
+  def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
+    inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(pattern)))).isEmpty
+  }
 }
 
 object TimetableAtom{
-  implicit def writesAtom: Writes[TimetableAtom] = (
-    (JsPath \ "labwork").write[Labwork] and
-      (JsPath \ "entries").writeSet[TimetableEntryAtom] and
-      (JsPath \ "start").write[LocalDate] and
-      (JsPath \ "localBlacklist").writeSet[DateTime] and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    )(unlift(TimetableAtom.unapply))
+  implicit def writesAtom: Writes[TimetableAtom] = new Writes[TimetableAtom] {
+    override def writes(o: TimetableAtom): JsValue = {
+      val json = Json.obj(
+        "labwork" -> o.labwork,
+        "entries" -> o.entries,
+        "start" -> o.start,
+        "localBlacklist" -> o.localBlacklist.map(_.toString(Timetable.pattern)))
+
+      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
+    }
+  }
 }
 
 object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {

@@ -7,6 +7,8 @@ import controllers.crud.labwork.TimetableCRUDController._
 import models._
 import models.labwork._
 import models.security.Permissions._
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
@@ -94,14 +96,14 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
     input.start.isEqual(output.start) &&
       input.entries == output.entries &&
-      input.localBlacklist.diff(output.localBlacklist).isEmpty
+      Timetable.isEqual(input.localBlacklist, output.localBlacklist)
   }
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
     case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist, timetable.invalidated, timetable.id)
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(Timetable.toDateTime), timetable.invalidated, timetable.id)
     case None =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist)
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(Timetable.toDateTime))
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {

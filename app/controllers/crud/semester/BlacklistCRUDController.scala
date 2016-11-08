@@ -1,10 +1,14 @@
 package controllers.crud.semester
 
+import java.text.SimpleDateFormat
+
 import controllers.crud.AbstractCRUDController
 import models.UriGenerator
+import models.labwork.Timetable
 import models.security.Permissions.{semester, _}
 import models.semester.{Blacklist, BlacklistProtocol, Semester}
-import org.joda.time.Interval
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, Interval}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import services.{BlacklistServiceLike, RoleService, SessionHandlingService}
@@ -41,12 +45,12 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
   override protected def coAtomic(atom: Blacklist): Blacklist = atom
 
   override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
-    input.label == output.label && input.dates == output.dates
+    input.label == output.label && Timetable.isEqual(input.dates, output.dates)
   }
 
   override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
-    case Some(blacklist) => Blacklist(input.label, input.dates, blacklist.invalidated, blacklist.id)
-    case None => Blacklist(input.label, input.dates, None, Blacklist.randomUUID)
+    case Some(blacklist) => Blacklist(input.label, input.dates.map(Timetable.toDateTime), blacklist.invalidated, blacklist.id)
+    case None => Blacklist(input.label, input.dates.map(Timetable.toDateTime), None, Blacklist.randomUUID)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
