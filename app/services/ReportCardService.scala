@@ -23,8 +23,9 @@ trait ReportCardServiceLike {
 class ReportCardService extends ReportCardServiceLike {
 
   override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry] = {
-    import TimetableDateEntry._
-    import ReportCardService._
+    import models.labwork.TimetableDateEntry.toLocalDateTime
+    import services.ReportCardService.toReportCardEntryType
+    import models.LwmDateTime.localDateTimeOrd
 
     val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)

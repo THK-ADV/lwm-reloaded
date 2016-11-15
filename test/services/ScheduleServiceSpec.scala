@@ -53,6 +53,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   "A ScheduleService" should {
 
     import models.labwork.TimetableDateEntry._
+    import models.LwmDateTime.localDateTimeOrd
 
     "return empty list of scheduleG's when there are no competitive schedules" in {} // TODO
     "return scheduleG's when there are competitive schedules" in {} // TODO

@@ -24,20 +24,6 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserController {
-  implicit val writes: Writes[User] = new Writes[User] {
-    override def writes(user: User): JsValue = user match {
-      case student: Student => Json.toJson(student)
-      case employee: Employee => Json.toJson(employee)(Employee.writes)
-    }
-  }
-
-//  implicit val userFormat: Format[User] = new Format[User] {
-//    override def writes(o: User): JsValue = writes(o)
-//
-//    override def reads(json: JsValue): JsResult[User] = {
-//      json.validate[Employee] orElse json.validate[Student]
-//    }
-//  }
 
   private def withFilter[A <: User](queryString: Map[String, Seq[String]])(all: Set[A]): Try[Set[A]] = {
     queryString.foldRight(Try(all)) {
@@ -92,7 +78,8 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   with Retrieved[User, User]
   with RdfSerialisation[User, User] {
 
-  import Student.writesAtom
+  import models.users.Student.writesAtom
+
   import defaultBindings.{StudentDescriptor, StudentAtomDescriptor, EmployeeDescriptor}
 
   implicit val ns: Namespace = repository.namespace
@@ -119,35 +106,32 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   def student(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
 
-    retrieve[Student](uri)
-      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
+    retrieve[Student](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
   }
 
   def studentAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
 
-    retrieve[StudentAtom](uri)
-      .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
+    retrieve[StudentAtom](uri).mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def employee(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
 
-    retrieve[Employee](uri)
-      .mapResult(e => Ok(Json.toJson(e)).as(mimeType))
+    retrieve[Employee](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
   }
 
   def allEmployees() = contextFrom(GetAll) action { request =>
     retrieveAll[Employee]
       .flatMap(filtered(request))
-      .map(set => chunk(set))
+      .map(set => chunk(set)(Employee.writes))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allStudents() = contextFrom(GetAll) action { request =>
     retrieveAll[Student]
       .flatMap(filtered(request))
-      .map(set => chunk(set))
+      .map(set => chunk(set)(Student.writes))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
@@ -158,22 +142,21 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         filtered(request)(non)
           .map(set => students filter (s => set exists (_.id == s.id)))
       }
-      .map(set => chunk(set))
+      .map(set => chunk(set)(StudentAtom.writesAtom))
+      .mapResult(enum => Ok.stream(enum).as(mimeType))
+  }
+
+  def allUsers() = contextFrom(GetAll) action { request =>
+    retrieveAll[User]
+      .flatMap(filtered(request))
+      .map(set => chunk(set)(User.writes))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def user(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}"
 
-    retrieve[User](uri)
-      .mapResult(u => Ok(Json.toJson(u)).as(mimeType))
-  }
-
-  def allUsers() = contextFrom(GetAll) action { request =>
-    retrieveAll[User]
-      .flatMap(filtered(request))
-      .map(set => chunk(set))
-      .mapResult(enum => Ok.stream(enum).as(mimeType))
+    retrieve[User](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
   }
 
   def userAtomic(id: String) = contextFrom(Get) action { request =>
@@ -182,7 +165,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     retrieve[User](uri)
       .flatMap {
         case s: Student => retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
-        case e: Employee => Continue(Json.toJson(e))
+        case e: Employee => Continue(Json.toJson(e)(Employee.writes))
       }
       .mapResult(js => Ok(js).as(mimeType))
   }
@@ -199,7 +182,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
               elm <- retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
             } yield list.+:(elm)
 
-          case (ret, e: Employee) => ret map (list => list.+:(Json.toJson(e)))
+          case (ret, e: Employee) => ret map (list => list.+:(Json.toJson(e)(Employee.writes)))
           case (ret, _) => ret
         }
       }

@@ -8,5 +8,4 @@ package object models {
     def invalidated: Option[DateTime]
     def id: UUID
   }
-
 }

@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
 
   import models.labwork.TimetableDateEntry._
+  import models.LwmDateTime.localDateTimeOrd
   import scala.util.Random.nextInt
 
   val blacklistService = new BlacklistService

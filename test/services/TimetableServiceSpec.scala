@@ -90,6 +90,8 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]): Unit = {
+      import models.LwmDateTime.localDateTimeOrd
+
       val sortedResult = result.map(toLocalDateTime).sorted
 
       result.size should be > timetable.entries.size

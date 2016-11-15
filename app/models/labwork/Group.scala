@@ -31,13 +31,13 @@ object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, G
   override def base: String = "groups"
 }
 
-object GroupAtom{
+object GroupAtom {
 
   implicit def writesAtom: Writes[GroupAtom] = (
-      (JsPath \ "label").write[String] and
+    (JsPath \ "label").write[String] and
       (JsPath \ "labwork").write[Labwork] and
-      (JsPath \ "members").writeSet[Student] and
+      (JsPath \ "members").writeSet[Student](Student.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
-    )(unlift(GroupAtom.unapply))
+    ) (unlift(GroupAtom.unapply))
 }

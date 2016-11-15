@@ -34,7 +34,8 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
   }
 
   private def takeAppointments(entries: Vector[TimetableDateEntry], assignmentPlan: AssignmentPlan, groupSize: Int): Vector[TimetableDateEntry] = {
-    import TimetableDateEntry._
+    import models.labwork.TimetableDateEntry._
+    import models.LwmDateTime.localDateTimeOrd
 
     val sorted = entries.sortBy(toLocalDateTime)
     val initial = sorted.take(groupSize)

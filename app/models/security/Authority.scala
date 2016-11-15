@@ -8,7 +8,6 @@ import models.{Course, CourseAtom, UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import utils.Ops.JsPathX
 
 /**
   * Structure linking a user to his/her respective authority in the system.
@@ -94,8 +93,6 @@ object Authority extends UriGenerator[Authority] with JsonSerialisation[Authorit
 }
 
 object AuthorityAtom{
-  import controllers.UserController.writes
-
   implicit def writesAtom: Writes[AuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[Role] and

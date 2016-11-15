@@ -21,4 +21,12 @@ object User extends UriGenerator[User] {
   lazy val lecturerType = "lecturer"
 
   lazy val studentType = "student"
+
+  implicit def writes: Writes[User] = new Writes[User] {
+
+    override def writes(user: User): JsValue = user match {
+      case student: Student => Json.toJson(student)(Student.writes)
+      case employee: Employee => Json.toJson(employee)(Employee.writes)
+    }
+  }
 }

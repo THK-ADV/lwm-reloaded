@@ -96,14 +96,14 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
   override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
     input.start.isEqual(output.start) &&
       input.entries == output.entries &&
-      Timetable.isEqual(input.localBlacklist, output.localBlacklist)
+      LwmDateTime.isEqual(input.localBlacklist, output.localBlacklist)
   }
 
   override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
     case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(Timetable.toDateTime), timetable.invalidated, timetable.id)
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime), timetable.invalidated, timetable.id)
     case None =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(Timetable.toDateTime))
+      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime))
   }
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {

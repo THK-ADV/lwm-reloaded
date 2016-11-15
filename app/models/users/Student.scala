@@ -7,7 +7,6 @@ import models._
 import org.joda.time.DateTime
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax._
-import utils.Ops.JsPathX
 
 case class Student(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, invalidated: Option[DateTime] = None, id: UUID = User.randomUUID) extends User
 
@@ -21,7 +20,9 @@ object Student extends JsonSerialisation[Student, Student, StudentAtom] {
 
   override implicit def writesAtom: Writes[StudentAtom] = StudentAtom.writesAtom
 }
-object StudentAtom{
+
+object StudentAtom {
+
   implicit def writesAtom: Writes[StudentAtom] = (
     (JsPath \ "systemId").write[String] and
       (JsPath \ "lastname").write[String] and
@@ -31,5 +32,5 @@ object StudentAtom{
       (JsPath \ "enrollment").write[Degree](Degree.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
-    )(unlift(StudentAtom.unapply))
+    ) (unlift(StudentAtom.unapply))
 }

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 
 case class Room(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = Room.randomUUID) extends UniqueEntity
 

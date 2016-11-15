@@ -8,7 +8,7 @@ object Weekday {
     override def compare(x: Weekday, y: Weekday): Int = x compareTo y
   }
 
-  def toDay(d: LocalDate): Weekday = toDay(d.getDayOfWeek)
+  def toDay(date: LocalDate): Weekday = toDay(date.getDayOfWeek)
 
   def toDay(i: Int): Weekday = (i - 1) % 7 match {
     case 0 => Monday
@@ -24,14 +24,14 @@ object Weekday {
 
 sealed abstract class Weekday(val index: Int) {
 
-  import Weekday._
+  import models.labwork.Weekday._
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case w: Weekday => index == w.index
     case _ => false
   }
 
-  def compareTo(z: Weekday): Int = index - z.index
+  def compareTo(day: Weekday): Int = index - day.index
 
   def sync(date: LocalDate): LocalDate = {
     if (index < date.getDayOfWeek)

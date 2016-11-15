@@ -2,7 +2,7 @@ package controllers
 
 import base.StreamHandler._
 import controllers.crud.semester.BlacklistCRUDController
-import models.labwork.Timetable
+import models.LwmDateTime
 import models.semester.{Blacklist, BlacklistProtocol}
 import org.joda.time.{DateTime, Interval}
 import org.mockito.Matchers._
@@ -60,12 +60,12 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override val inputJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
-    "dates" -> entityToPass.dates.map(_.toString(Timetable.pattern))
+    "dates" -> entityToPass.dates.map(_.toString(LwmDateTime.pattern))
   )
 
   override val updateJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
-    "dates" -> (entityToPass.dates + DateTime.now).map(_.toString(Timetable.pattern))
+    "dates" -> (entityToPass.dates + DateTime.now).map(_.toString(LwmDateTime.pattern))
   )
 
   "A BlacklistCRUDControllerSpec also " should {

@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.crud.JsonSerialisation
 import models.{UniqueEntity, UriGenerator}
 import org.joda.time.{DateTime, Interval, LocalDate}
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 
 case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, invalidated: Option[DateTime] = None, id: UUID = Semester.randomUUID) extends UniqueEntity {
 

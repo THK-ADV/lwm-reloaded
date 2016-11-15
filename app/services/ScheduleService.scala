@@ -11,7 +11,7 @@ import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
-import TimetableDateEntry._
+import models.labwork.TimetableDateEntry._
 import models.semester.Semester
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
@@ -115,6 +115,8 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
   }
 
   private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
+    import models.LwmDateTime.localDateTimeOrd
+
     val shuffled = shuffle(groups.toVector)
     val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
       case (t, group) => ScheduleEntryG(t.start, t.end, t.date, t.room, t.supervisor, group)

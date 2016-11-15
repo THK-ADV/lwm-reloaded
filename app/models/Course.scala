@@ -7,7 +7,6 @@ import models.users.Employee
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import utils.Ops.JsPathX
 
 case class Course(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[DateTime] = None, id: UUID = Course.randomUUID) extends UniqueEntity
 
@@ -26,7 +25,7 @@ object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol
   override def base: String = "courses"
 }
 
-object CourseAtom{
+object CourseAtom {
   implicit def writesAtom: Writes[CourseAtom] = (
       (JsPath \ "label").write[String] and
       (JsPath \ "description").write[String] and

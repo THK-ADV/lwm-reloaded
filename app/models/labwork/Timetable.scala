@@ -2,12 +2,9 @@ package models.labwork
 
 import java.util.UUID
 
-import controllers.UserController
 import controllers.crud.JsonSerialisation
 import models._
 import models.users.User
-import org.joda.time
-import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
 import services.ScheduleEntryG
@@ -16,7 +13,7 @@ import utils.Ops.JsPathX
 
 case class Timetable(labwork: UUID, entries: Set[TimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = Timetable.randomUUID) extends UniqueEntity {
 
-  import models.semester.Blacklist.dateOrd
+  import models.LwmDateTime.dateTimeOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case Timetable(l2, e2, s2, bl2, _, id2) =>
@@ -64,69 +61,51 @@ object Timetable extends UriGenerator[Timetable] with JsonSerialisation[Timetabl
 
   override implicit def reads: Reads[TimetableProtocol] = Json.reads[TimetableProtocol]
 
-  override implicit def writes: Writes[Timetable] = new Writes[Timetable] {
-    override def writes(o: Timetable): JsValue = {
-      val json = Json.obj(
-        "labwork" -> o.labwork,
-        "entries" -> o.entries,
-        "start" -> o.start,
-        "localBlacklist" -> o.localBlacklist.map(_.toString(pattern))
-      )
-
-      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
-    }
-  }
+  override implicit def writes: Writes[Timetable] = (
+    (JsPath \ "labwork").write[UUID] and
+      (JsPath \ "entries").writeSet[TimetableEntry] and
+      (JsPath \ "start").write[LocalDate] and
+      (JsPath \ "localBlacklist").writeSet[DateTime](LwmDateTime.writes) and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(Timetable.unapply))
 
   override implicit def writesAtom: Writes[TimetableAtom] = TimetableAtom.writesAtom
-
-  implicit def setAtomicWrites: Writes[Set[TimetableAtom]] = Writes.set[TimetableAtom]
-
-  lazy val pattern = "yyyy-MM-dd'T'HH:mm"
-
-  def toDateTime(string: String) = DateTime.parse(string, DateTimeFormat.forPattern(pattern))
-
-  def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
-    inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(pattern)))).isEmpty
-  }
 }
 
-object TimetableAtom{
-  implicit def writesAtom: Writes[TimetableAtom] = new Writes[TimetableAtom] {
-    override def writes(o: TimetableAtom): JsValue = {
-      val json = Json.obj(
-        "labwork" -> o.labwork,
-        "entries" -> o.entries,
-        "start" -> o.start,
-        "localBlacklist" -> o.localBlacklist.map(_.toString(Timetable.pattern)))
+object TimetableAtom {
 
-      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
-    }
-  }
+  implicit def writesAtom: Writes[TimetableAtom] = (
+    (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "entries").writeSet[TimetableEntryAtom] and
+      (JsPath \ "start").write[LocalDate] and
+      (JsPath \ "localBlacklist").writeSet[DateTime](LwmDateTime.writes) and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(TimetableAtom.unapply))
 }
 
 object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, TimetableEntryAtom] {
 
-  implicit val dateOrd = TimetableDateEntry.localDateOrd
+  implicit val dateOrd = LwmDateTime.localDateOrd
 
-  implicit val timeOrd = TimetableDateEntry.localTimeOrd
+  implicit val timeOrd = LwmDateTime.localTimeOrd
 
   override implicit def reads: Reads[TimetableEntry] = Json.reads[TimetableEntry]
 
   override implicit def writes: Writes[TimetableEntry] = Json.writes[TimetableEntry]
 
   override implicit def writesAtom: Writes[TimetableEntryAtom] = TimetableEntryAtom.writesAtom
-
-  implicit def setAtomicWrites: Writes[Set[TimetableEntryAtom]] = Writes.set[TimetableEntryAtom]
 }
 
-object TimetableEntryAtom{
+object TimetableEntryAtom {
   implicit def writesAtom: Writes[TimetableEntryAtom] = (
-    (JsPath \ "supervisor").writeSet[User](UserController.writes) and
-      (JsPath \ "room").write[Room](Room.writes)  and
+    (JsPath \ "supervisor").writeSet[User] and
+      (JsPath \ "room").write[Room](Room.writes) and
       (JsPath \ "dayIndex").write[Int] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime]
-    )(unlift(TimetableEntryAtom.unapply))
+    ) (unlift(TimetableEntryAtom.unapply))
 }
 
 object TimetableDateEntry {
@@ -137,17 +116,5 @@ object TimetableDateEntry {
 
   def toLocalDateTime(entry: ScheduleEntryG): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
-  }
-
-  implicit val localTimeOrd: Ordering[LocalTime] = new Ordering[LocalTime] {
-    override def compare(x: LocalTime, y: LocalTime): Int = x.compareTo(y)
-  }
-
-  implicit val localDateOrd: Ordering[LocalDate] = new Ordering[LocalDate] {
-    override def compare(x: LocalDate, y: LocalDate): Int = x.compareTo(y)
-  }
-
-  implicit val localDateTimeOrd: Ordering[LocalDateTime] = new Ordering[LocalDateTime] {
-    override def compare(x: LocalDateTime, y: LocalDateTime): Int = x.compareTo(y)
   }
 }

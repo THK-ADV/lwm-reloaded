@@ -56,17 +56,16 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, 
   override implicit def writes: Writes[Schedule] = Json.writes[Schedule]
 
   override implicit def writesAtom: Writes[ScheduleAtom] = ScheduleAtom.writesAtom
-
-  implicit def setAtomicWrites: Writes[Set[ScheduleAtom]] = Writes.set[ScheduleAtom]
 }
 
-object ScheduleAtom{
+object ScheduleAtom {
+
   implicit def writesAtom: Writes[ScheduleAtom] = (
-      (JsPath \ "labwork").write[LabworkAtom] and
+    (JsPath \ "labwork").write[LabworkAtom] and
       (JsPath \ "entries").writeSet[ScheduleEntryAtom] and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
-    )(unlift(ScheduleAtom.unapply))
+    ) (unlift(ScheduleAtom.unapply))
 }
 
 object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom] {
@@ -82,7 +81,7 @@ object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[
   override def base: String = "scheduleEntry"
 }
 
-object ScheduleEntryAtom{
+object ScheduleEntryAtom {
 
   implicit def writesAtom: Writes[ScheduleEntryAtom] = (
     (JsPath \ "labwork").write[LabworkAtom] and
@@ -90,9 +89,9 @@ object ScheduleEntryAtom{
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "date").write[LocalDate] and
       (JsPath \ "room").write[Room](Room.writes) and
-      (JsPath \ "supervisor").writeSet[User](UserController.writes) and
+      (JsPath \ "supervisor").writeSet[User] and
       (JsPath \ "group").write[Group] and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
-    )(unlift(ScheduleEntryAtom.unapply))
+    ) (unlift(ScheduleEntryAtom.unapply))
 }

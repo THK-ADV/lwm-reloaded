@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.crud.JsonSerialisation
 import models.users.Student
-import models.{UniqueEntity, UriGenerator}
+import models.{LwmDateTime, UniqueEntity, UriGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -28,27 +28,26 @@ object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSeri
 
   override implicit def reads: Reads[LabworkApplicationProtocol] = Json.reads[LabworkApplicationProtocol]
 
-  override implicit def writes: Writes[LabworkApplication] = new Writes[LabworkApplication] {
-    override def writes(o: LabworkApplication): JsValue = {
-      val json = Json.obj(
-        "labwork" -> o.labwork,
-        "applicant" -> o.applicant,
-        "friends" -> o.friends,
-        "timestamp" -> o.timestamp.toString(Timetable.pattern))
-
-      o.invalidated.fold(json)(date => json + ("invalidated" -> Json.toJson(date))) + ("id" -> Json.toJson(o.id))
-    }
-  }
+  override implicit def writes: Writes[LabworkApplication] = (
+    (JsPath \ "labwork").write[UUID] and
+      (JsPath \ "applicant").write[UUID] and
+      (JsPath \ "friends").writeSet[UUID] and
+      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
+      (JsPath \ "invalidated").writeNullable[DateTime] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(LabworkApplication.unapply))
 
   override implicit def writesAtom: Writes[LabworkApplicationAtom] = LabworkApplicationAtom.writesAtom
 }
-object LabworkApplicationAtom{
+
+object LabworkApplicationAtom {
+
   implicit def writesAtom: Writes[LabworkApplicationAtom] = (
     (JsPath \ "labwork").write[Labwork] and
-      (JsPath \ "applicant").write[Student] and
-      (JsPath \ "friends").writeSet[Student] and
-      (JsPath \ "timestamp").write[DateTime] and
+      (JsPath \ "applicant").write[Student](Student.writes) and
+      (JsPath \ "friends").writeSet[Student](Student.writes) and
+      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
-    )(unlift(LabworkApplicationAtom.unapply))
+    ) (unlift(LabworkApplicationAtom.unapply))
 }
