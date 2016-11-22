@@ -223,9 +223,6 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                               controllers.SessionController.header
 
 # APIData
-GET           /api/patch/timetableEntry                                               controllers.ApiDataController.patchTimetableEntry
-GET           /api/remove/blacklists                                                  controllers.ApiDataController.removeBlacklists
-GET           /api/patch/entries/:l                                                   controllers.ApiDataController.patchEntries(l)
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
 
 # Map static resources from the /public folder to the /assets URL path
