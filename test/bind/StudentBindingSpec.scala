@@ -1,8 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.Degree
-import models.users.{Student, StudentAtom, User}
+import models._
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

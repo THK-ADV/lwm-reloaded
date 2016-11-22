@@ -1,9 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.security._
-import models.users.{Employee, Student, User}
-import models.{Course, CourseAtom, Degree}
+import models._
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.ReportCardEntryType
-import models.security.Permissions._
+import models.Permissions._
+import models.ReportCardEntryType
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -24,7 +24,7 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
   val id = UUID.randomUUID
   val json = {
-    import models.labwork.ReportCardEntryType._
+    import models.ReportCardEntryType._
     import scala.util.Random.nextBoolean
     Json.toJson(ReportCardEntryType(Attendance.entryType, bool = nextBoolean, 0, None, id))
   }

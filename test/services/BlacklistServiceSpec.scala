@@ -4,8 +4,7 @@ import java.util.UUID
 
 import akka.util.Timeout
 import base.TestBaseDefinition
-import models.labwork.{TimetableDateEntry, Weekday}
-import models.users.User
+import models.{TimetableDateEntry, User, Weekday}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
@@ -14,7 +13,7 @@ import scala.concurrent.duration._
 
 class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
 
-  import models.labwork.TimetableDateEntry._
+  import models.TimetableDateEntry._
   import models.LwmDateTime.localDateTimeOrd
   import scala.util.Random.nextInt
 

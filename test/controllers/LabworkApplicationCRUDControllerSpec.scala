@@ -4,12 +4,8 @@ import java.net.URLEncoder
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.crud.labwork.LabworkApplicationCRUDController
-import controllers.crud.labwork.LabworkApplicationCRUDController._
+import controllers.LabworkApplicationCRUDController._
 import models._
-import models.labwork.{Labwork, LabworkApplication, LabworkApplicationAtom, LabworkApplicationProtocol}
-import models.semester.Semester
-import models.users.{Student, User}
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._

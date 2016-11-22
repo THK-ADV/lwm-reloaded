@@ -3,8 +3,7 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.labwork.{Labwork, LabworkApplication}
-import models.users.User
+import models.{LabworkApplication, User}
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._

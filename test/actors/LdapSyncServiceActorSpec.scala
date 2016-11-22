@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import base.TestBaseDefinition
-import models.users.{Employee, Student, User}
+import models.{Employee, Student, User}
 import org.mockito.Matchers.anyObject
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike

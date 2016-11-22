@@ -2,7 +2,7 @@ package base
 
 import java.util.UUID
 
-import models.security.Authority
+import models.Authority
 import org.scalatest.mock.MockitoSugar
 import play.api.ApplicationLoader.Context
 import play.api.test.WithApplicationLoader
@@ -41,9 +41,9 @@ trait FakeAuthority {
 
 trait SecurityBaseDefinition extends FakeAuthority { self =>
 
-  val roleService = MockitoSugar.mock[RoleService]
-  val sessionService = MockitoSugar.mock[SessionHandlingService]
-  val groupService = MockitoSugar.mock[GroupService]
+  lazy val roleService = MockitoSugar.mock[RoleService]
+  lazy val sessionService = MockitoSugar.mock[SessionHandlingService]
+  lazy val groupService = MockitoSugar.mock[GroupService]
 
   class FakeApplication extends WithApplicationLoader(new ApplicationLoader {
 
@@ -51,7 +51,7 @@ trait SecurityBaseDefinition extends FakeAuthority { self =>
 
       override lazy val roleService: RoleService = self.roleService
 
-      override val sessionService: SessionHandlingService = self.sessionService
+      override lazy val sessionService: SessionHandlingService = self.sessionService
 
       override lazy val groupService: GroupServiceLike = self.groupService
     }.application

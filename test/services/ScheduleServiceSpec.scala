@@ -3,9 +3,6 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.labwork._
-import models.semester.Semester
-import models.users.User
 import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime, Weeks}
 import org.joda.time.format.DateTimeFormat
@@ -26,7 +23,7 @@ object ScheduleServiceSpec {
   }
 
   def alph(amount: Int): Vector[String] = {
-    unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27) toVector
+    (unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27)).toVector
   }
 
   def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
@@ -34,7 +31,7 @@ object ScheduleServiceSpec {
     AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
   }
 
-  def population(n: Int): Vector[UUID] = Stream.continually(UUID.randomUUID()) take n toVector
+  def population(n: Int): Vector[UUID] = (Stream.continually(UUID.randomUUID()) take n).toVector
 }
 
 class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
@@ -52,7 +49,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
   "A ScheduleService" should {
 
-    import models.labwork.TimetableDateEntry._
+    import models.TimetableDateEntry._
     import models.LwmDateTime.localDateTimeOrd
 
     "return empty list of scheduleG's when there are no competitive schedules" in {} // TODO
@@ -275,7 +272,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val newSchedule = scheduleService.mutateDestructive(schedule, ev)
 
       val theGroup = entries(4).group
-      val theNaughtyOnes = theGroup.members take 2 toVector
+      val theNaughtyOnes = theGroup.members.take(2).toVector
 
       newSchedule.entries find (_.group.id == theGroup.id) match {
         case Some(entry) =>
@@ -328,7 +325,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       def schedule = ScheduleG(labid, entries, Schedule.randomUUID)
 
       val (schedule1, schedule2) = (schedule, schedule)
-      val (e1, e2) = (schedule1.entries.toVector(3), schedule2.entries.toVector(5))
+      val (e1, e2) = (schedule1.entries(3), schedule2.entries(5))
 
       val (eval1, eval2) = (Evaluation(List(Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
         Evaluation(List(Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))

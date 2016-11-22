@@ -3,11 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Course, Degree, Room}
-import models.labwork._
-import models.security.{Authority, Role}
-import models.semester.Semester
-import models.users.User
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.Random._

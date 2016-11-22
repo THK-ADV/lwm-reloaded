@@ -3,10 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Course, Degree, Room}
-import models.labwork.{ReportCardEntry, ReportCardEvaluation, Schedule, _}
-import models.semester.Semester
-import models.users.User
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.Random._
@@ -47,8 +44,8 @@ class DegreeInvalidation extends SesameDbSpec {
     }
 
     def rceval(labwork: UUID): Stream[ReportCardEvaluation] = Stream.continually {
-      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", true, 0)
-      else ReportCardEvaluation(User.randomUUID, Labwork.randomUUID, "Label", true, 0)
+      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
+      else ReportCardEvaluation(User.randomUUID, Labwork.randomUUID, "Label", bool = true, 0)
     }
 
     def labapp(labwork: UUID): Stream[LabworkApplication] = Stream.continually {

@@ -2,11 +2,8 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.labwork.GroupCRUDController
-import controllers.crud.labwork.GroupCRUDController._
+import controllers.GroupCRUDController._
 import models._
-import models.labwork._
-import models.users.{Student, User}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -296,7 +293,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "preview groups given some arbitrary group size and range" in {
-      import models.labwork.Group.protocolWrites
+      import models.Group.protocolWrites
 
       val labwork = Labwork.randomUUID
       val course = Course.randomUUID

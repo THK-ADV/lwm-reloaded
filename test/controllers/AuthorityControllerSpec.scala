@@ -3,11 +3,8 @@ package controllers
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.security.AuthorityController
-import models.security.Permissions._
-import models.security._
-import models.users.{Employee, Student}
-import models.{Course, CourseAtom}
+import models.Permissions._
+import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph

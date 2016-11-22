@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.users.{Employee, User}
+import models.{Employee, User}
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

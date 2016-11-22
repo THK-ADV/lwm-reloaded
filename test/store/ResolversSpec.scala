@@ -1,9 +1,7 @@
 package store
 
 import base.TestBaseDefinition
-import models.Degree
-import models.security.{Permissions, Role}
-import models.users.{Employee, Student, User}
+import models._
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import services.RoleService

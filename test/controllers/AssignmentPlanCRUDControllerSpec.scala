@@ -4,8 +4,7 @@ import java.util.UUID
 
 import base.StreamHandler
 import base.StreamHandler._
-import controllers.crud.labwork.AssignmentPlanCRUDController
-import models.labwork._
+import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph

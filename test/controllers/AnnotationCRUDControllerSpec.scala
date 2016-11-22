@@ -3,9 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.crud.labwork.AnnotationCRUDController
-import models.labwork._
-import models.users.Student
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._

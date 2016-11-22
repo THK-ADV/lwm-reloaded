@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.Group
-import models.security.Permissions._
+import models.Group
+import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec

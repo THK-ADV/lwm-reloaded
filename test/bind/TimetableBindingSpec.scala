@@ -3,9 +3,7 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.Room
-import models.labwork._
-import models.users.{Employee, User}
+import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 
@@ -77,7 +75,7 @@ class TimetableBindingSpec extends SesameDbSpec {
     "return a timetable atom based on an RDF representation" in {
       import bindings.{EmployeeDescriptor, LabworkDescriptor, RoomDescriptor, TimetableAtomDescriptor, TimetableDescriptor}
 
-      val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), false, false)
+      val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), subscribable = false, published = false)
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
       val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")

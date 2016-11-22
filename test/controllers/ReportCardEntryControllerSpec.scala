@@ -4,10 +4,7 @@ import java.util.UUID
 
 import base.StreamHandler._
 import base.{StreamHandler, TestBaseDefinition}
-import controllers.reportCard.ReportCardEntryController
-import models.labwork._
-import models.users.{Student, User}
-import models.{Course, Room}
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -69,7 +66,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   "A ReportCardEntryControllerSpec " should {
 
     "successfully reschedule a student's report card entry" in {
-      import ReportCardEntry.writes
+      import models.ReportCardEntry.writes
 
       val rescheduledEntry = {
         val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
@@ -208,7 +205,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "successfully return a student's report card entries atomized" in {
-      import ReportCardEntry.writesAtom
+      import models.ReportCardEntry.writesAtom
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))

@@ -1,7 +1,8 @@
 package services
 
 import java.util.UUID
-import models.labwork.{Labwork, LabworkApplication}
+
+import models.{Labwork, LabworkApplication}
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix
@@ -15,7 +16,6 @@ import scala.util.Try
 trait LabworkApplicationServiceLike {
 
   def applicationsFor(labwork: UUID): Try[Set[LabworkApplication]]
-
 }
 
 case class LabworkApplicationService(private val repository: SesameRepository) extends LabworkApplicationServiceLike {
@@ -43,7 +43,7 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
       select(_.get("s")).
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
-      requestAll(ids => repository.getMany[LabworkApplication](ids)).
+      requestAll(repository.getMany[LabworkApplication]).
       run
   }
 }

@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 
-import models.labwork.Group
+import models.Group
 import utils.PreferenceSort
 
 import scala.util.Try

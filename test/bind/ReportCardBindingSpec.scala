@@ -4,8 +4,6 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models._
-import models.labwork._
-import models.users.User
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 

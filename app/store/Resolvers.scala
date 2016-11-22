@@ -2,9 +2,7 @@ package store
 
 import java.util.UUID
 
-import models.Degree
-import models.security.{Authority, Role, Roles}
-import models.users.{Employee, Student, User}
+import models._
 import org.w3.banana.{PointedGraph, RDFPrefix}
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import store.Prefixes.LWMPrefix
@@ -55,9 +53,6 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     * dieser LdapUser wird mit missingUserData um eine Auth und dem Degree angereichert. Danach werden auth und user in die db geworfen
     * beispiel: ldap.user(user) map (missingUserData) map (createAuthAndUser)
     * dandruch wird auch die degree funtkion aus dem ldap wegoptimiert. die hat auch nichts dazu zu tun, das sind lwm details
-    * @param user
-    * @tparam A
-    * @return
     */
   override def missingUserData[A <: User](user: A): Try[PointedGraph[Sesame]] = {
     import bindings.{AuthorityDescriptor, RoleDescriptor, StudentDescriptor, EmployeeDescriptor}

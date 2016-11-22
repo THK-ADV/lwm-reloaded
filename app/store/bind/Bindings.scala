@@ -3,10 +3,6 @@ package store.bind
 import java.util.UUID
 
 import models._
-import models.labwork._
-import models.security._
-import models.semester.{Blacklist, Semester}
-import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana._
@@ -645,8 +641,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
   implicit lazy val ReportCardEntryDescriptor: Descriptor[Rdf, ReportCardEntry] = new Descriptor[Rdf, ReportCardEntry] {
-
-    import PropertyEnhancer._
+    import store.bind.PropertyEnhancer._
 
     override val clazz: Rdf#URI = lwm.ReportCardEntry
 
@@ -675,8 +670,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
   implicit lazy val ReportCardEntryAtomDescriptor: Descriptor[Rdf, ReportCardEntryAtom] = new Descriptor[Rdf, ReportCardEntryAtom] {
-
-    import PropertyEnhancer._
+    import store.bind.PropertyEnhancer._
 
     override val clazz: Rdf#URI = lwm.ReportCardEntry
 

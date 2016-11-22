@@ -3,9 +3,8 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.labwork._
-import models.labwork.ReportCardEntryType._
-import models.users.User
+import models._
+import models.ReportCardEntryType._
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
@@ -67,7 +66,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
   val reportCardService = new ReportCardService
 
   val planEntries = {
-    import models.labwork.AssignmentEntryType._
+    import models.AssignmentEntryType._
 
     Vector(
       AssignmentEntry(0, "Einführung", Set(Attendance)),
@@ -87,7 +86,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
     "successfully return report cards for given schedule" in {
       import services.ReportCardServiceSpec._
-      import models.labwork.TimetableDateEntry._
+      import models.TimetableDateEntry._
       import models.LwmDateTime.localDateTimeOrd
 
       val amount = 8

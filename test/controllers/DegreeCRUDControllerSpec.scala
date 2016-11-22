@@ -1,6 +1,5 @@
 package controllers
 
-import controllers.crud.DegreeCRUDController
 import models.{Degree, DegreeProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers.anyObject

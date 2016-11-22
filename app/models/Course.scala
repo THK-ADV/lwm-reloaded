@@ -2,8 +2,7 @@ package models
 
 import java.util.UUID
 
-import controllers.crud.JsonSerialisation
-import models.users.Employee
+import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._

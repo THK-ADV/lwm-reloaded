@@ -3,8 +3,7 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork.{Group, GroupAtom, Labwork}
-import models.users.{Student, User}
+import models._
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

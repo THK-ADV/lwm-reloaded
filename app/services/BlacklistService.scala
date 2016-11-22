@@ -1,7 +1,6 @@
 package services
 
-import models.labwork.TimetableDateEntry
-import models.semester.Blacklist
+import models.{Blacklist, TimetableDateEntry}
 import org.joda.time.DateTime
 
 import scala.concurrent.Future

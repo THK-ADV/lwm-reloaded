@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 
-import models.labwork._
+import models._
 
 object ReportCardService {
 
@@ -23,7 +23,7 @@ trait ReportCardServiceLike {
 class ReportCardService extends ReportCardServiceLike {
 
   override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry] = {
-    import models.labwork.TimetableDateEntry.toLocalDateTime
+    import models.TimetableDateEntry.toLocalDateTime
     import services.ReportCardService.toReportCardEntryType
     import models.LwmDateTime.localDateTimeOrd
 
@@ -60,7 +60,7 @@ class ReportCardService extends ReportCardServiceLike {
       eval(reportCardEntryType.entryType, boolRes, intRes)
     }
 
-    import ReportCardEntryType._
+    import models.ReportCardEntryType._
     import utils.Ops.TravOps
 
     Set(

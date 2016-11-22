@@ -1,7 +1,6 @@
 package controllers
 
-import controllers.security.RoleController
-import models.security.{Permission, Role, RoleProtocol}
+import models._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
@@ -10,6 +9,7 @@ import utils.LwmMimeType
 class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, Role] {
   import bindings.RoleDescriptor
   import ops._
+
   override def entityTypeName: String = "role"
 
   override val controller: RoleController = new RoleController(repository, sessionService, namespace, roleService) {

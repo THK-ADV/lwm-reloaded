@@ -3,11 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import controllers.schedule.ScheduleEntryController
-import models.labwork._
-import models.semester.Semester
-import models.users.{Employee, User}
-import models.{CourseAtom, Degree, Room}
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -30,7 +26,7 @@ import scala.util.Success
 
 class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
-  import models.labwork.ScheduleEntry.writesAtom
+  import models.ScheduleEntry.writesAtom
 
   val repository = mock[SesameRepository]
   val sessionService = mock[SessionHandlingService]
@@ -75,7 +71,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     val courseAtom = CourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
     val degree = Degree("label to pass", "abbrev to pass")
 
-    val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, false, published = false, None, e.labwork)
+    val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)
     val supervisor: Set[User] = e.supervisor map (Employee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
     val group = Group("label", labworkAtom.id, Set(), None, e.group)

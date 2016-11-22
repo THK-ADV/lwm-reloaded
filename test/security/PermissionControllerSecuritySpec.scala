@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.security.Permissions
+import models.Permissions
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -22,7 +22,7 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all permissions" in new FakeApplication() {
-      import models.security.Permission.writes
+      import models.Permission.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, Permissions.prime))(FakeAdminAuth)).thenReturn(Success(true))

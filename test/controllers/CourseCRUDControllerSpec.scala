@@ -3,10 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.crud.CourseCRUDController
-import models.security.{Authority, Role, Roles}
-import models.users.{Employee, User}
-import models.{Course, CourseAtom, CourseProtocol}
+import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.Value

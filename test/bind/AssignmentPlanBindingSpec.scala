@@ -3,8 +3,8 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork.AssignmentEntryType._
-import models.labwork.{AssignmentEntry, AssignmentPlan, Labwork}
+import models.AssignmentEntryType._
+import models.{AssignmentEntry, AssignmentPlan, Labwork}
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

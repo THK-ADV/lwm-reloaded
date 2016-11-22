@@ -3,12 +3,8 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import controllers.crud.labwork.GroupCRUDController._
-import controllers.schedule.ScheduleController
+import controllers.GroupCRUDController._
 import models._
-import models.labwork._
-import models.semester.Semester
-import models.users.Employee
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -120,7 +116,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     Schedule(gen.elem.labwork, entries, None, gen.elem.id)
   }
 
-  private def assumptions(gen: Gen[ScheduleG, Conflict, Int], comps: Boolean = true): Unit = {
+  private def assumptions(gen: Gen[ScheduleG, Conflict, Int], comps: Boolean = true) = {
     val comp = if (comps) Set(randomAtom) else Set.empty[ScheduleAtom]
 
     when(repository.get[LabworkAtom](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))

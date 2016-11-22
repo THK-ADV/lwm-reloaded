@@ -3,10 +3,8 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork._
-import models.semester.Semester
-import models.users.{Employee, User}
-import models.{Course, CourseAtom, Degree, Room}
+import models._
+import models.{Semester, _}
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 

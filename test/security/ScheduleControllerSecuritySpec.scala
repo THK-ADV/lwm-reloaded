@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.{Schedule, ScheduleEntry}
-import models.security.Permissions._
+import models.Permissions._
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -26,7 +26,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a schedule entry" in new FakeApplication() {
-      import models.labwork.ScheduleEntry.writes
+      import models.ScheduleEntry.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), scheduleEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
@@ -48,7 +48,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when mv wants to create a schedule" in new FakeApplication() {
-      import models.labwork.Schedule.writes
+      import models.Schedule.writes
 
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), schedule.create))(FakeMvAuth)).thenReturn(Success(true))
@@ -141,7 +141,7 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when ma wants to create schedule" in new FakeApplication() {
-      import models.labwork.Schedule.writes
+      import models.Schedule.writes
 
       when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), schedule.create))(FakeMaAuth)).thenReturn(Success(false))

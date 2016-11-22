@@ -2,14 +2,12 @@ package services
 
 import base.TestBaseDefinition
 import models._
-import models.labwork.{AssignmentPlan, Labwork, LabworkApplication}
-import models.semester.Semester
-import models.users.User
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.SesameModule
 import store.{Namespace, SesameRepository}
 import store.bind.Bindings
+
 import scala.util.{Failure, Success}
 
 class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition with SesameModule {
@@ -20,7 +18,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
 
   val bindings = Bindings(ns)
 
-  val applicationService = new LabworkApplicationService(repository)
+  val applicationService = LabworkApplicationService(repository)
 
   import bindings.{
   LabworkApplicationDescriptor,

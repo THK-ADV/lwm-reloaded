@@ -1,8 +1,7 @@
 package controllers
 
 import base.StreamHandler._
-import controllers.crud.semester.SemesterCRUDController
-import models.semester.{Semester, SemesterProtocol}
+import models._
 import org.joda.time.LocalDate
 import org.mockito.Matchers
 import org.mockito.Matchers._
@@ -86,7 +85,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
   "A SemesterCRUDController also " should {
 
     "successfully return current semester" in {
-      import controllers.crud.semester.SemesterCRUDController._
+      import controllers.SemesterCRUDController._
       val semesters = SemesterCRUDControllerSpec.populate
 
       when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))

@@ -3,11 +3,8 @@ package controllers
 import java.util.UUID
 
 import controllers.UserController._
-import controllers.crud.{Chunked, _}
-import models.UriGenerator
-import models.security.Permissions
-import models.users.{Employee, Student, StudentAtom, User}
-import modules.store.BaseNamespace
+import models._
+import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Controller, Request, Result}
@@ -17,7 +14,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, Resolvers, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
-
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
@@ -78,7 +74,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   with Retrieved[User, User]
   with RdfSerialisation[User, User] {
 
-  import models.users.Student.writesAtom
+  import models.Student.writesAtom
 
   import defaultBindings.{StudentDescriptor, StudentAtomDescriptor, EmployeeDescriptor}
 

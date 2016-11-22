@@ -1,10 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.labwork.{Labwork, LabworkAtom}
-import models.semester.Semester
-import models.users.Employee
-import models.{Course, CourseAtom, Degree}
+import models._
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 
@@ -53,7 +50,7 @@ class LabworkBindingSpec extends SesameDbSpec {
       val employee = Employee("systemid", "lastname", "firstname", "email", "status")
       val course = Course("course", "description", "abbr", employee.id, 1)
       val degree = Degree("degree", "abbr")
-      val labwork = Labwork("labwork", "description", semester.id, course.id, degree.id, false, false)
+      val labwork = Labwork("labwork", "description", semester.id, course.id, degree.id, subscribable = false, published = false)
 
       val courseAtom = CourseAtom("course", "description", "abbr", employee, 1, course.invalidated, course.id)
       val labworkAtom = LabworkAtom("labwork", "description", semester, courseAtom, degree, labwork.subscribable, labwork.published, labwork.invalidated, labwork.id)

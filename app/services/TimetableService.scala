@@ -1,6 +1,6 @@
 package services
 
-import models.labwork._
+import models._
 import org.joda.time.{LocalDate, Weeks}
 
 trait TimetableServiceLike {
@@ -34,14 +34,14 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
   }
 
   private def takeAppointments(entries: Vector[TimetableDateEntry], assignmentPlan: AssignmentPlan, groupSize: Int): Vector[TimetableDateEntry] = {
-    import models.labwork.TimetableDateEntry._
+    import models.TimetableDateEntry._
     import models.LwmDateTime.localDateTimeOrd
 
     val sorted = entries.sortBy(toLocalDateTime)
     val initial = sorted.take(groupSize)
     val remaining = sorted.drop(groupSize)
 
-    assignmentPlan.entries.toVector.sortBy(_.index).drop(1).foldLeft(remaining, initial) {
+    assignmentPlan.entries.toVector.sortBy(_.index).drop(1).foldLeft((remaining, initial)) {
       case ((e, vec), ae) =>
         val skip = groupSize * (ae.duration - 1)
         val remain = e.drop(skip)

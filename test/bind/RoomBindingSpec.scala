@@ -3,8 +3,6 @@ package bind
 import base.SesameDbSpec
 import models.Room
 import org.w3.banana.PointedGraph
-import org.w3.banana.sesame.Sesame
-import store.bind.Bindings
 
 import scala.util.{Failure, Success}
 

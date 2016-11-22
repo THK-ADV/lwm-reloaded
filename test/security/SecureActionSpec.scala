@@ -4,9 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import controllers.SessionController
-import models.Login
-import models.security.{Authority, Permission, Role}
-import models.users.User
+import models._
 import org.scalatest.WordSpec
 import org.w3.banana.PointedGraph
 import play.api.ApplicationLoader.Context
@@ -52,7 +50,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override val resolvers: Resolvers = new Resolvers {
+      override lazy val resolvers: Resolvers = new Resolvers {
         override def userId(systemId: String): Try[Option[UUID]] = Success(Some(userID))
 
         override def missingUserData[A <: User](v: A): Try[PointedGraph[Sesame]] = Failure(new Throwable("Not invoked"))

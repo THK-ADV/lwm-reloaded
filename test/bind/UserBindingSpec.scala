@@ -3,7 +3,7 @@ package bind
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.users.{Employee, Student, User}
+import models._
 import org.scalatest.WordSpec
 import org.w3.banana.sesame.SesameModule
 import store.Namespace

@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.security.{Permission, Role}
+import models._
 import org.w3.banana.PointedGraph
 
 import scala.util.Success

@@ -3,10 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.crud.labwork.TimetableCRUDController
-import models.Room
-import models.labwork._
-import models.users.Employee
+import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.mockito.Matchers._
 import org.mockito.Mockito._

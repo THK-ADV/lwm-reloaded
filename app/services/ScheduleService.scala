@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 
-import models.labwork._
+import models._
 import org.joda.time._
 import utils.{Gen, Genesis}
 import utils.TypeClasses._
@@ -11,8 +11,7 @@ import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
-import models.labwork.TimetableDateEntry._
-import models.semester.Semester
+import models.TimetableDateEntry._
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._

@@ -1,8 +1,8 @@
 package security
 
 import base.TestBaseDefinition
-import controllers.security.PermissionController
-import models.security.Permissions
+import controllers.PermissionController
+import models.Permissions
 import org.mockito.Matchers
 import org.mockito.Mockito.{mock => _, _}
 import org.scalatest.WordSpec

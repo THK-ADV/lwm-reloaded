@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.semester.Blacklist
+import models.Blacklist
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 

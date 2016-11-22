@@ -3,9 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.Room
-import models.labwork._
-import models.users.User
+import models._
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.Random._

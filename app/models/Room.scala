@@ -2,7 +2,7 @@ package models
 
 import java.util.UUID
 
-import controllers.crud.JsonSerialisation
+import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 

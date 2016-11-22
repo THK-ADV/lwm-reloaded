@@ -5,8 +5,8 @@ import java.util.UUID
 import base.StreamHandler._
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.{Timetable, TimetableEntry}
-import models.security.Permissions._
+import models.Permissions._
+import models.{Timetable, TimetableEntry}
 import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -27,7 +27,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a timetable" in new FakeApplication() {
-      import models.labwork.Timetable.writes
+      import models.Timetable.writes
       
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
@@ -52,7 +52,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when mv wants to create a timetable" in new FakeApplication() {
-      import models.labwork.Timetable.writes
+      import models.Timetable.writes
 
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
@@ -146,7 +146,7 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block restricted context invocations when ma wants to create timetable" in new FakeApplication() {
-      import models.labwork.Timetable.writes
+      import models.Timetable.writes
       
       when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))

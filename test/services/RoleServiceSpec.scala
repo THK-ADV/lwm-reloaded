@@ -3,11 +3,7 @@ package services
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.labwork.Labwork
-import models.security._
-import models.semester.Semester
-import models.users.{Employee, Student, User}
-import models.Degree
+import models._
 
 import scala.util.{Failure, Success, Try}
 

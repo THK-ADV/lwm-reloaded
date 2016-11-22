@@ -1,7 +1,6 @@
 package modules
 
 import controllers.ApiDataController
-import modules.store.SemanticRepositoryModule
 
 trait ApiDataModule {
   self: SemanticRepositoryModule =>

@@ -4,9 +4,7 @@ import java.util.UUID
 
 import base.StreamHandler._
 import base.TestBaseDefinition
-import models.Degree
-import models.users.Student._
-import models.users.{Employee, Student, StudentAtom, User}
+import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.Value
@@ -32,7 +30,7 @@ import scala.util.{Failure, Success}
 
 class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
-  import models.users.User.writes
+  import models.User.writes
 
   val repository = mock[SesameRepository]
   val roleService = mock[RoleService]
@@ -58,7 +56,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
   class FakeApp extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override def userController: UserController = controller
+      override lazy val userController: UserController = controller
     }.application
   })
 
@@ -300,7 +298,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
 
     "get users specific to some particular filter attribute" in {
-      import UserController._
+      import controllers.UserController._
 
       val degree = UUID.randomUUID()
       val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree)

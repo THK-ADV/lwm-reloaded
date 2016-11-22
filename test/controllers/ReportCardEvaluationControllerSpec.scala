@@ -3,11 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.StreamHandler._
-import controllers.reportCard.ReportCardEvaluationController
-import models.labwork._
-import models.semester.Semester
-import models.users.{Employee, Student}
-import models.{CourseAtom, Degree}
+import models._
 import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers._
 import org.mockito.Mockito.{doReturn, when}

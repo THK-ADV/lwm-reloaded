@@ -4,8 +4,8 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.labwork.AssignmentPlan
-import models.security.Permissions._
+import models.AssignmentPlan
+import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -42,7 +42,7 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Allow restricted context invocations when admin wants to create an assignmentPlan" in new FakeApplication() {
-      import models.labwork.AssignmentPlan.writes
+      import models.AssignmentPlan.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.create))(FakeAdminAuth)).thenReturn(Success(true))
@@ -65,7 +65,7 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Allow restricted context invocations when mv wants to update an assignmentPlan" in new FakeApplication() {
-      import models.labwork.AssignmentPlan.writes
+      import models.AssignmentPlan.writes
 
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.update))(FakeMvAuth)).thenReturn(Success(true))
@@ -105,7 +105,7 @@ class AssignmentPlanControllerSecuritySpec extends WordSpec with TestBaseDefinit
     }
 
     "Block restricted context invocations when ma wants to update an assignmentPlan" in new FakeApplication() {
-      import models.labwork.AssignmentPlan.writes
+      import models.AssignmentPlan.writes
 
       when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), assignmentPlan.update))(FakeMaAuth)).thenReturn(Success(false))

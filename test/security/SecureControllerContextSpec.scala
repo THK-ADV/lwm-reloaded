@@ -1,8 +1,8 @@
 package security
 
 import base.TestBaseDefinition
-import controllers.crud.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
-import models.security.Permission
+import controllers.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
+import models.Permission
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -19,7 +19,7 @@ class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {self
 
   implicit val roleService = mock[RoleService]
   implicit val sessionService = mock[SessionHandlingService]
-  val controller = new MockController(roleService, sessionService)
+  val controller = MockController(roleService, sessionService)
 
   val permission = Permission("permission")
 

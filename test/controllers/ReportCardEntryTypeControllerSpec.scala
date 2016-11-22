@@ -3,8 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import controllers.reportCard.ReportCardEntryTypeController
-import models.labwork.ReportCardEntryType
+import models.ReportCardEntryType
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.impl.ValueFactoryImpl
@@ -51,7 +50,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
   "A ReportCardEntryTypeControllerSpec " should {
 
     "successfully update a report card entry type" in {
-      import ReportCardEntryType._
+      import models.ReportCardEntryType._
 
       val entryType = types.head
       val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)

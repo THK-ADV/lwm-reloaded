@@ -1,9 +1,7 @@
 package controllers
 
 import base.StreamHandler._
-import controllers.crud.semester.BlacklistCRUDController
-import models.LwmDateTime
-import models.semester.{Blacklist, BlacklistProtocol}
+import models._
 import org.joda.time.{DateTime, Interval}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -91,8 +89,8 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
     }
 
     "return all blacklists in current semester" in {
-      import controllers.crud.semester.BlacklistCRUDController._
-      import models.semester.Semester.isCurrent
+      import controllers.BlacklistCRUDController._
+      import models.Semester.isCurrent
 
       val semesters = SemesterCRUDControllerSpec.populate
       val blacklists = (0 until 10).map { i =>

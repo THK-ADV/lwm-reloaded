@@ -4,7 +4,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import controllers.SessionController
-import models.security.{Authority, Permission}
+import models.{Authority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results._
 import play.api.mvc._

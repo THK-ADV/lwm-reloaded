@@ -2,7 +2,6 @@ package controllers
 
 import java.util.UUID
 
-import controllers.crud.{ContentTyped, SessionChecking}
 import models.{InvalidSession, Login, ValidSession}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._

@@ -1,6 +1,5 @@
 package controllers
 
-import controllers.crud.RoomCRUDController
 import models.{Room, RoomProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._

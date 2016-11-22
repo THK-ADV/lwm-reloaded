@@ -2,9 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.UriGenerator
-import models.labwork._
-import models.semester.{Blacklist, Semester}
+import models._
 import org.joda.time.{DateTimeConstants, Interval}
 import org.openrdf.query.QueryLanguage
 import org.w3.banana.RDFPrefix
