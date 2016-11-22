@@ -17,9 +17,11 @@ class DbBackupServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
   val srcFolder = "lwm_store"
   val destFolder = "db_backup"
+  val resources = "test/resources"
 
   val folders = (for {
-    lwm_store <- Try(Files.createDirectory(new File("test/resources", srcFolder).toPath))
+    test_resources <- Try(Files.createDirectory(new File(resources).toPath))
+    lwm_store <- Try(Files.createDirectory(new File(test_resources.getParent.toString, srcFolder).toPath))
     db_backup <- Try(Files.createDirectory(new File(lwm_store.getParent.toString, destFolder).toPath))
     _ <- Try(Files.createFile(new File(lwm_store.toString, "memstore.data").toPath))
   } yield List(lwm_store, db_backup)).getOrElse(List.empty)
@@ -60,7 +62,7 @@ class DbBackupServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
   override protected def afterAll(): Unit = {
     system.terminate
 
-    folders.foreach { p =>
+    folders.+:(new File(resources).toPath).foreach { p =>
       Files.walkFileTree(p, new SimpleFileVisitor[Path] {
         override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
           Files.delete(file)
