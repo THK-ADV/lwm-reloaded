@@ -4,12 +4,10 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import base.TestBaseDefinition
-import models.Degree
-import models.security._
-import models.users.{Student, User}
+import models._
 import org.mockito.Matchers._
 import org.mockito.Mockito
-import org.mockito.Mockito.{when, doReturn}
+import org.mockito.Mockito.{doReturn, when}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import services.{LdapService, SessionServiceActor}

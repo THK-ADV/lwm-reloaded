@@ -3,10 +3,9 @@ package security
 import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
-import controllers.SessionController
-import controllers.reportCard.ReportCardEntryController
-import models.labwork.{ReportCardEntry, ReportCardEntryType, Rescheduled}
-import models.security.Permissions.reportCardEntry
+import controllers.{ReportCardEntryController, SessionController}
+import models._
+import models.Permissions.reportCardEntry
 import org.joda.time.{LocalDate, LocalTime}
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -26,7 +25,7 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
   val id = UUID.randomUUID
   val json = {
-    import models.labwork.ReportCardEntry.writes
+    import models.ReportCardEntry.writes
 
     Json.toJson(
       ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType],

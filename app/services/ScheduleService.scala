@@ -2,8 +2,8 @@ package services
 
 import java.util.UUID
 
-import models.labwork._
-import org.joda.time.{LocalDate, LocalTime, Weeks}
+import models._
+import org.joda.time._
 import utils.{Gen, Genesis}
 import utils.TypeClasses._
 
@@ -11,8 +11,7 @@ import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
 import services.ScheduleService._
-import TimetableDateEntry._
-import models.semester.Semester
+import models.TimetableDateEntry._
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
@@ -28,10 +27,15 @@ trait ScheduleServiceLike {
   def crossover: Crossover
   def crossoverDestructive: Crossover
   def evaluation(all: Vector[ScheduleG], appointments: Int): Evaluator
+
+  def pops: Int
+  def gens: Int
+  def elite: Int
 }
 
 trait ScheduleGenesisServiceLike {
-  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int)
+  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
+  def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG]
 }
 
 object ScheduleService {
@@ -78,26 +82,31 @@ object ScheduleService {
   )
 
   def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
-    left.date.isEqual(right.date) && left.start.isEqual(right.start) || (right.start.isAfter(left.start) && right.start.isBefore(left.end))
+    val leftSlot = new Interval(left.date.toDateTime(left.start), left.date.toDateTime(left.end))
+    val rightSlot = new Interval(right.date.toDateTime(right.start), right.date.toDateTime(right.end))
+
+    leftSlot overlaps rightSlot
   }
 
   def exchange(left: UUID, right: UUID, s: ScheduleG) = replaceSchedule(s)(replaceEntry(_)(replaceGroup(_)(swap(_)(left, right))))
 }
 
-class ScheduleService(private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
+class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
 
-  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG]): (Gen[ScheduleG, Conflict, Int], Int) = {
+  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val entries = timetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups)
-    val pop = population(300, timetable.labwork, entries, groups)
+    val pop = population(p getOrElse pops, timetable.labwork, entries, groups)
 
     implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
     implicit val mutateF = (mutate, mutateDestructive)
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
 
-    Genesis.byVariation[ScheduleG, Conflict, Int](pop, 300, 20) { elite =>
-      if (elite.size % 5 == 0) elite.take(5).distinct.size == 1 else false
+    val gen = Genesis.byVariation[ScheduleG, Conflict, Int](pop, g getOrElse gens, e getOrElse elite) { elite =>
+      if (elite.size % 2 == 0) elite.take(2).distinct.size == 1 else false
     }
+    println(s"genesis :: ${gen._2}")
+    gen
   }
 
   override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG] = {
@@ -105,6 +114,8 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
   }
 
   private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
+    import models.LwmDateTime.localDateTimeOrd
+
     val shuffled = shuffle(groups.toVector)
     val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
       case (t, group) => ScheduleEntryG(t.start, t.end, t.date, t.room, t.supervisor, group)
@@ -180,5 +191,19 @@ class ScheduleService(private val timetableService: TimetableServiceLike) extend
       case (eval, Some(c)) => eval add c map (_ + c.members.size)
       case (eval, _) => eval
     } map (_ * conflicts.count(_.isDefined))
+  }
+
+  override def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG] = {
+    labwork.fold(Set.empty[ScheduleG]) { item =>
+      val filtered = all
+        .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
+        .filter(_.labwork.semester.id == item.semester.id)
+        .filter(_.labwork.degree.id == item.degree.id)
+        .filterNot(_.labwork.id == item.id)
+
+      filtered map { atom =>
+        ScheduleG(atom.labwork.id, atom.entries.map(e => ScheduleEntryG(e.start, e.end, e.date, e.room.id, e.supervisor map (_.id), e.group)).toVector, atom.id)
+      }
+    }
   }
 }

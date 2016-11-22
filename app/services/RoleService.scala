@@ -2,8 +2,7 @@ package services
 
 import java.util.UUID
 
-import models.security._
-import models.users.User
+import models._
 import org.openrdf.model.Value
 import store.Prefixes.LWMPrefix
 import store.SesameRepository
@@ -63,7 +62,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
   }
 
   def rolesForCourse(userId: UUID): Try[Set[Role]] = {
-    import models.security.Roles.{CourseManager, RightsManager}
+    import models.Roles.{CourseManager, RightsManager}
 
     for {
       userAuths <- authorities(userId)

@@ -2,12 +2,12 @@ package services
 
 import java.util.UUID
 
-import models.labwork._
+import models._
 
 object ReportCardService {
 
   private def toReportCardEntryType(types: Set[AssignmentEntryType]): Set[ReportCardEntryType] = {
-    types.map(t => ReportCardEntryType(t.entryType, t.bool, t.int))
+    types.map(t => ReportCardEntryType(t.entryType))
   }
 }
 
@@ -23,8 +23,9 @@ trait ReportCardServiceLike {
 class ReportCardService extends ReportCardServiceLike {
 
   override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry] = {
-    import TimetableDateEntry._
-    import ReportCardService._
+    import models.TimetableDateEntry.toLocalDateTime
+    import services.ReportCardService.toReportCardEntryType
+    import models.LwmDateTime.localDateTimeOrd
 
     val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
@@ -59,7 +60,7 @@ class ReportCardService extends ReportCardServiceLike {
       eval(reportCardEntryType.entryType, boolRes, intRes)
     }
 
-    import ReportCardEntryType._
+    import models.ReportCardEntryType._
     import utils.Ops.TravOps
 
     Set(

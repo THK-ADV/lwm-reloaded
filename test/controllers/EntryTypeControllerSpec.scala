@@ -1,7 +1,7 @@
 package controllers
 
 import base.TestBaseDefinition
-import models.labwork.AssignmentEntryType
+import models.AssignmentEntryType
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import play.api.libs.json.{Json, Writes}
@@ -11,8 +11,7 @@ import services.{RoleService, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition {
-  self =>
+class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition { self =>
 
   val roleService = mock[RoleService]
   val sessionService = mock[SessionHandlingService]

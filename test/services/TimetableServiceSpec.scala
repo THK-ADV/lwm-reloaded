@@ -1,11 +1,7 @@
 package services
 
 import base.TestBaseDefinition
-import models.labwork._
-import models.semester.Blacklist
-import models.users.User
 import models._
-import models.labwork.Weekday
 import org.joda.time.{DateTime, LocalDateTime, Weeks}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
@@ -16,7 +12,7 @@ import scala.util.Success
 
 class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
-  import models.labwork.TimetableDateEntry._
+  import models.TimetableDateEntry._
 
   val blacklistService = new BlacklistService
   val timetableService = new TimetableService(blacklistService)
@@ -89,7 +85,9 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       checkAssertion(tt, plan, groups, expectedStart, result)
     }
 
-    def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]): Unit = {
+    def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
+      import models.LwmDateTime.localDateTimeOrd
+
       val sortedResult = result.map(toLocalDateTime).sorted
 
       result.size should be > timetable.entries.size

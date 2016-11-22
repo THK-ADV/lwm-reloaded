@@ -2,12 +2,6 @@ package utils
 
 import controllers._
 import modules._
-import modules.labwork.reportCard._
-import modules.labwork.schedule._
-import modules.labwork._
-import modules.security._
-import modules.semester._
-import modules.store._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router

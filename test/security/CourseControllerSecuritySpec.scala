@@ -4,9 +4,8 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.Course
-import models.security.Permissions._
-import models.security.{Role, Roles}
+import models.{Course, Role, Roles}
+import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec

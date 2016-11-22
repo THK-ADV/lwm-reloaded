@@ -1,7 +1,7 @@
 package services
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import models.users.{Employee, Student, User}
+import models.{Employee, Student, User}
 import services.LdapSyncServiceActor.SyncRequest
 import store.bind.Bindings
 import store.{Resolvers, SesameRepository}
@@ -11,10 +11,13 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 trait LdapSyncService {
-  val cronExpression: String
-  val ldapService: LdapService
-  val resolvers: Resolvers
-  val repository: SesameRepository
+  def cronExpression: String
+
+  def ldapService: LdapService
+
+  def resolvers: Resolvers
+
+  def repository: SesameRepository
 }
 
 class ActorBasedLdapSyncService(val system: ActorSystem, val cronExpression: String, val repository: SesameRepository, val ldapService: LdapService, val resolvers: Resolvers) extends LdapSyncService {
@@ -30,12 +33,14 @@ object LdapSyncServiceActor {
   def props(repository: SesameRepository, ldapService: LdapService, resolvers: Resolvers) = Props(new LdapSyncServiceActor(repository, ldapService, resolvers))
 
   case object SyncRequest
+
 }
 
 class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: LdapService, val resolvers: Resolvers) extends Actor with ActorLogging {
 
   val bindings = Bindings[repository.Rdf](repository.namespace)
   implicit val dispatcher: ExecutionContextExecutor = context.system.dispatcher
+
   import bindings.UserDescriptor
 
   override def receive: Receive = {

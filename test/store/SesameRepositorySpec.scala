@@ -4,8 +4,6 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models._
-import models.labwork.{ReportCardEntry, ReportCardEntryType}
-import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.{LocalDate, LocalTime}
 
 import scala.util.{Failure, Success}

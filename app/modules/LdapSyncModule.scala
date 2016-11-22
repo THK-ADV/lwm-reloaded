@@ -1,6 +1,5 @@
 package modules
 
-import modules.store.{ResolversModule, SemanticRepositoryModule}
 import services.{ActorBasedLdapSyncService, LdapSyncService}
 
 trait LdapSyncModule {

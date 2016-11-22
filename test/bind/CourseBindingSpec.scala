@@ -1,9 +1,9 @@
 package bind
 
 import base.SesameDbSpec
-import models.{Course, CourseAtom}
-import models.users.{Employee, User}
+import models.{Course, CourseAtom, Employee, User}
 import org.w3.banana.PointedGraph
+
 import scala.util.{Failure, Success}
 
 class CourseBindingSpec extends SesameDbSpec {

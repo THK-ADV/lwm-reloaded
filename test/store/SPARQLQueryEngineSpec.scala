@@ -3,9 +3,7 @@ package store
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Degree
-import models.labwork.Group
-import models.users.{Student, User}
+import models._
 import org.openrdf.model.Value
 import org.openrdf.repository.RepositoryConnection
 import org.scalatest.WordSpec
@@ -55,8 +53,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         select(_.get("id")).
         transform(_.fold(List.empty[Value])(a => a)).
         transform(_.headOption).
-        map(value => UUID.fromString(value.stringValue()))(optM).
-        request(uuid => repo.get[Student](User.generateUri(uuid))).
+        map(value => User.generateUri(UUID.fromString(value.stringValue())))(optM).
+        request(repo.get[Student]).
         run
 
       result shouldBe Success(Some(student))
@@ -141,11 +139,11 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
     }
   }
 
-  override protected def beforeEach(): Unit = {
+  override protected def beforeEach() {
     repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 
-  override protected def beforeAll(): Unit = {
+  override protected def beforeAll() {
     repo.reset().foreach(r => assert(repo.size.get == 0))
   }
 }

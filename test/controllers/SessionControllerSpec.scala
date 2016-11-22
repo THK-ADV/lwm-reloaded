@@ -20,7 +20,6 @@ import utils._
 
 import scala.concurrent.Future
 
-
 class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   val loginToPass = Login("student1", "abcde123")
@@ -49,7 +48,7 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
   class WithDepsApplication extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override val sessionController: SessionController = controller
+      override lazy val sessionController: SessionController = controller
     }.application
   })
 

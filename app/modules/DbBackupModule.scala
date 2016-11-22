@@ -2,8 +2,6 @@ package modules
 
 import java.io.File
 import java.nio.file.Files
-
-import modules.store.DbFolder
 import services.{ActorBasedBackupService, DbBackupService}
 
 trait DbBackupModule {

@@ -75,7 +75,9 @@ object Genesis {
   }
 
   def replicate[A, E, V: Monoid](times: Int)(implicit mut: Mutate[A, E, V], cross: Cross[A, E, V]): GenAcc[A, E, V] => Vector[Gen[A, E, V]] = {
-    case (v, l) => (0 until times).foldLeft(v) {
+    case (v, l) =>
+      println(v.map(_.evaluate.value))
+      (0 until times).foldLeft(v) {
       case (vec, _) =>
         val s = vec.size
         if (nextBoolean()) vec :+ vec(nextInt(s)).fold((a, e) => withValue[A, E, V](mut(a, e)))

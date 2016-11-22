@@ -3,10 +3,6 @@ package store.bind
 import java.util.UUID
 
 import models._
-import models.labwork._
-import models.security._
-import models.semester.{Blacklist, Semester}
-import models.users.{Employee, Student, StudentAtom, User}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.w3.banana._
@@ -543,10 +539,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(EmployeeDescriptor.references)
+        .pointsAt(UserDescriptor.references)
         .pointsAt(RoomDescriptor.references)
 
-    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
@@ -579,10 +575,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(LabworkDescriptor.references)
+        .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(ScheduleEntryAtomDescriptor.references)
 
-    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val entries = set[ScheduleEntryAtom](lwm.entries)(ScheduleEntryAtomDescriptor.binder)
 
     override val binder: PGBinder[Rdf, ScheduleAtom] =
@@ -616,12 +612,12 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       Ref(clazz)
         .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(RoomDescriptor.references)
-        .pointsAt(EmployeeDescriptor.references)
+        .pointsAt(UserDescriptor.references)
         .pointsAt(GroupDescriptor.references)
 
     private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
-    private val supervisor = set[Employee](lwm.supervisor)(EmployeeDescriptor.binder)
+    private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
     private val group = property[Group](lwm.group)(GroupDescriptor.binder)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
@@ -645,8 +641,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
   implicit lazy val ReportCardEntryDescriptor: Descriptor[Rdf, ReportCardEntry] = new Descriptor[Rdf, ReportCardEntry] {
-
-    import PropertyEnhancer._
+    import store.bind.PropertyEnhancer._
 
     override val clazz: Rdf#URI = lwm.ReportCardEntry
 
@@ -675,8 +670,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
   }
   implicit lazy val ReportCardEntryAtomDescriptor: Descriptor[Rdf, ReportCardEntryAtom] = new Descriptor[Rdf, ReportCardEntryAtom] {
-
-    import PropertyEnhancer._
+    import store.bind.PropertyEnhancer._
 
     override val clazz: Rdf#URI = lwm.ReportCardEntry
 

@@ -2,9 +2,9 @@ package models
 
 import java.util.UUID
 
-import controllers.crud.JsonSerialisation
+import controllers.JsonSerialisation
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 
 case class Room(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = Room.randomUUID) extends UniqueEntity
 
@@ -19,8 +19,6 @@ object Room extends UriGenerator[Room] with JsonSerialisation[RoomProtocol, Room
   override implicit def writes: Writes[Room] = Json.writes[Room]
 
   override implicit def writesAtom: Writes[Room] = writes
-
-  implicit def format: Format[Room] = Json.format[Room]
 
   override def base: String = "rooms"
 }
