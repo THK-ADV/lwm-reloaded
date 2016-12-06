@@ -6,7 +6,7 @@ import java.util.UUID
 import base.StreamHandler._
 import controllers.LabworkApplicationCRUDController._
 import models._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
@@ -20,8 +20,14 @@ import scala.util.Try
 
 class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  val employee = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+  val course = Course("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
+  val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
+  val degree = Degree("label to pass", "abbrev to pass")
+
+  val labworkToPass = LabworkAtom("label to pass", "desc to pass", semester, courseAtom, degree, subscribable = false, published = false, None, UUID.randomUUID)
+  val labworkToFail = LabworkAtom("label to fail", "desc to fail", semester, courseAtom, degree, subscribable = false, published = false, None, UUID.randomUUID)
 
   val applicantToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val applicantToFail = Student("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())

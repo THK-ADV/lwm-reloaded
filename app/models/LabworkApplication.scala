@@ -18,7 +18,7 @@ case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID]
 
 case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
 
-case class LabworkApplicationAtom(labwork: Labwork, applicant: Student, friends: Set[Student], timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class LabworkApplicationAtom(labwork: LabworkAtom, applicant: Student, friends: Set[Student], timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSerialisation[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
 
@@ -41,7 +41,7 @@ object LabworkApplication extends UriGenerator[LabworkApplication] with JsonSeri
 object LabworkApplicationAtom {
 
   implicit def writesAtom: Writes[LabworkApplicationAtom] = (
-    (JsPath \ "labwork").write[Labwork] and
+    (JsPath \ "labwork").write[LabworkAtom] and
       (JsPath \ "applicant").write[Student](Student.writes) and
       (JsPath \ "friends").writeSet[Student](Student.writes) and
       (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
