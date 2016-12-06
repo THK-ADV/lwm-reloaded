@@ -183,10 +183,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
-        .pointsAt(LabworkDescriptor.references)
+        .pointsAt(LabworkAtomDescriptor.references)
         .pointsAt(StudentDescriptor.references)
 
-    private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
+    private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val applicant = property[Student](lwm.applicant)(StudentDescriptor.binder)
     private val friends = set[Student](lwm.friends)(StudentDescriptor.binder)
     private val timestamp = property[DateTime](lwm.timestamp)

@@ -10,7 +10,7 @@ case class Degree(label: String, abbreviation: String, invalidated: Option[DateT
 
 case class DegreeProtocol(label: String, abbreviation: String)
 
-object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol, Degree, Degree]{
+object Degree extends UriGenerator[Degree] with JsonSerialisation[DegreeProtocol, Degree, Degree] {
 
   override implicit def reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
 
