@@ -62,7 +62,7 @@ class ReportCardEntryTypeController(val repository: SesameRepository, val sessio
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEntryType]): Try[Set[ReportCardEntryType]] = Success(all)
 
   def update(course: String, entryType: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    validate(request)
+    validateInput(request)
       .when(_.id == UUID.fromString(entryType), overwrite0)(
         BadRequest(Json.obj(
           "status" -> "KO",

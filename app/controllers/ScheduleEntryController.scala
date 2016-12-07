@@ -174,7 +174,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def update(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    validate(request)
+    validateInput(request)
       .when(_.id == UUID.fromString(entry),
         overwrite0)(
         BadRequest(Json.obj(
@@ -185,7 +185,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
   }
 
   def updateAtomic(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
-    validate(request)
+    validateInput(request)
       .when(_.id == UUID.fromString(entry),
         overwrite0)(
         BadRequest(Json.obj(
