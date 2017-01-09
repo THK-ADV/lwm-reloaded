@@ -161,6 +161,8 @@ GET           /courses/:c/atomic/reportCardEntries                              
 PUT           /courses/:c/reportCardEntries/:e                                        controllers.ReportCardEntryController.update(c, e)
 PUT           /courses/:c/atomic/reportCardEntries/:e                                 controllers.ReportCardEntryController.updateAtomic(c, e)
 
+POST           /courses/:c/reportCardEntries/copy                                      controllers.ReportCardEntryController.copy(c)
+
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                        controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries                 controllers.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
 

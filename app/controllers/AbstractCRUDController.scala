@@ -220,14 +220,14 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
   with Basic[I, O, A] {
 
   def create(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
-    validate(request)
+    validateInput(request)
       .flatMap(existence)
       .flatMap(add)
       .mapResult(o => Created(Json.toJson(o)).as(mimeType))
   }
 
   def createAtomic(secureContext: SecureContext = contextFrom(Create)) = secureContext contentTypedAction { request =>
-    validate(request)
+    validateInput(request)
       .flatMap(existence)
       .flatMap(add)
       .flatMap { o =>
@@ -251,14 +251,14 @@ trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Co
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext contentTypedAction { request =>
     val uri = asUri(namespace, request)
-    validate(request)
+    validateInput(request)
       .flatMap(input => replace(uri, input))
       .mapResult(o => Ok(Json.toJson(o)).as(mimeType))
   }
 
   def updateAtomic(id: String, securedContext: SecureContext = contextFrom(Update)) = securedContext contentTypedAction { request =>
     val uri = asUri(namespace, request)
-    validate(request)
+    validateInput(request)
       .flatMap(input => replace(uri, input))
       .flatMap(i => retrieve[A](uri))
       .mapResult(a => Ok(Json.toJson(a)).as(mimeType))
@@ -403,8 +403,20 @@ trait Added[I, O <: UniqueEntity, A <: UniqueEntity] {
     with RdfSerialisation[O, A]
     with JsonSerialisation[I, O, A] =>
 
-  def validate(request: Request[JsValue]) = {
+  def validateInput(request: Request[JsValue]) = {
     request.body.validate[I].fold(
+      errors => {
+        Return(BadRequest(Json.obj(
+          "status" -> "KO",
+          "errors" -> JsError.toJson(errors)
+        )))
+      },
+      success => Continue(success)
+    )
+  }
+
+  def validate[X](request: Request[JsValue])(implicit reads: Reads[X]) = {
+    request.body.validate[X].fold(
       errors => {
         Return(BadRequest(Json.obj(
           "status" -> "KO",

@@ -24,7 +24,7 @@ import store.sparql.{QueryEngine, QueryExecutor, SelectClause}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
@@ -145,11 +145,19 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       )
     }
 
-    "successfully return a student's report card entries" in {
+    def whenQueryIsPrepared = {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(entries))
+    }
+
+    def whenFiltered(returnValue: Try[Set[ReportCardEntry]]) = {
+      whenQueryIsPrepared
+      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(returnValue)
+    }
+
+    "successfully return a student's report card entries" in {
+      whenFiltered(Success(entries))
 
       val request = FakeRequest(
         GET,
@@ -164,10 +172,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return an empty json when entries are not found" in {
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
+      whenFiltered(Success(Set.empty[ReportCardEntry]))
 
       val request = FakeRequest(
         GET,
@@ -184,10 +189,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     "not return a student's report card entries when there is an exception" in {
       val errorMsg = "Oops, something went wrong"
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Failure(new Throwable(errorMsg)))
+      whenFiltered(Failure(new Throwable(errorMsg)))
 
       val request = FakeRequest(
         GET,
@@ -207,9 +209,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     "successfully return a student's report card entries atomized" in {
       import models.ReportCardEntry.writesAtom
 
-      when(repository.prepareQuery(anyObject())).thenReturn(query)
-      when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
-      when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
+      whenQueryIsPrepared
       doReturn(Success(entries))
         .doReturn(Success(atomizedEntries))
         .when(repository)
@@ -370,6 +370,68 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         case (result, expected) =>
           typedContentFromStream[ReportCardEntry](result) shouldBe expected
       }
+    }
+
+    "copy an existing reportcard from one student to another" in {
+      import controllers.ReportCardCopyRequest.writes
+
+      val destLab = UUID.randomUUID
+      val destStudent = UUID.randomUUID
+      val copy = ReportCardCopyRequest(labwork.id, student.id, destLab, destStudent)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/reportCardEntries/copy",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.toJson(copy)
+      )
+
+      whenFiltered(Success(entries))
+      when(repository.addMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+
+      val result = controller.copy(course)(request)
+      val resultEntries = typedContentFromStream[ReportCardEntry](result)
+
+      status(result) shouldBe OK
+      resultEntries.forall { entry =>
+        entry.student == destStudent && entry.labwork == destLab
+      } shouldBe true
+
+      resultEntries.zip(entries).forall {
+        case (l, r) => l.start.isEqual(r.start) &&
+          l.end.isEqual(r.end) &&
+          l.date.isEqual(r.date) &&
+          l.room == r.room &&
+          l.id != r.id &&
+          l.rescheduled == r.rescheduled &&
+          l.entryTypes.zip(r.entryTypes).forall {
+            case ((lt, rt)) => lt.entryType == rt.entryType &&
+              lt.bool == false &&
+              lt.int == 0 &&
+              lt.id != rt.id
+          }
+      } shouldBe true
+    }
+
+    "not copy an existing reportcard when precondition fails" in {
+      import controllers.ReportCardCopyRequest.writes
+
+      val copy = ReportCardCopyRequest(labwork.id, student.id, UUID.randomUUID, student.id)
+
+      val request = FakeRequest(
+        POST,
+        s"/courses/$course/reportCardEntries/copy",
+        FakeHeaders(Seq(CONTENT_TYPE -> mimeType)),
+        Json.toJson(copy)
+      )
+
+      val result = controller.copy(course)(request)
+
+      status(result) shouldBe PRECONDITION_FAILED
+      contentFromStream(result).head shouldBe Json.obj(
+        "status" -> "KO",
+        "message" -> "srcStudent and destStudent should be different"
+      )
     }
   }
 }
