@@ -160,8 +160,9 @@ GET           /courses/:c/reportCardEntries                                     
 GET           /courses/:c/atomic/reportCardEntries                                    controllers.ReportCardEntryController.allAtomic(c)
 PUT           /courses/:c/reportCardEntries/:e                                        controllers.ReportCardEntryController.update(c, e)
 PUT           /courses/:c/atomic/reportCardEntries/:e                                 controllers.ReportCardEntryController.updateAtomic(c, e)
+DELETE        /courses/:c/reportCardEntries/:id                                       controllers.ReportCardEntryController.deleteFrom(c, id)
 
-POST           /courses/:c/reportCardEntries/copy                                      controllers.ReportCardEntryController.copy(c)
+POST          /courses/:c/reportCardEntries/copy                                      controllers.ReportCardEntryController.copy(c)
 
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                        controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries                 controllers.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
@@ -226,6 +227,7 @@ HEAD          /sessions                                                         
 
 # APIData
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
+GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

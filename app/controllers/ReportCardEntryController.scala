@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.Permissions.{god, reportCardEntry}
+import models.Permissions.{god, prime, reportCardEntry}
 import models._
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
@@ -111,6 +111,10 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
           "status" -> "KO",
           "message" -> s"Id found in body  does not match id found in resource ($entry)"
         )))
+  }
+
+  def deleteFrom(course: String, reportCardEntry: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(reportCardEntry, NonSecureBlock)(rebase(reportCardEntry))
   }
 
   def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) action { request =>
@@ -255,6 +259,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     case Create => SecureBlock(restrictionId, reportCardEntry.create)
     case Update => SecureBlock(restrictionId, reportCardEntry.update)
     case GetAll => SecureBlock(restrictionId, reportCardEntry.getAll)
+    case Delete => PartialSecureBlock(prime)
     case _ => PartialSecureBlock(god)
   }
 
