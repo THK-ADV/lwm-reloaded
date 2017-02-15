@@ -110,7 +110,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
       groups map { group =>
         for {
           optLabwork <- repository.get[Labwork](Labwork.generateUri(group.labwork))
-          students <- repository.getMany[Student](group.members map User.generateUri)
+          students <- repository.getMany[SesameStudent](group.members map User.generateUri)
         } yield optLabwork map (GroupAtom(group.label, _, students, group.invalidated, group.id))
       }
     } match {

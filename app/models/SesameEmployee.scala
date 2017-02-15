@@ -6,15 +6,26 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Employee(systemId: String, lastname: String, firstname: String, email: String, status: String, invalidated: Option[DateTime] = None, id: UUID = User.randomUUID) extends User
+case class SesameEmployee(systemId: String, lastname: String, firstname: String, email: String, status: String, invalidated: Option[DateTime] = None, id: UUID = User.randomUUID) extends User
 
-object Employee extends JsonSerialisation[Employee, Employee, Employee] {
+object SesameEmployee extends JsonSerialisation[SesameEmployee, SesameEmployee, SesameEmployee] {
 
-  lazy val default = Employee("n.a.", "n.a.", "n.a", "n.a.", "n.a")
+  lazy val default = SesameEmployee("n.a.", "n.a.", "n.a", "n.a.", "n.a")
 
-  override implicit def reads: Reads[Employee] = Json.reads[Employee]
+  override implicit def reads: Reads[SesameEmployee] = Json.reads[SesameEmployee]
 
-  override implicit def writes: Writes[Employee] = Json.writes[Employee]
+  override implicit def writes: Writes[SesameEmployee] = Json.writes[SesameEmployee]
 
-  override implicit def writesAtom: Writes[Employee] = writes
+  override implicit def writesAtom: Writes[SesameEmployee] = writes
+}
+
+case class PostgresEmployee(systemId: String, lastname: String, firstname: String, email: String, id: UUID = User.randomUUID) extends User
+
+object PostgresEmployee extends JsonSerialisation[PostgresEmployee, PostgresEmployee, PostgresEmployee] {
+
+  override implicit def reads: Reads[PostgresEmployee] = Json.reads[PostgresEmployee]
+
+  override implicit def writes: Writes[PostgresEmployee] = Json.writes[PostgresEmployee]
+
+  override implicit def writesAtom: Writes[PostgresEmployee] = ???
 }

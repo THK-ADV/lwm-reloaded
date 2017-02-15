@@ -67,13 +67,13 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
     val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
-    val employee = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+    val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
     val courseAtom = CourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
-    val degree = Degree("label to pass", "abbrev to pass")
+    val degree = PostgresDegree("label to pass", "abbrev to pass")
 
     val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)
-    val supervisor: Set[User] = e.supervisor map (Employee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
+    val supervisor: Set[User] = e.supervisor map (SesameEmployee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
     val group = Group("label", labworkAtom.id, Set(), None, e.group)
     ScheduleEntryAtom(labworkAtom, e.start, e.end, e.date, room, supervisor, group, None, e.id)
   }
@@ -242,9 +242,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val group1 = Group("Label1", labwork1.id, Set.empty)
       val group2 = Group("Label2", labwork2.id, Set.empty)
       val group3 = Group("Label3", labwork3.id, Set.empty)
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
-      val supervisor3 = Employee("systemid3", "lastname3", "firstname3", "email3", "status3")
+      val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
+      val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
+      val supervisor3 = SesameEmployee("systemid3", "lastname3", "firstname3", "email3", "status3")
       val room1 = Room("label1", "description1")
       val room2 = Room("label1", "description2")
       val start1 = LocalTime.now

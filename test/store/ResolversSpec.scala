@@ -26,9 +26,9 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "resolve a given username properly" in {
       import bindings.StudentDescriptor
 
-      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student1 = SesameStudent("mi1018", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
 
       val previousSize = repo.size.get
 
@@ -52,9 +52,9 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "return `None` when username is not found" in {
       import bindings.StudentDescriptor
 
-      val student1 = Student("mi1111", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student1 = SesameStudent("mi1111", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -184,7 +184,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
       import scala.util.Random.nextInt
 
-      val degrees = (0 until 10).map(i => Degree(i.toString, i.toString)).toList
+      val degrees = (0 until 10).map(i => PostgresDegree(i.toString, i.toString)).toList
       repo.addMany[Degree](degrees)
 
       val result = (0 until 8).map(_ => resolver.degree(degrees(nextInt(degrees.size)).abbreviation)).toList
@@ -198,8 +198,8 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
     "throw an exception when degree cant be resolved cause its not found" in {
       import bindings.DegreeDescriptor
 
-      val degree1 = Degree("label", "abbrev")
-      val degree2 = Degree("label2", "abbrev")
+      val degree1 = PostgresDegree("label", "abbrev")
+      val degree2 = PostgresDegree("label2", "abbrev")
       val abbreviation = "not existent"
 
       repo.addMany[Degree](List(degree1, degree2))

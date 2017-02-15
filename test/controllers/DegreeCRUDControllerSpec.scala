@@ -1,6 +1,6 @@
 package controllers
 
-import models.{Degree, DegreeProtocol}
+import models.{PostgresDegree$, DegreeProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers.anyObject
 import org.mockito.Mockito._
@@ -15,11 +15,11 @@ import utils.LwmMimeType
 import scala.util.Success
 
 class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree, Degree] {
-  override val entityToPass: Degree = Degree("label to pass", "abbreviation to pass")
+  override val entityToPass: Degree = PostgresDegree("label to pass", "abbreviation to pass")
 
-  override val entityToFail: Degree = Degree("label to fail", "abbreviation to fail")
+  override val entityToFail: Degree = PostgresDegree("label to fail", "abbreviation to fail")
 
-  override implicit val jsonWrites: Writes[Degree] = Degree.writes
+  override implicit val jsonWrites: Writes[Degree] = PostgresDegree.writes
 
   override val atomizedEntityToPass: Degree = entityToPass
 
@@ -62,7 +62,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Degree.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(PostgresDegree.generateUri(entityToPass)))
       )))
       when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
@@ -87,7 +87,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Degree.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(PostgresDegree.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

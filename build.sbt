@@ -30,7 +30,8 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= semanticDependencies,
     libraryDependencies ++= lwmDependencies,
     libraryDependencies ++= scalazDependencies,
-    libraryDependencies ++= testDependencies
+    libraryDependencies ++= testDependencies,
+    libraryDependencies ++= postgresDependencies
   ).enablePlugins(PlayScala)
 
 lazy val semanticDependencies = Seq(
@@ -57,6 +58,12 @@ lazy val lwmDependencies = Seq(
   "com.chuusai" %% "shapeless" % "2.2.5",
   "com.unboundid" % "unboundid-ldapsdk" % "2.3.6",
   "us.theatr" %% "akka-quartz" % "0.3.0"
+)
+
+lazy val postgresDependencies = Seq(
+  "com.typesafe.slick" %% "slick" % "3.0.0",
+  "com.zaxxer" % "HikariCP-java6" % "2.3.2",
+  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
 )
 
 scalaVersion := "2.11.7"

@@ -16,7 +16,7 @@ class SesameRepositorySpec extends SesameDbSpec {
   "Sesame Repository" should {
 
     "add an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       val g = repo.add(student)
 
@@ -26,7 +26,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(student.lastname)
         .--(lwm.registrationId).->-(student.registrationId)
         .--(lwm.email).->-(student.email)
-        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
+        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
         .--(lwm.id).->-(student.id).graph
 
       g match {
@@ -38,15 +38,15 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "simultaneously add many entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
       val g = repo.addMany(students)
-      val studentsFromRepo = repo.getAll[Student]
+      val studentsFromRepo = repo.getAll[SesameStudent]
 
       (g, studentsFromRepo) match {
         case (Success(graphs), Success(fromRepo)) =>
@@ -61,13 +61,13 @@ class SesameRepositorySpec extends SesameDbSpec {
     "add polymorphic entities" in {
       import bindings.UserDescriptor
 
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+      val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = SesameStudent("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student3 = SesameStudent("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
 
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+      val employee1 = SesameEmployee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = SesameEmployee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee3 = SesameEmployee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
 
       val users: Vector[User] = Vector(student1, student2, student3, employee1, employee2, employee3)
 
@@ -80,12 +80,12 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "delete an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       repo add student
       repo delete User.generateUri(student)
 
-      val explicitStudent = repo.get[Student](User.generateUri(student))
+      val explicitStudent = repo.get[SesameStudent](User.generateUri(student))
 
       explicitStudent match {
         case Success(Some(s)) =>
@@ -98,17 +98,17 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "get list of entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
       repo.add(student3)
       repo.add(student4)
 
-      repo.getAll[Student] match {
+      repo.getAll[SesameStudent] match {
         case Success(students) =>
           students should contain theSameElementsAs Set(student1, student2, student3, student4)
         case Failure(e) =>
@@ -117,10 +117,10 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "get an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
       repo add student
 
-      val explicitStudent = repo.get[Student](User.generateUri(student))
+      val explicitStudent = repo.get[SesameStudent](User.generateUri(student))
 
       explicitStudent match {
         case Success(Some(s)) =>
@@ -135,16 +135,16 @@ class SesameRepositorySpec extends SesameDbSpec {
     "delete an arbitrarily nested entity" in {
       import bindings.{DegreeDescriptor, StudentAtomDescriptor}
 
-      val degree = Degree("label", "abbr")
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", degree.id)
+      val degree = PostgresDegree("label", "abbr")
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", degree.id)
 
       repo add student
       repo add degree
 
-      repo.delete[StudentAtom](User.generateUri(student))
+      repo.delete[SesameStudentAtom](User.generateUri(student))
 
-      val postDegree = repo get[Degree] Degree.generateUri(degree)
-      val postStudent = repo get[Student] User.generateUri(student)
+      val postDegree = repo get[Degree] PostgresDegree.generateUri(degree)
+      val postStudent = repo get[SesameStudent] User.generateUri(student)
 
       (postDegree, postStudent) match {
         case (Success(None), Success(None)) => repo.size.get shouldBe 0
@@ -184,34 +184,34 @@ class SesameRepositorySpec extends SesameDbSpec {
     "get a polymorphic entity" in {
       import bindings.{StudentDescriptor, UserDescriptor}
 
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+      val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = SesameStudent("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student3 = SesameStudent("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
 
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+      val employee1 = SesameEmployee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = SesameEmployee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee3 = SesameEmployee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
 
       val users: Vector[User] = Vector(student1, student2, student3, employee1, employee2, employee3)
 
       repo.addMany[User](users)
 
-      repo.get[Student](User.generateUri(student1.id)) match {
+      repo.get[SesameStudent](User.generateUri(student1.id)) match {
         case Success(Some(student)) =>
         case _ => fail(s"Retrieval not successful")
       }
     }
 
     "simultaneously get many entities" in {
-      val student1 = Student("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student2 = Student("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student3 = Student("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val student4 = Student("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
       repo.addMany(students)
-      val g = repo.getMany[Student](students.map(User.generateUri))
+      val g = repo.getMany[SesameStudent](students.map(User.generateUri))
 
       g match {
         case Success(s) =>
@@ -222,8 +222,8 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "update an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val studentUpdated = Student("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val studentUpdated = SesameStudent("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       val g = repo.add(student)
 
@@ -233,7 +233,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(student.lastname)
         .--(lwm.registrationId).->-(student.registrationId)
         .--(lwm.email).->-(student.email)
-        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
+        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
         .--(lwm.id).->-(student.id).graph
 
       val expectedGraphUpdated = URI(User.generateUri(studentUpdated)).a(lwm.User)
@@ -242,7 +242,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(studentUpdated.lastname)
         .--(lwm.registrationId).->-(studentUpdated.registrationId)
         .--(lwm.email).->-(studentUpdated.email)
-        .--(lwm.enrollment).->-(studentUpdated.enrollment)(ops, uuidRefBinder(Degree.splitter))
+        .--(lwm.enrollment).->-(studentUpdated.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
         .--(lwm.id).->-(studentUpdated.id).graph
 
       g match {
@@ -266,8 +266,8 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "contains an entity" in {
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val anotherStudent = Student("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val anotherStudent = SesameStudent("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       repo add student
 
@@ -279,7 +279,7 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "delete many properly" in {
-      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val students = (0 until 20) map (i => SesameStudent(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
 
       repo addMany students.toList
 
@@ -295,7 +295,7 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "try to delete many, even when there is nothing to delete" in {
-      val students = (0 until 20) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val students = (0 until 20) map (i => SesameStudent(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
 
       repo deleteMany (students map User.generateUri) match {
         case Success(s) =>
@@ -306,12 +306,12 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "rollback transactions" in {
-      val validStudents = (0 until 2) map (i => Student(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
-      val invalidStudents = (0 until 3) map (i => Student(null, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val validStudents = (0 until 2) map (i => SesameStudent(i.toString, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
+      val invalidStudents = (0 until 3) map (i => SesameStudent(null, i.toString, i.toString, i.toString, i.toString, UUID.randomUUID))
       val students = validStudents ++ invalidStudents
 
       repo addMany students
-      repo.getAll[Student].get shouldBe Set.empty
+      repo.getAll[SesameStudent].get shouldBe Set.empty
     }
   }
 

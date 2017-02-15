@@ -13,7 +13,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   implicit val authorityBinder = AuthorityDescriptor.binder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
+  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
   val authWithCourse1 = Authority(student.id, Role.randomUUID, Some(Course.randomUUID))
   val authWithCourse2 = Authority(student.id, Role.randomUUID, Some(Course.randomUUID))
@@ -59,7 +59,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
     "return an authority atom based on an RDF representation" in {
       import bindings.{AuthorityAtomDescriptor, AuthorityDescriptor, CourseDescriptor, EmployeeDescriptor, RoleDescriptor, StudentDescriptor}
 
-      val lecturer = Employee("lecturer", "lastname", "firstname", "email", "lecturer")
+      val lecturer = SesameEmployee("lecturer", "lastname", "firstname", "email", "lecturer")
       val course1 = Course("course1", "description", "abbrev", lecturer.id, 3)
       val course2 = Course("course2", "description", "abbrev", lecturer.id, 2)
       val role1 = Role("role1", Set(Permission("perm1"), Permission("perm2")))

@@ -11,7 +11,7 @@ case class Course(label: String, description: String, abbreviation: String, lect
 
 case class CourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
 
-case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: Employee, semesterIndex: Int, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
+case class CourseAtom(label: String, description: String, abbreviation: String, lecturer: SesameEmployee, semesterIndex: Int, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
 
 object Course extends UriGenerator[Course] with JsonSerialisation[CourseProtocol, Course, CourseAtom] {
 
@@ -29,7 +29,7 @@ object CourseAtom {
       (JsPath \ "label").write[String] and
       (JsPath \ "description").write[String] and
       (JsPath \ "abbreviation").write[String] and
-      (JsPath \ "lecturer").write[Employee](Employee.writes) and
+      (JsPath \ "lecturer").write[SesameEmployee](SesameEmployee.writes) and
       (JsPath \ "semesterIndex").write[Int] and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]

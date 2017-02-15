@@ -107,16 +107,16 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
 
   private def attribute(entry: SearchResultEntry, parameter: String): Option[String] = Option(entry.getAttributeValue(parameter))
 
-  private def employee(entry: SearchResultEntry, status: String): Option[Employee] = {
+  private def employee(entry: SearchResultEntry, status: String): Option[SesameEmployee] = {
     for {
       systemId <- attribute(entry, "uid")
       firstname <- attribute(entry, "givenName")
       lastname <- attribute(entry, "sn")
       email = attribute(entry, "mail") getOrElse ""
-    } yield Employee(systemId, lastname, firstname, email, status)
+    } yield SesameEmployee(systemId, lastname, firstname, email, status)
   }
 
-  private def student(entry: SearchResultEntry)(degreeFor: String => Try[UUID]): Option[Student] = {
+  private def student(entry: SearchResultEntry)(degreeFor: String => Try[UUID]): Option[SesameStudent] = {
     for {
       systemId <- attribute(entry, "uid")
       firstname <- attribute(entry, "givenName")
@@ -125,6 +125,6 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
       enrollment <- attribute(entry, "studyPath")
       email = attribute(entry, "mail") getOrElse ""
       degree <- degreeFor(enrollment).toOption
-    } yield Student(systemId, lastname, firstname, email, regId, degree)
+    } yield SesameStudent(systemId, lastname, firstname, email, regId, degree)
   }
 }

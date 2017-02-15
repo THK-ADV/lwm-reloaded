@@ -23,19 +23,19 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
   val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
   val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
 
-  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
-  val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
+  val employeeToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+  val employeeToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
 
   val courseToPass = Course("label to pass", "desc to pass", "abbrev to pass", employeeToPass.id, 1)
   val courseToFail = Course("label to fail", "desc to fail", "abbrev to fail", employeeToFail.id, 1)
 
   def toAtom(course: Course): CourseAtom = {
-    def employee(id: UUID): Employee = if (id == employeeToPass.id) employeeToPass else employeeToFail
+    def employee(id: UUID): SesameEmployee = if (id == employeeToPass.id) employeeToPass else employeeToFail
     CourseAtom(course.label, course.description, course.abbreviation, employee(course.lecturer), course.semesterIndex, course.invalidated, course.id)
   }
 
-  val degreeToPass = Degree("label to pass", "abbrev to pass")
-  val degreeToFail = Degree("label to fail", "abbrev to fail")
+  val degreeToPass = PostgresDegree("label to pass", "abbrev to pass")
+  val degreeToFail = PostgresDegree("label to fail", "abbrev to fail")
 
   override val entityToPass: Labwork = Labwork(
     "label to pass",
@@ -126,10 +126,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return the corresponding labwork for a given course" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -150,10 +150,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given course" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, course.id, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, course.id, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -174,10 +174,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks for a course when there is no match" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -197,10 +197,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks when there is an invalid query attribute" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -224,10 +224,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "not return labworks when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -249,11 +249,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return the corresponding labwork for a given degree" in {
-      val degree = Degree("label", "description")
+      val degree = PostgresDegree("label", "description")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -273,10 +273,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given degree" in {
-      val degree = Degree("label", "description")
+      val degree = PostgresDegree("label", "description")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, degree.id)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
       val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -297,11 +297,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "not return labworks for a degree when there is no match" in {
-      val degree = Degree("label", "description")
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val degree = PostgresDegree("label", "description")
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -321,10 +321,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return the corresponding labwork for a given semester" in {
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -345,10 +345,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given semester" in {
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -369,10 +369,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks for a semester when there is no match" in {
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -392,9 +392,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given course and degree" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val degree = Degree("label", "abbrev")
+      val degree = PostgresDegree("label", "abbrev")
       val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, degree.id)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, Degree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, course.id, PostgresDegree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, course.id, degree.id)
       val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, degree.id)
 
@@ -418,10 +418,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "return all corresponding labworks for a given course and semester" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", semester.id, course.id, Degree.randomUUID)
-      val third = Labwork("label 3", "description 3", semester.id, course.id, Degree.randomUUID)
-      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, course.id, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", semester.id, course.id, PostgresDegree.randomUUID)
+      val third = Labwork("label 3", "description 3", semester.id, course.id, PostgresDegree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, PostgresDegree.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -441,11 +441,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given degree and semester" in {
-      val degree = Degree("label", "abbrev")
+      val degree = PostgresDegree("label", "abbrev")
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", semester.id, Course.randomUUID, degree.id)
       val second = Labwork("label 2", "description 2", semester.id, Course.randomUUID, degree.id)
-      val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, Degree.randomUUID)
+      val third = Labwork("label 3", "description 3", semester.id, Course.randomUUID, PostgresDegree.randomUUID)
       val fourth = Labwork("label 4", "description 4", semester.id, Course.randomUUID, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -467,11 +467,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given degree, course and semester" in {
       val course = Course("label", "desc", "abbrev", User.randomUUID, 1)
-      val degree = Degree("label", "abbrev")
+      val degree = PostgresDegree("label", "abbrev")
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = Labwork("label 1", "description 1", semester.id, course.id, degree.id)
       val second = Labwork("label 2", "description 2", semester.id, Course.randomUUID, degree.id)
-      val third = Labwork("label 3", "description 3", semester.id, course.id, Degree.randomUUID)
+      val third = Labwork("label 3", "description 3", semester.id, course.id, PostgresDegree.randomUUID)
       val fourth = Labwork("label 4", "description 4", semester.id, course.id, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -492,11 +492,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks where a given student can apply for" in {
-      val degree = Degree("label", "abbrev")
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = true)
+      val degree = PostgresDegree("label", "abbrev")
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID, subscribable = true)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, degree.id, subscribable = true)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       when(repository.getAll[Labwork](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
@@ -514,11 +514,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return no labworks when there is nothing to apply for" in {
-      val degree = Degree("label", "abbrev")
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val degree = PostgresDegree("label", "abbrev")
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
       val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, degree.id)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       when(repository.getAll[Labwork](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
@@ -535,12 +535,12 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks which schedules are published" in {
-      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
-      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
-      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
-      val fifth = Labwork("label 5", "description 5", Semester.randomUUID, Course.randomUUID, Degree.randomUUID, subscribable = false, published = true)
-      val sixth = Labwork("label 6", "description 6", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      val first = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val second = Labwork("label 2", "description 2", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
+      val third = Labwork("label 3", "description 3", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
+      val fourth = Labwork("label 4", "description 4", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val fifth = Labwork("label 5", "description 5", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
+      val sixth = Labwork("label 6", "description 6", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
 
       when(repository.getAll[Labwork](anyObject())).thenReturn(Success(Set(
         first, second, third, fourth, fifth, sixth

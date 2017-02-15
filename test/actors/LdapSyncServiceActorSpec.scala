@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import base.TestBaseDefinition
-import models.{Employee, Student, User}
+import models.{SesameEmployee, SesameStudent, User}
 import org.mockito.Matchers.anyObject
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike
@@ -36,32 +36,32 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
 
     (0 until amount).map { i =>
       if (nextBoolean)
-        Student(s"systemId$i", s"lastname$i", s"firstname$i", s"email$i", s"regId$i", enrollments(nextInt(enrollments.size)))
+        SesameStudent(s"systemId$i", s"lastname$i", s"firstname$i", s"email$i", s"regId$i", enrollments(nextInt(enrollments.size)))
       else
-        Employee(s"systemId$i", s"lastname$i", s"firstname$i", s"email$i", types(nextInt(types.size)))
+        SesameEmployee(s"systemId$i", s"lastname$i", s"firstname$i", s"email$i", types(nextInt(types.size)))
     }.toSet
   }
 
   def deltaUser(users: Set[User]): Set[User] = {
     users map {
       case alterLastname if alterLastname.lastname.contains(String.valueOf(10)) => alterLastname match {
-        case student: Student => Student(student.systemId, "otherLastname", student.firstname, student.email, student.registrationId, student.enrollment)
-        case employee: Employee => Employee(employee.systemId, "otherLastname", employee.firstname, employee.email, employee.status)
+        case student: SesameStudent => SesameStudent(student.systemId, "otherLastname", student.firstname, student.email, student.registrationId, student.enrollment)
+        case employee: SesameEmployee => SesameEmployee(employee.systemId, "otherLastname", employee.firstname, employee.email, employee.status)
       }
 
       case alterFirstname if alterFirstname.firstname.contains(String.valueOf(20)) => alterFirstname match {
-        case student: Student => Student(student.systemId, student.lastname, "otherFirstname", student.email, student.registrationId, student.enrollment)
-        case employee: Employee => Employee(employee.systemId, employee.lastname, "otherFirstname", employee.email, employee.status)
+        case student: SesameStudent => SesameStudent(student.systemId, student.lastname, "otherFirstname", student.email, student.registrationId, student.enrollment)
+        case employee: SesameEmployee => SesameEmployee(employee.systemId, employee.lastname, "otherFirstname", employee.email, employee.status)
       }
 
       case alterEmail if alterEmail.email.contains(String.valueOf(30)) => alterEmail match {
-        case student: Student => Student(student.systemId, student.lastname, student.firstname, "otherEmail", student.registrationId, student.enrollment)
-        case employee: Employee => Employee(employee.systemId, employee.lastname, employee.firstname, "otherEmail", employee.status)
+        case student: SesameStudent => SesameStudent(student.systemId, student.lastname, student.firstname, "otherEmail", student.registrationId, student.enrollment)
+        case employee: SesameEmployee => SesameEmployee(employee.systemId, employee.lastname, employee.firstname, "otherEmail", employee.status)
       }
 
       case user => user match {
-        case student: Student => Student(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, student.enrollment)
-        case employee: Employee => Employee(employee.systemId, employee.lastname, employee.firstname, employee.email, employee.status)
+        case student: SesameStudent => SesameStudent(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, student.enrollment)
+        case employee: SesameEmployee => SesameEmployee(employee.systemId, employee.lastname, employee.firstname, employee.email, employee.status)
       }
     }
   }

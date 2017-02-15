@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.{Course, CourseAtom, Employee, User}
+import models.{Course, CourseAtom, SesameEmployee, User}
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}
@@ -52,7 +52,7 @@ class CourseBindingSpec extends SesameDbSpec {
       CourseAtomDescriptor
       }
 
-      val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
+      val lecturer = SesameEmployee("systemid", "lastname", "firstname", "email", "lecturer")
       val course = Course("course", "description", "abbr", lecturer.id, 2)
       val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.invalidated, course.id)
 

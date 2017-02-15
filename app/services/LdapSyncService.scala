@@ -1,7 +1,7 @@
 package services
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import models.{Employee, Student, User}
+import models.{SesameEmployee, SesameStudent, User}
 import services.LdapSyncServiceActor.SyncRequest
 import store.bind.Bindings
 import store.{Resolvers, SesameRepository}
@@ -47,8 +47,8 @@ class LdapSyncServiceActor(val repository: SesameRepository, val ldapService: Ld
     case SyncRequest =>
       def difference(current: Set[User], newest: Set[User]): Set[User] = {
         def equalizeId(from: User, to: User): Option[User] = (from, to) match {
-          case (s1: Student, s2: Student) => Some(Student(s2.systemId, s2.lastname, s2.firstname, s2.email, s2.registrationId, s2.enrollment, s1.invalidated, s1.id))
-          case (e1: Employee, e2: Employee) => Some(Employee(e2.systemId, e2.lastname, e2.firstname, e2.email, e2.status, e1.invalidated, e1.id))
+          case (s1: SesameStudent, s2: SesameStudent) => Some(SesameStudent(s2.systemId, s2.lastname, s2.firstname, s2.email, s2.registrationId, s2.enrollment, s1.invalidated, s1.id))
+          case (e1: SesameEmployee, e2: SesameEmployee) => Some(SesameEmployee(e2.systemId, e2.lastname, e2.firstname, e2.email, e2.status, e1.invalidated, e1.id))
           case _ => None
         }
 

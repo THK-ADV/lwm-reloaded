@@ -78,8 +78,8 @@ class TimetableBindingSpec extends SesameDbSpec {
       val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), subscribable = false, published = false)
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
+      val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
+      val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
 
       val timetableEntry1 = TimetableEntry(Set(supervisor1.id), room1.id, 1, LocalTime.now, LocalTime.now)
       val timetableEntry2 = TimetableEntry(Set(supervisor2.id), room2.id, 4, LocalTime.now, LocalTime.now)

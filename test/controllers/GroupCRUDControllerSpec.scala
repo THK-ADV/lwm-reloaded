@@ -22,12 +22,12 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val studentsToPass = Set(
-    Student("systemId1 to pass", "last name 1 to pass", "first name 1 to pass", "email1 to pass", "regId1 to pass", UUID.randomUUID()),
-    Student("systemId2 to pass", "last name 2 to pass", "first name 2 to pass", "email2 to pass", "regId2 to pass", UUID.randomUUID())
+    SesameStudent("systemId1 to pass", "last name 1 to pass", "first name 1 to pass", "email1 to pass", "regId1 to pass", UUID.randomUUID()),
+    SesameStudent("systemId2 to pass", "last name 2 to pass", "first name 2 to pass", "email2 to pass", "regId2 to pass", UUID.randomUUID())
   )
   val studentsToFail = Set(
-    Student("systemId1 to fail", "last name 1 to fail", "first name 1 to fail", "email1 to fail", "regId1 to fail", UUID.randomUUID()),
-    Student("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID())
+    SesameStudent("systemId1 to fail", "last name 1 to fail", "first name 1 to fail", "email1 to fail", "regId1 to fail", UUID.randomUUID()),
+    SesameStudent("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID())
   )
 
   override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id))

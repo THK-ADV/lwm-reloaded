@@ -72,8 +72,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     }
 
     user match {
-      case s: Student => createAuthAndUser(s)(_.label == Roles.Student)
-      case e: Employee => createAuthAndUser(e)(_.label == Roles.Employee)
+      case s: SesameStudent => createAuthAndUser(s)(_.label == Roles.Student)
+      case e: SesameEmployee => createAuthAndUser(e)(_.label == Roles.Employee)
     }
   }
 

@@ -47,7 +47,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
     "return an atomic annotation based on an RDF graph representation" in {
       import bindings.{AnnotationAtomDescriptor, AnnotationDescriptor, LabworkDescriptor, ReportCardEntryDescriptor, StudentDescriptor}
 
-      val student = Student("systemid", "lastname", "firstname", "email", "registrationId", UUID.randomUUID())
+      val student = SesameStudent("systemid", "lastname", "firstname", "email", "registrationId", UUID.randomUUID())
       val labwork = Labwork("label", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val reportCardEntry = ReportCardEntry(student.id, labwork.id, "label", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), Set.empty)
       val annot = Annotation(student.id, labwork.id, reportCardEntry.id, "message")

@@ -30,9 +30,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
   }
 
-  val studentToPass = Student("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
-  val employeeToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
-  val employeeToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
+  val studentToPass = SesameStudent("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
+  val employeeToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val employeeToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   val courseToPass = Course("Course2", "Description", "Abbrev", employeeToPass.id, 0)
   val courseToFail = Course("Course1", "Description", "Abbrev", employeeToFail.id, 0)
@@ -116,9 +116,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       val role1 = Role("", Set.empty)
       val role2 = Role("", Set.empty)
 
-      val user1 = Employee("", "", "", "", "")
-      val user2 = Employee("", "", "", "", "")
-      val user3 = Employee("", "", "", "", "")
+      val user1 = SesameEmployee("", "", "", "", "")
+      val user2 = SesameEmployee("", "", "", "", "")
+      val user3 = SesameEmployee("", "", "", "", "")
 
       val course1 = Course("", "", "", UUID.randomUUID, 1)
       val course2 = Course("", "", "", UUID.randomUUID, 2)
@@ -131,7 +131,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
 
       realRepo.addMany[Authority](List(auth1, auth2, auth3, auth4, auth5))
       realRepo.addMany[Role](List(role1, role2))
-      realRepo.addMany[Employee](List(user1, user2, user3))
+      realRepo.addMany[SesameEmployee](List(user1, user2, user3))
       realRepo.addMany[Course](List(course1, course2))
 
       val requestWithCourse = FakeRequest(

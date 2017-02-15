@@ -79,18 +79,18 @@ class ScheduleBindingSpec extends SesameDbSpec {
       import bindings.{CourseDescriptor, DegreeDescriptor, EmployeeDescriptor, GroupDescriptor, LabworkDescriptor, RoomDescriptor, ScheduleAtomDescriptor, ScheduleDescriptor, ScheduleEntryDescriptor, SemesterDescriptor}
 
       val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
-      val employee = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
+      val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
       val course = Course("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
       val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
-      val degree = Degree("label to pass", "abbrev to pass")
+      val degree = PostgresDegree("label to pass", "abbrev to pass")
 
       val labwork = Labwork("labwork", "description", semester.id, courseAtom.id, degree.id, subscribable = false, published = false)
       val labworkAtom = LabworkAtom(labwork.label, labwork.description, semester, courseAtom, degree, labwork.subscribable, labwork.subscribable, labwork.invalidated, labwork.id)
 
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
-      val supervisor1 = Employee("systemid1", "lastname1", "firstname1", "email1", "status1")
-      val supervisor2 = Employee("systemid2", "lastname2", "firstname2", "email2", "status2")
+      val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
+      val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
       val group1 = Group("group1", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
       val group2 = Group("group2", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
       val scheduleEntry1 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room1.id, Set(supervisor1.id), group1.id)

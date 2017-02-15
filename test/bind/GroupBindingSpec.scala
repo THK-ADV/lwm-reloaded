@@ -46,15 +46,15 @@ class GroupBindingSpec extends SesameDbSpec {
       import bindings.{GroupAtomDescriptor, GroupDescriptor, LabworkDescriptor, StudentDescriptor}
 
       val labwork = Labwork("Label", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-      val student1 = Student("systemid1", "lastname1", "firstname1", "email1", "registrationId1", UUID.randomUUID())
-      val student2 = Student("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
+      val student1 = SesameStudent("systemid1", "lastname1", "firstname1", "email1", "registrationId1", UUID.randomUUID())
+      val student2 = SesameStudent("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
       val group = Group("label", labwork.id, Set(student1.id, student2.id))
 
       val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.invalidated, group.id)
 
       repo.add[Labwork](labwork)
-      repo.add[Student](student1)
-      repo.add[Student](student2)
+      repo.add[SesameStudent](student1)
+      repo.add[SesameStudent](student2)
       repo.add[Group](group)
 
       repo.get[GroupAtom](Group.generateUri(group.id)) match {

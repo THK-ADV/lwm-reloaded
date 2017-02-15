@@ -25,13 +25,13 @@ object UserController {
     queryString.foldRight(Try(all)) {
       case ((`degreeAttribute`, degrees), users) => users flatMap { set =>
         Try(UUID.fromString(degrees.head)) map (degree => set filter {
-          case Student(_, _, _, _, _, e, _, _) => e == degree
+          case SesameStudent(_, _, _, _, _, e, _, _) => e == degree
           case _ => false
         })
       }
       case ((`statusAttribute`, states), users) => users map { set =>
         states.foldLeft(set)((set, status) => set filter {
-          case Employee(_, _, _, _, s, _, _) => s == status
+          case SesameEmployee(_, _, _, _, s, _, _) => s == status
           case _ => false
         }
         )
@@ -74,7 +74,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   with Retrieved[User, User]
   with RdfSerialisation[User, User] {
 
-  import models.Student.writesAtom
+  import models.SesameStudent.writesAtom
 
   import defaultBindings.{StudentDescriptor, StudentAtomDescriptor, EmployeeDescriptor}
 
@@ -88,7 +88,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
   override implicit val uriGenerator: UriGenerator[User] = User
 
-  def coatomic(atom: StudentAtom): Student = Student(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.invalidated, atom.id)
+  def coatomic(atom: SesameStudentAtom): SesameStudent = SesameStudent(atom.systemId, atom.lastname, atom.firstname, atom.email, atom.registrationId, atom.enrollment.id, atom.invalidated, atom.id)
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(Permissions.user.get)
@@ -102,43 +102,43 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
   def student(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("students", "users")
 
-    retrieve[Student](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
+    retrieve[SesameStudent](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
   }
 
   def studentAtomic(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("/atomic", "").replace("students", "users")
 
-    retrieve[StudentAtom](uri).mapResult(s => Ok(Json.toJson(s)).as(mimeType))
+    retrieve[SesameStudentAtom](uri).mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def employee(id: String) = contextFrom(Get) action { request =>
     val uri = s"$namespace${request.uri}".replace("employees", "users")
 
-    retrieve[Employee](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
+    retrieve[SesameEmployee](uri).map(User.writes.writes).mapResult(Ok(_).as(mimeType))
   }
 
   def allEmployees() = contextFrom(GetAll) action { request =>
-    retrieveAll[Employee]
+    retrieveAll[SesameEmployee]
       .flatMap(filtered(request))
-      .map(set => chunk(set)(Employee.writes))
+      .map(set => chunk(set)(SesameEmployee.writes))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allStudents() = contextFrom(GetAll) action { request =>
-    retrieveAll[Student]
+    retrieveAll[SesameStudent]
       .flatMap(filtered(request))
-      .map(set => chunk(set)(Student.writes))
+      .map(set => chunk(set)(SesameStudent.writes))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def allAtomicStudents() = contextFrom(GetAll) action { request =>
-    retrieveAll[StudentAtom]
+    retrieveAll[SesameStudentAtom]
       .flatMap { students =>
         val non = students map coatomic
         filtered(request)(non)
           .map(set => students filter (s => set exists (_.id == s.id)))
       }
-      .map(set => chunk(set)(StudentAtom.writesAtom))
+      .map(set => chunk(set)(SesameStudentAtom.writesAtom))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
@@ -160,8 +160,8 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
 
     retrieve[User](uri)
       .flatMap {
-        case s: Student => retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
-        case e: Employee => Continue(Json.toJson(e)(Employee.writes))
+        case s: SesameStudent => retrieve[SesameStudentAtom](User generateUri s) map (a => Json.toJson(a))
+        case e: SesameEmployee => Continue(Json.toJson(e)(SesameEmployee.writes))
       }
       .mapResult(js => Ok(js).as(mimeType))
   }
@@ -172,13 +172,13 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .flatMap(filtered(request))
       .flatMap { set =>
         set.foldLeft(Attempt(List.empty[JsValue])) {
-          case (ret, s: Student) =>
+          case (ret, s: SesameStudent) =>
             for {
               list <- ret
-              elm <- retrieve[StudentAtom](User generateUri s) map (a => Json.toJson(a))
+              elm <- retrieve[SesameStudentAtom](User generateUri s) map (a => Json.toJson(a))
             } yield list.+:(elm)
 
-          case (ret, e: Employee) => ret map (list => list.+:(Json.toJson(e)(Employee.writes)))
+          case (ret, e: SesameEmployee) => ret map (list => list.+:(Json.toJson(e)(SesameEmployee.writes)))
           case (ret, _) => ret
         }
       }
@@ -186,7 +186,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def paired[A](request: Request[A], systemId: String): Attempt[Set[Student]] = {
+  def paired[A](request: Request[A], systemId: String): Attempt[Set[SesameStudent]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.NaturalTrasformations._
@@ -203,7 +203,7 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
         select(_.get("student")).
         changeTo(_.headOption).
         transform(_.fold(Set.empty[String])(value => Set(value.stringValue(), currentUser))).
-        requestAll(repository.getMany[Student](_))
+        requestAll(repository.getMany[SesameStudent](_))
     }
   }
 
@@ -252,8 +252,8 @@ class UserController(val roleService: RoleService, val sessionService: SessionHa
     resolvers.userId(systemId) match {
       case Success(Some(uuid)) =>
         def adapt(user: User, id: UUID): User = user match {
-          case s: Student => Student(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, s.enrollment, s.invalidated, id)
-          case e: Employee => Employee(e.systemId, e.lastname, e.firstname, e.email, e.status, e.invalidated, id)
+          case s: SesameStudent => SesameStudent(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, s.enrollment, s.invalidated, id)
+          case e: SesameEmployee => SesameEmployee(e.systemId, e.lastname, e.firstname, e.email, e.status, e.invalidated, id)
         }
 
         ldap { user =>

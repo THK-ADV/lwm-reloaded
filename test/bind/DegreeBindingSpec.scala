@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.Degree
+import models.PostgresDegree$
 import org.w3.banana.PointedGraph
 import scala.util.{Failure, Success}
 
@@ -15,9 +15,9 @@ class DegreeBindingSpec extends SesameDbSpec {
 
   implicit val degreeBinder = DegreeDescriptor.binder
 
-  val degree = Degree("degree", "abbreviation")
+  val degree = PostgresDegree("degree", "abbreviation")
   val degreeGraph = (
-    URI(Degree.generateUri(degree)).a(lwm.Degree)
+    URI(PostgresDegree.generateUri(degree)).a(lwm.Degree)
       -- lwm.label ->- degree.label
       -- lwm.abbreviation ->- degree.abbreviation
       -- lwm.id ->- degree.id
@@ -32,7 +32,7 @@ class DegreeBindingSpec extends SesameDbSpec {
     }
 
     "return a student based on a RDF graph representation" in {
-      val expecteddegree = PointedGraph[Rdf](URI(Degree.generateUri(degree)), degreeGraph).as[Degree]
+      val expecteddegree = PointedGraph[Rdf](URI(PostgresDegree.generateUri(degree)), degreeGraph).as[Degree]
 
       expecteddegree match {
         case Success(s) =>

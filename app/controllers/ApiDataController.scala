@@ -6,10 +6,12 @@ import models._
 import org.joda.time.Interval
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
+import services.UserService
 import store.SesameRepository
 import store.bind.Bindings
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 class ApiDataController(private val repository: SesameRepository) extends Controller {
 
@@ -54,5 +56,39 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     } yield 1
 
     Ok
+  }
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  def migrateUsers = Action.async { request =>
+    import bindings.{StudentDescriptor, EmployeeDescriptor}
+    import models.User.writes
+
+    val result = for {
+      sesameStudents <- Future.fromTry(repository.getAll[SesameStudent])
+      _ = println(s"sesameStudents ${sesameStudents.size}")
+      sesameEmployees <- Future.fromTry(repository.getAll[SesameEmployee])
+      _ = println(s"sesameEmployees ${sesameEmployees.size}")
+      postgresStudents = sesameStudents.map(s => PostgresStudent(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, s.enrollment, s.id)).map(_.dbUser)
+      postgresEmployees = sesameEmployees.foldLeft(Set.empty[DbUser]) {
+        case ((list, e)) =>
+          if (e.status == User.employeeType)
+            list + PostgresEmployee(e.systemId, e.lastname, e.firstname, e.email, e.id).dbUser
+          else
+            list + PostgresLecturer(e.systemId, e.lastname, e.firstname, e.email, e.id).dbUser
+      }
+      dbUsers = postgresStudents ++ postgresEmployees
+      _ = println(s"dbUsers ${dbUsers.size}")
+      ok <- UserService.dropAndCreateSchema
+      users <- UserService.createMany(dbUsers).map(_.map(_.user))
+    } yield users.toSet
+
+    result.map { users =>
+      println(s"users ${users.size}")
+      Ok(Json.toJson(users))
+    }.recover {
+      case NonFatal(e) =>
+        InternalServerError(Json.obj("error" -> e.getMessage))
+    }
   }
 }

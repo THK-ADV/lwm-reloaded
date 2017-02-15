@@ -107,15 +107,15 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       }
 
       override def toPG(t: User): PointedGraph[Rdf] = t match {
-        case s: Student => s.toPG(StudentDescriptor.binder)
-        case e: Employee => e.toPG(EmployeeDescriptor.binder)
+        case s: SesameStudent => s.toPG(StudentDescriptor.binder)
+        case e: SesameEmployee => e.toPG(EmployeeDescriptor.binder)
       }
     }
   }
-  implicit lazy val StudentDescriptor: Descriptor[Rdf, Student] = new Descriptor[Rdf, Student] {
+  implicit lazy val StudentDescriptor: Descriptor[Rdf, SesameStudent] = new Descriptor[Rdf, SesameStudent] {
     override val clazz: Rdf#URI = lwm.User
 
-    override val classUris: ClassUrisFor[Rdf, Student] = classUrisFor[Student](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameStudent] = classUrisFor[SesameStudent](clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -124,14 +124,14 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val enrollment = property[UUID](lwm.enrollment)(uuidRefBinder(Degree.splitter))
     private val email = property[String](lwm.email)
 
-    override val binder: PGBinder[Rdf, Student] =
-      pgbWithId[Student](student =>
-        makeUri(User.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(Student.apply, Student.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameStudent] =
+      pgbWithId[SesameStudent](student =>
+        makeUri(User.generateUri(student)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(SesameStudent.apply, SesameStudent.unapply) withClasses classUris
   }
-  implicit lazy val StudentAtomDescriptor: Descriptor[Rdf, StudentAtom] = new Descriptor[Rdf, StudentAtom] {
+  implicit lazy val StudentAtomDescriptor: Descriptor[Rdf, SesameStudentAtom] = new Descriptor[Rdf, SesameStudentAtom] {
     override val clazz: Rdf#URI = lwm.User
 
-    override val classUris: ClassUrisFor[Rdf, StudentAtom] = classUrisFor[StudentAtom](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameStudentAtom] = classUrisFor[SesameStudentAtom](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt DegreeDescriptor.references
 
@@ -142,14 +142,14 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val systemId = property[String](lwm.systemId)
     private val email = property[String](lwm.email)
 
-    override val binder: PGBinder[Rdf, StudentAtom] =
-      pgbWithId[StudentAtom](student =>
-        makeUri(User.generateUri(student.id)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(StudentAtom.apply, StudentAtom.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameStudentAtom] =
+      pgbWithId[SesameStudentAtom](student =>
+        makeUri(User.generateUri(student.id)))(systemId, lastname, firstname, email, registrationId, enrollment, invalidated, id)(SesameStudentAtom.apply, SesameStudentAtom.unapply) withClasses classUris
   }
-  implicit lazy val EmployeeDescriptor: Descriptor[Rdf, Employee] = new Descriptor[Rdf, Employee] {
+  implicit lazy val EmployeeDescriptor: Descriptor[Rdf, SesameEmployee] = new Descriptor[Rdf, SesameEmployee] {
     override val clazz: Rdf#URI = lwm.User
 
-    override val classUris: ClassUrisFor[Rdf, Employee] = classUrisFor[Employee](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameEmployee] = classUrisFor[SesameEmployee](clazz)
 
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
@@ -157,9 +157,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val email = property[String](lwm.email)
     private val status = property[String](lwm.status)
 
-    override val binder: PGBinder[Rdf, Employee] =
-      pgbWithId[Employee](employee =>
-        makeUri(User.generateUri(employee)))(systemId, lastname, firstname, email, status, invalidated, id)(Employee.apply, Employee.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameEmployee] =
+      pgbWithId[SesameEmployee](employee =>
+        makeUri(User.generateUri(employee)))(systemId, lastname, firstname, email, status, invalidated, id)(SesameEmployee.apply, SesameEmployee.unapply) withClasses classUris
 
   }
   implicit lazy val LabworkApplicationDescriptor: Descriptor[Rdf, LabworkApplication] = new Descriptor[Rdf, LabworkApplication] {
@@ -187,8 +187,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(StudentDescriptor.references)
 
     private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
-    private val applicant = property[Student](lwm.applicant)(StudentDescriptor.binder)
-    private val friends = set[Student](lwm.friends)(StudentDescriptor.binder)
+    private val applicant = property[SesameStudent](lwm.applicant)(StudentDescriptor.binder)
+    private val friends = set[SesameStudent](lwm.friends)(StudentDescriptor.binder)
     private val timestamp = property[DateTime](lwm.timestamp)
 
     override val binder: PGBinder[Rdf, LabworkApplicationAtom] =
@@ -389,7 +389,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val abbreviation = property[String](lwm.abbreviation)
-    private val lecturer = property[Employee](lwm.lecturer)(EmployeeDescriptor.binder)
+    private val lecturer = property[SesameEmployee](lwm.lecturer)(EmployeeDescriptor.binder)
     private val semesterIndex = property[Int](lwm.semesterIndex)
 
     override val binder: PGBinder[Rdf, CourseAtom] =
@@ -437,7 +437,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val label = property[String](lwm.label)
     private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
-    private val members = set[Student](lwm.members)(StudentDescriptor.binder)
+    private val members = set[SesameStudent](lwm.members)(StudentDescriptor.binder)
 
     override val binder: PGBinder[Rdf, GroupAtom] =
       pgbWithId[GroupAtom](group =>
@@ -684,7 +684,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(ReportCardEntryTypeDescriptor.references)
         .pointsAt(RescheduledAtomDescriptor.references)
 
-    private val student = property[Student](lwm.student)(StudentDescriptor.binder)
+    private val student = property[SesameStudent](lwm.student)(StudentDescriptor.binder)
     private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
     private val room = property[Room](lwm.room)(RoomDescriptor.binder)
     private val rescheduled = optional[RescheduledAtom](lwm.rescheduled)(RescheduledAtomDescriptor.binder)
@@ -771,7 +771,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(LabworkDescriptor.references)
         .pointsAt(ReportCardEntryDescriptor.references)
 
-    private val student = property[Student](lwm.student)(StudentDescriptor.binder)
+    private val student = property[SesameStudent](lwm.student)(StudentDescriptor.binder)
     private val labwork = property[Labwork](lwm.labwork)(LabworkDescriptor.binder)
     private val reportCardEntry = property[ReportCardEntry](lwm.reportCardEntry)(ReportCardEntryDescriptor.binder)
     private val message = property[String](lwm.message)
@@ -809,7 +809,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(StudentDescriptor.references)
         .pointsAt(LabworkAtomDescriptor.references)
 
-    private val student = property[Student](lwm.student)(StudentDescriptor.binder)
+    private val student = property[SesameStudent](lwm.student)(StudentDescriptor.binder)
     private val labwork = property[LabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
     private val label = property[String](lwm.label)
     private val bool = property[Boolean](lwm.bool)

@@ -19,8 +19,8 @@ import scala.util.Success
 
 class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course, CourseAtom] {
 
-  val lecturerToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
-  val lecturerToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
+  val lecturerToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val lecturerToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1)
 
@@ -89,7 +89,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
   "A CourseCRUDControllerSpec also " should {
     "return the corresponding course for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
+      val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
       val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
       val second = Course("label2", "desc2", "abbreviation2", lecturer.id, 1)
@@ -114,7 +114,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "return all corresponding courses for a given lecturer" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
+      val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
       val first = Course("label1", "desc1", "abbreviation1", lecturer.id, 1)
       val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)
@@ -139,7 +139,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses for a lecturer when there is no match" in {
-      val lecturer = Employee("systemId", "last name", "first name", "email", "status")
+      val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
       val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
       val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)

@@ -12,7 +12,7 @@ case class Group(label: String, labwork: UUID, members: Set[UUID], invalidated: 
 
 case class GroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
-case class GroupAtom(label: String, labwork: Labwork, members: Set[Student], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class GroupAtom(label: String, labwork: Labwork, members: Set[SesameStudent], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Group extends UriGenerator[Group] with JsonSerialisation[GroupProtocol, Group, GroupAtom] {
 
@@ -34,7 +34,7 @@ object GroupAtom {
   implicit def writesAtom: Writes[GroupAtom] = (
     (JsPath \ "label").write[String] and
       (JsPath \ "labwork").write[Labwork] and
-      (JsPath \ "members").writeSet[Student](Student.writes) and
+      (JsPath \ "members").writeSet[SesameStudent](SesameStudent.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(GroupAtom.unapply))

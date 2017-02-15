@@ -15,8 +15,8 @@ class CourseInvalidation extends SesameDbSpec {
   "A Course invalidation" should {
 
     def labs(course: UUID): Stream[Labwork] = Stream.continually {
-      if (nextBoolean) Labwork("Label", "Desc", Semester.randomUUID, course, Degree.randomUUID)
-      else Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+      if (nextBoolean) Labwork("Label", "Desc", Semester.randomUUID, course, PostgresDegree.randomUUID)
+      else Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
     }
 
     def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {

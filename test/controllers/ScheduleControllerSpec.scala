@@ -35,8 +35,8 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val roomToPass = Room("room to pass", "desc to pass")
   val roomToFail = Room("room to fail", "desc to fail")
 
-  val supervisorToPass = Employee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
-  val supervisorToFail = Employee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
+  val supervisorToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
+  val supervisorToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   val groupToPass = Group("group to pass", labworkToPass.id, Set(UUID.randomUUID(), UUID.randomUUID()))
   val groupToFail = Group("group to fail", labworkToFail.id, Set(UUID.randomUUID(), UUID.randomUUID()))
@@ -95,10 +95,10 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
     s"/schedules/preview?$countAttribute=8"
   )
 
-  val lecturer = Employee("systemid", "lastname", "firstname", "email", "lecturer")
+  val lecturer = SesameEmployee("systemid", "lastname", "firstname", "email", "lecturer")
   val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
   val course = CourseAtom("", "", "", lecturer, 2, None, Course.randomUUID)
-  val degree = Degree("degree", "abbrev")
+  val degree = PostgresDegree("degree", "abbrev")
   val labwork = LabworkAtom("", "", semester, course, degree, subscribable = false, published = false, None, Labwork.randomUUID)
   val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
   val timetable = Timetable(labwork.id, Set(
@@ -107,7 +107,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
 
   val randomAtom = {
-    val entries = (0 until 10).map(i => ScheduleEntryAtom(labwork, LocalTime.now.plusHours(i), LocalTime.now.plusHours(i + 1), LocalDate.now.plusDays(i), Room.default, Set(Employee.default), Group.empty, None, UUID.randomUUID)).toSet
+    val entries = (0 until 10).map(i => ScheduleEntryAtom(labwork, LocalTime.now.plusHours(i), LocalTime.now.plusHours(i + 1), LocalDate.now.plusDays(i), Room.default, Set(SesameEmployee.default), Group.empty, None, UUID.randomUUID)).toSet
     ScheduleAtom(labwork, entries, None, UUID.randomUUID)
   }
 

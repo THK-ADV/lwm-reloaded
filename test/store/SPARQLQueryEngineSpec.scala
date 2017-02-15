@@ -38,7 +38,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import utils.Ops.NaturalTrasformations._
       import bindings.StudentDescriptor
 
-      val student = Student("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
       repo add student
 
@@ -54,7 +54,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         transform(_.fold(List.empty[Value])(a => a)).
         transform(_.headOption).
         map(value => User.generateUri(UUID.fromString(value.stringValue())))(optM).
-        request(repo.get[Student]).
+        request(repo.get[SesameStudent]).
         run
 
       result shouldBe Success(Some(student))
@@ -68,9 +68,9 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       GroupDescriptor
       }
 
-      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)
-      val s3 = Student("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", Degree.randomUUID)
+      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val s3 = SesameStudent("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", PostgresDegree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, s3.id))
 
       repo addMany List(s1, s2, s3)
@@ -87,7 +87,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         select(_.get("members")).
         transform(_.fold(List.empty[Value])(identity)).
         transform(_.map(_.stringValue())).
-        requestAll(repo.getMany[Student](_)).
+        requestAll(repo.getMany[SesameStudent](_)).
         map(_.id).
         run
 
@@ -101,8 +101,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       GroupDescriptor
       }
 
-      val s1 = Student("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", Degree.randomUUID)
-      val s2 = Student("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", Degree.randomUUID)
+      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", PostgresDegree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, UUID.randomUUID()))
 
       repo addMany List(s1, s2)
@@ -119,7 +119,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
         select(_.get("members")).
         transform(_.fold(List.empty[Value])(identity)).
         transform(_.map(_.stringValue())).
-        requestAll(repo.getMany[Student](_)).
+        requestAll(repo.getMany[SesameStudent](_)).
         map(_.id).
         run
 

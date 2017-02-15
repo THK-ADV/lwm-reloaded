@@ -69,9 +69,9 @@ class RoleServiceSpec extends SesameDbSpec {
     "retrieve authorities properly" in {
       import bindings.{RoleDescriptor, AuthorityDescriptor, StudentDescriptor}
 
-      val student1 = Student("mi1018", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student2 = Student("ai1223", "last name", "first name", "email", "registrationId", Degree.randomUUID)
-      val student3 = Student("ti1233", "last name", "first name", "email", "registrationId", Degree.randomUUID)
+      val student1 = SesameStudent("mi1018", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
 
       val authority1 = Authority(student1.id, module1UserRole1.role, module1UserRole1.course)
       val authority2 = Authority(student1.id, module2UserRole2.role, module1UserRole1.course)
@@ -116,7 +116,7 @@ class RoleServiceSpec extends SesameDbSpec {
       val emp = Role(Roles.Employee, Set.empty)
       val rm = Role(Roles.RightsManager, Set.empty)
 
-      val employee = Employee("systemId", "lastname", "firstname", "email", User.employeeType)
+      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.employeeType)
       val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
         Authority(employee.id, UUID.randomUUID, Some(UUID.randomUUID)),
         Authority(employee.id, emp.id)
@@ -139,7 +139,7 @@ class RoleServiceSpec extends SesameDbSpec {
       val emp = Role(Roles.Employee, Set.empty)
       val rm = Role(Roles.RightsManager, Set.empty)
 
-      val employee = Employee("systemId", "lastname", "firstname", "email", User.employeeType)
+      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.employeeType)
       val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
         Authority(employee.id, rm.id, None),
         Authority(employee.id, emp.id)

@@ -206,18 +206,18 @@ DELETE        /courses/:c/labworks/:l/annotations/:id                           
 HEAD          /annotations                                                            controllers.AnnotationCRUDController.header
 
 # Users
-PUT           /users/systemId/:systemId                                               controllers.UserController.createOrUpdate(systemId)
-GET           /users                                                                  controllers.UserController.allUsers()
-GET           /users/:id                                                              controllers.UserController.user(id)
-GET           /atomic/users                                                           controllers.UserController.allUserAtomic()
-GET           /atomic/users/:id                                                       controllers.UserController.userAtomic(id)
-GET           /students                                                               controllers.UserController.allStudents()
-GET           /atomic/students                                                        controllers.UserController.allAtomicStudents()
-GET           /students/:id                                                           controllers.UserController.student(id)
-GET           /atomic/students/:id                                                    controllers.UserController.studentAtomic(id)
-GET           /employees                                                              controllers.UserController.allEmployees()
-GET           /employees/:id                                                          controllers.UserController.employee(id)
-GET           /students/buddies/:systemId                                             controllers.UserController.buddy(systemId)
+#PUT           /users/systemId/:systemId                                               controllers.UserControllerP.createOrUpdate(systemId)
+GET           /users                                                                  controllers.UserControllerP.allUsers()
+#GET           /users/:id                                                              controllers.UserControllerP.user(id)
+#GET           /atomic/users                                                           controllers.UserControllerP.allUserAtomic()
+#GET           /atomic/users/:id                                                       controllers.UserControllerP.userAtomic(id)
+#GET           /students                                                               controllers.UserControllerP.allStudents()
+#GET           /atomic/students                                                        controllers.UserControllerP.allAtomicStudents()
+#GET           /students/:id                                                           controllers.UserControllerP.student(id)
+#GET           /atomic/students/:id                                                    controllers.UserControllerP.studentAtomic(id)
+#GET           /employees                                                              controllers.UserControllerP.allEmployees()
+#GET           /employees/:id                                                          controllers.UserControllerP.employee(id)
+#GET           /students/buddies/:systemId                                             controllers.UserControllerP.buddy(systemId)
 
 # Sessions
 POST          /sessions                                                               controllers.SessionController.login
@@ -228,6 +228,7 @@ HEAD          /sessions                                                         
 # APIData
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
+GET           /api/migrateUsers                                                       controllers.ApiDataController.migrateUsers()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

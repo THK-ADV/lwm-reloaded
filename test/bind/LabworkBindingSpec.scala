@@ -13,13 +13,13 @@ class LabworkBindingSpec extends SesameDbSpec {
   import ops._
 
   implicit val labworkBinder = LabworkDescriptor.binder
-  val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, Degree.randomUUID)
+  val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
   val labworkGraph = URI(Labwork.generateUri(labwork)).a(lwm.Labwork)
     .--(lwm.label).->-(labwork.label)
     .--(lwm.description).->-(labwork.description)
     .--(lwm.semester).->-(labwork.semester)(ops, uuidRefBinder(Semester.splitter))
     .--(lwm.course).->-(labwork.course)(ops, uuidRefBinder(Course.splitter))
-    .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(Degree.splitter))
+    .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(PostgresDegree.splitter))
     .--(lwm.subscribable).->-(labwork.subscribable)
     .--(lwm.published).->-(labwork.published)
     .--(lwm.invalidated).->-(labwork.invalidated)
@@ -47,9 +47,9 @@ class LabworkBindingSpec extends SesameDbSpec {
       import bindings.{CourseDescriptor, DegreeDescriptor, EmployeeDescriptor, LabworkAtomDescriptor, LabworkDescriptor, SemesterDescriptor}
 
       val semester = Semester("semester", "abr", LocalDate.now, LocalDate.now, LocalDate.now)
-      val employee = Employee("systemid", "lastname", "firstname", "email", "status")
+      val employee = SesameEmployee("systemid", "lastname", "firstname", "email", "status")
       val course = Course("course", "description", "abbr", employee.id, 1)
-      val degree = Degree("degree", "abbr")
+      val degree = PostgresDegree("degree", "abbr")
       val labwork = Labwork("labwork", "description", semester.id, course.id, degree.id, subscribable = false, published = false)
 
       val courseAtom = CourseAtom("course", "description", "abbr", employee, 1, course.invalidated, course.id)

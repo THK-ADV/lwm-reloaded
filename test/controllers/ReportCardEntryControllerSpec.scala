@@ -38,7 +38,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val query = QueryEngine.empty(qe)
 
   val mimeType = LwmMimeType.reportCardEntryV1Json
-  val student = Student("systemId", "last", "first", "email", "regId", UUID.randomUUID)
+  val student = SesameStudent("systemId", "last", "first", "email", "regId", UUID.randomUUID)
   val labwork = Labwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
   val room = Room("label", "desc")
   val entries = (0 until 2).map(n =>

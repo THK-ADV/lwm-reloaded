@@ -30,7 +30,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 
-  val user = Student("mi1111", "Last", "First", "Email", "111111", Degree.randomUUID)
+  val user = SesameStudent("mi1111", "Last", "First", "Email", "111111", PostgresDegree.randomUUID)
   val actorRef = system.actorOf(SessionServiceActor.props(ldap, resolver))
 
   "A SessionServiceActor" should {
@@ -87,8 +87,8 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     "keep track of sessions within a closure" in {
       import bindings.RoleDescriptor
 
-      val user1 = Student("mi1111", "lastname1", "firstname1", "email1", "regid1", User.randomUUID)
-      val user2 = Student("mi1112", "lastname2", "firstname2", "email2", "regid2", User.randomUUID)
+      val user1 = SesameStudent("mi1111", "lastname1", "firstname1", "email1", "regid1", User.randomUUID)
+      val user2 = SesameStudent("mi1112", "lastname2", "firstname2", "email2", "regid2", User.randomUUID)
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       doReturn(Future.successful(user1))

@@ -13,13 +13,13 @@ class StudentBindingSpec extends SesameDbSpec {
 
   implicit val studentBinder = StudentDescriptor.binder
 
-  val student = Student("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", Degree.randomUUID)
+  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
   val studentGraph = URI(User.generateUri(student)).a(lwm.User)
     .--(lwm.systemId).->-(student.systemId)
     .--(lwm.lastname).->-(student.lastname)
     .--(lwm.firstname).->-(student.firstname)
     .--(lwm.registrationId).->-(student.registrationId)
-    .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(Degree.splitter))
+    .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
     .--(lwm.email).->-(student.email)
     .--(lwm.invalidated).->-(student.invalidated)
     .--(lwm.id).->-(student.id).graph
@@ -33,7 +33,7 @@ class StudentBindingSpec extends SesameDbSpec {
     }
 
     "return a student based on a RDF graph representation" in {
-      val expectedStudent = PointedGraph[Rdf](URI(User.generateUri(student)), studentGraph).as[Student]
+      val expectedStudent = PointedGraph[Rdf](URI(User.generateUri(student)), studentGraph).as[SesameStudent]
 
       expectedStudent match {
         case Success(s) =>
@@ -46,15 +46,15 @@ class StudentBindingSpec extends SesameDbSpec {
     "return a student atom based on an RDF graph representation" in {
       import bindings.{DegreeDescriptor, StudentAtomDescriptor, StudentDescriptor}
 
-      val degree = Degree("degree", "abbrev")
-      val student = Student("systemid", "lastname", "firstname", "email", "regid", degree.id)
+      val degree = PostgresDegree("degree", "abbrev")
+      val student = SesameStudent("systemid", "lastname", "firstname", "email", "regid", degree.id)
 
-      val studentAtom = StudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.invalidated, student.id)
+      val studentAtom = SesameStudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.invalidated, student.id)
 
       repo add degree
       repo add student
 
-      repo.get[StudentAtom](User.generateUri(student)) match {
+      repo.get[SesameStudentAtom](User.generateUri(student)) match {
         case Success(Some(atom)) =>
           atom shouldEqual studentAtom
         case Success(None) =>

@@ -24,9 +24,9 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
   "A UserBinding" should {
 
     "serialise and deserialise monomorphic collections of student entries" in {
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
-      val student3 = Student("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
+      val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = SesameStudent("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student3 = SesameStudent("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID())
 
       val vec: Vector[User] = Vector(student1, student2, student3)
 
@@ -40,9 +40,9 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
     }
 
     "serialise and deserialise monomorphic collections of employee entries" in {
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
-      val employee3 = Employee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
+      val employee1 = SesameEmployee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = SesameEmployee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee3 = SesameEmployee("rlak", "Rasl", "Kramral", "ramk@mail.de", "status")
 
       val vec: Vector[User] = Vector(employee1, employee2, employee3)
 
@@ -56,11 +56,11 @@ class UserBindingSpec extends WordSpec with TestBaseDefinition with SesameModule
     }
 
     "serilaise and deserialise polymorphic collections of user entries" in {
-      val student1 = Student("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
-      val student2 = Student("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
+      val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", UUID.randomUUID())
+      val student2 = SesameStudent("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", UUID.randomUUID())
 
-      val employee1 = Employee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
-      val employee2 = Employee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
+      val employee1 = SesameEmployee("mlark", "Lars", "Marklar", "mark@mail.de", "status")
+      val employee2 = SesameEmployee("mlark", "Sarl", "Ralkram", "kram@mail.de", "status")
 
       val vec: Vector[User] = Vector(student1, student2, employee1, employee2)
 

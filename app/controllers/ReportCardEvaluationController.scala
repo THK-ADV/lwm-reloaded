@@ -230,7 +230,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
       evals map { eval =>
         for {
           optLabwork <- repository.get[LabworkAtom](Labwork.generateUri(eval.labwork))
-          optStudent <- repository.get[Student](User.generateUri(eval.student))
+          optStudent <- repository.get[SesameStudent](User.generateUri(eval.student))
         } yield for {
           l <- optLabwork; s <- optStudent
         } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.timestamp, eval.invalidated, eval.id)
