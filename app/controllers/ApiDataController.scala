@@ -6,7 +6,7 @@ import models._
 import org.joda.time.Interval
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
-import services.UserService
+import services.{DegreeService, UserService}
 import store.SesameRepository
 import store.bind.Bindings
 
@@ -60,7 +60,21 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def migrateUsers = Action.async { request =>
+  def createSchema = Action.async {
+    for {
+      _ <- DegreeService.createSchema
+      _ <- UserService.createSchema
+    } yield Ok
+  }
+
+  def dropSchema = Action.async {
+    for {
+      _ <- DegreeService.dropSchema
+      _ <- UserService.dropSchema
+    } yield Ok
+  }
+
+  def migrateUsers = Action.async {
     import bindings.{StudentDescriptor, EmployeeDescriptor}
     import models.User.writes
 
@@ -86,6 +100,26 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     result.map { users =>
       println(s"users ${users.size}")
       Ok(Json.toJson(users))
+    }.recover {
+      case NonFatal(e) =>
+        InternalServerError(Json.obj("error" -> e.getMessage))
+    }
+  }
+
+  def migrateDegrees = Action.async {
+    import bindings.DegreeDescriptor
+    import models.PostgresDegree.writes
+
+    val result = for {
+      sesameDegrees <- Future.fromTry(repository.getAll[SesameDegree])
+      _ = println(s"sesameDegrees ${sesameDegrees.size}")
+      postgresDegrees = sesameDegrees.map(s => PostgresDegree(s.label, s.abbreviation, s.id))
+      _ = println(s"postgresDegrees ${postgresDegrees.size}")
+      degrees <- DegreeService.createMany(postgresDegrees)
+    } yield degrees.map(_.copy())
+
+    result.map { degrees =>
+      Ok(Json.toJson(degrees))
     }.recover {
       case NonFatal(e) =>
         InternalServerError(Json.obj("error" -> e.getMessage))

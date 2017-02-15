@@ -2,9 +2,9 @@ package services
 
 import java.util.UUID
 
-import models.{UniqueEntity, UniqueTable}
+import models.UniqueEntity
 import slick.driver.PostgresDriver.api._
-import store.PostgresDatabase
+import store.{PostgresDatabase, UniqueTable}
 
 trait AbstractDao[T <: Table[E] with UniqueTable, E <: UniqueEntity] extends PostgresDatabase {
 
@@ -29,6 +29,8 @@ trait AbstractDao[T <: Table[E] with UniqueTable, E <: UniqueEntity] extends Pos
   def dropAndCreateSchema = db.run(DBIO.seq(drop, create).transactionally)
 
   def createSchema = db.run(create)
+
+  def dropSchema = db.run(drop)
 
   private def create = tableQuery.schema.create
 

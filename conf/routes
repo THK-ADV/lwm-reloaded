@@ -228,7 +228,11 @@ HEAD          /sessions                                                         
 # APIData
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
-GET           /api/migrateUsers                                                       controllers.ApiDataController.migrateUsers()
+
+GET           /api/schema/create                                                      controllers.ApiDataController.createSchema()
+GET           /api/schema/drop                                                        controllers.ApiDataController.dropSchema()
+GET           /api/migrate/users                                                      controllers.ApiDataController.migrateUsers()
+GET           /api/migrate/degrees                                                    controllers.ApiDataController.migrateDegrees()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

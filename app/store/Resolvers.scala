@@ -90,8 +90,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     repository.prepareQuery(query).
       select(_.get("degree")).
       changeTo(_.headOption).
-      request[Option, Degree](value => repository.get[Degree](value.stringValue())).
-      transform(_.fold[Try[Degree]](Failure(new Throwable(s"No viable degree found for abbreviation $abbreviation")))(Success(_))).
+      request[Option, SesameDegree](value => repository.get[SesameDegree](value.stringValue())).
+      transform(_.fold[Try[SesameDegree]](Failure(new Throwable(s"No viable degree found for abbreviation $abbreviation")))(Success(_))).
       map(_.id).
       run.
       flatten

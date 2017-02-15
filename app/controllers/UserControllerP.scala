@@ -1,7 +1,5 @@
 package controllers
 
-import java.util.UUID
-
 import models.User
 import play.api.mvc.{Controller, Result}
 import services._
@@ -9,8 +7,8 @@ import store.Resolvers
 import utils.LwmMimeType
 import play.api.libs.json.{JsValue, Json}
 
-import scala.collection.Map
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 object UserControllerP {
@@ -22,35 +20,45 @@ class UserControllerP(val roleService: RoleService, val sessionService: SessionH
   with Secured
   with SessionChecking
   with SecureControllerContext
-  with Filterable[User]
   with ContentTyped
   with Chunked {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  import models.User.writes
-
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[User]) = ???
 
   override implicit def mimeType = LwmMimeType.userV1Json
 
-  // /users
-  // /users?status=employee
-  // /users?status=lecturer
-  // /users?status=student
-
-  // TODO expand queryString to work dynamically
   def allUsers() = contextFrom(GetAll) asyncAction { request =>
-    request.getQueryString(UserControllerP.statusAttribute).fold {
-      handle(userService.getAll)(body => Json.toJson(body.map(_.user)))
-    } { status =>
-      handle(userService.filter(status))(body => Json.toJson(body.map(_.user)))
+    import controllers.UserControllerP._
+
+    val status = request.queryString.get(statusAttribute).flatMap(_.headOption)
+    val atomic = request.queryString.get(atomicAttribute).flatMap(_.headOption).map(s => Try(s.toBoolean))
+
+    (status, atomic) match {
+      case (Some(s) , Some(Success(a))) if a =>
+        handle(userService.atomic(s)) { students =>
+          import models.PostgresStudentAtom.writesAtom
+          Json.toJson(students)
+        }
+      case (Some(s), None) =>
+        handle(userService.filter(s)) { users =>
+          import models.User.writes
+          Json.toJson(users)
+        }
+      case (None, None) =>
+        handle(userService.getAll) { dbUsers =>
+          import models.User.writes
+          Json.toJson(dbUsers.map(_.user))
+        }
+      case (None, Some(Success(_))) =>
+        Future.successful(internalServerError(s"atomic only works for $statusAttribute=${User.studentType}"))
+      case (_, Some(Failure(e))) =>
+        Future.successful(internalServerError(e.getMessage))
     }
   }
 
-  private def handle[A](future: Future[A])(toJson: A => JsValue): Future[Result] = future.map(a => Ok(toJson(a))).recover { case NonFatal(e) =>
-    InternalServerError(Json.obj(
-      "status" -> "KO",
-      "error" -> e.getMessage
-    ))
+  private def handle[A](future: Future[A])(toJson: A => JsValue): Future[Result] = future.map(a => Ok(toJson(a))).recover {
+    case NonFatal(e) => internalServerError(e.getMessage)
   }
+
+  private def internalServerError(message: String) = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
 }

@@ -24,10 +24,10 @@ object User extends UriGenerator[User] {
   override def base: String = "users"
 
   lazy val employeeType = "employee"
-
   lazy val lecturerType = "lecturer"
-
   lazy val studentType = "student"
+
+  lazy val types = List(employeeType, lecturerType, studentType)
 
   implicit def writes: Writes[User] = new Writes[User] {
     override def writes(user: User): JsValue = user match {

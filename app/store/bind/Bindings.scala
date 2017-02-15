@@ -121,7 +121,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val firstname = property[String](lwm.firstname)
     private val registrationId = property[String](lwm.registrationId)
     private val systemId = property[String](lwm.systemId)
-    private val enrollment = property[UUID](lwm.enrollment)(uuidRefBinder(Degree.splitter))
+    private val enrollment = property[UUID](lwm.enrollment)(uuidRefBinder(SesameDegree.splitter))
     private val email = property[String](lwm.email)
 
     override val binder: PGBinder[Rdf, SesameStudent] =
@@ -138,7 +138,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val lastname = property[String](lwm.lastname)
     private val firstname = property[String](lwm.firstname)
     private val registrationId = property[String](lwm.registrationId)
-    private val enrollment = property[Degree](lwm.enrollment)(DegreeDescriptor.binder)
+    private val enrollment = property[SesameDegree](lwm.enrollment)(DegreeDescriptor.binder)
     private val systemId = property[String](lwm.systemId)
     private val email = property[String](lwm.email)
 
@@ -327,7 +327,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val description = property[String](lwm.description)
     private val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
     private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
-    private val degree = property[UUID](lwm.degree)(uuidRefBinder(Degree.splitter))
+    private val degree = property[UUID](lwm.degree)(uuidRefBinder(SesameDegree.splitter))
     private val subscribable = property[Boolean](lwm.subscribable)
     private val published = property[Boolean](lwm.published)
 
@@ -350,7 +350,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val description = property[String](lwm.description)
     private val semester = property[Semester](lwm.semester)(SemesterDescriptor.binder)
     private val course = property[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
-    private val degree = property[Degree](lwm.degree)(DegreeDescriptor.binder)
+    private val degree = property[SesameDegree](lwm.degree)(DegreeDescriptor.binder)
     private val subscribable = property[Boolean](lwm.subscribable)
     private val published = property[Boolean](lwm.published)
 
@@ -396,10 +396,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[CourseAtom](atom =>
         makeUri(Course.generateUri(atom.id)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(CourseAtom.apply, CourseAtom.unapply) withClasses classUris
   }
-  implicit lazy val DegreeDescriptor: Descriptor[Rdf, Degree] = new Descriptor[Rdf, Degree] {
+  implicit lazy val DegreeDescriptor: Descriptor[Rdf, SesameDegree] = new Descriptor[Rdf, SesameDegree] {
     override val clazz: Rdf#URI = lwm.Degree
 
-    override val classUris: ClassUrisFor[Rdf, Degree] = classUrisFor[Degree](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameDegree] = classUrisFor[SesameDegree](clazz)
 
     override val branching: Ref[Rdf#URI] =
       Ref(clazz)
@@ -409,8 +409,8 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val abbreviation = property[String](lwm.abbreviation)
 
-    override val binder: PGBinder[Rdf, Degree] =
-      pgbWithId[Degree](degree => makeUri(Degree.generateUri(degree)))(label, abbreviation, invalidated, id)(Degree.apply, Degree.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameDegree] =
+      pgbWithId[SesameDegree](degree => makeUri(SesameDegree.generateUri(degree)))(label, abbreviation, invalidated, id)(SesameDegree.apply, SesameDegree.unapply) withClasses classUris
   }
   implicit lazy val GroupDescriptor: Descriptor[Rdf, Group] = new Descriptor[Rdf, Group] {
     override val clazz: Rdf#URI = lwm.Group

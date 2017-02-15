@@ -1,7 +1,7 @@
 package controllers
 
 import models.Permissions._
-import models.{Degree, DegreeProtocol, UriGenerator}
+import models.{SesameDegree, DegreeProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -15,29 +15,29 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, Degree, Degree]{
+class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[DegreeProtocol, SesameDegree, SesameDegree]{
 
   override val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Degree] = defaultBindings.DegreeDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameDegree] = defaultBindings.DegreeDescriptor
 
-  override val descriptorAtom: Descriptor[Sesame, Degree] = descriptor
+  override val descriptorAtom: Descriptor[Sesame, SesameDegree] = descriptor
 
-  override implicit val reads: Reads[DegreeProtocol] = Degree.reads
+  override implicit val reads: Reads[DegreeProtocol] = SesameDegree.reads
 
-  override implicit val writes: Writes[Degree] = Degree.writes
+  override implicit val writes: Writes[SesameDegree] = SesameDegree.writes
 
-  override implicit val writesAtom: Writes[Degree] = Degree.writesAtom
+  override implicit val writesAtom: Writes[SesameDegree] = SesameDegree.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Degree] = Degree
+  override implicit val uriGenerator: UriGenerator[SesameDegree] = SesameDegree
 
-  override protected def coAtomic(atom: Degree): Degree = atom
+  override protected def coAtomic(atom: SesameDegree): SesameDegree = atom
 
-  override protected def compareModel(input: DegreeProtocol, output: Degree): Boolean = input.label == output.label
+  override protected def compareModel(input: DegreeProtocol, output: SesameDegree): Boolean = input.label == output.label
 
-  override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = existing match {
-    case Some(degree) => Degree(input.label, input.abbreviation, degree.invalidated, degree.id)
-    case None => Degree(input.label, input.abbreviation)
+  override protected def fromInput(input: DegreeProtocol, existing: Option[SesameDegree]): SesameDegree = existing match {
+    case Some(degree) => SesameDegree(input.label, input.abbreviation, degree.invalidated, degree.id)
+    case None => SesameDegree(input.label, input.abbreviation)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -60,6 +60,6 @@ class DegreeCRUDController(val repository: SesameRepository, val sessionService:
     }
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Degree]): Try[Set[Degree]] = Success(all)
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameDegree]): Try[Set[SesameDegree]] = Success(all)
 
 }

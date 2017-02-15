@@ -8,7 +8,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 
 case class SesameStudent(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, invalidated: Option[DateTime] = None, id: UUID = User.randomUUID) extends User
-case class SesameStudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: Degree, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class SesameStudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: SesameDegree, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object SesameStudent extends JsonSerialisation[SesameStudent, SesameStudent, SesameStudentAtom] {
 
@@ -27,19 +27,33 @@ object SesameStudentAtom {
       (JsPath \ "firstname").write[String] and
       (JsPath \ "email").write[String] and
       (JsPath \ "registrationId").write[String] and
-      (JsPath \ "enrollment").write[Degree](Degree.writes) and
+      (JsPath \ "enrollment").write[SesameDegree](SesameDegree.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(SesameStudentAtom.unapply))
 }
 
 case class PostgresStudent(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, id: UUID = User.randomUUID) extends User
+case class PostgresStudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: PostgresDegree, id: UUID) extends User
 
-object PostgresStudent extends JsonSerialisation[PostgresStudent, PostgresStudent, PostgresStudent] {
+object PostgresStudent extends JsonSerialisation[PostgresStudent, PostgresStudent, PostgresStudentAtom] {
 
   override implicit def reads: Reads[PostgresStudent] = Json.reads[PostgresStudent]
 
   override implicit def writes: Writes[PostgresStudent] = Json.writes[PostgresStudent]
 
-  override implicit def writesAtom: Writes[PostgresStudent] = ???
+  override implicit def writesAtom: Writes[PostgresStudentAtom] = PostgresStudentAtom.writesAtom
+}
+
+object PostgresStudentAtom {
+
+  implicit def writesAtom: Writes[PostgresStudentAtom] = (
+    (JsPath \ "systemId").write[String] and
+      (JsPath \ "lastname").write[String] and
+      (JsPath \ "firstname").write[String] and
+      (JsPath \ "email").write[String] and
+      (JsPath \ "registrationId").write[String] and
+      (JsPath \ "enrollment").write[PostgresDegree](PostgresDegree.writes) and
+      (JsPath \ "id").write[UUID]
+  ) (unlift(PostgresStudentAtom.unapply))
 }

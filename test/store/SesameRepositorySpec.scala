@@ -143,7 +143,7 @@ class SesameRepositorySpec extends SesameDbSpec {
 
       repo.delete[SesameStudentAtom](User.generateUri(student))
 
-      val postDegree = repo get[Degree] PostgresDegree.generateUri(degree)
+      val postDegree = repo get[SesameDegree] PostgresDegree.generateUri(degree)
       val postStudent = repo get[SesameStudent] User.generateUri(student)
 
       (postDegree, postStudent) match {

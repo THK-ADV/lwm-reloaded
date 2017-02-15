@@ -87,7 +87,7 @@ class DegreeInvalidation extends SesameDbSpec {
       val annotations = labworks flatMap (l => (annot(l.id) take 20).toSet)
       val refAnnots = annotations filterNot (a => refLabs exists (_.id == a.labwork))
 
-      repo.add[Degree](degree)
+      repo.add[SesameDegree](degree)
       repo.addMany[Labwork](labworks)
       repo.addMany[AssignmentPlan](assPlans)
       repo.addMany[Group](groups)
@@ -98,9 +98,9 @@ class DegreeInvalidation extends SesameDbSpec {
       repo.addMany[LabworkApplication](applications)
       repo.addMany[Annotation](annotations)
 
-      repo.invalidate[Degree](PostgresDegree.generateUri(degree))
+      repo.invalidate[SesameDegree](PostgresDegree.generateUri(degree))
 
-      repo.get[Degree](PostgresDegree.generateUri(degree)) shouldBe Success(None)
+      repo.get[SesameDegree](PostgresDegree.generateUri(degree)) shouldBe Success(None)
       repo.getAll[Labwork] shouldBe Success(labworks filter (_.degree != degree.id))
       repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
@@ -118,7 +118,7 @@ class DegreeInvalidation extends SesameDbSpec {
         case Failure(e) => fail("no")
       }
 
-      repo.deepGet[Degree](PostgresDegree.generateUri(degree)) map (_ map (_.id)) shouldBe Success(Some(degree.id))
+      repo.deepGet[SesameDegree](PostgresDegree.generateUri(degree)) map (_ map (_.id)) shouldBe Success(Some(degree.id))
       repo.deepGetAll[Labwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
       repo.deepGetAll[AssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))

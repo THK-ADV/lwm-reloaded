@@ -185,7 +185,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       import scala.util.Random.nextInt
 
       val degrees = (0 until 10).map(i => PostgresDegree(i.toString, i.toString)).toList
-      repo.addMany[Degree](degrees)
+      repo.addMany[SesameDegree](degrees)
 
       val result = (0 until 8).map(_ => resolver.degree(degrees(nextInt(degrees.size)).abbreviation)).toList
 
@@ -202,7 +202,7 @@ class ResolversSpec extends WordSpec with TestBaseDefinition with SesameModule {
       val degree2 = PostgresDegree("label2", "abbrev")
       val abbreviation = "not existent"
 
-      repo.addMany[Degree](List(degree1, degree2))
+      repo.addMany[SesameDegree](List(degree1, degree2))
 
       val result = resolver.degree(abbreviation)
 
