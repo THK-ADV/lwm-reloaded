@@ -5,7 +5,7 @@ import java.util.UUID
 import models.Permissions
 import play.api.mvc.{Controller, Result}
 import services._
-import store.{Resolvers, UserTable}
+import store.{Resolvers, TableFilter, UserTable}
 import utils.LwmMimeType
 import play.api.libs.json.{JsValue, Json, Writes}
 
@@ -34,7 +34,7 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
 
   object PostgresResult {
     private def internalServerError(message: String) = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
-    private def notFound(message: String = "No such element...") = NotFound(Json.obj("status" -> "KO", "message" -> message))
+    private def notFound(element: String) = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
 
     implicit class SequenceResult[A](val future: Future[Seq[A]]) {
       def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {
@@ -43,8 +43,8 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
     }
 
     implicit class OptionResult[A](val future: Future[Option[A]]) {
-      def jsonResult(implicit writes: Writes[A]) = future.map { maybeA =>
-        maybeA.fold(notFound())(a => Ok(Json.toJson(a)) )
+      def jsonResult(idForMessage: String)(implicit writes: Writes[A]) = future.map { maybeA =>
+        maybeA.fold(notFound(idForMessage))(a => Ok(Json.toJson(a)) )
       }.recover {
         case NonFatal(e) => internalServerError(e.getMessage)
       }
@@ -89,14 +89,14 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
 
     (for {
       filter <- Future.fromTry(userFilter)
-      users <- userService.getUsers(filter, atomic)
+      users <- userService.get(filter, atomic)
     } yield users).jsonResult
   }
 
   def user(id: String) = contextFrom(Get) asyncAction { request =>
     val atomic = extractAtomic(request.queryString)._2
 
-    userService.getUsers(List(UserIdFilter(id)), atomic).map(_.headOption).jsonResult
+    userService.get(List(UserIdFilter(id)), atomic).map(_.headOption).jsonResult(id)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models.{DbUser, PostgresDegree}
 import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
@@ -11,6 +12,12 @@ trait UniqueTable { self: Table[_] =>
 
 trait PostgresDatabase {
   lazy val db = Database.forConfig("database")
+}
+
+trait TableFilter[T <: Table[_]] {
+  def value: String
+
+  def predicate: T => Rep[Boolean]
 }
 
 class UserTable(tag: Tag) extends Table[DbUser](tag, "USERS") with UniqueTable {

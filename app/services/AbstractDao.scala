@@ -4,31 +4,39 @@ import java.util.UUID
 
 import models.UniqueEntity
 import slick.driver.PostgresDriver.api._
-import store.{PostgresDatabase, UniqueTable}
+import store.{PostgresDatabase, TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 
-trait AbstractDao[T <: Table[E] with UniqueTable, E <: UniqueEntity] extends PostgresDatabase {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] extends PostgresDatabase {
 
   protected def tableQuery: TableQuery[T]
 
-  def create(entity: E): Future[E] = db.run((tableQuery returning tableQuery) += entity)
+  protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
-  def createMany(entities: Set[E]): Future[Seq[E]] = db.run((tableQuery returning tableQuery) ++= entities)
+  protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
-  def getAll: Future[Seq[E]] = db.run(tableQuery.result)
+  def create(entity: DbModel): Future[DbModel] = db.run((tableQuery returning tableQuery) += entity)
 
-  def filter(predicate: T => Rep[Boolean]): Future[Seq[E]] = db.run(tableQuery.filter(predicate).result)
+  def createMany(entities: Set[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
 
-  def get(id: UUID): Future[Option[E]] = db.run(tableQuery.filter(_.id === id).result.map(_.headOption))
+  def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = false): Future[Seq[LwmModel]] = {
+    val query = tableFilter match {
+      case h :: t =>
+        t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
+        query.filter(nextFilter.predicate)
+      }
+      case _ => tableQuery
+    }
+
+    if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
 
   def delete(id: UUID): Future[Int] = db.run(tableQuery.filter(_.id === id).delete)
 
   def deleteMany(ids: Set[UUID]): Future[Int] = db.run(tableQuery.filter(_.id.inSet(ids)).delete)
 
-  def update(entity: E): Future[Int] = db.run(tableQuery.filter(_.id === entity.id).update(entity))
+  def update(entity: DbModel): Future[Int] = db.run(tableQuery.filter(_.id === entity.id).update(entity))
 
   def dropAndCreateSchema = db.run(DBIO.seq(drop, create).transactionally)
 
