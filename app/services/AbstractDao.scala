@@ -6,25 +6,29 @@ import models.UniqueEntity
 import slick.driver.PostgresDriver.api._
 import store.{PostgresDatabase, UniqueTable}
 
+import scala.concurrent.Future
+
 trait AbstractDao[T <: Table[E] with UniqueTable, E <: UniqueEntity] extends PostgresDatabase {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def tableQuery: TableQuery[T]
 
-  /*def create[T <: Table[E]](entity: E)(implicit tableQuery: TableQuery[T]) = (tableQuery returning tableQuery) += entity */
+  def create(entity: E): Future[E] = db.run((tableQuery returning tableQuery) += entity)
 
-  def createMany(entities: Set[E]) = db.run((tableQuery returning tableQuery) ++= entities)
+  def createMany(entities: Set[E]): Future[Seq[E]] = db.run((tableQuery returning tableQuery) ++= entities)
 
-  def getAll = db.run(tableQuery.result)
+  def getAll: Future[Seq[E]] = db.run(tableQuery.result)
 
-  def filter(predicate: T => Rep[Boolean]) = db.run(tableQuery.filter(predicate).result)
+  def filter(predicate: T => Rep[Boolean]): Future[Seq[E]] = db.run(tableQuery.filter(predicate).result)
 
-  def get(id: UUID) = db.run(tableQuery.filter(_.id === id).result)
+  def get(id: UUID): Future[Option[E]] = db.run(tableQuery.filter(_.id === id).result.map(_.headOption))
 
-  /*def delete[T <: Table[E] with BasicTemplate](id: UUID)(implicit tableQuery: TableQuery[T]) = tableQuery.filter(_.id === id).delete
+  def delete(id: UUID): Future[Int] = db.run(tableQuery.filter(_.id === id).delete)
 
-  def deleteMany[T <: Table[E] with BasicTemplate](ids: List[UUID])(implicit tableQuery: TableQuery[T]) = tableQuery.filter(_.id.inSet(ids)).delete
+  def deleteMany(ids: Set[UUID]): Future[Int] = db.run(tableQuery.filter(_.id.inSet(ids)).delete)
 
-  def update[T <: Table[E] with BasicTemplate](entity: E)(implicit tableQuery: TableQuery[T]) = tableQuery.filter(_.id === entity.id).update(entity)*/
+  def update(entity: E): Future[Int] = db.run(tableQuery.filter(_.id === entity.id).update(entity))
 
   def dropAndCreateSchema = db.run(DBIO.seq(drop, create).transactionally)
 

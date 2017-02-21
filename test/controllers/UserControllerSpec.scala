@@ -56,7 +56,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
   class FakeApp extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override lazy val userController: UserController = controller
+      override lazy val userControllerPostgres: UserController = controller
     }.application
   })
 

@@ -34,6 +34,7 @@ object User extends UriGenerator[User] {
       case sesameStudent: SesameStudent => Json.toJson(sesameStudent)(SesameStudent.writes)
       case sesameEmployee: SesameEmployee => Json.toJson(sesameEmployee)(SesameEmployee.writes)
       case postgresStudent: PostgresStudent => Json.toJson(postgresStudent)(PostgresStudent.writes)
+      case postgresStudentAtom: PostgresStudentAtom => Json.toJson(postgresStudentAtom)(PostgresStudentAtom.writesAtom)
       case postgresEmployee: PostgresEmployee => Json.toJson(postgresEmployee)(PostgresEmployee.writes)
       case postgresLecturer: PostgresLecturer => Json.toJson(postgresLecturer)(PostgresLecturer.writes)
     }

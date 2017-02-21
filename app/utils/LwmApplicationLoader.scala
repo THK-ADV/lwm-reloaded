@@ -72,6 +72,7 @@ with ReportCardEntryManagementModule
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with UserManagementModule
+with UserManagementModulePostgres
 with AnnotationManagementModule
 with ReportCardEvaluationManagementModule
 with LdapSyncModule {
@@ -101,6 +102,7 @@ with LdapSyncModule {
     assignmentPlanManagementController,
     annotationManagementController,
     userController,
+    userControllerPostgres,
     sessionController,
     apiDataController,
     assetsController
@@ -145,6 +147,7 @@ with DefaultReportCardEntryManagementModuleImpl
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultUserManagementModule
+with DefaultUserManagementModulePostgres
 with DefaultAnnotationManagementModuleImpl
 with DefaultReportCardEvaluationManagementModuleImpl
 with DefaultDbFolderImpl
