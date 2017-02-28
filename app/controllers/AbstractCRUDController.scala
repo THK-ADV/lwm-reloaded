@@ -19,6 +19,7 @@ import utils.{Attempt, Continue, LwmMimeType, Return}
 
 import scala.collection.Map
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 trait Stored {
@@ -201,6 +202,48 @@ trait SecureControllerContext {
 
   case object NonSecureBlock extends SecureContext
 
+}
+
+trait PostgresResult { self: Controller =>
+
+  private def internalServerError(message: String) = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
+  private def notFound(element: String) = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
+
+  implicit class SequenceResult[A](val future: Future[Seq[A]]) {
+    def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {
+      case NonFatal(e) => internalServerError(e.getMessage)
+    }
+  }
+
+  implicit class OptionResult[A](val future: Future[Option[A]]) {
+    def jsonResult(idForMessage: String)(implicit writes: Writes[A]) = future.map { maybeA =>
+      maybeA.fold(notFound(idForMessage))(a => Ok(Json.toJson(a)) )
+    }.recover {
+      case NonFatal(e) => internalServerError(e.getMessage)
+    }
+  }
+
+  implicit class CreatedResult[A](val future: Future[A]) {
+    def jsonResult(implicit writes: Writes[A]) = future.map(a => Created(Json.toJson(a))).recover {
+      case NonFatal(e) => internalServerError(e.getMessage)
+    }
+  }
+
+  lazy val atomicAttribute = "atomic"
+
+  type QueryString = Map[String, Seq[String]]
+
+  final def extractAtomic(queryString: QueryString): (QueryString, Boolean) = {
+    queryString.find(_._1 == `atomicAttribute`) match {
+      case Some(q) =>
+        val atomic = q._2.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(false)(_ == true)
+        val remaining = queryString - `atomicAttribute`
+
+        (remaining, atomic)
+      case None =>
+        (queryString, false)
+    }
+  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Controller

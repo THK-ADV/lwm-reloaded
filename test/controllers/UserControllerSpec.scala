@@ -454,7 +454,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
     "successfully create a user by systemId" in new FakeApp {
       val systemId = "test"
-      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.employeeType)
+      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.EmployeeType)
 
       when(resolvers.userId(anyObject())).thenReturn(Success(None))
       when(ldapService.user(anyObject())(anyObject())).thenReturn(Future.successful(user))
@@ -477,7 +477,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     "update a user when already exists" in new FakeApp {
       val systemId = "test"
       val id = UUID.randomUUID
-      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.employeeType)
+      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.EmployeeType)
       val updated = SesameEmployee(user.systemId, user.lastname, user.firstname, user.email, user.status, user.invalidated, id)
 
       when(resolvers.userId(anyObject())).thenReturn(Success(Some(id)))
@@ -524,7 +524,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
     "fail create user when db dies" in new FakeApp {
       val systemId = "test"
-      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.employeeType)
+      val user = SesameEmployee(systemId, "lastname", "firstname", "email", User.EmployeeType)
       val errorMessage = "Oops, something went wrong"
 
       when(resolvers.userId(anyObject())).thenReturn(Success(None))

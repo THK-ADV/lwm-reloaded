@@ -36,8 +36,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
   val module1 = UUID.randomUUID()
   val module2 = UUID.randomUUID()
-  val role1 = Role("testRole1", sufficientPermissions)
-  val role2 = Role("testRole2", insufficientPermissions)
+  val role1 = SesameRole("testRole1", sufficientPermissions)
+  val role2 = SesameRole("testRole2", insufficientPermissions)
 
   val ns = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(ns)
@@ -63,7 +63,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   "A secured action" should {
 
     "propagate an action when sufficient permissions are provided" in new WithDepsApplication {
-      val auth = Authority(userID, role1.id, Some(module1))
+      val auth = SesameAuthority(userID, role1.id, Some(module1))
 
       when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
       when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(true))
@@ -85,7 +85,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block an action when no user-id has been found" in new WithDepsApplication {
-      val auth = Authority(userID, role1.id, Some(module1))
+      val auth = SesameAuthority(userID, role1.id, Some(module1))
 
       val response = Json.obj(
         "status" -> "KO",
@@ -105,7 +105,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when no valid session has been found" in new WithDepsApplication {
-      val auth = Authority(userID, role2.id, Some(module1))
+      val auth = SesameAuthority(userID, role2.id, Some(module1))
 
       val response = Json.obj(
         "status" -> "KO",
@@ -127,7 +127,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when insufficient permissions are provided" in new WithDepsApplication {
-      val auth = Authority(userID, role2.id, Some(module1))
+      val auth = SesameAuthority(userID, role2.id, Some(module1))
 
       when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
       when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
@@ -149,7 +149,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     }
 
     "block the propagation of an action when an improper module is provided" in new WithDepsApplication {
-      val auth = Authority(userID, role2.id, Some(module2))
+      val auth = SesameAuthority(userID, role2.id, Some(module2))
 
       when(roleService.authorities(anyObject())).thenReturn(Success(Set(auth)))
       when(roleService.checkAuthority((Some(module1), sufficientPermissions.head))(auth)).thenReturn(Success(false))
@@ -175,7 +175,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
 
       val perm = Permission("No permission")
       when(roleService.checkAuthority(anyObject())(anyObject())).thenReturn(Success(true))
-      when(roleService.authorities(anyObject())).thenReturn(Success(Set(Authority(userID, role2.id, Some(module1)))))
+      when(roleService.authorities(anyObject())).thenReturn(Success(Set(SesameAuthority(userID, role2.id, Some(module1)))))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))
 
       val action = SecureContentTypedAction((None, perm)) {

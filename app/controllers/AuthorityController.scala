@@ -26,29 +26,29 @@ object AuthorityController {
   val roleAttribute = "role"
 }
 
-class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AuthorityProtocol, Authority, AuthorityAtom] {
+class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Authority] = defaultBindings.AuthorityDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameAuthority] = defaultBindings.AuthorityDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, AuthorityAtom] = defaultBindings.AuthorityAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameAuthorityAtom] = defaultBindings.AuthorityAtomDescriptor
 
-  override implicit val reads: Reads[AuthorityProtocol] = Authority.reads
+  override implicit val reads: Reads[SesameAuthorityProtocol] = SesameAuthority.reads
 
-  override implicit val writes: Writes[Authority] = Authority.writes
+  override implicit val writes: Writes[SesameAuthority] = SesameAuthority.writes
 
-  override implicit val writesAtom: Writes[AuthorityAtom] = Authority.writesAtom
+  override implicit val writesAtom: Writes[SesameAuthorityAtom] = SesameAuthority.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Authority] = Authority
+  override implicit val uriGenerator: UriGenerator[SesameAuthority] = SesameAuthority
 
-  override protected def coAtomic(atom: AuthorityAtom): Authority = Authority(atom.user.id, atom.role.id, atom.course.map(_.id), atom.invalidated, atom.id)
+  override protected def coAtomic(atom: SesameAuthorityAtom): SesameAuthority = SesameAuthority(atom.user.id, atom.role.id, atom.course.map(_.id), atom.invalidated, atom.id)
 
-  override protected def compareModel(input: AuthorityProtocol, output: Authority): Boolean = input.course == output.course && input.role == output.role
+  override protected def compareModel(input: SesameAuthorityProtocol, output: SesameAuthority): Boolean = input.course == output.course && input.role == output.role
 
-  override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = existing match {
-    case Some(authority) => Authority(input.user, input.role, input.course, authority.invalidated, authority.id)
-    case None => Authority(input.user, input.role, input.course)
+  override protected def fromInput(input: SesameAuthorityProtocol, existing: Option[SesameAuthority]): SesameAuthority = existing match {
+    case Some(authority) => SesameAuthority(input.user, input.role, input.course, authority.invalidated, authority.id)
+    case None => SesameAuthority(input.user, input.role, input.course)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -59,7 +59,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Authority]): Try[Set[Authority]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameAuthority]): Try[Set[SesameAuthority]] = {
     import store.sparql.select
     import store.sparql.select._
 
@@ -73,7 +73,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
         _ append **(v("auth"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
       }
       case (authorities, (`roleAttribute`, roles)) => authorities map {
-        _ append **(v("auth"), p(lwm.role), s(Role.generateUri(UUID.fromString(roles.head))))
+        _ append **(v("auth"), p(lwm.role), s(SesameRole.generateUri(UUID.fromString(roles.head))))
       }
       case (authorities, (`userAttribute`, users)) => authorities map {
         _ append **(v("auth"), p(lwm.privileged), s(User.generateUri(UUID.fromString(users.head))))
@@ -86,21 +86,21 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
         select(_.get("auth")).
         transform(_.fold(List.empty[Value])(identity)).
         map(_.stringValue()).
-        requestAll(repository.getMany[Authority]).
+        requestAll(repository.getMany[SesameAuthority]).
         run
     }
   }
 
   def delete(id: String) = contextFrom(Delete) action { request =>
-    import models.Roles.{Employee, Student}
+    import models.Roles.{EmployeeLabel, StudentLabel}
 
     val uri = asUri(namespace, request)
 
-    optional(repository.get[AuthorityAtom](uri)).
-      when(auth => !(auth.role.label == Employee || auth.role.label == Student), _ => invalidate[Authority](uri)) {
+    optional(repository.get[SesameAuthorityAtom](uri)).
+      when(auth => !(auth.role.label == EmployeeLabel || auth.role.label == StudentLabel), _ => invalidate[SesameAuthority](uri)) {
       PreconditionFailed(Json.obj(
         "status" -> "KO",
-        "message" -> s"The user associated with $id have to remain with at least one basic role, namely $Student or $Employee"
+        "message" -> s"The user associated with $id have to remain with at least one basic role, namely $StudentLabel or $EmployeeLabel"
       ))
     }.mapResult(_ => Ok(Json.obj("status" -> "OK")))
   }
@@ -109,9 +109,9 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
     filter(request)(Set.empty)
       .flatMap { set =>
         if (set.nonEmpty)
-          retrieveLots[AuthorityAtom](set map Authority.generateUri)
+          retrieveLots[SesameAuthorityAtom](set map SesameAuthority.generateUri)
         else
-          retrieveAll[AuthorityAtom]
+          retrieveAll[SesameAuthorityAtom]
       }
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))

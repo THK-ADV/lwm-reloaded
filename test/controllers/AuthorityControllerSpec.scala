@@ -17,13 +17,13 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtocol, Authority, AuthorityAtom] {
+class AuthorityControllerSpec extends AbstractCRUDControllerSpec[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
 
   override def entityTypeName: String = "authority"
 
   override val controller: AuthorityController = new AuthorityController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: AuthorityProtocol, existing: Option[Authority]): Authority = entityToPass
+    override protected def fromInput(input: SesameAuthorityProtocol, existing: Option[SesameAuthority]): SesameAuthority = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -40,22 +40,22 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.invalidated, courseToPass.id)
   val courseAtomToFail = CourseAtom(courseToFail.label, courseToFail.description, courseToFail.abbreviation, employeeToFail, courseToFail.semesterIndex, courseToPass.invalidated, courseToFail.id)
 
-  val role1 = Role(Roles.Admin, Set(user.get, user.getAll))
-  val role2 = Role("role2", Set(course.get, course.create, course.getAll))
-  val role3 = Role("role3", Set(degree.get, degree.getAll))
-  val role4 = Role("role4", Set(authority.get, authority.getAll))
+  val role1 = SesameRole(Roles.AdminLabel, Set(user.get, user.getAll))
+  val role2 = SesameRole("role2", Set(course.get, course.create, course.getAll))
+  val role3 = SesameRole("role3", Set(degree.get, degree.getAll))
+  val role4 = SesameRole("role4", Set(authority.get, authority.getAll))
 
-  override val entityToPass: Authority = Authority(
+  override val entityToPass: SesameAuthority = SesameAuthority(
     studentToPass.id,
     role1.id
   )
 
-  override val entityToFail: Authority = Authority(
+  override val entityToFail: SesameAuthority = SesameAuthority(
     employeeToFail.id,
     role2.id
   )
 
-  override val atomizedEntityToPass = AuthorityAtom(
+  override val atomizedEntityToPass = SesameAuthorityAtom(
     studentToPass,
     role1,
     Some(courseAtomToPass),
@@ -63,7 +63,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     entityToPass.id
   )
 
-  override val atomizedEntityToFail = AuthorityAtom(
+  override val atomizedEntityToFail = SesameAuthorityAtom(
     employeeToFail,
     role2,
     Some(courseAtomToFail),
@@ -77,9 +77,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
   implicit val authorityBinder = AuthorityDescriptor.binder
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
-  override implicit val jsonWrites: Writes[Authority] = Authority.writes
+  override implicit val jsonWrites: Writes[SesameAuthority] = SesameAuthority.writes
 
-  override implicit def jsonWritesAtom: Writes[AuthorityAtom] = Authority.writesAtom
+  override implicit def jsonWritesAtom: Writes[SesameAuthorityAtom] = SesameAuthority.writesAtom
 
   override val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 
@@ -94,7 +94,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     "role" -> role3.id
   )
 
-  def role(label: String) = Role(label, Set.empty)
+  def role(label: String) = SesameRole(label, Set.empty)
 
   "A AuthorityControllerSpec " should {
 
@@ -113,8 +113,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
         }
       }
 
-      val role1 = Role("", Set.empty)
-      val role2 = Role("", Set.empty)
+      val role1 = SesameRole("", Set.empty)
+      val role2 = SesameRole("", Set.empty)
 
       val user1 = SesameEmployee("", "", "", "", "")
       val user2 = SesameEmployee("", "", "", "", "")
@@ -123,14 +123,14 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       val course1 = Course("", "", "", UUID.randomUUID, 1)
       val course2 = Course("", "", "", UUID.randomUUID, 2)
 
-      val auth1 = Authority(user1.id, role1.id, Some(course1.id))
-      val auth2 = Authority(user1.id, role2.id)
-      val auth3 = Authority(user2.id, role2.id)
-      val auth4 = Authority(user3.id, role1.id, Some(course1.id))
-      val auth5 = Authority(user3.id, role1.id, Some(course2.id))
+      val auth1 = SesameAuthority(user1.id, role1.id, Some(course1.id))
+      val auth2 = SesameAuthority(user1.id, role2.id)
+      val auth3 = SesameAuthority(user2.id, role2.id)
+      val auth4 = SesameAuthority(user3.id, role1.id, Some(course1.id))
+      val auth5 = SesameAuthority(user3.id, role1.id, Some(course2.id))
 
-      realRepo.addMany[Authority](List(auth1, auth2, auth3, auth4, auth5))
-      realRepo.addMany[Role](List(role1, role2))
+      realRepo.addMany[SesameAuthority](List(auth1, auth2, auth3, auth4, auth5))
+      realRepo.addMany[SesameRole](List(role1, role2))
       realRepo.addMany[SesameEmployee](List(user1, user2, user3))
       realRepo.addMany[Course](List(course1, course2))
 
@@ -169,10 +169,10 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
 
     "successfully delete an authority when there is at least one basic role left" in {
-      val auth = AuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseAssistant), Some(courseAtomToPass), None, UUID.randomUUID)
+      val auth = SesameAuthorityAtom(atomizedEntityToPass.user, role(Roles.CourseAssistantLabel), Some(courseAtomToPass), None, UUID.randomUUID)
 
-      when(repository.get[AuthorityAtom](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
-      when(repository.invalidate[Authority](anyObject())(anyObject())).thenReturn(Success(()))
+      when(repository.get[SesameAuthorityAtom](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
+      when(repository.invalidate[SesameAuthority](anyObject())(anyObject())).thenReturn(Success(()))
 
       val request = FakeRequest(
         DELETE,
@@ -186,9 +186,9 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
     }
 
     "not delete an authority when he has only one basic role left" in {
-      val auth = AuthorityAtom(atomizedEntityToPass.user, role(Roles.Student), None, None, atomizedEntityToPass.id)
+      val auth = SesameAuthorityAtom(atomizedEntityToPass.user, role(Roles.StudentLabel), None, None, atomizedEntityToPass.id)
 
-      when(repository.get[AuthorityAtom](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
+      when(repository.get[SesameAuthorityAtom](anyObject())(anyObject())).thenReturn(Success(Some(auth)))
 
       val request = FakeRequest(
         DELETE,
@@ -200,7 +200,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[AuthorityProtoc
       status(result) shouldBe PRECONDITION_FAILED
       contentAsJson(result) shouldBe Json.obj(
         "status" -> "KO",
-        "message" -> s"The user associated with ${auth.id.toString} have to remain with at least one basic role, namely ${Roles.Student} or ${Roles.Employee}"
+        "message" -> s"The user associated with ${auth.id.toString} have to remain with at least one basic role, namely ${Roles.StudentLabel} or ${Roles.EmployeeLabel}"
       )
     }
   }

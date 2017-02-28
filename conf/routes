@@ -220,6 +220,7 @@ GET           /employees/:id                                                    
 GET           /students/buddies/:systemId                                             controllers.UserController.buddy(systemId)
 
 # Users 2.0
+POST          /api2/users                                                             controllers.UserControllerPostgres.createOrUpdate()
 GET           /api2/users                                                             controllers.UserControllerPostgres.allUsers()
 GET           /api2/users/:id                                                         controllers.UserControllerPostgres.user(id)
 

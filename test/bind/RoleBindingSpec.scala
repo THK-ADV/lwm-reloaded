@@ -8,8 +8,8 @@ import scala.util.Success
 
 class RoleBindingSpec extends SesameDbSpec {
 
-  val roleWith = Role("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
-  val roleWithout = Role("role1", Set())
+  val roleWith = SesameRole("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
+  val roleWithout = SesameRole("role1", Set())
 
   import bindings.{RoleDescriptor, dateTimeBinder, permissionBinder, uuidBinder}
   import ops._
@@ -17,7 +17,7 @@ class RoleBindingSpec extends SesameDbSpec {
   implicit val roleBinder = RoleDescriptor.binder
 
   val roleGraph = (
-    URI(Role.generateUri(roleWith)).a(lwm.Role)
+    URI(SesameRole.generateUri(roleWith)).a(lwm.Role)
       -- lwm.label ->- roleWith.label
       -- lwm.permissions ->- roleWith.permissions
       -- lwm.id ->- roleWith.id
@@ -33,7 +33,7 @@ class RoleBindingSpec extends SesameDbSpec {
 
     "return a Role representation of an RDF graph" in {
       val graph = roleWith.toPG.graph
-      val authConverted = PointedGraph[Rdf](URI(Role.generateUri(roleWith)), graph).as[Role]
+      val authConverted = PointedGraph[Rdf](URI(SesameRole.generateUri(roleWith)), graph).as[SesameRole]
 
       authConverted match {
         case Success(des) => des shouldBe roleWith
@@ -43,7 +43,7 @@ class RoleBindingSpec extends SesameDbSpec {
 
     "return a RDF graph representation of a Role with no permissions" in {
       val graph = roleWithout.toPG.graph
-      val authConverted = PointedGraph[Rdf](URI(Role.generateUri(roleWithout)), graph).as[Role]
+      val authConverted = PointedGraph[Rdf](URI(SesameRole.generateUri(roleWithout)), graph).as[SesameRole]
 
       authConverted match {
         case Success(des) =>

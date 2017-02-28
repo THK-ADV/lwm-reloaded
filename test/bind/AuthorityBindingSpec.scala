@@ -15,13 +15,13 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
-  val authWithCourse1 = Authority(student.id, Role.randomUUID, Some(Course.randomUUID))
-  val authWithCourse2 = Authority(student.id, Role.randomUUID, Some(Course.randomUUID))
-  val authWithoutCourse = Authority(student.id, Role.randomUUID)
+  val authWithCourse1 = SesameAuthority(student.id, SesameRole.randomUUID, Some(Course.randomUUID))
+  val authWithCourse2 = SesameAuthority(student.id, SesameRole.randomUUID, Some(Course.randomUUID))
+  val authWithoutCourse = SesameAuthority(student.id, SesameRole.randomUUID)
 
-  val authorityGraph = URI(Authority.generateUri(authWithCourse1)).a(lwm.Authority)
+  val authorityGraph = URI(SesameAuthority.generateUri(authWithCourse1)).a(lwm.Authority)
     .--(lwm.privileged).->-(authWithCourse1.user)(ops, uuidRefBinder(User.splitter))
-    .--(lwm.role).->-(authWithCourse1.role)(ops, uuidRefBinder(Role.splitter))
+    .--(lwm.role).->-(authWithCourse1.role)(ops, uuidRefBinder(SesameRole.splitter))
     .--(lwm.course).->-(authWithCourse1.course)(ops, uuidRefBinder(Course.splitter))
     .--(lwm.invalidated).->-(authWithCourse1.invalidated)
     .--(lwm.id).->-(authWithCourse1.id).
@@ -37,7 +37,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
     "return an Authority representation of an RDF graph" in {
       val graph = authWithCourse2.toPG.graph
-      val authConverted = PointedGraph[Rdf](URI(Authority.generateUri(authWithCourse2)), graph).as[Authority]
+      val authConverted = PointedGraph[Rdf](URI(SesameAuthority.generateUri(authWithCourse2)), graph).as[SesameAuthority]
 
       authConverted match {
         case Success(auth) => auth shouldBe authWithCourse2
@@ -47,7 +47,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
     "return a RDF graph representation of an Authority with empty authorization" in {
       val graph = authWithoutCourse.toPG.graph
-      val authConverted = PointedGraph[Rdf](URI(Authority.generateUri(authWithoutCourse)), graph).as[Authority]
+      val authConverted = PointedGraph[Rdf](URI(SesameAuthority.generateUri(authWithoutCourse)), graph).as[SesameAuthority]
 
       authConverted match {
         case Success(des) =>
@@ -62,17 +62,17 @@ class AuthorityBindingSpec extends SesameDbSpec {
       val lecturer = SesameEmployee("lecturer", "lastname", "firstname", "email", "lecturer")
       val course1 = Course("course1", "description", "abbrev", lecturer.id, 3)
       val course2 = Course("course2", "description", "abbrev", lecturer.id, 2)
-      val role1 = Role("role1", Set(Permission("perm1"), Permission("perm2")))
-      val role2 = Role("role2", Set(Permission("perm3")))
+      val role1 = SesameRole("role1", Set(Permission("perm1"), Permission("perm2")))
+      val role2 = SesameRole("role2", Set(Permission("perm3")))
       val authorities = Set(
-        Authority(student.id, role1.id, Some(course1.id)),
-        Authority(student.id, role2.id)
+        SesameAuthority(student.id, role1.id, Some(course1.id)),
+        SesameAuthority(student.id, role2.id)
       )
 
       val courseAtom = CourseAtom(course1.label, course1.description, course1.abbreviation, lecturer, course1.semesterIndex, course1.invalidated, course1.id)
       val authorityAtoms = Set(
-        AuthorityAtom(student, role1, Some(courseAtom), role1.invalidated, authorities.head.id),
-        AuthorityAtom(student, role2, None, role2.invalidated, authorities.last.id)
+        SesameAuthorityAtom(student, role1, Some(courseAtom), role1.invalidated, authorities.head.id),
+        SesameAuthorityAtom(student, role2, None, role2.invalidated, authorities.last.id)
       )
 
       repo addMany authorities
@@ -81,7 +81,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
       repo add student
       repo addMany List(course1, course2)
 
-      repo.getMany[AuthorityAtom](authorities.map(auth => Authority.generateUri(auth))) match {
+      repo.getMany[SesameAuthorityAtom](authorities.map(auth => SesameAuthority.generateUri(auth))) match {
         case Success(atoms) =>
           atoms shouldEqual authorityAtoms
         case Failure(e) =>

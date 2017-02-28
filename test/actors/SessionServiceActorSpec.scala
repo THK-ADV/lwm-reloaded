@@ -67,11 +67,11 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.user(anyString())(anyObject())).thenReturn(Future.successful(user))
 
-      val studentRole = Role(Roles.Student, Set(Permissions.labworkApplication.create))
-      val employeeRole = Role(Roles.Employee, Set(Permissions.course.create, Permissions.timetable.create))
+      val studentRole = SesameRole(Roles.StudentLabel, Set(Permissions.labworkApplication.create))
+      val employeeRole = SesameRole(Roles.EmployeeLabel, Set(Permissions.course.create, Permissions.timetable.create))
 
-      repository.add[Role](studentRole)
-      repository.add[Role](employeeRole)
+      repository.add[SesameRole](studentRole)
+      repository.add[SesameRole](employeeRole)
 
       val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)
@@ -95,11 +95,11 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
         .doReturn(Future.successful(user2))
         .when(ldap).user(anyString())(anyObject())
 
-      val studentRole = Role(Roles.Student, Set(Permissions.labworkApplication.create))
-      val employeeRole = Role(Roles.Employee, Set(Permissions.course.create, Permissions.timetable.create))
+      val studentRole = SesameRole(Roles.StudentLabel, Set(Permissions.labworkApplication.create))
+      val employeeRole = SesameRole(Roles.EmployeeLabel, Set(Permissions.course.create, Permissions.timetable.create))
 
-      repository.add[Role](studentRole)
-      repository.add[Role](employeeRole)
+      repository.add[SesameRole](studentRole)
+      repository.add[SesameRole](employeeRole)
 
       val auth1 = Await.result((actorRef ? SessionServiceActor.SessionRequest(user1.systemId, "")).mapTo[Authenticated], timeout.duration)
       val auth2 = Await.result((actorRef ? SessionServiceActor.SessionRequest(user2.systemId, "")).mapTo[Authenticated], timeout.duration)

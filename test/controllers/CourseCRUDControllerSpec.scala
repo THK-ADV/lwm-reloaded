@@ -265,8 +265,8 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
 
     "create a course whilst also creating its respective security models" in {
-      val rm = Role(Roles.RightsManager, Set.empty)
-      val cm = Role(Roles.CourseManager, Set.empty)
+      val rm = SesameRole(Roles.RightsManagerLabel, Set.empty)
+      val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
 
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
@@ -275,7 +275,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(rm, cm)))
-      when(repository.addMany[Authority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
+      when(repository.addMany[SesameAuthority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
 
       val request = FakeRequest(
@@ -292,7 +292,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "skip adding rights-manager when already exists" in {
-      val cm = Role(Roles.CourseManager, Set.empty)
+      val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
 
       val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
@@ -301,7 +301,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
       when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(cm)))
-      when(repository.addMany[Authority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
+      when(repository.addMany[SesameAuthority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
       when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
 
       val request = FakeRequest(
@@ -323,7 +323,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
 
-      when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set.empty[Role]))
+      when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set.empty[SesameRole]))
 
       val request = FakeRequest(
         POST,

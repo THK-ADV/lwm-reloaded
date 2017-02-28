@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.{Authority, _}
+import models.{SesameAuthority$, _}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
@@ -17,7 +17,7 @@ import controllers.CourseCRUDController.lecturerAttribute
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import models.Permissions.{course, prime, god}
-import models.Roles.CourseManager
+import models.Roles.CourseManagerLabel
 
 object CourseCRUDController {
   val lecturerAttribute = "lecturer"
@@ -124,10 +124,10 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     (for {
       roles <- roleService.rolesForCourse(course.lecturer) if roles.nonEmpty
       authorities = roles.map { role =>
-        val optCourse = if (role.label == CourseManager) Some(course.id) else None
-        Authority(course.lecturer, role.id, optCourse)
+        val optCourse = if (role.label == CourseManagerLabel) Some(course.id) else None
+        SesameAuthority(course.lecturer, role.id, optCourse)
       }
-      _ <- repository.addMany[Authority](authorities)
+      _ <- repository.addMany[SesameAuthority](authorities)
       _ <- repository.add[Course](course)
     } yield course) match {
       case Success(c) => Continue(c)

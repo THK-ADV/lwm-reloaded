@@ -4,7 +4,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import controllers.SessionController
-import models.{Authority, Permission}
+import models.{SesameAuthority, Permission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results._
 import play.api.mvc._
@@ -17,7 +17,7 @@ object LwmActions {
 
   implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
-  final private def securedAction(predicate: Seq[Authority] => Try[Boolean])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+  final private def securedAction(predicate: Seq[SesameAuthority] => Try[Boolean])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
     Allowed(sessionService) andThen Authorized(roleService) andThen Permitted(predicate)
   }
 
@@ -53,7 +53,7 @@ object LwmActions {
 
 }
 
-case class AuthRequest[A](private val unwrapped: Request[A], authorities: Seq[Authority]) extends WrappedRequest[A](unwrapped)
+case class AuthRequest[A](private val unwrapped: Request[A], authorities: Seq[SesameAuthority]) extends WrappedRequest[A](unwrapped)
 
 case class IdRequest[A](private val unwrapped: Request[A], userId: String) extends WrappedRequest[A](unwrapped)
 
@@ -118,7 +118,7 @@ case class Authorized(roleService: RoleServiceLike) extends ActionFunction[IdReq
   }
 }
 
-case class Permitted(predicate: Seq[Authority] => Try[Boolean]) extends ActionFilter[AuthRequest] {
+case class Permitted(predicate: Seq[SesameAuthority] => Try[Boolean]) extends ActionFilter[AuthRequest] {
 
   override protected def filter[A](request: AuthRequest[A]): Future[Option[Result]] = Future.successful {
     predicate(request.authorities) match {

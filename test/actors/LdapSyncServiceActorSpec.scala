@@ -32,7 +32,7 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
   val enrollments = List(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
 
   def randomUser(amount: Int): Set[User] = {
-    val types = List(User.employeeType, User.lecturerType)
+    val types = List(User.EmployeeType, User.LecturerType)
 
     (0 until amount).map { i =>
       if (nextBoolean)

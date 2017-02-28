@@ -57,13 +57,13 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
   override def missingUserData[A <: User](user: A): Try[PointedGraph[Sesame]] = {
     import bindings.{AuthorityDescriptor, RoleDescriptor, StudentDescriptor, EmployeeDescriptor}
 
-    def createAuthAndUser[B <: User](entity: B)(p: Role => Boolean)(implicit descriptor: Descriptor[Rdf, B]) = {
-      repository.getAll[Role] flatMap { roles =>
+    def createAuthAndUser[B <: User](entity: B)(p: SesameRole => Boolean)(implicit descriptor: Descriptor[Rdf, B]) = {
+      repository.getAll[SesameRole] flatMap { roles =>
         roles.find(p) match {
           case Some(role) =>
             for {
               userPg <- repository.add[B](entity)
-              _ <- repository.add[Authority](Authority(entity.id, role.id))
+              _ <- repository.add[SesameAuthority](SesameAuthority(entity.id, role.id))
             } yield userPg
           case None =>
             Failure(new Throwable("No appropriate RefRole or Role found while resolving user"))
@@ -72,8 +72,8 @@ class LwmResolvers(val repository: SesameRepository) extends Resolvers {
     }
 
     user match {
-      case s: SesameStudent => createAuthAndUser(s)(_.label == Roles.Student)
-      case e: SesameEmployee => createAuthAndUser(e)(_.label == Roles.Employee)
+      case s: SesameStudent => createAuthAndUser(s)(_.label == Roles.StudentLabel)
+      case e: SesameEmployee => createAuthAndUser(e)(_.label == Roles.EmployeeLabel)
     }
   }
 

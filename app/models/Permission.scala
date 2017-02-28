@@ -1,5 +1,27 @@
 package models
 
+import controllers.JsonSerialisation
+import play.api.libs.json.{Json, Reads, Writes}
+
+/**
+  * A unary permission.
+  *
+  * @param value Raw permission label
+  */
+
+case class Permission(value: String) {
+  override def toString: String = value
+}
+
+object Permission extends JsonSerialisation[Permission, Permission, Permission] {
+
+  override implicit def reads: Reads[Permission] = Json.reads[Permission]
+
+  override def writesAtom: Writes[Permission] = writes
+
+  override implicit def writes: Writes[Permission] = Json.writes[Permission]
+}
+
 /*
   missing permissions directly implicate either admin or god and are therefore not modelled
  */

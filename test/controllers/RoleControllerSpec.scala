@@ -6,7 +6,7 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import utils.LwmMimeType
 
-class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, Role] {
+class RoleControllerSpec extends AbstractCRUDControllerSpec[SesameRoleProtocol, SesameRole, SesameRole] {
   import bindings.RoleDescriptor
   import ops._
 
@@ -14,23 +14,23 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[RoleProtocol, Role, 
 
   override val controller: RoleController = new RoleController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = entityToPass
+    override protected def fromInput(input: SesameRoleProtocol, existing: Option[SesameRole]): SesameRole = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
   }
-  override val entityToFail: Role = Role("role to fail", Set(Permission("permission to fail")))
+  override val entityToFail: SesameRole = SesameRole("role to fail", Set(Permission("permission to fail")))
 
-  override val entityToPass: Role = Role("role to pass", Set(Permission("permission to pass")))
+  override val entityToPass: SesameRole = SesameRole("role to pass", Set(Permission("permission to pass")))
 
-  override implicit val jsonWrites: Writes[Role] = Role.writes
+  override implicit val jsonWrites: Writes[SesameRole] = SesameRole.writes
 
-  override val atomizedEntityToPass: Role = entityToPass
+  override val atomizedEntityToPass: SesameRole = entityToPass
 
-  override val atomizedEntityToFail: Role = entityToFail
+  override val atomizedEntityToFail: SesameRole = entityToFail
 
-  override val jsonWritesAtom: Writes[Role] = jsonWrites
+  override val jsonWritesAtom: Writes[SesameRole] = jsonWrites
 
   implicit val roleBinder = RoleDescriptor.binder
 

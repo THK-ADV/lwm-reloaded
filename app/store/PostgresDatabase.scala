@@ -2,7 +2,7 @@ package store
 
 import java.util.UUID
 
-import models.{DbUser, PostgresDegree}
+import models.{DbUser, PostgresAuthority, PostgresDegree}
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 
@@ -29,14 +29,25 @@ class UserTable(tag: Tag) extends Table[DbUser](tag, "USERS") with UniqueTable {
   def enrollment = column[Option[UUID]]("ENROLLMENT")
   def status = column[String]("STATUS")
 
-  def degree = foreignKey("DEGREE_fkey", enrollment, TableQuery[DegreeTable])(_.id.?, ForeignKeyAction.NoAction, ForeignKeyAction.Restrict)
+  def degreeFk = foreignKey("DEGREES_fkey", enrollment, TableQuery[DegreeTable])(_.id.?, ForeignKeyAction.NoAction, ForeignKeyAction.Restrict)
 
-  def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, id) <> ((DbUser.apply _ ).tupled, DbUser.unapply)
+  override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, id) <> ((DbUser.apply _ ).tupled, DbUser.unapply)
 }
 
 class DegreeTable(tag: Tag) extends Table[PostgresDegree](tag, "DEGREES") with UniqueTable {
   def label = column[String]("LABEL")
   def abbreviation = column[String]("ABBREVIATION")
 
-  def * = (label, abbreviation, id) <> ((PostgresDegree.apply _ ).tupled, PostgresDegree.unapply)
+  override def * = (label, abbreviation, id) <> ((PostgresDegree.apply _ ).tupled, PostgresDegree.unapply)
+}
+
+class AuthorityTable(tag: Tag) extends Table[PostgresAuthority](tag, "AUTHORITY") with UniqueTable {
+  def user = column[UUID]("USER")
+  def role = column[UUID]("ROLE")
+  def course = column[Option[UUID]]("COURSE")
+
+  def userFk = foreignKey("USERS_fkey", user, TableQuery[UserTable])(_.id, ForeignKeyAction.NoAction, ForeignKeyAction.Restrict)
+  def courseFk = foreignKey("COURSES_fkey", course, TableQuery[UserTable])(_.id.?, ForeignKeyAction.NoAction, ForeignKeyAction.Restrict) // TODO CHANGE
+
+  override def * = (user, role, course, id) <> ((PostgresAuthority.apply _).tupled, PostgresAuthority.unapply)
 }

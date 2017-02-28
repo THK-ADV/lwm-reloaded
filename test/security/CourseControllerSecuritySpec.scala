@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.{Course, Role, Roles}
+import models.{Course, SesameRole$, Roles}
 import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -25,7 +25,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow invocations when admin wants to create a course" in new FakeApplication() {
-      val roles = Set(Role(Roles.RightsManager, Set.empty), Role(Roles.CourseManager, Set.empty))
+      val roles = Set(SesameRole(Roles.RightsManagerLabel, Set.empty), SesameRole(Roles.CourseManagerLabel, Set.empty))
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))

@@ -196,36 +196,36 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         makeUri(LabworkApplication.generateUri(application.id)))(labwork, applicant, friends, timestamp, invalidated, id)(LabworkApplicationAtom.apply, LabworkApplicationAtom.unapply) withClasses classUris
 
   }
-  implicit lazy val RoleDescriptor: Descriptor[Rdf, Role] = new Descriptor[Rdf, Role] {
+  implicit lazy val RoleDescriptor: Descriptor[Rdf, SesameRole] = new Descriptor[Rdf, SesameRole] {
     override val clazz: Rdf#URI = lwm.Role
 
-    override val classUris: ClassUrisFor[Rdf, Role] = classUrisFor[Role](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameRole] = classUrisFor[SesameRole](clazz)
 
     private val label = property[String](lwm.label)
     private val permissions = set[Permission](lwm.permissions)
 
-    override val binder: PGBinder[Rdf, Role] =
-      pgbWithId[Role](role =>
-        makeUri(Role.generateUri(role)))(label, permissions, invalidated, id)(Role.apply, Role.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameRole] =
+      pgbWithId[SesameRole](role =>
+        makeUri(SesameRole.generateUri(role)))(label, permissions, invalidated, id)(SesameRole.apply, SesameRole.unapply) withClasses classUris
 
   }
-  implicit lazy val AuthorityDescriptor: Descriptor[Rdf, Authority] = new Descriptor[Rdf, Authority] {
+  implicit lazy val AuthorityDescriptor: Descriptor[Rdf, SesameAuthority] = new Descriptor[Rdf, SesameAuthority] {
     override val clazz: Rdf#URI = lwm.Authority
 
-    override val classUris: ClassUrisFor[Rdf, Authority] = classUrisFor[Authority](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAuthority] = classUrisFor[SesameAuthority](clazz)
 
     private val privileged = property[UUID](lwm.privileged)(uuidRefBinder(User.splitter))
     private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
-    private val role = property[UUID](lwm.role)(uuidRefBinder(Role.splitter))
+    private val role = property[UUID](lwm.role)(uuidRefBinder(SesameRole.splitter))
 
-    override val binder: PGBinder[Rdf, Authority] =
-      pgbWithId[Authority](auth =>
-        makeUri(Authority.generateUri(auth)))(privileged, role, course, invalidated, id)(Authority.apply, Authority.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAuthority] =
+      pgbWithId[SesameAuthority](auth =>
+        makeUri(SesameAuthority.generateUri(auth)))(privileged, role, course, invalidated, id)(SesameAuthority.apply, SesameAuthority.unapply) withClasses classUris
   }
-  implicit lazy val AuthorityAtomDescriptor: Descriptor[Rdf, AuthorityAtom] = new Descriptor[Rdf, AuthorityAtom] {
+  implicit lazy val AuthorityAtomDescriptor: Descriptor[Rdf, SesameAuthorityAtom] = new Descriptor[Rdf, SesameAuthorityAtom] {
     override val clazz: Rdf#URI = lwm.Authority
 
-    override val classUris: ClassUrisFor[Rdf, AuthorityAtom] = classUrisFor[AuthorityAtom](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAuthorityAtom] = classUrisFor[SesameAuthorityAtom](clazz)
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
@@ -235,11 +235,11 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val privileged = property[User](lwm.privileged)(UserDescriptor.binder)
     private val course = optional[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
-    private val role = property[Role](lwm.role)(RoleDescriptor.binder)
+    private val role = property[SesameRole](lwm.role)(RoleDescriptor.binder)
 
-    override val binder: PGBinder[Rdf, AuthorityAtom] =
-      pgbWithId[AuthorityAtom](
-        auth => makeUri(Authority.generateUri(auth.id)))(privileged, role, course, invalidated, id)(AuthorityAtom.apply, AuthorityAtom.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAuthorityAtom] =
+      pgbWithId[SesameAuthorityAtom](
+        auth => makeUri(SesameAuthority.generateUri(auth.id)))(privileged, role, course, invalidated, id)(SesameAuthorityAtom.apply, SesameAuthorityAtom.unapply) withClasses classUris
   }
   implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, AssignmentEntry] = new Descriptor[Rdf, AssignmentEntry] {
     override val clazz: Rdf#URI = lwm.AssignmentEntry

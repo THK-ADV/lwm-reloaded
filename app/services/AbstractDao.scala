@@ -20,6 +20,8 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   def createMany(entities: Set[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
 
+  def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
+
   def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = false): Future[Seq[LwmModel]] = {
     val query = tableFilter match {
       case h :: t =>

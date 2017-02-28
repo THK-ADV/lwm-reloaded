@@ -61,9 +61,9 @@ class CourseInvalidation extends SesameDbSpec {
       else Annotation(User.randomUUID, Labwork.randomUUID, ReportCardEntry.randomUUID, "Message")
     }
 
-    def auths(course: UUID): Stream[Authority] = Stream.continually {
-      if (nextBoolean) Authority(User.randomUUID, Role.randomUUID, Some(course))
-      else Authority(User.randomUUID, Role.randomUUID, Some(Course.randomUUID))
+    def auths(course: UUID): Stream[SesameAuthority] = Stream.continually {
+      if (nextBoolean) SesameAuthority(User.randomUUID, SesameRole.randomUUID, Some(course))
+      else SesameAuthority(User.randomUUID, SesameRole.randomUUID, Some(Course.randomUUID))
     }
 
     "invalidate the course and subsequent labwork and refroles" in {
@@ -99,7 +99,7 @@ class CourseInvalidation extends SesameDbSpec {
 
       repo.add[Course](course)
       repo.addMany[Labwork](labworks)
-      repo.addMany[Authority](authorities)
+      repo.addMany[SesameAuthority](authorities)
       repo.addMany[AssignmentPlan](assPlans)
       repo.addMany[Group](groups)
       repo.addMany[Schedule](schedules)
@@ -113,7 +113,7 @@ class CourseInvalidation extends SesameDbSpec {
 
       repo.get[Course](Course.generateUri(course)) shouldBe Success(None)
       repo.getAll[Labwork] shouldBe Success(labworks filter (_.course != course.id))
-      repo.getAll[Authority] shouldBe Success(authorities filter (_.course.get != course.id))
+      repo.getAll[SesameAuthority] shouldBe Success(authorities filter (_.course.get != course.id))
       repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Schedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))

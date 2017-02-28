@@ -1,12 +1,17 @@
 package services
 
 import models.PostgresDegree
-import store.DegreeTable
+import slick.lifted.Rep
+import store.{DegreeTable, TableFilter}
+import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 
+case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTable] {
+  override def predicate: (DegreeTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
+}
+
 trait DegreeService extends AbstractDao[DegreeTable, PostgresDegree, PostgresDegree] {
-  import slick.driver.PostgresDriver.api._
 
   override protected def tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 

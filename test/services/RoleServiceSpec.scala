@@ -15,19 +15,19 @@ class RoleServiceSpec extends SesameDbSpec {
   val module1 = UUID.randomUUID
   val module2 = UUID.randomUUID
 
-  val role1 = Role("testRole1", sufficientPermissions)
-  val role2 = Role("testRole2", insufficientPermissions)
-  val role3 = Role("Admin", Set(Permissions.prime))
+  val role1 = SesameRole("testRole1", sufficientPermissions)
+  val role2 = SesameRole("testRole2", insufficientPermissions)
+  val role3 = SesameRole("Admin", Set(Permissions.prime))
 
   val roles = Vector(role1, role2, role3)
 
-  val noneModule1Role1 = Authority(UUID.randomUUID, role1.id)
-  val noneModule1Role2 = Authority(UUID.randomUUID, role2.id)
+  val noneModule1Role1 = SesameAuthority(UUID.randomUUID, role1.id)
+  val noneModule1Role2 = SesameAuthority(UUID.randomUUID, role2.id)
 
-  val module1UserRole1 = Authority(UUID.randomUUID, role1.id, Some(module1))
-  val module1UserRole2 = Authority(UUID.randomUUID, role2.id, Some(module1))
-  val module2UserRole2 = Authority(UUID.randomUUID, role2.id, Some(module2))
-  val adminRefRole = Authority(UUID.randomUUID, role3.id)
+  val module1UserRole1 = SesameAuthority(UUID.randomUUID, role1.id, Some(module1))
+  val module1UserRole2 = SesameAuthority(UUID.randomUUID, role2.id, Some(module1))
+  val module2UserRole2 = SesameAuthority(UUID.randomUUID, role2.id, Some(module2))
+  val adminRefRole = SesameAuthority(UUID.randomUUID, role3.id)
 
   val roleService = new RoleService(repo)
 
@@ -73,10 +73,10 @@ class RoleServiceSpec extends SesameDbSpec {
       val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
       val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
 
-      val authority1 = Authority(student1.id, module1UserRole1.role, module1UserRole1.course)
-      val authority2 = Authority(student1.id, module2UserRole2.role, module1UserRole1.course)
-      val authority3 = Authority(student2.id, module2UserRole2.role, module2UserRole2.course)
-      val authority4 = Authority(student2.id, noneModule1Role1.role, noneModule1Role1.course)
+      val authority1 = SesameAuthority(student1.id, module1UserRole1.role, module1UserRole1.course)
+      val authority2 = SesameAuthority(student1.id, module2UserRole2.role, module1UserRole1.course)
+      val authority3 = SesameAuthority(student2.id, module2UserRole2.role, module2UserRole2.course)
+      val authority4 = SesameAuthority(student2.id, noneModule1Role1.role, noneModule1Role1.course)
 
       repo.addMany(List(student1, student2, student3))
       repo.addMany(List(role1, role2, role3))
@@ -112,14 +112,14 @@ class RoleServiceSpec extends SesameDbSpec {
     "filter roles for lecturer when he is not rights manager already" in {
       import bindings.{RoleDescriptor, AuthorityDescriptor}
 
-      val cm = Role(Roles.CourseManager, Set.empty)
-      val emp = Role(Roles.Employee, Set.empty)
-      val rm = Role(Roles.RightsManager, Set.empty)
+      val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
+      val emp = SesameRole(Roles.EmployeeLabel, Set.empty)
+      val rm = SesameRole(Roles.RightsManagerLabel, Set.empty)
 
-      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.employeeType)
-      val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
-        Authority(employee.id, UUID.randomUUID, Some(UUID.randomUUID)),
-        Authority(employee.id, emp.id)
+      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.EmployeeType)
+      val authorities = (0 until 10).map(i => SesameAuthority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
+        SesameAuthority(employee.id, UUID.randomUUID, Some(UUID.randomUUID)),
+        SesameAuthority(employee.id, emp.id)
       )
 
       repo addMany Set(cm, emp, rm)
@@ -135,14 +135,14 @@ class RoleServiceSpec extends SesameDbSpec {
     "filter roles for lecturer when he is rights manager already" in {
       import bindings.{RoleDescriptor, AuthorityDescriptor}
 
-      val cm = Role(Roles.CourseManager, Set.empty)
-      val emp = Role(Roles.Employee, Set.empty)
-      val rm = Role(Roles.RightsManager, Set.empty)
+      val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
+      val emp = SesameRole(Roles.EmployeeLabel, Set.empty)
+      val rm = SesameRole(Roles.RightsManagerLabel, Set.empty)
 
-      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.employeeType)
-      val authorities = (0 until 10).map(i => Authority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
-        Authority(employee.id, rm.id, None),
-        Authority(employee.id, emp.id)
+      val employee = SesameEmployee("systemId", "lastname", "firstname", "email", User.EmployeeType)
+      val authorities = (0 until 10).map(i => SesameAuthority(UUID.randomUUID, UUID.randomUUID)).toSet ++ Set(
+        SesameAuthority(employee.id, rm.id, None),
+        SesameAuthority(employee.id, emp.id)
       )
 
       repo addMany Set(cm, emp, rm)

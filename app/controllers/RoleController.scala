@@ -1,7 +1,7 @@
 package controllers
 
 import models.Permissions._
-import models.{Role, RoleProtocol, UriGenerator}
+import models.{SesameRole, SesameRoleProtocol, UriGenerator}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
 import services.{RoleService, SessionHandlingService}
@@ -12,29 +12,29 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoleProtocol, Role, Role] {
+class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameRoleProtocol, SesameRole, SesameRole] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Role] = defaultBindings.RoleDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameRole] = defaultBindings.RoleDescriptor
 
-  override val descriptorAtom: Descriptor[Sesame, Role] = descriptor
+  override val descriptorAtom: Descriptor[Sesame, SesameRole] = descriptor
 
-  override implicit val reads: Reads[RoleProtocol] = Role.reads
+  override implicit val reads: Reads[SesameRoleProtocol] = SesameRole.reads
 
-  override implicit val writes: Writes[Role] = Role.writes
+  override implicit val writes: Writes[SesameRole] = SesameRole.writes
 
-  override implicit val writesAtom: Writes[Role] = Role.writesAtom
+  override implicit val writesAtom: Writes[SesameRole] = SesameRole.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Role] = Role
+  override implicit val uriGenerator: UriGenerator[SesameRole] = SesameRole
 
-  override protected def coAtomic(atom: Role): Role = atom
+  override protected def coAtomic(atom: SesameRole): SesameRole = atom
 
-  override protected def compareModel(input: RoleProtocol, output: Role): Boolean = input.permissions == output.permissions
+  override protected def compareModel(input: SesameRoleProtocol, output: SesameRole): Boolean = input.permissions == output.permissions
 
-  override protected def fromInput(input: RoleProtocol, existing: Option[Role]): Role = existing match {
-    case Some(role) => Role(input.label, input.permissions, role.invalidated, role.id)
-    case None => Role(input.label, input.permissions)
+  override protected def fromInput(input: SesameRoleProtocol, existing: Option[SesameRole]): SesameRole = existing match {
+    case Some(role) => SesameRole(input.label, input.permissions, role.invalidated, role.id)
+    case None => SesameRole(input.label, input.permissions)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -44,5 +44,5 @@ class RoleController(val repository: SesameRepository, val sessionService: Sessi
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Role]): Try[Set[Role]] = Success(all)
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameRole]): Try[Set[SesameRole]] = Success(all)
 }

@@ -29,7 +29,6 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
 }
 
 trait UserService extends AbstractDao[UserTable, DbUser, User] {
-
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {

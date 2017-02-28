@@ -11,18 +11,24 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
+final case class LdapUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], degreeAbbrev: Option[String], id: UUID = User.randomUUID) extends User
+
 trait LdapService {
   def authenticate(user: String, password: String): Future[Boolean]
 
   def user(user: String)(degreeFor: String => Try[UUID]): Future[User]
 
-  def users(user: Set[String])(degreeFor: (String) => Try[UUID]): Future[Set[User]]
+  def users(users: Set[String])(degreeFor: (String) => Try[UUID]): Future[Set[User]]
+
+  def user2(user: String): Future[LdapUser]
+
+  def users2(users: Set[String]): Future[Set[LdapUser]]
 }
 
 /**
   * The [[LdapServiceImpl]] object enables the user to communicate with an LDAP service.
   */
-case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUsername: Option[String], bindPassword: Option[String]) extends LdapService {
+final class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUsername: Option[String], bindPassword: Option[String]) extends LdapService {
 
   private implicit val executionContext = ExecutionContext.fromExecutorService(new ThreadPoolExecutor(0, 32, 60L, TimeUnit.SECONDS, new SynchronousQueue[Runnable]))
 
@@ -98,8 +104,8 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
 
   private def makeUser(entry: SearchResultEntry, user: String)(degreeFor: String => Try[UUID]): Try[User] = {
     val optUser = attribute(entry, "employeeType").flatMap[User] {
-      case status@(User.employeeType | User.lecturerType) => employee(entry, status)
-      case User.studentType => student(entry)(degreeFor)
+      case status@(User.EmployeeType | User.LecturerType) => employee(entry, status)
+      case User.StudentType => student(entry)(degreeFor)
       case _ => None
     }
     optUser.fold[Try[User]](Failure(new Throwable(s"Could not resolve user $user")))(u => Success(u))
@@ -116,6 +122,18 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
     } yield SesameEmployee(systemId, lastname, firstname, email, status)
   }
 
+  private def ldapUser(entry: SearchResultEntry): Option[LdapUser] = {
+    for {
+      systemId <- attribute(entry, "uid")
+      firstname <- attribute(entry, "givenName")
+      lastname <- attribute(entry, "sn")
+      status <- attribute(entry, "employeeType")
+      regId = attribute(entry, "matriculationNumber")
+      degreeAbbrev = attribute(entry, "studyPath")
+      email = attribute(entry, "mail") getOrElse ""
+    } yield LdapUser(systemId, lastname, firstname, email, status, regId, degreeAbbrev)
+  }
+
   private def student(entry: SearchResultEntry)(degreeFor: String => Try[UUID]): Option[SesameStudent] = {
     for {
       systemId <- attribute(entry, "uid")
@@ -126,5 +144,25 @@ case class LdapServiceImpl(bindHost: String, bindPort: Int, dn: String, bindUser
       email = attribute(entry, "mail") getOrElse ""
       degree <- degreeFor(enrollment).toOption
     } yield SesameStudent(systemId, lastname, firstname, email, regId, degree)
+  }
+
+  override def user2(user: String) = bind(bindUsername, bindPassword) { connection ⇒
+    user02(user, connection)
+  }
+
+  private def user02(user: String, connection: LDAPConnection) = {
+    search(connection, bindDN(user)) flatMap {
+      case h :: Nil => ldapUser(h).fold[Try[LdapUser]](Failure(new Throwable(s"Could not resolve user $user")))(u => Success(u))
+      case h :: t => Failure(new Throwable(s"More than one LDAP entry found under username $user"))
+      case _ => Failure(new Throwable("No attributes found"))
+    }
+  }
+
+  override def users2(users: Set[String]) = bind(bindUsername, bindPassword) { connection ⇒
+    Success {
+      users.map { user =>
+        user02(user, connection)
+      }.filter(_.isSuccess).map(_.get)
+    }
   }
 }

@@ -2,7 +2,7 @@ package models
 
 import java.util.UUID
 
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 
 trait User extends UniqueEntity {
   def systemId: String
@@ -12,22 +12,22 @@ trait User extends UniqueEntity {
 
   def dbUser = this match {
     case s: PostgresStudent =>
-      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.studentType, Some(s.registrationId), Some(s.enrollment), s.id)
+      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), s.id)
     case e: PostgresEmployee =>
-      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.employeeType, None, None, e.id)
+      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, e.id)
     case l: PostgresLecturer =>
-      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.lecturerType, None, None, l.id)
+      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, l.id)
   }
 }
 
 object User extends UriGenerator[User] {
   override def base: String = "users"
 
-  lazy val employeeType = "employee"
-  lazy val lecturerType = "lecturer"
-  lazy val studentType = "student"
+  lazy val EmployeeType = "employee"
+  lazy val LecturerType = "lecturer"
+  lazy val StudentType = "student"
 
-  lazy val types = List(employeeType, lecturerType, studentType)
+  lazy val types = List(EmployeeType, LecturerType, StudentType)
 
   implicit def writes: Writes[User] = new Writes[User] {
     override def writes(user: User): JsValue = user match {
@@ -39,16 +39,20 @@ object User extends UriGenerator[User] {
       case postgresLecturer: PostgresLecturer => Json.toJson(postgresLecturer)(PostgresLecturer.writes)
     }
   }
+
+  case class UserProtocol(systemId: String)
+
+  implicit def reads: Reads[UserProtocol] = Json.reads[UserProtocol]
 }
 
 final case class DbUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[UUID], id: UUID) extends User {
 
   def user: User = this match {
-    case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), studentId) if stat == User.studentType =>
+    case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), studentId) if stat == User.StudentType =>
       PostgresStudent(sId, last, first, mail, regId, enroll, studentId)
-    case DbUser(sId, last, first, mail, stat, None, None, employeeId) if stat == User.employeeType =>
+    case DbUser(sId, last, first, mail, stat, None, None, employeeId) if stat == User.EmployeeType =>
       PostgresEmployee(sId, last, first, mail, employeeId)
-    case DbUser(sId, last, first, mail, stat, None, None, lecturerId) if stat == User.lecturerType =>
+    case DbUser(sId, last, first, mail, stat, None, None, lecturerId) if stat == User.LecturerType =>
       PostgresLecturer(sId, last, first, mail, lecturerId)
   }
 }

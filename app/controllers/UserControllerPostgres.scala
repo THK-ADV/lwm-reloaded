@@ -1,17 +1,14 @@
 package controllers
 
-import java.util.UUID
-
-import models.Permissions
-import play.api.mvc.{Controller, Result}
+import models.{DbUser, Permissions, User}
+import play.api.libs.json.{JsError, JsValue, Json, Reads}
+import play.api.mvc.{Controller, Request, Result}
 import services._
 import store.{Resolvers, TableFilter, UserTable}
 import utils.LwmMimeType
-import play.api.libs.json.{JsValue, Json, Writes}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
-import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 object UserControllerPostgres {
   lazy val statusAttribute = "status"
@@ -19,8 +16,6 @@ object UserControllerPostgres {
   lazy val systemIdAttribute = "systemId"
   lazy val firstnameAttribute = "firstname"
   lazy val lastnameAttribute = "lastname"
-
-  lazy val atomicAttribute = "atomic"
 }
 
 class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val resolvers: Resolvers, val ldapService: LdapService, val userService: UserService) extends Controller
@@ -28,50 +23,13 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
   with SessionChecking
   with SecureControllerContext
   with ContentTyped
-  with Chunked {
+  with Chunked
+  with PostgresResult {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-
-  object PostgresResult {
-    private def internalServerError(message: String) = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
-    private def notFound(element: String) = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
-
-    implicit class SequenceResult[A](val future: Future[Seq[A]]) {
-      def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {
-        case NonFatal(e) => internalServerError(e.getMessage)
-      }
-    }
-
-    implicit class OptionResult[A](val future: Future[Option[A]]) {
-      def jsonResult(idForMessage: String)(implicit writes: Writes[A]) = future.map { maybeA =>
-        maybeA.fold(notFound(idForMessage))(a => Ok(Json.toJson(a)) )
-      }.recover {
-        case NonFatal(e) => internalServerError(e.getMessage)
-      }
-    }
-  }
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import PostgresResult._
 
   override implicit def mimeType = LwmMimeType.userV1Json
-  import models.User.writes
-
-  type QueryString = Map[String, Seq[String]]
-
-  def extractAtomic(queryString: QueryString): (QueryString, Boolean) = {
-    import controllers.UserControllerPostgres.atomicAttribute
-
-    queryString.find(_._1 == `atomicAttribute`) match {
-      case Some(q) =>
-        val atomic = q._2.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(false)(_ == true)
-        val remaining = queryString - `atomicAttribute`
-
-        (remaining, atomic)
-      case None =>
-        (queryString, false)
-    }
-  }
+  import models.User.{writes, reads, UserProtocol}
 
   def allUsers() = contextFrom(GetAll) asyncAction { request =>
     import controllers.UserControllerPostgres._
@@ -97,6 +55,29 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
     val atomic = extractAtomic(request.queryString)._2
 
     userService.get(List(UserIdFilter(id)), atomic).map(_.headOption).jsonResult(id)
+  }
+
+  def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
+    request.body.validate[A].fold[Try[A]](
+      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
+      success => Success(success)
+    )
+  }
+
+  def createOrUpdate() = contextFrom(Create) asyncContentTypedAction { request =>
+    val a = for {
+      systemId <- Future.fromTry(parse[UserProtocol](request).map(p => UserSystemIdFilter(p.systemId)))
+      ldapUser <- ldapService.user2(systemId.value)
+      degrees <- DegreeService.get()
+      existing <- userService.get(List(systemId))
+      maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
+      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, existing.headOption.fold(ldapUser.id)(_.id))
+      updated <- userService.createOrUpdate(dbUser)
+      //a = updated.fold()(inserted => )
+    } yield 1
+
+
+    ???
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

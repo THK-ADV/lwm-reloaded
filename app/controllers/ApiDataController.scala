@@ -86,7 +86,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       postgresStudents = sesameStudents.map(s => PostgresStudent(s.systemId, s.lastname, s.firstname, s.email, s.registrationId, s.enrollment, s.id)).map(_.dbUser)
       postgresEmployees = sesameEmployees.foldLeft(Set.empty[DbUser]) {
         case ((list, e)) =>
-          if (e.status == User.employeeType)
+          if (e.status == User.EmployeeType)
             list + PostgresEmployee(e.systemId, e.lastname, e.firstname, e.email, e.id).dbUser
           else
             list + PostgresLecturer(e.systemId, e.lastname, e.firstname, e.email, e.id).dbUser
