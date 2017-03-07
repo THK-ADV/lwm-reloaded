@@ -1,7 +1,7 @@
 package controllers
 
 import models.Permissions
-import models.Permission
+import models.SesamePermission
 import modules.BaseNamespace
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
@@ -10,7 +10,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
 class PermissionController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
-  with JsonSerialisation[Permission, Permission, Permission]
+  with JsonSerialisation[SesamePermission, SesamePermission, SesamePermission]
   with BaseNamespace
   with Secured
   with SessionChecking
@@ -19,11 +19,11 @@ class PermissionController(val repository: SesameRepository, val sessionService:
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.permissionV1Json
 
-  override implicit val reads: Reads[Permission] = Permission.reads
+  override implicit val reads: Reads[SesamePermission] = SesamePermission.reads
 
-  override implicit val writes: Writes[Permission] = Permission.writes
+  override implicit val writes: Writes[SesamePermission] = SesamePermission.writes
 
-  override val writesAtom: Writes[Permission] = Permission.writesAtom
+  override val writesAtom: Writes[SesamePermission] = SesamePermission.writesAtom
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
     Ok(Json.toJson(Permissions.all)).as(mimeType)

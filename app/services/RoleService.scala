@@ -28,7 +28,7 @@ trait RoleServiceLike {
     * @param checker to be checked
     * @return true/false
     */
-  def checkAuthority(checkee: (Option[UUID], Permission))(checker: SesameAuthority*): Try[Boolean]
+  def checkAuthority(checkee: (Option[UUID], SesamePermission))(checker: SesameAuthority*): Try[Boolean]
 }
 
 class RoleService(private val repository: SesameRepository) extends RoleServiceLike {
@@ -70,7 +70,7 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
     } yield roles.filterNot(role => role.label == RightsManagerLabel && userAuths.exists(_.role == role.id))
   }
 
-  override def checkAuthority(whatToCheck: (Option[UUID], Permission))(checkWith: SesameAuthority*): Try[Boolean] = whatToCheck match {
+  override def checkAuthority(whatToCheck: (Option[UUID], SesamePermission))(checkWith: SesameAuthority*): Try[Boolean] = whatToCheck match {
     case (_, permission) if permission == Permissions.god => Success(false)
     case (optCourse, permission) =>
       import bindings.RoleDescriptor

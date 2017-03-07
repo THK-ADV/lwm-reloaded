@@ -22,7 +22,7 @@ class PermissionControllerSecuritySpec extends WordSpec with TestBaseDefinition 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to get all permissions" in new FakeApplication() {
-      import models.Permission.writes
+      import models.SesamePermission.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, Permissions.prime))(FakeAdminAuth)).thenReturn(Success(true))

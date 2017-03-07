@@ -4,7 +4,9 @@ import java.util.UUID
 
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.functional.syntax._
+import utils.Ops.JsPathX
 
 /**
   * Structure abstracting over a set of unary `Permission`s.
@@ -15,11 +17,15 @@ import play.api.libs.json.{Json, Reads, Writes}
   * @param permissions The unary permissions of that `Role`
   */
 
-case class SesameRole(label: String, permissions: Set[Permission], invalidated: Option[DateTime] = None, id: UUID = SesameRole.randomUUID) extends UniqueEntity
+case class SesameRole(label: String, permissions: Set[SesamePermission], invalidated: Option[DateTime] = None, id: UUID = SesameRole.randomUUID) extends UniqueEntity
 
-case class SesameRoleProtocol(label: String, permissions: Set[Permission])
+case class SesameRoleProtocol(label: String, permissions: Set[SesamePermission])
 
-case class PostgresRole(label: String, id: UUID = PostgresRole.randomUUID) extends UniqueEntity
+case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends UniqueEntity
+
+case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
+
+case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends UniqueEntity
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
 
@@ -32,19 +38,25 @@ object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[Sesame
   override def base: String = "roles"
 }
 
-object PostgresRole extends UriGenerator[PostgresRole] with JsonSerialisation[PostgresRole, PostgresRole, PostgresRole] {
+object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole, PostgresRoleAtom] {
 
-  override implicit def reads: Reads[PostgresRole] = Json.reads[PostgresRole]
+  override implicit def reads: Reads[PostgresRoleProtocol] = Json.reads[PostgresRoleProtocol]
 
   override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
 
-  override implicit def writesAtom: Writes[PostgresRole] = writes
+  override implicit def writesAtom: Writes[PostgresRoleAtom] = PostgresRoleAtom.writesAtom
+}
 
-  override def base: String = "roles"
+object PostgresRoleAtom {
+
+  implicit def writesAtom: Writes[PostgresRoleAtom] = (
+    (JsPath \ "label").write[String] and
+      (JsPath \ "permissions").writeSet[PostgresPermission](PostgresPermission.writes) and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresRoleAtom.unapply))
 }
 
 object Roles {
-
   lazy val AdminLabel = "Administrator"
   lazy val EmployeeLabel = "Mitarbeiter"
   lazy val StudentLabel = "Student"

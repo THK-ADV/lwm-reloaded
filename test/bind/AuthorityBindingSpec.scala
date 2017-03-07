@@ -62,8 +62,8 @@ class AuthorityBindingSpec extends SesameDbSpec {
       val lecturer = SesameEmployee("lecturer", "lastname", "firstname", "email", "lecturer")
       val course1 = SesameCourse("course1", "description", "abbrev", lecturer.id, 3)
       val course2 = SesameCourse("course2", "description", "abbrev", lecturer.id, 2)
-      val role1 = SesameRole("role1", Set(Permission("perm1"), Permission("perm2")))
-      val role2 = SesameRole("role2", Set(Permission("perm3")))
+      val role1 = SesameRole("role1", Set(SesamePermission("perm1"), SesamePermission("perm2")))
+      val role2 = SesameRole("role2", Set(SesamePermission("perm3")))
       val authorities = Set(
         SesameAuthority(student.id, role1.id, Some(course1.id)),
         SesameAuthority(student.id, role2.id)

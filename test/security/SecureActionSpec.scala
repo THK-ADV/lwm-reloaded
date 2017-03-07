@@ -31,8 +31,8 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
   implicit val roleService = mock[RoleService]
   implicit val sessionService = mock[SessionHandlingService]
 
-  val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
-  val insufficientPermissions = Set(Permission("view"), Permission("delete"))
+  val sufficientPermissions = Set(SesamePermission("view"), SesamePermission("create"), SesamePermission("delete"))
+  val insufficientPermissions = Set(SesamePermission("view"), SesamePermission("delete"))
 
   val module1 = UUID.randomUUID()
   val module2 = UUID.randomUUID()
@@ -173,7 +173,7 @@ class SecureActionSpec extends WordSpec with TestBaseDefinition {
     "parse content types securely" in new WithDepsApplication {
       implicit val mimeType = LwmMimeType.loginV1Json
 
-      val perm = Permission("No permission")
+      val perm = SesamePermission("No permission")
       when(roleService.checkAuthority(anyObject())(anyObject())).thenReturn(Success(true))
       when(roleService.authorities(anyObject())).thenReturn(Success(Set(SesameAuthority(userID, role2.id, Some(module1)))))
       when(sessionService.isValid(anyObject())).thenReturn(Future.successful(true))

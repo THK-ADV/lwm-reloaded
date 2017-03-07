@@ -24,7 +24,7 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to update a role" in new FakeApplication() {
-      import models.Permission.writes
+      import models.SesamePermission.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
@@ -50,7 +50,7 @@ class RoleControllerSecuritySpec extends WordSpec with TestBaseDefinition with S
     }
 
     "Block non restricted context invocations when rv wants to update a role" in new FakeApplication() {
-      import models.Permission.writes
+      import models.SesamePermission.writes
 
       when(roleService.authorities(FakeRv)).thenReturn(Success(Set(FakeRvAuth)))
       when(roleService.checkAuthority((None, prime))(FakeRvAuth)).thenReturn(Success(false))

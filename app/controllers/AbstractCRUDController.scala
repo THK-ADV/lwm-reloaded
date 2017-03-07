@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.{Permission, Permissions, UniqueEntity, UriGenerator}
+import models.{SesamePermission, Permissions, UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.{Enumeratee, Enumerator}
@@ -169,7 +169,7 @@ trait SecureControllerContext {
       simple = ContentTypedAction(block)
     )
 
-    def apply[A](restricted: (Option[UUID], Permission) => Action[A], simple: => Action[A]) = this match {
+    def apply[A](restricted: (Option[UUID], SesamePermission) => Action[A], simple: => Action[A]) = this match {
       case SecureBlock(id, permission) => restricted(Some(UUID.fromString(id)), permission)
       case PartialSecureBlock(permission) => restricted(None, permission)
       case NonSecureBlock => simple()
@@ -186,9 +186,9 @@ trait SecureControllerContext {
     )
   }
 
-  case class SecureBlock(restrictionRef: String, permission: Permission) extends SecureContext
+  case class SecureBlock(restrictionRef: String, permission: SesamePermission) extends SecureContext
 
-  case class PartialSecureBlock(permission: Permission) extends SecureContext
+  case class PartialSecureBlock(permission: SesamePermission) extends SecureContext
 
   case object Create extends Rule
 

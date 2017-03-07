@@ -1,7 +1,7 @@
 package invalidation
 
 import base.SesameDbSpec
-import models.{Permission, SesameRole$}
+import models.{SesamePermission$, SesameRole$}
 
 import scala.util.Random._
 import scala.util.Success
@@ -11,7 +11,7 @@ class RoleInvalidation extends SesameDbSpec {
 
   "A Role invalidation" should {
 
-    def perms: Stream[Permission] = Stream.continually(Permission(nextString(5)))
+    def perms: Stream[SesamePermission] = Stream.continually(SesamePermission(nextString(5)))
     def rls: Stream[SesameRole] = Stream.continually(SesameRole("Role", (perms take 20).toSet))
 
     "invalidate the role" in {

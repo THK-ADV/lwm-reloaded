@@ -8,7 +8,7 @@ import scala.util.Success
 
 class RoleBindingSpec extends SesameDbSpec {
 
-  val roleWith = SesameRole("role1", Set(Permission("p1"), Permission("p2"), Permission("p3")))
+  val roleWith = SesameRole("role1", Set(SesamePermission("p1"), SesamePermission("p2"), SesamePermission("p3")))
   val roleWithout = SesameRole("role1", Set())
 
   import bindings.{RoleDescriptor, dateTimeBinder, permissionBinder, uuidBinder}

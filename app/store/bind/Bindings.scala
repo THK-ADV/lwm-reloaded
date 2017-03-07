@@ -202,7 +202,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val classUris: ClassUrisFor[Rdf, SesameRole] = classUrisFor[SesameRole](clazz)
 
     private val label = property[String](lwm.label)
-    private val permissions = set[Permission](lwm.permissions)
+    private val permissions = set[SesamePermission](lwm.permissions)
 
     override val binder: PGBinder[Rdf, SesameRole] =
       pgbWithId[SesameRole](role =>
@@ -872,13 +872,13 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       }
     }
   }
-  implicit val permissionBinder = new PGBinder[Rdf, Permission] {
-    override def toPG(t: Permission): PointedGraph[Rdf] = {
+  implicit val permissionBinder = new PGBinder[Rdf, SesamePermission] {
+    override def toPG(t: SesamePermission): PointedGraph[Rdf] = {
       PointedGraph(ops.makeLiteral(t.value, xsd.string))
     }
 
-    override def fromPG(pointed: PointedGraph[Rdf]): Try[Permission] = {
-      pointed.pointer.as[String].map(Permission.apply)
+    override def fromPG(pointed: PointedGraph[Rdf]): Try[SesamePermission] = {
+      pointed.pointer.as[String].map(SesamePermission.apply)
     }
   }
   val id = property[UUID](lwm.id)

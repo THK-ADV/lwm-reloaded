@@ -9,8 +9,8 @@ import scala.util.{Failure, Success, Try}
 
 class RoleServiceSpec extends SesameDbSpec {
 
-  val sufficientPermissions = Set(Permission("view"), Permission("create"), Permission("delete"))
-  val insufficientPermissions = Set(Permission("view"), Permission("delete"))
+  val sufficientPermissions = Set(SesamePermission("view"), SesamePermission("create"), SesamePermission("delete"))
+  val insufficientPermissions = Set(SesamePermission("view"), SesamePermission("delete"))
 
   val module1 = UUID.randomUUID
   val module2 = UUID.randomUUID

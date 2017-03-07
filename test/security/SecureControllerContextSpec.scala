@@ -2,7 +2,7 @@ package security
 
 import base.TestBaseDefinition
 import controllers.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
-import models.Permission
+import models.SesamePermission$
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -21,7 +21,7 @@ class SecureControllerContextSpec extends WordSpec with TestBaseDefinition {self
   implicit val sessionService = mock[SessionHandlingService]
   val controller = MockController(roleService, sessionService)
 
-  val permission = Permission("permission")
+  val permission = SesamePermission("permission")
 
   case class MockController(roleService: RoleService, sessionService: SessionHandlingService) extends Controller with SecureControllerContext with Secured with SessionChecking with ContentTyped {
     override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json //not relevant

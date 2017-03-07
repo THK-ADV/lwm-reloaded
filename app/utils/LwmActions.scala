@@ -4,7 +4,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import controllers.SessionController
-import models.{SesameAuthority, Permission}
+import models.{SesameAuthority, SesamePermission}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results._
 import play.api.mvc._
@@ -31,22 +31,22 @@ object LwmActions {
 
   object SecureAction {
 
-    def apply(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+    def apply(ps: (Option[UUID], SesamePermission))(block: Request[AnyContent] => Result)(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
       securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*))(roleService, sessionService)(block)
     }
 
-    def async(ps: (Option[UUID], Permission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+    def async(ps: (Option[UUID], SesamePermission))(block: Request[AnyContent] => Future[Result])(implicit roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
       securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*)).async(block)
     }
   }
 
   object SecureContentTypedAction {
 
-    def apply(ps: (Option[UUID], Permission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+    def apply(ps: (Option[UUID], SesamePermission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
       securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*))(roleService, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async(ps: (Option[UUID], Permission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
+    def async(ps: (Option[UUID], SesamePermission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, roleService: RoleServiceLike, sessionService: SessionHandlingService) = {
       securedAction(authorities => roleService.checkAuthority(ps)(authorities: _*)).async(LwmBodyParser.parseWith(mimeType))(block)
     }
   }

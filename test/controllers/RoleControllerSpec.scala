@@ -20,9 +20,9 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[SesameRoleProtocol, 
       case _ => NonSecureBlock
     }
   }
-  override val entityToFail: SesameRole = SesameRole("role to fail", Set(Permission("permission to fail")))
+  override val entityToFail: SesameRole = SesameRole("role to fail", Set(SesamePermission("permission to fail")))
 
-  override val entityToPass: SesameRole = SesameRole("role to pass", Set(Permission("permission to pass")))
+  override val entityToPass: SesameRole = SesameRole("role to pass", Set(SesamePermission("permission to pass")))
 
   override implicit val jsonWrites: Writes[SesameRole] = SesameRole.writes
 
@@ -45,6 +45,6 @@ class RoleControllerSpec extends AbstractCRUDControllerSpec[SesameRoleProtocol, 
 
   override val updateJson: JsValue = Json.obj(
     "label" -> entityToPass.label,
-    "permissions" -> (entityToPass.permissions + Permission(""))
+    "permissions" -> (entityToPass.permissions + SesamePermission(""))
   )
 }
