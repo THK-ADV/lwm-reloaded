@@ -76,7 +76,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
       case ((`courseAttribute`, values), t) =>
         val query = select("labworks") where {
           **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
-            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
+            **(v("labworks"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(values.head))))
         }
 
         repository.prepareQuery(query).

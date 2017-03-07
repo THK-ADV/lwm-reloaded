@@ -306,7 +306,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         }
       }
 
-      val course1 = Course("", "", "", UUID.randomUUID, 1)
+      val course1 = SesameCourse("", "", "", UUID.randomUUID, 1)
 
       val student1 = UUID.randomUUID()
       val labwork1 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)

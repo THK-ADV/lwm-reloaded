@@ -17,25 +17,25 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol, Course, CourseAtom] {
+class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameCourseProtocol, SesameCourse, SesameCourseAtom] {
 
   val lecturerToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val lecturerToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
-  override val entityToPass: Course = Course("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1)
+  override val entityToPass: SesameCourse = SesameCourse("label to pass", "description to pass", "abbreviation to pass", lecturerToPass.id, 1)
 
   override val controller: CourseCRUDController = new CourseCRUDController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = entityToPass
+    override protected def fromInput(input: SesameCourseProtocol, existing: Option[SesameCourse]): SesameCourse = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
   }
 
-  override val entityToFail: Course = Course("label to fail", "description to fail", "abbreviation to fail", lecturerToFail.id, 1)
+  override val entityToFail: SesameCourse = SesameCourse("label to fail", "description to fail", "abbreviation to fail", lecturerToFail.id, 1)
 
-  override val atomizedEntityToPass = CourseAtom(
+  override val atomizedEntityToPass = SesameCourseAtom(
     entityToPass.label,
     entityToPass.description,
     entityToPass.abbreviation,
@@ -45,7 +45,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     entityToPass.id
   )
 
-  override val atomizedEntityToFail = CourseAtom(
+  override val atomizedEntityToFail = SesameCourseAtom(
     entityToFail.label,
     entityToFail.description,
     entityToFail.abbreviation,
@@ -55,9 +55,9 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     entityToFail.id
   )
 
-  override implicit val jsonWrites: Writes[Course] = Course.writes
+  override implicit val jsonWrites: Writes[SesameCourse] = SesameCourse.writes
 
-  override implicit val jsonWritesAtom: Writes[CourseAtom] = Course.writesAtom
+  override implicit val jsonWritesAtom: Writes[SesameCourseAtom] = SesameCourse.writesAtom
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
@@ -91,14 +91,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "return the corresponding course for a given lecturer" in {
       val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
-      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
-      val second = Course("label2", "desc2", "abbreviation2", lecturer.id, 1)
-      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1)
-      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1)
+      val first = SesameCourse("label1", "desc1", "abbreviation1", User.randomUUID, 1)
+      val second = SesameCourse("label2", "desc2", "abbreviation2", lecturer.id, 1)
+      val third = SesameCourse("label3", "desc3", "abbreviation3", User.randomUUID, 1)
+      val fourth = SesameCourse("label4", "desc4", "abbreviation4", User.randomUUID, 1)
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[SesameCourse](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -116,14 +116,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "return all corresponding courses for a given lecturer" in {
       val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
-      val first = Course("label1", "desc1", "abbreviation1", lecturer.id, 1)
-      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)
-      val third = Course("label3", "desc3", "abbreviation3", lecturer.id, 1)
-      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1)
+      val first = SesameCourse("label1", "desc1", "abbreviation1", lecturer.id, 1)
+      val second = SesameCourse("label2", "desc2", "abbreviation2", User.randomUUID, 1)
+      val third = SesameCourse("label3", "desc3", "abbreviation3", lecturer.id, 1)
+      val fourth = SesameCourse("label4", "desc4", "abbreviation4", User.randomUUID, 1)
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[SesameCourse](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -141,14 +141,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "not return courses for a lecturer when there is no match" in {
       val lecturer = SesameEmployee("systemId", "last name", "first name", "email", "status")
 
-      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
-      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)
-      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1)
-      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1)
+      val first = SesameCourse("label1", "desc1", "abbreviation1", User.randomUUID, 1)
+      val second = SesameCourse("label2", "desc2", "abbreviation2", User.randomUUID, 1)
+      val third = SesameCourse("label3", "desc3", "abbreviation3", User.randomUUID, 1)
+      val fourth = SesameCourse("label4", "desc4", "abbreviation4", User.randomUUID, 1)
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[SesameCourse](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -163,14 +163,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "not return courses when there is an invalid query attribute" in {
-      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
-      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)
-      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1)
-      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1)
+      val first = SesameCourse("label1", "desc1", "abbreviation1", User.randomUUID, 1)
+      val second = SesameCourse("label2", "desc2", "abbreviation2", User.randomUUID, 1)
+      val third = SesameCourse("label3", "desc3", "abbreviation3", User.randomUUID, 1)
+      val fourth = SesameCourse("label4", "desc4", "abbreviation4", User.randomUUID, 1)
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[SesameCourse](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -190,14 +190,14 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "not return courses when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val first = Course("label1", "desc1", "abbreviation1", User.randomUUID, 1)
-      val second = Course("label2", "desc2", "abbreviation2", User.randomUUID, 1)
-      val third = Course("label3", "desc3", "abbreviation3", User.randomUUID, 1)
-      val fourth = Course("label4", "desc4", "abbreviation4", User.randomUUID, 1)
+      val first = SesameCourse("label1", "desc1", "abbreviation1", User.randomUUID, 1)
+      val second = SesameCourse("label2", "desc2", "abbreviation2", User.randomUUID, 1)
+      val third = SesameCourse("label3", "desc3", "abbreviation3", User.randomUUID, 1)
+      val fourth = SesameCourse("label4", "desc4", "abbreviation4", User.randomUUID, 1)
 
       val courses = Set(first, second, third, fourth)
 
-      when(repository.getAll[Course](anyObject())).thenReturn(Success(courses))
+      when(repository.getAll[SesameCourse](anyObject())).thenReturn(Success(courses))
 
       val request = FakeRequest(
         GET,
@@ -217,9 +217,9 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Course.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameCourse.generateUri(entityToPass)))
       )))
-      when(repository.get[Course](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[SesameCourse](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -242,7 +242,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Course.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameCourse.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(
@@ -262,13 +262,13 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
       )
     }
 
-    implicit val writes: Writes[CourseProtocol] = Json.writes[CourseProtocol]
+    implicit val writes: Writes[SesameCourseProtocol] = Json.writes[SesameCourseProtocol]
 
     "create a course whilst also creating its respective security models" in {
       val rm = SesameRole(Roles.RightsManagerLabel, Set.empty)
       val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
 
-      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+      val course = SesameCourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
@@ -276,7 +276,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(rm, cm)))
       when(repository.addMany[SesameAuthority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
-      when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
+      when(repository.add[SesameCourse](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
 
       val request = FakeRequest(
         POST,
@@ -294,7 +294,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     "skip adding rights-manager when already exists" in {
       val cm = SesameRole(Roles.CourseManagerLabel, Set.empty)
 
-      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+      val course = SesameCourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
       val dummyGraph = PointedGraph[repository.Rdf](makeBNodeLabel("empty"))
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
@@ -302,7 +302,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
 
       when(roleService.rolesForCourse(anyObject())).thenReturn(Success(Set(cm)))
       when(repository.addMany[SesameAuthority](anyObject())(anyObject())).thenReturn(Success(Set(dummyGraph)))
-      when(repository.add[Course](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
+      when(repository.add[SesameCourse](anyObject())(anyObject())).thenReturn(Success(dummyGraph))
 
       val request = FakeRequest(
         POST,
@@ -318,7 +318,7 @@ class CourseCRUDControllerSpec extends AbstractCRUDControllerSpec[CourseProtocol
     }
 
     "stop the creation when the appropriate roles haven't been found" in {
-      val course = CourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
+      val course = SesameCourseProtocol("Course", "Desc", "C", UUID.randomUUID(), 0)
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))

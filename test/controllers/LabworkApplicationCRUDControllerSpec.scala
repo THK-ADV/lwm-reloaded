@@ -22,8 +22,8 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
 
   val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
   val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
-  val course = Course("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
-  val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
+  val course = SesameCourse("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
+  val courseAtom = SesameCourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
   val degree = PostgresDegree("label to pass", "abbrev to pass")
 
   val labworkToPass = LabworkAtom("label to pass", "desc to pass", semester, courseAtom, degree, subscribable = false, published = false, None, UUID.randomUUID)
@@ -89,7 +89,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   "A LabworkApplicationCRUDControllerSpec" should {
 
     "return the corresponding labworkApplication for a given labwork" in {
-      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val labwork = Labwork("label 1", "description 1", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
 
       val first = LabworkApplication(labwork.id, User.randomUUID, Set(User.randomUUID))
       val second = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -115,7 +115,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "return all corresponding applications for a given labwork" in {
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
 
     val first = LabworkApplication(labwork.id, User.randomUUID, Set(User.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -140,7 +140,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[La
   }
 
   "not return applications for a labwork when there is no match" in {
-    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+    val labwork = Labwork("label 1", "description 1", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
 
     val first = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID))
     val second = LabworkApplication(Labwork.randomUUID, User.randomUUID, Set(User.randomUUID))

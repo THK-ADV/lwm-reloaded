@@ -296,7 +296,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       import models.Group.protocolWrites
 
       val labwork = Labwork.randomUUID
-      val course = Course.randomUUID
+      val course = SesameCourse.randomUUID
       val groupSize = 8
       val min = 13
       val max = 15

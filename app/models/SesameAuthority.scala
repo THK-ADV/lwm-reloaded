@@ -23,13 +23,13 @@ case class SesameAuthority(user: UUID, role: UUID, course: Option[UUID] = None, 
 
 case class SesameAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
 
-case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[CourseAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[SesameCourseAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class PostgresAuthority(user: UUID, roleLabel: String, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
+case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
 
 case class PostgresAuthorityProtocol(user: UUID, roleLabel: String, course: Option[UUID] = None)
 
-case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[CourseAtom], id: UUID) extends UniqueEntity
+case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[SesameCourseAtom], id: UUID) extends UniqueEntity
 
 object SesameAuthority extends UriGenerator[SesameAuthority] with JsonSerialisation[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
 
@@ -49,7 +49,7 @@ object SesameAuthorityAtom {
   implicit def writesAtom: Writes[SesameAuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[SesameRole] and
-      (JsPath \ "course").writeNullable[CourseAtom] and
+      (JsPath \ "course").writeNullable[SesameCourseAtom] and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(SesameAuthorityAtom.unapply))
@@ -71,7 +71,7 @@ object PostgresAuthorityAtom {
   implicit def writesAtom: Writes[PostgresAuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[PostgresRole](PostgresRole.writes) and
-      (JsPath \ "course").writeNullable[CourseAtom] and
+      (JsPath \ "course").writeNullable[SesameCourseAtom] and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresAuthorityAtom.unapply))
 }

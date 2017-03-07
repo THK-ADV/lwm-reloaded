@@ -15,14 +15,14 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
 
-  val authWithCourse1 = SesameAuthority(student.id, SesameRole.randomUUID, Some(Course.randomUUID))
-  val authWithCourse2 = SesameAuthority(student.id, SesameRole.randomUUID, Some(Course.randomUUID))
+  val authWithCourse1 = SesameAuthority(student.id, SesameRole.randomUUID, Some(SesameCourse.randomUUID))
+  val authWithCourse2 = SesameAuthority(student.id, SesameRole.randomUUID, Some(SesameCourse.randomUUID))
   val authWithoutCourse = SesameAuthority(student.id, SesameRole.randomUUID)
 
   val authorityGraph = URI(SesameAuthority.generateUri(authWithCourse1)).a(lwm.Authority)
     .--(lwm.privileged).->-(authWithCourse1.user)(ops, uuidRefBinder(User.splitter))
     .--(lwm.role).->-(authWithCourse1.role)(ops, uuidRefBinder(SesameRole.splitter))
-    .--(lwm.course).->-(authWithCourse1.course)(ops, uuidRefBinder(Course.splitter))
+    .--(lwm.course).->-(authWithCourse1.course)(ops, uuidRefBinder(SesameCourse.splitter))
     .--(lwm.invalidated).->-(authWithCourse1.invalidated)
     .--(lwm.id).->-(authWithCourse1.id).
     graph
@@ -60,8 +60,8 @@ class AuthorityBindingSpec extends SesameDbSpec {
       import bindings.{AuthorityAtomDescriptor, AuthorityDescriptor, CourseDescriptor, EmployeeDescriptor, RoleDescriptor, StudentDescriptor}
 
       val lecturer = SesameEmployee("lecturer", "lastname", "firstname", "email", "lecturer")
-      val course1 = Course("course1", "description", "abbrev", lecturer.id, 3)
-      val course2 = Course("course2", "description", "abbrev", lecturer.id, 2)
+      val course1 = SesameCourse("course1", "description", "abbrev", lecturer.id, 3)
+      val course2 = SesameCourse("course2", "description", "abbrev", lecturer.id, 2)
       val role1 = SesameRole("role1", Set(Permission("perm1"), Permission("perm2")))
       val role2 = SesameRole("role2", Set(Permission("perm3")))
       val authorities = Set(
@@ -69,7 +69,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
         SesameAuthority(student.id, role2.id)
       )
 
-      val courseAtom = CourseAtom(course1.label, course1.description, course1.abbreviation, lecturer, course1.semesterIndex, course1.invalidated, course1.id)
+      val courseAtom = SesameCourseAtom(course1.label, course1.description, course1.abbreviation, lecturer, course1.semesterIndex, course1.invalidated, course1.id)
       val authorityAtoms = Set(
         SesameAuthorityAtom(student, role1, Some(courseAtom), role1.invalidated, authorities.head.id),
         SesameAuthorityAtom(student, role2, None, role2.invalidated, authorities.last.id)

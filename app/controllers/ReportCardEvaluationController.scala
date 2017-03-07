@@ -65,7 +65,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
     queryString.foldLeft(Try(**(v("entries"), p(rdf.`type`), s(lwm.ReportCardEvaluation)))) {
       case (clause, (`courseAttribute`, courses)) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
+        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(courses.head))))
       }
       case (clause, (`labworkAttribute`, labworks)) => clause map {
         _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labworks.head))))

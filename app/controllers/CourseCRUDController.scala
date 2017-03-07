@@ -23,23 +23,23 @@ object CourseCRUDController {
   val lecturerAttribute = "lecturer"
 }
 
-class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[CourseProtocol, Course, CourseAtom] {
+class CourseCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameCourseProtocol, SesameCourse, SesameCourseAtom] {
 
   override val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Course] = defaultBindings.CourseDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameCourse] = defaultBindings.CourseDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, CourseAtom] = defaultBindings.CourseAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameCourseAtom] = defaultBindings.CourseAtomDescriptor
 
-  override implicit val reads: Reads[CourseProtocol] = Course.reads
+  override implicit val reads: Reads[SesameCourseProtocol] = SesameCourse.reads
 
-  override implicit val writes: Writes[Course] = Course.writes
+  override implicit val writes: Writes[SesameCourse] = SesameCourse.writes
 
-  override implicit val writesAtom: Writes[CourseAtom] = Course.writesAtom
+  override implicit val writesAtom: Writes[SesameCourseAtom] = SesameCourse.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Course] = Course
+  override implicit val uriGenerator: UriGenerator[SesameCourse] = SesameCourse
 
-  override protected def coAtomic(atom: CourseAtom): Course = Course(
+  override protected def coAtomic(atom: SesameCourseAtom): SesameCourse = SesameCourse(
     atom.label,
     atom.description,
     atom.abbreviation,
@@ -50,13 +50,13 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
   )
 
 
-  override protected def compareModel(input: CourseProtocol, output: Course): Boolean = {
+  override protected def compareModel(input: SesameCourseProtocol, output: SesameCourse): Boolean = {
     input.description == output.description && input.abbreviation == output.abbreviation && input.semesterIndex == output.semesterIndex
   }
 
-  override protected def fromInput(input: CourseProtocol, existing: Option[Course]): Course = existing match {
-    case Some(course) => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, None, course.id)
-    case None => Course(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex)
+  override protected def fromInput(input: SesameCourseProtocol, existing: Option[SesameCourse]): SesameCourse = existing match {
+    case Some(course) => SesameCourse(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex, None, course.id)
+    case None => SesameCourse(input.label, input.description, input.abbreviation, input.lecturer, input.semesterIndex)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -70,7 +70,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def existsQuery(input: CourseProtocol): Clause = {
+  override protected def existsQuery(input: SesameCourseProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -81,7 +81,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     }
   }
 
-  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Course]): Try[Set[Course]] = {
+  override def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameCourse]): Try[Set[SesameCourse]] = {
 
     queryString.foldLeft(Try(all)) {
       case (courses, (`lecturerAttribute`, lecturers)) => courses flatMap (set => Try(UUID.fromString(lecturers.head)).map(p => set.filter(_.lecturer == p)))
@@ -108,7 +108,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     validateInput(request)
       .flatMap(existence)
       .flatMap(withRoles)
-      .flatMap(course => retrieve[CourseAtom](Course.generateUri(course)))
+      .flatMap(course => retrieve[SesameCourseAtom](SesameCourse.generateUri(course)))
       .mapResult(courseAtom => Created(Json.toJson(courseAtom)).as(mimeType))
   }
 
@@ -118,7 +118,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
     * @param course which is associated
     * @return
     */
-  private def withRoles(course: Course) = {
+  private def withRoles(course: SesameCourse) = {
     import defaultBindings.AuthorityDescriptor
 
     (for {
@@ -128,7 +128,7 @@ class CourseCRUDController(val repository: SesameRepository, val sessionService:
         SesameAuthority(course.lecturer, role.id, optCourse)
       }
       _ <- repository.addMany[SesameAuthority](authorities)
-      _ <- repository.add[Course](course)
+      _ <- repository.add[SesameCourse](course)
     } yield course) match {
       case Success(c) => Continue(c)
       case Failure(e) => Return(

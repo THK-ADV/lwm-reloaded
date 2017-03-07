@@ -84,7 +84,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     // TODO appending queries are broken
     queryString.foldRight(Try(startClause)) {
       case ((`courseAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(Course.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(values.head))))
       }
       case ((`labworkAttribute`, values), clause) => clause map {
         _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))

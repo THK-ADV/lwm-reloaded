@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.{Course, SesameRole$, Roles}
+import models.{SesameCourse$, SesameRole$, Roles}
 import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -109,7 +109,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), course.update))(FakeMvAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
+      val json = Json.toJson(SesameCourse("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
       
       val request = FakeRequest(
         PUT,
@@ -130,7 +130,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), course.update))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
+      val json = Json.toJson(SesameCourse("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
       
       val request = FakeRequest(
         PUT,
@@ -151,7 +151,7 @@ class CourseControllerSecuritySpec extends WordSpec with TestBaseDefinition with
       when(roleService.authorities(FakeEmployee)).thenReturn(Success(Set(FakeEmployeeAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), course.update))(FakeEmployeeAuth)).thenReturn(Success(false))
 
-      val json = Json.toJson(Course("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
+      val json = Json.toJson(SesameCourse("", "", "", UUID.randomUUID(), 1, None, FakeCourse))
 
       val request = FakeRequest(
         PUT,

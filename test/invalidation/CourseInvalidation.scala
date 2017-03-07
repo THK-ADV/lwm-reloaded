@@ -16,7 +16,7 @@ class CourseInvalidation extends SesameDbSpec {
 
     def labs(course: UUID): Stream[Labwork] = Stream.continually {
       if (nextBoolean) Labwork("Label", "Desc", Semester.randomUUID, course, PostgresDegree.randomUUID)
-      else Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      else Labwork("Label", "Desc", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
     }
 
     def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {
@@ -63,7 +63,7 @@ class CourseInvalidation extends SesameDbSpec {
 
     def auths(course: UUID): Stream[SesameAuthority] = Stream.continually {
       if (nextBoolean) SesameAuthority(User.randomUUID, SesameRole.randomUUID, Some(course))
-      else SesameAuthority(User.randomUUID, SesameRole.randomUUID, Some(Course.randomUUID))
+      else SesameAuthority(User.randomUUID, SesameRole.randomUUID, Some(SesameCourse.randomUUID))
     }
 
     "invalidate the course and subsequent labwork and refroles" in {
@@ -81,7 +81,7 @@ class CourseInvalidation extends SesameDbSpec {
       AnnotationDescriptor
       }
 
-      val course = Course("Label", "Desc", "Abbrev", User.randomUUID, 2)
+      val course = SesameCourse("Label", "Desc", "Abbrev", User.randomUUID, 2)
       val labworks = (labs(course.id) take 100).toSet
       val refLabs = labworks filter (_.course == course.id)
 
@@ -97,7 +97,7 @@ class CourseInvalidation extends SesameDbSpec {
       val annotations = labworks flatMap (l => (annot(l.id) take 20).toSet)
       val refAnnots = annotations filterNot (a => refLabs exists (_.id == a.labwork))
 
-      repo.add[Course](course)
+      repo.add[SesameCourse](course)
       repo.addMany[Labwork](labworks)
       repo.addMany[SesameAuthority](authorities)
       repo.addMany[AssignmentPlan](assPlans)
@@ -109,9 +109,9 @@ class CourseInvalidation extends SesameDbSpec {
       repo.addMany[LabworkApplication](applications)
       repo.addMany[Annotation](annotations)
 
-      repo.invalidate[Course](Course.generateUri(course))
+      repo.invalidate[SesameCourse](SesameCourse.generateUri(course))
 
-      repo.get[Course](Course.generateUri(course)) shouldBe Success(None)
+      repo.get[SesameCourse](SesameCourse.generateUri(course)) shouldBe Success(None)
       repo.getAll[Labwork] shouldBe Success(labworks filter (_.course != course.id))
       repo.getAll[SesameAuthority] shouldBe Success(authorities filter (_.course.get != course.id))
       repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
@@ -130,7 +130,7 @@ class CourseInvalidation extends SesameDbSpec {
         case Failure(e) => fail("no")
       }
 
-      repo.deepGet[Course](Course.generateUri(course)) map (_ map (_.id)) shouldBe Success(Some(course.id))
+      repo.deepGet[SesameCourse](SesameCourse.generateUri(course)) map (_ map (_.id)) shouldBe Success(Some(course.id))
       repo.deepGetAll[Labwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
       repo.deepGetAll[AssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))

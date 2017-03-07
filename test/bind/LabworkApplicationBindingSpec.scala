@@ -55,7 +55,7 @@ class LabworkApplicationBindingSpec extends SesameDbSpec {
       import bindings.{LabworkApplicationAtomDescriptor, LabworkAtomDescriptor, StudentDescriptor}
 
       val employee = SesameEmployee("systemId", "last", "first", "mail", "status")
-      val courseAtom = CourseAtom("label", "desc", "abbrev", employee, 1, None, UUID.randomUUID)
+      val courseAtom = SesameCourseAtom("label", "desc", "abbrev", employee, 1, None, UUID.randomUUID)
       val degree = PostgresDegree("label", "abbrev")
       val semester = Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val labwork = LabworkAtom("Label", "Description", semester, courseAtom, degree, false, false, None, UUID.randomUUID)

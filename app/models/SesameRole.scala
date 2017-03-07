@@ -19,7 +19,7 @@ case class SesameRole(label: String, permissions: Set[Permission], invalidated: 
 
 case class SesameRoleProtocol(label: String, permissions: Set[Permission])
 
-case class PostgresRole(label: String, permissions: Set[Permission])
+case class PostgresRole(label: String, id: UUID = PostgresRole.randomUUID) extends UniqueEntity
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
 
@@ -32,17 +32,18 @@ object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[Sesame
   override def base: String = "roles"
 }
 
-object PostgresRole extends JsonSerialisation[PostgresRole, PostgresRole, PostgresRole] {
+object PostgresRole extends UriGenerator[PostgresRole] with JsonSerialisation[PostgresRole, PostgresRole, PostgresRole] {
 
   override implicit def reads: Reads[PostgresRole] = Json.reads[PostgresRole]
 
   override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
 
   override implicit def writesAtom: Writes[PostgresRole] = writes
+
+  override def base: String = "roles"
 }
 
 object Roles {
-  import models.Permissions._
 
   lazy val AdminLabel = "Administrator"
   lazy val EmployeeLabel = "Mitarbeiter"
@@ -51,12 +52,4 @@ object Roles {
   lazy val CourseAssistantLabel = "Hilfskraft"
   lazy val CourseManagerLabel = "Modulverantwortlicher"
   lazy val RightsManagerLabel = "Rechteverantwortlicher"
-
-  lazy val Admin = PostgresRole(AdminLabel, Set(prime))
-  lazy val Employee = PostgresRole(EmployeeLabel, Set())
-  lazy val Student = PostgresRole(StudentLabel, Set())
-  lazy val CourseEmployee = PostgresRole(CourseEmployeeLabel, Set())
-  lazy val CourseAssistant = PostgresRole(CourseAssistantLabel, Set())
-  lazy val CourseManager = PostgresRole(CourseManagerLabel, Set())
-  lazy val RightsManager = PostgresRole(RightsManagerLabel, Set())
 }

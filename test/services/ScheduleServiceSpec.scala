@@ -175,7 +175,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are no other schedules" in {
       val plan = assignmentPlan(5)
-      val labwork = Labwork("label", "description", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      val labwork = Labwork("label", "description", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
 
@@ -196,8 +196,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are some other schedules" in {
       val plan = assignmentPlan(8)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
-      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
+      val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
       val degree = PostgresDegree.randomUUID
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
@@ -393,7 +393,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate an initial collision free schedule instantly" in {
       val ap1Plan = assignmentPlan(8)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, PostgresDegree.randomUUID)
 
@@ -445,8 +445,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "generate a schedule with minimal or no collisions considering one existing competitive schedule and more density" in {
       val ap1Plan = assignmentPlan(8)
       val ma1Plan = assignmentPlan(4, 2)
-      val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
-      val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
+      val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
+      val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
       val degree = PostgresDegree.randomUUID
       val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)

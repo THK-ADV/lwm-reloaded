@@ -80,8 +80,8 @@ class ScheduleBindingSpec extends SesameDbSpec {
 
       val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
       val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
-      val course = Course("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
-      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
+      val course = SesameCourse("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
+      val courseAtom = SesameCourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
       val degree = PostgresDegree("label to pass", "abbrev to pass")
 
       val labwork = Labwork("labwork", "description", semester.id, courseAtom.id, degree.id, subscribable = false, published = false)

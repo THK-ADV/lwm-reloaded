@@ -116,7 +116,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
       case ((`courseAttribute`, courses), timetables) =>
         val query = select("labworks") where {
           **(v("labworks"), p(rdf.`type`), s(lwm.Labwork)).
-            **(v("labworks"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
+            **(v("labworks"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(courses.head))))
         }
 
         repository.prepareQuery(query).

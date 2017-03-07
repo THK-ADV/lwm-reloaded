@@ -14,8 +14,8 @@ class SemesterInvalidation extends SesameDbSpec {
   "A Semester invalidation" should {
 
     def labs(semester: UUID): Stream[Labwork] = Stream.continually {
-      if (nextBoolean()) Labwork("Label", "Desc", semester, Course.randomUUID, PostgresDegree.randomUUID)
-      else Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      if (nextBoolean()) Labwork("Label", "Desc", semester, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      else Labwork("Label", "Desc", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
     }
 
     def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))

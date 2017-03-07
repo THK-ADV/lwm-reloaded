@@ -68,7 +68,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
     val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
     val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
-    val courseAtom = CourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
+    val courseAtom = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
     val degree = PostgresDegree("label to pass", "abbrev to pass")
 
     val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)

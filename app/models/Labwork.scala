@@ -11,7 +11,7 @@ case class Labwork(label: String, description: String, semester: UUID, course: U
 
 case class LabworkProtocol(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean, published: Boolean)
 
-case class LabworkAtom(label: String, description: String, semester: Semester, course: CourseAtom, degree: SesameDegree, subscribable: Boolean, published: Boolean, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class LabworkAtom(label: String, description: String, semester: Semester, course: SesameCourseAtom, degree: SesameDegree, subscribable: Boolean, published: Boolean, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Labwork extends UriGenerator[Labwork] with JsonSerialisation[LabworkProtocol, Labwork, LabworkAtom] {
 
@@ -30,7 +30,7 @@ object LabworkAtom {
     (JsPath \ "label").write[String] and
       (JsPath \ "description").write[String] and
       (JsPath \ "semester").write[Semester] and
-      (JsPath \ "course").write[CourseAtom] and
+      (JsPath \ "course").write[SesameCourseAtom] and
       (JsPath \ "degree").write[SesameDegree](SesameDegree.writes) and
       (JsPath \ "subscribable").write[Boolean] and
       (JsPath \ "published").write[Boolean] and

@@ -215,7 +215,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val classUris: ClassUrisFor[Rdf, SesameAuthority] = classUrisFor[SesameAuthority](clazz)
 
     private val privileged = property[UUID](lwm.privileged)(uuidRefBinder(User.splitter))
-    private val course = optional[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val course = optional[UUID](lwm.course)(uuidRefBinder(SesameCourse.splitter))
     private val role = property[UUID](lwm.role)(uuidRefBinder(SesameRole.splitter))
 
     override val binder: PGBinder[Rdf, SesameAuthority] =
@@ -234,7 +234,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(RoleDescriptor.references)
 
     private val privileged = property[User](lwm.privileged)(UserDescriptor.binder)
-    private val course = optional[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
+    private val course = optional[SesameCourseAtom](lwm.course)(CourseAtomDescriptor.binder)
     private val role = property[SesameRole](lwm.role)(RoleDescriptor.binder)
 
     override val binder: PGBinder[Rdf, SesameAuthorityAtom] =
@@ -326,7 +326,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val semester = property[UUID](lwm.semester)(uuidRefBinder(Semester.splitter))
-    private val course = property[UUID](lwm.course)(uuidRefBinder(Course.splitter))
+    private val course = property[UUID](lwm.course)(uuidRefBinder(SesameCourse.splitter))
     private val degree = property[UUID](lwm.degree)(uuidRefBinder(SesameDegree.splitter))
     private val subscribable = property[Boolean](lwm.subscribable)
     private val published = property[Boolean](lwm.published)
@@ -349,7 +349,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
     private val semester = property[Semester](lwm.semester)(SemesterDescriptor.binder)
-    private val course = property[CourseAtom](lwm.course)(CourseAtomDescriptor.binder)
+    private val course = property[SesameCourseAtom](lwm.course)(CourseAtomDescriptor.binder)
     private val degree = property[SesameDegree](lwm.degree)(DegreeDescriptor.binder)
     private val subscribable = property[Boolean](lwm.subscribable)
     private val published = property[Boolean](lwm.published)
@@ -359,10 +359,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         atom => makeUri(Labwork.generateUri(atom.id)))(label, description, semester, course, degree, subscribable, published, invalidated, id)(LabworkAtom.apply, LabworkAtom.unapply) withClasses classUris
 
   }
-  implicit lazy val CourseDescriptor: Descriptor[Rdf, Course] = new Descriptor[Rdf, Course] {
+  implicit lazy val CourseDescriptor: Descriptor[Rdf, SesameCourse] = new Descriptor[Rdf, SesameCourse] {
     override val clazz: Rdf#URI = lwm.Course
 
-    override val classUris: ClassUrisFor[Rdf, Course] = classUrisFor[Course](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameCourse] = classUrisFor[SesameCourse](clazz)
 
     override val branching: Ref[Rdf#URI] =
       Ref(clazz)
@@ -375,14 +375,14 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val lecturer = property[UUID](lwm.lecturer)(uuidRefBinder(User.splitter))
     private val semesterIndex = property[Int](lwm.semesterIndex)
 
-    override val binder: PGBinder[Rdf, Course] =
-      pgbWithId[Course](course =>
-        makeUri(Course.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(Course.apply, Course.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameCourse] =
+      pgbWithId[SesameCourse](course =>
+        makeUri(SesameCourse.generateUri(course)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(SesameCourse.apply, SesameCourse.unapply) withClasses classUris
   }
-  implicit lazy val CourseAtomDescriptor: Descriptor[Rdf, CourseAtom] = new Descriptor[Rdf, CourseAtom] {
+  implicit lazy val CourseAtomDescriptor: Descriptor[Rdf, SesameCourseAtom] = new Descriptor[Rdf, SesameCourseAtom] {
     override val clazz: Rdf#URI = lwm.Course
 
-    override val classUris: ClassUrisFor[Rdf, CourseAtom] = classUrisFor[CourseAtom](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameCourseAtom] = classUrisFor[SesameCourseAtom](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt EmployeeDescriptor.references
 
@@ -392,9 +392,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val lecturer = property[SesameEmployee](lwm.lecturer)(EmployeeDescriptor.binder)
     private val semesterIndex = property[Int](lwm.semesterIndex)
 
-    override val binder: PGBinder[Rdf, CourseAtom] =
-      pgbWithId[CourseAtom](atom =>
-        makeUri(Course.generateUri(atom.id)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(CourseAtom.apply, CourseAtom.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameCourseAtom] =
+      pgbWithId[SesameCourseAtom](atom =>
+        makeUri(SesameCourse.generateUri(atom.id)))(label, description, abbreviation, lecturer, semesterIndex, invalidated, id)(SesameCourseAtom.apply, SesameCourseAtom.unapply) withClasses classUris
   }
   implicit lazy val DegreeDescriptor: Descriptor[Rdf, SesameDegree] = new Descriptor[Rdf, SesameDegree] {
     override val clazz: Rdf#URI = lwm.Degree

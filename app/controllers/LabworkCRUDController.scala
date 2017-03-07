@@ -86,7 +86,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.Labwork)).
         **(v("s"), p(lwm.semester), s(Semester.generateUri(input.semester)(namespace))).
-        **(v("s"), p(lwm.course), s(Course.generateUri(input.course)(namespace))).
+        **(v("s"), p(lwm.course), s(SesameCourse.generateUri(input.course)(namespace))).
         **(v("s"), p(lwm.degree), s(SesameDegree.generateUri(input.degree)(namespace)))
     }
   }

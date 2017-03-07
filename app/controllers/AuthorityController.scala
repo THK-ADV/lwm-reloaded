@@ -70,7 +70,7 @@ class AuthorityController(val repository: SesameRepository, val sessionService: 
 
     queryString.foldLeft(Try(initClause)) {
       case (authorities, (`courseAttribute`, courses)) => authorities map {
-        _ append **(v("auth"), p(lwm.course), s(Course.generateUri(UUID.fromString(courses.head))))
+        _ append **(v("auth"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(courses.head))))
       }
       case (authorities, (`roleAttribute`, roles)) => authorities map {
         _ append **(v("auth"), p(lwm.role), s(SesameRole.generateUri(UUID.fromString(roles.head))))

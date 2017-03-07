@@ -19,8 +19,8 @@ class DegreeInvalidation extends SesameDbSpec {
     }
 
     def labs(degree: UUID): Stream[Labwork] = Stream.continually {
-      if (nextBoolean()) Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, degree)
-      else Labwork("Label", "Desc", Semester.randomUUID, Course.randomUUID, PostgresDegree.randomUUID)
+      if (nextBoolean()) Labwork("Label", "Desc", Semester.randomUUID, SesameCourse.randomUUID, degree)
+      else Labwork("Label", "Desc", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
     }
 
     def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {

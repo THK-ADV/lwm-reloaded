@@ -34,11 +34,11 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[SesameAuthority
   val employeeToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val employeeToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
-  val courseToPass = Course("Course2", "Description", "Abbrev", employeeToPass.id, 0)
-  val courseToFail = Course("Course1", "Description", "Abbrev", employeeToFail.id, 0)
+  val courseToPass = SesameCourse("Course2", "Description", "Abbrev", employeeToPass.id, 0)
+  val courseToFail = SesameCourse("Course1", "Description", "Abbrev", employeeToFail.id, 0)
 
-  val courseAtomToPass = CourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.invalidated, courseToPass.id)
-  val courseAtomToFail = CourseAtom(courseToFail.label, courseToFail.description, courseToFail.abbreviation, employeeToFail, courseToFail.semesterIndex, courseToPass.invalidated, courseToFail.id)
+  val courseAtomToPass = SesameCourseAtom(courseToPass.label, courseToPass.description, courseToPass.abbreviation, employeeToPass, courseToPass.semesterIndex, courseToPass.invalidated, courseToPass.id)
+  val courseAtomToFail = SesameCourseAtom(courseToFail.label, courseToFail.description, courseToFail.abbreviation, employeeToFail, courseToFail.semesterIndex, courseToPass.invalidated, courseToFail.id)
 
   val role1 = SesameRole(Roles.AdminLabel, Set(user.get, user.getAll))
   val role2 = SesameRole("role2", Set(course.get, course.create, course.getAll))
@@ -120,8 +120,8 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[SesameAuthority
       val user2 = SesameEmployee("", "", "", "", "")
       val user3 = SesameEmployee("", "", "", "", "")
 
-      val course1 = Course("", "", "", UUID.randomUUID, 1)
-      val course2 = Course("", "", "", UUID.randomUUID, 2)
+      val course1 = SesameCourse("", "", "", UUID.randomUUID, 1)
+      val course2 = SesameCourse("", "", "", UUID.randomUUID, 2)
 
       val auth1 = SesameAuthority(user1.id, role1.id, Some(course1.id))
       val auth2 = SesameAuthority(user1.id, role2.id)
@@ -132,7 +132,7 @@ class AuthorityControllerSpec extends AbstractCRUDControllerSpec[SesameAuthority
       realRepo.addMany[SesameAuthority](List(auth1, auth2, auth3, auth4, auth5))
       realRepo.addMany[SesameRole](List(role1, role2))
       realRepo.addMany[SesameEmployee](List(user1, user2, user3))
-      realRepo.addMany[Course](List(course1, course2))
+      realRepo.addMany[SesameCourse](List(course1, course2))
 
       val requestWithCourse = FakeRequest(
         GET,
