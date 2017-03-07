@@ -17,15 +17,29 @@ import utils.Ops.JsPathX
   * @param permissions The unary permissions of that `Role`
   */
 
+sealed trait Role extends UniqueEntity
+
 case class SesameRole(label: String, permissions: Set[SesamePermission], invalidated: Option[DateTime] = None, id: UUID = SesameRole.randomUUID) extends UniqueEntity
 
 case class SesameRoleProtocol(label: String, permissions: Set[SesamePermission])
 
-case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends UniqueEntity
+case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
 
 case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
-case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends UniqueEntity
+case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
+
+case class RolePermission(role: UUID, permission: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
+
+object Role {
+
+  implicit def writes: Writes[Role] = new Writes[Role] {
+    override def writes(o: Role) = o match {
+      case postgresRole: PostgresRole => Json.toJson(postgresRole)(PostgresRole.writes)
+      case postgresRoleAtom: PostgresRoleAtom => Json.toJson(postgresRoleAtom)(PostgresRoleAtom.writesAtom)
+    }
+  }
+}
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
 
@@ -45,6 +59,15 @@ object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole
   override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
 
   override implicit def writesAtom: Writes[PostgresRoleAtom] = PostgresRoleAtom.writesAtom
+}
+
+object RolePermission extends JsonSerialisation[RolePermission, RolePermission, RolePermission] {
+
+  override implicit def reads: Reads[RolePermission] = Json.reads[RolePermission]
+
+  override implicit def writes: Writes[RolePermission] = Json.writes[RolePermission]
+
+  override implicit def writesAtom: Writes[RolePermission] = writes
 }
 
 object PostgresRoleAtom {

@@ -24,7 +24,7 @@ object SesamePermission extends JsonSerialisation[SesamePermission, SesamePermis
   override implicit def writes: Writes[SesamePermission] = Json.writes[SesamePermission]
 }
 
-case class PostgresPermission(value: String, description: String, id: UUID) extends UniqueEntity
+case class PostgresPermission(value: String, description: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class PostgresPermissionProtocol(value: String, description: String)
 
@@ -207,8 +207,9 @@ object Permissions {
 
   lazy val all = room.all ++ degree.all ++ course.all ++
     labwork.all ++ labworkApplication.all ++ authority.all ++
-    role.all ++ schedule.all ++ timetable.all ++ semester.all ++ group.all ++
+    role.all ++ schedule.all ++ scheduleEntry.all ++
+    timetable.all ++ semester.all ++ group.all ++
     user.all ++ blacklist.all ++ entryType.all ++ reportCardEntry.all ++
     reportCardEntryType.all ++ reportCardEvaluation.all ++ assignmentPlan.all ++
-    annotation.all ++ scheduleEntry.all
+    annotation.all
 }

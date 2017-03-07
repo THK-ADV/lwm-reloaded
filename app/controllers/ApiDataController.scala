@@ -6,14 +6,14 @@ import models._
 import org.joda.time.Interval
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
-import services.{DegreeService, UserService}
+import services._
 import store.SesameRepository
 import store.bind.Bindings
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-class ApiDataController(private val repository: SesameRepository) extends Controller {
+class ApiDataController(private val repository: SesameRepository) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
@@ -124,5 +124,63 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       case NonFatal(e) =>
         InternalServerError(Json.obj("error" -> e.getMessage))
     }
+  }
+
+  def migratePermissions = Action.async {
+    import bindings.RoleDescriptor
+
+    val result = for {
+      _ <- PermissionService.createSchema
+      sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
+      permissions = Permissions.all + Permissions.prime + Permissions.god
+      _ = println(s"permissions ${permissions.size}")
+      sesamePermissions = sesameRoles.flatMap(_.permissions)
+      _ = println(s"sesamePermissions ${sesamePermissions.filterNot(s => permissions.exists(_.value == s.value))}")
+      postgresPermissions = permissions.map(p => PostgresPermission(p.value, ""))
+      _ = println(s"postgresPermissions ${postgresPermissions.size}")
+      ps <- PermissionService.createMany(postgresPermissions)
+      _ = println(s"ps ${ps.size}")
+    } yield ps
+
+    result.jsonResult(PostgresPermission.writes)
+  }
+
+  def migrateRoles = Action.async {
+    import bindings.RoleDescriptor
+    import models.RolePermission.writes
+
+    val result = for {
+      _ <- RoleService2.createSchema
+      _ <- RolePermissionService.createSchema
+      sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
+      _ = println(s"sesameRoles ${sesameRoles.size}")
+      postgresPermissions <- PermissionService.get()
+      _ = println(s"postgresPermissions ${postgresPermissions.size}")
+      postgresRoles = sesameRoles.map{ r =>
+        println(s"sesameRole permissions ${r.permissions.size}")
+        val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
+        println(s"postgresPermissions ${perms.size}")
+        PostgresRole(r.label, perms.toSet, r.id)
+      }
+      result <- RoleService2.createManyWithPermissions(postgresRoles)
+      foo = result.map {
+        case ((o, set)) => (o, set.size)
+      }
+      _ = println(s"result roles")
+      _ = foo.foreach(println)
+    } yield result
+
+    result.map { map =>
+      Ok(Json.toJson(map.map {
+        case ((r, rps)) => Json.obj(
+          "role" -> Json.toJson(r.get)(Role.writes),
+          "role_permission" -> Json.toJson(rps)
+        )
+      }))
+    }
+  }
+
+  def a = Action.async {
+    RoleService2.get(List.empty, true).jsonResult
   }
 }

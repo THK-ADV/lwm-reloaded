@@ -1,6 +1,6 @@
 package controllers
 
-import models.{DbUser, Permissions, User}
+import models._
 import play.api.libs.json.{JsError, JsValue, Json, Reads}
 import play.api.mvc.{Controller, Request, Result}
 import services._
@@ -8,6 +8,7 @@ import store.{Resolvers, TableFilter, UserTable}
 import utils.LwmMimeType
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object UserControllerPostgres {
@@ -57,7 +58,7 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
     userService.get(List(UserIdFilter(id)), atomic).map(_.headOption).jsonResult(id)
   }
 
-  def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
+  private def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
       errors => Failure(new Throwable(JsError.toJson(errors).toString())),
       success => Success(success)
@@ -65,7 +66,10 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
   }
 
   def createOrUpdate() = contextFrom(Create) asyncContentTypedAction { request =>
-    val a = for {
+    import models.User.writes
+    import models.PostgresAuthority.writesAtom
+
+    val result = for {
       systemId <- Future.fromTry(parse[UserProtocol](request).map(p => UserSystemIdFilter(p.systemId)))
       ldapUser <- ldapService.user2(systemId.value)
       degrees <- DegreeService.get()
@@ -73,11 +77,23 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
       maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
       dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, existing.headOption.fold(ldapUser.id)(_.id))
       updated <- userService.createOrUpdate(dbUser)
-      //a = updated.fold()(inserted => )
-    } yield 1
+      maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => AuthorityService.createWith(user).mapTo[Option[PostgresAuthorityAtom]])
+    } yield (dbUser, maybeAuth)
 
-
-    ???
+    result.map {
+      case ((dbUser, maybeAuth)) =>
+        val userJson = Json.toJson(dbUser.user)
+        maybeAuth.fold {
+          Ok(userJson)
+        } { auth =>
+          Created(Json.obj(
+            "user" -> userJson,
+            "authority" -> Json.toJson(auth)
+          ))
+        }
+    } recover {
+      case NonFatal(e) => internalServerError(e)
+    }
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

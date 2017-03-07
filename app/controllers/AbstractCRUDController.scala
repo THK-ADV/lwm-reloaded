@@ -206,8 +206,9 @@ trait SecureControllerContext {
 
 trait PostgresResult { self: Controller =>
 
-  private def internalServerError(message: String) = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
-  private def notFound(element: String) = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
+  def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getMessage)
+  def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
+  def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
 
   implicit class SequenceResult[A](val future: Future[Seq[A]]) {
     def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {

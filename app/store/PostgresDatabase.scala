@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import slick.driver.PostgresDriver.api._
-import slick.lifted.Rep
+import slick.lifted.{QueryBase, Rep}
 
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
@@ -77,6 +77,10 @@ class RoleTable(tag: Tag) extends Table[PostgresRole](tag, "ROLES") with UniqueT
   def unmapRow: (PostgresRole) => Option[(String, UUID)] = {
     role => Option((role.label, role.id))
   }
+
+  def isLabel(label: String): Rep[Boolean] = this.label === label
+
+  def permissions = TableQuery[RolePermissionTable].filter(_.role === id).flatMap(_.permissionFk)
 }
 
 class PermissionTable(tag: Tag) extends Table[PostgresPermission](tag, "PERMISSIONS") with UniqueTable {
@@ -85,8 +89,6 @@ class PermissionTable(tag: Tag) extends Table[PostgresPermission](tag, "PERMISSI
 
   override def * = (value, description, id) <> ((PostgresPermission.apply _).tupled, PostgresPermission.unapply)
 }
-
-case class RolePermission(role: UUID, permission: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PERMISSION") with UniqueTable {
   def role = column[UUID]("ROLE")
