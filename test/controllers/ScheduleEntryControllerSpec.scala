@@ -66,12 +66,12 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   }).toVector
 
   def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
-    val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+    val semester = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
     val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
     val courseAtom = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
     val degree = PostgresDegree("label to pass", "abbrev to pass")
 
-    val labworkAtom = LabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
+    val labworkAtom = SesameLabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)
     val supervisor: Set[User] = e.supervisor map (SesameEmployee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
     val group = Group("label", labworkAtom.id, Set(), None, e.group)
@@ -101,7 +101,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     }
 
     "get specific entries atomised" in {
-      val labwork = Labwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val labwork = SesameLabwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val courseID = UUID.randomUUID()
 
       val entry = entries(labwork.id)(1)
@@ -144,7 +144,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     }
 
     "get all entries atomised" in {
-      val labwork = Labwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val labwork = SesameLabwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val courseID = UUID.randomUUID()
 
       val entry = entries(labwork.id)(3)
@@ -189,7 +189,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     }
 
     "update entries and respond with the atomised atomic version" in {
-      val labwork = Labwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val labwork = SesameLabwork("", "", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val courseID = UUID.randomUUID()
 
       val entry = entries(labwork.id)(1)
@@ -235,9 +235,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val courseID = UUID.randomUUID()
       val courseID2 = UUID.randomUUID()
 
-      val labwork1 = Labwork("Label1", "Desc1", UUID.randomUUID(), courseID, UUID.randomUUID())
-      val labwork2 = Labwork("Label2", "Desc2", UUID.randomUUID(), courseID2, UUID.randomUUID())
-      val labwork3 = Labwork("Label3", "Desc3", UUID.randomUUID(), courseID, UUID.randomUUID())
+      val labwork1 = SesameLabwork("Label1", "Desc1", UUID.randomUUID(), courseID, UUID.randomUUID())
+      val labwork2 = SesameLabwork("Label2", "Desc2", UUID.randomUUID(), courseID2, UUID.randomUUID())
+      val labwork3 = SesameLabwork("Label3", "Desc3", UUID.randomUUID(), courseID, UUID.randomUUID())
 
       val group1 = Group("Label1", labwork1.id, Set.empty)
       val group2 = Group("Label2", labwork2.id, Set.empty)

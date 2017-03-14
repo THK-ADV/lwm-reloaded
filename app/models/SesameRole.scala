@@ -17,19 +17,23 @@ import utils.Ops.JsPathX
   * @param permissions The unary permissions of that `Role`
   */
 
-sealed trait Role extends UniqueEntity
-
 case class SesameRole(label: String, permissions: Set[SesamePermission], invalidated: Option[DateTime] = None, id: UUID = SesameRole.randomUUID) extends UniqueEntity
 
 case class SesameRoleProtocol(label: String, permissions: Set[SesamePermission])
 
+// Postgres
+
+sealed trait Role extends UniqueEntity
+
 case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
+
+case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
 case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
 
-case class RolePermission(role: UUID, permission: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class RolePermission(role: UUID, permission: UUID, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 object Role {
 
@@ -39,6 +43,8 @@ object Role {
       case postgresRoleAtom: PostgresRoleAtom => Json.toJson(postgresRoleAtom)(PostgresRoleAtom.writesAtom)
     }
   }
+
+  def toRole(roleDb: RoleDb): PostgresRole = PostgresRole(roleDb.label, roleDb.permissions, roleDb.id)
 }
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
@@ -87,4 +93,10 @@ object Roles {
   lazy val CourseAssistantLabel = "Hilfskraft"
   lazy val CourseManagerLabel = "Modulverantwortlicher"
   lazy val RightsManagerLabel = "Rechteverantwortlicher"
+
+  def fromUserStatus(status: String): String = status match {
+    case User.EmployeeType => EmployeeLabel
+    case User.LecturerType => EmployeeLabel
+    case User.StudentType => StudentLabel
+  }
 }

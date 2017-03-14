@@ -13,7 +13,7 @@ class TimetableInvalidation extends SesameDbSpec {
 
     def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
-    def tt: Stream[Timetable] = Stream.continually(Timetable(Labwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set()))
+    def tt: Stream[Timetable] = Stream.continually(Timetable(SesameLabwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set()))
 
     "invalidate the timetable and subsequent timetable entries" in {
       import bindings.TimetableDescriptor

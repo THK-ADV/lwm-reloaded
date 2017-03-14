@@ -13,12 +13,6 @@ case class SesameCourseProtocol(label: String, description: String, abbreviation
 
 case class SesameCourseAtom(label: String, description: String, abbreviation: String, lecturer: SesameEmployee, semesterIndex: Int, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
 
-case class PostgresCourse(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity
-
-case class PostgresCourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
-
-case class PostgresCourseAtom(label: String, description: String, abbreviation: String, lecturer: PostgresEmployee, semesterIndex: Int, id: UUID) extends UniqueEntity
-
 object SesameCourse extends UriGenerator[SesameCourse] with JsonSerialisation[SesameCourseProtocol, SesameCourse, SesameCourseAtom] {
 
   override implicit def reads: Reads[SesameCourseProtocol] = Json.reads[SesameCourseProtocol]
@@ -43,6 +37,20 @@ object SesameCourseAtom {
 }
 
 
+// Postgres
+
+sealed trait Course extends UniqueEntity
+
+case class PostgresCourse(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID = PostgresCourse.randomUUID) extends Course
+
+case class PostgresCourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
+
+case class PostgresCourseAtom(label: String, description: String, abbreviation: String, lecturer: User, semesterIndex: Int, id: UUID) extends Course
+
+case class CourseDb(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[DateTime] = None, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity {
+  def toCourse = PostgresCourse(label, description, abbreviation, lecturer, semesterIndex, id)
+}
+
 object PostgresCourse extends UriGenerator[PostgresCourse] with JsonSerialisation[PostgresCourseProtocol, PostgresCourse, PostgresCourseAtom] {
 
   override implicit def reads: Reads[PostgresCourseProtocol] = Json.reads[PostgresCourseProtocol]
@@ -59,7 +67,7 @@ object PostgresCourseAtom {
     (JsPath \ "label").write[String] and
       (JsPath \ "description").write[String] and
       (JsPath \ "abbreviation").write[String] and
-      (JsPath \ "lecturer").write[PostgresEmployee](PostgresEmployee.writes) and
+      (JsPath \ "lecturer").write[User](User.writes) and
       (JsPath \ "semesterIndex").write[Int] and
       (JsPath \ "id").write[UUID]
     )(unlift(PostgresCourseAtom.unapply))

@@ -40,11 +40,11 @@ case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: 
   * Atomic
   */
 
-case class ReportCardEntryAtom(student: SesameStudent, labwork: Labwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ReportCardEntryAtom(student: SesameStudent, labwork: SesameLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
 
-case class ReportCardEvaluationAtom(student: SesameStudent, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ReportCardEvaluationAtom(student: SesameStudent, labwork: SesameLabworkAtom, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 /**
   * Companions
@@ -126,7 +126,7 @@ object ReportCardEntryAtom {
 
   implicit def writesAtom: Writes[ReportCardEntryAtom] = (
     (JsPath \ "student").write[SesameStudent](SesameStudent.writes) and
-      (JsPath \ "labwork").write[Labwork] and
+      (JsPath \ "labwork").write[SesameLabwork] and
       (JsPath \ "label").write[String] and
       (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
@@ -143,7 +143,7 @@ object ReportCardEvaluationAtom {
 
   implicit def writesAtom: Writes[ReportCardEvaluationAtom] = (
     (JsPath \ "student").write[SesameStudent](SesameStudent.writes) and
-      (JsPath \ "labwork").write[LabworkAtom] and
+      (JsPath \ "labwork").write[SesameLabworkAtom] and
       (JsPath \ "label").write[String] and
       (JsPath \ "bool").write[Boolean] and
       (JsPath \ "int").write[Int] and

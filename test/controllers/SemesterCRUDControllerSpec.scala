@@ -21,34 +21,34 @@ object SemesterCRUDControllerSpec {
   def populate = {
     val template = {
       val start = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5)
-      Semester("template", "template", start, start.plusMonths(6), start.plusMonths(5))
+      SesameSemester("template", "template", start, start.plusMonths(6), start.plusMonths(5))
     }
 
-    (0 until 20).foldLeft((Set.empty[Semester], template)) {
+    (0 until 20).foldLeft((Set.empty[SesameSemester], template)) {
       case ((vector, prev), i) =>
-        val current = Semester(i.toString, i.toString, prev.end.plusDays(1), prev.end.plusDays(1).plusMonths(6), prev.end.plusDays(1).plusMonths(5))
+        val current = SesameSemester(i.toString, i.toString, prev.end.plusDays(1), prev.end.plusDays(1).plusMonths(6), prev.end.plusDays(1).plusMonths(5))
         (vector + current, current)
     }._1
   }
 }
 
-class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, Semester, Semester] {
+class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProtocol, SesameSemester, SesameSemester] {
 
-  override val entityToPass: Semester = Semester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  override val entityToPass: SesameSemester = SesameSemester("label to pass", "abbreviation to pass", LocalDate.now, LocalDate.now, LocalDate.now)
 
-  override val entityToFail: Semester = Semester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now)
+  override val entityToFail: SesameSemester = SesameSemester("label to fail", "abbreviation to fail", LocalDate.now, LocalDate.now, LocalDate.now)
 
-  override implicit val jsonWrites: Writes[Semester] = Semester.writes
+  override implicit val jsonWrites: Writes[SesameSemester] = SesameSemester.writes
 
-  override val atomizedEntityToPass: Semester = entityToPass
+  override val atomizedEntityToPass: SesameSemester = entityToPass
 
-  override val atomizedEntityToFail: Semester = entityToFail
+  override val atomizedEntityToFail: SesameSemester = entityToFail
 
-  override val jsonWritesAtom: Writes[Semester] = jsonWrites
+  override val jsonWritesAtom: Writes[SesameSemester] = jsonWrites
 
   override val controller: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = entityToPass
+    override protected def fromInput(input: SemesterProtocol, existing: Option[SesameSemester]): SesameSemester = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -88,7 +88,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       import controllers.SemesterCRUDController._
       val semesters = SemesterCRUDControllerSpec.populate
 
-      when(repository.getAll[Semester](anyObject())).thenReturn(Success(semesters))
+      when(repository.getAll[SesameSemester](anyObject())).thenReturn(Success(semesters))
 
       val validRequest = FakeRequest(
         GET,
@@ -119,9 +119,9 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameSemester.generateUri(entityToPass)))
       )))
-      when(repository.get[Semester](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[SesameSemester](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -144,7 +144,7 @@ class SemesterCRUDControllerSpec extends AbstractCRUDControllerSpec[SemesterProt
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Semester.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameSemester.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

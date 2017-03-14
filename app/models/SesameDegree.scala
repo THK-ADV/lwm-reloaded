@@ -23,6 +23,10 @@ object SesameDegree extends UriGenerator[SesameDegree] with JsonSerialisation[De
 
 case class PostgresDegree(label: String, abbreviation: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
+case class DegreeDb(label: String, abbreviation: String, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+  def toDegree = PostgresDegree(label, abbreviation, id)
+}
+
 object PostgresDegree extends JsonSerialisation[PostgresDegree, PostgresDegree, PostgresDegree] {
 
   override implicit def reads: Reads[PostgresDegree] = Json.reads[PostgresDegree]

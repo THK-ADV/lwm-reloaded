@@ -109,7 +109,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     SemanticUtils.collect {
       groups map { group =>
         for {
-          optLabwork <- repository.get[Labwork](Labwork.generateUri(group.labwork))
+          optLabwork <- repository.get[SesameLabwork](SesameLabwork.generateUri(group.labwork))
           students <- repository.getMany[SesameStudent](group.members map User.generateUri)
         } yield optLabwork map (GroupAtom(group.label, _, students, group.invalidated, group.id))
       }

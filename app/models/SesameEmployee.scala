@@ -10,7 +10,7 @@ case class SesameEmployee(systemId: String, lastname: String, firstname: String,
 
 object SesameEmployee extends JsonSerialisation[SesameEmployee, SesameEmployee, SesameEmployee] {
 
-  lazy val default = SesameEmployee("n.a.", "n.a.", "n.a", "n.a.", "n.a")
+  lazy val default = SesameEmployee("n.a.", "n.a.", "n.a", "n.a.", User.EmployeeType)
 
   override implicit def reads: Reads[SesameEmployee] = Json.reads[SesameEmployee]
 

@@ -29,7 +29,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
 
   val entryGraph = URI(ReportCardEntry.generateUri(reportCardEntry)).a(lwm.ReportCardEntry)
     .--(lwm.student).->-(reportCardEntry.student)(ops, uuidRefBinder(User.splitter))
-    .--(lwm.labwork).->-(reportCardEntry.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.labwork).->-(reportCardEntry.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.label).->-(reportCardEntry.label)
     .--(lwm.date).->-(reportCardEntry.date)
     .--(lwm.start).->-(reportCardEntry.start)

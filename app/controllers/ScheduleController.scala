@@ -137,7 +137,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     val labId = UUID.fromString(labwork)
 
     val genesis = for {
-      lab <- repository.get[LabworkAtom](Labwork.generateUri(labId))
+      lab <- repository.get[SesameLabworkAtom](SesameLabwork.generateUri(labId))
       semester = lab map (_.semester)
       groups <- groupService.groupBy(labId, groupStrategy)
       timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
@@ -192,7 +192,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
 
     queryString.foldLeft(Try(**(v("schedules"), p(rdf.`type`), s(lwm.Schedule)))) {
       case (clause, (`labworkAttribute`, labworks)) => clause map {
-        _ append **(v("schedules"), p(lwm.labwork), o(Labwork.generateUri(UUID.fromString(labworks.head))))
+        _ append **(v("schedules"), p(lwm.labwork), o(SesameLabwork.generateUri(UUID.fromString(labworks.head))))
       }
       case _ => Failure(new Throwable("Unknown attribute"))
     } flatMap { clause =>

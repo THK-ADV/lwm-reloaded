@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models._
-import models.{Semester, _}
+import models.{SesameSemester$, _}
 import org.joda.time.{LocalDate, LocalTime}
 import org.w3.banana.PointedGraph
 
@@ -23,13 +23,13 @@ class ScheduleBindingSpec extends SesameDbSpec {
   val schedule = Schedule(labwork, Set(scheduleEntry))
 
   val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
-    .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.entries).->-(schedule.entries)
     .--(lwm.invalidated).->-(schedule.invalidated)
     .--(lwm.id).->-(schedule.id).graph
 
   val scheduleEntryGraph = URI(ScheduleEntry.generateUri(scheduleEntry)).a(lwm.ScheduleEntry)
-    .--(lwm.labwork).->-(scheduleEntry.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.labwork).->-(scheduleEntry.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.start).->-(scheduleEntry.start)
     .--(lwm.end).->-(scheduleEntry.end)
     .--(lwm.date).->-(scheduleEntry.date)
@@ -78,14 +78,14 @@ class ScheduleBindingSpec extends SesameDbSpec {
     "return a schedule atom based on an RDF representation" in {
       import bindings.{CourseDescriptor, DegreeDescriptor, EmployeeDescriptor, GroupDescriptor, LabworkDescriptor, RoomDescriptor, ScheduleAtomDescriptor, ScheduleDescriptor, ScheduleEntryDescriptor, SemesterDescriptor}
 
-      val semester = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+      val semester = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
       val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
       val course = SesameCourse("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
       val courseAtom = SesameCourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
       val degree = PostgresDegree("label to pass", "abbrev to pass")
 
-      val labwork = Labwork("labwork", "description", semester.id, courseAtom.id, degree.id, subscribable = false, published = false)
-      val labworkAtom = LabworkAtom(labwork.label, labwork.description, semester, courseAtom, degree, labwork.subscribable, labwork.subscribable, labwork.invalidated, labwork.id)
+      val labwork = SesameLabwork("labwork", "description", semester.id, courseAtom.id, degree.id, subscribable = false, published = false)
+      val labworkAtom = SesameLabworkAtom(labwork.label, labwork.description, semester, courseAtom, degree, labwork.subscribable, labwork.subscribable, labwork.invalidated, labwork.id)
 
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")

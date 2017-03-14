@@ -15,10 +15,10 @@ class GroupBindingSpec extends SesameDbSpec {
 
   implicit val groupBinder = GroupDescriptor.binder
 
-  val group = Group("Label", Labwork.randomUUID, Set(User.randomUUID, User.randomUUID))
+  val group = Group("Label", SesameLabwork.randomUUID, Set(User.randomUUID, User.randomUUID))
   val groupGraph = URI(Group.generateUri(group)).a(lwm.Group)
     .--(lwm.label).->-(group.label)
-    .--(lwm.labwork).->-(group.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.labwork).->-(group.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.members).->-(group.members)(ops, uuidRefBinder(User.splitter))
     .--(lwm.invalidated).->-(group.invalidated)
     .--(lwm.id).->-(group.id).graph
@@ -45,14 +45,14 @@ class GroupBindingSpec extends SesameDbSpec {
     "return an atomic group based on an RDF graph representation" in {
       import bindings.{GroupAtomDescriptor, GroupDescriptor, LabworkDescriptor, StudentDescriptor}
 
-      val labwork = Labwork("Label", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+      val labwork = SesameLabwork("Label", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val student1 = SesameStudent("systemid1", "lastname1", "firstname1", "email1", "registrationId1", UUID.randomUUID())
       val student2 = SesameStudent("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
       val group = Group("label", labwork.id, Set(student1.id, student2.id))
 
       val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.invalidated, group.id)
 
-      repo.add[Labwork](labwork)
+      repo.add[SesameLabwork](labwork)
       repo.add[SesameStudent](student1)
       repo.add[SesameStudent](student2)
       repo.add[Group](group)

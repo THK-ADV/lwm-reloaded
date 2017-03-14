@@ -22,7 +22,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
-  def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = false): Future[Seq[LwmModel]] = {
+  def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true): Future[Seq[LwmModel]] = {
     val query = tableFilter match {
       case h :: t =>
         t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>

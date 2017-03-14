@@ -29,29 +29,29 @@ object LabworkApplicationCRUDController {
 }
 
 //DateTime format is: yyyy-MM-dd'T'HH:mm
-class LabworkApplicationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplication, LabworkApplicationAtom] {
+class LabworkApplicationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameLabworkApplicationProtocol, SesameLabworkApplication, SesameLabworkApplicationAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, LabworkApplication] = defaultBindings.LabworkApplicationDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameLabworkApplication] = defaultBindings.LabworkApplicationDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, LabworkApplicationAtom] = defaultBindings.LabworkApplicationAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameLabworkApplicationAtom] = defaultBindings.LabworkApplicationAtomDescriptor
 
-  override implicit val reads: Reads[LabworkApplicationProtocol] = LabworkApplication.reads
+  override implicit val reads: Reads[SesameLabworkApplicationProtocol] = SesameLabworkApplication.reads
 
-  override implicit val writes: Writes[LabworkApplication] = LabworkApplication.writes
+  override implicit val writes: Writes[SesameLabworkApplication] = SesameLabworkApplication.writes
 
-  override implicit val writesAtom: Writes[LabworkApplicationAtom] = LabworkApplication.writesAtom
+  override implicit val writesAtom: Writes[SesameLabworkApplicationAtom] = SesameLabworkApplication.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[LabworkApplication] = LabworkApplication
+  override implicit val uriGenerator: UriGenerator[SesameLabworkApplication] = SesameLabworkApplication
 
-  override protected def coAtomic(atom: LabworkApplicationAtom): LabworkApplication = LabworkApplication(atom.labwork.id, atom.applicant.id, atom.friends map (_.id), atom.timestamp, atom.invalidated, atom.id)
+  override protected def coAtomic(atom: SesameLabworkApplicationAtom): SesameLabworkApplication = SesameLabworkApplication(atom.labwork.id, atom.applicant.id, atom.friends map (_.id), atom.timestamp, atom.invalidated, atom.id)
 
-  override protected def compareModel(input: LabworkApplicationProtocol, output: LabworkApplication): Boolean = input.friends == output.friends
+  override protected def compareModel(input: SesameLabworkApplicationProtocol, output: SesameLabworkApplication): Boolean = input.friends == output.friends
 
-  override protected def fromInput(input: LabworkApplicationProtocol, existing: Option[LabworkApplication]): LabworkApplication = existing match {
-    case Some(lapp) => LabworkApplication(input.labwork, input.applicant, input.friends, lapp.timestamp, lapp.invalidated, lapp.id)
-    case None => LabworkApplication(input.labwork, input.applicant, input.friends)
+  override protected def fromInput(input: SesameLabworkApplicationProtocol, existing: Option[SesameLabworkApplication]): SesameLabworkApplication = existing match {
+    case Some(lapp) => SesameLabworkApplication(input.labwork, input.applicant, input.friends, lapp.timestamp, lapp.invalidated, lapp.id)
+    case None => SesameLabworkApplication(input.labwork, input.applicant, input.friends)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -62,7 +62,7 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
     case GetAll => PartialSecureBlock(labworkApplication.getAll)
   }
 
-  override protected def existsQuery(input: LabworkApplicationProtocol): Clause = {
+  override protected def existsQuery(input: SesameLabworkApplicationProtocol): Clause = {
     import store.sparql.select._
 
     lazy val prefixes = LWMPrefix[repository.Rdf]
@@ -70,12 +70,12 @@ class LabworkApplicationCRUDController(val repository: SesameRepository, val ses
 
     select("s") where {
       **(v("s"), p(rdf.`type`), s(prefixes.LabworkApplication)).
-        **(v("s"), p(prefixes.labwork), s(Labwork.generateUri(input.labwork)(namespace))).
+        **(v("s"), p(prefixes.labwork), s(SesameLabwork.generateUri(input.labwork)(namespace))).
         **(v("s"), p(prefixes.applicant), s(User.generateUri(input.applicant)(namespace)))
     }
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[LabworkApplication]): Try[Set[LabworkApplication]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameLabworkApplication]): Try[Set[SesameLabworkApplication]] = {
     def decode(s: String) = URLDecoder.decode(s, "UTF-8")
 
     queryString.foldRight(Try(all)) {

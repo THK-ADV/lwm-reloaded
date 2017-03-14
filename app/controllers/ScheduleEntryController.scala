@@ -87,7 +87,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
         _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(values.head))))
       }
       case ((`labworkAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.labwork), s(SesameLabwork.generateUri(UUID.fromString(values.head))))
       }
       case ((`groupAttribute`, values), clause) => clause map {
         _ append **(v("entries"), p(lwm.group), s(Group.generateUri(UUID.fromString(values.head))))

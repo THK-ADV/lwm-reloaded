@@ -68,7 +68,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         _ append **(v("entries"), p(lwm.labwork), v("labwork")).**(v("labwork"), p(lwm.course), s(SesameCourse.generateUri(UUID.fromString(courses.head))))
       }
       case (clause, (`labworkAttribute`, labworks)) => clause map {
-        _ append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(labworks.head))))
+        _ append **(v("entries"), p(lwm.labwork), s(SesameLabwork.generateUri(UUID.fromString(labworks.head))))
       }
       case (clause, (`studentAttribute`, students)) => clause map {
         _ append **(v("entries"), p(lwm.student), s(User.generateUri(UUID.fromString(students.head))))
@@ -190,7 +190,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
       val apQuery = select("ap") where {
         **(v("ap"), p(rdf.`type`), s(lwm.AssignmentPlan)).
-          **(v("ap"), p(lwm.labwork), s(Labwork.generateUri(labworkId)))
+          **(v("ap"), p(lwm.labwork), s(SesameLabwork.generateUri(labworkId)))
       }
 
       repository.prepareQuery(apQuery).
@@ -205,7 +205,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
       val cardsQuery = select("cards") where {
         **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-          **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labworkId)))
+          **(v("cards"), p(lwm.labwork), s(SesameLabwork.generateUri(labworkId)))
       }
 
       repository.prepareQuery(cardsQuery).
@@ -229,7 +229,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     SemanticUtils.collect {
       evals map { eval =>
         for {
-          optLabwork <- repository.get[LabworkAtom](Labwork.generateUri(eval.labwork))
+          optLabwork <- repository.get[SesameLabworkAtom](SesameLabwork.generateUri(eval.labwork))
           optStudent <- repository.get[SesameStudent](User.generateUri(eval.student))
         } yield for {
           l <- optLabwork; s <- optStudent

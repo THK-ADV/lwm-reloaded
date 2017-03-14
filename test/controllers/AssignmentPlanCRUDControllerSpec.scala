@@ -34,9 +34,9 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = entityToPass
   }
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   override val entityToFail: AssignmentPlan = AssignmentPlan(labworkToFail.id, 5, 5, entries("fail"))
 
@@ -136,8 +136,8 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
 
     "return all assignment plans for a given course" in {
       val course = UUID.randomUUID
-      val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab1 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val ap1 = AssignmentPlan(lab1.id, 0, 0, entries("ap1"))
       val ap2 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap2"))
       val ap3 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap3"))
@@ -150,7 +150,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(
         ap1, ap2, ap3, ap4, ap5, ap6, ap7, ap8
       )))
-      when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
+      when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
 
       val request = FakeRequest(
         GET,
@@ -166,12 +166,12 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
 
     "return an empty json when there are no assignment plans for a given course" in {
       val course = UUID.randomUUID
-      val lab1 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      val lab2 = Labwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab1 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val aps = (0 until 1).map(i => AssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
 
       when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(aps))
-      when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
+      when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
 
       val request = FakeRequest(
         GET,

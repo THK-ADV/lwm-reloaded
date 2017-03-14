@@ -39,7 +39,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
   val mimeType = LwmMimeType.reportCardEntryV1Json
   val student = SesameStudent("systemId", "last", "first", "email", "regId", UUID.randomUUID)
-  val labwork = Labwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+  val labwork = SesameLabwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
   val room = Room("label", "desc")
   val entries = (0 until 2).map(n =>
     ReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, ReportCardEntryType.all)
@@ -309,13 +309,13 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       val course1 = SesameCourse("", "", "", UUID.randomUUID, 1)
 
       val student1 = UUID.randomUUID()
-      val labwork1 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
+      val labwork1 = SesameLabwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
       val date1 = LocalDate.now
       val (start1, end1) = (LocalTime.parse(LocalTime.now.toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(2).toString("HH:mm")))
       val room1 = UUID.randomUUID()
 
       val student2 = UUID.randomUUID()
-      val labwork2 = Labwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
+      val labwork2 = SesameLabwork("", "", UUID.randomUUID, course1.id, UUID.randomUUID)
       val date2 = LocalDate.now plusDays 2
       val (start2, end2) = (LocalTime.parse(LocalTime.now.plusHours(14).toString("HH:mm")), LocalTime.parse(LocalTime.now.plusHours(16).toString("HH:mm")))
       val room2 = UUID.randomUUID()

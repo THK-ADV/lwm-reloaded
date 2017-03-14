@@ -3,6 +3,7 @@ package models
 import java.util.UUID
 
 import controllers.JsonSerialisation
+import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 
 /**
@@ -25,6 +26,10 @@ object SesamePermission extends JsonSerialisation[SesamePermission, SesamePermis
 }
 
 case class PostgresPermission(value: String, description: String, id: UUID = UUID.randomUUID) extends UniqueEntity
+
+case class PermissionDb(value: String, description: String, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+  def toPermission = PostgresPermission(value, description, id)
+}
 
 case class PostgresPermissionProtocol(value: String, description: String)
 

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.SesameDbSpec
 import models.AssignmentEntryType._
-import models.{AssignmentEntry, AssignmentPlan, Labwork}
+import models.{AssignmentEntry, AssignmentPlan, SameLabwork$}
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}
@@ -27,7 +27,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
 
   val assignmentPlanGraph = (
     URI(AssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
-      .--(lwm.labwork).->-(assignmentPlan.labwork)(ops, uuidRefBinder(Labwork.splitter))
+      .--(lwm.labwork).->-(assignmentPlan.labwork)(ops, uuidRefBinder(SameLabwork.splitter))
       -- lwm.attendance ->- assignmentPlan.attendance
       -- lwm.mandatory ->- assignmentPlan.mandatory
       -- lwm.entries ->- assignmentPlan.entries

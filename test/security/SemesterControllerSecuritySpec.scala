@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.Semester
+import models.SesameSemester$
 import models.Permissions._
 import org.joda.time.LocalDate
 import org.mockito.Matchers
@@ -30,7 +30,7 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+        SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       )
 
       val request = FakeRequest(
@@ -53,7 +53,7 @@ class SemesterControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
       when(roleService.checkAuthority((None, prime))(FakeEmployeeAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Semester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+        SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       )
 
       val request = FakeRequest(

@@ -19,10 +19,10 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   val timetableEntry1 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now)
   val timetableEntry2 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 2, LocalTime.now, LocalTime.now)
-  val timetable = Timetable(Labwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
+  val timetable = Timetable(SesameLabwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
-    .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(Labwork.splitter))
+    .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.entries).->-(timetable.entries)
     .--(lwm.start).->-(timetable.start)
     .--(lwm.blacklist).->-(timetable.localBlacklist)
@@ -75,7 +75,7 @@ class TimetableBindingSpec extends SesameDbSpec {
     "return a timetable atom based on an RDF representation" in {
       import bindings.{EmployeeDescriptor, LabworkDescriptor, RoomDescriptor, TimetableAtomDescriptor, TimetableDescriptor}
 
-      val labwork = Labwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), subscribable = false, published = false)
+      val labwork = SesameLabwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), subscribable = false, published = false)
       val room1 = Room("room1", "description1")
       val room2 = Room("room2", "description2")
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")

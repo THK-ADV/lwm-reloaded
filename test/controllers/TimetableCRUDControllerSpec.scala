@@ -18,8 +18,8 @@ import scala.util.Success
 
 class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable, TimetableAtom] {
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val roomToPass = Room("room to pass", "desc to pass")
   val roomToFail = Room("room to fail", "desc to fail")
@@ -117,8 +117,8 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
     "return all timetables for a given course" in {
       val course = UUID.randomUUID
-      val lab1 = Labwork("lab1", "lab1", UUID.randomUUID, course, UUID.randomUUID)
-      val lab2 = Labwork("lab2", "lab2", UUID.randomUUID, course, UUID.randomUUID)
+      val lab1 = SesameLabwork("lab1", "lab1", UUID.randomUUID, course, UUID.randomUUID)
+      val lab2 = SesameLabwork("lab2", "lab2", UUID.randomUUID, course, UUID.randomUUID)
 
       val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
@@ -132,7 +132,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
       )))
-      when(repository.getMany[Labwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
+      when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
 
       val request = FakeRequest(
         GET,
@@ -147,10 +147,10 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
 
     "return all timetables for a given labwork" in {
-      val lab1 = Labwork("lab1", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
-      val lab2 = Labwork("lab2", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
-      val lab3 = Labwork("lab3", "lab3", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
-      val lab4 = Labwork("lab4", "lab4", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab1 = SesameLabwork("lab1", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab2 = SesameLabwork("lab2", "lab2", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab3 = SesameLabwork("lab3", "lab3", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
+      val lab4 = SesameLabwork("lab4", "lab4", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
 
       val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
       val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])

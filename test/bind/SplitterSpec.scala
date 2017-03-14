@@ -3,7 +3,7 @@ package bind
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.Semester
+import models.SesameSemester$
 import org.scalatest.WordSpec
 import store.Namespace
 
@@ -17,16 +17,16 @@ class SplitterSpec extends WordSpec with TestBaseDefinition {
     "conjoin the domain and the actual model id of a resource" in {
       val uuid = UUID.randomUUID()
 
-      val to = Semester.splitter.to(uuid)
+      val to = SesameSemester.splitter.to(uuid)
 
-      to shouldBe Semester.generateUri(uuid)
+      to shouldBe SesameSemester.generateUri(uuid)
     }
 
     "separate the domain of the model of a resource from its actual UUID" in {
       val uuid = UUID.randomUUID()
-      val uri = Semester.generateUri(uuid)
+      val uri = SesameSemester.generateUri(uuid)
 
-      val from = Semester.splitter.from(uri)
+      val from = SesameSemester.splitter.from(uri)
 
       from shouldBe uuid
     }

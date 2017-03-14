@@ -47,8 +47,8 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
   implicit val binder = ReportCardEvaluationDescriptor.binder
 
-  val semesterToPass = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
-  val semesterToFail = Semester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  val semesterToPass = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
+  val semesterToFail = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
 
   val employeeToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
   val employeeToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
@@ -59,8 +59,8 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
   val courseToPass = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employeeToPass, 1, None, UUID.randomUUID)
   val courseToFail = SesameCourseAtom("label to fail", "desc to fail", "abbrev to fail", employeeToFail, 1, None, UUID.randomUUID)
 
-  val labworkToPass = LabworkAtom("label to pass", "desc to pass", semesterToPass, courseToPass, degreeToPass, subscribable = false, published = false, None, UUID.randomUUID)
-  val labworkToFail = LabworkAtom("label to fail", "desc to fail", semesterToFail, courseToFail, degreeToFail, subscribable = false, published = false, None, UUID.randomUUID)
+  val labworkToPass = SesameLabworkAtom("label to pass", "desc to pass", semesterToPass, courseToPass, degreeToPass, subscribable = false, published = false, None, UUID.randomUUID)
+  val labworkToFail = SesameLabworkAtom("label to fail", "desc to fail", semesterToFail, courseToFail, degreeToFail, subscribable = false, published = false, None, UUID.randomUUID)
 
   val studentToPass = SesameStudent("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val studentToFail = SesameStudent("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())

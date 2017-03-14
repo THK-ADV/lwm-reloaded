@@ -206,9 +206,9 @@ trait SecureControllerContext {
 
 trait PostgresResult { self: Controller =>
 
-  def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getMessage)
-  def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
-  def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
+  private def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getMessage)
+  private def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
+  private def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
 
   implicit class SequenceResult[A](val future: Future[Seq[A]]) {
     def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {
@@ -228,6 +228,10 @@ trait PostgresResult { self: Controller =>
     def jsonResult(implicit writes: Writes[A]) = future.map(a => Created(Json.toJson(a))).recover {
       case NonFatal(e) => internalServerError(e.getMessage)
     }
+
+    def jsonResult(f: A => Result) = future.map(f).recover {
+      case NonFatal(e) => internalServerError(e.getMessage)
+    }
   }
 
   lazy val atomicAttribute = "atomic"
@@ -242,8 +246,15 @@ trait PostgresResult { self: Controller =>
 
         (remaining, atomic)
       case None =>
-        (queryString, false)
+        (queryString, true)
     }
+  }
+
+  final def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
+    request.body.validate[A].fold[Try[A]](
+      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
+      success => Success(success)
+    )
   }
 }
 

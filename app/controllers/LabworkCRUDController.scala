@@ -26,23 +26,23 @@ object LabworkCRUDController {
   val publishedAttribute = "published"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, Labwork, LabworkAtom] {
+class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, SesameLabwork, SesameLabworkAtom] {
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Labwork] = defaultBindings.LabworkDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameLabwork] = defaultBindings.LabworkDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, LabworkAtom] = defaultBindings.LabworkAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameLabworkAtom] = defaultBindings.LabworkAtomDescriptor
 
-  override implicit val reads: Reads[LabworkProtocol] = Labwork.reads
+  override implicit val reads: Reads[LabworkProtocol] = SesameLabwork.reads
 
-  override implicit val writes: Writes[Labwork] = Labwork.writes
+  override implicit val writes: Writes[SesameLabwork] = SesameLabwork.writes
 
-  override implicit val writesAtom: Writes[LabworkAtom] = Labwork.writesAtom
+  override implicit val writesAtom: Writes[SesameLabworkAtom] = SesameLabwork.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Labwork] = Labwork
+  override implicit val uriGenerator: UriGenerator[SesameLabwork] = SesameLabwork
 
-  override protected def coAtomic(atom: LabworkAtom): Labwork = Labwork(
+  override protected def coAtomic(atom: SesameLabworkAtom): SesameLabwork = SesameLabwork(
     atom.label,
     atom.description,
     atom.semester.id,
@@ -54,15 +54,15 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
     atom.id
   )
 
-  override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
+  override protected def compareModel(input: LabworkProtocol, output: SesameLabwork): Boolean = {
     input.label == output.label && input.description == output.description && input.subscribable == output.subscribable && input.published == output.published
   }
 
-  override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
+  override protected def fromInput(input: LabworkProtocol, existing: Option[SesameLabwork]): SesameLabwork = existing match {
     case Some(labwork) =>
-      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, labwork.invalidated, labwork.id)
+      SesameLabwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published, labwork.invalidated, labwork.id)
     case None =>
-      Labwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published)
+      SesameLabwork(input.label, input.description, input.semester, input.course, input.degree, input.subscribable, input.published)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -85,14 +85,14 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
     select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.Labwork)).
-        **(v("s"), p(lwm.semester), s(Semester.generateUri(input.semester)(namespace))).
+        **(v("s"), p(lwm.semester), s(SesameSemester.generateUri(input.semester)(namespace))).
         **(v("s"), p(lwm.course), s(SesameCourse.generateUri(input.course)(namespace))).
         **(v("s"), p(lwm.degree), s(SesameDegree.generateUri(input.degree)(namespace)))
     }
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Labwork]): Try[Set[Labwork]] = {
-    queryString.foldRight(Try[Set[Labwork]](all)) {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameLabwork]): Try[Set[SesameLabwork]] = {
+    queryString.foldRight(Try[Set[SesameLabwork]](all)) {
       case ((`courseAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.course == p)))
       case ((`degreeAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.degree == p)))
       case ((`semesterAttribute`, values), set) => set flatMap (set => Try(UUID.fromString(values.head)).map(p => set.filter(_.semester == p)))

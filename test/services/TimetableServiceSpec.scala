@@ -37,7 +37,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
     )
 
-    Timetable(Labwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist ++ globalBlacklist.flatMap(_.dates))
+    Timetable(SesameLabwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist ++ globalBlacklist.flatMap(_.dates))
   }
 
   "A TimetableService" should {

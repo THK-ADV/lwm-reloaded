@@ -302,7 +302,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       }
       case (clause, (`labworkAttribute`, values)) => clause map {
         case ((filter, resched)) =>
-          (filter append **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(UUID.fromString(values.head)))), resched)
+          (filter append **(v("entries"), p(lwm.labwork), s(SesameLabwork.generateUri(UUID.fromString(values.head)))), resched)
       }
       case (clause, (`roomAttribute`, values)) => clause map {
         case ((filter, resched)) =>

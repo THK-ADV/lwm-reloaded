@@ -1,7 +1,7 @@
 package controllers
 
 import models.Permissions._
-import models.{Semester, SemesterProtocol, UriGenerator}
+import models.{SesameSemester, SemesterProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -20,22 +20,22 @@ object SemesterCRUDController {
   val currentValue = "current"
 }
 
-class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, Semester, Semester] {
+class SemesterCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SemesterProtocol, SesameSemester, SesameSemester] {
   override val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
 
-  override implicit def descriptor: Descriptor[Sesame, Semester] = defaultBindings.SemesterDescriptor
+  override implicit def descriptor: Descriptor[Sesame, SesameSemester] = defaultBindings.SemesterDescriptor
 
-  override implicit def uriGenerator: UriGenerator[Semester] = Semester
+  override implicit def uriGenerator: UriGenerator[SesameSemester] = SesameSemester
 
-  override implicit def reads: Reads[SemesterProtocol] = Semester.reads
+  override implicit def reads: Reads[SemesterProtocol] = SesameSemester.reads
 
-  override implicit def writes: Writes[Semester] = Semester.writes
+  override implicit def writes: Writes[SesameSemester] = SesameSemester.writes
 
-  override implicit def writesAtom: Writes[Semester] = Semester.writesAtom
+  override implicit def writesAtom: Writes[SesameSemester] = SesameSemester.writesAtom
 
-  override protected def fromInput(input: SemesterProtocol, existing: Option[Semester]): Semester = existing match {
-    case Some(semester) => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.invalidated, semester.id)
-    case None => Semester(input.label, input.abbreviation, input.start, input.end, input.examStart, None, Semester.randomUUID)
+  override protected def fromInput(input: SemesterProtocol, existing: Option[SesameSemester]): SesameSemester = existing match {
+    case Some(semester) => SesameSemester(input.label, input.abbreviation, input.start, input.end, input.examStart, semester.invalidated, semester.id)
+    case None => SesameSemester(input.label, input.abbreviation, input.start, input.end, input.examStart, None, SesameSemester.randomUUID)
   }
 
   override protected def existsQuery(input: SemesterProtocol): Clause = {
@@ -53,11 +53,11 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     }
   }
 
-  override protected def coAtomic(atom: Semester): Semester = atom
+  override protected def coAtomic(atom: SesameSemester): SesameSemester = atom
 
-  override implicit def descriptorAtom: Descriptor[Sesame, Semester] = descriptor
+  override implicit def descriptorAtom: Descriptor[Sesame, SesameSemester] = descriptor
 
-  override protected def compareModel(input: SemesterProtocol, output: Semester): Boolean = {
+  override protected def compareModel(input: SemesterProtocol, output: SesameSemester): Boolean = {
     input.abbreviation == output.abbreviation && input.examStart.isEqual(output.examStart)
   }
 
@@ -67,8 +67,8 @@ class SemesterCRUDController(val repository: SesameRepository, val sessionServic
     case _ => PartialSecureBlock(prime)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Semester]): Try[Set[Semester]] = {
-    import models.Semester.isCurrent
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameSemester]): Try[Set[SesameSemester]] = {
+    import models.SesameSemester.isCurrent
     import controllers.SemesterCRUDController._
     queryString.foldLeft(Try(all)) {
       case (set, (`selectAttribute`, current)) if current.head == currentValue => set map (_.filter(isCurrent))

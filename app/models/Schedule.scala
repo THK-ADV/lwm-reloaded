@@ -38,9 +38,9 @@ case class ScheduleEntry(labwork: UUID,
   * Atoms
   */
 
-case class ScheduleAtom(labwork: LabworkAtom, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ScheduleAtom(labwork: SesameLabworkAtom, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: LabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[User], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ScheduleEntryAtom(labwork: SesameLabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[User], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
 
@@ -58,7 +58,7 @@ object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, 
 object ScheduleAtom {
 
   implicit def writesAtom: Writes[ScheduleAtom] = (
-    (JsPath \ "labwork").write[LabworkAtom] and
+    (JsPath \ "labwork").write[SesameLabworkAtom] and
       (JsPath \ "entries").writeSet[ScheduleEntryAtom] and
       (JsPath \ "invalidated").writeNullable[DateTime] and
       (JsPath \ "id").write[UUID]
@@ -79,7 +79,7 @@ object ScheduleEntry extends UriGenerator[ScheduleEntry] with JsonSerialisation[
 object ScheduleEntryAtom {
 
   implicit def writesAtom: Writes[ScheduleEntryAtom] = (
-    (JsPath \ "labwork").write[LabworkAtom] and
+    (JsPath \ "labwork").write[SesameLabworkAtom] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "date").write[LocalDate] and

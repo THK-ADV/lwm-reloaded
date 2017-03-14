@@ -13,11 +13,11 @@ class LabworkBindingSpec extends SesameDbSpec {
   import ops._
 
   implicit val labworkBinder = LabworkDescriptor.binder
-  val labwork = Labwork("AP Praktikum", "AP Praktikum", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-  val labworkGraph = URI(Labwork.generateUri(labwork)).a(lwm.Labwork)
+  val labwork = SesameLabwork("AP Praktikum", "AP Praktikum", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+  val labworkGraph = URI(SesameLabwork.generateUri(labwork)).a(lwm.Labwork)
     .--(lwm.label).->-(labwork.label)
     .--(lwm.description).->-(labwork.description)
-    .--(lwm.semester).->-(labwork.semester)(ops, uuidRefBinder(Semester.splitter))
+    .--(lwm.semester).->-(labwork.semester)(ops, uuidRefBinder(SesameSemester.splitter))
     .--(lwm.course).->-(labwork.course)(ops, uuidRefBinder(SesameCourse.splitter))
     .--(lwm.degree).->-(labwork.degree)(ops, uuidRefBinder(PostgresDegree.splitter))
     .--(lwm.subscribable).->-(labwork.subscribable)
@@ -33,7 +33,7 @@ class LabworkBindingSpec extends SesameDbSpec {
     }
 
     "return a labwork based on a RDF representation" in {
-      val expectedLabwork = PointedGraph[Rdf](URI(Labwork.generateUri(labwork)), labworkGraph).as[Labwork]
+      val expectedLabwork = PointedGraph[Rdf](URI(SesameLabwork.generateUri(labwork)), labworkGraph).as[SesameLabwork]
 
       expectedLabwork match {
         case Success(s) =>
@@ -46,14 +46,14 @@ class LabworkBindingSpec extends SesameDbSpec {
     "return a labwork atom based on an RDF representation" in {
       import bindings.{CourseDescriptor, DegreeDescriptor, EmployeeDescriptor, LabworkAtomDescriptor, LabworkDescriptor, SemesterDescriptor}
 
-      val semester = Semester("semester", "abr", LocalDate.now, LocalDate.now, LocalDate.now)
+      val semester = SesameSemester("semester", "abr", LocalDate.now, LocalDate.now, LocalDate.now)
       val employee = SesameEmployee("systemid", "lastname", "firstname", "email", "status")
       val course = SesameCourse("course", "description", "abbr", employee.id, 1)
       val degree = PostgresDegree("degree", "abbr")
-      val labwork = Labwork("labwork", "description", semester.id, course.id, degree.id, subscribable = false, published = false)
+      val labwork = SesameLabwork("labwork", "description", semester.id, course.id, degree.id, subscribable = false, published = false)
 
       val courseAtom = SesameCourseAtom("course", "description", "abbr", employee, 1, course.invalidated, course.id)
-      val labworkAtom = LabworkAtom("labwork", "description", semester, courseAtom, degree, labwork.subscribable, labwork.published, labwork.invalidated, labwork.id)
+      val labworkAtom = SesameLabworkAtom("labwork", "description", semester, courseAtom, degree, labwork.subscribable, labwork.published, labwork.invalidated, labwork.id)
 
       repo add semester
       repo add employee
@@ -61,7 +61,7 @@ class LabworkBindingSpec extends SesameDbSpec {
       repo add degree
       repo add labwork
 
-      repo.get[LabworkAtom](Labwork.generateUri(labwork)) match {
+      repo.get[SesameLabworkAtom](SesameLabwork.generateUri(labwork)) match {
         case Success(Some(atom)) =>
           atom shouldEqual labworkAtom
         case Success(None) =>

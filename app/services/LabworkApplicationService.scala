@@ -2,7 +2,7 @@ package services
 
 import java.util.UUID
 
-import models.{Labwork, LabworkApplication}
+import models.{SesameLabwork, SesameLabworkApplication}
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import store.Prefixes.LWMPrefix
@@ -15,7 +15,7 @@ import scala.util.Try
 
 trait LabworkApplicationServiceLike {
 
-  def applicationsFor(labwork: UUID): Try[Set[LabworkApplication]]
+  def applicationsFor(labwork: UUID): Try[Set[SesameLabworkApplication]]
 }
 
 case class LabworkApplicationService(private val repository: SesameRepository) extends LabworkApplicationServiceLike {
@@ -29,8 +29,8 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
   import bindings.LabworkApplicationDescriptor
   import utils.Ops.MonadInstances.listM
 
-  override def applicationsFor(labwork: UUID): Try[Set[LabworkApplication]] = {
-    val laburi = Labwork.generateUri(labwork)
+  override def applicationsFor(labwork: UUID): Try[Set[SesameLabworkApplication]] = {
+    val laburi = SesameLabwork.generateUri(labwork)
     val result = repository.prepareQuery {
       select("s", "timestamp") where {
         **(v("s"), p(lwm.labwork), s(laburi)).
@@ -43,7 +43,7 @@ case class LabworkApplicationService(private val repository: SesameRepository) e
       select(_.get("s")).
       transform(_.fold(List.empty[Value])(identity)).
       map(_.stringValue()).
-      requestAll(repository.getMany[LabworkApplication]).
+      requestAll(repository.getMany[SesameLabworkApplication]).
       run
   }
 }

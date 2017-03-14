@@ -3,7 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Labwork, LabworkApplication, User}
+import models.{SameLabwork$, SesameLabworkApplication$, User}
 
 import scala.util.Random._
 import scala.util.{Failure, Success}
@@ -13,7 +13,7 @@ class LabworkApplicationInvalidation extends SesameDbSpec {
   "A LabworkApplication invalidation" should {
 
     def people: Stream[UUID] = Stream.continually(User.randomUUID)
-    def labapp: Stream[LabworkApplication] = Stream.continually(LabworkApplication(Labwork.randomUUID, User.randomUUID, (people take 10).toSet))
+    def labapp: Stream[SesameLabworkApplication] = Stream.continually(SesameLabworkApplication(SameLabwork.randomUUID, User.randomUUID, (people take 10).toSet))
 
     "invalidate the labwork application" in {
       import bindings.LabworkApplicationDescriptor
@@ -21,16 +21,16 @@ class LabworkApplicationInvalidation extends SesameDbSpec {
       val apps = (labapp take 100).toSet
       val toInvalidate = shuffle(apps) take 30
 
-      repo.addMany[LabworkApplication](apps)
+      repo.addMany[SesameLabworkApplication](apps)
 
-      toInvalidate foreach (a => repo.invalidate[LabworkApplication](LabworkApplication.generateUri(a)))
+      toInvalidate foreach (a => repo.invalidate[SesameLabworkApplication](SesameLabworkApplication.generateUri(a)))
 
-      repo.getAll[LabworkApplication] match {
+      repo.getAll[SesameLabworkApplication] match {
         case Success(set) =>
           set.toVector.sortBy(_.applicant) shouldBe (apps diff toInvalidate).toVector.sortBy(_.applicant)
         case Failure(e) => fail("no")
       }
-      repo.deepGetAll[LabworkApplication] map (_ map (_.id)) shouldBe Success(apps map (_.id))
+      repo.deepGetAll[SesameLabworkApplication] map (_ map (_.id)) shouldBe Success(apps map (_.id))
     }
   }
 }

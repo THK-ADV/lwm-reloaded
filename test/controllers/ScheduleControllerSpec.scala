@@ -29,8 +29,8 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val groupService = mock[GroupService]
   val namespace = Namespace("test://lwm.gm.fh-koeln.de")
 
-  val labworkToPass = Labwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-  val labworkToFail = Labwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+  val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val roomToPass = Room("room to pass", "desc to pass")
   val roomToFail = Room("room to fail", "desc to fail")
@@ -96,10 +96,10 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   )
 
   val lecturer = SesameEmployee("systemid", "lastname", "firstname", "email", "lecturer")
-  val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
+  val semester = SesameSemester("", "", LocalDate.now, LocalDate.now, LocalDate.now)
   val course = SesameCourseAtom("", "", "", lecturer, 2, None, SesameCourse.randomUUID)
   val degree = PostgresDegree("degree", "abbrev")
-  val labwork = LabworkAtom("", "", semester, course, degree, subscribable = false, published = false, None, Labwork.randomUUID)
+  val labwork = SesameLabworkAtom("", "", semester, course, degree, subscribable = false, published = false, None, SesameLabwork.randomUUID)
   val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
   val timetable = Timetable(labwork.id, Set(
     TimetableEntry(Set(UUID.randomUUID()), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
@@ -119,7 +119,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   private def assumptions(gen: Gen[ScheduleG, Conflict, Int], comps: Boolean = true) = {
     val comp = if (comps) Set(randomAtom) else Set.empty[ScheduleAtom]
 
-    when(repository.get[LabworkAtom](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
+    when(repository.get[SesameLabworkAtom](anyObject())(anyObject())).thenReturn(Success(Some(labwork)))
     doReturn(Success(groups)).when(groupService).groupBy(anyObject(), anyObject())
 
     doReturn(Success(Set(timetable)))

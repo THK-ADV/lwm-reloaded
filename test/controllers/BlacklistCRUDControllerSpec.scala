@@ -90,7 +90,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
     "return all blacklists in current semester" in {
       import controllers.BlacklistCRUDController._
-      import models.Semester.isCurrent
+      import models.SesameSemester.isCurrent
 
       val semesters = SemesterCRUDControllerSpec.populate
       val blacklists = (0 until 10).map { i =>

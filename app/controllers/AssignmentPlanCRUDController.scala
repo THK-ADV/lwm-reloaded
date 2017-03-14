@@ -83,7 +83,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
           select(_.get("labworks")).
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
-          requestAll(repository.getMany[Labwork](_)).
+          requestAll(repository.getMany[SesameLabwork](_)).
           requestAll[Set, AssignmentPlan](labworks => t.map(_.filter(p => labworks.exists(_.id == p.labwork)))).
           run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
@@ -96,7 +96,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
 
     select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.AssignmentPlan)).
-        **(v("s"), p(lwm.labwork), s(Labwork.generateUri(input.labwork)))
+        **(v("s"), p(lwm.labwork), s(SesameLabwork.generateUri(input.labwork)))
     }
   }
 

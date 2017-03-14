@@ -41,7 +41,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val timetableService = new TimetableService(blacklistService)
   val scheduleService = new ScheduleService(20, 100, 10, timetableService)
 
-  val semester = Semester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
+  val semester = SesameSemester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
   val weeks = Weeks.weeksBetween(semester.start, semester.examStart)
 
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
@@ -57,7 +57,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "populate initial schedules any times" in {
       val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(Labwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime])
+      val timetable = Timetable(SesameLabwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime])
       val plan = assignmentPlan(5)
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty)).toSet
 
@@ -175,7 +175,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are no other schedules" in {
       val plan = assignmentPlan(5)
-      val labwork = Labwork("label", "description", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
 
@@ -199,9 +199,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
       val degree = PostgresDegree.randomUUID
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
+      val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+      val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
+      val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
 
       val ap1Entries = Set(
         TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -394,8 +394,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "generate an initial collision free schedule instantly" in {
       val ap1Plan = assignmentPlan(8)
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, PostgresDegree.randomUUID)
+      val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+      val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, PostgresDegree.randomUUID)
 
       val ap1Entries = Set(
         TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -448,9 +448,9 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
       val degree = PostgresDegree.randomUUID
-      val semester1 = Semester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val ap1Prak = Labwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
-      val ma1Prak = Labwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
+      val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
+      val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
+      val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
 
       val ap1Entries = Set(
         TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),

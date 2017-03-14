@@ -14,13 +14,13 @@ class ReportCardInvalidation extends SesameDbSpec {
   "A ReportCard invalidation" should {
 
     def annot(reportCardEntry: UUID): Stream[Annotation] = Stream.continually {
-      if (nextBoolean()) Annotation(User.randomUUID, Labwork.randomUUID, reportCardEntry, "Message")
-      else Annotation(User.randomUUID, Labwork.randomUUID, ReportCardEntry.randomUUID, "Message")
+      if (nextBoolean()) Annotation(User.randomUUID, SesameLabwork.randomUUID, reportCardEntry, "Message")
+      else Annotation(User.randomUUID, SesameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message")
     }
 
     def rcetypes: Stream[ReportCardEntryType] = Stream.continually(ReportCardEntryType(s"String$nextInt", nextBoolean()))
     def rce: Stream[ReportCardEntry] = Stream.continually(
-      ReportCardEntry(User.randomUUID, Labwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, (rcetypes take 10).toSet))
+      ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, (rcetypes take 10).toSet))
 
     "invalidate the report card and subsequent report card entries and annotations" in {
       import bindings.{AnnotationDescriptor, ReportCardEntryDescriptor}

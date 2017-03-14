@@ -14,20 +14,20 @@ class RoomInvalidation extends SesameDbSpec {
   "A Room invalidation" should {
 
     def rce(room: UUID): Stream[ReportCardEntry] = Stream.continually {
-      if (nextBoolean()) ReportCardEntry(User.randomUUID, Labwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, room, Set())
-      else ReportCardEntry(User.randomUUID, Labwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, Set())
+      if (nextBoolean()) ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, room, Set())
+      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, Set())
     }
 
     def sce(room: UUID): Stream[ScheduleEntry] = Stream.continually {
-      if (nextBoolean()) ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, Set(User.randomUUID), Group.randomUUID)
-      else ScheduleEntry(Labwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, Set(User.randomUUID), Group.randomUUID)
+      if (nextBoolean()) ScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, Set(User.randomUUID), Group.randomUUID)
+      else ScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, Set(User.randomUUID), Group.randomUUID)
     }
 
     def tte(room: UUID): Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), room, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt(room: UUID): Stream[Timetable] = Stream.continually {
-      if (nextBoolean()) Timetable(Labwork.randomUUID, (tte(room) take 20).toSet, LocalDate.now, Set())
-      else Timetable(Labwork.randomUUID, (tte(Room.randomUUID) take 20).toSet, LocalDate.now, Set())
+      if (nextBoolean()) Timetable(SesameLabwork.randomUUID, (tte(room) take 20).toSet, LocalDate.now, Set())
+      else Timetable(SesameLabwork.randomUUID, (tte(Room.randomUUID) take 20).toSet, LocalDate.now, Set())
     }
 
 

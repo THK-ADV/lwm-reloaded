@@ -32,17 +32,17 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
   "An application service" should {
 
     "return applications for a given labwork" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
       val applications = List(
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty)
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty)
       )
 
-      repository.add[Labwork](labwork)
-      repository.addMany[LabworkApplication](applications)
+      repository.add[SesameLabwork](labwork)
+      repository.addMany[SesameLabworkApplication](applications)
 
       val resApplications = applicationService.applicationsFor(labwork.id)
 
@@ -56,26 +56,26 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return only the applications of a specific labwork, even though more are present" in {
-      val labwork1 = Labwork("label1", "description1", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val labwork2 = Labwork("label2", "description2", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork1 = SesameLabwork("label1", "description1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork2 = SesameLabwork("label2", "description2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
       val applicationList1 = List(
-        LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork1.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork1.id, User.randomUUID, Set.empty)
+        SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty)
       )
 
       val applicationList2 = List(
-        LabworkApplication(labwork2.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork2.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork2.id, User.randomUUID, Set.empty),
-        LabworkApplication(labwork2.id, User.randomUUID, Set.empty)
+        SesameLabworkApplication(labwork2.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork2.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork2.id, User.randomUUID, Set.empty),
+        SesameLabworkApplication(labwork2.id, User.randomUUID, Set.empty)
       )
-      repository.add[Labwork](labwork1)
-      repository.add[Labwork](labwork2)
-      repository.addMany[LabworkApplication](applicationList1)
-      repository.addMany[LabworkApplication](applicationList2)
+      repository.add[SesameLabwork](labwork1)
+      repository.add[SesameLabwork](labwork2)
+      repository.addMany[SesameLabworkApplication](applicationList1)
+      repository.addMany[SesameLabworkApplication](applicationList2)
 
       val resApplications = applicationService.applicationsFor(labwork2.id)
 
@@ -91,9 +91,9 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return None when no applications are found" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
 
-      repository.add[Labwork](labwork)
+      repository.add[SesameLabwork](labwork)
 
       val resApplications = applicationService.applicationsFor(labwork.id)
 
@@ -105,20 +105,20 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return applications for a given labwork ordered by timestamp" in {
-      val labwork = Labwork("label", "description", Semester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
       val applications = List(
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now()),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusDays(1)),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusHours(4)),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(50)),
-        LabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(10))
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now()),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusDays(1)),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusHours(4)),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(50)),
+        SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusMinutes(10))
       )
       implicit val dateTimeOrdering = new Ordering[DateTime] {
         override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
       }
 
-      repository.add[Labwork](labwork)
-      repository.addMany[LabworkApplication](applications)
+      repository.add[SesameLabwork](labwork)
+      repository.addMany[SesameLabworkApplication](applications)
 
       val resApplications = applicationService.applicationsFor(labwork.id)
 

@@ -16,7 +16,7 @@ case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntry
 
 case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
 
-case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class AssignmentPlanAtom(labwork: SesameLabwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisation[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
 
@@ -33,7 +33,7 @@ object AssignmentPlan extends UriGenerator[AssignmentPlan] with JsonSerialisatio
 
 object AssignmentPlanAtom {
   implicit def writesAtom: Writes[AssignmentPlanAtom] = (
-    (JsPath \ "labwork").write[Labwork] and
+    (JsPath \ "labwork").write[SesameLabwork] and
       (JsPath \ "attendance").write[Int] and
       (JsPath \ "mandatory").write[Int] and
       (JsPath \ "entries").writeSet[AssignmentEntry] and

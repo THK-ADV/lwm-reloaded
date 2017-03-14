@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{LabworkApplication, User}
+import models.{SesameLabworkApplication$, User}
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
@@ -19,7 +19,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
   val labwork = UUID.randomUUID
   val users = ((0 until 100) map (_ => UUID.randomUUID)).toVector
-  val apps = users.map(id => LabworkApplication(labwork, id, Set.empty)).toSet
+  val apps = users.map(id => SesameLabworkApplication(labwork, id, Set.empty)).toSet
 
   "A group service" should {
 
@@ -42,13 +42,13 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val applications = Set(
-        LabworkApplication(labwork, users(0), Set(users(1))),
-        LabworkApplication(labwork, users(1), Set(users(0), users(3))),
-        LabworkApplication(labwork, users(2), Set(users(3))),
-        LabworkApplication(labwork, users(3), Set(users(2), users(1))),
-        LabworkApplication(labwork, users(4), Set(users(5))),
-        LabworkApplication(labwork, users(5), Set(users(4))),
-        LabworkApplication(labwork, users(6), Set.empty)
+        SesameLabworkApplication(labwork, users(0), Set(users(1))),
+        SesameLabworkApplication(labwork, users(1), Set(users(0), users(3))),
+        SesameLabworkApplication(labwork, users(2), Set(users(3))),
+        SesameLabworkApplication(labwork, users(3), Set(users(2), users(1))),
+        SesameLabworkApplication(labwork, users(4), Set(users(5))),
+        SesameLabworkApplication(labwork, users(5), Set(users(4))),
+        SesameLabworkApplication(labwork, users(6), Set.empty)
       )
       when(applicationService.applicationsFor(labwork)).thenReturn(Success(applications))
 
@@ -85,7 +85,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "stop creating groups when no applications have been found" in {
-      when(applicationService.applicationsFor(labwork)).thenReturn(Success(Set.empty[LabworkApplication]))
+      when(applicationService.applicationsFor(labwork)).thenReturn(Success(Set.empty[SesameLabworkApplication]))
 
       groupService.groupBy(labwork, Count("1")) match {
         case Failure(e) =>

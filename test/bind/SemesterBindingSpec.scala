@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.Semester
+import models.SesameSemester$
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 
@@ -14,9 +14,9 @@ class SemesterBindingSpec extends SesameDbSpec {
 
   implicit val semesterBinder = SemesterDescriptor.binder
 
-  val semester = Semester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5))
+  val semester = SesameSemester("label", "abbreviation", LocalDate.now, LocalDate.now.plusMonths(6), LocalDate.now.plusMonths(5))
   val semesterGraph = (
-    URI(Semester.generateUri(semester)).a(lwm.Semester)
+    URI(SesameSemester.generateUri(semester)).a(lwm.Semester)
       -- lwm.label ->- semester.label
       -- lwm.abbreviation ->- semester.abbreviation
       -- lwm.start ->- semester.start
@@ -35,7 +35,7 @@ class SemesterBindingSpec extends SesameDbSpec {
     }
 
     "return a semester based on a RDF graph representation" in {
-      val expectedSemester = PointedGraph[Rdf](URI(Semester.generateUri(semester)), semesterGraph).as[Semester]
+      val expectedSemester = PointedGraph[Rdf](URI(SesameSemester.generateUri(semester)), semesterGraph).as[SesameSemester]
 
       expectedSemester match {
         case Success(s) =>

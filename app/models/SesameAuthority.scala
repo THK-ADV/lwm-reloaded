@@ -25,7 +25,11 @@ case class SesameAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] 
 
 case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[SesameCourseAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
+// Postgres
+
 case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
+
+case class AuthorityDb(user: UUID, roles: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
 
 case class PostgresAuthorityProtocol(user: UUID, roleLabel: String, course: Option[UUID] = None)
 

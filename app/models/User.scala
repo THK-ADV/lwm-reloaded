@@ -2,6 +2,7 @@ package models
 
 import java.util.UUID
 
+import org.joda.time.DateTime
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 
 trait User extends UniqueEntity {
@@ -10,13 +11,13 @@ trait User extends UniqueEntity {
   def firstname: String
   def email: String
 
-  def dbUser = this match {
+  def toDbUser = this match {
     case s: PostgresStudent =>
-      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), s.id)
+      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), None, s.id)
     case e: PostgresEmployee =>
-      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, e.id)
+      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, None, e.id)
     case l: PostgresLecturer =>
-      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, l.id)
+      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, None, l.id)
   }
 }
 
@@ -45,14 +46,14 @@ object User extends UriGenerator[User] {
   implicit def reads: Reads[UserProtocol] = Json.reads[UserProtocol]
 }
 
-final case class DbUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[UUID], id: UUID) extends User {
+case class DbUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[UUID], invalidated: Option[DateTime], id: UUID) extends UniqueEntity {
 
-  def user: User = this match {
-    case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), studentId) if stat == User.StudentType =>
+  def toUser: User = this match {
+    case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), _, studentId) if stat == User.StudentType =>
       PostgresStudent(sId, last, first, mail, regId, enroll, studentId)
-    case DbUser(sId, last, first, mail, stat, None, None, employeeId) if stat == User.EmployeeType =>
+    case DbUser(sId, last, first, mail, stat, None, None, _, employeeId) if stat == User.EmployeeType =>
       PostgresEmployee(sId, last, first, mail, employeeId)
-    case DbUser(sId, last, first, mail, stat, None, None, lecturerId) if stat == User.LecturerType =>
+    case DbUser(sId, last, first, mail, stat, None, None, _ ,lecturerId) if stat == User.LecturerType =>
       PostgresLecturer(sId, last, first, mail, lecturerId)
   }
 }

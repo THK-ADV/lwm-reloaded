@@ -54,12 +54,12 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = {
     import defaultBindings.SemesterDescriptor
-    import models.Semester.isCurrent
+    import models.SesameSemester.isCurrent
 
     queryString.foldLeft(Try(all)) {
       case (set, (`selectAttribute`, current)) if current.head == currentValue =>
         for {
-          semesters <- repository.getAll[Semester]
+          semesters <- repository.getAll[SesameSemester]
           currentSemester = semesters.find(isCurrent)
           blacklists <- set
         } yield currentSemester.fold(Set.empty[Blacklist]) { semester =>

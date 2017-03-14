@@ -1,16 +1,19 @@
 package services
 
-import models.PostgresPermission
+import models.{PermissionDb, PostgresPermission}
 import store.PermissionTable
 import slick.driver.PostgresDriver.api._
+
 import scala.concurrent.Future
 
-trait PermissionService extends AbstractDao[PermissionTable, PostgresPermission, PostgresPermission] {
+trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, PostgresPermission] {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   override protected def tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
 
-  override protected def toAtomic(query: Query[PermissionTable, PostgresPermission, Seq]): Future[Seq[PostgresPermission]] = ???
+  override protected def toAtomic(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[PermissionTable, PostgresPermission, Seq]): Future[Seq[PostgresPermission]] = db.run(query.result)
+  override protected def toUniqueEntity(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = db.run(query.result.map(_.map(_.toPermission)))
 }
 
 object PermissionService extends PermissionService

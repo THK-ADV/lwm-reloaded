@@ -1,6 +1,6 @@
 package services
 
-import models.PostgresDegree
+import models.{DegreeDb, PostgresDegree}
 import slick.lifted.Rep
 import store.{DegreeTable, TableFilter}
 import slick.driver.PostgresDriver.api._
@@ -11,13 +11,14 @@ case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTab
   override def predicate: (DegreeTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
 }
 
-trait DegreeService extends AbstractDao[DegreeTable, PostgresDegree, PostgresDegree] {
+trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
-  override protected def toAtomic(query: Query[DegreeTable, PostgresDegree, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, PostgresDegree, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result)
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toDegree)))
 }
 
 object DegreeService extends DegreeService

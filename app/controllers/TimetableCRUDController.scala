@@ -123,7 +123,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
           select(_.get("labworks")).
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
-          requestAll(repository.getMany[Labwork]).
+          requestAll(repository.getMany[SesameLabwork]).
           requestAll[Set, Timetable](labworks => timetables.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
           run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
