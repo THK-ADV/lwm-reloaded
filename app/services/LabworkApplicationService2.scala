@@ -58,6 +58,16 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
       _ <- LabworkApplicationFriendService.createMany(friends)
     } yield labworkApplication
   }
+
+  final def createManyWithFriends(labworkApplications: Set[LabworkApplicationDb]): Future[Map[PostgresLabworkApplication, Seq[LabworkApplicationFriend]]] = {
+    for {
+      lapps <- createMany(labworkApplications)
+      friends = labworkApplications.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f, None, UUID.randomUUID)))
+      lafs <- LabworkApplicationFriendService.createMany(friends)
+    } yield lafs.groupBy(_.labworkApplication).map {
+      case (lappId, lappFriends) => (lapps.find(_.id == lappId).map(_.toLabworkApplication).get, lappFriends)
+    }
+  }
 }
 
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] {

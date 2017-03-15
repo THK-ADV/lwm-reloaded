@@ -153,7 +153,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = foo.foreach(println)
     } yield result
 
-    result.map { map =>
+    result.jsonResult { map =>
       Ok(Json.toJson(map.map {
         case ((r, rps)) => Json.obj(
           "role" -> Json.toJson(r.get)(Role.writes),
@@ -209,5 +209,32 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     } yield labworks.map(_.toLabwork)
 
     result.jsonResult
+  }
+
+  def migrateLabworkApplications = Action.async {
+    import bindings.LabworkApplicationDescriptor
+    import models.LabworkApplicationFriend.writes
+
+    val result = for {
+      _ <- LabworkApplicationService2.createSchema
+      _ <- LabworkApplicationFriendService.createSchema
+      sesameLapps <- Future.fromTry(repository.getAll[SesameLabworkApplication])
+      _ = println(s"sesameLapps ${sesameLapps.size}")
+      lappDbs = sesameLapps.map(l => LabworkApplicationDb(l.labwork, l.applicant, l.friends, l.timestamp, None, l.id))
+      _ = println(s"lappDbs ${lappDbs.size}")
+      lapps <- LabworkApplicationService2.createManyWithFriends(lappDbs)
+      _ = lapps.foreach {
+        case (app, friends) => println(s"lapps ${app.id} with friends ${friends.size}")
+      }
+    } yield lapps
+
+    result.jsonResult { map =>
+      Ok(Json.toJson(map.map {
+        case (lapp, friends) => Json.obj(
+          "labworkApplication" -> Json.toJson(lapp),
+          "labworkApplicationFriends" -> Json.toJson(friends)
+        )
+      }))
+    }
   }
 }

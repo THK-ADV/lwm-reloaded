@@ -12,6 +12,10 @@ case class LabworkIdFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
+case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate = _.degree === UUID.fromString(value)
+}
+
 trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   import scala.concurrent.ExecutionContext.Implicits.global
 

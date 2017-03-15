@@ -58,6 +58,35 @@ case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: S
 
 case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime], id: UUID = UUID.randomUUID) extends LabworkApplication
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime], id: UUID = UUID.randomUUID) extends LabworkApplication {
+  def toLabworkApplication = PostgresLabworkApplication(labwork, applicant, friends, timestamp, id)
+}
 
 case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
+
+object PostgresLabworkApplication extends JsonSerialisation[SesameLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
+  override implicit def reads: Reads[SesameLabworkApplicationProtocol] = Json.reads[SesameLabworkApplicationProtocol]
+
+  override implicit def writes: Writes[PostgresLabworkApplication] = Json.writes[PostgresLabworkApplication]
+
+  override implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = PostgresLabworkApplicationAtom.writesAtom
+}
+
+object PostgresLabworkApplicationAtom {
+
+  implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = (
+    (JsPath \ "labwork").write[PostgresLabworkAtom] and
+      (JsPath \ "applicant").write[User] and
+      (JsPath \ "friends").writeSet[User] and
+      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresLabworkApplicationAtom.unapply))
+}
+
+object LabworkApplicationFriend extends JsonSerialisation[LabworkApplicationFriend, LabworkApplicationFriend, LabworkApplicationFriend] {
+  override implicit def reads: Reads[LabworkApplicationFriend] = Json.reads[LabworkApplicationFriend]
+
+  override implicit def writes: Writes[LabworkApplicationFriend] = Json.writes[LabworkApplicationFriend]
+
+  override implicit def writesAtom: Writes[LabworkApplicationFriend] = writes
+}

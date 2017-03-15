@@ -5,6 +5,7 @@ import java.util.UUID
 import models._
 import play.api.libs.json.{JsError, JsValue, Json, Reads}
 import play.api.mvc.{Controller, Request}
+import services.UserService.BuddyResult
 import services._
 import store.{Resolvers, TableFilter, UserTable}
 import utils.LwmMimeType
@@ -83,11 +84,28 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
     }
   }
 
-  def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
-    val requesterId = request.session(SessionController.userId)
+  def buddy(user: String, systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
+    import services.UserService.{Allowed, Almost, Denied}
+    //val requesterId = request.session(SessionController.userId) // TODO FOR TESTING PURPOSE
 
-    userService.buddyResult(requesterId, systemId, labwork).jsonResult { buddyResult =>
-      Ok(Json.obj("result" -> buddyResult.toString))
+    userService.buddyResult(user, systemId, labwork).jsonResult { buddyResult =>
+      buddyResult match {
+        case Allowed => Ok(Json.obj(
+          "status" -> "OK",
+          "type" -> buddyResult.toString,
+          "message" -> s"Dein Partner $systemId hat Dich ebenfalls referenziert."
+        ))
+        case Almost => Ok(Json.obj(
+          "status" -> "OK",
+          "type" -> buddyResult.toString,
+          "message" -> s"Dein Partner $systemId muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
+        ))
+        case Denied => BadRequest(Json.obj(
+          "status" -> "KO",
+          "type" -> buddyResult.toString,
+          "message" -> s"Dein Partner $systemId und Du sind nicht im selben Studiengang."
+        ))
+      }
     }
   }
 

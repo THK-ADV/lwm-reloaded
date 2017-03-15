@@ -59,6 +59,9 @@ class UserTable(tag: Tag) extends Table[DbUser](tag, "USERS") with UniqueTable {
 }
 
 class DegreeTable(tag: Tag) extends Table[DegreeDb](tag, "DEGREES") with UniqueTable with LabelTable with AbbreviationTable {
+
+  def labworks =  TableQuery[LabworkTable].filter(_.degree === id)
+
   override def * = (label, abbreviation, invalidated, id) <> ((DegreeDb.apply _).tupled, DegreeDb.unapply)
 }
 

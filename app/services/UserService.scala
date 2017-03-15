@@ -3,7 +3,8 @@ package services
 import java.util.UUID
 
 import models._
-import store.{DegreeTable, TableFilter, UserTable}
+import services.UserService.Allowed
+import store.{DegreeTable, LabworkTable, TableFilter, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
@@ -56,32 +57,36 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
   }
 
   sealed trait BuddyResult
-  case object Allowed extends BuddyResult // same degree, in tool, paired
-  case object Almost extends BuddyResult // same degree, in tool, not paired yet
-  case object Denied extends BuddyResult // not same degree, in tool, other
+  case object Allowed extends BuddyResult
+  case object Almost extends BuddyResult
+  case object Denied extends BuddyResult
 
   final def buddyResult(studentId: String, buddySystemId: String, labwork: String): Future[BuddyResult] = {
     val buddySystemIdFilter = UserSystemIdFilter(buddySystemId)
-    val requesterIdFilter = UserIdFilter(studentId)
+    //val requesterIdFilter = UserIdFilter(studentId) // TODO FOR TESTING PURPOSE
+    val requesterSystemIdFilter = UserSystemIdFilter(studentId)
 
-    val query = for {
+    val buddy = for {
       buddy <- tableQuery.filter(buddySystemIdFilter.predicate)
-      requester <- tableQuery.filter(requesterIdFilter.predicate)
+      requester <- tableQuery.filter(requesterSystemIdFilter.predicate)
       sameDegree = buddy.enrollment === requester.enrollment
-      buddyApps <- buddy.labworkApplication(UUID.fromString(labwork))
-      friends <- buddyApps.friends
-    } yield (buddy, requester, sameDegree.getOrElse(false), friends)
+    } yield (buddy, sameDegree.getOrElse(false))
 
-    query.result.statements.foreach(println)
+    val friends = for {
+      b <- buddy
+      buddyApp <- b._1.labworkApplication(UUID.fromString(labwork))
+      friends <- buddyApp.friends
+    } yield friends
 
-    db.run(query.result.map { seq =>
-      val sameDegree = seq.map(_._3).reduce(_ && _)
+    db.run(for {
+      b <- buddy.result
+      f <- friends.result
+    } yield {
+      val sameDegree = b.map(_._2).reduce(_ && _)
+      val friends = f.exists(_.systemId == studentId)
 
-      if (sameDegree) {
-        val friends = seq.exists(t => t._2.id == t._4.id)
-
+      if (sameDegree)
         if (friends) Allowed else Almost
-      }
       else
         Denied
     })

@@ -223,7 +223,7 @@ GET           /students/buddies/:systemId                                       
 POST          /api2/users                                                             controllers.UserControllerPostgres.createOrUpdate()
 GET           /api2/users                                                             controllers.UserControllerPostgres.allUsers()
 GET           /api2/users/:id                                                         controllers.UserControllerPostgres.user(id)
-GET /api2/users/buddies/:systemId/labworks/:lid controllers.UserControllerPostgres.buddy(systemId, lid)
+GET           /api2/users/:user/buddies/:systemId/labworks/:lid                             controllers.UserControllerPostgres.buddy(user, systemId, lid)
 
 # Sessions
 POST          /sessions                                                               controllers.SessionController.login
@@ -238,10 +238,11 @@ GET           /api/multipleReportCardEntries/:c                                 
 GET           /api/migrate/users                                                      controllers.ApiDataController.migrateUsers()
 GET           /api/migrate/degrees                                                    controllers.ApiDataController.migrateDegrees()
 GET           /api/migrate/permissions                                                controllers.ApiDataController.migratePermissions()
-GET           /api/migrate/roles                                                controllers.ApiDataController.migrateRoles()
-GET           /api/migrate/semesters                                                controllers.ApiDataController.migrateSemesters()
-GET           /api/migrate/courses                                                controllers.ApiDataController.migrateCourses()
-GET           /api/migrate/labworks                                                controllers.ApiDataController.migrateLabworks()
+GET           /api/migrate/roles                                                      controllers.ApiDataController.migrateRoles()
+GET           /api/migrate/semesters                                                  controllers.ApiDataController.migrateSemesters()
+GET           /api/migrate/courses                                                    controllers.ApiDataController.migrateCourses()
+GET           /api/migrate/labworks                                                   controllers.ApiDataController.migrateLabworks()
+GET           /api/migrate/labworkApplications                                        controllers.ApiDataController.migrateLabworkApplications()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
