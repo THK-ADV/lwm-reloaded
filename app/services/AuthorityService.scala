@@ -3,12 +3,12 @@ package services
 import java.util.UUID
 
 import models._
-import store.AuthorityTable
+import store.{AuthorityTable, PostgresDatabase}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
-trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, PostgresAuthority] {
+trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, PostgresAuthority] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
@@ -28,4 +28,4 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Postgres
   }
 }
 
-object AuthorityService extends AuthorityService
+object AuthorityService extends AuthorityService with PostgresDatabase

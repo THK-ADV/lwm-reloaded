@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import models._
-import store.{CourseTable, LabworkTable, TableFilter}
+import store.{CourseTable, LabworkTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
@@ -16,7 +16,7 @@ case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] 
   override def predicate = _.degree === UUID.fromString(value)
 }
 
-trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
+trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
@@ -44,4 +44,4 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   }
 }
 
-object LabworkService extends LabworkService
+object LabworkService extends LabworkService with PostgresDatabase

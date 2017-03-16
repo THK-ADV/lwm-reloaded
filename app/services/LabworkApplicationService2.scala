@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import models._
-import store.{LabworkApplicationFriendTable, LabworkApplicationTable, TableFilter}
+import store.{LabworkApplicationFriendTable, LabworkApplicationTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
@@ -12,7 +12,7 @@ case class ApplicantFilter(value: String) extends TableFilter[LabworkApplication
   override def predicate = _.applicant === UUID.fromString(value)
 }
 
-trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
+trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
@@ -70,7 +70,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 }
 
-trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] {
+trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
   override protected def tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   override protected def toAtomic(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
@@ -78,5 +78,5 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
   override protected def toUniqueEntity(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
 }
 
-object LabworkApplicationService2 extends LabworkApplicationService2
-object LabworkApplicationFriendService extends LabworkApplicationFriendService
+object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase
+object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase

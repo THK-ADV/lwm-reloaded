@@ -6,7 +6,19 @@ import org.w3.banana.sesame.{Sesame, SesameModule}
 import org.w3.banana.{RDF, RDFModule}
 import store.Prefixes.LWMPrefix
 import store.bind.Bindings
-import store.{Namespace, SemanticRepository, SesameRepository}
+import store._
+
+import scala.concurrent.{Await, Future}
+
+abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with PostgresDatabase {
+  import slick.driver.PostgresDriver.api._
+  import scala.concurrent.duration._
+
+  override lazy val db = Database.forConfig("database_test")
+  implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
+
+  final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
+}
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {
   val lwm = LWMPrefix[Sesame]

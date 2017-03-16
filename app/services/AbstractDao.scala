@@ -8,7 +8,7 @@ import store.{PostgresDatabase, TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 
-trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] extends PostgresDatabase {
+trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
 
   protected def tableQuery: TableQuery[T]
 
@@ -40,13 +40,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   def update(entity: DbModel): Future[Int] = db.run(tableQuery.filter(_.id === entity.id).update(entity))
 
-  def dropAndCreateSchema = db.run(DBIO.seq(drop, createWith).transactionally)
+  def createSchema = db.run(tableQuery.schema.create)
 
-  def createSchema = db.run(createWith)
-
-  def dropSchema = db.run(drop)
-
-  private def createWith = tableQuery.schema.create
-
-  private def drop = tableQuery.schema.drop
+  def dropSchema = db.run(tableQuery.schema.create)
 }

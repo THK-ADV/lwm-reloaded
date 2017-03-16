@@ -1,12 +1,12 @@
 package services
 
 import models.{Course, CourseDb, PostgresCourseAtom}
-import store.CourseTable
+import store.{CourseTable, PostgresDatabase}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
-trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
+trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
@@ -27,4 +27,4 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
   }
 }
 
-object CourseService extends CourseService
+object CourseService extends CourseService with PostgresDatabase

@@ -1,12 +1,12 @@
 package services
 
 import models._
-import store.{RolePermissionTable, RoleTable}
+import store.{PostgresDatabase, RolePermissionTable, RoleTable}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 
-trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
+trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
@@ -50,7 +50,7 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 }
 
-trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermission, RolePermission] {
+trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermission, RolePermission] { self: PostgresDatabase =>
   override protected def tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
 
   override protected def toAtomic(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
@@ -58,5 +58,5 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
   override protected def toUniqueEntity(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 }
 
-object RoleService2 extends RoleService2
-object RolePermissionService extends RolePermissionService
+object RoleService2 extends RoleService2 with PostgresDatabase
+object RolePermissionService extends RolePermissionService with PostgresDatabase

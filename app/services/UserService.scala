@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import models._
-import store.{DegreeTable, TableFilter, UserTable}
+import store.{DegreeTable, PostgresDatabase, TableFilter, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
@@ -33,17 +33,19 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait UserService extends AbstractDao[UserTable, DbUser, User] {
+trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
+  override protected val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
+
+  val degreeTable = TableQuery[DegreeTable]
 
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
     db.run(query.result.map(_.map(_.toUser)))
   }
 
   override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.joinLeft(TableQuery[DegreeTable]).on(_.enrollment === _.id).result.map(_.map {
+    db.run(query.joinLeft(degreeTable).on(_.enrollment === _.id).result.map(_.map {
       case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toDegree, s.id)
       case ((dbUser, None)) => dbUser.toUser
     }))
@@ -91,4 +93,4 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
   }
 }
 
-object UserService extends UserService
+object UserService extends UserService with PostgresDatabase
