@@ -9,7 +9,9 @@ import scala.concurrent.Future
 trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
+  protected def rolePermissionService: RolePermissionService
+
+  override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
   override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
     case (role, rolePerms) =>
@@ -43,7 +45,7 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
     for {
       rs <- createMany(roles)
       rolePermissions = roles.flatMap(r => r.permissions.map(p => RolePermission(r.id, p)))
-      rps <- RolePermissionService.createMany(rolePermissions)
+      rps <- rolePermissionService.createMany(rolePermissions)
     } yield rps.groupBy(_.role).map {
       case ((r, rp)) => (rs.find(_.id == r).map(r => PostgresRole(r.label, r.permissions, r.id)), rp)
     }
@@ -51,12 +53,14 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
 }
 
 trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermission, RolePermission] { self: PostgresDatabase =>
-  override protected def tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
+  override val tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
 
   override protected def toAtomic(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 
   override protected def toUniqueEntity(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 }
 
-object RoleService2 extends RoleService2 with PostgresDatabase
+object RoleService2 extends RoleService2 with PostgresDatabase {
+  override protected def rolePermissionService: RolePermissionService = RolePermissionService
+}
 object RolePermissionService extends RolePermissionService with PostgresDatabase

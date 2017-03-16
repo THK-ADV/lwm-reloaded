@@ -14,7 +14,7 @@ case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTab
 trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
+  override def tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
 

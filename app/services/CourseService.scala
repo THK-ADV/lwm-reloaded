@@ -9,7 +9,7 @@ import slick.driver.PostgresDriver.api._
 trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
+  override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     val joinedQuery = for {

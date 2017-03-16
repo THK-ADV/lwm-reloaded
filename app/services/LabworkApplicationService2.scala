@@ -15,7 +15,7 @@ case class ApplicantFilter(value: String) extends TableFilter[LabworkApplication
 trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
+  override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
 
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
     case (lapp, foreigners) =>
@@ -71,7 +71,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 }
 
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
-  override protected def tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
+  override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   override protected def toAtomic(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
 

@@ -10,7 +10,7 @@ import scala.concurrent.Future
 
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
 
-  protected def tableQuery: TableQuery[T]
+  def tableQuery: TableQuery[T]
 
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 

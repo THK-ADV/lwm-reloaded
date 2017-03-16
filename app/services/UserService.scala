@@ -18,7 +18,7 @@ case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
 }
 case class UserSystemIdFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: (UserTable) => Rep[Boolean] = _.systemId.toLowerCase like s"%${value.toLowerCase}%"
+  override def predicate: (UserTable) => Rep[Boolean] = _.systemId.toLowerCase === value.toLowerCase
 }
 case class UserLastnameFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.lastname.toLowerCase like s"%${value.toLowerCase}%"
@@ -36,16 +36,17 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
 trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
+  protected def degreeService: DegreeService
+  protected def authorityService: AuthorityService
 
-  val degreeTable = TableQuery[DegreeTable]
+  override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
     db.run(query.result.map(_.map(_.toUser)))
   }
 
   override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.joinLeft(degreeTable).on(_.enrollment === _.id).result.map(_.map {
+    db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
       case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toDegree, s.id)
       case ((dbUser, None)) => dbUser.toUser
     }))
@@ -53,12 +54,12 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
 
   final def createOrUpdate(ldapUser: LdapUser): Future[(User, Option[PostgresAuthorityAtom])] = {
     for {
-      degrees <- DegreeService.get()
+      degrees <- degreeService.get()
       existing <- get(List(UserSystemIdFilter(ldapUser.systemId)), atomic = false)
       maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
       dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, None, existing.headOption.fold(ldapUser.id)(_.id))
       updated <- createOrUpdate(dbUser)
-      maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => AuthorityService.createWith(user).mapTo[Option[PostgresAuthorityAtom]])
+      maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).mapTo[Option[PostgresAuthorityAtom]])
     } yield (dbUser.toUser, maybeAuth)
   }
 
@@ -93,4 +94,8 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
   }
 }
 
-object UserService extends UserService with PostgresDatabase
+object UserService extends UserService with PostgresDatabase {
+  override protected def degreeService: DegreeService = DegreeService
+
+  override protected def authorityService: AuthorityService = AuthorityService
+}

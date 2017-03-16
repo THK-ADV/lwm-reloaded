@@ -19,7 +19,7 @@ case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] 
 trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
+  override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
     val joinedQuery = for {

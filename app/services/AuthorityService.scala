@@ -11,7 +11,9 @@ import slick.driver.PostgresDriver.api._
 trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, PostgresAuthority] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
+  protected def roleService: RoleService2
+
+  override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[PostgresAuthority]] = ???
 
@@ -19,7 +21,7 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Postgres
 
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
     for {
-      role <- RoleService2.byUserStatus(dbUser.status)
+      role <- roleService.byUserStatus(dbUser.status)
       created <- role.fold[Future[AuthorityDb]](Future.failed(new Throwable(s"No appropriate Role found while resolving user $dbUser"))) { role =>
         val authority = AuthorityDb(dbUser.id, role.id, None, None, UUID.randomUUID)
         create(authority)
@@ -28,4 +30,6 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Postgres
   }
 }
 
-object AuthorityService extends AuthorityService with PostgresDatabase
+object AuthorityService extends AuthorityService with PostgresDatabase {
+  override protected def roleService: RoleService2 = RoleService2
+}

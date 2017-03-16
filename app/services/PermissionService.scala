@@ -9,7 +9,7 @@ import scala.concurrent.Future
 trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, PostgresPermission] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
+  override val tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
 
   override protected def toAtomic(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = toUniqueEntity(query)
 

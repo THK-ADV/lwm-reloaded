@@ -18,6 +18,30 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
+
+  protected def fillDb: DBIOAction[Unit, NoStream, Effect.Write]
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+
+    await(db.run(DBIO.seq(
+      TableQuery[DegreeTable].schema.create,
+      TableQuery[UserTable].schema.create,
+      TableQuery[CourseTable].schema.create,
+      TableQuery[AuthorityTable].schema.create
+    ).andThen(fillDb).transactionally))
+  }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+
+    await(db.run(DBIO.seq(
+      TableQuery[AuthorityTable].schema.create,
+      TableQuery[CourseTable].schema.create,
+      TableQuery[UserTable].schema.create,
+      TableQuery[DegreeTable].schema.create
+    ).andThen(fillDb).transactionally))
+  }
 }
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {

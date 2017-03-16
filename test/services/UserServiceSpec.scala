@@ -4,9 +4,11 @@ import java.util.UUID
 
 import base.PostgresDbSpec
 import models._
+import slick.dbio.Effect.Write
 
 class UserServiceSpec extends PostgresDbSpec with UserService {
   import scala.util.Random.nextInt
+  import slick.driver.PostgresDriver.api._
 
   val maxUser = 100
   val maxDegrees = 5
@@ -49,27 +51,49 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
       await(get(List(UserIdFilter(studentAtom.get.id.toString)))).headOption shouldBe studentAtom
       await(get(List(UserIdFilter(employeeAtom.get.id.toString)))).headOption shouldBe employeeAtom
     }
+
+    "filter users by certain attributes" in {
+      val degree = degrees(nextInt(maxDegrees))
+      val possibleUsers1 = dbUser.filter(u => u.status == User.StudentType && u.enrollment.get == degree.id).map(_.toUser)
+      val possibleUsers2 = dbUser.filter(u => u.firstname.contains("5") && u.lastname.contains("5")).map(_.toUser)
+      val possibleUsers3 = dbUser.filter(_.systemId == "10").map(_.toUser)
+
+      await(get(List(
+        UserStatusFilter(User.StudentType),
+        UserDegreeFilter(degree.id.toString)
+      ), atomic = false)) shouldBe possibleUsers1
+
+      await(get(List(
+        UserFirstnameFilter("5"),
+        UserLastnameFilter("5")
+      ), atomic = false)) shouldBe possibleUsers2
+
+      await(get(List(
+        UserSystemIdFilter("10")
+      ), atomic = false)) shouldBe possibleUsers3
+
+      await(get(List(
+        UserFirstnameFilter("3"),
+        UserLastnameFilter("3"),
+        UserSystemIdFilter("4")
+      ), atomic = false)) shouldBe empty
+    }
+
+    "create a user from ldap when not existing" in {
+      /*val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
+
+      val (user, maybeAuth) = await(createOrUpdate(ldapUser))
+      val allUser = await(get())
+
+      user.toDbUser shouldBe ldapUser.toDbUser
+      allUser.size shouldBe dbUser.size + 1
+      maybeAuth shouldBe defined*/
+    }
   }
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    import slick.driver.PostgresDriver.api._
+  override protected def fillDb: DBIOAction[Unit, NoStream, Write] = DBIO.seq(degreeService.tableQuery.forceInsertAll(degrees), tableQuery.forceInsertAll(dbUser))
 
-    await(db.run(DBIO.seq(
-      degreeTable.schema.create,
-      tableQuery.schema.create,
-      degreeTable.forceInsertAll(degrees),
-      tableQuery.forceInsertAll(dbUser)
-    )))
-  }
+  override protected val degreeService: DegreeService = new DegreeServiceSpec()
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    import slick.driver.PostgresDriver.api._
-
-    await(db.run(DBIO.seq(
-      tableQuery.schema.drop,
-      degreeTable.schema.drop
-    )))
-  }
+  override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
 }
