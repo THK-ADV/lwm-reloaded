@@ -2,7 +2,7 @@ package security
 
 import base.TestBaseDefinition
 import controllers.{ContentTyped, SecureControllerContext, Secured, SessionChecking}
-import models.SesamePermission$
+import models.SesamePermission
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.WordSpec

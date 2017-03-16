@@ -7,7 +7,6 @@ import scalaz.Monad
 
 class AttemptSpec extends WordSpec with Matchers with PropertyChecks {
 
-
   val monad: Monad[Attempt] = new Monad[Attempt] {
     override def point[A](a: => A): Attempt[A] = Continue(a)
 

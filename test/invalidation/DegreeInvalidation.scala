@@ -20,7 +20,7 @@ class DegreeInvalidation extends SesameDbSpec {
 
     def labs(degree: UUID): Stream[SesameLabwork] = Stream.continually {
       if (nextBoolean()) SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, degree)
-      else SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      else SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
     }
 
     def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {
@@ -72,7 +72,7 @@ class DegreeInvalidation extends SesameDbSpec {
       AnnotationDescriptor
       }
 
-      val degree = PostgresDegree("Label", "Abbrev")
+      val degree = SesameDegree("Label", "Abbrev")
       val labworks = (labs(degree.id) take 100).toSet
       val refLabs = labworks filter (_.degree == degree.id)
 
@@ -98,9 +98,9 @@ class DegreeInvalidation extends SesameDbSpec {
       repo.addMany[SesameLabworkApplication](applications)
       repo.addMany[Annotation](annotations)
 
-      repo.invalidate[SesameDegree](PostgresDegree.generateUri(degree))
+      repo.invalidate[SesameDegree](SesameDegree.generateUri(degree))
 
-      repo.get[SesameDegree](PostgresDegree.generateUri(degree)) shouldBe Success(None)
+      repo.get[SesameDegree](SesameDegree.generateUri(degree)) shouldBe Success(None)
       repo.getAll[SesameLabwork] shouldBe Success(labworks filter (_.degree != degree.id))
       repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
@@ -118,7 +118,7 @@ class DegreeInvalidation extends SesameDbSpec {
         case Failure(e) => fail("no")
       }
 
-      repo.deepGet[SesameDegree](PostgresDegree.generateUri(degree)) map (_ map (_.id)) shouldBe Success(Some(degree.id))
+      repo.deepGet[SesameDegree](SesameDegree.generateUri(degree)) map (_ map (_.id)) shouldBe Success(Some(degree.id))
       repo.deepGetAll[SesameLabwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
       repo.deepGetAll[AssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))

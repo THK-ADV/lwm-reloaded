@@ -1,5 +1,7 @@
 package bind
 
+import java.util.UUID
+
 import base.SesameDbSpec
 import models._
 import org.w3.banana.PointedGraph
@@ -13,7 +15,7 @@ class AuthorityBindingSpec extends SesameDbSpec {
 
   implicit val authorityBinder = AuthorityDescriptor.binder
 
-  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
+  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", UUID.randomUUID)
 
   val authWithCourse1 = SesameAuthority(student.id, SesameRole.randomUUID, Some(SesameCourse.randomUUID))
   val authWithCourse2 = SesameAuthority(student.id, SesameRole.randomUUID, Some(SesameCourse.randomUUID))

@@ -3,7 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{SameLabwork$, SesameLabworkApplication$, User}
+import models.{SesameLabwork, SesameLabworkApplication, User}
 
 import scala.util.Random._
 import scala.util.{Failure, Success}
@@ -13,7 +13,7 @@ class LabworkApplicationInvalidation extends SesameDbSpec {
   "A LabworkApplication invalidation" should {
 
     def people: Stream[UUID] = Stream.continually(User.randomUUID)
-    def labapp: Stream[SesameLabworkApplication] = Stream.continually(SesameLabworkApplication(SameLabwork.randomUUID, User.randomUUID, (people take 10).toSet))
+    def labapp: Stream[SesameLabworkApplication] = Stream.continually(SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, (people take 10).toSet))
 
     "invalidate the labwork application" in {
       import bindings.LabworkApplicationDescriptor

@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.SesameSemester$
+import models.SesameSemester
 import org.joda.time.LocalDate
 import org.w3.banana.PointedGraph
 

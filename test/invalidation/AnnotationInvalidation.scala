@@ -1,7 +1,7 @@
 package invalidation
 
 import base.SesameDbSpec
-import models.{Annotation, SameLabwork$, ReportCardEntry, User}
+import models.{Annotation, SesameLabwork, ReportCardEntry, User}
 
 import scala.util.Random._
 import scala.util.{Failure, Success}
@@ -10,7 +10,7 @@ class AnnotationInvalidation extends SesameDbSpec {
 
   "An Annotation invalidation" should {
 
-    def annot: Stream[Annotation] = Stream.continually(Annotation(User.randomUUID, SameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message"))
+    def annot: Stream[Annotation] = Stream.continually(Annotation(User.randomUUID, SesameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message"))
 
     "invalidate the annotation" in {
       import bindings.AnnotationDescriptor

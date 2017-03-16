@@ -3,7 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.{Group, SameLabwork$, User}
+import models.{Group, SesameLabwork, User}
 
 import scala.util.Random._
 import scala.util.Success
@@ -13,7 +13,7 @@ class GroupInvalidation extends SesameDbSpec {
   "A Group invalidation" should {
 
     def people: Stream[UUID] = Stream.continually(User.randomUUID)
-    def grps: Stream[Group] = Stream.continually(Group("Label", SameLabwork.randomUUID, (people take 10).toSet))
+    def grps: Stream[Group] = Stream.continually(Group("Label", SesameLabwork.randomUUID, (people take 10).toSet))
 
     "invalidate the group" in {
       import bindings.GroupDescriptor

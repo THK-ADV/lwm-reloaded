@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.SesameLabworkApplication$
+import models.SesameLabworkApplication
 import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._

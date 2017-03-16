@@ -16,7 +16,7 @@ class SesameRepositorySpec extends SesameDbSpec {
   "Sesame Repository" should {
 
     "add an entity" in {
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       val g = repo.add(student)
 
@@ -26,7 +26,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(student.lastname)
         .--(lwm.registrationId).->-(student.registrationId)
         .--(lwm.email).->-(student.email)
-        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
+        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(SesameDegree.splitter))
         .--(lwm.id).->-(student.id).graph
 
       g match {
@@ -38,10 +38,10 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "simultaneously add many entities" in {
-      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
@@ -80,7 +80,7 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "delete an entity" in {
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       repo add student
       repo delete User.generateUri(student)
@@ -98,10 +98,10 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "get list of entities" in {
-      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       repo.add(student1)
       repo.add(student2)
@@ -117,7 +117,7 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "get an entity" in {
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
       repo add student
 
       val explicitStudent = repo.get[SesameStudent](User.generateUri(student))
@@ -135,7 +135,7 @@ class SesameRepositorySpec extends SesameDbSpec {
     "delete an arbitrarily nested entity" in {
       import bindings.{DegreeDescriptor, StudentAtomDescriptor}
 
-      val degree = PostgresDegree("label", "abbr")
+      val degree = SesameDegree("label", "abbr")
       val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", degree.id)
 
       repo add student
@@ -143,7 +143,7 @@ class SesameRepositorySpec extends SesameDbSpec {
 
       repo.delete[SesameStudentAtom](User.generateUri(student))
 
-      val postDegree = repo get[SesameDegree] PostgresDegree.generateUri(degree)
+      val postDegree = repo get[SesameDegree] SesameDegree.generateUri(degree)
       val postStudent = repo get[SesameStudent] User.generateUri(student)
 
       (postDegree, postStudent) match {
@@ -203,10 +203,10 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "simultaneously get many entities" in {
-      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student1 = SesameStudent("mi1111", "Carl", "A", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student2 = SesameStudent("mi1112", "Claus", "B", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student3 = SesameStudent("mi1113", "Tom", "C", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val student4 = SesameStudent("mi1114", "Bob", "D", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       val students = List(student1, student2, student3, student4)
 
@@ -222,8 +222,8 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "update an entity" in {
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val studentUpdated = SesameStudent("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val studentUpdated = SesameStudent("mi1111", "Carlo", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
 
       val g = repo.add(student)
 
@@ -233,7 +233,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(student.lastname)
         .--(lwm.registrationId).->-(student.registrationId)
         .--(lwm.email).->-(student.email)
-        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
+        .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(SesameDegree.splitter))
         .--(lwm.id).->-(student.id).graph
 
       val expectedGraphUpdated = URI(User.generateUri(studentUpdated)).a(lwm.User)
@@ -242,7 +242,7 @@ class SesameRepositorySpec extends SesameDbSpec {
         .--(lwm.lastname).->-(studentUpdated.lastname)
         .--(lwm.registrationId).->-(studentUpdated.registrationId)
         .--(lwm.email).->-(studentUpdated.email)
-        .--(lwm.enrollment).->-(studentUpdated.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
+        .--(lwm.enrollment).->-(studentUpdated.enrollment)(ops, uuidRefBinder(SesameDegree.splitter))
         .--(lwm.id).->-(studentUpdated.id).graph
 
       g match {
@@ -266,8 +266,8 @@ class SesameRepositorySpec extends SesameDbSpec {
     }
 
     "contains an entity" in {
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val anotherStudent = SesameStudent("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", UUID.randomUUID)
+      val anotherStudent = SesameStudent("mi1112", "Carlo", "Heinz", "117273", "mi1112@gm.fh-koeln.de", UUID.randomUUID)
 
       repo add student
 

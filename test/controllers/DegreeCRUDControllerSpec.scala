@@ -1,6 +1,6 @@
 package controllers
 
-import models.{PostgresDegree$, DegreeProtocol}
+import models.{DegreeProtocol, SesameDegree}
 import org.mockito.Matchers
 import org.mockito.Matchers.anyObject
 import org.mockito.Mockito._
@@ -14,22 +14,22 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, Degree, Degree] {
-  override val entityToPass: Degree = PostgresDegree("label to pass", "abbreviation to pass")
+class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol, SesameDegree, SesameDegree] {
+  override val entityToPass: SesameDegree = SesameDegree("label to pass", "abbreviation to pass")
 
-  override val entityToFail: Degree = PostgresDegree("label to fail", "abbreviation to fail")
+  override val entityToFail: SesameDegree = SesameDegree("label to fail", "abbreviation to fail")
 
-  override implicit val jsonWrites: Writes[Degree] = PostgresDegree.writes
+  override implicit val jsonWrites: Writes[SesameDegree] = SesameDegree.writes
 
-  override val atomizedEntityToPass: Degree = entityToPass
+  override val atomizedEntityToPass: SesameDegree = entityToPass
 
-  override val atomizedEntityToFail: Degree = entityToFail
+  override val atomizedEntityToFail: SesameDegree = entityToFail
 
-  override val jsonWritesAtom: Writes[Degree] = jsonWrites
+  override val jsonWritesAtom: Writes[SesameDegree] = jsonWrites
 
   override val controller: DegreeCRUDController = new DegreeCRUDController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: DegreeProtocol, existing: Option[Degree]): Degree = entityToPass
+    override protected def fromInput(input: DegreeProtocol, existing: Option[SesameDegree]): SesameDegree = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -62,9 +62,9 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(PostgresDegree.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameDegree.generateUri(entityToPass)))
       )))
-      when(repository.get[Degree](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[SesameDegree](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -87,7 +87,7 @@ class DegreeCRUDControllerSpec extends AbstractCRUDControllerSpec[DegreeProtocol
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(PostgresDegree.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameDegree.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

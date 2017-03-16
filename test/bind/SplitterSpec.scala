@@ -3,7 +3,7 @@ package bind
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.SesameSemester$
+import models.SesameSemester
 import org.scalatest.WordSpec
 import store.Namespace
 

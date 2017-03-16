@@ -69,9 +69,9 @@ class RoleServiceSpec extends SesameDbSpec {
     "retrieve authorities properly" in {
       import bindings.{RoleDescriptor, AuthorityDescriptor, StudentDescriptor}
 
-      val student1 = SesameStudent("mi1018", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
-      val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
-      val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", PostgresDegree.randomUUID)
+      val student1 = SesameStudent("mi1018", "last name", "first name", "email", "registrationId", UUID.randomUUID)
+      val student2 = SesameStudent("ai1223", "last name", "first name", "email", "registrationId", UUID.randomUUID)
+      val student3 = SesameStudent("ti1233", "last name", "first name", "email", "registrationId", UUID.randomUUID)
 
       val authority1 = SesameAuthority(student1.id, module1UserRole1.role, module1UserRole1.course)
       val authority2 = SesameAuthority(student1.id, module2UserRole2.role, module1UserRole1.course)

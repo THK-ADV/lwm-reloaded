@@ -69,7 +69,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     val semester = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
     val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
     val courseAtom = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
-    val degree = PostgresDegree("label to pass", "abbrev to pass")
+    val degree = SesameDegree("label to pass", "abbrev to pass")
 
     val labworkAtom = SesameLabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
     val room = Room("room", "desc", None, e.room)

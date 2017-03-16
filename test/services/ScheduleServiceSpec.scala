@@ -175,7 +175,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are no other schedules" in {
       val plan = assignmentPlan(5)
-      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
       val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
 
@@ -198,7 +198,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val plan = assignmentPlan(8)
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
-      val degree = PostgresDegree.randomUUID
+      val degree = UUID.randomUUID
       val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
       val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
@@ -395,7 +395,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1Plan = assignmentPlan(8)
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, PostgresDegree.randomUUID)
+      val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, UUID.randomUUID)
 
       val ap1Entries = Set(
         TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
@@ -447,7 +447,7 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ma1Plan = assignmentPlan(4, 2)
       val ap1 = SesameCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
       val ma1 = SesameCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
-      val degree = PostgresDegree.randomUUID
+      val degree = UUID.randomUUID
       val semester1 = SesameSemester("semester1", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, degree)
       val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)

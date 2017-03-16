@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.SesameSemester$
+import models.SesameSemester
 import models.Permissions._
 import org.joda.time.LocalDate
 import org.mockito.Matchers

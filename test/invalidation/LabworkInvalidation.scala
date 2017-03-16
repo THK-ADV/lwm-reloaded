@@ -57,7 +57,7 @@ class LabworkInvalidation extends SesameDbSpec {
     "invalidate the labwork and subsequent assignment plans, groups, schedules and others" in {
       import bindings.{AnnotationDescriptor, AssignmentPlanDescriptor, GroupDescriptor, LabworkApplicationDescriptor, LabworkDescriptor, ReportCardEntryDescriptor, ReportCardEvaluationDescriptor, ScheduleDescriptor, TimetableDescriptor}
 
-      val labwork = SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val assPlans = (aplans(labwork.id) take 20).toSet
       val groups = (grps(labwork.id) take 20).toSet

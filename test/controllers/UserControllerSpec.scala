@@ -56,7 +56,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
 
   class FakeApp extends WithApplicationLoader(new ApplicationLoader {
     override def load(context: Context): Application = new DefaultLwmApplication(context) {
-      override lazy val userControllerPostgres: UserController = controller
+      override lazy val userController: UserController = controller
     }.application
   })
 
@@ -102,7 +102,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize one specific user, regardless of his subcategory" in {
-      val degree = PostgresDegree("Degree", "DD")
+      val degree = SesameDegree("Degree", "DD")
       val student = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
       val studentAtom = SesameStudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.invalidated, student.id)
 
@@ -122,7 +122,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize all users, regardless of their subcategory" in {
-      val degree = PostgresDegree("Degree1", "DD1")
+      val degree = SesameDegree("Degree1", "DD1")
 
       def atomize(s: Set[User]): Set[JsValue] = s map {
         case s: SesameStudent =>
@@ -177,7 +177,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize a single student" in {
-      val degree = PostgresDegree("label", "abbrev")
+      val degree = SesameDegree("label", "abbrev")
       val studentAtom = SesameStudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, None, User.randomUUID)
 
       when(repository.get[SesameStudentAtom](anyObject())(anyObject())).thenReturn(Success(Some(studentAtom)))
@@ -194,7 +194,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "get all students" in {
-      val degree = PostgresDegree("label", "abbrev")
+      val degree = SesameDegree("label", "abbrev")
       val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree.id)
       val student2 = SesameStudent("mi1818", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree.id)
       val student3 = SesameStudent("wi1818", "Nahs", "Rustw", "lab@mail.de", "22331144", degree.id)
@@ -216,7 +216,7 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "atomize all students" in {
-      val degree = PostgresDegree("Degree1", "DD1")
+      val degree = SesameDegree("Degree1", "DD1")
 
       val studentAtom1 = SesameStudentAtom("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree, None, User.randomUUID)
       val studentAtom2 = SesameStudentAtom("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree, None, User.randomUUID)
@@ -275,11 +275,11 @@ class UserControllerSpec extends WordSpec with TestBaseDefinition with SesameMod
     }
 
     "get students specific to particular degree" in {
-      val degree1 = PostgresDegree("Degree1", "DD1")
+      val degree1 = SesameDegree("Degree1", "DD1")
 
       val student1 = SesameStudent("ai1818", "Hans", "Wurst", "bla@mail.de", "11223344", degree1.id)
       val student2 = SesameStudent("ai2182", "Sanh", "Tsruw", "alb@mail.de", "44332211", degree1.id)
-      val student3 = SesameStudent("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", PostgresDegree.randomUUID)
+      val student3 = SesameStudent("mi3512", "Nahs", "Rustw", "lab@mail.de", "22331144", UUID.randomUUID)
       val students: Set[SesameStudent] = Set(student1, student2, student3)
 
       when(repository.getAll[SesameStudent](anyObject())).thenReturn(Success(students))

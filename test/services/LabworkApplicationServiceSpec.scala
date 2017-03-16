@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import base.TestBaseDefinition
 import models._
 import org.joda.time.DateTime
@@ -32,7 +34,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
   "An application service" should {
 
     "return applications for a given labwork" in {
-      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val applications = List(
         SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
         SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty),
@@ -56,8 +58,8 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return only the applications of a specific labwork, even though more are present" in {
-      val labwork1 = SesameLabwork("label1", "description1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val labwork2 = SesameLabwork("label2", "description2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork1 = SesameLabwork("label1", "description1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val labwork2 = SesameLabwork("label2", "description2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val applicationList1 = List(
         SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
         SesameLabworkApplication(labwork1.id, User.randomUUID, Set.empty),
@@ -91,7 +93,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return None when no applications are found" in {
-      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       repository.add[SesameLabwork](labwork)
 
@@ -105,7 +107,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return applications for a given labwork ordered by timestamp" in {
-      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val applications = List(
         SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now()),
         SesameLabworkApplication(labwork.id, User.randomUUID, Set.empty, DateTime.now().plusDays(1)),

@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{SesameLabworkApplication$, User}
+import models.{SesameLabworkApplication, User}
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._

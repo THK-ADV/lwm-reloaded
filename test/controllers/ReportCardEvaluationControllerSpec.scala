@@ -53,8 +53,8 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
   val employeeToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
   val employeeToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "employee")
 
-  val degreeToPass = PostgresDegree("label to pass", "abbrev to pass")
-  val degreeToFail = PostgresDegree("label to fail", "abbrev to fail")
+  val degreeToPass = SesameDegree("label to pass", "abbrev to pass")
+  val degreeToFail = SesameDegree("label to fail", "abbrev to fail")
 
   val courseToPass = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employeeToPass, 1, None, UUID.randomUUID)
   val courseToFail = SesameCourseAtom("label to fail", "desc to fail", "abbrev to fail", employeeToFail, 1, None, UUID.randomUUID)

@@ -38,7 +38,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       import utils.Ops.NaturalTrasformations._
       import bindings.StudentDescriptor
 
-      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val student = SesameStudent("mi1111", "Carl", "Heinz", "117272", "mi1111@gm.fh-koeln.de", SesameDegree.randomUUID)
 
       repo add student
 
@@ -68,9 +68,9 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       GroupDescriptor
       }
 
-      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val s3 = SesameStudent("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", SesameDegree.randomUUID)
+      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", SesameDegree.randomUUID)
+      val s3 = SesameStudent("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", SesameDegree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, s3.id))
 
       repo addMany List(s1, s2, s3)
@@ -101,8 +101,8 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       GroupDescriptor
       }
 
-      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", PostgresDegree.randomUUID)
-      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", PostgresDegree.randomUUID)
+      val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", SesameDegree.randomUUID)
+      val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", SesameDegree.randomUUID)
       val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, UUID.randomUUID()))
 
       repo addMany List(s1, s2)

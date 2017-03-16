@@ -24,7 +24,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
   val course = SesameCourse("label to pass", "desc to pass", "abbrev to pass", employee.id, 1, None, UUID.randomUUID)
   val courseAtom = SesameCourseAtom(course.label, course.description, course.abbreviation, employee, course.semesterIndex, course.invalidated, course.id)
-  val degree = PostgresDegree("label to pass", "abbrev to pass")
+  val degree = SesameDegree("label to pass", "abbrev to pass")
 
   val labworkToPass = SesameLabworkAtom("label to pass", "desc to pass", semester, courseAtom, degree, subscribable = false, published = false, None, UUID.randomUUID)
   val labworkToFail = SesameLabworkAtom("label to fail", "desc to fail", semester, courseAtom, degree, subscribable = false, published = false, None, UUID.randomUUID)
@@ -89,7 +89,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   "A LabworkApplicationCRUDControllerSpec" should {
 
     "return the corresponding labworkApplication for a given labwork" in {
-      val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val first = SesameLabworkApplication(labwork.id, User.randomUUID, Set(User.randomUUID))
       val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -115,7 +115,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "return all corresponding applications for a given labwork" in {
-    val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+    val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
     val first = SesameLabworkApplication(labwork.id, User.randomUUID, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -140,7 +140,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "not return applications for a labwork when there is no match" in {
-    val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+    val labwork = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -216,7 +216,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "return the corresponding application for a given applicant" in {
-    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, applicant.id, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -240,7 +240,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
     contentFromStream(result) shouldBe expected
   }
   "return all corresponding applications for a given applicant" in {
-    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, applicant.id, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -265,7 +265,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "not return applications for an applicant when there is no match" in {
-    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val applicant = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -289,7 +289,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "return the corresponding application for a given friend" in {
-    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(friend.id))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -313,7 +313,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
     contentFromStream(result) shouldBe expected
   }
   "return all corresponding applications for a given friend" in {
-    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(friend.id))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
@@ -338,7 +338,7 @@ class LabworkApplicationCRUDControllerSpec extends AbstractCRUDControllerSpec[Se
   }
 
   "not return applications for a friend  when there is no match" in {
-    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", PostgresDegree.randomUUID)
+    val friend = SesameStudent("id", "lastname", "firstname", "email", "registrationId", UUID.randomUUID)
 
     val first = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))
     val second = SesameLabworkApplication(SesameLabwork.randomUUID, User.randomUUID, Set(User.randomUUID))

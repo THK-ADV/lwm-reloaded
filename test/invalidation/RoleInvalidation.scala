@@ -1,7 +1,7 @@
 package invalidation
 
 import base.SesameDbSpec
-import models.{SesamePermission$, SesameRole$}
+import models.{SesamePermission, SesameRole}
 
 import scala.util.Random._
 import scala.util.Success

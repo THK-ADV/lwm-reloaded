@@ -3,7 +3,7 @@ package invalidation
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.SesameAuthority$
+import models.SesameAuthority
 
 import scala.util.Random._
 import scala.util.Success

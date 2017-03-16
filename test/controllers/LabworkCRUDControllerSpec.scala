@@ -5,8 +5,8 @@ import java.util.UUID
 import base.StreamHandler._
 import models._
 import org.joda.time.LocalDate
-import org.mockito.Matchers
 import org.mockito.Matchers._
+import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.w3.banana.PointedGraph
 import org.w3.banana.sesame.Sesame
@@ -34,8 +34,8 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     SesameCourseAtom(course.label, course.description, course.abbreviation, employee(course.lecturer), course.semesterIndex, course.invalidated, course.id)
   }
 
-  val degreeToPass = PostgresDegree("label to pass", "abbrev to pass")
-  val degreeToFail = PostgresDegree("label to fail", "abbrev to fail")
+  val degreeToPass = SesameDegree("label to pass", "abbrev to pass")
+  val degreeToFail = SesameDegree("label to fail", "abbrev to fail")
 
   override val entityToPass: SesameLabwork = SesameLabwork(
     "label to pass",
@@ -126,10 +126,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return the corresponding labwork for a given course" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -150,10 +150,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given course" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, course.id, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, course.id, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -174,10 +174,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks for a course when there is no match" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -197,10 +197,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks when there is an invalid query attribute" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -224,10 +224,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "not return labworks when there is an invalid query parameter value" in {
       val invalidParameter = "invalidParameterValue"
 
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -249,11 +249,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return the corresponding labwork for a given degree" in {
-      val degree = PostgresDegree("label", "description")
+      val degree = SesameDegree("label", "description")
       val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -273,10 +273,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given degree" in {
-      val degree = PostgresDegree("label", "description")
+      val degree = SesameDegree("label", "description")
       val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -297,11 +297,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "not return labworks for a degree when there is no match" in {
-      val degree = PostgresDegree("label", "description")
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val degree = SesameDegree("label", "description")
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -321,10 +321,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return the corresponding labwork for a given semester" in {
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -345,10 +345,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given semester" in {
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", semester.id, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", semester.id, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -369,10 +369,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "not return labworks for a semester when there is no match" in {
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -392,9 +392,9 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given course and degree" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val degree = PostgresDegree("label", "abbrev")
+      val degree = SesameDegree("label", "abbrev")
       val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, course.id, degree.id)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, PostgresDegree.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, course.id, UUID.randomUUID)
       val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, course.id, degree.id)
       val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id)
 
@@ -418,10 +418,10 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     "return all corresponding labworks for a given course and semester" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, course.id, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", semester.id, course.id, PostgresDegree.randomUUID)
-      val third = SesameLabwork("label 3", "description 3", semester.id, course.id, PostgresDegree.randomUUID)
-      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, course.id, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", semester.id, course.id, UUID.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", semester.id, course.id, UUID.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, UUID.randomUUID)
 
       val labworks = Set(first, second, third, fourth)
 
@@ -441,11 +441,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks for a given degree and semester" in {
-      val degree = PostgresDegree("label", "abbrev")
+      val degree = SesameDegree("label", "abbrev")
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = SesameLabwork("label 1", "description 1", semester.id, SesameCourse.randomUUID, degree.id)
       val second = SesameLabwork("label 2", "description 2", semester.id, SesameCourse.randomUUID, degree.id)
-      val third = SesameLabwork("label 3", "description 3", semester.id, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", semester.id, SesameCourse.randomUUID, UUID.randomUUID)
       val fourth = SesameLabwork("label 4", "description 4", semester.id, SesameCourse.randomUUID, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -467,11 +467,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
     "return all corresponding labworks for a given degree, course and semester" in {
       val course = SesameCourse("label", "desc", "abbrev", User.randomUUID, 1)
-      val degree = PostgresDegree("label", "abbrev")
+      val degree = SesameDegree("label", "abbrev")
       val semester = SesameSemester("label", "abbrev", LocalDate.now, LocalDate.now, LocalDate.now)
       val first = SesameLabwork("label 1", "description 1", semester.id, course.id, degree.id)
       val second = SesameLabwork("label 2", "description 2", semester.id, SesameCourse.randomUUID, degree.id)
-      val third = SesameLabwork("label 3", "description 3", semester.id, course.id, PostgresDegree.randomUUID)
+      val third = SesameLabwork("label 3", "description 3", semester.id, course.id, UUID.randomUUID)
       val fourth = SesameLabwork("label 4", "description 4", semester.id, course.id, degree.id)
 
       val labworks = Set(first, second, third, fourth)
@@ -492,11 +492,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks where a given student can apply for" in {
-      val degree = PostgresDegree("label", "abbrev")
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID, subscribable = true)
+      val degree = SesameDegree("label", "abbrev")
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID, subscribable = true)
       val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id, subscribable = true)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       when(repository.getAll[SesameLabwork](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
@@ -514,11 +514,11 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return no labworks when there is nothing to apply for" in {
-      val degree = PostgresDegree("label", "abbrev")
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val degree = SesameDegree("label", "abbrev")
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
       val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, degree.id)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       when(repository.getAll[SesameLabwork](anyObject())).thenReturn(Success(Set(first, second, third, fourth)))
 
@@ -535,12 +535,12 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
     }
 
     "return all corresponding labworks which schedules are published" in {
-      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
-      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
-      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
-      val fifth = SesameLabwork("label 5", "description 5", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID, subscribable = false, published = true)
-      val sixth = SesameLabwork("label 6", "description 6", SesameSemester.randomUUID, SesameCourse.randomUUID, PostgresDegree.randomUUID)
+      val first = SesameLabwork("label 1", "description 1", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val second = SesameLabwork("label 2", "description 2", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID, subscribable = false, published = true)
+      val third = SesameLabwork("label 3", "description 3", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID, subscribable = false, published = true)
+      val fourth = SesameLabwork("label 4", "description 4", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
+      val fifth = SesameLabwork("label 5", "description 5", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID, subscribable = false, published = true)
+      val sixth = SesameLabwork("label 6", "description 6", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
 
       when(repository.getAll[SesameLabwork](anyObject())).thenReturn(Success(Set(
         first, second, third, fourth, fifth, sixth

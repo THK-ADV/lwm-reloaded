@@ -1,7 +1,7 @@
 package invalidation
 
 import base.SesameDbSpec
-import models.{AssignmentEntry, AssignmentEntryType, AssignmentPlan, SameLabwork$}
+import models.{AssignmentEntry, AssignmentEntryType, AssignmentPlan, SesameLabwork}
 
 import scala.util.Random._
 import scala.util.Success
@@ -12,7 +12,7 @@ class AssignmentPlanInvalidation extends SesameDbSpec {
 
     def atypes: Stream[AssignmentEntryType] = Stream.continually(AssignmentEntryType(s"String$nextInt", nextBoolean()))
     def aentry: Stream[AssignmentEntry] = Stream.continually(AssignmentEntry(nextInt, "label", (atypes take 10).toSet))
-    def aplans: Stream[AssignmentPlan] = Stream.continually(AssignmentPlan(SameLabwork.randomUUID, 1, 2, (aentry take 10).toSet))
+    def aplans: Stream[AssignmentPlan] = Stream.continually(AssignmentPlan(SesameLabwork.randomUUID, 1, 2, (aentry take 10).toSet))
 
     "invalidate the assignment plan and subsequent assignment entries" in {
       import bindings.AssignmentPlanDescriptor

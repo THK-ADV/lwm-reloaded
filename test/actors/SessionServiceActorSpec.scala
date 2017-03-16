@@ -1,12 +1,13 @@
 package actors
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import base.TestBaseDefinition
 import models._
 import org.mockito.Matchers._
-import org.mockito.Mockito
 import org.mockito.Mockito.{doReturn, when}
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
@@ -30,7 +31,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
   val resolver = new LwmResolvers(repository)
   val bindings = Bindings[repository.Rdf](ns)
 
-  val user = SesameStudent("mi1111", "Last", "First", "Email", "111111", PostgresDegree.randomUUID)
+  val user = SesameStudent("mi1111", "Last", "First", "Email", "111111", UUID.randomUUID)
   val actorRef = system.actorOf(SessionServiceActor.props(ldap, resolver))
 
   "A SessionServiceActor" should {

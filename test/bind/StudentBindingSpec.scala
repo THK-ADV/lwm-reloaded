@@ -13,13 +13,13 @@ class StudentBindingSpec extends SesameDbSpec {
 
   implicit val studentBinder = StudentDescriptor.binder
 
-  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", PostgresDegree.randomUUID)
+  val student = SesameStudent("mi1234", "Doe", "John", "11234567", "mi1234@gm.fh-koeln.de", SesameDegree.randomUUID)
   val studentGraph = URI(User.generateUri(student)).a(lwm.User)
     .--(lwm.systemId).->-(student.systemId)
     .--(lwm.lastname).->-(student.lastname)
     .--(lwm.firstname).->-(student.firstname)
     .--(lwm.registrationId).->-(student.registrationId)
-    .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(PostgresDegree.splitter))
+    .--(lwm.enrollment).->-(student.enrollment)(ops, uuidRefBinder(SesameDegree.splitter))
     .--(lwm.email).->-(student.email)
     .--(lwm.invalidated).->-(student.invalidated)
     .--(lwm.id).->-(student.id).graph
@@ -46,7 +46,7 @@ class StudentBindingSpec extends SesameDbSpec {
     "return a student atom based on an RDF graph representation" in {
       import bindings.{DegreeDescriptor, StudentAtomDescriptor, StudentDescriptor}
 
-      val degree = PostgresDegree("degree", "abbrev")
+      val degree = SesameDegree("degree", "abbrev")
       val student = SesameStudent("systemid", "lastname", "firstname", "email", "regid", degree.id)
 
       val studentAtom = SesameStudentAtom(student.systemId, student.lastname, student.firstname, student.email, student.registrationId, degree, student.invalidated, student.id)

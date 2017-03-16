@@ -2,7 +2,7 @@ package base
 
 import java.util.UUID
 
-import models.SesameAuthority$
+import models.SesameAuthority
 import org.scalatest.mock.MockitoSugar
 import play.api.ApplicationLoader.Context
 import play.api.test.WithApplicationLoader
