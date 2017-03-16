@@ -223,7 +223,7 @@ GET           /students/buddies/:systemId                                       
 POST          /api2/users                                                             controllers.UserControllerPostgres.createOrUpdate()
 GET           /api2/users                                                             controllers.UserControllerPostgres.allUsers()
 GET           /api2/users/:id                                                         controllers.UserControllerPostgres.user(id)
-GET           /api2/users/:user/buddies/:systemId/labworks/:lid                             controllers.UserControllerPostgres.buddy(user, systemId, lid)
+GET           /api2/users/buddies/:systemId/labworks/:lid                             controllers.UserControllerPostgres.buddy(systemId, lid)
 
 # Sessions
 POST          /sessions                                                               controllers.SessionController.login

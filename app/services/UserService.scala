@@ -3,12 +3,16 @@ package services
 import java.util.UUID
 
 import models._
-import services.UserService.Allowed
-import store.{DegreeTable, LabworkTable, TableFilter, UserTable}
+import store.{DegreeTable, TableFilter, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
+
+sealed trait BuddyResult
+case object Allowed extends BuddyResult
+case object Almost extends BuddyResult
+case object Denied extends BuddyResult
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
@@ -56,19 +60,13 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
     } yield (dbUser.toUser, maybeAuth)
   }
 
-  sealed trait BuddyResult
-  case object Allowed extends BuddyResult
-  case object Almost extends BuddyResult
-  case object Denied extends BuddyResult
-
   final def buddyResult(studentId: String, buddySystemId: String, labwork: String): Future[BuddyResult] = {
     val buddySystemIdFilter = UserSystemIdFilter(buddySystemId)
-    //val requesterIdFilter = UserIdFilter(studentId) // TODO FOR TESTING PURPOSE
-    val requesterSystemIdFilter = UserSystemIdFilter(studentId)
+    val requesterIdFilter = UserIdFilter(studentId)
 
     val buddy = for {
       buddy <- tableQuery.filter(buddySystemIdFilter.predicate)
-      requester <- tableQuery.filter(requesterSystemIdFilter.predicate)
+      requester <- tableQuery.filter(requesterIdFilter.predicate)
       sameDegree = buddy.enrollment === requester.enrollment
     } yield (buddy, sameDegree.getOrElse(false))
 
@@ -83,7 +81,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
       f <- friends.result
     } yield {
       val sameDegree = b.map(_._2).reduce(_ && _)
-      val friends = f.exists(_.systemId == studentId)
+      val friends = f.exists(_.id == UUID.fromString(studentId))
 
       if (sameDegree)
         if (friends) Allowed else Almost

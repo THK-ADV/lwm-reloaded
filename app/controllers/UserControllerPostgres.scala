@@ -1,17 +1,14 @@
 package controllers
 
-import java.util.UUID
-
 import models._
-import play.api.libs.json.{JsError, JsValue, Json, Reads}
-import play.api.mvc.{Controller, Request}
-import services.UserService.BuddyResult
+import play.api.libs.json.Json
+import play.api.mvc.Controller
 import services._
 import store.{Resolvers, TableFilter, UserTable}
 import utils.LwmMimeType
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object UserControllerPostgres {
   lazy val statusAttribute = "status"
@@ -84,11 +81,10 @@ class UserControllerPostgres(val roleService: RoleService, val sessionService: S
     }
   }
 
-  def buddy(user: String, systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
-    import services.UserService.{Allowed, Almost, Denied}
-    //val requesterId = request.session(SessionController.userId) // TODO FOR TESTING PURPOSE
+  def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
+    val requesterId = request.session(SessionController.userId)
 
-    userService.buddyResult(user, systemId, labwork).jsonResult { buddyResult =>
+    userService.buddyResult(requesterId, systemId, labwork).jsonResult { buddyResult =>
       buddyResult match {
         case Allowed => Ok(Json.obj(
           "status" -> "OK",
