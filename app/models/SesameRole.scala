@@ -27,7 +27,9 @@ sealed trait Role extends UniqueEntity
 
 case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
 
-case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+  def toRole = PostgresRole(label, permissions, id)
+}
 
 case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
@@ -93,6 +95,16 @@ object Roles {
   lazy val CourseAssistantLabel = "Hilfskraft"
   lazy val CourseManagerLabel = "Modulverantwortlicher"
   lazy val RightsManagerLabel = "Rechteverantwortlicher"
+
+  lazy val all = List(
+    AdminLabel,
+    EmployeeLabel,
+    StudentLabel,
+    CourseEmployeeLabel,
+    CourseAssistantLabel,
+    CourseManagerLabel,
+    RightsManagerLabel
+  )
 
   def fromUserStatus(status: String): String = status match {
     case User.EmployeeType => EmployeeLabel

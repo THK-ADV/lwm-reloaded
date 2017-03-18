@@ -1,5 +1,6 @@
 package base
 
+import models.{RoleDb, Roles}
 import org.scalatest._
 import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.w3.banana.sesame.{Sesame, SesameModule}
@@ -17,30 +18,41 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
   override lazy val db = Database.forConfig("database_test")
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
+  protected final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
 
-  protected def fillDb: DBIOAction[Unit, NoStream, Effect.Write]
+  protected def customFill: DBIOAction[Unit, NoStream, Effect.Write]
+
+  private val schema = List(
+    TableQuery[PermissionTable].schema,
+    TableQuery[RoleTable].schema,
+    TableQuery[RolePermissionTable].schema,
+    TableQuery[DegreeTable].schema,
+    TableQuery[UserTable].schema,
+    TableQuery[CourseTable].schema,
+    TableQuery[AuthorityTable].schema
+  )
+
+  private val mandatoryFill = DBIO.seq(
+    TableQuery[RoleTable].forceInsertAll(Roles.all.map(l => RoleDb(l, Set.empty)))
+  )
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
     await(db.run(DBIO.seq(
-      TableQuery[DegreeTable].schema.create,
-      TableQuery[UserTable].schema.create,
-      TableQuery[CourseTable].schema.create,
-      TableQuery[AuthorityTable].schema.create
-    ).andThen(fillDb).transactionally))
+      schema.map(_.create): _*
+    ).andThen(customFill).
+      andThen(mandatoryFill).
+      transactionally)
+    )
   }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
 
     await(db.run(DBIO.seq(
-      TableQuery[AuthorityTable].schema.create,
-      TableQuery[CourseTable].schema.create,
-      TableQuery[UserTable].schema.create,
-      TableQuery[DegreeTable].schema.create
-    ).andThen(fillDb).transactionally))
+      schema.reverseMap(_.drop): _*
+    ).transactionally))
   }
 }
 

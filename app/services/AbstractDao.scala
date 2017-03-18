@@ -8,6 +8,7 @@ import store.{PostgresDatabase, TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 
+// TODO maybe we can get rid of DbModel
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
 
   def tableQuery: TableQuery[T]

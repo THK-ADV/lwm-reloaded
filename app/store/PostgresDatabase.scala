@@ -71,7 +71,7 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
   def course = column[Option[UUID]]("COURSE")
 
   def userFk = foreignKey("USERS_fkey", user, TableQuery[UserTable])(_.id)
-  def courseFk = foreignKey("COURSES_fkey", course, TableQuery[CourseTable])(_.id.?)
+  def courseFk = foreignKey("COURSES_fkey", course, TableQuery[CourseTable])(_.id.?) // https://github.com/slick/slick/issues/179
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
 
   override def * = (user, role, course, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)

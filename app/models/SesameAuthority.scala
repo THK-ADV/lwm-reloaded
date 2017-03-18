@@ -27,13 +27,17 @@ case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[Sesa
 
 // Postgres
 
-case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
+sealed trait Authority extends UniqueEntity
 
-case class AuthorityDb(user: UUID, roles: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity
+case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends Authority
+
+case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity {
+  def toAuthority = PostgresAuthority(user, role, course, id)
+}
 
 case class PostgresAuthorityProtocol(user: UUID, roleLabel: String, course: Option[UUID] = None)
 
-case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[SesameCourseAtom], id: UUID) extends UniqueEntity
+case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[PostgresCourseAtom], id: UUID) extends Authority
 
 object SesameAuthority extends UriGenerator[SesameAuthority] with JsonSerialisation[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
 
@@ -75,7 +79,7 @@ object PostgresAuthorityAtom {
   implicit def writesAtom: Writes[PostgresAuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[PostgresRole](PostgresRole.writes) and
-      (JsPath \ "course").writeNullable[SesameCourseAtom] and
+      (JsPath \ "course").writeNullable[PostgresCourseAtom] and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresAuthorityAtom.unapply))
 }

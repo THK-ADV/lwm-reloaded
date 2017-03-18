@@ -5,6 +5,7 @@ import java.util.UUID
 import base.PostgresDbSpec
 import models._
 import slick.dbio.Effect.Write
+import store.RoleTable
 
 class UserServiceSpec extends PostgresDbSpec with UserService {
   import scala.util.Random.nextInt
@@ -80,18 +81,22 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
     }
 
     "create a user from ldap when not existing" in {
-      /*val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
+      val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
+      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, None, ldapUser.id)
 
       val (user, maybeAuth) = await(createOrUpdate(ldapUser))
       val allUser = await(get())
 
-      user.toDbUser shouldBe ldapUser.toDbUser
+      user.toDbUser shouldBe dbVariation
       allUser.size shouldBe dbUser.size + 1
-      maybeAuth shouldBe defined*/
+      maybeAuth shouldBe await(authorityService.get()).headOption
     }
   }
 
-  override protected def fillDb: DBIOAction[Unit, NoStream, Write] = DBIO.seq(degreeService.tableQuery.forceInsertAll(degrees), tableQuery.forceInsertAll(dbUser))
+  override protected def customFill: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    degreeService.tableQuery.forceInsertAll(degrees),
+    tableQuery.forceInsertAll(dbUser)
+  )
 
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
 

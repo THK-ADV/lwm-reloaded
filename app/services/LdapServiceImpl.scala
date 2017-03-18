@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-final case class LdapUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], degreeAbbrev: Option[String], id: UUID = User.randomUUID) extends User
+final case class LdapUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], degreeAbbrev: Option[String], id: UUID = User.randomUUID)
 
 trait LdapService {
   def authenticate(user: String, password: String): Future[Boolean]

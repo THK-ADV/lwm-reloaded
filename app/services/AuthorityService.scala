@@ -3,21 +3,41 @@ package services
 import java.util.UUID
 
 import models._
-import store.{AuthorityTable, PostgresDatabase}
+import store.{AuthorityTable, CourseTable, PostgresDatabase, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
-trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, PostgresAuthority] { self: PostgresDatabase =>
+trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def roleService: RoleService2
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[PostgresAuthority]] = ???
+  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
+    val joinedQuery = for {
+      ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
+        joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
+      u <- a.userFk
+      r <- a.roleFk
+    } yield (a, u, r, c, l)
 
-  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[PostgresAuthority]] = ???
+    db.run(joinedQuery.result.map(_.foldLeft(List.empty[PostgresAuthorityAtom]) {
+      case (list, (a, u, r, Some(c), Some(l))) =>
+        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toUser, c.semesterIndex, c.id)
+        val atom = PostgresAuthorityAtom(u.toUser, r.toRole, Some(courseAtom), a.id)
+
+        list.+:(atom)
+      case (list, (a, u, r, None, None)) =>
+        list.+:(PostgresAuthorityAtom(u.toUser, r.toRole, None, a.id))
+      case (list, _) => list // this should never happen
+    }))
+  }
+
+  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
+    db.run(query.result.map(_.map(_.toAuthority)))
+  }
 
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
     for {
