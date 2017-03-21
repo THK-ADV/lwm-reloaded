@@ -207,30 +207,37 @@ trait SecureControllerContext {
 trait PostgresResult { self: Controller =>
 
   private def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getMessage)
-  private def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
+  protected def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
+  protected def ok[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.toJson(entity))
   private def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
 
   implicit class SequenceResult[A](val future: Future[Seq[A]]) {
-    def jsonResult(implicit writes: Writes[A]) = future.map(a => Ok(Json.toJson(a))).recover {
-      case NonFatal(e) => internalServerError(e.getMessage)
+    def jsonResult(implicit writes: Writes[A]) = future.map(a => ok(a)).recover {
+      case NonFatal(e) => internalServerError(e)
     }
   }
 
   implicit class OptionResult[A](val future: Future[Option[A]]) {
     def jsonResult(idForMessage: String)(implicit writes: Writes[A]) = future.map { maybeA =>
-      maybeA.fold(notFound(idForMessage))(a => Ok(Json.toJson(a)) )
+      maybeA.fold(notFound(idForMessage))(ok)
     }.recover {
-      case NonFatal(e) => internalServerError(e.getMessage)
+      case NonFatal(e) => internalServerError(e)
+    }
+
+    def jsonResult(idOfEntity: UUID)(implicit writes: Writes[A]) = future.map { maybeA =>
+      maybeA.fold(internalServerError(s"cant update $idOfEntity"))(ok)
+    }.recover {
+      case NonFatal(e) => internalServerError(e)
     }
   }
 
   implicit class CreatedResult[A](val future: Future[A]) {
     def jsonResult(implicit writes: Writes[A]) = future.map(a => Created(Json.toJson(a))).recover {
-      case NonFatal(e) => internalServerError(e.getMessage)
+      case NonFatal(e) => internalServerError(e)
     }
 
     def jsonResult(f: A => Result) = future.map(f).recover {
-      case NonFatal(e) => internalServerError(e.getMessage)
+      case NonFatal(e) => internalServerError(e)
     }
   }
 
