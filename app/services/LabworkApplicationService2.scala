@@ -3,6 +3,7 @@ package services
 import java.util.UUID
 
 import models._
+import org.joda.time.DateTime
 import store.{LabworkApplicationFriendTable, LabworkApplicationTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
@@ -16,6 +17,10 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
+
+  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
+    LabworkApplicationDb(entity.labwork, entity.applicant, entity.friends, entity.timestamp, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
     case (lapp, foreigners) =>
@@ -44,8 +49,6 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
       lec <- lab._1.joinLecturer
     } yield (q, lapp._1, lapp._2, lapp._3, (lab._1, lab._2, lab._3, lec))
 
-    fullJoin.result.statements.foreach(println)
-
     db.run(fullJoin.result.map(_.groupBy(_._1).map {
       case (labworkApplication, foreigners) => build(labworkApplication, foreigners)
     }.toSeq))
@@ -72,6 +75,10 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
+
+  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = {
+    LabworkApplicationFriend(entity.labworkApplication, entity.friend, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
 

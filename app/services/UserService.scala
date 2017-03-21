@@ -3,7 +3,8 @@ package services
 import java.util.UUID
 
 import models._
-import store.{DegreeTable, PostgresDatabase, TableFilter, UserTable}
+import org.joda.time.DateTime
+import store.{PostgresDatabase, TableFilter, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
@@ -40,6 +41,10 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
   protected def authorityService: AuthorityService
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
+
+  override protected def setInvalidated(entity: DbUser): DbUser = {
+    DbUser(entity.systemId, entity.lastname, entity.firstname, entity.email, entity.status, entity.registrationId, entity.enrollment, Some(DateTime.now), entity.id)
+  }
 
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
     db.run(query.result.map(_.map(_.toUser)))

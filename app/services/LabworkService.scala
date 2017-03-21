@@ -3,6 +3,7 @@ package services
 import java.util.UUID
 
 import models._
+import org.joda.time.DateTime
 import store.{CourseTable, LabworkTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
@@ -20,6 +21,18 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
+
+  override protected def setInvalidated(entity: LabworkDb): LabworkDb = LabworkDb(
+    entity.label,
+    entity.description,
+    entity.semester,
+    entity.course,
+    entity.degree,
+    entity.subscribable,
+    entity.published,
+    Some(DateTime.now),
+    entity.id
+  )
 
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
     val joinedQuery = for {

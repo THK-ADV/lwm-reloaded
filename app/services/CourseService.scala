@@ -1,6 +1,7 @@
 package services
 
 import models.{Course, CourseDb, PostgresCourseAtom}
+import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase}
 
 import scala.concurrent.Future
@@ -10,6 +11,10 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
+
+  override protected def setInvalidated(entity: CourseDb): CourseDb = {
+    CourseDb(entity.label, entity.description, entity.abbreviation, entity.lecturer, entity.semesterIndex, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     val joinedQuery = for {

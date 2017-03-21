@@ -1,6 +1,7 @@
 package services
 
 import models.{DegreeDb, PostgresDegree}
+import org.joda.time.DateTime
 import slick.lifted.Rep
 import store.{DegreeTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
@@ -14,7 +15,11 @@ case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTab
 trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override def tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
+  override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
+
+  override protected def setInvalidated(entity: DegreeDb): DegreeDb = {
+    DegreeDb(entity.label, entity.abbreviation, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
 

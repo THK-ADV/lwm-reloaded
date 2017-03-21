@@ -3,6 +3,7 @@ package services
 import java.util.UUID
 
 import models._
+import org.joda.time.DateTime
 import store.{AuthorityTable, CourseTable, PostgresDatabase, UserTable}
 
 import scala.concurrent.Future
@@ -15,8 +16,12 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
+  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = {
+    AuthorityDb(entity.user, entity.role, entity.course, Some(DateTime.now), entity.id)
+  }
+
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
-    val joinedQuery = for {
+    val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
         joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
       u <- a.userFk

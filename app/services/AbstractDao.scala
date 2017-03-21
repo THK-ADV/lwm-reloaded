@@ -3,6 +3,7 @@ package services
 import java.util.UUID
 
 import models.UniqueEntity
+import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
 import store.{PostgresDatabase, TableFilter, UniqueTable}
 
@@ -17,13 +18,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
+  protected def setInvalidated(entity: DbModel): DbModel
+
   def create(entity: DbModel): Future[DbModel] = db.run((tableQuery returning tableQuery) += entity)
 
   def createMany(entities: Set[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
 
   def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
-  def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true): Future[Seq[LwmModel]] = {
+  def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true): Future[Seq[LwmModel]] = {
     val query = tableFilter match {
       case h :: t =>
         t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
@@ -31,15 +34,17 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       }
       case _ => tableQuery
     }
+    
+    val valid = if (validOnly) query.filter(_.isValid) else query
 
-    if (atomic) toAtomic(query) else toUniqueEntity(query)
+    if (atomic) toAtomic(valid) else toUniqueEntity(valid)
   }
 
-  def delete(id: UUID): Future[Int] = db.run(tableQuery.filter(_.id === id).delete)
+  def delete(entity: DbModel) = update0(setInvalidated(entity))
 
-  def deleteMany(ids: Set[UUID]): Future[Int] = db.run(tableQuery.filter(_.id.inSet(ids)).delete)
+  def update(entity: DbModel): Future[Int] = update0(entity)
 
-  def update(entity: DbModel): Future[Int] = db.run(tableQuery.filter(_.id === entity.id).update(entity))
+  private def update0(entity: DbModel) = db.run(tableQuery.filter(_.id === entity.id).update(entity))
 
   def createSchema = db.run(tableQuery.schema.create)
 

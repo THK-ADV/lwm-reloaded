@@ -1,6 +1,7 @@
 package services
 
 import models._
+import org.joda.time.DateTime
 import store.{PostgresDatabase, RolePermissionTable, RoleTable}
 import slick.driver.PostgresDriver.api._
 
@@ -12,6 +13,10 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
   protected def rolePermissionService: RolePermissionService
 
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
+
+  override protected def setInvalidated(entity: RoleDb): RoleDb = {
+    RoleDb(entity.label, entity.permissions, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
     case (role, rolePerms) =>
@@ -54,6 +59,10 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
 
 trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermission, RolePermission] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
+
+  override protected def setInvalidated(entity: RolePermission): RolePermission = {
+    RolePermission(entity.role, entity.permission, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 

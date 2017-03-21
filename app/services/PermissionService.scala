@@ -1,6 +1,7 @@
 package services
 
 import models.{PermissionDb, PostgresPermission}
+import org.joda.time.DateTime
 import store.{PermissionTable, PostgresDatabase}
 import slick.driver.PostgresDriver.api._
 
@@ -10,6 +11,10 @@ trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, Postg
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
+
+  override protected def setInvalidated(entity: PermissionDb): PermissionDb = {
+    PermissionDb(entity.value, entity.description, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = toUniqueEntity(query)
 

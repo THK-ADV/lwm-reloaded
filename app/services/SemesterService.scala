@@ -1,6 +1,7 @@
 package services
 
 import models.{PostgresSemester, SemesterDb}
+import org.joda.time.DateTime
 import store.{PostgresDatabase, SemesterTable}
 import slick.driver.PostgresDriver.api._
 
@@ -10,6 +11,10 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
+
+  override protected def setInvalidated(entity: SemesterDb): SemesterDb = {
+    SemesterDb(entity.label, entity.abbreviation, entity.start, entity.end, entity.examStart, Some(DateTime.now), entity.id)
+  }
 
   override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
 

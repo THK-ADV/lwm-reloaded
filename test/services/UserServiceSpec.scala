@@ -5,7 +5,6 @@ import java.util.UUID
 import base.PostgresDbSpec
 import models._
 import slick.dbio.Effect.Write
-import store.RoleTable
 
 class UserServiceSpec extends PostgresDbSpec with UserService {
   import scala.util.Random.nextInt

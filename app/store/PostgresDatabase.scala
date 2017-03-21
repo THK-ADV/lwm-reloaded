@@ -6,7 +6,7 @@ import models._
 import org.joda.time.{DateTime, LocalDate}
 import org.joda.time.format.ISODateTimeFormat
 import slick.driver.PostgresDriver.api._
-import slick.lifted.{QueryBase, Rep}
+import slick.lifted.Rep
 
 trait UniqueTable { self: Table[_] =>
   implicit val jodaDateTime = MappedColumnType.base[DateTime, String](ISODateTimeFormat.dateTime.print, DateTime.parse)
@@ -14,6 +14,8 @@ trait UniqueTable { self: Table[_] =>
 
   def id = column[UUID]("ID", O.PrimaryKey)
   def invalidated = column[Option[DateTime]]("INVALIDATED")
+
+  def isValid: Rep[Boolean] = invalidated.isEmpty
 }
 
 trait LabworkTableId { self: Table[_] =>
@@ -71,7 +73,7 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
   def course = column[Option[UUID]]("COURSE")
 
   def userFk = foreignKey("USERS_fkey", user, TableQuery[UserTable])(_.id)
-  def courseFk = foreignKey("COURSES_fkey", course, TableQuery[CourseTable])(_.id.?) // https://github.com/slick/slick/issues/179
+  def courseFk = foreignKey("COURSES_fkey", course, TableQuery[CourseTable])(_.id.?)
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
 
   override def * = (user, role, course, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)

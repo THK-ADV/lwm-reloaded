@@ -18,7 +18,7 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val resolvers: Resolvers, val ldapService: LdapService, val userService: UserService) extends Controller
+final class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val resolvers: Resolvers, val ldapService: LdapService, val userService: UserService) extends Controller
   with Secured
   with SessionChecking
   with SecureControllerContext
