@@ -77,7 +77,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       postgresEmployees = sesameEmployees.map(e => DbUser(e.systemId, e.lastname, e.firstname, e.email, e.status, None, None, None, e.id))
       dbUsers = postgresStudents ++ postgresEmployees
       _ = println(s"dbUsers ${dbUsers.size}")
-      users <- UserService.createMany(dbUsers)
+      users <- UserService.createMany(dbUsers.toList)
     } yield users.map(_.toUser)
 
     result.map { users =>
@@ -99,7 +99,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameDegrees ${sesameDegrees.size}")
       postgresDegrees = sesameDegrees.map(s => DegreeDb(s.label, s.abbreviation, None, s.id))
       _ = println(s"postgresDegrees ${postgresDegrees.size}")
-      degrees <- DegreeService.createMany(postgresDegrees)
+      degrees <- DegreeService.createMany(postgresDegrees.toList)
     } yield degrees.map(_.toDegree)
 
     result.map { degrees =>
@@ -123,7 +123,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesamePermissions ${sesamePermissions.filterNot(s => permissions.exists(_.value == s.value))}")
       postgresPermissions = permissions.map(p => PermissionDb(p.value, ""))
       _ = println(s"postgresPermissions ${postgresPermissions.size}")
-      ps <- PermissionService.createMany(postgresPermissions)
+      ps <- PermissionService.createMany(postgresPermissions.toList)
       _ = println(s"ps ${ps.size}")
     } yield ps.map(_.toPermission)
 
@@ -145,7 +145,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
         val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
         RoleDb(r.label, perms.toSet, None, r.id)
       }
-      result <- RoleService2.createManyWithPermissions(postgresRoles)
+      result <- RoleService2.createManyWithPermissions(postgresRoles.toList)
       foo = result.map {
         case ((o, set)) => (o, set.size)
       }
@@ -172,7 +172,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameSemesters ${sesameSemesters.size}")
       semesterDbs = sesameSemesters.map(s => SemesterDb(s.label, s.abbreviation, s.start, s.end, s.examStart, None, s.id))
       _ = println(s"semesterDbs ${semesterDbs.size}")
-      semester <- SemesterService.createMany(semesterDbs)
+      semester <- SemesterService.createMany(semesterDbs.toList)
       _ = println(s"semester ${semester.size}")
     } yield semester.map(_.toSemester)
 
@@ -188,7 +188,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameCourses ${sesameCourses.size}")
       coursesDbs = sesameCourses.map(c => CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, None, c.id))
       _ = println(s"coursesDbs ${coursesDbs.size}")
-      courses <- CourseService.createMany(coursesDbs)
+      courses <- CourseService.createMany(coursesDbs.toList)
       _ = println(s"courses ${courses.size}")
     } yield courses.map(_.toCourse)
 
@@ -204,7 +204,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameLabworks ${sesameLabworks.size}")
       labworkDbs = sesameLabworks.map(l => LabworkDb(l.label, l.description, l.semester, l.course, l.degree, l.subscribable, l.published, None, l.id))
       _ = println(s"labworkDbs ${labworkDbs.size}")
-      labworks <- LabworkService.createMany(labworkDbs)
+      labworks <- LabworkService.createMany(labworkDbs.toList)
       _ = println(s"labworks ${labworks.size}")
     } yield labworks.map(_.toLabwork)
 
@@ -222,7 +222,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameLapps ${sesameLapps.size}")
       lappDbs = sesameLapps.map(l => LabworkApplicationDb(l.labwork, l.applicant, l.friends, l.timestamp, None, l.id))
       _ = println(s"lappDbs ${lappDbs.size}")
-      lapps <- LabworkApplicationService2.createManyWithFriends(lappDbs)
+      lapps <- LabworkApplicationService2.createManyWithFriends(lappDbs.toList)
       _ = lapps.foreach {
         case (app, friends) => println(s"lapps ${app.id} with friends ${friends.size}")
       }

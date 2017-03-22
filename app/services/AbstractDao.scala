@@ -1,9 +1,6 @@
 package services
 
-import java.util.UUID
-
 import models.UniqueEntity
-import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
 import store.{PostgresDatabase, TableFilter, UniqueTable}
 
@@ -22,7 +19,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   def create(entity: DbModel): Future[DbModel] = db.run((tableQuery returning tableQuery) += entity)
 
-  def createMany(entities: Set[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
+  def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
 
   def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 

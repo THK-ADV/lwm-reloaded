@@ -2,11 +2,11 @@ package services
 
 import java.util.UUID
 
-import base.PostgresDbSpec
 import models._
 import slick.dbio.Effect.Write
+import store.UserTable
 
-class UserServiceSpec extends PostgresDbSpec with UserService {
+final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserService {
   import scala.util.Random.nextInt
   import slick.driver.PostgresDriver.api._
 
@@ -35,7 +35,6 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
   }
 
   "A UserServiceSpec " should {
-
     "return a user by id (either atomic or non atomic)" in {
       val student = dbUser.find(_.status == User.StudentType)
       val studentAtom = student.map { u =>
@@ -135,7 +134,7 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
       val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
       val someoneElse2 = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
 
-      val lapps = Set(
+      val lapps = List(
         LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
         LabworkApplicationDb(labwork.id, someoneElse2.id, Set(someoneElse.id)),
         LabworkApplicationDb(labwork.id, buddy.id, Set(student.id))
@@ -154,7 +153,7 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
       val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
       val someoneElse2 = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
 
-      val lapps = Set(
+      val lapps = List(
         LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
         LabworkApplicationDb(labwork.id, someoneElse2.id, Set(someoneElse.id)),
         LabworkApplicationDb(otherLabwork.id, buddy.id, Set(student.id))
@@ -166,8 +165,7 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
   }
 
   override protected def customFill: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    degreeService.tableQuery.forceInsertAll(degrees),
-    tableQuery.forceInsertAll(dbUser)
+    degreeService.tableQuery.forceInsertAll(degrees)
   )
 
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
@@ -175,4 +173,10 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
   override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
 
   private val labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
+
+  override protected def name: String = "user"
+
+  override protected val entityToDelete: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None, None, UUID.randomUUID)
+
+  override protected val entities: List[DbUser] = dbUser
 }

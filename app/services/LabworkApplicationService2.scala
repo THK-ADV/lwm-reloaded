@@ -59,12 +59,12 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   final def createWithFriends(labworkApplication: LabworkApplicationDb): Future[LabworkApplicationDb] = {
     for {
       lapp <- create(labworkApplication)
-      friends = labworkApplication.friends.map(f => LabworkApplicationFriend(lapp.id, f, None, UUID.randomUUID))
+      friends = labworkApplication.friends.map(f => LabworkApplicationFriend(lapp.id, f, None, UUID.randomUUID)).toList
       _ <- labworkApplicationFriendService.createMany(friends)
     } yield labworkApplication
   }
 
-  final def createManyWithFriends(labworkApplications: Set[LabworkApplicationDb]): Future[Map[PostgresLabworkApplication, Seq[LabworkApplicationFriend]]] = {
+  final def createManyWithFriends(labworkApplications: List[LabworkApplicationDb]): Future[Map[PostgresLabworkApplication, Seq[LabworkApplicationFriend]]] = {
     for {
       lapps <- createMany(labworkApplications)
       friends = labworkApplications.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f, None, UUID.randomUUID)))

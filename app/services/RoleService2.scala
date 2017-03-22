@@ -46,7 +46,7 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
     db.run(tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption)
   }
 
-  def createManyWithPermissions(roles: Set[RoleDb]): Future[Map[Option[PostgresRole], Seq[RolePermission]]] = {
+  def createManyWithPermissions(roles: List[RoleDb]): Future[Map[Option[PostgresRole], Seq[RolePermission]]] = {
     for {
       rs <- createMany(roles)
       rolePermissions = roles.flatMap(r => r.permissions.map(p => RolePermission(r.id, p)))
