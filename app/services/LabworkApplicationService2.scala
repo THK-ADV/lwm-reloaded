@@ -18,6 +18,8 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
 
+  protected def labworkApplicationFriendService: LabworkApplicationFriendService
+
   override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
     LabworkApplicationDb(entity.labwork, entity.applicant, entity.friends, entity.timestamp, Some(DateTime.now), entity.id)
   }
@@ -58,7 +60,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     for {
       lapp <- create(labworkApplication)
       friends = labworkApplication.friends.map(f => LabworkApplicationFriend(lapp.id, f, None, UUID.randomUUID))
-      _ <- LabworkApplicationFriendService.createMany(friends)
+      _ <- labworkApplicationFriendService.createMany(friends)
     } yield labworkApplication
   }
 
@@ -66,7 +68,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     for {
       lapps <- createMany(labworkApplications)
       friends = labworkApplications.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f, None, UUID.randomUUID)))
-      lafs <- LabworkApplicationFriendService.createMany(friends)
+      lafs <- labworkApplicationFriendService.createMany(friends)
     } yield lafs.groupBy(_.labworkApplication).map {
       case (lappId, lappFriends) => (lapps.find(_.id == lappId).map(_.toLabworkApplication).get, lappFriends)
     }
@@ -85,5 +87,8 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
   override protected def toUniqueEntity(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
 }
 
-object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase
+object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase {
+  override protected def labworkApplicationFriendService: LabworkApplicationFriendService = LabworkApplicationFriendService
+}
+
 object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase

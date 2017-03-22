@@ -80,15 +80,88 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
     }
 
     "create a user from ldap when not existing" in {
+      val degree = degrees.head
       val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
+      val ldapUser2 = LdapUser("systemId2", "firstname2", "lastname2", "email2", User.StudentType, Some("regId"), Some(degree.label))
       val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, None, ldapUser.id)
+      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), None, ldapUser2.id)
 
       val (user, maybeAuth) = await(createOrUpdate(ldapUser))
+      val (user2, maybeAuth2) = await(createOrUpdate(ldapUser2))
       val allUser = await(get())
+      val allAuths = await(authorityService.get())
+      val maybeAuths = List(maybeAuth, maybeAuth2)
 
       user.toDbUser shouldBe dbVariation
-      allUser.size shouldBe dbUser.size + 1
-      maybeAuth shouldBe await(authorityService.get()).headOption
+      user2.toDbUser shouldBe dbVariation2
+      allUser.size shouldBe dbUser.size + 2
+      maybeAuths.forall(_.isDefined) shouldBe true
+      maybeAuths.map(_.get).forall(a => allAuths.contains(a)) shouldBe true
+    }
+
+    "update a user from ldap when already exists" in {
+      val chosenEmployee = dbUser.find(_.status == User.EmployeeType).get
+      val chosenStudent = dbUser.find(_.status == User.StudentType).get
+      val degree = chosenStudent.enrollment.flatMap(current => degrees.find(_.id == current))
+
+      val ldapEmployee = LdapUser(chosenEmployee.systemId, "updateFirst", "updateLast", chosenEmployee.email, chosenEmployee.status, None, None)
+      val dbEmployee = DbUser(ldapEmployee.systemId, ldapEmployee.lastname, ldapEmployee.firstname, ldapEmployee.email, ldapEmployee.status, None, None, None, chosenEmployee.id)
+      val ldapStudent = LdapUser(chosenStudent.systemId, "updateFirst2", chosenStudent.lastname, "updateEmail", chosenStudent.status, chosenStudent.registrationId, degree.map(_.abbreviation))
+      val dbStudent = DbUser(ldapStudent.systemId, ldapStudent.lastname, ldapStudent.firstname, ldapStudent.email, ldapStudent.status, ldapStudent.registrationId, degree.map(_.id), None, chosenStudent.id)
+
+      val (employee, maybeAuth) = await(createOrUpdate(ldapEmployee))
+      val (student, maybeAuth2) = await(createOrUpdate(ldapStudent))
+
+      employee.toDbUser shouldBe dbEmployee
+      student.toDbUser shouldBe dbStudent
+      List(maybeAuth, maybeAuth2).forall(_.isEmpty) shouldBe true
+    }
+
+    "deny buddy requests properly" in {
+      val chosenDegree = degrees.last
+      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
+      val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
+      val buddy = dbUser.find(u => u.status == User.StudentType && !u.enrollment.contains(chosenDegree.id)).get
+
+      await(buddyResult(student.id.toString, "not in system", labwork.id.toString)) shouldBe NotExisting
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Denied
+    }
+
+    "allow a buddy request" in {
+      val chosenDegree = degrees.last
+      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
+      val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
+      val buddy = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
+      val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
+      val someoneElse2 = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
+
+      val lapps = Set(
+        LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
+        LabworkApplicationDb(labwork.id, someoneElse2.id, Set(someoneElse.id)),
+        LabworkApplicationDb(labwork.id, buddy.id, Set(student.id))
+      )
+
+      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Allowed
+    }
+
+    "almost allow a buddy request" in {
+      val chosenDegree = degrees.last
+      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
+      val otherLabwork = LabworkDb("label2", "desc2", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
+      val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
+      val buddy = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
+      val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
+      val someoneElse2 = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
+
+      val lapps = Set(
+        LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
+        LabworkApplicationDb(labwork.id, someoneElse2.id, Set(someoneElse.id)),
+        LabworkApplicationDb(otherLabwork.id, buddy.id, Set(student.id))
+      )
+
+      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Almost
     }
   }
 
@@ -100,4 +173,6 @@ class UserServiceSpec extends PostgresDbSpec with UserService {
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
 
   override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
+
+  private val labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
 }

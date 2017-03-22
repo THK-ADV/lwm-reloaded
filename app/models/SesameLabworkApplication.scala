@@ -58,7 +58,7 @@ case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: S
 
 case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime], id: UUID = UUID.randomUUID) extends LabworkApplication {
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends LabworkApplication {
   def toLabworkApplication = PostgresLabworkApplication(labwork, applicant, friends, timestamp, id)
 }
 

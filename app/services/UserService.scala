@@ -14,6 +14,7 @@ sealed trait BuddyResult
 case object Allowed extends BuddyResult
 case object Almost extends BuddyResult
 case object Denied extends BuddyResult
+case object NotExisting extends BuddyResult
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
@@ -88,13 +89,15 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
       b <- buddy.result
       f <- friends.result
     } yield {
-      val sameDegree = b.map(_._2).reduce(_ && _)
+      val sameDegree = b.map(_._2).reduceOption(_ && _)
       val friends = f.exists(_.id == UUID.fromString(studentId))
 
-      if (sameDegree)
-        if (friends) Allowed else Almost
-      else
-        Denied
+      sameDegree.fold[BuddyResult](NotExisting) { sameDegree =>
+        if (sameDegree)
+          if (friends) Allowed else Almost
+        else
+          Denied
+      }
     })
   }
 }

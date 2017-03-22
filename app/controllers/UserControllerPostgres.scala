@@ -101,6 +101,11 @@ final class UserControllerPostgres(val roleService: RoleService, val sessionServ
           "type" -> buddyResult.toString,
           "message" -> s"Dein Partner $systemId und Du sind nicht im selben Studiengang."
         ))
+        case NotExisting => BadRequest(Json.obj(
+          "status" -> "KO",
+          "type" -> buddyResult.toString,
+          "message" -> s"Dein Partner $systemId hat sich noch nicht im Praktikumstool angemeldet."
+        ))
       }
     }
   }
