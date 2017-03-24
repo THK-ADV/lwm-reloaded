@@ -49,6 +49,14 @@ final class DegreeCRUDControllerPostgres(val degreeService: DegreeService, val s
     degreeService.get(List(DegreeIdFilter(id))).map(_.headOption).jsonResult(id)
   }
 
+  def create = contextFrom(Update) asyncContentTypedAction { request =>
+    (for {
+      degreeProtocol <- Future.fromTry(parse[DegreeProtocol](request))
+      degreeDb = DegreeDb(degreeProtocol.label, degreeProtocol.abbreviation)
+      result <- degreeService.create(degreeDb)
+    } yield result.toDegree).jsonResult
+  }
+
   def update(id: String) = contextFrom(Update) asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
 

@@ -21,4 +21,6 @@ trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, Postg
   override protected def toUniqueEntity(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = db.run(query.result.map(_.map(_.toPermission)))
 }
 
-object PermissionService extends PermissionService with PostgresDatabase
+object PermissionService extends PermissionService with PostgresDatabase {
+  override protected def existsQuery(entity: PermissionDb): _root_.slick.driver.PostgresDriver.api.Query[PermissionTable, PermissionDb, Seq] = ???
+}

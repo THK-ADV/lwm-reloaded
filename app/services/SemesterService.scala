@@ -23,4 +23,6 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   }
 }
 
-object SemesterService extends SemesterService with PostgresDatabase
+object SemesterService extends SemesterService with PostgresDatabase {
+  override protected def existsQuery(entity: SemesterDb): _root_.slick.driver.PostgresDriver.api.Query[SemesterTable, SemesterDb, Seq] = ???
+}

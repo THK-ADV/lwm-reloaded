@@ -32,4 +32,6 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   }
 }
 
-object CourseService extends CourseService with PostgresDatabase
+object CourseService extends CourseService with PostgresDatabase {
+  override protected def existsQuery(entity: CourseDb): _root_.slick.driver.PostgresDriver.api.Query[CourseTable, CourseDb, Seq] = ???
+}

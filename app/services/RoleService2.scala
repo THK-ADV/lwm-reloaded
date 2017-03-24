@@ -71,5 +71,9 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
 
 object RoleService2 extends RoleService2 with PostgresDatabase {
   override protected def rolePermissionService: RolePermissionService = RolePermissionService
+
+  override protected def existsQuery(entity: RoleDb): _root_.slick.driver.PostgresDriver.api.Query[RoleTable, RoleDb, Seq] = ???
 }
-object RolePermissionService extends RolePermissionService with PostgresDatabase
+object RolePermissionService extends RolePermissionService with PostgresDatabase {
+  override protected def existsQuery(entity: RolePermission): _root_.slick.driver.PostgresDriver.api.Query[RolePermissionTable, RolePermission, Seq] = ???
+}

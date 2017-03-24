@@ -96,6 +96,10 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
 
 object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase {
   override protected def labworkApplicationFriendService: LabworkApplicationFriendService = LabworkApplicationFriendService
+
+  override protected def existsQuery(entity: LabworkApplicationDb): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = ???
 }
 
-object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase
+object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase {
+  override protected def existsQuery(entity: LabworkApplicationFriend): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq] = ???
+}

@@ -57,4 +57,6 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
 object AuthorityService extends AuthorityService with PostgresDatabase {
   override protected def roleService: RoleService2 = RoleService2
+
+  override protected def existsQuery(entity: AuthorityDb): _root_.slick.driver.PostgresDriver.api.Query[AuthorityTable, AuthorityDb, Seq] = ???
 }

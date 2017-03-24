@@ -108,4 +108,6 @@ object UserService extends UserService with PostgresDatabase {
   override protected def authorityService: AuthorityService = AuthorityService
 
   override protected def labworkApplicationService: LabworkApplicationService2 = LabworkApplicationService2
+
+  override protected def existsQuery(entity: DbUser): _root_.slick.driver.PostgresDriver.api.Query[UserTable, DbUser, Seq] = ???
 }

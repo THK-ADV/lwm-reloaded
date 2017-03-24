@@ -57,4 +57,6 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
   }
 }
 
-object LabworkService extends LabworkService with PostgresDatabase
+object LabworkService extends LabworkService with PostgresDatabase {
+  override protected def existsQuery(entity: LabworkDb): _root_.slick.driver.PostgresDriver.api.Query[LabworkTable, LabworkDb, Seq] = ???
+}

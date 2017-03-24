@@ -6,7 +6,8 @@ import slick.dbio.Effect.Write
 import store.UniqueTable
 import slick.driver.PostgresDriver.api._
 
-abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
+abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
+  extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
 
   protected def name: String
   protected def entityToDelete: DbModel
@@ -25,7 +26,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"delete a $name by invalidating it" in {
-      await(delete(entityToDelete)) shouldBe 1
+      await(delete(entityToDelete)) shouldBe defined
     }
   }
 }
