@@ -172,7 +172,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
 
-  private val labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
+  override protected def labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
 
   override protected def name: String = "user"
 

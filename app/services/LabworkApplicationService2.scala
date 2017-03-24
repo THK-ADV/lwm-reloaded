@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{LabworkApplicationFriendTable, LabworkApplicationTable, PostgresDatabase, TableFilter}
+import store._
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
@@ -72,6 +72,13 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     } yield lafs.groupBy(_.labworkApplication).map {
       case (lappId, lappFriends) => (lapps.find(_.id == lappId).map(_.toLabworkApplication).get, lappFriends)
     }
+  }
+
+  final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
+    for {
+      buddy <- tableQuery.filter(lapp => lapp.applicant === applicant && lapp.labwork === labwork)
+      friends <- labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === buddy.id).flatMap(_.friendFk)
+    } yield friends
   }
 }
 

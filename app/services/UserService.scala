@@ -40,6 +40,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
 
   protected def degreeService: DegreeService
   protected def authorityService: AuthorityService
+  protected def labworkApplicationService: LabworkApplicationService2
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
@@ -81,8 +82,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
 
     val friends = for {
       b <- buddy
-      buddyApp <- b._1.labworkApplication(UUID.fromString(labwork))
-      friends <- buddyApp.friends
+      friends <- labworkApplicationService.friendsOf(b._1.id, UUID.fromString(labwork))
     } yield friends
 
     db.run(for {
@@ -106,4 +106,6 @@ object UserService extends UserService with PostgresDatabase {
   override protected def degreeService: DegreeService = DegreeService
 
   override protected def authorityService: AuthorityService = AuthorityService
+
+  override protected def labworkApplicationService: LabworkApplicationService2 = LabworkApplicationService2
 }

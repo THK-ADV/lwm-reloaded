@@ -55,7 +55,7 @@ class UserTable(tag: Tag) extends Table[DbUser](tag, "USERS") with UniqueTable {
 
   def degreeFk = foreignKey("DEGREES_fkey", enrollment, TableQuery[DegreeTable])(_.id.?)
 
-  def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
+  //def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
 
   override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, invalidated, id) <> ((DbUser.apply _).tupled, DbUser.unapply)
 }
@@ -137,9 +137,9 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
     lapp => Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.invalidated, lapp.id))
   }
 
-  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
-  def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
-  def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
+  private def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
+  private def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
+  private def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
 
   def fullJoin = {
     for {
