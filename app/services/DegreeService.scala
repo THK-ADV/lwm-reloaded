@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import models.{DegreeDb, PostgresDegree}
 import org.joda.time.DateTime
 import slick.lifted.Rep
@@ -10,6 +12,12 @@ import scala.concurrent.Future
 
 case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTable] {
   override def predicate: (DegreeTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
+}
+case class DegreeLabelFilter(value: String) extends TableFilter[DegreeTable] {
+  override def predicate: (DegreeTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
+}
+case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
+  override def predicate: (DegreeTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
 trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] { self: PostgresDatabase =>

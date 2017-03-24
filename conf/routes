@@ -11,6 +11,11 @@ GET           /degrees                                                          
 GET           /degrees/:id                                                            controllers.DegreeCRUDController.get(id)
 HEAD          /degrees                                                                controllers.DegreeCRUDController.header
 
+# Degree 2.0
+PUT           /api2/degrees/:id                                                       controllers.DegreeCRUDControllerPostgres.update(id)
+GET           /api2/degrees                                                           controllers.DegreeCRUDControllerPostgres.all()
+GET           /api2/degrees/:id                                                       controllers.DegreeCRUDControllerPostgres.get(id)
+
 # Course
 POST          /courses                                                                controllers.CourseCRUDController.createWithRoles()
 POST          /atomic/courses                                                         controllers.CourseCRUDController.createAtomicWithRoles()

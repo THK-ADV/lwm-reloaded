@@ -39,6 +39,7 @@ with HomepageModule
 with SemanticRepositoryModule
 with DbFolder
 with DegreeManagementModule
+with DegreeManagementModulePostgres
 with CourseManagementModule
 with GroupServiceManagementModule
 with GroupManagementModule
@@ -82,6 +83,7 @@ with LdapSyncModule {
     httpErrorHandler,
     homepageController,
     degreeManagementController,
+    degreeManagementControllerPostgres,
     courseManagementController,
     groupManagementController,
     labworkManagementController,
@@ -115,6 +117,7 @@ with ConfigurableBaseNamespace
 with DefaultSemanticRepositoryModuleImpl
 with DefaultHomepageModuleImpl
 with DefaultDegreeManagementModuleImpl
+with DefaultDegreeManagementModuleImplPostgres
 with DefaultCourseManagementModuleImpl
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl

@@ -27,9 +27,9 @@ case class DegreeDb(label: String, abbreviation: String, invalidated: Option[Dat
   def toDegree = PostgresDegree(label, abbreviation, id)
 }
 
-object PostgresDegree extends JsonSerialisation[PostgresDegree, PostgresDegree, PostgresDegree] {
+object PostgresDegree extends JsonSerialisation[DegreeProtocol, PostgresDegree, PostgresDegree] {
 
-  override implicit def reads: Reads[PostgresDegree] = Json.reads[PostgresDegree]
+  override implicit def reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
 
   override implicit def writes: Writes[PostgresDegree] = Json.writes[PostgresDegree]
 
