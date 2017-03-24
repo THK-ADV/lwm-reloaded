@@ -8,6 +8,7 @@ import scala.concurrent.Future
 
 // TODO maybe we can get rid of DbModel
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def tableQuery: TableQuery[T]
 
@@ -37,11 +38,16 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     if (atomic) toAtomic(valid) else toUniqueEntity(valid)
   }
 
-  def delete(entity: DbModel) = update0(setInvalidated(entity))
+  def delete(entity: DbModel): Future[Option[DbModel]] = update0(setInvalidated(entity))
 
-  def update(entity: DbModel): Future[Int] = update0(entity)
+  def update(entity: DbModel): Future[Option[DbModel]] = update0(entity)
 
-  private def update0(entity: DbModel) = db.run(tableQuery.filter(_.id === entity.id).update(entity))
+  private def update0(entity: DbModel): Future[Option[DbModel]] = db.run(
+    tableQuery.filter(_.id === entity.id).update(entity).map {
+      case 1 => Some(entity)
+      case _ => None
+    }
+  )
 
   def createSchema = db.run(tableQuery.schema.create)
 
