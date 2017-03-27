@@ -48,6 +48,18 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
     DbUser(entity.systemId, entity.lastname, entity.firstname, entity.email, entity.status, entity.registrationId, entity.enrollment, Some(DateTime.now), entity.id)
   }
 
+  override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
+    (existing.enrollment != toUpdate.enrollment ||
+      existing.lastname != toUpdate.lastname ||
+      existing.firstname != toUpdate.firstname ||
+      existing.email != toUpdate.email) &&
+    existing.systemId == toUpdate.systemId
+  }
+
+  override protected def existsQuery(entity: DbUser): Query[UserTable, DbUser, Seq] = {
+    filterBy(List(UserSystemIdFilter(entity.systemId)))
+  }
+
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
     db.run(query.result.map(_.map(_.toUser)))
   }
@@ -108,6 +120,4 @@ object UserService extends UserService with PostgresDatabase {
   override protected def authorityService: AuthorityService = AuthorityService
 
   override protected def labworkApplicationService: LabworkApplicationService2 = LabworkApplicationService2
-
-  override protected def existsQuery(entity: DbUser): _root_.slick.driver.PostgresDriver.api.Query[UserTable, DbUser, Seq] = ???
 }

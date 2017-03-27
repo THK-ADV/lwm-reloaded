@@ -2,10 +2,14 @@ package services
 
 import models._
 import org.joda.time.DateTime
-import store.{PostgresDatabase, RolePermissionTable, RoleTable}
+import store.{PostgresDatabase, RolePermissionTable, RoleTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
+
+case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
+  override def predicate = _.label.toLowerCase === value.toLowerCase
+}
 
 trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,6 +20,14 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
 
   override protected def setInvalidated(entity: RoleDb): RoleDb = {
     RoleDb(entity.label, entity.permissions, Some(DateTime.now), entity.id)
+  }
+
+  override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = {
+    existing.permissions != toUpdate.permissions && existing.label == toUpdate.label
+  }
+
+  override protected def existsQuery(entity: RoleDb): Query[RoleTable, RoleDb, Seq] = {
+    filterBy(List(RoleLabelFilter(entity.label)))
   }
 
   override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
@@ -64,6 +76,12 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
     RolePermission(entity.role, entity.permission, Some(DateTime.now), entity.id)
   }
 
+  override protected def existsQuery(entity: RolePermission): Query[RolePermissionTable, RolePermission, Seq] = {
+    tableQuery.filter(t => t.permission === entity.permission && t.role === entity.role)
+  }
+
+  override protected def shouldUpdate(existing: RolePermission, toUpdate: RolePermission): Boolean = false
+
   override protected def toAtomic(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 
   override protected def toUniqueEntity(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
@@ -71,9 +89,5 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
 
 object RoleService2 extends RoleService2 with PostgresDatabase {
   override protected def rolePermissionService: RolePermissionService = RolePermissionService
-
-  override protected def existsQuery(entity: RoleDb): _root_.slick.driver.PostgresDriver.api.Query[RoleTable, RoleDb, Seq] = ???
 }
-object RolePermissionService extends RolePermissionService with PostgresDatabase {
-  override protected def existsQuery(entity: RolePermission): _root_.slick.driver.PostgresDriver.api.Query[RolePermissionTable, RolePermission, Seq] = ???
-}
+object RolePermissionService extends RolePermissionService with PostgresDatabase

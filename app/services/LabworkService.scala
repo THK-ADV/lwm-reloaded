@@ -17,6 +17,14 @@ case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] 
   override def predicate = _.degree === UUID.fromString(value)
 }
 
+case class LabworkSemesterFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate = _.semester === UUID.fromString(value)
+}
+
+case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate = _.course === UUID.fromString(value)
+}
+
 trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,6 +41,23 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
     Some(DateTime.now),
     entity.id
   )
+
+  override protected def shouldUpdate(existing: LabworkDb, toUpdate: LabworkDb): Boolean = {
+    (existing.label != toUpdate.label ||
+      existing.description != toUpdate.description ||
+      existing.subscribable != toUpdate.subscribable ||
+      existing.published != toUpdate.published) &&
+      (existing.semester == toUpdate.semester && existing.course == toUpdate.course && existing.degree == toUpdate.degree)
+
+  }
+
+  override protected def existsQuery(entity: LabworkDb): Query[LabworkTable, LabworkDb, Seq] = {
+    filterBy(List(
+      LabworkSemesterFilter(entity.semester.toString),
+      LabworkCourseFilter(entity.course.toString),
+      LabworkDegreeFilter(entity.degree.toString)
+    ))
+  }
 
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
     val joinedQuery = for {
@@ -57,6 +82,4 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
   }
 }
 
-object LabworkService extends LabworkService with PostgresDatabase {
-  override protected def existsQuery(entity: LabworkDb): _root_.slick.driver.PostgresDriver.api.Query[LabworkTable, LabworkDb, Seq] = ???
-}
+object LabworkService extends LabworkService with PostgresDatabase

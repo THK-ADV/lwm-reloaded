@@ -4,10 +4,23 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{AuthorityTable, CourseTable, PostgresDatabase, UserTable}
+import store._
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
+
+case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: (AuthorityTable) => Rep[Boolean] = _.user === UUID.fromString(value)
+}
+
+case class AuthorityCourseFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: (AuthorityTable) => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
+}
+
+case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
+}
 
 trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,6 +31,12 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
   override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = {
     AuthorityDb(entity.user, entity.role, entity.course, Some(DateTime.now), entity.id)
+  }
+
+  override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = false
+
+  override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
+    filterBy(List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))).filter(_.course === entity.course)
   }
 
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
@@ -57,6 +76,4 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
 object AuthorityService extends AuthorityService with PostgresDatabase {
   override protected def roleService: RoleService2 = RoleService2
-
-  override protected def existsQuery(entity: AuthorityDb): _root_.slick.driver.PostgresDriver.api.Query[AuthorityTable, AuthorityDb, Seq] = ???
 }

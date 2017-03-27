@@ -10,8 +10,8 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
   import scala.util.Random.nextInt
   import slick.driver.PostgresDriver.api._
 
-  val maxUser = 100
-  val maxDegrees = 5
+  val maxUser = 150
+  val maxDegrees = 3
 
   val degrees: List[DegreeDb] = {
     (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
@@ -176,7 +176,13 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected def name: String = "user"
 
-  override protected val entityToDelete: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None, None, UUID.randomUUID)
+  override protected val entity: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None, None, UUID.randomUUID)
 
   override protected val entities: List[DbUser] = dbUser
+
+  override protected def invalidDuplicateOfEntity: DbUser = DbUser(entity.systemId, "delete2", "delete2", "delete2", User.EmployeeType, None, None, None, entity.id)
+
+  override protected def invalidUpdateOfEntity: DbUser = DbUser("new SystemId", "new lastname", entity.firstname, entity.email, entity.status, None, None, None, entity.id)
+
+  override protected def validUpdateOnEntity: DbUser = DbUser(entity.systemId, "new lastname", entity.firstname, entity.email, entity.status, None, None, None, entity.id)
 }

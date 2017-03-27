@@ -13,7 +13,6 @@ HEAD          /degrees                                                          
 
 # Degree 2.0
 PUT           /api2/degrees/:id                                                       controllers.DegreeCRUDControllerPostgres.update(id)
-POST           /api2/degrees                                                       controllers.DegreeCRUDControllerPostgres.create()
 GET           /api2/degrees                                                           controllers.DegreeCRUDControllerPostgres.all()
 GET           /api2/degrees/:id                                                       controllers.DegreeCRUDControllerPostgres.get(id)
 

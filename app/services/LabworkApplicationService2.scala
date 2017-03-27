@@ -24,6 +24,10 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     LabworkApplicationDb(entity.labwork, entity.applicant, entity.friends, entity.timestamp, Some(DateTime.now), entity.id)
   }
 
+  override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = ???
+
+  override protected def existsQuery(entity: LabworkApplicationDb): Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = ???
+
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
     case (lapp, foreigners) =>
       val applicant = foreigners.map(_._3).head
@@ -89,6 +93,10 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
     LabworkApplicationFriend(entity.labworkApplication, entity.friend, Some(DateTime.now), entity.id)
   }
 
+  override protected def shouldUpdate(existing: LabworkApplicationFriend, toUpdate: LabworkApplicationFriend): Boolean = ???
+
+  override protected def existsQuery(entity: LabworkApplicationFriend): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq] = ???
+
   override protected def toAtomic(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = ???
@@ -96,10 +104,6 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
 
 object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase {
   override protected def labworkApplicationFriendService: LabworkApplicationFriendService = LabworkApplicationFriendService
-
-  override protected def existsQuery(entity: LabworkApplicationDb): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = ???
 }
 
-object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase {
-  override protected def existsQuery(entity: LabworkApplicationFriend): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq] = ???
-}
+object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase

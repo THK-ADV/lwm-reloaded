@@ -10,7 +10,10 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
 
   protected def name: String
-  protected def entityToDelete: DbModel
+  protected def entity: DbModel
+  protected def invalidDuplicateOfEntity: DbModel
+  protected def invalidUpdateOfEntity: DbModel
+  protected def validUpdateOnEntity: DbModel
   protected def entities: List[DbModel]
 
   override protected def customFill: DBIOAction[Unit, NoStream, Write]
@@ -18,7 +21,19 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   s"A AbstractDaoSpec with $name " should {
 
     s"create a $name" in {
-      await(create(entityToDelete)) shouldBe entityToDelete
+      await(create(entity)) shouldBe entity
+    }
+
+    s"not create a $name because model already exists" in {
+      await(create(invalidDuplicateOfEntity).failed) shouldBe ModelAlreadyExists(Seq(entity))
+    }
+
+    s"not update a $name because model already exists" in {
+      await(update(invalidUpdateOfEntity).failed) shouldBe ModelAlreadyExists(entity)
+    }
+
+    s"update a $name properly" in {
+      await(update(validUpdateOnEntity)) shouldBe Some(validUpdateOnEntity)
     }
 
     s"create many $name" in {
@@ -26,7 +41,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"delete a $name by invalidating it" in {
-      await(delete(entityToDelete)) shouldBe defined
+      await(delete(entity)) shouldBe defined
     }
   }
 }

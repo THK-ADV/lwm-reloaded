@@ -2,15 +2,34 @@ package services
 
 import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
-import store.{CourseTable, PostgresDatabase}
+import store.{CourseTable, PostgresDatabase, TableFilter}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
+
+case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
+  override def predicate = _.label.toLowerCase === value.toLowerCase
+}
+
+case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTable] {
+  override def predicate = _.semesterIndex === value.toInt
+}
 
 trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
+
+  override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
+    filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
+  }
+
+  override protected def shouldUpdate(existing: CourseDb, toUpdate: CourseDb): Boolean = {
+    (existing.description != toUpdate.description ||
+      existing.abbreviation != toUpdate.abbreviation ||
+      existing.lecturer != toUpdate.lecturer) &&
+      (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
+  }
 
   override protected def setInvalidated(entity: CourseDb): CourseDb = {
     CourseDb(entity.label, entity.description, entity.abbreviation, entity.lecturer, entity.semesterIndex, Some(DateTime.now), entity.id)
@@ -32,6 +51,4 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   }
 }
 
-object CourseService extends CourseService with PostgresDatabase {
-  override protected def existsQuery(entity: CourseDb): _root_.slick.driver.PostgresDriver.api.Query[CourseTable, CourseDb, Seq] = ???
-}
+object CourseService extends CourseService with PostgresDatabase
