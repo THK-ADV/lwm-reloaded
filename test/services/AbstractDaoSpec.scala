@@ -16,7 +16,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   protected def validUpdateOnEntity: DbModel
   protected def entities: List[DbModel]
 
-  override protected def customFill: DBIOAction[Unit, NoStream, Write]
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write]
 
   s"A AbstractDaoSpec with $name " should {
 

@@ -164,7 +164,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
     }
   }
 
-  override protected def customFill: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     degreeService.tableQuery.forceInsertAll(degrees)
   )
 

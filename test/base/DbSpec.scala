@@ -20,7 +20,7 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
 
   protected final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
 
-  protected def customFill: DBIOAction[Unit, NoStream, Effect.Write]
+  protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
   private val schema = List(
     TableQuery[PermissionTable].schema,
@@ -45,7 +45,7 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
 
     await(db.run(DBIO.seq(
       schema.map(_.create): _*
-    ).andThen(customFill).
+    ).andThen(dependencies).
       andThen(mandatoryFill).
       transactionally)
     )

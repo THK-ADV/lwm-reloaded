@@ -225,7 +225,7 @@ trait PostgresResult { self: Controller =>
     }
 
     def jsonResult(idOfEntity: UUID)(implicit writes: Writes[A]) = future.map { maybeA =>
-      maybeA.fold(internalServerError(s"cant update $idOfEntity"))(ok)
+      maybeA.fold(internalServerError(s"cant update or delete $idOfEntity"))(ok)
     }.recover {
       case NonFatal(e) => internalServerError(e)
     }

@@ -46,6 +46,7 @@ with GroupManagementModule
 with LabworkManagementModule
 with RoomManagementModule
 with SemesterManagementModule
+with SemesterManagementModulePostgres
 with SessionRepositoryModule
 with SecurityManagementModule
 with RoleManagementModule
@@ -90,6 +91,7 @@ with LdapSyncModule {
     entryTypeController,
     roomManagementController,
     semesterManagementController,
+    semesterManagementControllerPostgres,
     roleManagementController,
     authorityManagementController,
     permissionManagementController,
@@ -124,6 +126,7 @@ with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
 with DefaultRoomManagementModuleImpl
 with DefaultSemesterManagementModuleImpl
+with DefaultSemesterManagementModuleImplPostgres
 with LdapModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl

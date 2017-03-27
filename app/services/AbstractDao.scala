@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import models.UniqueEntity
 import slick.driver.PostgresDriver.api._
 import store.{PostgresDatabase, TableFilter, UniqueTable}
@@ -62,8 +64,22 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
   final def delete(entity: DbModel): Future[Option[DbModel]] = {
     val invalidated = setInvalidated(entity)
     val query = tableQuery.filter(_.id === invalidated.id).update(invalidated).map {
-      case 1 => Some(entity)
+      case 1 => Some(invalidated)
       case _ => None
+    }
+
+    db.run(query)
+  }
+
+  final def delete(id: UUID): Future[Option[DbModel]] = {
+    val found = tableQuery.filter(_.id === id)
+    val query = found.result.head.flatMap { existing =>
+      val invalidated = setInvalidated(existing)
+
+      found.update(invalidated).map {
+        case 1 => Some(invalidated)
+        case _ => None
+      }
     }
 
     db.run(query)

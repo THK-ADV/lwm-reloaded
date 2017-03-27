@@ -51,4 +51,8 @@ object PostgresSemester extends JsonSerialisation[SemesterProtocol, PostgresSeme
   override implicit def writes: Writes[PostgresSemester] = Json.writes[PostgresSemester]
 
   override implicit def writesAtom = writes
+
+  def isCurrent(semester: PostgresSemester): Boolean = {
+    new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).containsNow
+  }
 }

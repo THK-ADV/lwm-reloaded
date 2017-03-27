@@ -7,5 +7,5 @@ import slick.driver.PostgresDriver.api._
 class AuthorityServiceSpec extends PostgresDbSpec with AuthorityService {
   override protected def roleService: RoleService2 = RoleService2Spec
 
-  override protected def customFill: DBIOAction[Unit, NoStream, Write] = ???
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = ???
 }

@@ -12,12 +12,12 @@ import utils.LwmMimeType
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
-object DegreeCRUDControllerPostgres {
+object DegreePostgresController {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreeCRUDControllerPostgres(val degreeService: DegreeService, val sessionService: SessionHandlingService, val roleService: RoleService) extends Controller
+final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleService, val degreeService: DegreeService) extends Controller
   with Secured
   with SessionChecking
   with SecureControllerContext
@@ -30,7 +30,7 @@ final class DegreeCRUDControllerPostgres(val degreeService: DegreeService, val s
   import models.PostgresDegree.{writes, reads}
 
   def all = contextFrom(GetAll) asyncAction{ request =>
-    import controllers.DegreeCRUDControllerPostgres._
+    import controllers.DegreePostgresController._
 
     val degreeFilter = request.queryString.foldLeft(Try(List.empty[TableFilter[DegreeTable]])) {
       case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))

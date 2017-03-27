@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import models.{LwmDateTime, PostgresSemester, SemesterDb}
 import org.joda.time.{DateTime, LocalDate}
 import store.{PostgresDatabase, SemesterTable, TableFilter}
@@ -9,7 +11,11 @@ import slick.lifted.Rep
 import scala.concurrent.Future
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate: (SemesterTable) => Rep[Boolean] = _.label.toLowerCase === value.toLowerCase
+  override def predicate = _.label.toLowerCase === value.toLowerCase
+}
+
+case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
+  override def predicate = _.id === UUID.fromString(value)
 }
 
 trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] { self: PostgresDatabase =>
