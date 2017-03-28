@@ -40,7 +40,7 @@ case class ScheduleEntry(labwork: UUID,
 
 case class ScheduleAtom(labwork: SesameLabworkAtom, entries: Set[ScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class ScheduleEntryAtom(labwork: SesameLabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[User], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ScheduleEntryAtom(labwork: SesameLabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: SesameRoom, supervisor: Set[User], group: Group, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 object Schedule extends UriGenerator[Schedule] with JsonSerialisation[Schedule, Schedule, ScheduleAtom] {
 
@@ -83,7 +83,7 @@ object ScheduleEntryAtom {
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "date").write[LocalDate] and
-      (JsPath \ "room").write[Room](Room.writes) and
+      (JsPath \ "room").write[SesameRoom](SesameRoom.writes) and
       (JsPath \ "supervisor").writeSet[User] and
       (JsPath \ "group").write[Group] and
       (JsPath \ "invalidated").writeNullable[DateTime] and

@@ -1,6 +1,6 @@
 package controllers
 
-import models.{Room, RoomProtocol}
+import models.{SesameRoom$, SesameRoomProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -14,22 +14,22 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Room, Room] {
-  override val entityToPass: Room = Room("label to pass", "description to pass")
+class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameRoomProtocol, SesameRoom, SesameRoom] {
+  override val entityToPass: SesameRoom = SesameRoom("label to pass", "description to pass")
 
-  override val entityToFail: Room = Room("label to fail", "description to fail")
+  override val entityToFail: SesameRoom = SesameRoom("label to fail", "description to fail")
 
-  override implicit val jsonWrites: Writes[Room] = Room.writes
+  override implicit val jsonWrites: Writes[SesameRoom] = SesameRoom.writes
 
-  override val atomizedEntityToPass: Room = entityToPass
+  override val atomizedEntityToPass: SesameRoom = entityToPass
 
-  override val atomizedEntityToFail: Room = entityToFail
+  override val atomizedEntityToFail: SesameRoom = entityToFail
 
-  override val jsonWritesAtom: Writes[Room] = jsonWrites
+  override val jsonWritesAtom: Writes[SesameRoom] = jsonWrites
 
   override val controller: RoomCRUDController = new RoomCRUDController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = entityToPass
+    override protected def fromInput(input: SesameRoomProtocol, existing: Option[SesameRoom]): SesameRoom = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -62,9 +62,9 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
     s"handle this model issue when creating a new $entityTypeName which already exists" in {
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Room.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameRoom.generateUri(entityToPass)))
       )))
-      when(repository.get[Room](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[SesameRoom](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -87,7 +87,7 @@ class RoomCRUDControllerSpec extends AbstractCRUDControllerSpec[RoomProtocol, Ro
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(Matchers.anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(Room.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameRoom.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(

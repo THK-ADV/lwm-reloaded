@@ -20,7 +20,7 @@ class ReportCardInvalidation extends SesameDbSpec {
 
     def rcetypes: Stream[ReportCardEntryType] = Stream.continually(ReportCardEntryType(s"String$nextInt", nextBoolean()))
     def rce: Stream[ReportCardEntry] = Stream.continually(
-      ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, (rcetypes take 10).toSet))
+      ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, (rcetypes take 10).toSet))
 
     "invalidate the report card and subsequent report card entries and annotations" in {
       import bindings.{AnnotationDescriptor, ReportCardEntryDescriptor}

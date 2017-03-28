@@ -21,8 +21,8 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
-  val roomToPass = Room("room to pass", "desc to pass")
-  val roomToFail = Room("room to fail", "desc to fail")
+  val roomToPass = SesameRoom("room to pass", "desc to pass")
+  val roomToFail = SesameRoom("room to fail", "desc to fail")
 
   val supervisorToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val supervisorToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
@@ -91,7 +91,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     "localBlacklist" -> entityToPass.localBlacklist
   )
 
-  private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: Room, supervisor: SesameEmployee): Set[TimetableEntryAtom] = {
+  private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: SesameRoom, supervisor: SesameEmployee): Set[TimetableEntryAtom] = {
     entries.map(e => TimetableEntryAtom(Set(supervisor), room, e.dayIndex, e.start, e.end))
   }
 

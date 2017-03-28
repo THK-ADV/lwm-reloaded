@@ -72,7 +72,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     val degree = SesameDegree("label to pass", "abbrev to pass")
 
     val labworkAtom = SesameLabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
-    val room = Room("room", "desc", None, e.room)
+    val room = SesameRoom("room", "desc", None, e.room)
     val supervisor: Set[User] = e.supervisor map (SesameEmployee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
     val group = Group("label", labworkAtom.id, Set(), None, e.group)
     ScheduleEntryAtom(labworkAtom, e.start, e.end, e.date, room, supervisor, group, None, e.id)
@@ -245,8 +245,8 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
       val supervisor3 = SesameEmployee("systemid3", "lastname3", "firstname3", "email3", "status3")
-      val room1 = Room("label1", "description1")
-      val room2 = Room("label1", "description2")
+      val room1 = SesameRoom("label1", "description1")
+      val room2 = SesameRoom("label1", "description2")
       val start1 = LocalTime.now
       val start2 = LocalTime.now plusHours 2
       val start3 = LocalTime.now plusHours 4

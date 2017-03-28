@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 class DegreeInvalidation extends SesameDbSpec {
 
   "A Degree invalidation" should {
-    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
+    def tte: Stream[TimetableEntry] = Stream.continually(TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 1, LocalTime.now, LocalTime.now plusHours 2))
 
     def tt: Stream[Timetable] = Stream.continually {
       Timetable(SesameLabwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set())
@@ -39,8 +39,8 @@ class DegreeInvalidation extends SesameDbSpec {
     }
 
     def rce(labwork: UUID): Stream[ReportCardEntry] = Stream.continually {
-      if (nextBoolean()) ReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, Set())
-      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, Room.randomUUID, Set())
+      if (nextBoolean()) ReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
     }
 
     def rceval(labwork: UUID): Stream[ReportCardEvaluation] = Stream.continually {

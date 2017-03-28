@@ -211,6 +211,24 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     result.jsonResult
   }
 
+  def migrateRooms = Action.async {
+    import bindings.RoomDescriptor
+    import models.PostgresRoom.writes
+
+    val result = for {
+      _ <- RoomService.createSchema
+      sesameRooms <- Future.fromTry(repository.getAll[SesameRoom])
+      _ = println(s"sesameRooms ${sesameRooms.size}")
+
+      roomDbs = sesameRooms.map(r => RoomDb(r.label, r.description, None, r.id))
+      _ = println(s"roomDbs ${roomDbs.size}")
+
+      rooms <- RoomService.createMany(roomDbs.toList)
+    } yield rooms.map(_.toRoom)
+
+    result.jsonResult
+  }
+
   def migrateLabworkApplications = Action.async {
     import bindings.LabworkApplicationDescriptor
     import models.LabworkApplicationFriend.writes

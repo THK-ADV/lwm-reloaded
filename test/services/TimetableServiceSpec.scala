@@ -30,11 +30,11 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
   def timetable(localBlacklist: Set[DateTime] = Set.empty) = {
     val tEntries = Set(
-      TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-      TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
-      TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
-      TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
-      TimetableEntry(Set(User.randomUUID), Room.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
+      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
+      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
     )
 
     Timetable(SesameLabwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist ++ globalBlacklist.flatMap(_.dates))

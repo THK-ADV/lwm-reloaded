@@ -197,3 +197,10 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
 
   override def * = (role, permission, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
 }
+
+class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable {
+  def label = column[String]("LABEL")
+  def description = column[String]("DESCRIPTION")
+
+  override def * = (label, description, invalidated, id) <> ((RoomDb.apply _).tupled, RoomDb.unapply)
+}

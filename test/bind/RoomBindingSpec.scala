@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.Room
+import models.SesameRoom$
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}
@@ -16,9 +16,9 @@ class RoomBindingSpec extends SesameDbSpec {
 
   implicit val roomBinding = RoomDescriptor.binder
 
-  val room = Room("label", "description")
+  val room = SesameRoom("label", "description")
   val roomGraph = (
-    URI(Room.generateUri(room)).a(lwm.Room)
+    URI(SesameRoom.generateUri(room)).a(lwm.Room)
       -- lwm.label ->- room.label
       -- lwm.description ->- room.description
       -- lwm.id ->- room.id
@@ -33,7 +33,7 @@ class RoomBindingSpec extends SesameDbSpec {
     }
 
     "return a room based on a RDF graph representation" in {
-      val expectedRoom = PointedGraph[Rdf](URI(Room.generateUri(room)), roomGraph).as[Room]
+      val expectedRoom = PointedGraph[Rdf](URI(SesameRoom.generateUri(room)), roomGraph).as[SesameRoom]
 
       expectedRoom match {
         case Success(s) =>
