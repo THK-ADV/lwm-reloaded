@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import models.{LwmDateTime, PostgresSemester, SemesterDb}
-import org.joda.time.{DateTime, LocalDate}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import store.{PostgresDatabase, SemesterTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep

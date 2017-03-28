@@ -7,8 +7,14 @@ import org.joda.time.{DateTime, LocalDate}
 import org.joda.time.format.ISODateTimeFormat
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
+import java.sql.Timestamp
 
 trait UniqueTable { self: Table[_] =>
+  /*implicit val jodaLocalDate = MappedColumnType.base[LocalDate, Timestamp](
+    localDate => new Timestamp(localDate.toDateTimeAtStartOfDay.getMillis),
+    timestamp => ???
+  )*/
+
   implicit val jodaDateTime = MappedColumnType.base[DateTime, String](ISODateTimeFormat.dateTime.print, DateTime.parse)
   implicit val jodaLocalDate = MappedColumnType.base[LocalDate, String](d => d.toString, LocalDate.parse) // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
 
