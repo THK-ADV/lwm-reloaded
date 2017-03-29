@@ -2,14 +2,13 @@ package controllers
 
 import java.util.UUID
 
-import models.{DegreeDb, DegreeProtocol}
+import models.{DegreeDb, DegreeProtocol, PostgresDegree}
 import models.Permissions.{degree, god, prime}
-import play.api.mvc.Controller
+import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{DegreeTable, TableFilter}
 import utils.LwmMimeType
 
-import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 object DegreePostgresController {
@@ -17,46 +16,8 @@ object DegreePostgresController {
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleService, val degreeService: DegreeService) extends Controller
-  with Secured
-  with SessionChecking
-  with SecureControllerContext
-  with ContentTyped
-  with Chunked
-  with PostgresResult {
-
-  override implicit def mimeType: LwmMimeType = LwmMimeType.degreeV1Json
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import models.PostgresDegree.{writes, reads}
-
-  def all = contextFrom(GetAll) asyncAction{ request =>
-    import controllers.DegreePostgresController._
-
-    val degreeFilter = request.queryString.foldLeft(Try(List.empty[TableFilter[DegreeTable]])) {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation.head)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-
-    (for{
-      list <- Future.fromTry(degreeFilter)
-      degrees <- degreeService.get(list)
-    } yield degrees).jsonResult
-  }
-
-  def get(id: String) = contextFrom(Get) asyncAction { _ =>
-    degreeService.get(List(DegreeIdFilter(id))).map(_.headOption).jsonResult(id)
-  }
-
-  def update(id: String) = contextFrom(Update) asyncContentTypedAction { request =>
-    val uuid = UUID.fromString(id)
-
-    (for {
-      degreeProtocol <- Future.fromTry(parse[DegreeProtocol](request))
-      degreeDb = DegreeDb(degreeProtocol.label, degreeProtocol.abbreviation, None, uuid)
-      result <- degreeService.update(degreeDb)
-    } yield result.map(_.toDegree)).jsonResult(uuid)
-  }
+final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleService, val degreeService: DegreeService)
+  extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(degree.get)
@@ -64,4 +25,28 @@ final class DegreePostgresController(val sessionService: SessionHandlingService,
     case Update => PartialSecureBlock(prime)
     case _ => PartialSecureBlock(god)
   }
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.degreeV1Json
+
+  override protected implicit val writes: Writes[PostgresDegree] = PostgresDegree.writes
+
+  override protected implicit val reads: Reads[DegreeProtocol] = PostgresDegree.reads
+
+  override protected val abstractDao: AbstractDao[DegreeTable, DegreeDb, PostgresDegree] = degreeService
+
+  override protected def idTableFilter(id: String): TableFilter[DegreeTable] = DegreeIdFilter(id)
+
+  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
+    import controllers.DegreePostgresController._
+
+    (appendTo, (attribute, values)) match {
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation.head)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = DegreeDb.from(protocol, existingId)
+
+  override protected def toLwmModel(dbModel: DegreeDb): PostgresDegree = dbModel.toDegree
 }

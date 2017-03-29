@@ -3,20 +3,20 @@ package store
 import java.util.UUID
 
 import models._
-import org.joda.time.{DateTime, LocalDate}
+import org.joda.time.{DateTime}
 import org.joda.time.format.ISODateTimeFormat
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
-import java.sql.Timestamp
+import java.sql.{Date, Timestamp}
 
 trait UniqueTable { self: Table[_] =>
-  /*implicit val jodaLocalDate = MappedColumnType.base[LocalDate, Timestamp](
-    localDate => new Timestamp(localDate.toDateTimeAtStartOfDay.getMillis),
-    timestamp => ???
-  )*/
+  implicit val jodaDateTime = MappedColumnType.base[DateTime, Timestamp](
+    dateTime => new Timestamp(dateTime.getMillis),
+    timestamp => new DateTime(timestamp.getTime)
+  )
 
-  implicit val jodaDateTime = MappedColumnType.base[DateTime, String](ISODateTimeFormat.dateTime.print, DateTime.parse)
-  implicit val jodaLocalDate = MappedColumnType.base[LocalDate, String](d => d.toString, LocalDate.parse) // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
+  //implicit val jodaDateTime = MappedColumnType.base[DateTime, String](ISODateTimeFormat.dateTime.print, DateTime.parse)
+  //implicit val jodaLocalDate = MappedColumnType.base[LocalDate, String](d => d.toString, LocalDate.parse) // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
 
   def id = column[UUID]("ID", O.PrimaryKey)
   def invalidated = column[Option[DateTime]]("INVALIDATED")
@@ -85,9 +85,9 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
   override def * = (user, role, course, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)
 }
 class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with UniqueTable with LabelTable with AbbreviationTable {
-  def start = column[LocalDate]("START")
-  def end = column[LocalDate]("END")
-  def examStart = column[LocalDate]("EXAM_START")
+  def start = column[Date]("START")
+  def end = column[Date]("END")
+  def examStart = column[Date]("EXAM_START")
 
   override def * = (label, abbreviation, start, end, examStart, invalidated, id) <> ((SemesterDb.apply _).tupled, SemesterDb.unapply)
 }

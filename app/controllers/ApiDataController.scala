@@ -165,12 +165,13 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
 
   def migrateSemesters = Action.async {
     import bindings.SemesterDescriptor
+    import models.LwmDateTime._
 
     val result = for {
       _ <- SemesterService.createSchema
       sesameSemesters <- Future.fromTry(repository.getAll[SesameSemester])
       _ = println(s"sesameSemesters ${sesameSemesters.size}")
-      semesterDbs = sesameSemesters.map(s => SemesterDb(s.label, s.abbreviation, s.start, s.end, s.examStart, None, s.id))
+      semesterDbs = sesameSemesters.map(s => SemesterDb(s.label, s.abbreviation, s.start.sqlDate, s.end.sqlDate, s.examStart.sqlDate, None, s.id))
       _ = println(s"semesterDbs ${semesterDbs.size}")
       semester <- SemesterService.createMany(semesterDbs.toList)
       _ = println(s"semester ${semester.size}")

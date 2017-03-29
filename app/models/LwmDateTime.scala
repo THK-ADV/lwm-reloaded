@@ -1,15 +1,31 @@
 package models
 
+import java.sql.Date
+
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.{JsString, Writes}
 
 object LwmDateTime {
 
+  implicit class LocalDateConverter(val date: LocalDate) {
+    def sqlDate: Date = LwmDateTime.toDate(date)
+  }
+
+  implicit class SqlDateConverter(val date: Date) {
+    def localDate: LocalDate = LwmDateTime.toLocalDate(date)
+  }
+
   lazy val pattern = "yyyy-MM-dd'T'HH:mm"
   lazy val formatter = DateTimeFormat.forPattern(pattern)
 
   implicit def writes: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
+
+  def toLocalDate(date: Date): LocalDate = new LocalDate(date.getTime)
+
+  def toLocalTime(date: Date): LocalTime = new LocalTime(date.getTime)
+
+  def toDate(date: LocalDate): Date = Date.valueOf(date.toString)
 
   def toDateTime(string: String) = DateTime.parse(string, formatter)
 

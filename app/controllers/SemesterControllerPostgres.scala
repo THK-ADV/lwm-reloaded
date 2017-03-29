@@ -3,79 +3,58 @@ package controllers
 import java.util.UUID
 
 import models.Permissions.{prime, semester}
-import models.{SemesterDb, SemesterProtocol}
-import play.api.mvc.Controller
+import models.{PostgresSemester, SemesterDb, SemesterProtocol}
+import org.joda.time.LocalDate
+import play.api.libs.json.{Reads, Writes}
 import services._
+import store.{SemesterTable, TableFilter}
 import utils.LwmMimeType
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object SemesterControllerPostgres {
-  val selectAttribute = "select"
-  val currentValue = "current"
+  lazy val startAttribute = "start"
+  lazy val endAttribute = "end"
+  lazy val labelAttribute = "label"
+  lazy val abbreviationAttribute = "abbreviation"
+  lazy val selectAttribute = "select"
+  lazy val currentValue = "current"
 }
 
-final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val semesterService: SemesterService) extends Controller
-  with Secured
-  with SessionChecking
-  with SecureControllerContext
-  with ContentTyped
-  with Chunked
-  with PostgresResult {
+final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val semesterService: SemesterService)
+  extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
 
-  import models.PostgresSemester.{writes, reads}
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  override implicit def mimeType = LwmMimeType.semesterV1Json
-
-  def create = contextFrom(Create) asyncContentTypedAction { request =>
-    (for {
-      protocol <- Future.fromTry(parse[SemesterProtocol](request))
-      semesterDb = SemesterDb(protocol.label, protocol.abbreviation, protocol.start, protocol.end, protocol.examStart)
-      semester <- semesterService.create(semesterDb)
-    } yield semester.toSemester).jsonResult
-  }
-
-  def update(id: String) = contextFrom(Update) asyncContentTypedAction { request =>
-    val uuid = UUID.fromString(id)
-
-    (for {
-      protocol <- Future.fromTry(parse[SemesterProtocol](request))
-      semesterDb = SemesterDb(protocol.label, protocol.abbreviation, protocol.start, protocol.end, protocol.examStart, None, uuid)
-      semester <- semesterService.update(semesterDb)
-    } yield semester.map(_.toSemester)).jsonResult(uuid)
-  }
-
-  def delete(id: String) = contextFrom(Delete) asyncAction { _ =>
-    val uuid = UUID.fromString(id)
-
-    semesterService.delete(uuid).map(_.map(_.toSemester)).jsonResult(uuid)
-  }
-
-  def all = contextFrom(GetAll) asyncAction { request =>
-    import controllers.SemesterControllerPostgres._
-    import models.PostgresSemester.isCurrent
-
-    (for{
-      semesters <- semesterService.get()
-      filter = request.queryString.get(`selectAttribute`).fold[Try[Boolean]](Success(false)) { seq =>
-        if (seq.headOption.contains(currentValue))
-          Success(true)
-        else
-          Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${seq.headOption}"))
-      }
-      currentFilter <- Future.fromTry(filter)
-    } yield if (currentFilter) semesters.filter(isCurrent) else semesters).jsonResult
-  }
-
-  def get(id: String) = contextFrom(Get) asyncAction { _ =>
-    semesterService.get(List(SemesterIdFilter(id))).map(_.headOption).jsonResult(id)
-  }
+  override implicit val mimeType = LwmMimeType.semesterV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(semester.get)
     case GetAll => PartialSecureBlock(semester.getAll)
     case _ => PartialSecureBlock(prime)
   }
+
+  override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
+
+  override protected implicit val reads: Reads[SemesterProtocol] = PostgresSemester.reads
+
+  override protected val abstractDao: AbstractDao[SemesterTable, SemesterDb, PostgresSemester] = semesterService
+
+  override protected def idTableFilter(id: String): TableFilter[SemesterTable] = SemesterIdFilter(id)
+
+  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
+    import controllers.SemesterControllerPostgres._
+
+    (appendTo, (attribute, values)) match {
+      case (list, (`labelAttribute`, labels)) => list.map(_.+:(SemesterLabelFilter(labels.head)))
+      case (list, (`abbreviationAttribute`, abbrevs)) => list.map(_.+:(SemesterAbbreviationFilter(abbrevs.head)))
+      case (list, (`startAttribute`, starts)) => list.map(_.+:(SemesterStartFilter(starts.head)))
+      case (list, (`endAttribute`, ends)) => list.map(_.+:(SemesterEndFilter(ends.head)))
+      case (list, (`selectAttribute`, current)) if current.head == currentValue => list.map(_.+:(SemesterCurrentFilter(LocalDate.now.toString)))
+      case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${other.head}"))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
+
+  override protected def toLwmModel(dbModel: SemesterDb): PostgresSemester = dbModel.toSemester
 }
