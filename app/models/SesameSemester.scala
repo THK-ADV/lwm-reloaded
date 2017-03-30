@@ -1,6 +1,6 @@
 package models
 
-import java.sql.Date
+import java.sql.{Date, Timestamp}
 import java.util.UUID
 
 import controllers.JsonSerialisation
@@ -42,7 +42,7 @@ object SesameSemester extends UriGenerator[SesameSemester] with JsonSerialisatio
 
 case class PostgresSemester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID = SesameSemester.randomUUID) extends UniqueEntity
 
-case class SemesterDb(label: String, abbreviation: String, start: Date, end: Date, examStart: Date, invalidated: Option[DateTime] = None, id: UUID = SesameSemester.randomUUID) extends UniqueEntity {
+case class SemesterDb(label: String, abbreviation: String, start: Date, end: Date, examStart: Date, invalidated: Option[Timestamp] = None, id: UUID = SesameSemester.randomUUID) extends UniqueEntity {
   import models.LwmDateTime._
 
   def toSemester = PostgresSemester(label, abbreviation, start.localDate, end.localDate, examStart.localDate, id)

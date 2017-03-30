@@ -1,5 +1,6 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import controllers.JsonSerialisation
@@ -31,7 +32,7 @@ sealed trait Authority extends UniqueEntity
 
 case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends Authority
 
-case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity {
+case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[Timestamp] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity {
   def toAuthority = PostgresAuthority(user, role, course, id)
 }
 

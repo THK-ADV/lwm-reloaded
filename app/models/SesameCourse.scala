@@ -1,5 +1,6 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import controllers.JsonSerialisation
@@ -47,7 +48,7 @@ case class PostgresCourseProtocol(label: String, description: String, abbreviati
 
 case class PostgresCourseAtom(label: String, description: String, abbreviation: String, lecturer: User, semesterIndex: Int, id: UUID) extends Course
 
-case class CourseDb(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[DateTime] = None, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity {
+case class CourseDb(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[Timestamp] = None, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity {
   def toCourse = PostgresCourse(label, description, abbreviation, lecturer, semesterIndex, id)
 }
 

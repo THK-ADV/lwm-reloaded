@@ -9,6 +9,7 @@ import store.{PostgresDatabase, SemesterTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
+import models.LwmDateTime.DateTimeConverter
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -39,9 +40,15 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
-  override protected def setInvalidated(entity: SemesterDb): SemesterDb = {
-    SemesterDb(entity.label, entity.abbreviation, entity.start, entity.end, entity.examStart, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: SemesterDb): SemesterDb = SemesterDb(
+    entity.label,
+    entity.abbreviation,
+    entity.start,
+    entity.end,
+    entity.examStart,
+    Some(DateTime.now.timestamp),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
     (existing.abbreviation != toUpdate.abbreviation ||

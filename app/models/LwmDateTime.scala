@@ -1,6 +1,6 @@
 package models
 
-import java.sql.Date
+import java.sql.{Date, Timestamp}
 
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
@@ -12,8 +12,16 @@ object LwmDateTime {
     def sqlDate: Date = LwmDateTime.toDate(date)
   }
 
+  implicit class DateTimeConverter(val date: DateTime) {
+    def timestamp: Timestamp= new Timestamp(date.getMillis)
+  }
+
   implicit class SqlDateConverter(val date: Date) {
     def localDate: LocalDate = LwmDateTime.toLocalDate(date)
+  }
+
+  implicit class SqlTimestampConverter(val timestamp: Timestamp) {
+    def dateTime: DateTime = new DateTime(timestamp.getTime)
   }
 
   lazy val pattern = "yyyy-MM-dd'T'HH:mm"

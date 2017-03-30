@@ -1,5 +1,6 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import controllers.JsonSerialisation
@@ -27,7 +28,7 @@ sealed trait Role extends UniqueEntity
 
 case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
 
-case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toRole = PostgresRole(label, permissions, id)
 }
 
@@ -35,7 +36,7 @@ case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
 case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
 
-case class RolePermission(role: UUID, permission: UUID, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class RolePermission(role: UUID, permission: UUID, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 object Role {
 
@@ -67,15 +68,6 @@ object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole
   override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
 
   override implicit def writesAtom: Writes[PostgresRoleAtom] = PostgresRoleAtom.writesAtom
-}
-
-object RolePermission extends JsonSerialisation[RolePermission, RolePermission, RolePermission] {
-
-  override implicit def reads: Reads[RolePermission] = Json.reads[RolePermission]
-
-  override implicit def writes: Writes[RolePermission] = Json.writes[RolePermission]
-
-  override implicit def writesAtom: Writes[RolePermission] = writes
 }
 
 object PostgresRoleAtom {

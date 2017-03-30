@@ -6,6 +6,7 @@ import store.{PermissionTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
+import models.LwmDateTime.DateTimeConverter
 
 case class PermissionValueFilter(value: String) extends TableFilter[PermissionTable] {
   override def predicate = _.value.toLowerCase === value.toLowerCase
@@ -16,9 +17,12 @@ trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, Postg
 
   override val tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
 
-  override protected def setInvalidated(entity: PermissionDb): PermissionDb = {
-    PermissionDb(entity.value, entity.description, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: PermissionDb): PermissionDb = PermissionDb(
+    entity.value,
+    entity.description,
+    Some(DateTime.now.timestamp),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: PermissionDb, toUpdate: PermissionDb): Boolean = {
     existing.description != toUpdate.description && existing.value == toUpdate.value

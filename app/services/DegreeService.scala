@@ -1,5 +1,6 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.{DegreeDb, PostgresDegree}
@@ -33,9 +34,12 @@ trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def setInvalidated(entity: DegreeDb): DegreeDb = {
-    DegreeDb(entity.label, entity.abbreviation, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: DegreeDb): DegreeDb = DegreeDb(
+    entity.label,
+    entity.abbreviation,
+    Some(new Timestamp(System.currentTimeMillis)),
+    entity.id
+  )
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
 

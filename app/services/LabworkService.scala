@@ -1,10 +1,11 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{CourseTable, LabworkTable, PostgresDatabase, TableFilter}
+import store.{LabworkTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
@@ -38,7 +39,7 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
     entity.degree,
     entity.subscribable,
     entity.published,
-    Some(DateTime.now),
+    Some(new Timestamp(System.currentTimeMillis)),
     entity.id
   )
 

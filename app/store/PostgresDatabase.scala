@@ -3,23 +3,14 @@ package store
 import java.util.UUID
 
 import models._
-import org.joda.time.{DateTime}
 import org.joda.time.format.ISODateTimeFormat
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Timestamp}
 
 trait UniqueTable { self: Table[_] =>
-  implicit val jodaDateTime = MappedColumnType.base[DateTime, Timestamp](
-    dateTime => new Timestamp(dateTime.getMillis),
-    timestamp => new DateTime(timestamp.getTime)
-  )
-
-  //implicit val jodaDateTime = MappedColumnType.base[DateTime, String](ISODateTimeFormat.dateTime.print, DateTime.parse)
-  //implicit val jodaLocalDate = MappedColumnType.base[LocalDate, String](d => d.toString, LocalDate.parse) // LocalDate.toString formats to ISO8601 (yyyy-MM-dd)
-
   def id = column[UUID]("ID", O.PrimaryKey)
-  def invalidated = column[Option[DateTime]]("INVALIDATED")
+  def invalidated = column[Option[Timestamp]]("INVALIDATED")
 
   def isValid: Rep[Boolean] = invalidated.isEmpty
 }
@@ -131,15 +122,15 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
 
 class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkTableId {
   def applicant = column[UUID]("APPLICANT")
-  def timestamp = column[DateTime]("TIMESTAMP")
+  def timestamp = column[Timestamp]("TIMESTAMP")
 
   override def * = (labwork, applicant, timestamp, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((UUID, UUID, DateTime, Option[DateTime], UUID)) => LabworkApplicationDb = {
+  def mapRow: ((UUID, UUID, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
     case (labwork, applicant, timestamp, invalidated, id) => LabworkApplicationDb(labwork, applicant, Set.empty, timestamp, invalidated, id)
   }
 
-  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, DateTime, Option[DateTime], UUID)] = {
+  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Option[Timestamp], UUID)] = {
     lapp => Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.invalidated, lapp.id))
   }
 
@@ -169,11 +160,11 @@ class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFr
 class RoleTable(tag: Tag) extends Table[RoleDb](tag, "ROLES") with UniqueTable with LabelTable {
   override def * = (label, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((String, Option[DateTime], UUID)) => RoleDb = {
+  def mapRow: ((String, Option[Timestamp], UUID)) => RoleDb = {
     case (label, invalidated, id) => RoleDb(label, Set.empty, invalidated, id)
   }
 
-  def unmapRow: (RoleDb) => Option[(String, Option[DateTime], UUID)] = {
+  def unmapRow: (RoleDb) => Option[(String, Option[Timestamp], UUID)] = {
     role => Option((role.label, role.invalidated, role.id))
   }
 

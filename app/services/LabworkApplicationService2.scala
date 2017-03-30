@@ -1,12 +1,13 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
 import store._
 import slick.driver.PostgresDriver.api._
-
+import models.LwmDateTime._
 import scala.concurrent.Future
 
 case class ApplicantFilter(value: String) extends TableFilter[LabworkApplicationTable] {
@@ -20,9 +21,14 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 
   protected def labworkApplicationFriendService: LabworkApplicationFriendService
 
-  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
-    LabworkApplicationDb(entity.labwork, entity.applicant, entity.friends, entity.timestamp, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = LabworkApplicationDb(
+    entity.labwork,
+    entity.applicant,
+    entity.friends,
+    entity.timestamp,
+    Some(DateTime.now.timestamp),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = ???
 
@@ -40,13 +46,14 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
       val labworkAtom = PostgresLabworkAtom(labwork.label, labwork.description, semester.toSemester, courseAtom, degree.toDegree, labwork.subscribable, labwork.published, labwork.id)
       val friends = foreigners.map(_._2.toUser)
 
-      PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.toSet, lapp.timestamp, lapp.id)
+      PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
-    case (lapp, foreigners) => PostgresLabworkApplication(lapp.labwork, lapp.applicant, foreigners.map(_._2.id).toSet, lapp.timestamp, lapp.id)
+    case (lapp, foreigners) => PostgresLabworkApplication(lapp.labwork, lapp.applicant, foreigners.map(_._2.id).toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
+  // TODO maybe we can use dedicated queries instead of massive querying... just like user's buddy request
   private def joinFriends(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])(build: (LabworkApplicationDb, Seq[(LabworkApplicationDb, DbUser, DbUser, LabworkDb, (CourseDb, DegreeDb, SemesterDb, DbUser))]) => LabworkApplication) = {
     val fullJoin = for {
       q <- query
@@ -89,9 +96,12 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
-  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = {
-    LabworkApplicationFriend(entity.labworkApplication, entity.friend, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = LabworkApplicationFriend(
+    entity.labworkApplication,
+    entity.friend,
+    Some(DateTime.now.timestamp),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: LabworkApplicationFriend, toUpdate: LabworkApplicationFriend): Boolean = ???
 

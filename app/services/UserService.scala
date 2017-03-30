@@ -9,6 +9,7 @@ import store.{PostgresDatabase, TableFilter, UserTable}
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
+import models.LwmDateTime.DateTimeConverter
 
 sealed trait BuddyResult
 case object Allowed extends BuddyResult
@@ -44,9 +45,17 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
-  override protected def setInvalidated(entity: DbUser): DbUser = {
-    DbUser(entity.systemId, entity.lastname, entity.firstname, entity.email, entity.status, entity.registrationId, entity.enrollment, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: DbUser): DbUser = DbUser(
+    entity.systemId,
+    entity.lastname,
+    entity.firstname,
+    entity.email,
+    entity.status,
+    entity.registrationId,
+    entity.enrollment,
+    Some(DateTime.now.timestamp),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||

@@ -1,8 +1,8 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
-import org.joda.time.DateTime
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 
 trait User extends UniqueEntity {
@@ -46,7 +46,7 @@ object User extends UriGenerator[User] {
   implicit def reads: Reads[UserProtocol] = Json.reads[UserProtocol]
 }
 
-case class DbUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[UUID], invalidated: Option[DateTime], id: UUID) extends UniqueEntity {
+case class DbUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[UUID], invalidated: Option[Timestamp], id: UUID) extends UniqueEntity {
 
   def toUser: User = this match {
     case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), _, studentId) if stat == User.StudentType =>

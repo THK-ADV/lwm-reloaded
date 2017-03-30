@@ -1,5 +1,7 @@
 package services
 
+import java.sql.Timestamp
+
 import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase, TableFilter}
@@ -8,7 +10,7 @@ import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
 case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
-  override def predicate = _.label.toLowerCase === value.toLowerCase
+  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
 case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTable] {
@@ -31,9 +33,15 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def setInvalidated(entity: CourseDb): CourseDb = {
-    CourseDb(entity.label, entity.description, entity.abbreviation, entity.lecturer, entity.semesterIndex, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: CourseDb): CourseDb = CourseDb(
+    entity.label,
+    entity.description,
+    entity.abbreviation,
+    entity.lecturer,
+    entity.semesterIndex,
+    Some(new Timestamp(System.currentTimeMillis)),
+    entity.id
+  )
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     val joinedQuery = for {

@@ -1,5 +1,6 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models._
@@ -29,9 +30,13 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = {
-    AuthorityDb(entity.user, entity.role, entity.course, Some(DateTime.now), entity.id)
-  }
+  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = AuthorityDb(
+    entity.user,
+    entity.role,
+    entity.course,
+    Some(new Timestamp(System.currentTimeMillis)),
+    entity.id
+  )
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = false
 
