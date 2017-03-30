@@ -40,15 +40,20 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
-  override protected def setInvalidated(entity: SemesterDb): SemesterDb = SemesterDb(
-    entity.label,
-    entity.abbreviation,
-    entity.start,
-    entity.end,
-    entity.examStart,
-    Some(DateTime.now.timestamp),
-    entity.id
-  )
+  override protected def setInvalidated(entity: SemesterDb): SemesterDb = {
+    val now = DateTime.now.timestamp
+
+    SemesterDb(
+      entity.label,
+      entity.abbreviation,
+      entity.start,
+      entity.end,
+      entity.examStart,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
     (existing.abbreviation != toUpdate.abbreviation ||

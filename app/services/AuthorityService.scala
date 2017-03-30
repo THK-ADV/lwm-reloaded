@@ -5,8 +5,8 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
+import models.LwmDateTime.DateTimeConverter
 import store._
-
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
@@ -30,13 +30,18 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = AuthorityDb(
-    entity.user,
-    entity.role,
-    entity.course,
-    Some(new Timestamp(System.currentTimeMillis)),
-    entity.id
-  )
+  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = {
+    val now = DateTime.now.timestamp
+
+    AuthorityDb(
+      entity.user,
+      entity.role,
+      entity.course,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = false
 
@@ -72,7 +77,7 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     for {
       role <- roleService.byUserStatus(dbUser.status)
       created <- role.fold[Future[AuthorityDb]](Future.failed(new Throwable(s"No appropriate Role found while resolving user $dbUser"))) { role =>
-        val authority = AuthorityDb(dbUser.id, role.id, None, None, UUID.randomUUID)
+        val authority = AuthorityDb(dbUser.id, role.id)
         create(authority)
       }
     } yield PostgresAuthorityAtom(dbUser.toUser, role.map(Role.toRole).get, None, created.id)

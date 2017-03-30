@@ -8,6 +8,7 @@ import org.joda.time.DateTime
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax._
 import utils.Ops.JsPathX
+import models.LwmDateTime.DateTimeConverter
 
 /**
   * Structure abstracting over a set of unary `Permission`s.
@@ -28,7 +29,7 @@ sealed trait Role extends UniqueEntity
 
 case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
 
-case class RoleDb(label: String, permissions: Set[UUID], invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+case class RoleDb(label: String, permissions: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toRole = PostgresRole(label, permissions, id)
 }
 
@@ -36,7 +37,7 @@ case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
 case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
 
-case class RolePermission(role: UUID, permission: UUID, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class RolePermission(role: UUID, permission: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 object Role {
 

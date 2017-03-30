@@ -3,16 +3,24 @@ package store
 import java.util.UUID
 
 import models._
-import org.joda.time.format.ISODateTimeFormat
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Timestamp}
 
+import org.joda.time.DateTime
+
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
   def invalidated = column[Option[Timestamp]]("INVALIDATED")
+  def lastModified = column[Timestamp]("LAST_MODIFIED")
 
-  def isValid: Rep[Boolean] = invalidated.isEmpty
+  final def isValid: Rep[Boolean] = invalidated.isEmpty
+
+  final def lastModifiedSince(date: DateTime): Rep[Boolean] = {
+    import models.LwmDateTime.DateTimeConverter
+
+    lastModified >= date.timestamp
+  }
 }
 
 trait LabworkTableId { self: Table[_] =>
@@ -54,14 +62,14 @@ class UserTable(tag: Tag) extends Table[DbUser](tag, "USERS") with UniqueTable {
 
   //def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
 
-  override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, invalidated, id) <> ((DbUser.apply _).tupled, DbUser.unapply)
+  override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) <> ((DbUser.apply _).tupled, DbUser.unapply)
 }
 
 class DegreeTable(tag: Tag) extends Table[DegreeDb](tag, "DEGREES") with UniqueTable with LabelTable with AbbreviationTable {
 
   def labworks =  TableQuery[LabworkTable].filter(_.degree === id)
 
-  override def * = (label, abbreviation, invalidated, id) <> ((DegreeDb.apply _).tupled, DegreeDb.unapply)
+  override def * = (label, abbreviation, lastModified, invalidated, id) <> ((DegreeDb.apply _).tupled, DegreeDb.unapply)
 }
 
 class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") with UniqueTable {
@@ -73,14 +81,14 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
   def courseFk = foreignKey("COURSES_fkey", course, TableQuery[CourseTable])(_.id.?)
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
 
-  override def * = (user, role, course, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)
+  override def * = (user, role, course, lastModified, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)
 }
 class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with UniqueTable with LabelTable with AbbreviationTable {
   def start = column[Date]("START")
   def end = column[Date]("END")
   def examStart = column[Date]("EXAM_START")
 
-  override def * = (label, abbreviation, start, end, examStart, invalidated, id) <> ((SemesterDb.apply _).tupled, SemesterDb.unapply)
+  override def * = (label, abbreviation, start, end, examStart, lastModified, invalidated, id) <> ((SemesterDb.apply _).tupled, SemesterDb.unapply)
 }
 
 class CourseTable(tag: Tag) extends Table[CourseDb](tag, "COURSES") with UniqueTable with LabelTable with DescriptionTable with AbbreviationTable {
@@ -91,7 +99,7 @@ class CourseTable(tag: Tag) extends Table[CourseDb](tag, "COURSES") with UniqueT
 
   def joinLecturer = TableQuery[UserTable].filter(_.id === lecturer)
 
-  override def * = (label, description, abbreviation, lecturer, semesterIndex, invalidated, id) <> ((CourseDb.apply _).tupled, CourseDb.unapply)
+  override def * = (label, description, abbreviation, lecturer, semesterIndex, lastModified, invalidated, id) <> ((CourseDb.apply _).tupled, CourseDb.unapply)
 }
 
 class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with UniqueTable with LabelTable with DescriptionTable {
@@ -117,21 +125,21 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
     } yield (c, d, s)
   }
 
-  override def * = (label, description, semester, course, degree, subscribable, published, invalidated, id) <> ((LabworkDb.apply _).tupled, LabworkDb.unapply)
+  override def * = (label, description, semester, course, degree, subscribable, published, lastModified, invalidated, id) <> ((LabworkDb.apply _).tupled, LabworkDb.unapply)
 }
 
 class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkTableId {
   def applicant = column[UUID]("APPLICANT")
   def timestamp = column[Timestamp]("TIMESTAMP")
 
-  override def * = (labwork, applicant, timestamp, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (labwork, applicant, timestamp, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((UUID, UUID, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
-    case (labwork, applicant, timestamp, invalidated, id) => LabworkApplicationDb(labwork, applicant, Set.empty, timestamp, invalidated, id)
+  def mapRow: ((UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
+    case (labwork, applicant, timestamp, lastModified, invalidated, id) => LabworkApplicationDb(labwork, applicant, Set.empty, timestamp, lastModified, invalidated, id)
   }
 
-  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Option[Timestamp], UUID)] = {
-    lapp => Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.invalidated, lapp.id))
+  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)] = {
+    lapp => Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
   private def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
@@ -154,18 +162,18 @@ class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFr
   def labworkApplicationFk = foreignKey("LABWORKAPPLICATIONS_fkey", labworkApplication, TableQuery[LabworkApplicationTable])(_.id)
   def friendFk = foreignKey("USERS_fkey", friend, TableQuery[UserTable])(_.id)
 
-  override def * = (labworkApplication, friend, invalidated, id) <> ((LabworkApplicationFriend.apply _).tupled, LabworkApplicationFriend.unapply)
+  override def * = (labworkApplication, friend, lastModified, invalidated, id) <> ((LabworkApplicationFriend.apply _).tupled, LabworkApplicationFriend.unapply)
 }
 
 class RoleTable(tag: Tag) extends Table[RoleDb](tag, "ROLES") with UniqueTable with LabelTable {
-  override def * = (label, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (label, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((String, Option[Timestamp], UUID)) => RoleDb = {
-    case (label, invalidated, id) => RoleDb(label, Set.empty, invalidated, id)
+  def mapRow: ((String, Timestamp, Option[Timestamp], UUID)) => RoleDb = {
+    case (label, lastModified, invalidated, id) => RoleDb(label, Set.empty, lastModified, invalidated, id)
   }
 
-  def unmapRow: (RoleDb) => Option[(String, Option[Timestamp], UUID)] = {
-    role => Option((role.label, role.invalidated, role.id))
+  def unmapRow: (RoleDb) => Option[(String, Timestamp, Option[Timestamp], UUID)] = {
+    role => Option((role.label, role.lastModified, role.invalidated, role.id))
   }
 
   def isLabel(label: String): Rep[Boolean] = this.label === label
@@ -176,7 +184,7 @@ class RoleTable(tag: Tag) extends Table[RoleDb](tag, "ROLES") with UniqueTable w
 class PermissionTable(tag: Tag) extends Table[PermissionDb](tag, "PERMISSIONS") with UniqueTable with DescriptionTable {
   def value = column[String]("VALUE")
 
-  override def * = (value, description, invalidated, id) <> ((PermissionDb.apply _).tupled, PermissionDb.unapply)
+  override def * = (value, description, lastModified, invalidated, id) <> ((PermissionDb.apply _).tupled, PermissionDb.unapply)
 }
 
 class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PERMISSION") with UniqueTable {
@@ -186,5 +194,5 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
   def permissionFk = foreignKey("PERMISSIONS_fkey", permission, TableQuery[PermissionTable])(_.id)
 
-  override def * = (role, permission, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+  override def * = (role, permission, lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
 }

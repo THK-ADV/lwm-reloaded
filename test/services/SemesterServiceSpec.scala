@@ -36,11 +36,11 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
   }
 
   override protected val invalidUpdateOfEntity: SemesterDb = {
-    SemesterDb(entity.label, "abbrev update", entity.end, entity.start, entity.examStart, entity.invalidated, entity.id)
+    SemesterDb(entity.label, "abbrev update", entity.end, entity.start, entity.examStart, lastModified, entity.invalidated, entity.id)
   }
 
   override protected val validUpdateOnEntity: SemesterDb = {
-    SemesterDb(entity.label, "abbrev update", entity.start, entity.end, entity.examStart, entity.invalidated, entity.id)
+    SemesterDb(entity.label, "abbrev update", entity.start, entity.end, entity.examStart, lastModified, entity.invalidated, entity.id)
   }
 
   override protected val entities: List[SemesterDb] = {

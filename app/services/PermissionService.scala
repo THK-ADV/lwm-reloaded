@@ -17,12 +17,17 @@ trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, Postg
 
   override val tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
 
-  override protected def setInvalidated(entity: PermissionDb): PermissionDb = PermissionDb(
-    entity.value,
-    entity.description,
-    Some(DateTime.now.timestamp),
-    entity.id
-  )
+  override protected def setInvalidated(entity: PermissionDb): PermissionDb = {
+    val now = DateTime.now.timestamp
+
+    PermissionDb(
+      entity.value,
+      entity.description,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: PermissionDb, toUpdate: PermissionDb): Boolean = {
     existing.description != toUpdate.description && existing.value == toUpdate.value

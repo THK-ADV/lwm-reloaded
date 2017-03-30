@@ -7,6 +7,7 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import models.LwmDateTime.DateTimeConverter
 
 /**
   * Structure linking a user to his/her respective authority in the system.
@@ -30,9 +31,9 @@ case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[Sesa
 
 sealed trait Authority extends UniqueEntity
 
-case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = PostgresAuthority.randomUUID) extends Authority
+case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends Authority
 
-case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[Timestamp] = None, id: UUID = PostgresAuthority.randomUUID) extends UniqueEntity {
+case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toAuthority = PostgresAuthority(user, role, course, id)
 }
 
@@ -65,8 +66,6 @@ object SesameAuthorityAtom {
 }
 
 object PostgresAuthority extends JsonSerialisation[PostgresAuthorityProtocol, PostgresAuthority, PostgresAuthorityAtom] {
-
-  def randomUUID: UUID = UUID.randomUUID
 
   override implicit def reads = Json.reads[PostgresAuthorityProtocol]
 

@@ -15,11 +15,11 @@ final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Pos
 
   override protected val entity: DegreeDb = DegreeDb("label", "abbrev")
 
-  override protected val invalidDuplicateOfEntity: DegreeDb = DegreeDb(entity.label, entity.abbreviation, entity.invalidated, entity.id)
+  override protected val invalidDuplicateOfEntity: DegreeDb = DegreeDb(entity.label, entity.abbreviation, lastModified, entity.invalidated, entity.id)
 
-  override protected val invalidUpdateOfEntity: DegreeDb = DegreeDb("new label", "new abbrev", entity.invalidated, entity.id)
+  override protected val invalidUpdateOfEntity: DegreeDb = DegreeDb("new label", "new abbrev", lastModified, entity.invalidated, entity.id)
 
-  override protected val validUpdateOnEntity: DegreeDb = DegreeDb("new label", entity.abbreviation, entity.invalidated, entity.id)
+  override protected val validUpdateOnEntity: DegreeDb = DegreeDb("new label", entity.abbreviation, lastModified, entity.invalidated, entity.id)
 
   override protected val entities: List[DegreeDb] = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
 }

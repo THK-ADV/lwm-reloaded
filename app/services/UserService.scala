@@ -45,17 +45,22 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
-  override protected def setInvalidated(entity: DbUser): DbUser = DbUser(
-    entity.systemId,
-    entity.lastname,
-    entity.firstname,
-    entity.email,
-    entity.status,
-    entity.registrationId,
-    entity.enrollment,
-    Some(DateTime.now.timestamp),
-    entity.id
-  )
+  override protected def setInvalidated(entity: DbUser): DbUser = {
+    val now = DateTime.now.timestamp
+
+    DbUser(
+      entity.systemId,
+      entity.lastname,
+      entity.firstname,
+      entity.email,
+      entity.status,
+      entity.registrationId,
+      entity.enrollment,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||
@@ -85,7 +90,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
       degrees <- degreeService.get()
       existing <- get(List(UserSystemIdFilter(ldapUser.systemId)), atomic = false)
       maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
-      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, None, existing.headOption.fold(ldapUser.id)(_.id))
+      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, DateTime.now.timestamp, None, existing.headOption.fold(ldapUser.id)(_.id))
       updated <- createOrUpdate(dbUser)
       maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).map(Some(_)))
     } yield (dbUser.toUser, maybeAuth)

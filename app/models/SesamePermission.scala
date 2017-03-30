@@ -6,6 +6,7 @@ import java.util.UUID
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
+import models.LwmDateTime.DateTimeConverter
 
 /**
   * A unary permission.
@@ -28,7 +29,7 @@ object SesamePermission extends JsonSerialisation[SesamePermission, SesamePermis
 
 case class PostgresPermission(value: String, description: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class PermissionDb(value: String, description: String, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+case class PermissionDb(value: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toPermission = PostgresPermission(value, description, id)
 }
 

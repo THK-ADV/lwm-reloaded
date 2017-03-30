@@ -8,6 +8,7 @@ import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
+import models.LwmDateTime._
 
 case class SesameLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = SesameLabworkApplication.randomUUID) extends UniqueEntity {
 
@@ -59,13 +60,11 @@ case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: S
 
 case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = new Timestamp(System.currentTimeMillis), invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends LabworkApplication {
-  import models.LwmDateTime._
-
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends LabworkApplication {
   def toLabworkApplication = PostgresLabworkApplication(labwork, applicant, friends, timestamp.dateTime, id)
 }
 
-case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, invalidated: Option[Timestamp], id: UUID) extends UniqueEntity
+case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 object PostgresLabworkApplication extends JsonSerialisation[SesameLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
   override implicit def reads: Reads[SesameLabworkApplicationProtocol] = Json.reads[SesameLabworkApplicationProtocol]

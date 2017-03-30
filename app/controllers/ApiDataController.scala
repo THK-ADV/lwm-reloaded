@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import models._
-import org.joda.time.Interval
+import org.joda.time.{DateTime, Interval}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import services._
@@ -69,12 +69,18 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameStudents <- Future.fromTry(repository.getAll[SesameStudent])
       _ = println(s"sesameStudents ${sesameStudents.size}")
       sesameEmployees <- Future.fromTry(repository.getAll[SesameEmployee]).map(_.map {
-        case na if na.status == "n.a" => SesameEmployee(na.systemId, na.lastname, na.firstname, na.email, User.EmployeeType, None, na.id)
-        case employee => employee
+        case na if na.status == "n.a" =>
+          SesameEmployee(na.systemId, na.lastname, na.firstname, na.email, User.EmployeeType, None, na.id)
+        case employee =>
+          employee
       })
       _ = println(s"sesameEmployees ${sesameEmployees.size}")
-      postgresStudents = sesameStudents.map(s => DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), None, s.id))
-      postgresEmployees = sesameEmployees.map(e => DbUser(e.systemId, e.lastname, e.firstname, e.email, e.status, None, None, None, e.id))
+      postgresStudents = sesameStudents.map(s =>
+        DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), DateTime.now.timestamp, None, s.id)
+      )
+      postgresEmployees = sesameEmployees.map(e =>
+        DbUser(e.systemId, e.lastname, e.firstname, e.email, e.status, None, None, DateTime.now.timestamp, None, e.id)
+      )
       dbUsers = postgresStudents ++ postgresEmployees
       _ = println(s"dbUsers ${dbUsers.size}")
       users <- UserService.createMany(dbUsers.toList)
@@ -97,7 +103,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ <- DegreeService.createSchema
       sesameDegrees <- Future.fromTry(repository.getAll[SesameDegree])
       _ = println(s"sesameDegrees ${sesameDegrees.size}")
-      postgresDegrees = sesameDegrees.map(s => DegreeDb(s.label, s.abbreviation, s.invalidated.map(_.timestamp), s.id))
+      postgresDegrees = sesameDegrees.map(s => DegreeDb(s.label, s.abbreviation, DateTime.now.timestamp, s.invalidated.map(_.timestamp), s.id))
       _ = println(s"postgresDegrees ${postgresDegrees.size}")
       degrees <- DegreeService.createMany(postgresDegrees.toList)
     } yield degrees.map(_.toDegree)
@@ -142,7 +148,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"postgresPermissions ${postgresPermissions.size}")
       postgresRoles = sesameRoles.map{ r =>
         val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
-        RoleDb(r.label, perms.toSet, r.invalidated.map(_.timestamp), r.id)
+        RoleDb(r.label, perms.toSet, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
       }
       result <- RoleService2.createManyWithPermissions(postgresRoles.toList)
       foo = result.map {
@@ -171,7 +177,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameSemesters <- Future.fromTry(repository.getAll[SesameSemester])
       _ = println(s"sesameSemesters ${sesameSemesters.size}")
       semesterDbs = sesameSemesters.map(s =>
-        SemesterDb(s.label, s.abbreviation, s.start.sqlDate, s.end.sqlDate, s.examStart.sqlDate, s.invalidated.map(_.timestamp), s.id)
+        SemesterDb(s.label, s.abbreviation, s.start.sqlDate, s.end.sqlDate, s.examStart.sqlDate, DateTime.now.timestamp, s.invalidated.map(_.timestamp), s.id)
       )
       _ = println(s"semesterDbs ${semesterDbs.size}")
       semester <- SemesterService.createMany(semesterDbs.toList)
@@ -189,7 +195,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameCourses <- Future.fromTry(repository.getAll[SesameCourse])
       _ = println(s"sesameCourses ${sesameCourses.size}")
       coursesDbs = sesameCourses.map(c =>
-        CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, c.invalidated.map(_.timestamp), c.id)
+        CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, DateTime.now.timestamp, c.invalidated.map(_.timestamp), c.id)
       )
       _ = println(s"coursesDbs ${coursesDbs.size}")
       courses <- CourseService.createMany(coursesDbs.toList)
@@ -207,7 +213,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameLabworks <- Future.fromTry(repository.getAll[SesameLabwork])
       _ = println(s"sesameLabworks ${sesameLabworks.size}")
       labworkDbs = sesameLabworks.map(l =>
-        LabworkDb(l.label, l.description, l.semester, l.course, l.degree, l.subscribable, l.published, l.invalidated.map(_.timestamp), l.id)
+        LabworkDb(l.label, l.description, l.semester, l.course, l.degree, l.subscribable, l.published, DateTime.now.timestamp, l.invalidated.map(_.timestamp), l.id)
       )
       _ = println(s"labworkDbs ${labworkDbs.size}")
       labworks <- LabworkService.createMany(labworkDbs.toList)
@@ -226,7 +232,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameLapps <- Future.fromTry(repository.getAll[SesameLabworkApplication])
       _ = println(s"sesameLapps ${sesameLapps.size}")
       lappDbs = sesameLapps.map(l =>
-        LabworkApplicationDb(l.labwork, l.applicant, l.friends, l.timestamp.timestamp, l.invalidated.map(_.timestamp), l.id)
+        LabworkApplicationDb(l.labwork, l.applicant, l.friends, l.timestamp.timestamp, DateTime.now.timestamp, l.invalidated.map(_.timestamp), l.id)
       )
       _ = println(s"lappDbs ${lappDbs.size}")
       lapps <- LabworkApplicationService2.createManyWithFriends(lappDbs.toList)

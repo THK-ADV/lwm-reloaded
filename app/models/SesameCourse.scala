@@ -7,6 +7,7 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import models.LwmDateTime.DateTimeConverter
 
 case class SesameCourse(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[DateTime] = None, id: UUID = SesameCourse.randomUUID) extends UniqueEntity
 
@@ -48,7 +49,7 @@ case class PostgresCourseProtocol(label: String, description: String, abbreviati
 
 case class PostgresCourseAtom(label: String, description: String, abbreviation: String, lecturer: User, semesterIndex: Int, id: UUID) extends Course
 
-case class CourseDb(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[Timestamp] = None, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity {
+case class CourseDb(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresCourse.randomUUID) extends UniqueEntity {
   def toCourse = PostgresCourse(label, description, abbreviation, lecturer, semesterIndex, id)
 }
 

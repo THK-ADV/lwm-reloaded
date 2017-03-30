@@ -21,14 +21,19 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 
   protected def labworkApplicationFriendService: LabworkApplicationFriendService
 
-  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = LabworkApplicationDb(
-    entity.labwork,
-    entity.applicant,
-    entity.friends,
-    entity.timestamp,
-    Some(DateTime.now.timestamp),
-    entity.id
-  )
+  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
+    val now = DateTime.now.timestamp
+
+    LabworkApplicationDb(
+      entity.labwork,
+      entity.applicant,
+      entity.friends,
+      entity.timestamp,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = ???
 
@@ -70,7 +75,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   final def createWithFriends(labworkApplication: LabworkApplicationDb): Future[LabworkApplicationDb] = {
     for {
       lapp <- create(labworkApplication)
-      friends = labworkApplication.friends.map(f => LabworkApplicationFriend(lapp.id, f, None, UUID.randomUUID)).toList
+      friends = labworkApplication.friends.map(f => LabworkApplicationFriend(lapp.id, f)).toList
       _ <- labworkApplicationFriendService.createMany(friends)
     } yield labworkApplication
   }
@@ -78,7 +83,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   final def createManyWithFriends(labworkApplications: List[LabworkApplicationDb]): Future[Map[PostgresLabworkApplication, Seq[LabworkApplicationFriend]]] = {
     for {
       lapps <- createMany(labworkApplications)
-      friends = labworkApplications.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f, None, UUID.randomUUID)))
+      friends = labworkApplications.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
       lafs <- labworkApplicationFriendService.createMany(friends)
     } yield lafs.groupBy(_.labworkApplication).map {
       case (lappId, lappFriends) => (lapps.find(_.id == lappId).map(_.toLabworkApplication).get, lappFriends)
@@ -96,12 +101,17 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
-  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = LabworkApplicationFriend(
-    entity.labworkApplication,
-    entity.friend,
-    Some(DateTime.now.timestamp),
-    entity.id
-  )
+  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = {
+    val now = DateTime.now.timestamp
+
+    LabworkApplicationFriend(
+      entity.labworkApplication,
+      entity.friend,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: LabworkApplicationFriend, toUpdate: LabworkApplicationFriend): Boolean = ???
 

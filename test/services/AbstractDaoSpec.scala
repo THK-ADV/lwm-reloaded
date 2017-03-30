@@ -1,5 +1,7 @@
 package services
 
+import java.sql.Timestamp
+
 import base.PostgresDbSpec
 import models.UniqueEntity
 import slick.dbio.Effect.Write
@@ -8,6 +10,13 @@ import slick.driver.PostgresDriver.api._
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
   extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
+
+  protected val lastModified: Timestamp = {
+    import models.LwmDateTime.DateTimeConverter
+    import org.joda.time.DateTime
+
+    DateTime.now.timestamp
+  }
 
   protected def name: String
   protected def entity: DbModel

@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase, TableFilter}
-
+import models.LwmDateTime.DateTimeConverter
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
@@ -33,15 +33,20 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def setInvalidated(entity: CourseDb): CourseDb = CourseDb(
-    entity.label,
-    entity.description,
-    entity.abbreviation,
-    entity.lecturer,
-    entity.semesterIndex,
-    Some(new Timestamp(System.currentTimeMillis)),
-    entity.id
-  )
+  override protected def setInvalidated(entity: CourseDb): CourseDb = {
+    val now = DateTime.now.timestamp
+
+    CourseDb(
+      entity.label,
+      entity.description,
+      entity.abbreviation,
+      entity.lecturer,
+      entity.semesterIndex,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     val joinedQuery = for {

@@ -20,7 +20,8 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
   override protected def setInvalidated(entity: RoleDb): RoleDb = {
-    RoleDb(entity.label, entity.permissions, Some(DateTime.now.timestamp), entity.id)
+    val now = DateTime.now.timestamp
+    RoleDb(entity.label, entity.permissions, now, Some(now), entity.id)
   }
 
   override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = {
@@ -74,7 +75,8 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
   override val tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
 
   override protected def setInvalidated(entity: RolePermission): RolePermission = {
-    RolePermission(entity.role, entity.permission, Some(DateTime.now.timestamp), entity.id)
+    val now = DateTime.now.timestamp
+    RolePermission(entity.role, entity.permission, now, Some(now), entity.id)
   }
 
   override protected def existsQuery(entity: RolePermission): Query[RolePermissionTable, RolePermission, Seq] = {

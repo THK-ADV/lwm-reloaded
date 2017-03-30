@@ -7,6 +7,7 @@ import models._
 import org.joda.time.DateTime
 import store.{LabworkTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
+import models.LwmDateTime.DateTimeConverter
 
 import scala.concurrent.Future
 
@@ -31,17 +32,22 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
-  override protected def setInvalidated(entity: LabworkDb): LabworkDb = LabworkDb(
-    entity.label,
-    entity.description,
-    entity.semester,
-    entity.course,
-    entity.degree,
-    entity.subscribable,
-    entity.published,
-    Some(new Timestamp(System.currentTimeMillis)),
-    entity.id
-  )
+  override protected def setInvalidated(entity: LabworkDb): LabworkDb = {
+    val now = DateTime.now.timestamp
+
+    LabworkDb(
+      entity.label,
+      entity.description,
+      entity.semester,
+      entity.course,
+      entity.degree,
+      entity.subscribable,
+      entity.published,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
 
   override protected def shouldUpdate(existing: LabworkDb, toUpdate: LabworkDb): Boolean = {
     (existing.label != toUpdate.label ||
