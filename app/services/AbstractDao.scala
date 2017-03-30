@@ -1,5 +1,6 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
@@ -43,7 +44,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
-  protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true): Query[T, DbModel, Seq] = {
+  protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
         t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
@@ -52,11 +53,13 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       case _ => tableQuery
     }
 
-    if (validOnly) query.filter(_.isValid) else query
+    val lastModified = sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
+
+    if (validOnly) lastModified.filter(_.isValid) else lastModified
   }
 
-  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true): Future[Seq[LwmModel]] = {
-    val query = filterBy(tableFilter, validOnly)
+  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
+    val query = filterBy(tableFilter, validOnly, sinceLastModified)
 
     if (atomic) toAtomic(query) else toUniqueEntity(query)
   }

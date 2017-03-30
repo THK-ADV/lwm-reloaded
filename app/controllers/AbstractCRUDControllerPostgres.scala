@@ -1,16 +1,63 @@
 package controllers
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
-import play.api.libs.json.{Reads, Writes}
-import play.api.mvc.Controller
+import play.api.libs.json.{JsError, JsValue, Reads, Writes}
+import play.api.mvc.{Action, AnyContent, Controller, Request}
 import services.AbstractDao
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
 
+import scala.collection.Map
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
+
+trait AttributeFilter {
+  protected lazy val atomicAttribute = "atomic"
+  protected lazy val validAttribute = "valid"
+  protected lazy val lastModifiedAttribute = "lastModified"
+
+  protected case class DefaultAttributes(atomic: Boolean = true, valid: Boolean = true, lastModified: Option[String] = None)
+
+  private type QueryString = Map[String, Seq[String]]
+
+  final protected def extractAttributes(queryString: QueryString): (QueryString, DefaultAttributes) = {
+    def extractBool(seq: Seq[String], fallback: Boolean): Boolean = {
+      seq.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(fallback)(_ == true)
+    }
+
+    def extractTimestamp(seq: Seq[String]): Option[String] = {
+      seq.headOption.flatMap(s => Try(s.toLong).flatMap(l => Try(new Timestamp(l))).toOption).map(_.getTime.toString)
+    }
+
+    var atomic = true
+    var valid = true
+    var lastModified: Option[String] = None
+
+    val remaining = List(atomicAttribute, validAttribute, lastModifiedAttribute).foldLeft(queryString) {
+      case (q, at) if at == atomicAttribute =>
+        q.find(_._1 == at).fold(q) { seq =>
+          atomic = extractBool(seq._2, fallback = false)
+          q - at
+        }
+      case (q, inv) if inv == validAttribute =>
+        q.find(_._1 == inv).fold(q) { seq =>
+          valid = extractBool(seq._2, fallback = true)
+          q - inv
+        }
+      case (q, mod) if mod == lastModifiedAttribute =>
+        q.find(_._1 == mod).fold(q) { seq =>
+          lastModified = extractTimestamp(seq._2)
+          q - mod
+        }
+      case (q, _) => q
+    }
+
+    (remaining, DefaultAttributes(atomic, valid, lastModified))
+  }
+}
 
 trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
   extends Controller
@@ -19,7 +66,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     with SecureControllerContext
     with ContentTyped
     with Chunked
-    with PostgresResult {
+    with PostgresResult
+    with AttributeFilter {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,7 +81,14 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
   protected def toLwmModel(dbModel: DbModel): LwmModel
 
-  def create = contextFrom(Create) asyncContentTypedAction { request =>
+  final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
+    request.body.validate[A].fold[Try[A]](
+      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
+      success => Success(success)
+    )
+  }
+
+  def create: Action[JsValue] = contextFrom(Create) asyncContentTypedAction { request =>
     (for {
       protocol <- Future.fromTry(parse[Protocol](request))
       dbModel = toDbModel(protocol, None)
@@ -41,7 +96,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     } yield toLwmModel(created)).jsonResult
   }
 
-  def update(id: String) = contextFrom(Update) asyncContentTypedAction { request =>
+  def update(id: String): Action[JsValue] = contextFrom(Update) asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
 
     (for {
@@ -51,14 +106,14 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     } yield updated.map(toLwmModel)).jsonResult(uuid)
   }
 
-  def delete(id: String) = contextFrom(Delete) asyncAction { _ =>
+  def delete(id: String): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
     val uuid = UUID.fromString(id)
 
     abstractDao.delete(uuid).map(_.map(toLwmModel)).jsonResult(uuid)
   }
 
-  def all = contextFrom(GetAll) asyncAction { request =>
-    val (queryString, atomic) = extractAtomic(request.queryString)
+  def all: Action[AnyContent] = contextFrom(GetAll) asyncAction { request =>
+    val (queryString, defaults) = extractAttributes(request.queryString)
 
     val filter = queryString.foldLeft(Try(List.empty[TableFilter[T]])) {
       case (list, (attribute, values)) => tableFilter(attribute, values)(list)
@@ -66,12 +121,12 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
 
     (for{
       filter <- Future.fromTry(filter)
-      results <- abstractDao.get(filter, atomic)
+      results <- abstractDao.get(filter, defaults.atomic, defaults.valid, defaults.lastModified)
     } yield results).jsonResult
   }
 
-  def get(id: String) = contextFrom(Get) asyncAction { request =>
-    val atomic = extractAtomic(request.queryString)._2
+  def get(id: String): Action[AnyContent] = contextFrom(Get) asyncAction { request =>
+    val atomic = extractAttributes(request.queryString)._2.atomic
 
     abstractDao.get(List(idTableFilter(id)), atomic).map(_.headOption).jsonResult(id)
   }

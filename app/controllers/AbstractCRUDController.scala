@@ -240,34 +240,6 @@ trait PostgresResult { self: Controller =>
       case NonFatal(e) => internalServerError(e)
     }
   }
-
-  // TODO add valid/invalid and lastModified parameters
-  // TODO move to AbstractCRUDController
-  lazy val atomicAttribute = "atomic"
-
-  // TODO move to AbstractCRUDController
-  type QueryString = Map[String, Seq[String]]
-
-  // TODO move to AbstractCRUDController
-  final def extractAtomic(queryString: QueryString): (QueryString, Boolean) = {
-    queryString.find(_._1 == `atomicAttribute`) match {
-      case Some(q) =>
-        val atomic = q._2.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(false)(_ == true)
-        val remaining = queryString - `atomicAttribute`
-
-        (remaining, atomic)
-      case None =>
-        (queryString, true)
-    }
-  }
-
-  // TODO move to AbstractCRUDController
-  final def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
-    request.body.validate[A].fold[Try[A]](
-      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
-      success => Success(success)
-    )
-  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Controller
