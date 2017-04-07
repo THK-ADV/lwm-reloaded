@@ -140,7 +140,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
         LabworkApplicationDb(labwork.id, buddy.id, Set(student.id))
       )
 
-      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(labworkApplicationService.createMany(lapps)) should not be empty
       await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Allowed
     }
 
@@ -159,7 +159,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
         LabworkApplicationDb(otherLabwork.id, buddy.id, Set(student.id))
       )
 
-      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(labworkApplicationService.createMany(lapps)) should not be empty
       await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Almost
     }
   }

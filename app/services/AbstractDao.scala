@@ -29,6 +29,18 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 
+  protected def expandCreationOf(entity: DbModel, origin: DbModel): Future[DbModel] = Future.successful(origin)
+
+  protected def expandUpdateOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandDeleteOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandDeleteOf(origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandCreationOf(entities: List[DbModel], origin: Seq[DbModel]): Future[Seq[DbModel]] = Future.successful(origin)
+
+  // TODO maybe add a function which expands creation to allow database normalization
+
   final def create(entity: DbModel): Future[DbModel] = {
     val query = existsQuery(entity).result.flatMap { exists =>
       if (exists.nonEmpty)
@@ -37,10 +49,18 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         (tableQuery returning tableQuery) += entity
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandCreationOf(entity, q)
+    } yield e
   }
 
-  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
+  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = {
+    for {
+      q <- db.run((tableQuery returning tableQuery) ++= entities)
+      e <- expandCreationOf(entities, q)
+    } yield e
+  }
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
@@ -71,7 +91,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       case _ => None
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandDeleteOf(entity, q)
+    } yield e
   }
 
   final def delete(id: UUID): Future[Option[DbModel]] = {
@@ -85,7 +108,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       }
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandDeleteOf(q)
+    } yield e
   }
 
   final def update(entity: DbModel): Future[Option[DbModel]] = {
@@ -100,7 +126,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         DBIO.failed(ModelAlreadyExists(existing))
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandUpdateOf(entity, q)
+    } yield e
   }
 
   final def createSchema = db.run(tableQuery.schema.create)

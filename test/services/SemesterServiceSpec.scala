@@ -9,8 +9,8 @@ import store.SemesterTable
 
 final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterService {
   import slick.driver.PostgresDriver.api._
+  import services.AbstractDaoSpec._
 
-  val maxSemester = 10
   val now = Date.valueOf("2017-01-01")
   val tomorrow = Date.valueOf("2017-01-02")
   val exam = Date.valueOf("2017-01-03")
@@ -43,19 +43,7 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
     SemesterDb(entity.label, "abbrev update", entity.start, entity.end, entity.examStart, lastModified, entity.invalidated, entity.id)
   }
 
-  override protected val entities: List[SemesterDb] = {
-    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
-
-    (0 until maxSemester).foldLeft((List.empty[SemesterDb], template)) {
-      case ((list, t), i) =>
-        val start = new Date(t.plusDays(1).toDateTimeAtStartOfDay.getMillis)
-        val end = t.plusDays(1).plusMonths(6)
-        val exam = new Date(t.plusDays(1).plusMonths(5).toDateTimeAtStartOfDay.getMillis)
-
-        val current = SemesterDb(i.toString, i.toString, start, new Date(end.toDateTimeAtStartOfDay.getMillis), exam)
-        (list.:+(current), end)
-    }._1
-  }
+  override protected val entities: List[SemesterDb] = semesters
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 }

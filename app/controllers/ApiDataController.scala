@@ -13,6 +13,7 @@ import store.bind.Bindings
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import models.LwmDateTime._
+
 class ApiDataController(private val repository: SesameRepository) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
@@ -235,19 +236,9 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
         LabworkApplicationDb(l.labwork, l.applicant, l.friends, l.timestamp.timestamp, DateTime.now.timestamp, l.invalidated.map(_.timestamp), l.id)
       )
       _ = println(s"lappDbs ${lappDbs.size}")
-      lapps <- LabworkApplicationService2.createManyWithFriends(lappDbs.toList)
-      _ = lapps.foreach {
-        case (app, friends) => println(s"lapps ${app.id} with friends ${friends.size}")
-      }
-    } yield lapps
+      lapps <- LabworkApplicationService2.createMany(lappDbs.toList)
+    } yield lapps.map(_.toLabworkApplication)
 
-    result.jsonResult { map =>
-      Ok(Json.toJson(map.map {
-        case (lapp, friends) => Json.obj(
-          "labworkApplication" -> Json.toJson(lapp),
-          "labworkApplicationFriends" -> friends.map(_.toString)
-        )
-      }))
-    }
+    result.jsonResult
   }
 }
