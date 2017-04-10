@@ -1,11 +1,13 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import models.LwmDateTime.DateTimeConverter
 
 case class SesameLabwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, invalidated: Option[DateTime] = None, id: UUID = SesameLabwork.randomUUID) extends UniqueEntity
 
@@ -47,7 +49,7 @@ case class PostgresLabwork(label: String, description: String, semester: UUID, c
 
 case class PostgresLabworkAtom(label: String, description: String, semester: PostgresSemester, course: PostgresCourseAtom, degree: PostgresDegree, subscribable: Boolean, published: Boolean, id: UUID) extends Labwork
 
-case class LabworkDb(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
+case class LabworkDb(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toLabwork = PostgresLabwork(label, description, semester, course, degree, subscribable, published, id)
 }
 

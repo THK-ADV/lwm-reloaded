@@ -240,29 +240,6 @@ trait PostgresResult { self: Controller =>
       case NonFatal(e) => internalServerError(e)
     }
   }
-
-  lazy val atomicAttribute = "atomic"
-
-  type QueryString = Map[String, Seq[String]]
-
-  final def extractAtomic(queryString: QueryString): (QueryString, Boolean) = {
-    queryString.find(_._1 == `atomicAttribute`) match {
-      case Some(q) =>
-        val atomic = q._2.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(false)(_ == true)
-        val remaining = queryString - `atomicAttribute`
-
-        (remaining, atomic)
-      case None =>
-        (queryString, true)
-    }
-  }
-
-  final def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
-    request.body.validate[A].fold[Try[A]](
-      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
-      success => Success(success)
-    )
-  }
 }
 
 trait AbstractCRUDController[I, O <: UniqueEntity, A <: UniqueEntity] extends Controller

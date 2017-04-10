@@ -8,6 +8,7 @@ import store.{PostgresDatabase, RoomTable, TableFilter}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
+import models.LwmDateTime._
 
 case class RoomIdFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.id === UUID.fromString(value)
@@ -31,7 +32,7 @@ trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] { self: P
   }
 
   override protected def setInvalidated(entity: RoomDb): RoomDb = {
-    RoomDb(entity.label, entity.description, Some(DateTime.now), entity.id)
+    RoomDb(entity.label, entity.description, DateTime.now.timestamp, Some(DateTime.now.timestamp), entity.id)
   }
 
   override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = toUniqueEntity(query)

@@ -3,30 +3,23 @@ package controllers
 import java.util.UUID
 
 import models.Permissions.{prime, room}
-import models.{PostgresRoomProtocol, RoomDb}
+import models.{PostgresRoom, PostgresRoomProtocol, RoomDb}
+import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.Controller
 import services._
 import store.{RoomTable, TableFilter}
 import utils.LwmMimeType
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object RoomControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class RoomControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val roomService: RoomService) extends Controller
-  with Secured
-  with SessionChecking
-  with SecureControllerContext
-  with ContentTyped
-  with Chunked
-  with PostgresResult {
+final class RoomControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val roomService: RoomService) extends
+  AbstractCRUDControllerPostgres[PostgresRoomProtocol, RoomTable, RoomDb, PostgresRoom]{
 
   override implicit def mimeType = LwmMimeType.roomV1Json
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import models.PostgresRoom.{writes, reads}
 
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -35,44 +28,25 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
     case _ => PartialSecureBlock(prime)
   }
 
-  def create = contextFrom(Create) asyncContentTypedAction { request =>
-    (for {
-      protocol <- Future.fromTry(parse[PostgresRoomProtocol](request))
-      roomDb = RoomDb(protocol.label, protocol.description)
-      room <- roomService.create(roomDb)
-    } yield room.toRoom).jsonResult
-  }
+  override protected implicit def writes: Writes[PostgresRoom] = PostgresRoom.writes
 
-  def update (id: String) = contextFrom(Update) asyncContentTypedAction { request =>
-    val uuid = UUID.fromString(id)
+  override protected implicit def reads: Reads[PostgresRoomProtocol] = PostgresRoom.reads
 
-    (for {
-      protocol <- Future.fromTry(parse[PostgresRoomProtocol](request))
-      roomDb = RoomDb(protocol.label, protocol.description, None, uuid)
-      room <- roomService.update(roomDb)
-    } yield room.map(_.toRoom)).jsonResult(uuid)
-  }
+  override protected def abstractDao: AbstractDao[RoomTable, RoomDb, PostgresRoom] = roomService
 
-  def all = contextFrom(GetAll) asyncAction { request =>
-    import RoomControllerPostgres._
+  override protected def idTableFilter(id: String): TableFilter[RoomTable] = RoomIdFilter(id)
 
-    val roomFilter = request.queryString.foldLeft(Try(List.empty[TableFilter[RoomTable]])){
+  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
+    import controllers.RoomControllerPostgres._
+
+
+    (appendTo, (attribute, values)) match {
       case (list, (`labelAttribute`, label)) => list.map(_.+:(RoomLabelFilter(label.head)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
-    (for{
-      list <- Future.fromTry(roomFilter)
-      rooms <- roomService.get(list)
-    } yield rooms).jsonResult
   }
 
-  def get(id: String) = contextFrom(Get) asyncAction { _ =>
-    roomService.get(List(RoomIdFilter(id))).map(_.headOption).jsonResult(id)
-  }
+  override protected def toDbModel(protocol: PostgresRoomProtocol, existingId: Option[UUID]): RoomDb = RoomDb.from(protocol, existingId)
 
-  def delete(id: String) = contextFrom(Delete) asyncAction { _ =>
-    val uuid = UUID.fromString(id)
-
-    roomService.delete(uuid).map(_.map(_.toRoom)).jsonResult(uuid)
-  }
+  override protected def toLwmModel(dbModel: RoomDb): PostgresRoom = dbModel.toRoom
 }

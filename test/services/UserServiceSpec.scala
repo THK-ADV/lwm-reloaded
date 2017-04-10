@@ -30,7 +30,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
       val status = randomStatus
       val (regId, enrollment) = studentAttributes(status, i)
 
-      DbUser(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment, None, UUID.randomUUID)
+      DbUser(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
     }.toList
   }
 
@@ -82,8 +82,8 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
       val degree = degrees.head
       val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
       val ldapUser2 = LdapUser("systemId2", "firstname2", "lastname2", "email2", User.StudentType, Some("regId"), Some(degree.label))
-      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, None, ldapUser.id)
-      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), None, ldapUser2.id)
+      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, lastModified, None, ldapUser.id)
+      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), lastModified, None, ldapUser2.id)
 
       val (user, maybeAuth) = await(createOrUpdate(ldapUser))
       val (user2, maybeAuth2) = await(createOrUpdate(ldapUser2))
@@ -91,8 +91,8 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
       val allAuths = await(authorityService.get())
       val maybeAuths = List(maybeAuth, maybeAuth2)
 
-      user.toDbUser shouldBe dbVariation
-      user2.toDbUser shouldBe dbVariation2
+      toDbUser(user) shouldBe dbVariation
+      toDbUser(user2) shouldBe dbVariation2
       allUser.size shouldBe dbUser.size + 2
       maybeAuths.forall(_.isDefined) shouldBe true
       maybeAuths.map(_.get).forall(a => allAuths.contains(a)) shouldBe true
@@ -104,15 +104,15 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
       val degree = chosenStudent.enrollment.flatMap(current => degrees.find(_.id == current))
 
       val ldapEmployee = LdapUser(chosenEmployee.systemId, "updateFirst", "updateLast", chosenEmployee.email, chosenEmployee.status, None, None)
-      val dbEmployee = DbUser(ldapEmployee.systemId, ldapEmployee.lastname, ldapEmployee.firstname, ldapEmployee.email, ldapEmployee.status, None, None, None, chosenEmployee.id)
+      val dbEmployee = DbUser(ldapEmployee.systemId, ldapEmployee.lastname, ldapEmployee.firstname, ldapEmployee.email, ldapEmployee.status, None, None, lastModified, None, chosenEmployee.id)
       val ldapStudent = LdapUser(chosenStudent.systemId, "updateFirst2", chosenStudent.lastname, "updateEmail", chosenStudent.status, chosenStudent.registrationId, degree.map(_.abbreviation))
-      val dbStudent = DbUser(ldapStudent.systemId, ldapStudent.lastname, ldapStudent.firstname, ldapStudent.email, ldapStudent.status, ldapStudent.registrationId, degree.map(_.id), None, chosenStudent.id)
+      val dbStudent = DbUser(ldapStudent.systemId, ldapStudent.lastname, ldapStudent.firstname, ldapStudent.email, ldapStudent.status, ldapStudent.registrationId, degree.map(_.id), lastModified, None, chosenStudent.id)
 
       val (employee, maybeAuth) = await(createOrUpdate(ldapEmployee))
       val (student, maybeAuth2) = await(createOrUpdate(ldapStudent))
 
-      employee.toDbUser shouldBe dbEmployee
-      student.toDbUser shouldBe dbStudent
+      toDbUser(employee) shouldBe dbEmployee
+      toDbUser(student) shouldBe dbStudent
       List(maybeAuth, maybeAuth2).forall(_.isEmpty) shouldBe true
     }
 
@@ -140,7 +140,7 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
         LabworkApplicationDb(labwork.id, buddy.id, Set(student.id))
       )
 
-      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(labworkApplicationService.createMany(lapps)) should not be empty
       await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Allowed
     }
 
@@ -159,9 +159,18 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
         LabworkApplicationDb(otherLabwork.id, buddy.id, Set(student.id))
       )
 
-      await(labworkApplicationService.createManyWithFriends(lapps)) should not be empty
+      await(labworkApplicationService.createMany(lapps)) should not be empty
       await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Almost
     }
+  }
+
+  private def toDbUser(user: User) = user match {
+    case s: PostgresStudent =>
+      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), lastModified, None, s.id)
+    case e: PostgresEmployee =>
+      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, lastModified, None, e.id)
+    case l: PostgresLecturer =>
+      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, lastModified, None, l.id)
   }
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
@@ -176,13 +185,13 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected def name: String = "user"
 
-  override protected val entity: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None, None, UUID.randomUUID)
+  override protected val entity: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None)
 
   override protected val entities: List[DbUser] = dbUser
 
-  override protected def invalidDuplicateOfEntity: DbUser = DbUser(entity.systemId, "delete2", "delete2", "delete2", User.EmployeeType, None, None, None, entity.id)
+  override protected def invalidDuplicateOfEntity: DbUser = DbUser(entity.systemId, "delete2", "delete2", "delete2", User.EmployeeType, None, None, lastModified, None, entity.id)
 
-  override protected def invalidUpdateOfEntity: DbUser = DbUser("new SystemId", "new lastname", entity.firstname, entity.email, entity.status, None, None, None, entity.id)
+  override protected def invalidUpdateOfEntity: DbUser = DbUser("new SystemId", "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
 
-  override protected def validUpdateOnEntity: DbUser = DbUser(entity.systemId, "new lastname", entity.firstname, entity.email, entity.status, None, None, None, entity.id)
+  override protected def validUpdateOnEntity: DbUser = DbUser(entity.systemId, "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
 }

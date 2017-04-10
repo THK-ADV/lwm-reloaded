@@ -1,5 +1,6 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.{DegreeDb, PostgresDegree}
@@ -7,6 +8,7 @@ import org.joda.time.DateTime
 import slick.lifted.Rep
 import store.{DegreeTable, PostgresDatabase, TableFilter}
 import slick.driver.PostgresDriver.api._
+import models.LwmDateTime.DateTimeConverter
 
 import scala.concurrent.Future
 
@@ -34,7 +36,15 @@ trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
   }
 
   override protected def setInvalidated(entity: DegreeDb): DegreeDb = {
-    DegreeDb(entity.label, entity.abbreviation, Some(DateTime.now), entity.id)
+    val now = DateTime.now.timestamp
+
+    DegreeDb(
+      entity.label,
+      entity.abbreviation,
+      now,
+      Some(now),
+      entity.id
+    )
   }
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)

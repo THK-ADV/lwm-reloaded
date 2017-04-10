@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.SesameRoom$
+import models.SesameRoom
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}

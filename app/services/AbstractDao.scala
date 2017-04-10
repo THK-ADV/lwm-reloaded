@@ -1,5 +1,6 @@
 package services
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
@@ -28,6 +29,18 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 
+  protected def expandCreationOf(entity: DbModel, origin: DbModel): Future[DbModel] = Future.successful(origin)
+
+  protected def expandUpdateOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandDeleteOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandDeleteOf(origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
+
+  protected def expandCreationOf(entities: List[DbModel], origin: Seq[DbModel]): Future[Seq[DbModel]] = Future.successful(origin)
+
+  // TODO maybe add a function which expands creation to allow database normalization
+
   final def create(entity: DbModel): Future[DbModel] = {
     val query = existsQuery(entity).result.flatMap { exists =>
       if (exists.nonEmpty)
@@ -36,14 +49,22 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         (tableQuery returning tableQuery) += entity
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandCreationOf(entity, q)
+    } yield e
   }
 
-  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = db.run((tableQuery returning tableQuery) ++= entities)
+  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = {
+    for {
+      q <- db.run((tableQuery returning tableQuery) ++= entities)
+      e <- expandCreationOf(entities, q)
+    } yield e
+  }
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
-  protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true): Query[T, DbModel, Seq] = {
+  protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
         t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
@@ -52,11 +73,13 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       case _ => tableQuery
     }
 
-    if (validOnly) query.filter(_.isValid) else query
+    val lastModified = sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
+
+    if (validOnly) lastModified.filter(_.isValid) else lastModified
   }
 
-  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true): Future[Seq[LwmModel]] = {
-    val query = filterBy(tableFilter, validOnly)
+  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
+    val query = filterBy(tableFilter, validOnly, sinceLastModified)
 
     if (atomic) toAtomic(query) else toUniqueEntity(query)
   }
@@ -68,7 +91,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       case _ => None
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandDeleteOf(entity, q)
+    } yield e
   }
 
   final def delete(id: UUID): Future[Option[DbModel]] = {
@@ -82,7 +108,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       }
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandDeleteOf(q)
+    } yield e
   }
 
   final def update(entity: DbModel): Future[Option[DbModel]] = {
@@ -97,7 +126,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         DBIO.failed(ModelAlreadyExists(existing))
     }
 
-    db.run(query)
+    for {
+      q <- db.run(query)
+      e <- expandUpdateOf(entity, q)
+    } yield e
   }
 
   final def createSchema = db.run(tableQuery.schema.create)

@@ -20,7 +20,7 @@ trait DefaultUserManagementModule extends UserManagementModule {
 }
 
 trait DefaultUserManagementModulePostgres extends UserManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with ResolversModule with LdapModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LdapModule =>
 
-  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(roleService, sessionService, resolvers, ldapService, UserService)
+  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(roleService, sessionService, ldapService, UserService)
 }

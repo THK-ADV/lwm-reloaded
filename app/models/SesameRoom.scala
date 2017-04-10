@@ -1,10 +1,12 @@
 package models
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
+import models.LwmDateTime._
 
 case class SesameRoom(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = SesameRoom.randomUUID) extends UniqueEntity
 
@@ -25,7 +27,8 @@ object SesameRoom extends UriGenerator[SesameRoom] with JsonSerialisation[Sesame
 
 case class PostgresRoom(label: String, description: String, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity
 
-case class RoomDb(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity{
+case class RoomDb(label: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity{
+
   def toRoom = PostgresRoom(label, description, id)
 }
 
@@ -42,4 +45,10 @@ object PostgresRoom extends UriGenerator[PostgresRoom] with JsonSerialisation[Po
   override implicit def writesAtom: Writes[PostgresRoom] = writes
 
   override def base: String = "rooms"
+}
+
+object RoomDb{
+  def from(protocol: PostgresRoomProtocol, existingId: Option[UUID]) : RoomDb = {
+    RoomDb(protocol.label, protocol.description, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 }

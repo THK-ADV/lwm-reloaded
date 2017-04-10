@@ -1,6 +1,6 @@
 package controllers
 
-import models.{SesameRoom$, SesameRoomProtocol}
+import models.{SesameRoom, SesameRoomProtocol}
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._

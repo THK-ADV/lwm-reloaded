@@ -1,10 +1,12 @@
 package controllers
 
+import java.util.UUID
+
+import models.User.UserProtocol
 import models._
-import play.api.libs.json.Json
-import play.api.mvc.Controller
+import play.api.libs.json.{Json, Reads, Writes}
 import services._
-import store.{Resolvers, TableFilter, UserTable}
+import store.{TableFilter, UserTable}
 import utils.LwmMimeType
 
 import scala.concurrent.Future
@@ -18,47 +20,14 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-final class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val resolvers: Resolvers, val ldapService: LdapService, val userService: UserService) extends Controller
-  with Secured
-  with SessionChecking
-  with SecureControllerContext
-  with ContentTyped
-  with Chunked
-  with PostgresResult {
+final class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
+  extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override implicit def mimeType = LwmMimeType.userV1Json
+  override implicit val mimeType = LwmMimeType.userV1Json
 
-  import models.User.{writes, reads, UserProtocol}
-
-  def allUsers() = contextFrom(GetAll) asyncAction { request =>
-    import controllers.UserControllerPostgres._
-
-    val (queryString, atomic) = extractAtomic(request.queryString)
-
-    val userFilter = queryString.foldLeft(Try(List.empty[TableFilter[UserTable]])) {
-      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status.head)))
-      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId.head)))
-      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname.head)))
-      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname.head)))
-      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree.head)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-
-    (for {
-      filter <- Future.fromTry(userFilter)
-      users <- userService.get(filter, atomic)
-    } yield users).jsonResult
-  }
-
-  def user(id: String) = contextFrom(Get) asyncAction { request =>
-    val atomic = extractAtomic(request.queryString)._2
-
-    userService.get(List(UserIdFilter(id)), atomic).map(_.headOption).jsonResult(id)
-  }
-
-  def createOrUpdate() = contextFrom(Create) asyncContentTypedAction { request =>
+  override def create = contextFrom(Create) asyncContentTypedAction { request =>
     import models.User.writes
     import models.PostgresAuthority.writesAtom
 
@@ -116,4 +85,29 @@ final class UserControllerPostgres(val roleService: RoleService, val sessionServ
     case Create => PartialSecureBlock(Permissions.prime)
     case _ => PartialSecureBlock(Permissions.god)
   }
+
+  override protected implicit val writes: Writes[User] = User.writes
+
+  override protected implicit val reads: Reads[UserProtocol] = User.reads
+
+  override protected val abstractDao: AbstractDao[UserTable, DbUser, User] = userService
+
+  override protected def idTableFilter(id: String): TableFilter[UserTable] = UserIdFilter(id)
+
+  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
+    import controllers.UserControllerPostgres._
+
+    (appendTo, (attribute, values)) match {
+      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status.head)))
+      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId.head)))
+      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname.head)))
+      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname.head)))
+      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree.head)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): DbUser = ???
+
+  override protected def toLwmModel(dbModel: DbUser): User = dbModel.toUser
 }
