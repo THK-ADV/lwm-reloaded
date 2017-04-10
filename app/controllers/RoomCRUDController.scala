@@ -1,7 +1,7 @@
 package controllers
 
 import models.Permissions._
-import models.{Room, RoomProtocol, UriGenerator}
+import models.{SesameRoom, SesameRoomProtocol, UriGenerator}
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
@@ -16,29 +16,29 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[RoomProtocol, Room, Room] {
+class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameRoomProtocol, SesameRoom, SesameRoom] {
 
   override val mimeType: LwmMimeType = LwmMimeType.roomV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Room] = defaultBindings.RoomDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameRoom] = defaultBindings.RoomDescriptor
 
-  override val descriptorAtom: Descriptor[Sesame, Room] = descriptor
+  override val descriptorAtom: Descriptor[Sesame, SesameRoom] = descriptor
 
-  override implicit val reads: Reads[RoomProtocol] = Room.reads
+  override implicit val reads: Reads[SesameRoomProtocol] = SesameRoom.reads
 
-  override implicit val writes: Writes[Room] = Room.writes
+  override implicit val writes: Writes[SesameRoom] = SesameRoom.writes
 
-  override  val writesAtom: Writes[Room] = Room.writesAtom
+  override  val writesAtom: Writes[SesameRoom] = SesameRoom.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Room] = Room
+  override implicit val uriGenerator: UriGenerator[SesameRoom] = SesameRoom
 
-  override protected def coAtomic(atom: Room): Room = atom
+  override protected def coAtomic(atom: SesameRoom): SesameRoom = atom
 
-  override protected def compareModel(input: RoomProtocol, output: Room): Boolean = input.description == output.description
+  override protected def compareModel(input: SesameRoomProtocol, output: SesameRoom): Boolean = input.description == output.description
 
-  override protected def fromInput(input: RoomProtocol, existing: Option[Room]): Room = existing match {
-    case Some(room) => Room(input.label, input.description, room.invalidated, room.id)
-    case None => Room(input.label, input.description)
+  override protected def fromInput(input: SesameRoomProtocol, existing: Option[SesameRoom]): SesameRoom = existing match {
+    case Some(room) => SesameRoom(input.label, input.description, room.invalidated, room.id)
+    case None => SesameRoom(input.label, input.description)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -47,7 +47,7 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
     case _ => PartialSecureBlock(prime)
   }
 
-  override protected def existsQuery(input: RoomProtocol): Clause = {
+  override protected def existsQuery(input: SesameRoomProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
@@ -57,6 +57,6 @@ class RoomCRUDController(val repository: SesameRepository, val sessionService: S
     }
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Room]): Try[Set[Room]] = Success(all)
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameRoom]): Try[Set[SesameRoom]] = Success(all)
 
 }

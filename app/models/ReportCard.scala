@@ -40,9 +40,9 @@ case class Rescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: 
   * Atomic
   */
 
-case class ReportCardEntryAtom(student: SesameStudent, labwork: SesameLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
+case class ReportCardEntryAtom(student: SesameStudent, labwork: SesameLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom, entryTypes: Set[ReportCardEntryType], rescheduled: Option[RescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room)
+case class RescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom)
 
 case class ReportCardEvaluationAtom(student: SesameStudent, labwork: SesameLabworkAtom, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
@@ -118,7 +118,7 @@ object RescheduledAtom {
     (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
-      (JsPath \ "room").write[Room](Room.writes)
+      (JsPath \ "room").write[SesameRoom](SesameRoom.writes)
     ) (unlift(RescheduledAtom.unapply))
 }
 
@@ -131,7 +131,7 @@ object ReportCardEntryAtom {
       (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
-      (JsPath \ "room").write[Room](Room.writes) and
+      (JsPath \ "room").write[SesameRoom](SesameRoom.writes) and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType] and
       (JsPath \ "rescheduled").writeNullable[RescheduledAtom] and
       (JsPath \ "invalidated").writeNullable[DateTime] and

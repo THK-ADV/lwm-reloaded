@@ -45,7 +45,7 @@ case class TimetableProtocol(labwork: UUID, entries: Set[TimetableEntry], start:
 
 case class TimetableAtom(labwork: SesameLabwork, entries: Set[TimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-case class TimetableEntryAtom(supervisor: Set[User], room: Room, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class TimetableEntryAtom(supervisor: Set[User], room: SesameRoom, dayIndex: Int, start: LocalTime, end: LocalTime)
 
 /**
   * Helper
@@ -99,7 +99,7 @@ object TimetableEntry extends JsonSerialisation[TimetableEntry, TimetableEntry, 
 object TimetableEntryAtom {
   implicit def writesAtom: Writes[TimetableEntryAtom] = (
     (JsPath \ "supervisor").writeSet[User] and
-      (JsPath \ "room").write[Room](Room.writes) and
+      (JsPath \ "room").write[SesameRoom](SesameRoom.writes) and
       (JsPath \ "dayIndex").write[Int] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime]

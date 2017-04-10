@@ -194,5 +194,12 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
   def permissionFk = foreignKey("PERMISSIONS_fkey", permission, TableQuery[PermissionTable])(_.id)
 
-  override def * = (role, permission, lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+  override def * = (role, permission,lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+}
+
+class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable {
+  def label = column[String]("LABEL")
+  def description = column[String]("DESCRIPTION")
+
+  override def * = (label, description, lastModified, invalidated, id) <> ((RoomDb.apply _).tupled, RoomDb.unapply)
 }

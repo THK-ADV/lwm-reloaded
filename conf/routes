@@ -65,6 +65,13 @@ GET           /rooms/:id                                                        
 DELETE        /rooms/:id                                                              controllers.RoomCRUDController.delete(id)
 HEAD          /rooms                                                                  controllers.RoomCRUDController.header
 
+# Room 2.0
+POST          /api2/rooms                                                                  controllers.RoomControllerPostgres.create()
+PUT           /api2/rooms/:id                                                              controllers.RoomControllerPostgres.update(id)
+GET           /api2/rooms                                                                  controllers.RoomControllerPostgres.all()
+GET           /api2/rooms/:id                                                              controllers.RoomControllerPostgres.get(id)
+DELETE        /api2/rooms/:id                                                              controllers.RoomControllerPostgres.delete(id)
+
 # Semester
 POST          /semesters                                                              controllers.SemesterCRUDController.create()
 PUT           /semesters/:id                                                          controllers.SemesterCRUDController.update(id)
@@ -255,6 +262,7 @@ GET           /api/migrate/semesters                                            
 GET           /api/migrate/courses                                                    controllers.ApiDataController.migrateCourses()
 GET           /api/migrate/labworks                                                   controllers.ApiDataController.migrateLabworks()
 GET           /api/migrate/labworkApplications                                        controllers.ApiDataController.migrateLabworkApplications()
+GET           /api/migrate/rooms                                        controllers.ApiDataController.migrateRooms()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

@@ -443,10 +443,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[GroupAtom](group =>
         makeUri(Group.generateUri(group.id)))(label, labwork, members, invalidated, id)(GroupAtom.apply, GroupAtom.unapply) withClasses classUris
   }
-  implicit lazy val RoomDescriptor: Descriptor[Rdf, Room] = new Descriptor[Rdf, Room] {
+  implicit lazy val RoomDescriptor: Descriptor[Rdf, SesameRoom] = new Descriptor[Rdf, SesameRoom] {
     override val clazz: Rdf#URI = lwm.Room
 
-    override val classUris: ClassUrisFor[Rdf, Room] = classUrisFor[Room](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameRoom] = classUrisFor[SesameRoom](clazz)
 
     override val branching: Ref[Rdf#URI] =
       Ref(clazz)
@@ -458,9 +458,9 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
 
-    override val binder: PGBinder[Rdf, Room] =
-      pgbWithId[Room](room =>
-        makeUri(Room.generateUri(room)))(label, description, invalidated, id)(Room.apply, Room.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameRoom] =
+      pgbWithId[SesameRoom](room =>
+        makeUri(SesameRoom.generateUri(room)))(label, description, invalidated, id)(SesameRoom.apply, SesameRoom.unapply) withClasses classUris
   }
   implicit lazy val SemesterDescriptor: Descriptor[Rdf, SesameSemester] = new Descriptor[Rdf, SesameSemester] {
     override val clazz: Rdf#URI = lwm.Semester
@@ -523,7 +523,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     override val classUris: ClassUrisFor[Rdf, TimetableEntry] = classUrisFor[TimetableEntry](clazz)
 
     private val supervisor = set[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
-    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val room = property[UUID](lwm.room)(uuidRefBinder(SesameRoom.splitter))
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
@@ -543,7 +543,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(RoomDescriptor.references)
 
     private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
-    private val room = property[Room](lwm.room)(RoomDescriptor.binder)
+    private val room = property[SesameRoom](lwm.room)(RoomDescriptor.binder)
     private val dayIndex = property[Int](lwm.dayIndex)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
@@ -594,7 +594,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
     private val date = property[LocalDate](lwm.date)
-    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val room = property[UUID](lwm.room)(uuidRefBinder(SesameRoom.splitter))
     private val supervisor = set[UUID](lwm.supervisor)(uuidRefBinder(User.splitter))
     private val group = property[UUID](lwm.group)(uuidRefBinder(Group.splitter))
 
@@ -616,7 +616,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(GroupDescriptor.references)
 
     private val labwork = property[SesameLabworkAtom](lwm.labwork)(LabworkAtomDescriptor.binder)
-    private val room = property[Room](lwm.room)(RoomDescriptor.binder)
+    private val room = property[SesameRoom](lwm.room)(RoomDescriptor.binder)
     private val supervisor = set[User](lwm.supervisor)(UserDescriptor.binder)
     private val group = property[Group](lwm.group)(GroupDescriptor.binder)
     private val start = property[LocalTime](lwm.start)
@@ -660,7 +660,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
-    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val room = property[UUID](lwm.room)(uuidRefBinder(SesameRoom.splitter))
     private val rescheduled = optional[Rescheduled](lwm.rescheduled)(RescheduledDescriptor.binder)
     private val types = set[ReportCardEntryType](lwm.entryTypes)(ReportCardEntryTypeDescriptor.binder)
 
@@ -686,7 +686,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
 
     private val student = property[SesameStudent](lwm.student)(StudentDescriptor.binder)
     private val labwork = property[SesameLabwork](lwm.labwork)(LabworkDescriptor.binder)
-    private val room = property[Room](lwm.room)(RoomDescriptor.binder)
+    private val room = property[SesameRoom](lwm.room)(RoomDescriptor.binder)
     private val rescheduled = optional[RescheduledAtom](lwm.rescheduled)(RescheduledAtomDescriptor.binder)
     private val label = property[String](lwm.label)
     private val date = property[LocalDate](lwm.date)
@@ -720,7 +720,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
-    private val room = property[UUID](lwm.room)(uuidRefBinder(Room.splitter))
+    private val room = property[UUID](lwm.room)(uuidRefBinder(SesameRoom.splitter))
 
     override val binder: PGBinder[Rdf, Rescheduled] =
       pgbWithId[Rescheduled](
@@ -736,7 +736,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val date = property[LocalDate](lwm.date)
     private val start = property[LocalTime](lwm.start)
     private val end = property[LocalTime](lwm.end)
-    private val room = property[Room](lwm.room)(RoomDescriptor.binder)
+    private val room = property[SesameRoom](lwm.room)(RoomDescriptor.binder)
 
     override val binder: PGBinder[Rdf, RescheduledAtom] =
       pgbWithId[RescheduledAtom](

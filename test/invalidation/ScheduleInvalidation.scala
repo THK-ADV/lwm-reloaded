@@ -15,7 +15,7 @@ class ScheduleInvalidation extends SesameDbSpec {
   "A Schedule invalidation" should {
 
     def schedEnts(labwork: UUID): Stream[ScheduleEntry] = Stream.continually(
-      ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, Room.randomUUID, Set(User.randomUUID), Group.randomUUID))
+      ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, SesameRoom.randomUUID, Set(User.randomUUID), Group.randomUUID))
 
     def scheds: Stream[Schedule] = Stream.continually {
       val labwork = SesameLabwork.randomUUID

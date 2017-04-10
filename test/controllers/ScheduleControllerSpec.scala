@@ -32,8 +32,8 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
-  val roomToPass = Room("room to pass", "desc to pass")
-  val roomToFail = Room("room to fail", "desc to fail")
+  val roomToPass = SesameRoom("room to pass", "desc to pass")
+  val roomToFail = SesameRoom("room to fail", "desc to fail")
 
   val supervisorToPass = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "status to pass")
   val supervisorToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
@@ -107,7 +107,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val groups = (0 until 3).map(n => Group(n.toString, labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID))).toSet
 
   val randomAtom = {
-    val entries = (0 until 10).map(i => ScheduleEntryAtom(labwork, LocalTime.now.plusHours(i), LocalTime.now.plusHours(i + 1), LocalDate.now.plusDays(i), Room.default, Set(SesameEmployee.default), Group.empty, None, UUID.randomUUID)).toSet
+    val entries = (0 until 10).map(i => ScheduleEntryAtom(labwork, LocalTime.now.plusHours(i), LocalTime.now.plusHours(i + 1), LocalDate.now.plusDays(i), SesameRoom.default, Set(SesameEmployee.default), Group.empty, None, UUID.randomUUID)).toSet
     ScheduleAtom(labwork, entries, None, UUID.randomUUID)
   }
 

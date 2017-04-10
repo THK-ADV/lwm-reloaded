@@ -17,8 +17,8 @@ class TimetableBindingSpec extends SesameDbSpec {
   implicit val timetableBinder = TimetableDescriptor.binder
   implicit val timetableEntryBinder = TimetableEntryDescriptor.binder
 
-  val timetableEntry1 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 1, LocalTime.now, LocalTime.now)
-  val timetableEntry2 = TimetableEntry(Set(User.randomUUID), Room.randomUUID, 2, LocalTime.now, LocalTime.now)
+  val timetableEntry1 = TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 1, LocalTime.now, LocalTime.now)
+  val timetableEntry2 = TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 2, LocalTime.now, LocalTime.now)
   val timetable = Timetable(SesameLabwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
 
   val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
@@ -31,7 +31,7 @@ class TimetableBindingSpec extends SesameDbSpec {
 
   val timetableEntryGraph = URI("#").a(lwm.TimetableEntry)
     .--(lwm.supervisor).->-(timetableEntry1.supervisor)(ops, uuidRefBinder(User.splitter))
-    .--(lwm.room).->-(timetableEntry1.room)(ops, uuidRefBinder(Room.splitter))
+    .--(lwm.room).->-(timetableEntry1.room)(ops, uuidRefBinder(SesameRoom.splitter))
     .--(lwm.dayIndex).->-(timetableEntry1.dayIndex)
     .--(lwm.start).->-(timetableEntry1.start)
     .--(lwm.end).->-(timetableEntry1.end).graph
@@ -76,8 +76,8 @@ class TimetableBindingSpec extends SesameDbSpec {
       import bindings.{EmployeeDescriptor, LabworkDescriptor, RoomDescriptor, TimetableAtomDescriptor, TimetableDescriptor}
 
       val labwork = SesameLabwork("labwork", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), subscribable = false, published = false)
-      val room1 = Room("room1", "description1")
-      val room2 = Room("room2", "description2")
+      val room1 = SesameRoom("room1", "description1")
+      val room2 = SesameRoom("room2", "description2")
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
 

@@ -34,7 +34,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
     .--(lwm.date).->-(reportCardEntry.date)
     .--(lwm.start).->-(reportCardEntry.start)
     .--(lwm.end).->-(reportCardEntry.end)
-    .--(lwm.room).->-(reportCardEntry.room)(ops, uuidRefBinder(Room.splitter))
+    .--(lwm.room).->-(reportCardEntry.room)(ops, uuidRefBinder(SesameRoom.splitter))
     .--(lwm.entryTypes).->-(reportCardEntry.entryTypes)
     .--(lwm.rescheduled).->-(reportCardEntry.entryTypes)
     .--(lwm.invalidated).->-(reportCardEntry.invalidated)

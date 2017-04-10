@@ -17,11 +17,13 @@ object AbstractDaoSpec {
   val maxLabworks = 20
   val maxSemesters = 10
   val maxCourses = 10
+  val maxRooms = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
   def randomDegree = degrees(nextInt(maxDegrees))
   def randomLabwork = labworks(nextInt(maxDegrees))
+  def randomRoom = rooms(nextInt(maxRooms))
 
   val semesters = {
     val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
@@ -46,6 +48,8 @@ object AbstractDaoSpec {
   val labworks = (0 until maxLabworks).map { i =>
     LabworkDb(i.toString, i.toString, randomSemester.id, randomCourse.id, randomDegree.id)
   }.toList
+
+  val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
