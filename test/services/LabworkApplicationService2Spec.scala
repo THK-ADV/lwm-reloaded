@@ -70,9 +70,9 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
 
   "A LabworkApplicationService2Spec " should {
 
-    "create a labworkApplication with friends" in {
-      val lapp = labworkApplication(Some(entity.applicant), withFriends = true)
+    val lapp = labworkApplication(Some(entity.applicant), withFriends = true)
 
+    "create a labworkApplication with friends" in {
       val result = await(create(lapp))
       val dbLapp = await(db.run(filterBy(List(LabworkApplicationIdFilter(lapp.id.toString))).result.headOption))
       val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
@@ -83,9 +83,32 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
       dbFriends.forall(_.labworkApplication == result.id) shouldBe true
     }
 
-    "create many labworkApplications with friends" in {}
+    "return friends of an given applicant in a specific labwork" in {
+      // TODO
+    }
 
-    "return friends of an given applicant in a specific labwork" in {}
+    "update a labworkApplication with friends" in {
+      val updated = lapp.copy(lapp.labwork, lapp.applicant, lapp.friends ++ Set(randomApplicant(Some(lapp.applicant)).id))
+
+      val result = await(update(updated)).get
+      val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
+
+      result shouldBe updated
+      result.friends shouldBe dbFriends.map(_.friend).toSet
+      dbFriends.forall(_.labworkApplication == result.id) shouldBe true
+    }
+
+    "delete a labworkApplication with friends" in {
+      val result = await(delete(lapp)).get
+      val dbLapp = await(get(List(LabworkApplicationIdFilter(lapp.id.toString)), atomic = false))
+      val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
+
+      result.id shouldBe lapp.id
+      dbLapp shouldBe empty
+      dbFriends shouldBe empty
+    }
+
+    "create many labworkApplications with friends" in {}
   }
 }
 
