@@ -7,6 +7,10 @@ import org.joda.time.DateTime
 import store._
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
+import slick.dbio.DBIOAction
+import slick.dbio.Effect.Write
+import slick.profile.FixedSqlAction
+
 import scala.concurrent.Future
 
 case class LabworkApplicationIdFilter(value: String) extends TableFilter[LabworkApplicationTable] {
@@ -87,35 +91,25 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     }.toSeq))
   }
 
-  // TODO REFACTOR AND ADJUST TESTS
-  override protected def expandCreationOf(entity: LabworkApplicationDb, origin: LabworkApplicationDb): Future[LabworkApplicationDb] = {
-    val friends = entity.friends.map(f => LabworkApplicationFriend(entity.id, f)).toList
+  override protected def databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {
+    override def expandCreationOf(entities: Seq[LabworkApplicationDb]) = {
+      val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
-    labworkApplicationFriendService.createMany(friends).map(_ => entity)
-  }
+      labworkApplicationFriendService.createManyQuery(friends).map(_ => entities)
+    }
 
-  override protected def expandCreationOf(entities: List[LabworkApplicationDb], origin: Seq[LabworkApplicationDb]): Future[Seq[LabworkApplicationDb]] = {
-    val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
+    override def expandUpdateOf(entity: LabworkApplicationDb) = {
+      for {
+        deleted <- expandDeleteOf(entity) if deleted.isDefined
+        lappFriends = entity.friends.map(id => LabworkApplicationFriend(entity.id, id)).toList
+        u <- labworkApplicationFriendService.createManyQuery(lappFriends)
+      } yield Some(entity.copy(entity.labwork, entity.applicant, u.map(_.friend).toSet))
+    }
 
-    labworkApplicationFriendService.createMany(friends).map(_ => entities)
-  }
-
-  override protected def expandUpdateOf(entity: LabworkApplicationDb, origin: Option[LabworkApplicationDb]): Future[Option[LabworkApplicationDb]] = {
-    for {
-      _ <- labworkApplicationFriendService.deleteFriendsOf(entity.id)
-      lappFriends = entity.friends.map(id => LabworkApplicationFriend(entity.id, id)).toList
-      u <- labworkApplicationFriendService.createMany(lappFriends)
-    } yield Some(entity.copy(entity.labwork, entity.applicant, u.map(_.friend).toSet))
-  }
-
-  override protected def expandDeleteOf(entity: LabworkApplicationDb, origin: Option[LabworkApplicationDb]): Future[Option[LabworkApplicationDb]] = {
-    labworkApplicationFriendService.deleteFriendsOf(entity.id).map { _ => origin }
-  }
-
-  override protected def expandDeleteOf(origin: Option[LabworkApplicationDb]): Future[Option[LabworkApplicationDb]] = origin match {
-    case Some(o) => expandDeleteOf(o, Some(o))
-    case None => Future.failed(new Throwable("no labworkApplication to delete"))
-  }
+    override def expandDeleteOf(entity: LabworkApplicationDb) = {
+      labworkApplicationFriendService.deleteFriendsOf(entity.id).map(_ => Some(entity))
+    }
+  })
 
   final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
     for {
@@ -126,8 +120,6 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
 }
 
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = {
@@ -142,10 +134,8 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
     )
   }
 
-  final def deleteFriendsOf(application: UUID): Future[Boolean] = {
-    db.run(for {
-      rows <- tableQuery.filter(_.labworkApplication === application).delete
-    } yield rows > 0)
+  final def deleteFriendsOf(application: UUID): DBIOAction[Int, NoStream, Write] = {
+    tableQuery.filter(_.labworkApplication === application).delete
   }
 
   override protected def shouldUpdate(existing: LabworkApplicationFriend, toUpdate: LabworkApplicationFriend): Boolean = ???

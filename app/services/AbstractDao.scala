@@ -4,10 +4,18 @@ import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
+import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
+import slick.profile.FixedSqlAction
 import store.{PostgresDatabase, TableFilter, UniqueTable}
 
 import scala.concurrent.Future
+
+trait DatabaseExpander[DbModel <: UniqueEntity] {
+  def expandCreationOf(entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write]
+  def expandUpdateOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
+  def expandDeleteOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
+}
 
 case class ModelAlreadyExists[A](value: A) extends Throwable {
   override def getMessage = s"model already exists $value"
@@ -29,17 +37,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 
-  protected def expandCreationOf(entity: DbModel, origin: DbModel): Future[DbModel] = Future.successful(origin)
-
-  protected def expandUpdateOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
-
-  protected def expandDeleteOf(entity: DbModel, origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
-
-  protected def expandDeleteOf(origin: Option[DbModel]): Future[Option[DbModel]] = Future.successful(origin)
-
-  protected def expandCreationOf(entities: List[DbModel], origin: Seq[DbModel]): Future[Seq[DbModel]] = Future.successful(origin)
-
-  // TODO maybe add a function which expands creation to allow database normalization
+  protected def databaseExpander: Option[DatabaseExpander[DbModel]] = None
 
   final def create(entity: DbModel): Future[DbModel] = {
     val query = existsQuery(entity).result.flatMap { exists =>
@@ -49,18 +47,26 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         (tableQuery returning tableQuery) += entity
     }
 
-    for {
-      q <- db.run(query)
-      e <- expandCreationOf(entity, q)
-    } yield e
+    databaseExpander.fold {
+      db.run(query)
+    } { expander =>
+      db.run((for {
+        _ <- query
+        e <- expander.expandCreationOf(List(entity))
+      } yield e.head).transactionally)
+    }
   }
 
-  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = {
-    for {
-      q <- db.run((tableQuery returning tableQuery) ++= entities)
-      e <- expandCreationOf(entities, q)
-    } yield e
+  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = databaseExpander.fold {
+    db.run(createManyQuery(entities))
+  } { expander =>
+    db.run((for {
+      _ <- createManyQuery(entities)
+      e <- expander.expandCreationOf(entities)
+    } yield e).transactionally)
   }
+
+  final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
 
@@ -84,52 +90,47 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     if (atomic) toAtomic(query) else toUniqueEntity(query)
   }
 
-  final def delete(entity: DbModel): Future[Option[DbModel]] = {
-    val invalidated = setInvalidated(entity)
-    val query = tableQuery.filter(_.id === invalidated.id).update(invalidated).map {
-      case 1 => Some(invalidated)
-      case _ => None
-    }
-
-    for {
-      q <- db.run(query)
-      e <- expandDeleteOf(entity, q)
-    } yield e
-  }
+  final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
 
   final def delete(id: UUID): Future[Option[DbModel]] = {
     val found = tableQuery.filter(_.id === id)
     val query = found.result.head.flatMap { existing =>
       val invalidated = setInvalidated(existing)
 
-      found.update(invalidated).map {
-        case 1 => Some(invalidated)
-        case _ => None
+      found.update(invalidated).map { rowsAffected =>
+        if (rowsAffected > 0) Some(invalidated) else None
       }
     }
 
-    for {
-      q <- db.run(query)
-      e <- expandDeleteOf(q)
-    } yield e
+    databaseExpander.fold {
+      db.run(query)
+    } { expander =>
+      db.run((for {
+        q <- query if q.isDefined
+        e <- expander.expandDeleteOf(q.get)
+      } yield e).transactionally)
+    }
   }
 
   final def update(entity: DbModel): Future[Option[DbModel]] = {
     val found = tableQuery.filter(_.id === entity.id)
     val query = found.result.head.flatMap { existing =>
       if (shouldUpdate(existing, entity))
-        found.update(entity).map {
-          case 1 => Some(entity)
-          case _ => None
+        found.update(entity).map { rowsAffected =>
+          if (rowsAffected > 0) Some(entity) else None
         }
       else
         DBIO.failed(ModelAlreadyExists(existing))
     }
 
-    for {
-      q <- db.run(query)
-      e <- expandUpdateOf(entity, q)
-    } yield e
+    databaseExpander.fold {
+      db.run(query)
+    } { expander =>
+      db.run((for {
+        q <- query if q.isDefined
+        e <- expander.expandUpdateOf(q.get)
+      } yield e).transactionally)
+    }
   }
 
   final def createSchema = db.run(tableQuery.schema.create)
