@@ -1,11 +1,13 @@
 package services
 
 import java.sql.Timestamp
+import java.util.UUID
 
 import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase, TableFilter}
 import models.LwmDateTime.DateTimeConverter
+
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
@@ -17,10 +19,20 @@ case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTa
   override def predicate = _.semesterIndex === value.toInt
 }
 
+case class CourseIdFilter(value: String) extends TableFilter[CourseTable]{
+  override def predicate: (CourseTable) => Rep[Boolean]= _.id === UUID.fromString(value)
+}
+
+case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTable]{
+  override def predicate: (CourseTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
+}
+
 trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
+
+  protected def authorityService: AuthorityService
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
     filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
@@ -62,6 +74,10 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     db.run(query.result.map(_.map(_.toCourse)))
   }
+
+  //TODO Create Expanden auf Role und Authority
 }
 
-object CourseService extends CourseService with PostgresDatabase
+object CourseService extends CourseService with PostgresDatabase {
+  override protected def authorityService: AuthorityService = AuthorityService
+}

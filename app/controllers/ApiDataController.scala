@@ -203,7 +203,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"courses ${courses.size}")
     } yield courses.map(_.toCourse)
 
-    result.jsonResult
+    result.jsonResult(PostgresCourse.writes)
   }
 
   def migrateLabworks = Action.async {

@@ -49,4 +49,7 @@ final class DegreePostgresController(val sessionService: SessionHandlingService,
   override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = DegreeDb.from(protocol, existingId)
 
   override protected def toLwmModel(dbModel: DegreeDb): PostgresDegree = dbModel.toDegree
+
+
+
 }

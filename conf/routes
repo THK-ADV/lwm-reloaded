@@ -28,6 +28,13 @@ GET           /atomic/courses/:id                                               
 DELETE        /courses/:id                                                            controllers.CourseCRUDController.delete(id)
 HEAD          /courses                                                                controllers.CourseCRUDController.header
 
+# Course 2.0
+POST          /api2/courses                                                                controllers.CourseControllerPostgres.create()
+PUT           /api2/courses/:id                                                            controllers.CourseControllerPostgres.update(id)
+GET           /api2/courses                                                                controllers.CourseControllerPostgres.all()
+GET           /api2/courses/:id                                                            controllers.CourseControllerPostgres.get(id)
+DELETE        /api2/courses/:id                                                            controllers.CourseControllerPostgres.delete(id)
+
 # Group
 GET           /courses/:c/labworks/:l/groups                                          controllers.GroupCRUDController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.GroupCRUDController.allAtomicFrom(c, l)

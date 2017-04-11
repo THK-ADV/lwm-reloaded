@@ -41,6 +41,7 @@ with DbFolder
 with DegreeManagementModule
 with DegreeManagementModulePostgres
 with CourseManagementModule
+with CourseManagementModulePostgres
 with GroupServiceManagementModule
 with GroupManagementModule
 with LabworkManagementModule
@@ -87,6 +88,7 @@ with LdapSyncModule {
     degreeManagementController,
     degreeManagementControllerPostgres,
     courseManagementController,
+    courseManagementControllerPostgres,
     groupManagementController,
     labworkManagementController,
     entryTypeController,
@@ -123,6 +125,7 @@ with DefaultHomepageModuleImpl
 with DefaultDegreeManagementModuleImpl
 with DefaultDegreeManagementModuleImplPostgres
 with DefaultCourseManagementModuleImpl
+with DefaultCourseManagementModuleImplPostgres
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
