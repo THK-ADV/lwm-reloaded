@@ -5,7 +5,7 @@ import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
 import store.DegreeTable
 
-final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeService {
+final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree, PostgresDegree] with DegreeService {
   import services.AbstractDaoSpec._
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
@@ -21,4 +21,8 @@ final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Pos
   override protected val validUpdateOnEntity: DegreeDb = DegreeDb("new label", entity.abbreviation, lastModified, entity.invalidated, entity.id)
 
   override protected val entities: List[DegreeDb] = degrees
+
+  override protected val postgresEntity: PostgresDegree = entity.toDegree
+
+  override protected val postgresAtom: PostgresDegree = postgresEntity
 }

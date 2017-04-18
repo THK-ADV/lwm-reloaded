@@ -6,11 +6,12 @@ import base.PostgresDbSpec
 import models._
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
-import store.{DegreeTable, LabworkApplicationTable, UserTable}
+import store._
 
-final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationService2 {
+final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication, PostgresLabworkApplicationAtom] with LabworkApplicationService2 {
   import services.AbstractDaoSpec._
   import scala.util.Random.{nextInt, nextBoolean}
+  import models.LwmDateTime.SqlTimestampConverter
 
   val maxApplicants = 300
   val maxApplications = 100
@@ -36,8 +37,12 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
     LabworkApplicationDb(randomLabwork.id, app, friends)
   }
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    TableQuery[UserTable].forceInsertAll(employees),
+    TableQuery[SemesterTable].forceInsertAll(semesters),
+    TableQuery[CourseTable].forceInsertAll(courses),
     TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[LabworkTable].forceInsertAll(labworks),
     TableQuery[UserTable].forceInsertAll(applicants)
   )
 
@@ -67,6 +72,29 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
   }
 
   override protected val entities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
+
+  override protected val postgresEntity: LabworkApplication = entity.toLabworkApplication
+
+  override protected val postgresAtom: PostgresLabworkApplicationAtom = {
+    val labworkAtom = {
+      val labwork = labworks.find(_.id == entity.labwork).get
+      val semester = semesters.find(_.id == labwork.semester).get
+      val course = courses.find(_.id == labwork.course).get
+      val lecturer = employees.find(_.id == course.lecturer).get.toUser
+      val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+      val degree = degrees.find(_.id == labwork.degree).get
+
+      PostgresLabworkAtom(labwork.label, labwork.description, semester.toSemester, courseAtom, degree.toDegree, labwork.subscribable, labwork.published, labwork.id)
+    }
+
+    PostgresLabworkApplicationAtom(
+      labworkAtom,
+      applicants.find(_.id == entity.applicant).get.toUser,
+      Set.empty,
+      entity.timestamp.dateTime,
+      entity.id
+    )
+  }
 
   "A LabworkApplicationService2Spec " should {
 
@@ -108,7 +136,7 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
       dbFriends shouldBe empty
     }
 
-    "create many labworkApplications with friends" in {}
+    // TODO: TEST LABWORKAPPLICATION ATOM WITH FRIENDS DEFINED
   }
 }
 

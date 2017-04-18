@@ -7,7 +7,7 @@ import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
 import store.SemesterTable
 
-final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterService {
+final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester, PostgresSemester] with SemesterService {
   import slick.driver.PostgresDriver.api._
   import services.AbstractDaoSpec._
 
@@ -45,5 +45,9 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
 
   override protected val entities: List[SemesterDb] = semesters
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+
+  override protected val postgresEntity: PostgresSemester = entity.toSemester
+
+  override protected val postgresAtom: PostgresSemester = postgresEntity
 }

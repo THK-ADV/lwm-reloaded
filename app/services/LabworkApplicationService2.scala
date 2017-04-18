@@ -59,35 +59,40 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
-    case (lapp, foreigners) =>
-      val applicant = foreigners.map(_._3).head
-      val labwork = foreigners.map(_._4).head
-      val semester = foreigners.map(_._5._3).head
-      val course = foreigners.map(_._5._1).head
-      val lecturer = foreigners.map(_._5._4).head
-      val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toUser, course.semesterIndex, course.id)
-      val degree = foreigners.map(_._5._2).head
-      val labworkAtom = PostgresLabworkAtom(labwork.label, labwork.description, semester.toSemester, courseAtom, degree.toDegree, labwork.subscribable, labwork.published, labwork.id)
-      val friends = foreigners.map(_._2.toUser)
+    case (labworkApplication, dependencies) =>
+      val ((lapp, lab, applicant, (course, degree, semester, lecturer)), _) = dependencies.find(_._1._1.id == labworkApplication.id).get
+      val friends = dependencies.flatMap(_._2.map(_.toUser))
+      val labworkAtom = {
+        val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toUser, course.semesterIndex, course.id)
+        PostgresLabworkAtom(lab.label, lab.description, semester.toSemester, courseAtom, degree.toDegree, lab.subscribable, lab.published, lab.id)
+      }
 
       PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
-    case (lapp, foreigners) => PostgresLabworkApplication(lapp.labwork, lapp.applicant, foreigners.map(_._2.id).toSet, lapp.timestamp.dateTime, lapp.id)
+    case (lapp, dependencies) =>
+      val friends = dependencies.flatMap(_._2.map(_.id))
+      PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
   // TODO maybe we can use dedicated queries instead of massive querying... just like user's buddy request
-  private def joinFriends(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])(build: (LabworkApplicationDb, Seq[(LabworkApplicationDb, DbUser, DbUser, LabworkDb, (CourseDb, DegreeDb, SemesterDb, DbUser))]) => LabworkApplication) = {
-    val fullJoin = for {
+  private def joinFriends(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
+                         (build: (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])]) => LabworkApplication) = {
+    val mandatory = for {
       q <- query
-      lapp <- q.fullJoin
-      lab <- lapp._3.fullJoin
-      lec <- lab._1.joinLecturer
-    } yield (q, lapp._1, lapp._2, lapp._3, (lab._1, lab._2, lab._3, lec))
+      l <- q.joinLabwork
+      a <- q.joinApplicant
+      (c, d, s) <- l.fullJoin
+      lec <- c.joinLecturer
+    } yield (q, l, a, (c, d, s, lec))
 
-    db.run(fullJoin.result.map(_.groupBy(_._1).map {
-      case (labworkApplication, foreigners) => build(labworkApplication, foreigners)
+    db.run(mandatory.
+        joinLeft(labworkApplicationFriendService.tableQuery).on(_._1.id === _.labworkApplication).
+        joinLeft(TableQuery[UserTable]).on(_._2.map(_.friend) === _.id).map {
+          case (((lapp, lab, a, (c, d, s, lec)), _), friend) => ((lapp, lab, a, (c, d, s, lec)), friend)
+        }.result.map(_.groupBy(_._1._1).map {
+          case (labworkApplication, dependencies) => build(labworkApplication, dependencies)
     }.toSeq))
   }
 

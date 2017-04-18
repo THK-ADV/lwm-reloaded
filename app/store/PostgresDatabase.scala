@@ -142,9 +142,9 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
     lapp => Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
-  private def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
-  private def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
-  private def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
+  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
+  def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
+  def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
 
   def fullJoin = {
     for {

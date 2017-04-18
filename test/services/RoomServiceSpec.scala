@@ -5,7 +5,7 @@ import slick.driver.PostgresDriver.api._
 import slick.dbio.Effect.Write
 import store.RoomTable
 
-final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomService {
+final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom, PostgresRoom] with RoomService {
 
   import services.AbstractDaoSpec._
 
@@ -22,4 +22,8 @@ final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresR
   override protected val validUpdateOnEntity: RoomDb = entity.copy(entity.label, "new description")
 
   override protected val entities: List[RoomDb] = rooms
+
+  override protected val postgresEntity: PostgresRoom = entity.toRoom
+
+  override protected val postgresAtom: PostgresRoom = postgresEntity
 }

@@ -25,6 +25,10 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  case class IdFilter(value: String) extends TableFilter[T] {
+    override def predicate = _.id === UUID.fromString(value)
+  }
+
   def tableQuery: TableQuery[T]
 
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
@@ -88,6 +92,11 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     val query = filterBy(tableFilter, validOnly, sinceLastModified)
 
     if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
+
+  // TODO use this function instead of get(tableFilter) for a single entity
+  final def getById(id: String, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Option[LwmModel]] = {
+    get(List(IdFilter(id)), atomic, validOnly, sinceLastModified).map(_.headOption)
   }
 
   final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
