@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.Permissions.{schedule, god}
+import models.Permissions.{god, schedule}
 import models._
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
@@ -16,8 +16,9 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{Attempt, Gen, LwmMimeType}
 import controllers.ScheduleController._
+
 import scala.collection.Map
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object ScheduleController {
 
@@ -130,7 +131,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   }
 
   private def generate[R](labwork: String, groupStrategy: Strategy)(implicit request: Request[R]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
-    import defaultBindings.{AssignmentPlanDescriptor, LabworkAtomDescriptor, TimetableDescriptor}
+    import defaultBindings.{AssignmentPlanDescriptor, LabworkAtomDescriptor, TimetableDescriptor, GroupDescriptor}
 
     def extract(query: Map[String, Seq[String]])(key: String) = query.get(key).flatMap(_.headOption).map(_.toInt)
 
@@ -157,6 +158,12 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       comp.foreach(s => println(s"comp :: ${s.labwork}"))
       val genesis = scheduleGenesisService.generate(t, g, p, s, comp.toVector, pop, gen, elite)
       val newGroups = genesis._1.elem.entries.map(_.group)
+
+      repository.addMany[Group](newGroups) match {
+        case Success(s) => println(s)
+        case Failure(e) => println(e)
+      }
+
       printGroup(groups, newGroups)
 
       println(s"final conflicts ${genesis._1.evaluate.err.size} :: fitness ${genesis._2}")
