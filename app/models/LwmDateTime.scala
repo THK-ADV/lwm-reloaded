@@ -14,7 +14,11 @@ object LwmDateTime {
   def toDateTime(string: String) = DateTime.parse(string, formatter)
 
   def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
-    inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(formatter)))).isEmpty
+    val inputDateTimes = inputDates.map(s => toDateTime(s).toInstant)
+    val outputDateTimes = outputDates.map(_.toInstant)
+    val diff = inputDateTimes.diff(outputDateTimes) ++ outputDateTimes.diff(inputDateTimes)
+
+    diff.isEmpty
   }
 
   implicit val localTimeOrd: Ordering[LocalTime] = new Ordering[LocalTime] {
