@@ -14,13 +14,14 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
   import models.LwmDateTime.SqlTimestampConverter
 
   val maxApplicants = 300
+  val reservedApplicants = 5
   val maxApplications = 100
 
   val applicants = (0 until maxApplicants).map(applicant).toList
 
   @scala.annotation.tailrec
   def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
-    val applicant = applicants(nextInt(maxApplicants))
+    val applicant = applicants(nextInt(maxApplicants - reservedApplicants))
 
     avoiding match {
       case Some(avoid) if applicant.id == avoid => randomApplicant(Some(avoid))
@@ -111,10 +112,6 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
       dbFriends.forall(_.labworkApplication == result.id) shouldBe true
     }
 
-    "return friends of an given applicant in a specific labwork" in {
-      // TODO
-    }
-
     "update a labworkApplication with friends" in {
       val updated = lapp.copy(lapp.labwork, lapp.applicant, lapp.friends ++ Set(randomApplicant(Some(lapp.applicant)).id))
 
@@ -136,7 +133,38 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
       dbFriends shouldBe empty
     }
 
-    // TODO: TEST LABWORKAPPLICATION ATOM WITH FRIENDS DEFINED
+    "return a atom of labworkApplication with friends" in {
+      def randomLabworkApplicationAtomWith(lapp: LabworkApplicationDb) = {
+        val applicant = applicants.find(_.id == lapp.applicant).get
+        val friends = applicants.filter(a => lapp.friends.contains(a.id))
+        val labworkAtom = {
+          val labwork = labworks.find(_.id == lapp.labwork).get
+          val semester = semesters.find(_.id == labwork.semester).get
+          val degree = degrees.find(_.id == labwork.degree).get
+          val course = courses.find(_.id == labwork.course).get
+          val lecturer = employees.find(_.id == course.lecturer).get
+          val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toUser, course.semesterIndex, course.id)
+          PostgresLabworkAtom(labwork.label, labwork.description, semester.toSemester, courseAtom, degree.toDegree, labwork.subscribable, labwork.published, labwork.id)
+        }
+
+        PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.map(_.toUser).toSet, lapp.timestamp.dateTime, lapp.id)
+      }
+
+      val lapps = applicants.drop(maxApplicants - reservedApplicants).
+        map(a => labworkApplication(Some(a.id), withFriends = true))
+      val atoms = lapps.map(randomLabworkApplicationAtomWith)
+
+      val createdLapps = await(createMany(lapps))
+      val getAtoms = await(getMany(createdLapps.map(_.id).toList))
+
+      createdLapps shouldBe lapps
+      (getAtoms ++ atoms).groupBy(_.id).forall {
+        case (_, labworkApplications) =>
+          val size = labworkApplications.size
+          val equals = labworkApplications.head == labworkApplications.last
+          size == 2 && equals
+      } shouldBe true
+    }
   }
 }
 

@@ -29,6 +29,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     override def predicate = _.id === UUID.fromString(value)
   }
 
+  case class IdFilterDisjunct(value: String) extends TableFilter[T] {
+    override def predicate = _.id =!= UUID.fromString(value)
+  }
+
   def tableQuery: TableQuery[T]
 
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
@@ -77,12 +81,16 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
   protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
-        t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
-          query.filter(nextFilter.predicate)
-        }
+          t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
+            query.filter(nextFilter.predicate)
+          }
       case _ => tableQuery
     }
 
+    filterBy(validOnly, sinceLastModified, query)
+  }
+
+  private def filterBy(validOnly: Boolean, sinceLastModified: Option[String], query: Query[T, DbModel, Seq]) = {
     val lastModified = sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
 
     if (validOnly) lastModified.filter(_.isValid) else lastModified
@@ -90,6 +98,14 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
     val query = filterBy(tableFilter, validOnly, sinceLastModified)
+
+    if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
+
+  // TODO refactor get functions... they are pretty messy right now
+
+  final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
+    val query = filterBy(validOnly, sinceLastModified, tableQuery.filter(_.id.inSet(ids)))
 
     if (atomic) toAtomic(query) else toUniqueEntity(query)
   }
