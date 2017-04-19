@@ -3,10 +3,12 @@ package services
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.{Course, CourseDb, PostgresCourseAtom}
+import models.{AuthorityDb, Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase, TableFilter}
 import models.LwmDateTime.DateTimeConverter
+import slick.dbio.Effect.Write
+import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
@@ -76,8 +78,23 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   }
 
   //TODO Create Expanden auf Role und Authority
+  override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
+
+    override def expandCreationOf(entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Write] = {
+      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
+    }
+
+    override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
+      DBIO.successful(Some(entity))
+      //TODO Authorities for new Lecturer
+    }
+
+    override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
+        authorityService.deleteWithCourse(entity).map(_ => Some(entity))
+    }
+  })
 }
 
-object CourseService extends CourseService with PostgresDatabase {
+object CourseService extends CourseService with PostgresDatabase{
   override protected def authorityService: AuthorityService = AuthorityService
 }

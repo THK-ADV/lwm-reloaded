@@ -69,6 +69,8 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
       authResult.exists(a => a.user == result.lecturer && a.role == rightsManager.id && a.course.isEmpty) shouldBe true
       authResult.exists(a => a.user == result.lecturer && a.role == courseManager.id && a.course.contains(result.id)) shouldBe true
     }
+
+    //TODO Delete a course with dedicated roles
   }
 
   override protected def name: String = "course"
@@ -87,5 +89,5 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
     TableQuery[UserTable].forceInsertAll(employees)
   )
 
-  override protected def authorityService: AuthorityService = new AuthorityServiceSpec()
+  override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
 }

@@ -6,10 +6,13 @@ import java.util.UUID
 import models._
 import org.joda.time.DateTime
 import models.LwmDateTime.DateTimeConverter
+import slick.dbio.Effect.Write
 import store._
+
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
+import slick.profile.FixedSqlAction
 
 case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.user === UUID.fromString(value)
@@ -23,7 +26,9 @@ case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
 }
 
-trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] { self: PostgresDatabase =>
+trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
+  self: PostgresDatabase =>
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def roleService: RoleService2
@@ -81,6 +86,20 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
         create(authority)
       }
     } yield PostgresAuthorityAtom(dbUser.toUser, role.map(Role.toRole).get, None, created.id)
+  }
+
+  final def createWithCourse(course: CourseDb): DBIOAction[Seq[AuthorityDb], NoStream, Write] = {
+    for { // TODO replace roleService.tableQuery with roleService.get when tests are established
+      rm <- DBIO.from(db.run(roleService.tableQuery.filter(_.label === Roles.RightsManagerLabel).map(_.id).result.headOption)) if rm.isDefined // TODO create rightsmanager only once
+      cm <- DBIO.from(db.run(roleService.tableQuery.filter(_.label === Roles.CourseManagerLabel).map(_.id).result.headOption)) if cm.isDefined
+      rma = AuthorityDb(course.lecturer, rm.head)
+      cma = AuthorityDb(course.lecturer, cm.head, Some(course.id))
+      authorities <- createManyQuery(Seq(rma, cma))
+    } yield authorities
+  }
+
+  final def deleteWithCourse(course: CourseDb): DBIOAction[Int, NoStream, Write] ={
+    filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
   }
 }
 
