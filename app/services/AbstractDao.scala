@@ -29,10 +29,6 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     override def predicate = _.id === UUID.fromString(value)
   }
 
-  case class IdFilterDisjunct(value: String) extends TableFilter[T] {
-    override def predicate = _.id =!= UUID.fromString(value)
-  }
-
   def tableQuery: TableQuery[T]
 
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]

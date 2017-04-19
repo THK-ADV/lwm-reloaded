@@ -16,11 +16,7 @@ trait UniqueTable { self: Table[_] =>
 
   final def isValid: Rep[Boolean] = invalidated.isEmpty
 
-  final def lastModifiedSince(timestamp: Timestamp): Rep[Boolean] = {
-    import models.LwmDateTime.DateTimeConverter
-
-    lastModified >= timestamp
-  }
+  final def lastModifiedSince(timestamp: Timestamp): Rep[Boolean] = lastModified >= timestamp
 }
 
 trait LabworkTableId { self: Table[_] =>

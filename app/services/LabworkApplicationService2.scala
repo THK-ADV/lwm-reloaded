@@ -13,10 +13,6 @@ import slick.profile.FixedSqlAction
 
 import scala.concurrent.Future
 
-case class LabworkApplicationIdFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.id === UUID.fromString(value)
-}
-
 case class LabworkApplicationApplicantFilter(value: String) extends TableFilter[LabworkApplicationTable] {
   override def predicate = _.applicant === UUID.fromString(value)
 }
@@ -58,7 +54,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
+  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
     case (labworkApplication, dependencies) =>
       val ((lapp, lab, applicant, (course, degree, semester, lecturer)), _) = dependencies.find(_._1._1.id == labworkApplication.id).get
       val friends = dependencies.flatMap(_._2.map(_.toUser))
@@ -70,15 +66,16 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
       PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinFriends(query) {
+  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
     case (lapp, dependencies) =>
       val friends = dependencies.flatMap(_._2.map(_.id))
       PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
-  // TODO maybe we can use dedicated queries instead of massive querying... just like user's buddy request
-  private def joinFriends(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
-                         (build: (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])]) => LabworkApplication) = {
+  type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])])
+
+  private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
+                              (build: LabworkApplicationDependencies => LabworkApplication) = {
     val mandatory = for {
       q <- query
       l <- q.joinLabwork

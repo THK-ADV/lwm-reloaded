@@ -38,8 +38,6 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
 
   override protected val abstractDao: AbstractDao[SemesterTable, SemesterDb, PostgresSemester] = semesterService
 
-  override protected def idTableFilter(id: String): TableFilter[SemesterTable] = SemesterIdFilter(id)
-
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
     import controllers.SemesterControllerPostgres._
 

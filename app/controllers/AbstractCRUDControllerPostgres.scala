@@ -75,7 +75,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected implicit def reads: Reads[Protocol]
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
-  protected def idTableFilter(id: String): TableFilter[T]
   protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
@@ -128,6 +127,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   def get(id: String): Action[AnyContent] = contextFrom(Get) asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
 
-    abstractDao.get(List(idTableFilter(id)), atomic).map(_.headOption).jsonResult(id)
+    abstractDao.getById(id, atomic).jsonResult(id)
   }
 }

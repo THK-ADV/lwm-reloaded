@@ -58,20 +58,38 @@ sealed trait LabworkApplication extends UniqueEntity
 
 case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, id: UUID = UUID.randomUUID) extends LabworkApplication
 
+case class PostgresLabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
+
 case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends LabworkApplication {
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toLabworkApplication = PostgresLabworkApplication(labwork, applicant, friends, timestamp.dateTime, id)
 }
 
 case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-object PostgresLabworkApplication extends JsonSerialisation[SesameLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
-  override implicit def reads: Reads[SesameLabworkApplicationProtocol] = Json.reads[SesameLabworkApplicationProtocol]
+object PostgresLabworkApplication extends JsonSerialisation[PostgresLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
+  override implicit def reads: Reads[PostgresLabworkApplicationProtocol] = Json.reads[PostgresLabworkApplicationProtocol]
 
   override implicit def writes: Writes[PostgresLabworkApplication] = Json.writes[PostgresLabworkApplication]
 
   override implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = PostgresLabworkApplicationAtom.writesAtom
+}
+
+object LabworkApplicationDb {
+  def from(protocol: PostgresLabworkApplicationProtocol, existingId: Option[UUID]) = {
+    LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends)
+  }
+}
+
+object LabworkApplication {
+
+  implicit def writes: Writes[LabworkApplication] = new Writes[LabworkApplication] {
+    override def writes(labworkApplication: LabworkApplication) = labworkApplication match {
+      case postgresLabworkApplication: PostgresLabworkApplication => Json.toJson(postgresLabworkApplication)(PostgresLabworkApplication.writes)
+      case postgresLabworkApplicationAtom: PostgresLabworkApplicationAtom => Json.toJson(postgresLabworkApplicationAtom)(PostgresLabworkApplication.writesAtom)
+    }
+  }
 }
 
 object PostgresLabworkApplicationAtom {

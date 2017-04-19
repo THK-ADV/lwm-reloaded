@@ -92,8 +92,6 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
 
   override protected val abstractDao: AbstractDao[UserTable, DbUser, User] = userService
 
-  override protected def idTableFilter(id: String): TableFilter[UserTable] = UserIdFilter(id)
-
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
     import controllers.UserControllerPostgres._
 

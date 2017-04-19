@@ -66,11 +66,11 @@ DELETE        /rooms/:id                                                        
 HEAD          /rooms                                                                  controllers.RoomCRUDController.header
 
 # Room 2.0
-POST          /api2/rooms                                                                  controllers.RoomControllerPostgres.create()
-PUT           /api2/rooms/:id                                                              controllers.RoomControllerPostgres.update(id)
-GET           /api2/rooms                                                                  controllers.RoomControllerPostgres.all()
-GET           /api2/rooms/:id                                                              controllers.RoomControllerPostgres.get(id)
-DELETE        /api2/rooms/:id                                                              controllers.RoomControllerPostgres.delete(id)
+POST          /api2/rooms                                                             controllers.RoomControllerPostgres.create()
+PUT           /api2/rooms/:id                                                         controllers.RoomControllerPostgres.update(id)
+GET           /api2/rooms                                                             controllers.RoomControllerPostgres.all()
+GET           /api2/rooms/:id                                                         controllers.RoomControllerPostgres.get(id)
+DELETE        /api2/rooms/:id                                                         controllers.RoomControllerPostgres.delete(id)
 
 # Semester
 POST          /semesters                                                              controllers.SemesterCRUDController.create()
@@ -81,11 +81,11 @@ DELETE        /semesters/:id                                                    
 HEAD          /semesters                                                              controllers.SemesterCRUDController.header
 
 # Semester 2.0
-POST          /api2/semesters                                                              controllers.SemesterControllerPostgres.create()
-PUT           /api2/semesters/:id                                                          controllers.SemesterControllerPostgres.update(id)
-GET           /api2/semesters                                                              controllers.SemesterControllerPostgres.all()
-GET           /api2/semesters/:id                                                          controllers.SemesterControllerPostgres.get(id)
-DELETE        /api2/semesters/:id                                                          controllers.SemesterControllerPostgres.delete(id)
+POST          /api2/semesters                                                         controllers.SemesterControllerPostgres.create()
+PUT           /api2/semesters/:id                                                     controllers.SemesterControllerPostgres.update(id)
+GET           /api2/semesters                                                         controllers.SemesterControllerPostgres.all()
+GET           /api2/semesters/:id                                                     controllers.SemesterControllerPostgres.get(id)
+DELETE        /api2/semesters/:id                                                     controllers.SemesterControllerPostgres.delete(id)
 
 # Role
 POST          /roles                                                                  controllers.RoleController.create()
@@ -120,6 +120,13 @@ GET           /labworkApplications/:id                                          
 GET           /atomic/labworkApplications/:id                                         controllers.LabworkApplicationCRUDController.getAtomic(id)
 DELETE        /labworkApplications/:id                                                controllers.LabworkApplicationCRUDController.delete(id)
 HEAD          /labworkApplications                                                    controllers.LabworkApplicationCRUDController.header
+
+# LabworkApplications 2.0
+POST          /api2/labworkApplications                                               controllers.LabworkApplicationControllerPostgres.create()
+PUT           /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.update(id)
+GET           /api2/labworkApplications                                               controllers.LabworkApplicationControllerPostgres.all()
+GET           /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.get(id)
+DELETE        /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.delete(id)
 
 # Schedule
 HEAD          /schedules                                                              controllers.ScheduleController.header
@@ -262,7 +269,7 @@ GET           /api/migrate/semesters                                            
 GET           /api/migrate/courses                                                    controllers.ApiDataController.migrateCourses()
 GET           /api/migrate/labworks                                                   controllers.ApiDataController.migrateLabworks()
 GET           /api/migrate/labworkApplications                                        controllers.ApiDataController.migrateLabworkApplications()
-GET           /api/migrate/rooms                                        controllers.ApiDataController.migrateRooms()
+GET           /api/migrate/rooms                                                      controllers.ApiDataController.migrateRooms()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

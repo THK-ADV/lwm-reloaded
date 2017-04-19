@@ -244,6 +244,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
 
   def migrateLabworkApplications = Action.async {
     import bindings.LabworkApplicationDescriptor
+    import models.LabworkApplication.writes
 
     val result = for {
       _ <- LabworkApplicationService2.createSchema

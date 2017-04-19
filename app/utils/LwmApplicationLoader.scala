@@ -62,6 +62,7 @@ with ResolversModule
 with CORSFilterModule
 with ApiDataModule
 with LabworkApplicationManagementModule
+with LabworkApplicationManagementModulePostgres
 with LabworkApplicationServiceModule
 with ScheduleManagementModule
 with ScheduleEntryManagementModule
@@ -98,6 +99,7 @@ with LdapSyncModule {
     authorityManagementController,
     permissionManagementController,
     labworkApplicationController,
+    labworkApplicationControllerPostgres,
     scheduleManagementController,
     scheduleEntryController,
     timetableManagementController,
@@ -143,6 +145,7 @@ with DefaultResolversModule
 with DefaultCORSFilterModule
 with DefaultApiDataModule
 with DefaultLabworkApplicationManagementModule
+with DefaultLabworkApplicationManagementModulePostgres
 with DefaultLabworkApplicationServiceModule
 with DefaultScheduleManagementModuleImpl
 with DefaultScheduleEntryManagementModule

@@ -33,8 +33,6 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
 
   override protected def abstractDao: AbstractDao[RoomTable, RoomDb, PostgresRoom] = roomService
 
-  override protected def idTableFilter(id: String): TableFilter[RoomTable] = RoomIdFilter(id)
-
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
     import controllers.RoomControllerPostgres._
 

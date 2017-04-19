@@ -34,8 +34,6 @@ final class DegreePostgresController(val sessionService: SessionHandlingService,
 
   override protected val abstractDao: AbstractDao[DegreeTable, DegreeDb, PostgresDegree] = degreeService
 
-  override protected def idTableFilter(id: String): TableFilter[DegreeTable] = DegreeIdFilter(id)
-
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
     import controllers.DegreePostgresController._
 
