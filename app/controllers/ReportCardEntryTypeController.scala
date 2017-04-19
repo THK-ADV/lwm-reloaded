@@ -8,7 +8,7 @@ import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -17,7 +17,7 @@ import scala.collection.Map
 import scala.util.{Success, Try}
 
 // TODO inherit from AbstractCRUDController
-class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService)
+class ReportCardEntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike)
   extends Controller
     with BaseNamespace
     with JsonSerialisation[ReportCardEntryType, ReportCardEntryType, ReportCardEntryType]

@@ -5,11 +5,12 @@ import models._
 import org.joda.time.Interval
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
-import services.{BlacklistServiceLike, RoleService, SessionHandlingService}
+import services.{BlacklistServiceLike, RoleService, RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.BlacklistCRUDController._
+
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
@@ -20,7 +21,7 @@ object BlacklistCRUDController {
   val currentValue = "current"
 }
 
-class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
+class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 

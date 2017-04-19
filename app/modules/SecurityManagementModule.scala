@@ -1,12 +1,12 @@
 package modules
 
-import services.RoleService
+import services.{RoleService, RoleServiceLike}
 import utils.LwmApplication
 
 trait SecurityManagementModule {
   self: LwmApplication with SemanticRepositoryModule with SessionRepositoryModule =>
 
-  def roleService: RoleService
+  def roleService: RoleServiceLike
 }
 
 trait DefaultSecurityManagementModule extends SecurityManagementModule {

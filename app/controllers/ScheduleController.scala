@@ -50,7 +50,7 @@ object ScheduleController {
 }
 
 // TODO ScheduleProtocol, ScheduleG -> ScheduleAtom, PUT for Schedules
-class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
+class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
   extends AbstractCRUDController[Schedule, Schedule, ScheduleAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json

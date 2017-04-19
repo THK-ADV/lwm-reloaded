@@ -2,12 +2,12 @@ package controllers
 
 import java.util.UUID
 
-import models.Permissions.{labwork, prime, god}
+import models.Permissions.{god, labwork, prime}
 import models._
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.sparql.select._
@@ -15,6 +15,7 @@ import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.LabworkCRUDController._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -26,7 +27,7 @@ object LabworkCRUDController {
   val publishedAttribute = "published"
 }
 
-class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[LabworkProtocol, SesameLabwork, SesameLabworkAtom] {
+class LabworkCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[LabworkProtocol, SesameLabwork, SesameLabworkAtom] {
 
   override val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 

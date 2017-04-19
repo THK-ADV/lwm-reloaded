@@ -56,7 +56,7 @@ object AbstractDaoSpec {
   val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 }
 
-abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity, Atom]
+abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
   extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
 
   protected val lastModified: Timestamp = {
@@ -67,46 +67,46 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   }
 
   protected def name: String
-  protected def entity: DbModel
-  protected def invalidDuplicateOfEntity: DbModel
-  protected def invalidUpdateOfEntity: DbModel
-  protected def validUpdateOnEntity: DbModel
-  protected def entities: List[DbModel]
+  protected def dbEntity: DbModel
+  protected def invalidDuplicateOfDbEntity: DbModel
+  protected def invalidUpdateOfDbEntity: DbModel
+  protected def validUpdateOnDbEntity: DbModel
+  protected def dbEntities: List[DbModel]
 
-  protected def postgresEntity: LwmModel
-  protected def postgresAtom: Atom
+  protected def lwmEntity: LwmModel
+  protected def lwmAtom: LwmModel
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write]
 
   s"A AbstractDaoSpec with $name " should {
 
     s"create a $name" in {
-      await(create(entity)) shouldBe entity
+      await(create(dbEntity)) shouldBe dbEntity
     }
 
     s"get a $name" in {
-      await(getById(entity.id.toString, atomic = false)) shouldBe Some(postgresEntity)
-      await(getById(entity.id.toString)) shouldBe Some(postgresAtom) // TODO maybe we can get rid of atom type and roll back to LwmModel <: UniqueEntity
+      await(getById(dbEntity.id.toString, atomic = false)) shouldBe Some(lwmEntity)
+      await(getById(dbEntity.id.toString)) shouldBe Some(lwmAtom)
     }
 
     s"not create a $name because model already exists" in {
-      await(create(invalidDuplicateOfEntity).failed) shouldBe ModelAlreadyExists(Seq(entity))
+      await(create(invalidDuplicateOfDbEntity).failed) shouldBe ModelAlreadyExists(Seq(dbEntity))
     }
 
     s"not update a $name because model already exists" in {
-      await(update(invalidUpdateOfEntity).failed) shouldBe ModelAlreadyExists(entity)
+      await(update(invalidUpdateOfDbEntity).failed) shouldBe ModelAlreadyExists(dbEntity)
     }
 
     s"update a $name properly" in {
-      await(update(validUpdateOnEntity)) shouldBe Some(validUpdateOnEntity)
+      await(update(validUpdateOnDbEntity)) shouldBe Some(validUpdateOnDbEntity)
     }
 
     s"create many $name" in {
-      await(createMany(entities)) shouldBe entities
+      await(createMany(dbEntities)) shouldBe dbEntities
     }
 
     s"delete a $name by invalidating it" in {
-      await(delete(entity)) shouldBe defined
+      await(delete(dbEntity)) shouldBe defined
     }
   }
 }

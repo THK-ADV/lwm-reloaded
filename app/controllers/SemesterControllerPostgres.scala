@@ -21,7 +21,7 @@ object SemesterControllerPostgres {
   lazy val currentValue = "current"
 }
 
-final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val semesterService: SemesterService)
+final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val semesterService: SemesterService)
   extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
 
   override implicit val mimeType = LwmMimeType.semesterV1Json

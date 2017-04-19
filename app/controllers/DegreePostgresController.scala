@@ -16,7 +16,7 @@ object DegreePostgresController {
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleService, val degreeService: DegreeService)
+final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val degreeService: DegreeService)
   extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

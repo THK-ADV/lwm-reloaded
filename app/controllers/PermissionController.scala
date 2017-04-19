@@ -5,11 +5,11 @@ import models.SesamePermission
 import modules.BaseNamespace
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{Action, Controller}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-class PermissionController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
+class PermissionController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends Controller
   with JsonSerialisation[SesamePermission, SesamePermission, SesamePermission]
   with BaseNamespace
   with Secured

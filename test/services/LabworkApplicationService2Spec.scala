@@ -8,7 +8,7 @@ import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
 import store._
 
-final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication, PostgresLabworkApplicationAtom] with LabworkApplicationService2 {
+final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationService2 {
   import services.AbstractDaoSpec._
   import scala.util.Random.{nextInt, nextBoolean}
   import models.LwmDateTime.SqlTimestampConverter
@@ -51,34 +51,34 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
 
   override protected def name: String = "labworkApplication"
 
-  override protected val entity: LabworkApplicationDb = labworkApplication(None, withFriends = false)
+  override protected val dbEntity: LabworkApplicationDb = labworkApplication(None, withFriends = false)
 
-  override protected val invalidDuplicateOfEntity: LabworkApplicationDb = {
-    val newFriends = if (entity.friends.isEmpty) Set(randomApplicant(Some(entity.applicant)).id) else Set.empty[UUID]
+  override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = {
+    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(entity.labwork, entity.applicant, newFriends)
+    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
   }
 
-  override protected val invalidUpdateOfEntity: LabworkApplicationDb = {
-    val newApplicant = randomApplicant(Some(entity.applicant)).id
-    val newFriends = if (entity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
+  override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = {
+    val newApplicant = randomApplicant(Some(dbEntity.applicant)).id
+    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(entity.labwork, newApplicant, newFriends, entity.timestamp, entity.lastModified, entity.invalidated, entity.id)
+    LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.timestamp, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
-  override protected val validUpdateOnEntity: LabworkApplicationDb = {
-    val newFriends = if (entity.friends.isEmpty) Set(randomApplicant(Some(entity.applicant)).id) else Set.empty[UUID]
+  override protected val validUpdateOnDbEntity: LabworkApplicationDb = {
+    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(entity.labwork, entity.applicant, newFriends, entity.timestamp, entity.lastModified, entity.invalidated, entity.id)
+    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.timestamp, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
-  override protected val entities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
+  override protected val dbEntities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
 
-  override protected val postgresEntity: LabworkApplication = entity.toLabworkApplication
+  override protected val lwmEntity: LabworkApplication = dbEntity.toLabworkApplication
 
-  override protected val postgresAtom: PostgresLabworkApplicationAtom = {
+  override protected val lwmAtom: LabworkApplication = {
     val labworkAtom = {
-      val labwork = labworks.find(_.id == entity.labwork).get
+      val labwork = labworks.find(_.id == dbEntity.labwork).get
       val semester = semesters.find(_.id == labwork.semester).get
       val course = courses.find(_.id == labwork.course).get
       val lecturer = employees.find(_.id == course.lecturer).get.toUser
@@ -90,16 +90,16 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
 
     PostgresLabworkApplicationAtom(
       labworkAtom,
-      applicants.find(_.id == entity.applicant).get.toUser,
+      applicants.find(_.id == dbEntity.applicant).get.toUser,
       Set.empty,
-      entity.timestamp.dateTime,
-      entity.id
+      dbEntity.timestamp.dateTime,
+      dbEntity.id
     )
   }
 
   "A LabworkApplicationService2Spec " should {
 
-    val lapp = labworkApplication(Some(entity.applicant), withFriends = true)
+    val lapp = labworkApplication(Some(dbEntity.applicant), withFriends = true)
 
     "create a labworkApplication with friends" in {
       val result = await(create(lapp))

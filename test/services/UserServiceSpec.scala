@@ -6,7 +6,7 @@ import models._
 import slick.dbio.Effect.Write
 import store.UserTable
 
-final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User, PostgresStudentAtom] with UserService {
+final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserService {
   import scala.util.Random.nextInt
   import slick.driver.PostgresDriver.api._
 
@@ -185,25 +185,25 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User, Pos
 
   override protected def name: String = "user"
 
-  override protected val entity: DbUser = DbUser("delete", "delete", "delete", "delete", User.StudentType, Some("regId"), Some(degrees.head.id))
+  override protected val dbEntity: DbUser = DbUser("delete", "delete", "delete", "delete", User.StudentType, Some("regId"), Some(degrees.head.id))
 
-  override protected val entities: List[DbUser] = dbUser
+  override protected val dbEntities: List[DbUser] = dbUser
 
-  override protected val invalidDuplicateOfEntity: DbUser = DbUser(entity.systemId, "delete2", "delete2", "delete2", User.StudentType, None, None, lastModified, None, entity.id)
+  override protected val invalidDuplicateOfDbEntity: DbUser = DbUser(dbEntity.systemId, "delete2", "delete2", "delete2", User.StudentType, None, None, lastModified, None, dbEntity.id)
 
-  override protected val invalidUpdateOfEntity: DbUser = DbUser("new SystemId", "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
+  override protected val invalidUpdateOfDbEntity: DbUser = DbUser("new SystemId", "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
 
-  override protected val validUpdateOnEntity: DbUser = DbUser(entity.systemId, "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
+  override protected val validUpdateOnDbEntity: DbUser = DbUser(dbEntity.systemId, "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
 
-  override protected val postgresEntity: User = entity.toUser
+  override protected val lwmEntity: User = dbEntity.toUser
 
-  override protected val postgresAtom: PostgresStudentAtom = PostgresStudentAtom(
-    entity.systemId,
-    entity.lastname,
-    entity.firstname,
-    entity.email,
-    entity.registrationId.get,
+  override protected val lwmAtom: User = PostgresStudentAtom(
+    dbEntity.systemId,
+    dbEntity.lastname,
+    dbEntity.firstname,
+    dbEntity.email,
+    dbEntity.registrationId.get,
     degrees.head.toDegree,
-    entity.id
+    dbEntity.id
   )
 }

@@ -1,7 +1,7 @@
 package modules
 
-import controllers.LabworkApplicationCRUDController
-import services.{LabworkApplicationService, LabworkApplicationServiceLike}
+import controllers.{LabworkApplicationCRUDController, LabworkApplicationControllerPostgres}
+import services.{LabworkApplicationService, LabworkApplicationService2, LabworkApplicationServiceLike}
 import utils.LwmApplication
 
 trait LabworkApplicationServiceModule {
@@ -26,4 +26,16 @@ trait DefaultLabworkApplicationManagementModule extends LabworkApplicationManage
   self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
 
   override lazy val labworkApplicationController: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService)
+}
+
+trait LabworkApplicationManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule =>
+
+  def labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres
+}
+
+trait DefaultLabworkApplicationManagementModulePostgres extends LabworkApplicationManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule =>
+
+  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, LabworkApplicationService2)
 }

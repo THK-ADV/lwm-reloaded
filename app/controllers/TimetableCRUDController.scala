@@ -8,12 +8,13 @@ import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.TimetableCRUDController._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -22,7 +23,7 @@ object TimetableCRUDController {
   val labworkAttribute = "labwork"
 }
 
-class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
+class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 

@@ -2,13 +2,13 @@ package controllers
 
 import java.util.UUID
 
-import models.{SesamePermission, Permissions, UniqueEntity, UriGenerator}
+import models.{Permissions, SesamePermission, UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.{Enumeratee, Enumerator}
 import play.api.libs.json._
 import play.api.mvc._
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
@@ -130,7 +130,7 @@ trait ContentTyped {
 }
 
 trait Secured {
-  implicit def roleService: RoleService
+  implicit def roleService: RoleServiceLike
 }
 
 /**

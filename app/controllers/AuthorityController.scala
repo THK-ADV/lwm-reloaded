@@ -9,7 +9,7 @@ import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.sparql.Clause
@@ -17,6 +17,7 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.Ops.MonadInstances.listM
 import controllers.AuthorityController._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -26,7 +27,7 @@ object AuthorityController {
   val roleAttribute = "role"
 }
 
-class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
+class AuthorityController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.authorityV1Json
 

@@ -9,7 +9,7 @@ import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Controller, Request}
-import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
+import services.{ReportCardServiceLike, RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.sparql.{Clause, NoneClause, SelectClause}
@@ -38,7 +38,7 @@ object ReportCardEntryController {
   val endAttribute = "end"
 }
 
-class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike)
+class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val reportCardService: ReportCardServiceLike)
   extends AbstractCRUDController[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json

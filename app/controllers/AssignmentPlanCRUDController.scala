@@ -7,7 +7,7 @@ import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.sparql.select._
@@ -15,6 +15,7 @@ import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.AssignmentPlanCRUDController._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -23,7 +24,7 @@ object AssignmentPlanCRUDController {
   val courseAttribute = "course"
 }
 
-class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
+class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 

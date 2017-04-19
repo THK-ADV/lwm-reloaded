@@ -20,7 +20,7 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-final class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
+final class UserControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
   extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global

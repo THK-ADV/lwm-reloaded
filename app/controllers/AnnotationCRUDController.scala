@@ -6,11 +6,12 @@ import models.Permissions._
 import models.{Annotation, AnnotationAtom, AnnotationProtocol, UriGenerator}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.AnnotationCRUDController._
+
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
@@ -20,7 +21,7 @@ object AnnotationCRUDController {
   val reportCardEntryAttribute = "reportCardEntry"
 }
 
-class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[AnnotationProtocol, Annotation, AnnotationAtom] {
+class AnnotationCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[AnnotationProtocol, Annotation, AnnotationAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.annotationV1Json
 

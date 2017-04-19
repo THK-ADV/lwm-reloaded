@@ -1,16 +1,16 @@
 package controllers
 
-import models.{AssignmentEntryType, Permissions}
+import models.{AssignmentEntryType}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.LwmMimeType._
 import models.Permissions.{entryType, god}
 import modules.BaseNamespace
 
-class EntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
+class EntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends Controller
   with ContentTyped
   with BaseNamespace
   with Secured
