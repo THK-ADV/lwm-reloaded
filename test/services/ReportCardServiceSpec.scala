@@ -228,5 +228,39 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       result.size shouldBe ReportCardEntryType.all.size
       result.forall(eval => ReportCardEntryType.all.count(_.entryType == eval.label) == 1) shouldBe true
     }
+
+    "remove report card evaluations of those who already passed" in {
+      val students = (0 until 200).map(_ => UUID.randomUUID).toList
+
+      def reportCardEvaluations(amount: Int, passed: Boolean, labwork: UUID, studentPool: List[UUID]) = {
+        (0 until amount).flatMap { i =>
+          ReportCardEntryType.all.map(entryType => ReportCardEvaluation(studentPool(i), labwork, entryType.entryType, passed, 0))
+        }.toSet
+      }
+
+      val labwork = UUID.randomUUID
+      val existingPassed = reportCardEvaluations(100, passed = true, labwork, students.take(100))
+      val existingNotPassed = reportCardEvaluations(50, passed = false, labwork, students.slice(100, 150))
+
+      val newestPassed = reportCardEvaluations(30, passed = true, labwork, students.slice(150, 180))
+      val newestNotPassed = reportCardEvaluations(20, passed = false, labwork, students.slice(180, 200))
+      val existingNewestPassed = reportCardEvaluations(20, passed = true, labwork, students.slice(100, 120))
+      val stillNotPassed = reportCardEvaluations(30, passed = false, labwork, students.slice(120, 150))
+      val apparentlyNotPassed = reportCardEvaluations(30, passed = false, labwork, students.take(30))
+
+      val evaluationsToAdd = reportCardService.removeThoseWhoAlreadyPassed(
+        existingPassed ++ existingNotPassed,
+        newestPassed ++ newestNotPassed ++ existingNewestPassed ++ existingPassed ++ stillNotPassed ++ apparentlyNotPassed
+      ).groupBy(_.student)
+
+      evaluationsToAdd.forall(_._2.size == ReportCardEntryType.all.size) shouldBe true
+      evaluationsToAdd.keys.size shouldBe 100
+
+      evaluationsToAdd.keys.toList.exists(existingPassed.groupBy(_.student).keys.toList.contains) shouldBe false
+      evaluationsToAdd.keys.toList.exists(existingNotPassed.groupBy(_.student).keys.toList.contains) shouldBe true
+      evaluationsToAdd.keys.toList.exists(newestNotPassed.groupBy(_.student).keys.toList.contains) shouldBe true
+      evaluationsToAdd.keys.toList.exists(existingNewestPassed.groupBy(_.student).keys.toList.contains) shouldBe true
+      evaluationsToAdd.keys.toList.exists(stillNotPassed.groupBy(_.student).keys.toList.contains) shouldBe true
+    }
   }
 }

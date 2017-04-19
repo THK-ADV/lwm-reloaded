@@ -18,6 +18,8 @@ trait ReportCardServiceLike {
   def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation]
 
   def evaluateExplicit(student: UUID, labwork: UUID): Set[ReportCardEvaluation]
+
+  def removeThoseWhoAlreadyPassed(existing: Set[ReportCardEvaluation], newest: Set[ReportCardEvaluation]): Set[ReportCardEvaluation]
 }
 
 class ReportCardService extends ReportCardServiceLike {
@@ -73,5 +75,12 @@ class ReportCardService extends ReportCardServiceLike {
 
   def evaluateExplicit(student: UUID, labwork: UUID): Set[ReportCardEvaluation] = {
     ReportCardEntryType.all.map(entryType => ReportCardEvaluation(student, labwork, entryType.entryType, bool = true, 0))
+  }
+
+  def passed(evaluations: Set[ReportCardEvaluation]): Boolean = evaluations.forall(_.bool)
+
+  override def removeThoseWhoAlreadyPassed(existing: Set[ReportCardEvaluation], newest: Set[ReportCardEvaluation]) = {
+    val passedYet = existing.groupBy(_.student).filter(e => passed(e._2)).flatMap(_._2)
+    newest.filterNot(e => passedYet.exists(_.student == e.student))
   }
 }
