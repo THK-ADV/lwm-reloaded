@@ -229,15 +229,15 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       result.forall(eval => ReportCardEntryType.all.count(_.entryType == eval.label) == 1) shouldBe true
     }
 
-    "remove report card evaluations of those who already passed" in {
-      val students = (0 until 200).map(_ => UUID.randomUUID).toList
+    val students = (0 until 200).map(_ => UUID.randomUUID).toList
 
-      def reportCardEvaluations(amount: Int, passed: Boolean, labwork: UUID, studentPool: List[UUID]) = {
-        (0 until amount).flatMap { i =>
-          ReportCardEntryType.all.map(entryType => ReportCardEvaluation(studentPool(i), labwork, entryType.entryType, passed, 0))
-        }.toSet
-      }
+    def reportCardEvaluations(amount: Int, passed: Boolean, labwork: UUID, studentPool: List[UUID]) = {
+      (0 until amount).flatMap { i =>
+        ReportCardEntryType.all.map(entryType => ReportCardEvaluation(studentPool(i), labwork, entryType.entryType, passed, 0))
+      }.toSet
+    }
 
+    "remove report card evaluations of those who already passed when mixed" in {
       val labwork = UUID.randomUUID
       val existingPassed = reportCardEvaluations(100, passed = true, labwork, students.take(100))
       val existingNotPassed = reportCardEvaluations(50, passed = false, labwork, students.slice(100, 150))
@@ -261,6 +261,16 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       evaluationsToAdd.keys.toList.exists(newestNotPassed.groupBy(_.student).keys.toList.contains) shouldBe true
       evaluationsToAdd.keys.toList.exists(existingNewestPassed.groupBy(_.student).keys.toList.contains) shouldBe true
       evaluationsToAdd.keys.toList.exists(stillNotPassed.groupBy(_.student).keys.toList.contains) shouldBe true
+    }
+
+    "remove report card evaluations of those who already passed when everyone has already passed" in {
+      val labwork = UUID.randomUUID
+      val existingPassed = reportCardEvaluations(200, passed = true, labwork, students.take(200))
+      val newestPassed = reportCardEvaluations(100, passed = true, labwork, students.take(100))
+
+      val evaluationsToAdd = reportCardService.removeThoseWhoAlreadyPassed(existingPassed, newestPassed)
+
+      evaluationsToAdd shouldBe empty
     }
   }
 }
