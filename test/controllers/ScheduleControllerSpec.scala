@@ -100,7 +100,7 @@ class ScheduleControllerSpec extends WordSpec with TestBaseDefinition with Sesam
   val course = SesameCourseAtom("", "", "", lecturer, 2, None, SesameCourse.randomUUID)
   val degree = SesameDegree("degree", "abbrev")
   val labwork = SesameLabworkAtom("", "", semester, course, degree, subscribable = false, published = false, None, SesameLabwork.randomUUID)
-  val plan = AssignmentPlan(labwork.id, 2, 2, Set(AssignmentEntry(0, "A", Set.empty)))
+  val plan = SesameAssignmentPlan(labwork.id, 2, 2, Set(SesameAssignmentEntry(0, "A", Set.empty)))
   val timetable = Timetable(labwork.id, Set(
     TimetableEntry(Set(UUID.randomUUID()), UUID.randomUUID(), 1, LocalTime.now, LocalTime.now)
   ), LocalDate.now, Set.empty[DateTime])

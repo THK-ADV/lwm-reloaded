@@ -27,8 +27,8 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
 
   override implicit val mimeType = LwmMimeType.userV1Json
 
-  override def create = contextFrom(Create) asyncContentTypedAction { request =>
-    import models.User.writes
+  override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
+  import models.User.writes
     import models.PostgresAuthority.writesAtom
 
     (for {

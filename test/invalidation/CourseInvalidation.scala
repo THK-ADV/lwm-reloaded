@@ -19,9 +19,9 @@ class CourseInvalidation extends SesameDbSpec {
       else SesameLabwork("Label", "Desc", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
     }
 
-    def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {
-      if (nextBoolean) AssignmentPlan(labwork, 1, 2, Set())
-      else AssignmentPlan(SesameLabwork.randomUUID, 1, 2, Set())
+    def aplans(labwork: UUID): Stream[SesameAssignmentPlan] = Stream.continually {
+      if (nextBoolean) SesameAssignmentPlan(labwork, 1, 2, Set())
+      else SesameAssignmentPlan(SesameLabwork.randomUUID, 1, 2, Set())
     }
 
     def grps(labwork: UUID): Stream[Group] = Stream.continually {
@@ -100,7 +100,7 @@ class CourseInvalidation extends SesameDbSpec {
       repo.add[SesameCourse](course)
       repo.addMany[SesameLabwork](labworks)
       repo.addMany[SesameAuthority](authorities)
-      repo.addMany[AssignmentPlan](assPlans)
+      repo.addMany[SesameAssignmentPlan](assPlans)
       repo.addMany[Group](groups)
       repo.addMany[Schedule](schedules)
       repo.addMany[ReportCardEntry](reportCardEntries)
@@ -114,7 +114,7 @@ class CourseInvalidation extends SesameDbSpec {
       repo.get[SesameCourse](SesameCourse.generateUri(course)) shouldBe Success(None)
       repo.getAll[SesameLabwork] shouldBe Success(labworks filter (_.course != course.id))
       repo.getAll[SesameAuthority] shouldBe Success(authorities filter (_.course.get != course.id))
-      repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameAssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Schedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
@@ -132,7 +132,7 @@ class CourseInvalidation extends SesameDbSpec {
 
       repo.deepGet[SesameCourse](SesameCourse.generateUri(course)) map (_ map (_.id)) shouldBe Success(Some(course.id))
       repo.deepGetAll[SesameLabwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
-      repo.deepGetAll[AssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
+      repo.deepGetAll[SesameAssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))
       repo.deepGetAll[Schedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
       repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))

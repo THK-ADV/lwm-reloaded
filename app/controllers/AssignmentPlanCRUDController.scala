@@ -24,31 +24,31 @@ object AssignmentPlanCRUDController {
   val courseAttribute = "course"
 }
 
-class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
+class AssignmentPlanCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameAssignmentPlanProtocol, SesameAssignmentPlan, SesameAssignmentPlanAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, AssignmentPlan] = defaultBindings.AssignmentPlanDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameAssignmentPlan] = defaultBindings.AssignmentPlanDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, AssignmentPlanAtom] = defaultBindings.AssignmentPlanAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameAssignmentPlanAtom] = defaultBindings.AssignmentPlanAtomDescriptor
 
-  override implicit val reads: Reads[AssignmentPlanProtocol] = AssignmentPlan.reads
+  override implicit val reads: Reads[SesameAssignmentPlanProtocol] = SesameAssignmentPlan.reads
 
-  override implicit val writes: Writes[AssignmentPlan] = AssignmentPlan.writes
+  override implicit val writes: Writes[SesameAssignmentPlan] = SesameAssignmentPlan.writes
 
-  override implicit val writesAtom: Writes[AssignmentPlanAtom] = AssignmentPlan.writesAtom
+  override implicit val writesAtom: Writes[SesameAssignmentPlanAtom] = SesameAssignmentPlan.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[AssignmentPlan] = AssignmentPlan
+  override implicit val uriGenerator: UriGenerator[SesameAssignmentPlan] = SesameAssignmentPlan
 
-  override protected def coAtomic(atom: AssignmentPlanAtom): AssignmentPlan = AssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.invalidated, atom.id)
+  override protected def coAtomic(atom: SesameAssignmentPlanAtom): SesameAssignmentPlan = SesameAssignmentPlan(atom.labwork.id, atom.attendance, atom.mandatory, atom.entries, atom.invalidated, atom.id)
 
-  override protected def compareModel(input: AssignmentPlanProtocol, output: AssignmentPlan): Boolean = {
+  override protected def compareModel(input: SesameAssignmentPlanProtocol, output: SesameAssignmentPlan): Boolean = {
     input.attendance == output.attendance && input.mandatory == output.mandatory && input.entries == output.entries
   }
 
-  override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = existing match {
-    case Some(ap) => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.invalidated, ap.id)
-    case None => AssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries)
+  override protected def fromInput(input: SesameAssignmentPlanProtocol, existing: Option[SesameAssignmentPlan]): SesameAssignmentPlan = existing match {
+    case Some(ap) => SesameAssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries, ap.invalidated, ap.id)
+    case None => SesameAssignmentPlan(input.labwork, input.attendance, input.mandatory, input.entries)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -63,7 +63,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     case GetAll => SecureBlock(restrictionId, Permissions.assignmentPlan.getAll)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[AssignmentPlan]): Try[Set[AssignmentPlan]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameAssignmentPlan]): Try[Set[SesameAssignmentPlan]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
@@ -72,7 +72,7 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    queryString.foldRight(Try[Set[AssignmentPlan]](all)) {
+    queryString.foldRight(Try[Set[SesameAssignmentPlan]](all)) {
       case ((`labworkAttribute`, values), t) => t flatMap (set => Try(UUID.fromString(values.head)).map(id => set.filter(_.labwork == id)))
       case ((`courseAttribute`, values), t) =>
         val query = select("labworks") where {
@@ -85,13 +85,13 @@ class AssignmentPlanCRUDController(val repository: SesameRepository, val session
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
           requestAll(repository.getMany[SesameLabwork](_)).
-          requestAll[Set, AssignmentPlan](labworks => t.map(_.filter(p => labworks.exists(_.id == p.labwork)))).
+          requestAll[Set, SesameAssignmentPlan](labworks => t.map(_.filter(p => labworks.exists(_.id == p.labwork)))).
           run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }
   }
 
-  override protected def existsQuery(input: AssignmentPlanProtocol): Clause = {
+  override protected def existsQuery(input: SesameAssignmentPlanProtocol): Clause = {
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 

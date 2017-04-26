@@ -25,9 +25,9 @@ class SemesterInvalidation extends SesameDbSpec {
       else Timetable(SesameLabwork.randomUUID, (tte take 20).toSet, LocalDate.now, Set())
     }
 
-    def aplans(labwork: UUID): Stream[AssignmentPlan] = Stream.continually {
-      if (nextBoolean()) AssignmentPlan(labwork, 1, 2, Set())
-      else AssignmentPlan(SesameLabwork.randomUUID, 1, 2, Set())
+    def aplans(labwork: UUID): Stream[SesameAssignmentPlan] = Stream.continually {
+      if (nextBoolean()) SesameAssignmentPlan(labwork, 1, 2, Set())
+      else SesameAssignmentPlan(SesameLabwork.randomUUID, 1, 2, Set())
     }
 
     def grps(labwork: UUID): Stream[Group] = Stream.continually {
@@ -80,7 +80,7 @@ class SemesterInvalidation extends SesameDbSpec {
 
       repo.add[SesameSemester](semester)
       repo.addMany[SesameLabwork](labworks)
-      repo.addMany[AssignmentPlan](assPlans)
+      repo.addMany[SesameAssignmentPlan](assPlans)
       repo.addMany[Group](groups)
       repo.addMany[Schedule](schedules)
       repo.addMany[ReportCardEntry](reportCardEntries)
@@ -93,7 +93,7 @@ class SemesterInvalidation extends SesameDbSpec {
 
       repo.get[SesameSemester](SesameSemester.generateUri(semester)) shouldBe Success(None)
       repo.getAll[SesameLabwork] shouldBe Success(labworks filter (_.semester != semester.id))
-      repo.getAll[AssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameAssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Schedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
@@ -111,7 +111,7 @@ class SemesterInvalidation extends SesameDbSpec {
 
       repo.deepGet[SesameSemester](SesameSemester.generateUri(semester)) map (_ map (_.id)) shouldBe Success(Some(semester.id))
       repo.deepGetAll[SesameLabwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
-      repo.deepGetAll[AssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
+      repo.deepGetAll[SesameAssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))
       repo.deepGetAll[Schedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
       repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))

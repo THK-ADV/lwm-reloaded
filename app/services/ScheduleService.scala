@@ -34,7 +34,7 @@ trait ScheduleServiceLike {
 }
 
 trait ScheduleGenesisServiceLike {
-  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
+  def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
   def competitive(labwork: Option[SesameLabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG]
 }
 
@@ -93,7 +93,7 @@ object ScheduleService {
 
 class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
 
-  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
+  override def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val entries = timetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups)
     val pop = population(p getOrElse pops, timetable.labwork, entries, groups)
 

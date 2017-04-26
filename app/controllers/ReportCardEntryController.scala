@@ -215,7 +215,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       select(_.get("plan")).
       changeTo(_.headOption).
       map(_.stringValue())(optM).
-      request(repository.get[AssignmentPlan](_))
+      request(repository.get[SesameAssignmentPlan](_))
 
     (for {
       optPlan <- attemptPlan.run

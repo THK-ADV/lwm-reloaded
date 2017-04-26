@@ -11,12 +11,12 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
 
-object DegreePostgresController {
+object DegreeControllerPostgres {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreePostgresController(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val degreeService: DegreeService)
+final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val degreeService: DegreeService)
   extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -35,7 +35,7 @@ final class DegreePostgresController(val sessionService: SessionHandlingService,
   override protected val abstractDao: AbstractDao[DegreeTable, DegreeDb, PostgresDegree] = degreeService
 
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
-    import controllers.DegreePostgresController._
+    import controllers.DegreeControllerPostgres._
 
     (appendTo, (attribute, values)) match {
       case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))

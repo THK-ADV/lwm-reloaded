@@ -197,12 +197,12 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
     def whenPreview(evals: Set[ReportCardEvaluation]): OngoingStubbing[Set[ReportCardEvaluation]] = {
       doReturn(query).when(repository).prepareQuery(anyObject())
       doReturn(Success(
-        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+        Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
         Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
-      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
       when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
 
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
@@ -239,12 +239,12 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
       doReturn(query).when(repository).prepareQuery(anyObject())
       doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
-        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+        Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
         Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
-      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
       doReturn(Success(Set.empty)).doReturn(Success(evals)).when(repository).getMany(anyObject())(anyObject())
 
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
@@ -272,12 +272,12 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
       doReturn(query).when(repository).prepareQuery(anyObject())
       doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
-        Map("ap" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+        Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
         Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
-      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(AssignmentPlan.empty)))
+      when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
       doReturn(Success(evals)).doReturn(Success(evals)).when(repository).getMany(anyObject())(anyObject())
 
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)

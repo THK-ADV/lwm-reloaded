@@ -233,9 +233,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+        Map("plan" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       ))
-      doReturn(Success(Some(AssignmentPlan.empty))).
+      doReturn(Success(Some(SesameAssignmentPlan.empty))).
         doReturn(Success(Some(Schedule.empty))).
         doReturn(Success(Some(Group.empty))).
         when(repository).get(anyObject())(anyObject())
@@ -265,7 +265,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(
-        Map("plan" -> List(factory.createURI(AssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
+        Map("plan" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       ))
       doReturn(Failure(new Exception(errorMessage))).
         doReturn(Success(Some(Schedule.empty))).

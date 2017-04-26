@@ -19,7 +19,7 @@ trait UniqueTable { self: Table[_] =>
   final def lastModifiedSince(timestamp: Timestamp): Rep[Boolean] = lastModified >= timestamp
 }
 
-trait LabworkTableId { self: Table[_] =>
+trait LabworkIdTable { self: Table[_] =>
   def labwork = column[UUID]("LABWORK")
 }
 
@@ -124,7 +124,7 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
   override def * = (label, description, semester, course, degree, subscribable, published, lastModified, invalidated, id) <> ((LabworkDb.apply _).tupled, LabworkDb.unapply)
 }
 
-class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkTableId {
+class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable {
   def applicant = column[UUID]("APPLICANT")
   def timestamp = column[Timestamp]("TIMESTAMP")
 
@@ -193,9 +193,23 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
   override def * = (role, permission,lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
 }
 
-class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable {
-  def label = column[String]("LABEL")
-  def description = column[String]("DESCRIPTION")
+class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable with LabelTable with DescriptionTable {
 
   override def * = (label, description, lastModified, invalidated, id) <> ((RoomDb.apply _).tupled, RoomDb.unapply)
+}
+
+class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGNMENT_PLAN") with UniqueTable with LabworkIdTable {
+  def attendance = column[Int]("ATTENDANCE")
+  def mandatory = column[Int]("MANDATORY")
+
+  override def * = (labwork, attendance, mandatory, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Int, Int, Timestamp, Option[Timestamp], UUID)) => AssignmentPlanDb = {
+    case (labwork, attendance, mandatory, lastModified, invalidated, id) =>
+      AssignmentPlanDb(labwork, attendance, mandatory, Set.empty, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (AssignmentPlanDb) => Option[(UUID, Int, Int, Timestamp, Option[Timestamp], UUID)] = {
+    plan => Option((plan.labwork, plan.attendance, plan.mandatory, plan.lastModified, plan.invalidated, plan.id))
+  }
 }

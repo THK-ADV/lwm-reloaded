@@ -198,7 +198,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         select(_.get("ap")).
         changeTo(_.headOption).
         map(_.stringValue)(optM).
-        request(repository.get[AssignmentPlan])
+        request(repository.get[SesameAssignmentPlan])
     }
 
     def reportCards = {

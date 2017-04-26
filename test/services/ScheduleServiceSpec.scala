@@ -26,9 +26,9 @@ object ScheduleServiceSpec {
     (unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27)).toVector
   }
 
-  def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "label", Set.empty, duration)).toSet
-    AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
+  def assignmentPlan(amount: Int, duration: Int = 1): SesameAssignmentPlan = {
+    val entries = (0 until amount).map(n => SesameAssignmentEntry(n, "label", Set.empty, duration)).toSet
+    SesameAssignmentPlan(UUID.randomUUID(), amount, amount, entries)
   }
 
   def population(n: Int): Vector[UUID] = (Stream.continually(UUID.randomUUID()) take n).toVector

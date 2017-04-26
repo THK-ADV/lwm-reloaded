@@ -141,7 +141,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       semester = lab map (_.semester)
       groups <- groupService.groupBy(labId, groupStrategy)
       timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
-      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labId))
+      plans <- repository.getAll[SesameAssignmentPlan].map(_.find(_.labwork == labId))
       all <- repository.getAll[ScheduleAtom]
       comp = scheduleGenesisService.competitive(lab, all)
       valueOf = extract(request.queryString) _

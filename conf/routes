@@ -12,9 +12,9 @@ GET           /degrees/:id                                                      
 HEAD          /degrees                                                                controllers.DegreeCRUDController.header
 
 # Degree 2.0
-PUT           /api2/degrees/:id                                                       controllers.DegreePostgresController.update(id)
-GET           /api2/degrees                                                           controllers.DegreePostgresController.all()
-GET           /api2/degrees/:id                                                       controllers.DegreePostgresController.get(id)
+PUT           /api2/degrees/:id                                                       controllers.DegreeControllerPostgres.update(id)
+GET           /api2/degrees                                                           controllers.DegreeControllerPostgres.all()
+GET           /api2/degrees/:id                                                       controllers.DegreeControllerPostgres.get(id)
 
 # Course
 POST          /courses                                                                controllers.CourseCRUDController.createWithRoles()
@@ -218,6 +218,13 @@ GET           /courses/:course/assignmentPlans                                  
 GET           /courses/:course/assignmentPlans/:id                                    controllers.AssignmentPlanCRUDController.getFrom(course, id)
 DELETE        /courses/:course/assignmentPlans/:id                                    controllers.AssignmentPlanCRUDController.deleteFrom(course, id)
 HEAD          /assignmentPlans                                                        controllers.AssignmentPlanCRUDController.header
+
+# AssignmentPlan 2.0
+POST          /api2/courses/:course/assignmentPlans                                   controllers.AssignmentPlanControllerPostgres.createFrom(course)
+PUT           /api2/courses/:course/assignmentPlans/:id                               controllers.AssignmentPlanControllerPostgres.updateFrom(course, id)
+GET           /api2/courses/:course/assignmentPlans                                   controllers.AssignmentPlanControllerPostgres.allFrom(course)
+GET           /api2/courses/:course/assignmentPlans/:id                               controllers.AssignmentPlanControllerPostgres.getFrom(course, id)
+DELETE        /api2/courses/:course/assignmentPlans/:id                               controllers.AssignmentPlanControllerPostgres.deleteFrom(course, id)
 
 # Annotation
 POST          /courses/:c/labworks/:l/annotations                                     controllers.AnnotationCRUDController.createFrom(c, l)

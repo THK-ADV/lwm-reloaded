@@ -47,7 +47,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(labworks)
       entries <- repository.getAll[ReportCardEntry].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
       _ = println(entries.groupBy(_.labwork).keys)
-      aps <- repository.getAll[AssignmentPlan].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
+      aps <- repository.getAll[SesameAssignmentPlan].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
       grouped = entries.groupBy(_.student)
       _ = grouped.foreach {
         case (student, reportCardEntries) if reportCardEntries.size > aps.find(_.labwork == reportCardEntries.head.labwork).get.entries.size => println(s"student $student with ${reportCardEntries.size} entries")

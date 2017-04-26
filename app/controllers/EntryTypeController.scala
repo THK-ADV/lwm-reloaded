@@ -1,6 +1,6 @@
 package controllers
 
-import models.{AssignmentEntryType}
+import models.{SesameAssignmentEntryType}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
 import services.{RoleServiceLike, SessionHandlingService}
@@ -20,7 +20,7 @@ class EntryTypeController(val repository: SesameRepository, val sessionService: 
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
-    Ok(Json.toJson(AssignmentEntryType.all)(Writes.set(AssignmentEntryType.writes))).as(mimeType)
+    Ok(Json.toJson(SesameAssignmentEntryType.all)(Writes.set(SesameAssignmentEntryType.writes))).as(mimeType)
   }
 
   def header() = Action { implicit request =>

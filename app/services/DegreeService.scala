@@ -1,6 +1,5 @@
 package services
 
-import java.sql.Timestamp
 import java.util.UUID
 
 import models.{DegreeDb, PostgresDegree}

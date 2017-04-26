@@ -9,7 +9,6 @@ import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
 import slick.dbio.DBIOAction
 import slick.dbio.Effect.Write
-import slick.profile.FixedSqlAction
 
 import scala.concurrent.Future
 

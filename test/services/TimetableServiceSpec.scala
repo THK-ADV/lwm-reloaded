@@ -45,10 +45,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with blacklists applied" in {
       val tt = timetable()
       val aEntries = (0 until 7).map {
-        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
-        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
+        case e if e < 5 => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType])
+        case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
@@ -68,8 +68,8 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with blacklists applied" in {
       val tt = timetable()
-      val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val aEntries = (0 until 5).map(SesameAssignmentEntry(_, "label", Set.empty[SesameAssignmentEntryType], 2)).toSet
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
@@ -85,7 +85,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       checkAssertion(tt, plan, groups, expectedStart, result)
     }
 
-    def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
+    def checkAssertion(timetable: Timetable, plan: SesameAssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
       import models.LwmDateTime.localDateTimeOrd
 
       val sortedResult = result.map(toLocalDateTime).sorted
@@ -113,10 +113,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
       val tt = timetable(localBlacklist)
       val aEntries = (0 until 7).map {
-        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
-        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
+        case e if e < 5 => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType])
+        case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(

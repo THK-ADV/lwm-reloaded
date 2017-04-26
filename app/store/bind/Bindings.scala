@@ -241,10 +241,10 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[SesameAuthorityAtom](
         auth => makeUri(SesameAuthority.generateUri(auth.id)))(privileged, role, course, invalidated, id)(SesameAuthorityAtom.apply, SesameAuthorityAtom.unapply) withClasses classUris
   }
-  implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, AssignmentEntry] = new Descriptor[Rdf, AssignmentEntry] {
+  implicit lazy val AssignmentEntryDescriptor: Descriptor[Rdf, SesameAssignmentEntry] = new Descriptor[Rdf, SesameAssignmentEntry] {
     override val clazz: Rdf#URI = lwm.AssignmentEntry
 
-    override val classUris: ClassUrisFor[Rdf, AssignmentEntry] = classUrisFor[AssignmentEntry](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAssignmentEntry] = classUrisFor[SesameAssignmentEntry](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt AssignmentEntryTypeDescriptor.references
 
@@ -253,27 +253,27 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val index = property[Int](lwm.index)
     private val label = property[String](lwm.label)
     private val duration = property[Int](lwm.duration)
-    private val types = set[AssignmentEntryType](lwm.entryTypes)(AssignmentEntryTypeDescriptor.binder)
+    private val types = set[SesameAssignmentEntryType](lwm.entryTypes)(AssignmentEntryTypeDescriptor.binder)
 
-    override val binder: PGBinder[Rdf, AssignmentEntry] =
-      pgbWithId[AssignmentEntry](_ => innerUri)(index, label, types, duration)(AssignmentEntry.apply, AssignmentEntry.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAssignmentEntry] =
+      pgbWithId[SesameAssignmentEntry](_ => innerUri)(index, label, types, duration)(SesameAssignmentEntry.apply, SesameAssignmentEntry.unapply) withClasses classUris
   }
-  implicit lazy val AssignmentEntryTypeDescriptor: Descriptor[Rdf, AssignmentEntryType] = new Descriptor[Rdf, AssignmentEntryType] {
+  implicit lazy val AssignmentEntryTypeDescriptor: Descriptor[Rdf, SesameAssignmentEntryType] = new Descriptor[Rdf, SesameAssignmentEntryType] {
     override val clazz: Rdf#URI = lwm.AssignmentEntryType
 
-    override val classUris: ClassUrisFor[Rdf, AssignmentEntryType] = classUrisFor[AssignmentEntryType](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAssignmentEntryType] = classUrisFor[SesameAssignmentEntryType](clazz)
 
     private val entryType = property[String](lwm.entryType)
     private val bool = property[Boolean](lwm.bool)
     private val int = property[Int](lwm.int)
 
-    override val binder: PGBinder[Rdf, AssignmentEntryType] =
-      pgbWithId[AssignmentEntryType](_ => innerUri)(entryType, bool, int)(AssignmentEntryType.apply, AssignmentEntryType.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAssignmentEntryType] =
+      pgbWithId[SesameAssignmentEntryType](_ => innerUri)(entryType, bool, int)(SesameAssignmentEntryType.apply, SesameAssignmentEntryType.unapply) withClasses classUris
   }
-  implicit lazy val AssignmentPlanDescriptor: Descriptor[Rdf, AssignmentPlan] = new Descriptor[Rdf, AssignmentPlan] {
+  implicit lazy val AssignmentPlanDescriptor: Descriptor[Rdf, SesameAssignmentPlan] = new Descriptor[Rdf, SesameAssignmentPlan] {
     override val clazz: Rdf#URI = lwm.AssignmentPlan
 
-    override val classUris: ClassUrisFor[Rdf, AssignmentPlan] = classUrisFor[AssignmentPlan](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAssignmentPlan] = classUrisFor[SesameAssignmentPlan](clazz)
 
     override val references: Ref[Rdf#URI] = Ref(clazz) pointsAt AssignmentEntryDescriptor.references
 
@@ -282,16 +282,16 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(SesameLabwork.splitter))
     private val attendance = property[Int](lwm.attendance)
     private val mandatory = property[Int](lwm.mandatory)
-    private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryDescriptor.binder)
+    private val entries = set[SesameAssignmentEntry](lwm.entries)(AssignmentEntryDescriptor.binder)
 
-    override val binder: PGBinder[Rdf, AssignmentPlan] =
-      pgbWithId[AssignmentPlan](aPlan =>
-        makeUri(AssignmentPlan.generateUri(aPlan)))(labwork, attendance, mandatory, entries, invalidated, id)(AssignmentPlan.apply, AssignmentPlan.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAssignmentPlan] =
+      pgbWithId[SesameAssignmentPlan](aPlan =>
+        makeUri(SesameAssignmentPlan.generateUri(aPlan)))(labwork, attendance, mandatory, entries, invalidated, id)(SesameAssignmentPlan.apply, SesameAssignmentPlan.unapply) withClasses classUris
   }
-  implicit lazy val AssignmentPlanAtomDescriptor: Descriptor[Rdf, AssignmentPlanAtom] = new Descriptor[Rdf, AssignmentPlanAtom] {
+  implicit lazy val AssignmentPlanAtomDescriptor: Descriptor[Rdf, SesameAssignmentPlanAtom] = new Descriptor[Rdf, SesameAssignmentPlanAtom] {
     override val clazz: Rdf#URI = lwm.AssignmentPlan
 
-    override val classUris: ClassUrisFor[Rdf, AssignmentPlanAtom] = classUrisFor[AssignmentPlanAtom](clazz)
+    override val classUris: ClassUrisFor[Rdf, SesameAssignmentPlanAtom] = classUrisFor[SesameAssignmentPlanAtom](clazz)
 
     override val references: Ref[Rdf#URI] =
       Ref(clazz)
@@ -301,11 +301,11 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
     private val labwork = property[SesameLabwork](lwm.labwork)(LabworkDescriptor.binder)
     private val attendance = property[Int](lwm.attendance)
     private val mandatory = property[Int](lwm.mandatory)
-    private val entries = set[AssignmentEntry](lwm.entries)(AssignmentEntryDescriptor.binder)
+    private val entries = set[SesameAssignmentEntry](lwm.entries)(AssignmentEntryDescriptor.binder)
 
-    override val binder: PGBinder[Rdf, AssignmentPlanAtom] =
-      pgbWithId[AssignmentPlanAtom](aPlan =>
-        makeUri(AssignmentPlan.generateUri(aPlan.id)))(labwork, attendance, mandatory, entries, invalidated, id)(AssignmentPlanAtom.apply, AssignmentPlanAtom.unapply) withClasses classUris
+    override val binder: PGBinder[Rdf, SesameAssignmentPlanAtom] =
+      pgbWithId[SesameAssignmentPlanAtom](aPlan =>
+        makeUri(SesameAssignmentPlan.generateUri(aPlan.id)))(labwork, attendance, mandatory, entries, invalidated, id)(SesameAssignmentPlanAtom.apply, SesameAssignmentPlanAtom.unapply) withClasses classUris
   }
   implicit lazy val LabworkDescriptor: Descriptor[Rdf, SesameLabwork] = new Descriptor[Rdf, SesameLabwork] {
     override val clazz: Rdf#URI = lwm.Labwork
