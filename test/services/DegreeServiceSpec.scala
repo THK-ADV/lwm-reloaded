@@ -8,7 +8,7 @@ import store.DegreeTable
 final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeService {
   import services.AbstractDaoSpec._
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
   override protected def name: String = "degree"
 

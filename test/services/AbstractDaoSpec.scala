@@ -19,6 +19,7 @@ object AbstractDaoSpec {
   val maxCourses = 10
   val maxRooms = 10
   val maxEmployees = 10
+  val maxAssignmentPlans = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -54,6 +55,15 @@ object AbstractDaoSpec {
   }.toList
 
   val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
+
+  val assignmentPlans = (0 until maxAssignmentPlans).map { i =>
+    val entries = (0 until 10).map { j =>
+      val allTypes = PostgresAssignmentEntryType.all
+      PostgresAssignmentEntry(j, j.toString, allTypes.take(nextInt(allTypes.size - 1) + 1))
+    }
+
+    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
+  }.toList
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
@@ -67,11 +77,11 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   }
 
   protected def name: String
-  protected def dbEntity: DbModel
-  protected def invalidDuplicateOfDbEntity: DbModel
-  protected def invalidUpdateOfDbEntity: DbModel
-  protected def validUpdateOnDbEntity: DbModel
-  protected def dbEntities: List[DbModel]
+  protected def dbEntity: DbModel // dbEntity should not expand
+  protected def invalidDuplicateOfDbEntity: DbModel // invalidDuplicateOfDbEntity should not expand
+  protected def invalidUpdateOfDbEntity: DbModel // invalidUpdateOfDbEntity should not expand
+  protected def validUpdateOnDbEntity: DbModel // validUpdateOnDbEntity should not expand
+  protected def dbEntities: List[DbModel] // dbEntities should not expand
 
   protected def lwmEntity: LwmModel
   protected def lwmAtom: LwmModel

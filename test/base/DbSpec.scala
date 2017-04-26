@@ -18,7 +18,8 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
   override lazy val db = Database.forConfig("database_test")
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  protected final def await[T](future: Future[T]) = Await.result(future, Duration.Inf)
+  protected final def await[R](future: Future[R]): R = Await.result(future, Duration.Inf)
+  protected final def run[R](action: DBIOAction[R, NoStream, Nothing]): R = await(db.run(action))
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
@@ -34,7 +35,10 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Post
     TableQuery[LabworkTable].schema,
     TableQuery[LabworkApplicationTable].schema,
     TableQuery[LabworkApplicationFriendTable].schema,
-    TableQuery[RoomTable].schema
+    TableQuery[RoomTable].schema,
+    TableQuery[AssignmentPlanTable].schema,
+    TableQuery[AssignmentEntryTable].schema,
+    TableQuery[AssignmentEntryTypeTable].schema
   )
 
   private val mandatoryFill = DBIO.seq(

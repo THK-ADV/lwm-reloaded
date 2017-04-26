@@ -74,7 +74,8 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])])
 
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
-                              (build: LabworkApplicationDependencies => LabworkApplication) = {
+                              (build: LabworkApplicationDependencies => LabworkApplication)
+  : Future[Seq[LabworkApplication]] = {
     val mandatory = for {
       q <- query
       l <- q.joinLabwork
@@ -102,9 +103,8 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     override def expandUpdateOf(entity: LabworkApplicationDb) = {
       for {
         deleted <- expandDeleteOf(entity) if deleted.isDefined
-        lappFriends = entity.friends.map(id => LabworkApplicationFriend(entity.id, id)).toList
-        u <- labworkApplicationFriendService.createManyQuery(lappFriends)
-      } yield Some(entity.copy(entity.labwork, entity.applicant, u.map(_.friend).toSet))
+        created <- expandCreationOf(Seq(entity))
+      } yield created.headOption
     }
 
     override def expandDeleteOf(entity: LabworkApplicationDb) = {

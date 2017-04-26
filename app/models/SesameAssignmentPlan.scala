@@ -82,7 +82,11 @@ case class PostgresAssignmentPlanProtocol(labwork: UUID, attendance: Int, mandat
 
 case class PostgresAssignmentEntry(index: Int, label: String, types: Set[PostgresAssignmentEntryType], duration: Int = 1)
 
+case class AssignmentEntryDb(assignmentPlan: UUID, index: Int, label: String, types: Set[AssignmentEntryTypeDb], duration: Int = 1, id: UUID = UUID.randomUUID) extends UniqueEntity
+
 case class PostgresAssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
+
+case class AssignmentEntryTypeDb(assignmentEntry: UUID, entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class PostgresAssignmentPlanAtom(labwork: PostgresLabwork, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], id: UUID) extends AssignmentPlan
 
@@ -134,10 +138,10 @@ object PostgresAssignmentEntry extends JsonSerialisation[PostgresAssignmentEntry
 object PostgresAssignmentEntryType extends JsonSerialisation[PostgresAssignmentEntryType, PostgresAssignmentEntryType, PostgresAssignmentEntryType] {
 
   lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
-  val Attendance = SesameAssignmentEntryType("Anwesenheitspflichtig")
-  val Certificate = SesameAssignmentEntryType("Testat")
-  val Bonus = SesameAssignmentEntryType("Bonus")
-  val Supplement = SesameAssignmentEntryType("Zusatzleistung")
+  val Attendance = PostgresAssignmentEntryType("Anwesenheitspflichtig")
+  val Certificate = PostgresAssignmentEntryType("Testat")
+  val Bonus = PostgresAssignmentEntryType("Bonus")
+  val Supplement = PostgresAssignmentEntryType("Zusatzleistung")
 
   override implicit def reads: Reads[PostgresAssignmentEntryType] = Json.reads[PostgresAssignmentEntryType]
 

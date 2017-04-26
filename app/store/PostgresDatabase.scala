@@ -21,6 +21,8 @@ trait UniqueTable { self: Table[_] =>
 
 trait LabworkIdTable { self: Table[_] =>
   def labwork = column[UUID]("LABWORK")
+
+  def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
 }
 
 trait LabelTable { self: Table[_] =>
@@ -139,7 +141,6 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
   }
 
   def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
-  def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
   def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
 
   def fullJoin = {
@@ -212,4 +213,33 @@ class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGN
   def unmapRow: (AssignmentPlanDb) => Option[(UUID, Int, Int, Timestamp, Option[Timestamp], UUID)] = {
     plan => Option((plan.labwork, plan.attendance, plan.mandatory, plan.lastModified, plan.invalidated, plan.id))
   }
+}
+
+class AssignmentEntryTable(tag: Tag) extends Table[AssignmentEntryDb](tag, "ASSIGNMENT_ENTRY") with UniqueTable with LabelTable {
+  def assignmentPlan = column[UUID]("ASSIGNMENT_PLAN")
+  def index = column[Int]("INDEX")
+  def duration = column[Int]("DURATION")
+
+  def assignmentPlanFk = foreignKey("ASSIGNMENT_PLAN_fkey", assignmentPlan, TableQuery[AssignmentPlanTable])(_.id)
+
+  override def * = (assignmentPlan, index, label, duration, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Int, String, Int, UUID)) => AssignmentEntryDb = {
+    case (assignmentPlan, index, label, duration, id) => AssignmentEntryDb(assignmentPlan, index, label, Set.empty, duration, id)
+  }
+
+  def unmapRow: (AssignmentEntryDb) => Option[(UUID, Int, String, Int, UUID)] = {
+    entry => Option((entry.assignmentPlan, entry.index, entry.label, entry.duration, entry.id))
+  }
+}
+
+class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](tag, "ASSIGNMENT_ENTRY_TYPE") with UniqueTable {
+  def assignmentEntry = column[UUID]("ASSIGNMENT_ENTRY")
+  def entryType = column[String]("ENTRY_TYPE")
+  def bool = column[Boolean]("BOOL")
+  def int = column[Int]("INT")
+
+  def assignmentEntryFk = foreignKey("ASSIGNMENT_ENTRY_fkey", assignmentEntry, TableQuery[AssignmentEntryTable])(_.id)
+
+  override def * = (assignmentEntry, entryType, bool, int, id) <> ((AssignmentEntryTypeDb.apply _).tupled, AssignmentEntryTypeDb.unapply)
 }

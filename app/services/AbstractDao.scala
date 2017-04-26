@@ -25,9 +25,9 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  /*case class IdFilter(value: String) extends TableFilter[T] {
+  case class IdFilter(value: String) extends TableFilter[T] {
     override def predicate = _.id === UUID.fromString(value)
-  }*/
+  }
 
   def tableQuery: TableQuery[T]
 
@@ -70,6 +70,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     } yield e).transactionally)
   }
 
+  // FIXME: CREATE MANY DOES NOT EXPAND CREATION OF ENTITIES
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
