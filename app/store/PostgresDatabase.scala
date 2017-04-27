@@ -8,6 +8,7 @@ import slick.lifted.Rep
 import java.sql.{Date, Timestamp}
 
 import org.joda.time.DateTime
+import slick.driver.PostgresDriver
 
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
@@ -37,8 +38,8 @@ trait AbbreviationTable { self: Table[_] =>
   def abbreviation = column[String]("ABBREVIATION")
 }
 
-trait PostgresDatabase {
-  lazy val db = Database.forConfig("database")
+trait PostgresDatabase { // TODO GET RID OF THIS
+  lazy val db: PostgresDriver.backend.Database = Database.forConfig("database")
 }
 
 trait TableFilter[T <: Table[_]] {

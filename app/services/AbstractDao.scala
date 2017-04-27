@@ -4,7 +4,9 @@ import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
+import modules.DatabaseModule
 import slick.dbio.Effect.Write
+import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import slick.profile.FixedSqlAction
 import store.{PostgresDatabase, TableFilter, UniqueTable}
@@ -22,12 +24,14 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
 }
 
 // TODO maybe we can get rid of DbModel
-trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
+trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   case class IdFilter(value: String) extends TableFilter[T] {
     override def predicate = _.id === UUID.fromString(value)
   }
+
+  protected def db: PostgresDriver.backend.Database
 
   def tableQuery: TableQuery[T]
 
@@ -61,13 +65,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     }
   }
 
-  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = databaseExpander.fold {
-    db.run(createManyQuery(entities))
-  } { expander =>
-    db.run((for {
-      _ <- createManyQuery(entities)
-      e <- expander.expandCreationOf(entities)
-    } yield e).transactionally)
+  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = {
+    databaseExpander.fold {
+      db.run(createManyQuery(entities))
+    } { expander =>
+      db.run((for {
+        _ <- createManyQuery(entities)
+        e <- expander.expandCreationOf(entities)
+      } yield e).transactionally)
+    }
   }
 
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities

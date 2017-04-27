@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{SemesterCRUDController, SemesterControllerPostgres}
-import services.SemesterService
+import services.{SemesterService, SemesterServiceImpl}
 
 trait SemesterManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -15,14 +15,24 @@ trait DefaultSemesterManagementModuleImpl extends SemesterManagementModule {
   lazy val semesterManagementController: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService)
 }
 
+// POSTGRES
+
+trait SemesterServiceModule { self: DatabaseModule =>
+  def semesterService: SemesterService
+}
+
+trait DefaultSemesterServiceModule extends SemesterServiceModule { self: DatabaseModule =>
+  override lazy val semesterService = new SemesterServiceImpl(db)
+}
+
 trait SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with SemesterServiceModule =>
 
   def semesterManagementControllerPostgres: SemesterControllerPostgres
 }
 
 trait DefaultSemesterManagementModuleImplPostgres extends SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with SemesterServiceModule =>
 
-  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, roleService, SemesterService)
+  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, roleService, semesterService)
 }

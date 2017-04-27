@@ -9,6 +9,7 @@ import store.{PostgresDatabase, RoomTable, TableFilter}
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
+import slick.driver.PostgresDriver
 
 case class RoomIdFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.id === UUID.fromString(value)
@@ -17,7 +18,7 @@ case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
-trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] { self: PostgresDatabase =>
+trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
@@ -42,4 +43,4 @@ trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] { self: P
   }
 }
 
-object RoomService extends RoomService with PostgresDatabase
+final class RoomServiceImpl(val db: PostgresDriver.backend.Database) extends RoomService

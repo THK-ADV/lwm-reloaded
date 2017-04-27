@@ -10,6 +10,7 @@ import slick.driver.PostgresDriver.api._
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
 import org.joda.time.DateTime
+import slick.driver.PostgresDriver
 
 case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[AssignmentPlanTable] {
   override def predicate = _.labwork === UUID.fromString(value)
@@ -17,7 +18,6 @@ case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[Assign
 
 trait AssignmentPlanService
   extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
-  self: PostgresDatabase =>
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -134,4 +134,4 @@ trait AssignmentPlanService
   }
 }
 
-object AssignmentPlanService extends AssignmentPlanService with PostgresDatabase
+final class AssignmentPlanServiceImpl(val db: PostgresDriver.backend.Database) extends AssignmentPlanService

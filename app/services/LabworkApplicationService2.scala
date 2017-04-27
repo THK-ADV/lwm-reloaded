@@ -9,6 +9,7 @@ import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
 import slick.dbio.DBIOAction
 import slick.dbio.Effect.Write
+import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
 
@@ -20,7 +21,7 @@ case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[La
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
-trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] { self: PostgresDatabase =>
+trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
@@ -151,7 +152,7 @@ trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFrie
   }
 }
 
-object LabworkApplicationService2 extends LabworkApplicationService2 with PostgresDatabase {
+final class LabworkApplicationServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkApplicationService2 {
   override protected def labworkApplicationFriendService: LabworkApplicationFriendService = LabworkApplicationFriendService
 }
 

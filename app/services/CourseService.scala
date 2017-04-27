@@ -6,6 +6,8 @@ import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
 import store.{CourseTable, PostgresDatabase, TableFilter}
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
+
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
@@ -17,7 +19,7 @@ case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTa
   override def predicate = _.semesterIndex === value.toInt
 }
 
-trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
+trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
@@ -64,4 +66,4 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
   }
 }
 
-object CourseService extends CourseService with PostgresDatabase
+final class CourseServiceImpl(val db: PostgresDriver.backend.Database) extends CourseService

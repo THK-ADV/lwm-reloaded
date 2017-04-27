@@ -5,10 +5,12 @@ import java.util.UUID
 import base.PostgresDbSpec
 import models._
 import slick.dbio.Effect.Write
+import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store._
 
-final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationService2 {
+class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationService2 {
+
   import services.AbstractDaoSpec._
   import scala.util.Random.{nextInt, nextBoolean}
   import models.LwmDateTime.SqlTimestampConverter
@@ -20,7 +22,7 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
   val applicants = (0 until maxApplicants).map(applicant).toList
 
   @scala.annotation.tailrec
-  def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
+  final def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
     val applicant = applicants(nextInt(maxApplicants - reservedApplicants))
 
     avoiding match {
@@ -47,7 +49,7 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
     TableQuery[UserTable].forceInsertAll(applicants)
   )
 
-  override protected val labworkApplicationFriendService: LabworkApplicationFriendService = new LabworkApplicationFriendServiceSpec()
+  override protected val labworkApplicationFriendService: LabworkApplicationFriendService = ???
 
   override protected def name: String = "labworkApplication"
 
@@ -166,8 +168,4 @@ final class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplic
       } shouldBe true
     }
   }
-}
-
-final class LabworkApplicationFriendServiceSpec extends PostgresDbSpec with LabworkApplicationFriendService {
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = ???
 }

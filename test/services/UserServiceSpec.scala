@@ -179,9 +179,15 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
 
-  override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
+  override protected val authorityService: AuthorityService = ???
 
-  override protected val labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
+  override protected val labworkApplicationService: LabworkApplicationService2 = {
+    lazy val sharedDb = db
+
+    new LabworkApplicationService2Spec {
+      override lazy val db = sharedDb // TODO STILL NEEDED?
+    }
+  }
 
   override protected def name: String = "user"
 

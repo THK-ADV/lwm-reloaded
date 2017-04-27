@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{LabworkApplicationCRUDController, LabworkApplicationControllerPostgres}
-import services.{LabworkApplicationService, LabworkApplicationService2, LabworkApplicationServiceLike}
+import services.{LabworkApplicationService, LabworkApplicationService2, LabworkApplicationServiceImpl, LabworkApplicationServiceLike}
 import utils.LwmApplication
 
 trait LabworkApplicationServiceModule {
@@ -28,14 +28,24 @@ trait DefaultLabworkApplicationManagementModule extends LabworkApplicationManage
   override lazy val labworkApplicationController: LabworkApplicationCRUDController = new LabworkApplicationCRUDController(repository, sessionService, namespace, roleService)
 }
 
+// POSTGRES
+
+trait LabworkApplication2ServiceModule { self: DatabaseModule =>
+  def labworkApplicationService2: LabworkApplicationService2
+}
+
+trait DefaultLabworkApplication2ServiceModule extends LabworkApplication2ServiceModule { self: DatabaseModule =>
+  override lazy val labworkApplicationService2 = new LabworkApplicationServiceImpl(db)
+}
+
 trait LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplication2ServiceModule =>
 
   def labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres
 }
 
 trait DefaultLabworkApplicationManagementModulePostgres extends LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplication2ServiceModule =>
 
-  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, LabworkApplicationService2)
+  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, labworkApplicationService2)
 }

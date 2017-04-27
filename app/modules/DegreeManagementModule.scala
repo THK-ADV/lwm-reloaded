@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{DegreeCRUDController, DegreeControllerPostgres}
-import services.DegreeService
+import services.{DegreeService, DegreeServiceImpl}
 
 trait DegreeManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -14,13 +14,23 @@ trait DefaultDegreeManagementModuleImpl extends DegreeManagementModule {
   lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(repository, sessionService, namespace, roleService)
 }
 
+// POSTGRES
+
+trait DegreeServiceModule { self: DatabaseModule =>
+  def degreeService: DegreeService
+}
+
+trait DefaultDegreeServiceModule extends DegreeServiceModule { self: DatabaseModule =>
+  override lazy val degreeService = new DegreeServiceImpl(db)
+}
+
 trait DegreeManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with DegreeServiceModule =>
   def degreeManagementControllerPostgres: DegreeControllerPostgres
 }
 
 trait DefaultDegreeManagementModuleImplPostgres extends DegreeManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with DegreeServiceModule =>
 
-  lazy val degreeManagementControllerPostgres: DegreeControllerPostgres = new DegreeControllerPostgres(sessionService, roleService, DegreeService)
+  lazy val degreeManagementControllerPostgres: DegreeControllerPostgres = new DegreeControllerPostgres(sessionService, roleService, degreeService)
 }

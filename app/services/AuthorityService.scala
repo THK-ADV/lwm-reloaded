@@ -1,12 +1,13 @@
 package services
 
-import java.sql.Timestamp
 import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 import store._
+
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
@@ -23,7 +24,7 @@ case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
 }
 
-trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] { self: PostgresDatabase =>
+trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def roleService: RoleService2
@@ -49,6 +50,7 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     filterBy(List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))).filter(_.course === entity.course)
   }
 
+  // TODO refactor based on AssignmentPlanService.toAtomic
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
@@ -73,6 +75,7 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     db.run(query.result.map(_.map(_.toAuthority)))
   }
 
+  // TODO maybe we can do this with Expander
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
     for {
       role <- roleService.byUserStatus(dbUser.status)
@@ -84,6 +87,4 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
   }
 }
 
-object AuthorityService extends AuthorityService with PostgresDatabase {
-  override protected def roleService: RoleService2 = RoleService2
-}
+final class AuthorityServiceImpl(val db: PostgresDriver.backend.Database, val roleService: RoleService2) extends AuthorityService

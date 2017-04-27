@@ -11,11 +11,11 @@ import store._
 
 import scala.concurrent.{Await, Future}
 
-abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with PostgresDatabase {
+abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition {
   import slick.driver.PostgresDriver.api._
   import scala.concurrent.duration._
 
-  override lazy val db = Database.forConfig("database_test")
+  lazy val db = Database.forConfig("database_test")
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   protected final def await[R](future: Future[R]): R = Await.result(future, Duration.Inf)

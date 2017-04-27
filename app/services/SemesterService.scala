@@ -10,6 +10,7 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -35,7 +36,7 @@ case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
-trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] { self: PostgresDatabase =>
+trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
@@ -76,4 +77,4 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   }
 }
 
-object SemesterService extends SemesterService with PostgresDatabase
+final class SemesterServiceImpl(val db: PostgresDriver.backend.Database) extends SemesterService

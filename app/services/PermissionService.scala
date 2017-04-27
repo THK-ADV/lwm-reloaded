@@ -7,12 +7,13 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 case class PermissionValueFilter(value: String) extends TableFilter[PermissionTable] {
   override def predicate = _.value.toLowerCase === value.toLowerCase
 }
 
-trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, PostgresPermission] { self: PostgresDatabase =>
+trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, PostgresPermission] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[PermissionTable] = TableQuery[PermissionTable]
@@ -42,4 +43,4 @@ trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, Postg
   override protected def toUniqueEntity(query: Query[PermissionTable, PermissionDb, Seq]): Future[Seq[PostgresPermission]] = db.run(query.result.map(_.map(_.toPermission)))
 }
 
-object PermissionService extends PermissionService with PostgresDatabase
+final class PermissionServiceImpl(val db: PostgresDriver.backend.Database) extends PermissionService

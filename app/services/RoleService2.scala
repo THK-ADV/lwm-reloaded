@@ -7,12 +7,13 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
-trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: PostgresDatabase =>
+trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def rolePermissionService: RolePermissionService
@@ -71,6 +72,7 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
   }
 }
 
+// TODO GET RID OF THIS, LIKE IN ASSIGNMENTPLANSERVICE
 trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermission, RolePermission] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
 
@@ -90,7 +92,8 @@ trait RolePermissionService extends AbstractDao[RolePermissionTable, RolePermiss
   override protected def toUniqueEntity(query: Query[RolePermissionTable, RolePermission, Seq]): Future[Seq[RolePermission]] = ???
 }
 
-object RoleService2 extends RoleService2 with PostgresDatabase {
+final class RoleServiceImpl(val db: PostgresDriver.backend.Database) extends RoleService2 {
   override protected def rolePermissionService: RolePermissionService = RolePermissionService
 }
+
 object RolePermissionService extends RolePermissionService with PostgresDatabase
