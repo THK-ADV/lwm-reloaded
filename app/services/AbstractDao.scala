@@ -70,7 +70,6 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     } yield e).transactionally)
   }
 
-  // FIXME: CREATE MANY DOES NOT EXPAND CREATION OF ENTITIES
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
 
   protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
@@ -155,7 +154,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     }
   }
 
-  final def createSchema = db.run(tableQuery.schema.create)
+  def createSchema: Future[Unit] = db.run(tableQuery.schema.create)
 
-  final def dropSchema = db.run(tableQuery.schema.create)
+  def dropSchema: Future[Unit] = db.run(tableQuery.schema.create)
 }

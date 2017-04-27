@@ -5,52 +5,57 @@ import slick.dbio.Effect
 import store._
 import slick.driver.PostgresDriver.api._
 
+object AssignmentPlanServiceSpec {
+  import scala.util.Random.nextInt
+  import services.AbstractDaoSpec.{labworks, maxLabworks}
+
+  def assignmentPlan(labwork: LabworkDb, number: Int) = {
+    val types = PostgresAssignmentEntryType.all
+    val entries = (0 until number).map { i =>
+      PostgresAssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
+    }.toSet
+
+    AssignmentPlanDb(labwork.id, number, number, entries)
+  }
+
+  def atom(plan: AssignmentPlanDb) = PostgresAssignmentPlanAtom(
+    labworks.find(_.id == plan.labwork).get.toLabwork,
+    plan.attendance,
+    plan.mandatory,
+    plan.entries,
+    plan.id
+  )
+
+  val plans = labworks.drop(maxLabworks - 5).zip(List(5, 8, 3, 9, 4)).map {
+    case (labwork, number) => assignmentPlan(labwork, number)
+  }
+
+  def merge(entries: Seq[AssignmentEntryDb], types: Seq[AssignmentEntryTypeDb]): Set[PostgresAssignmentEntry] = {
+    entries.map { e =>
+      val entryTypes = types.filter(_.assignmentEntry == e.id).map { t =>
+        PostgresAssignmentEntryType(t.entryType, t.bool, t.int)
+      }
+
+      PostgresAssignmentEntry(e.index, e.label, entryTypes.toSet, e.duration)
+    }.toSet
+  }
+}
+
 final class AssignmentPlanServiceSpec
   extends AbstractDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanService {
 
   import services.AbstractDaoSpec._
+  import services.AssignmentPlanServiceSpec._
+
+  def getEntriesAndTypesFromDb(plan: AssignmentPlanDb): (Seq[AssignmentEntryDb], Seq[AssignmentEntryTypeDb]) = {
+    val entryQuery = assignmentEntryQuery.filter(_.assignmentPlan === plan.id)
+    val entries = run(entryQuery.result)
+    val types = run(assignmentEntryTypeQuery.filter(_.assignmentEntry in entryQuery.map(_.id)).result)
+
+    (entries, types)
+  }
 
   "A AssignmentPlanServiceSpec" should {
-    import scala.util.Random.nextInt
-
-    def assignmentPlan(labwork: LabworkDb, number: Int) = {
-      val types = PostgresAssignmentEntryType.all
-      val entries = (0 until number).map { i =>
-        PostgresAssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
-      }.toSet
-
-      AssignmentPlanDb(labwork.id, number, number, entries)
-    }
-
-    def atom(plan: AssignmentPlanDb) = PostgresAssignmentPlanAtom(
-      labworks.find(_.id == plan.labwork).get.toLabwork,
-      plan.attendance,
-      plan.mandatory,
-      plan.entries,
-      plan.id
-    )
-
-    val plans = labworks.drop(maxLabworks - 5).zip(List(5, 8, 3, 9, 4)).map {
-      case (labwork, number) => assignmentPlan(labwork, number)
-    }
-
-    def merge(entries: Seq[AssignmentEntryDb], types: Seq[AssignmentEntryTypeDb]): Set[PostgresAssignmentEntry] = {
-      entries.map { e =>
-        val entryTypes = types.filter(_.assignmentEntry == e.id).map { t =>
-          PostgresAssignmentEntryType(t.entryType, t.bool, t.int)
-        }
-
-        PostgresAssignmentEntry(e.index, e.label, entryTypes.toSet, e.duration)
-      }.toSet
-    }
-
-    def getEntriesAndTypesFromDb(plan: AssignmentPlanDb): (Seq[AssignmentEntryDb], Seq[AssignmentEntryTypeDb]) = {
-      val entryQuery = assignmentEntryQuery.filter(_.assignmentPlan === plan.id)
-      val entries = run(entryQuery.result)
-      val types = run(assignmentEntryTypeQuery.filter(_.assignmentEntry in entryQuery.map(_.id)).result)
-
-      (entries, types)
-    }
 
     "create assignmentPlans with entries and entry types" in {
       plans.foreach { plan =>

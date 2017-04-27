@@ -19,7 +19,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
 
-  def collisionsForCurrentLabworks() = Action { request =>
+  def collisionsForCurrentLabworks() = Action {
     import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
 
     val result = for {
@@ -39,7 +39,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     Ok
   }
 
-  def multipleReportCardEntries(course: String) = Action { request =>
+  def multipleReportCardEntries(course: String) = Action {
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, AssignmentPlanDescriptor}
 
     for {
@@ -147,7 +147,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"sesameRoles ${sesameRoles.size}")
       postgresPermissions <- PermissionService.get()
       _ = println(s"postgresPermissions ${postgresPermissions.size}")
-      postgresRoles = sesameRoles.map{ r =>
+      postgresRoles = sesameRoles.map { r =>
         val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
         RoleDb(r.label, perms.toSet, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
       }
@@ -233,7 +233,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       sesameRooms <- Future.fromTry(repository.getAll[SesameRoom])
       _ = println(s"sesameRooms ${sesameRooms.size}")
 
-      roomDbs = sesameRooms.map(r => RoomDb(r.label, r.description,DateTime.now.timestamp, None, r.id))
+      roomDbs = sesameRooms.map(r => RoomDb(r.label, r.description, DateTime.now.timestamp, None, r.id))
       _ = println(s"roomDbs ${roomDbs.size}")
 
       rooms <- RoomService.createMany(roomDbs.toList)
@@ -257,6 +257,32 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       _ = println(s"lappDbs ${lappDbs.size}")
       lapps <- LabworkApplicationService2.createMany(lappDbs.toList)
     } yield lapps.map(_.toLabworkApplication)
+
+    result.jsonResult
+  }
+
+  def migrateAssignmentPlans = Action.async {
+    import bindings.AssignmentPlanDescriptor
+    import models.AssignmentPlan.writes
+
+    val result = for {
+      _ <- AssignmentPlanService.createSchema
+      sesamePlans <- Future.fromTry(repository.getAll[SesameAssignmentPlan])
+      _ = println(s"sesamePlans ${sesamePlans.size}")
+      _ = println(s"sesamePlanEntries ${sesamePlans.flatMap(_.entries).size}")
+      _ = println(s"sesamePlanEntryTypes ${sesamePlans.flatMap(_.entries.flatMap(_.types)).size}")
+      planDbs = sesamePlans.map { plan =>
+        val entries = plan.entries.map { e =>
+          val types = e.types.map(t => PostgresAssignmentEntryType(t.entryType, t.bool, t.int))
+          PostgresAssignmentEntry(e.index, e.label, types, e.duration)
+        }
+        AssignmentPlanDb(plan.labwork, plan.attendance, plan.mandatory, entries, DateTime.now.timestamp, plan.invalidated.map(_.timestamp), plan.id)
+      }
+      _ = println(s"planDbs ${planDbs.size}")
+      _ = println(s"planDbsEntries ${planDbs.flatMap(_.entries).size}")
+      _ = println(s"planDbsEntryTypes ${planDbs.flatMap(_.entries.flatMap(_.types)).size}")
+      plans <- AssignmentPlanService.createMany(planDbs.toList)
+    } yield plans.map(_.toAssignmentPlan)
 
     result.jsonResult
   }

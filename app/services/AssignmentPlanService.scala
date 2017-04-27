@@ -118,6 +118,20 @@ trait AssignmentPlanService
         } yield c.headOption
     }
   })
+
+  private lazy val schemas = List(
+    tableQuery.schema,
+    assignmentEntryQuery.schema,
+    assignmentEntryTypeQuery.schema
+  )
+
+  override def createSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
+  }
+
+  override def dropSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
+  }
 }
 
 object AssignmentPlanService extends AssignmentPlanService with PostgresDatabase

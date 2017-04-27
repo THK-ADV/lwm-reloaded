@@ -120,6 +120,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 }
 
+// TODO maybe we can merge this service with labworkApplicationService, similar to assignmentPlanService - consider
 trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
   override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
