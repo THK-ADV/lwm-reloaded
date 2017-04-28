@@ -97,6 +97,33 @@ final class AssignmentPlanServiceSpec
       entries shouldBe empty
       types shouldBe empty
     }
+
+    "get assignmentPlans for a given course" in {
+      val semester = randomSemester.id
+      val degree = randomDegree.id
+      val maxLabworksInCourse = 4
+
+      val courses = (0 until 5).map(i =>
+        CourseDb(s"label $i", s"desc $i", s"abbrev $i", randomEmployee.id, i)
+      )
+      val labworks = courses.flatMap(c => (0 until maxLabworksInCourse).map { i =>
+        LabworkDb(s"label $i", s"desc $i", semester, c.id, degree)
+      })
+      val plans = labworks.map(l => assignmentPlan(l, 5))
+      val chosenCourse = courses.head
+
+      run(DBIO.seq( // TODO we should setup db testing suites like this
+        TableQuery[CourseTable].forceInsertAll(courses),
+        TableQuery[LabworkTable].forceInsertAll(labworks)
+      ).andThen(
+        tableQuery.forceInsertAll(plans)
+      ).andFinally(
+        filterBy(List(AssignmentPlanCourseFilter(chosenCourse.id.toString))).result.map { dbPlans =>
+          dbPlans.size shouldBe maxLabworksInCourse
+          dbPlans.map(_.labwork) shouldBe labworks.filter(_.course == chosenCourse.id).map(_.id)
+        }
+      ))
+    }
   }
 
   override protected def name: String = "assignmentPlan"

@@ -67,7 +67,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     with ContentTyped
     with Chunked
     with PostgresResult
-    with AttributeFilter {
+    with AttributeFilter
+    with RequestRebasePostgres {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

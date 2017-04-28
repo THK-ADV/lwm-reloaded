@@ -16,6 +16,10 @@ case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[Assign
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
+case class AssignmentPlanCourseFilter(value: String) extends TableFilter[AssignmentPlanTable] {
+  override def predicate = _.joinLabwork.map(_.course).filter(_ === UUID.fromString(value)).exists
+}
+
 trait AssignmentPlanService
   extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
 

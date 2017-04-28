@@ -4,11 +4,16 @@ import java.util.UUID
 
 import models._
 import play.api.libs.json.{Reads, Writes}
-import services.{AbstractDao, AssignmentPlanService, RoleServiceLike, SessionHandlingService}
+import services._
 import store.{AssignmentPlanTable, TableFilter}
 import utils.LwmMimeType
 
-import scala.util.Try
+import scala.util.{Failure, Try}
+
+object AssignmentPlanControllerPostgres {
+  val labworkAttribute = "labwork"
+  val courseAttribute = "course"
+}
 
 final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val assignmentPlanService: AssignmentPlanService)
   extends AbstractCRUDControllerPostgres[PostgresAssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
@@ -19,7 +24,15 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override protected val abstractDao: AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] = assignmentPlanService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = ???
+  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
+    import controllers.AssignmentPlanControllerPostgres._
+
+    (appendTo, (attribute, values)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course.head)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork.head)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: PostgresAssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
 
@@ -52,7 +65,9 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request)
+    import controllers.AssignmentPlanControllerPostgres.courseAttribute
+    
+    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>
