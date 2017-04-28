@@ -49,8 +49,6 @@ class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationT
     TableQuery[UserTable].forceInsertAll(applicants)
   )
 
-  override protected val labworkApplicationFriendService: LabworkApplicationFriendService = ???
-
   override protected def name: String = "labworkApplication"
 
   override protected val dbEntity: LabworkApplicationDb = labworkApplication(None, withFriends = false)
@@ -106,7 +104,7 @@ class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationT
     "create a labworkApplication with friends" in {
       val result = await(create(lapp))
       val dbLapp = await(getById(lapp.id.toString, atomic = false))
-      val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
+      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result shouldBe lapp
       Some(result.toLabworkApplication) shouldBe dbLapp
@@ -118,7 +116,7 @@ class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationT
       val updated = lapp.copy(lapp.labwork, lapp.applicant, lapp.friends ++ Set(randomApplicant(Some(lapp.applicant)).id))
 
       val result = await(update(updated)).get
-      val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
+      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result shouldBe updated
       result.friends shouldBe dbFriends.map(_.friend).toSet
@@ -128,7 +126,7 @@ class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationT
     "delete a labworkApplication with friends" in {
       val result = await(delete(lapp)).get
       val dbLapp = await(getById(lapp.id.toString, atomic = false))
-      val dbFriends = await(db.run(labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === result.id).result))
+      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result.id shouldBe lapp.id
       dbLapp shouldBe empty

@@ -7,7 +7,6 @@ import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Timestamp}
 
-import org.joda.time.DateTime
 import slick.driver.PostgresDriver
 
 trait UniqueTable { self: Table[_] =>

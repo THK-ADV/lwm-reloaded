@@ -7,8 +7,6 @@ import org.joda.time.DateTime
 import store._
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
-import slick.dbio.DBIOAction
-import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
@@ -22,11 +20,19 @@ case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[La
 }
 
 trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
+  protected val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
-  protected def labworkApplicationFriendService: LabworkApplicationFriendService
+  final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
+    for {
+      buddy <- tableQuery.filter(lapp => lapp.applicant === applicant && lapp.labwork === labwork)
+      friends <- lappFriendQuery.filter(_.labworkApplication === buddy.id).flatMap(_.friendFk)
+    } yield friends
+  }
 
   override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
     val now = DateTime.now.timestamp
@@ -72,8 +78,6 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
       PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
-  type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])])
-
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
                               (build: LabworkApplicationDependencies => LabworkApplication)
   : Future[Seq[LabworkApplication]] = {
@@ -86,11 +90,11 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     } yield (q, l, a, (c, d, s, lec))
 
     db.run(mandatory.
-        joinLeft(labworkApplicationFriendService.tableQuery).on(_._1.id === _.labworkApplication).
-        joinLeft(TableQuery[UserTable]).on(_._2.map(_.friend) === _.id).map {
-          case (((lapp, lab, a, (c, d, s, lec)), _), friend) => ((lapp, lab, a, (c, d, s, lec)), friend)
-        }.result.map(_.groupBy(_._1._1).map {
-          case (labworkApplication, dependencies) => build(labworkApplication, dependencies)
+      joinLeft(lappFriendQuery).on(_._1.id === _.labworkApplication).
+      joinLeft(TableQuery[UserTable]).on(_._2.map(_.friend) === _.id).map {
+        case (((lapp, lab, a, (c, d, s, lec)), _), friend) => ((lapp, lab, a, (c, d, s, lec)), friend)
+    }.result.map(_.groupBy(_._1._1).map {
+        case (labworkApplication, dependencies) => build(labworkApplication, dependencies)
     }.toSeq))
   }
 
@@ -98,7 +102,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     override def expandCreationOf(entities: Seq[LabworkApplicationDb]) = {
       val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
-      labworkApplicationFriendService.createManyQuery(friends).map(_ => entities)
+      (lappFriendQuery ++= friends).map(_ => entities)
     }
 
     override def expandUpdateOf(entity: LabworkApplicationDb) = {
@@ -109,51 +113,22 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     }
 
     override def expandDeleteOf(entity: LabworkApplicationDb) = {
-      labworkApplicationFriendService.deleteFriendsOf(entity.id).map(_ => Some(entity))
+      lappFriendQuery.filter(_.labworkApplication === entity.id).delete.map(_ => Some(entity))
     }
   })
 
-  final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
-    for {
-      buddy <- tableQuery.filter(lapp => lapp.applicant === applicant && lapp.labwork === labwork)
-      friends <- labworkApplicationFriendService.tableQuery.filter(_.labworkApplication === buddy.id).flatMap(_.friendFk)
-    } yield friends
+  private lazy val schemas = List(
+    tableQuery.schema,
+    lappFriendQuery.schema
+  )
+
+  override def createSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
+  }
+
+  override def dropSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
   }
 }
 
-// TODO maybe we can merge this service with labworkApplicationService, similar to assignmentPlanService - consider
-trait LabworkApplicationFriendService extends AbstractDao[LabworkApplicationFriendTable, LabworkApplicationFriend, LabworkApplicationFriend] { self: PostgresDatabase =>
-  override val tableQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
-
-  override protected def setInvalidated(entity: LabworkApplicationFriend): LabworkApplicationFriend = {
-    val now = DateTime.now.timestamp
-
-    LabworkApplicationFriend(
-      entity.labworkApplication,
-      entity.friend,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
-  final def deleteFriendsOf(application: UUID): DBIOAction[Int, NoStream, Write] = {
-    tableQuery.filter(_.labworkApplication === application).delete
-  }
-
-  override protected def shouldUpdate(existing: LabworkApplicationFriend, toUpdate: LabworkApplicationFriend): Boolean = ???
-
-  override protected def existsQuery(entity: LabworkApplicationFriend): _root_.slick.driver.PostgresDriver.api.Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq] = ???
-
-  override protected def toAtomic(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = toUniqueEntity(query)
-
-  override protected def toUniqueEntity(query: Query[LabworkApplicationFriendTable, LabworkApplicationFriend, Seq]): Future[Seq[LabworkApplicationFriend]] = {
-    db.run(query.result)
-  }
-}
-
-final class LabworkApplicationServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkApplicationService2 {
-  override protected def labworkApplicationFriendService: LabworkApplicationFriendService = LabworkApplicationFriendService
-}
-
-object LabworkApplicationFriendService extends LabworkApplicationFriendService with PostgresDatabase
+final class LabworkApplicationServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkApplicationService2

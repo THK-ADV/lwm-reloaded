@@ -4,6 +4,8 @@ import java.util.UUID
 
 import models._
 import slick.dbio.Effect.Write
+import slick.driver
+import slick.driver.PostgresDriver
 import store.UserTable
 
 final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserService {
@@ -179,7 +181,19 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
 
-  override protected val authorityService: AuthorityService = ???
+  override protected val authorityService: AuthorityService = {
+    lazy val sharedDb = db
+
+    new AuthorityService {
+
+      override protected def roleService: RoleService2 = new RoleService2 {
+
+        override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+      }
+
+      override protected def db: PostgresDriver.backend.Database = sharedDb
+    }
+  }
 
   override protected val labworkApplicationService: LabworkApplicationService2 = {
     lazy val sharedDb = db

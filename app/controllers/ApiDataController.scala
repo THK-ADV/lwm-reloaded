@@ -150,34 +150,25 @@ final class ApiDataController(private val repository: SesameRepository,
 
   def migrateRoles = Action.async {
     import bindings.RoleDescriptor
+    import models.Role.writes
 
     val result = for {
       _ <- roleService.createSchema
-      _ <- RolePermissionService.createSchema
       sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
       _ = println(s"sesameRoles ${sesameRoles.size}")
+      _ = println(s"sesamePermissions ${sesameRoles.flatMap(_.permissions).size}")
       postgresPermissions <- permissionService.get()
       _ = println(s"postgresPermissions ${postgresPermissions.size}")
       postgresRoles = sesameRoles.map { r =>
         val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
         RoleDb(r.label, perms.toSet, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
       }
-      result <- roleService.createManyWithPermissions(postgresRoles.toList)
-      foo = result.map {
-        case ((o, set)) => (o, set.size)
-      }
-      _ = println(s"result roles")
-      _ = foo.foreach(println)
-    } yield result
+      roles <- roleService.createMany(postgresRoles.toList)
+      _ = println(s"roles ${roles.size}")
+      _ = println(s"permissions ${roles.flatMap(_.permissions).size}")
+    } yield roles.map(_.toRole)
 
-    result.jsonResult { map =>
-      Ok(Json.toJson(map.map {
-        case ((r, rps)) => Json.obj(
-          "role" -> Json.toJson(r.get)(Role.writes),
-          "role_permission" -> rps.map(_.toString)
-        )
-      }))
-    }
+    result.jsonResult
   }
 
   def migrateSemesters = Action.async {
@@ -259,7 +250,6 @@ final class ApiDataController(private val repository: SesameRepository,
 
     val result = for {
       _ <- labworkApplicationService.createSchema
-      _ <- LabworkApplicationFriendService.createSchema
       sesameLapps <- Future.fromTry(repository.getAll[SesameLabworkApplication])
       _ = println(s"sesameLapps ${sesameLapps.size}")
       lappDbs = sesameLapps.map(l =>
