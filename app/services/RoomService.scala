@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models.{PostgresRoom, RoomDb}
 import org.joda.time.DateTime
-import store.{PostgresDatabase, RoomTable, TableFilter}
+import store.{RoomTable, TableFilter}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._

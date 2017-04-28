@@ -2,7 +2,7 @@ package services
 
 import models.{PermissionDb, PostgresPermission}
 import org.joda.time.DateTime
-import store.{PermissionTable, PostgresDatabase, TableFilter}
+import store.{PermissionTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future

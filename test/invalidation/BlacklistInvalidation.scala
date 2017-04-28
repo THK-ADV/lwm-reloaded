@@ -1,7 +1,7 @@
 package invalidation
 
 import base.SesameDbSpec
-import models.Blacklist
+import models.SesameBlacklist
 import org.joda.time.DateTime
 
 import scala.util.Random._
@@ -12,7 +12,7 @@ class BlacklistInvalidation extends SesameDbSpec {
   "A Blacklist invalidation" should {
 
     def dates: Stream[DateTime] = Stream.continually(DateTime.now plusHours nextInt(20))
-    def lists: Stream[Blacklist] = Stream.continually(Blacklist(s"Label$nextInt", (dates take 10).toSet))
+    def lists: Stream[SesameBlacklist] = Stream.continually(SesameBlacklist(s"Label$nextInt", (dates take 10).toSet))
 
     "invalidate the blacklist" in {
       import bindings.BlacklistDescriptor
@@ -20,11 +20,11 @@ class BlacklistInvalidation extends SesameDbSpec {
       val blacklists = (lists take 100).toSet
       val toInvalidate = shuffle(blacklists) take 30
 
-      repo.addMany[Blacklist](blacklists)
+      repo.addMany[SesameBlacklist](blacklists)
 
-      toInvalidate foreach (a => repo.invalidate[Blacklist](Blacklist.generateUri(a)))
+      toInvalidate foreach (a => repo.invalidate[SesameBlacklist](SesameBlacklist.generateUri(a)))
 
-      repo.getAll[Blacklist] match {
+      repo.getAll[SesameBlacklist] match {
         case Success(set) =>
           val valid = blacklists diff toInvalidate
           set.toVector.sortBy(_.id) zip valid.toVector.sortBy(_.id) foreach {
@@ -38,7 +38,7 @@ class BlacklistInvalidation extends SesameDbSpec {
           }
         case Failure(e) => fail("no")
       }
-      repo.deepGetAll[Blacklist] map (_ map (_.id)) shouldBe Success(blacklists map (_.id))
+      repo.deepGetAll[SesameBlacklist] map (_ map (_.id)) shouldBe Success(blacklists map (_.id))
     }
   }
 

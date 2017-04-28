@@ -23,21 +23,21 @@ object TimetableCRUDController {
   val labworkAttribute = "labwork"
 }
 
-class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[TimetableProtocol, Timetable, TimetableAtom] {
+class TimetableCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameTimetableProtocol, SesameTimetable, SesameTimetableAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Timetable] = defaultBindings.TimetableDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameTimetable] = defaultBindings.TimetableDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, TimetableAtom] = defaultBindings.TimetableAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameTimetableAtom] = defaultBindings.TimetableAtomDescriptor
 
-  override implicit val reads: Reads[TimetableProtocol] = Timetable.reads
+  override implicit val reads: Reads[SesameTimetableProtocol] = SesameTimetable.reads
 
-  override implicit val writes: Writes[Timetable] = Timetable.writes
+  override implicit val writes: Writes[SesameTimetable] = SesameTimetable.writes
 
-  override implicit val writesAtom: Writes[TimetableAtom] = Timetable.writesAtom
+  override implicit val writesAtom: Writes[SesameTimetableAtom] = SesameTimetable.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Timetable] = Timetable
+  override implicit val uriGenerator: UriGenerator[SesameTimetable] = SesameTimetable
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     create(NonSecureBlock)(rebase)
@@ -83,26 +83,26 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     delete(timetable, NonSecureBlock)(rebase(timetable))
   }
 
-  override protected def coAtomic(atom: TimetableAtom): Timetable = Timetable(
+  override protected def coAtomic(atom: SesameTimetableAtom): SesameTimetable = SesameTimetable(
     atom.labwork.id,
-    atom.entries map (te => TimetableEntry(te.supervisor map (_.id), te.room.id, te.dayIndex, te.start, te.end)),
+    atom.entries map (te => SesameTimetableEntry(te.supervisor map (_.id), te.room.id, te.dayIndex, te.start, te.end)),
     atom.start, atom.localBlacklist, atom.invalidated, atom.id
   )
 
-  override protected def compareModel(input: TimetableProtocol, output: Timetable): Boolean = {
+  override protected def compareModel(input: SesameTimetableProtocol, output: SesameTimetable): Boolean = {
     input.start.isEqual(output.start) &&
       input.entries == output.entries &&
       LwmDateTime.isEqual(input.localBlacklist, output.localBlacklist)
   }
 
-  override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = existing match {
+  override protected def fromInput(input: SesameTimetableProtocol, existing: Option[SesameTimetable]): SesameTimetable = existing match {
     case Some(timetable) =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime), timetable.invalidated, timetable.id)
+      SesameTimetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime), timetable.invalidated, timetable.id)
     case None =>
-      Timetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime))
+      SesameTimetable(input.labwork, input.entries, input.start, input.localBlacklist.map(LwmDateTime.toDateTime))
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Timetable]): Try[Set[Timetable]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameTimetable]): Try[Set[SesameTimetable]] = {
     import defaultBindings.LabworkDescriptor
     import store.sparql.select
     import store.sparql.select._
@@ -111,7 +111,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
     lazy val lwm = LWMPrefix[repository.Rdf]
     lazy val rdf = RDFPrefix[repository.Rdf]
 
-    queryString.foldRight(Try[Set[Timetable]](all)) {
+    queryString.foldRight(Try[Set[SesameTimetable]](all)) {
       case ((`labworkAttribute`, labworks), timetables) =>
         timetables flatMap (set => Try(UUID.fromString(labworks.head)) map (id => set.filter(_.labwork == id)))
       case ((`courseAttribute`, courses), timetables) =>
@@ -125,7 +125,7 @@ class TimetableCRUDController(val repository: SesameRepository, val sessionServi
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
           requestAll(repository.getMany[SesameLabwork]).
-          requestAll[Set, Timetable](labworks => timetables.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
+          requestAll[Set, SesameTimetable](labworks => timetables.map(_.filter(tt => labworks.exists(_.id == tt.labwork)))).
           run
       case ((_, _), set) => Failure(new Throwable("Unknown attribute"))
     }

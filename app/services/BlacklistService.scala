@@ -1,6 +1,6 @@
 package services
 
-import models.{Blacklist, TimetableDateEntry}
+import models.{SesameBlacklist, TimetableDateEntry}
 import org.joda.time.DateTime
 
 import scala.concurrent.Future
@@ -33,14 +33,14 @@ trait BlacklistServiceLike {
 
   def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry]
 
-  def fetchByYear(year: String): Future[Blacklist]
+  def fetchByYear(year: String): Future[SesameBlacklist]
 }
 
 class BlacklistService extends BlacklistServiceLike {
 
   override def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry] = (lift _ andThen filterNot(entries))(blacklists)
 
-  override def fetchByYear(year: String): Future[Blacklist] = {
+  override def fetchByYear(year: String): Future[SesameBlacklist] = {
     import services.BlacklistService._
     import play.api.libs.ws.ning._
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -52,7 +52,7 @@ class BlacklistService extends BlacklistServiceLike {
       json = response.json.toString
       dates = (pattern findAllMatchIn json map (matches => DateTime.parse(matches.matched.split(":")(1).replace("\"", "")))).toSet
       _ <- Future.successful(sslClient.close())
-    } yield Blacklist(legalHolidayLabel(year), dates)
+    } yield SesameBlacklist(legalHolidayLabel(year), dates)
   }
 
   private def lift(blacklist: Set[DateTime]): Set[BlacklistDate] = blacklist map {

@@ -16,7 +16,7 @@ import utils.LwmMimeType
 
 import scala.util.Success
 
-class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetableProtocol, Timetable, TimetableAtom] {
+class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameTimetableProtocol, SesameTimetable, SesameTimetableAtom] {
 
   val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -28,7 +28,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
   val supervisorToFail = SesameEmployee("systemId to fail", "last name to fail", "first name to fail", "email to fail", "status to fail")
 
   val entriesToPass = (0 until 10).map(n =>
-    TimetableEntry(
+    SesameTimetableEntry(
       Set(supervisorToPass.id),
       roomToPass.id,
       Weekday.toDay(n).index,
@@ -37,7 +37,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     )
   ).toSet
   val entriesToFail = (0 until 10).map(n =>
-    TimetableEntry(
+    SesameTimetableEntry(
       Set(supervisorToFail.id),
       roomToFail.id,
       Weekday.toDay(n).index,
@@ -50,7 +50,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
 
   override val controller: TimetableCRUDController = new TimetableCRUDController(repository, sessionService, namespace, roleService) {
 
-    override protected def fromInput(input: TimetableProtocol, existing: Option[Timetable]): Timetable = entityToPass
+    override protected def fromInput(input: SesameTimetableProtocol, existing: Option[SesameTimetable]): SesameTimetable = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -61,13 +61,13 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     }
   }
 
-  override val entityToFail: Timetable = Timetable(labworkToFail.id, entriesToFail, LocalDate.now, Set.empty[DateTime])
+  override val entityToFail: SesameTimetable = SesameTimetable(labworkToFail.id, entriesToFail, LocalDate.now, Set.empty[DateTime])
 
-  override val entityToPass: Timetable = Timetable(labworkToPass.id, entriesToPass, LocalDate.now, Set.empty[DateTime])
+  override val entityToPass: SesameTimetable = SesameTimetable(labworkToPass.id, entriesToPass, LocalDate.now, Set.empty[DateTime])
 
-  override implicit val jsonWrites: Writes[Timetable] = Timetable.writes
+  override implicit val jsonWrites: Writes[SesameTimetable] = SesameTimetable.writes
 
-  override implicit def jsonWritesAtom: Writes[TimetableAtom] = Timetable.writesAtom
+  override implicit def jsonWritesAtom: Writes[SesameTimetableAtom] = SesameTimetable.writesAtom
 
   override val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
@@ -91,11 +91,11 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     "localBlacklist" -> entityToPass.localBlacklist
   )
 
-  private def toTimetableEntryAtom(entries: Set[TimetableEntry])(room: SesameRoom, supervisor: SesameEmployee): Set[TimetableEntryAtom] = {
-    entries.map(e => TimetableEntryAtom(Set(supervisor), room, e.dayIndex, e.start, e.end))
+  private def toTimetableEntryAtom(entries: Set[SesameTimetableEntry])(room: SesameRoom, supervisor: SesameEmployee): Set[SesameTimetableEntryAtom] = {
+    entries.map(e => SesameTimetableEntryAtom(Set(supervisor), room, e.dayIndex, e.start, e.end))
   }
 
-  override val atomizedEntityToPass = TimetableAtom(
+  override val atomizedEntityToPass = SesameTimetableAtom(
     labworkToPass,
     toTimetableEntryAtom(entriesToPass)(roomToPass, supervisorToPass),
     entityToPass.start,
@@ -104,7 +104,7 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
     entityToPass.id
   )
 
-  override val atomizedEntityToFail = TimetableAtom(
+  override val atomizedEntityToFail = SesameTimetableAtom(
     labworkToFail,
     toTimetableEntryAtom(entriesToFail)(roomToFail, supervisorToFail),
     entityToFail.start,
@@ -120,16 +120,16 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val lab1 = SesameLabwork("lab1", "lab1", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = SesameLabwork("lab2", "lab2", UUID.randomUUID, course, UUID.randomUUID)
 
-      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt5 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt7 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt8 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt1 = SesameTimetable(lab1.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt2 = SesameTimetable(lab2.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt3 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt4 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt5 = SesameTimetable(lab1.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt6 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt7 = SesameTimetable(lab2.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt8 = SesameTimetable(lab2.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
 
-      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
+      when(repository.getAll[SesameTimetable](anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
       )))
       when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
@@ -152,16 +152,16 @@ class TimetableCRUDControllerSpec extends AbstractCRUDControllerSpec[TimetablePr
       val lab3 = SesameLabwork("lab3", "lab3", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
       val lab4 = SesameLabwork("lab4", "lab4", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
 
-      val tt1 = Timetable(lab1.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt2 = Timetable(lab2.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt3 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt4 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt5 = Timetable(lab3.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt6 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt7 = Timetable(lab4.id, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
-      val tt8 = Timetable(UUID.randomUUID, Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt1 = SesameTimetable(lab1.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt2 = SesameTimetable(lab2.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt3 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt4 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt5 = SesameTimetable(lab3.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt6 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt7 = SesameTimetable(lab4.id, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
+      val tt8 = SesameTimetable(UUID.randomUUID, Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
 
-      when(repository.getAll[Timetable](anyObject())).thenReturn(Success(Set(
+      when(repository.getAll[SesameTimetable](anyObject())).thenReturn(Success(Set(
         tt1, tt2, tt3, tt4, tt5, tt6, tt7, tt8
       )))
 

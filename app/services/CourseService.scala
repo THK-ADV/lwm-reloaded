@@ -4,7 +4,7 @@ import java.sql.Timestamp
 
 import models.{Course, CourseDb, PostgresCourseAtom}
 import org.joda.time.DateTime
-import store.{CourseTable, PostgresDatabase, TableFilter}
+import store.{CourseTable, TableFilter}
 import models.LwmDateTime.DateTimeConverter
 import slick.driver.PostgresDriver
 

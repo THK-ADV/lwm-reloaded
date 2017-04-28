@@ -5,12 +5,12 @@ import org.joda.time.{LocalDate, Weeks}
 
 trait TimetableServiceLike {
 
-  def extrapolateTimetableByWeeks(timetable: Timetable, weeks: Weeks, assignmentPlan: SesameAssignmentPlan, groups: Set[Group]): Vector[TimetableDateEntry]
+  def extrapolateTimetableByWeeks(timetable: SesameTimetable, weeks: Weeks, assignmentPlan: SesameAssignmentPlan, groups: Set[Group]): Vector[TimetableDateEntry]
 }
 
 class TimetableService(private val blacklistService: BlacklistServiceLike) extends TimetableServiceLike {
 
-  override def extrapolateTimetableByWeeks(timetable: Timetable, weeks: Weeks, assignmentPlan: SesameAssignmentPlan, groups: Set[Group]): Vector[TimetableDateEntry] = {
+  override def extrapolateTimetableByWeeks(timetable: SesameTimetable, weeks: Weeks, assignmentPlan: SesameAssignmentPlan, groups: Set[Group]): Vector[TimetableDateEntry] = {
     val appointments = assignmentPlan.entries.size * groups.size
     val schemaWeek = unravel(timetable.entries.toVector, timetable.start)
 
@@ -28,7 +28,7 @@ class TimetableService(private val blacklistService: BlacklistServiceLike) exten
     }
   }
 
-  private def unravel(entries: Vector[TimetableEntry], start: LocalDate): Vector[TimetableDateEntry] = entries.map { entry =>
+  private def unravel(entries: Vector[SesameTimetableEntry], start: LocalDate): Vector[TimetableDateEntry] = entries.map { entry =>
     val weekday = Weekday.toDay(entry.dayIndex)
     TimetableDateEntry(weekday, weekday.sync(start), entry.start, entry.end, entry.room, entry.supervisor)
   }

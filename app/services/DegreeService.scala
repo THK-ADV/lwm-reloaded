@@ -5,7 +5,7 @@ import java.util.UUID
 import models.{DegreeDb, PostgresDegree}
 import org.joda.time.DateTime
 import slick.lifted.Rep
-import store.{DegreeTable, PostgresDatabase, TableFilter}
+import store.{DegreeTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime.DateTimeConverter
 import slick.driver.PostgresDriver

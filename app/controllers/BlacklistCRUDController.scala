@@ -21,31 +21,31 @@ object BlacklistCRUDController {
   val currentValue = "current"
 }
 
-class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[BlacklistProtocol, Blacklist, Blacklist] {
+class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[SesameBlacklistProtocol, SesameBlacklist, SesameBlacklist] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Blacklist] = defaultBindings.BlacklistDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameBlacklist] = defaultBindings.BlacklistDescriptor
 
-  override val descriptorAtom: Descriptor[Sesame, Blacklist] = descriptor
+  override val descriptorAtom: Descriptor[Sesame, SesameBlacklist] = descriptor
 
-  override implicit val reads: Reads[BlacklistProtocol] = Blacklist.reads
+  override implicit val reads: Reads[SesameBlacklistProtocol] = SesameBlacklist.reads
 
-  override implicit val writes: Writes[Blacklist] = Blacklist.writes
+  override implicit val writes: Writes[SesameBlacklist] = SesameBlacklist.writes
 
-  override implicit val writesAtom: Writes[Blacklist] = Blacklist.writesAtom
+  override implicit val writesAtom: Writes[SesameBlacklist] = SesameBlacklist.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[Blacklist] = Blacklist
+  override implicit val uriGenerator: UriGenerator[SesameBlacklist] = SesameBlacklist
 
-  override protected def coAtomic(atom: Blacklist): Blacklist = atom
+  override protected def coAtomic(atom: SesameBlacklist): SesameBlacklist = atom
 
-  override protected def compareModel(input: BlacklistProtocol, output: Blacklist): Boolean = {
+  override protected def compareModel(input: SesameBlacklistProtocol, output: SesameBlacklist): Boolean = {
     input.label == output.label && LwmDateTime.isEqual(input.dates, output.dates)
   }
 
-  override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = existing match {
-    case Some(blacklist) => Blacklist(input.label, input.dates.map(LwmDateTime.toDateTime), blacklist.invalidated, blacklist.id)
-    case None => Blacklist(input.label, input.dates.map(LwmDateTime.toDateTime), None, Blacklist.randomUUID)
+  override protected def fromInput(input: SesameBlacklistProtocol, existing: Option[SesameBlacklist]): SesameBlacklist = existing match {
+    case Some(blacklist) => SesameBlacklist(input.label, input.dates.map(LwmDateTime.toDateTime), blacklist.invalidated, blacklist.id)
+    case None => SesameBlacklist(input.label, input.dates.map(LwmDateTime.toDateTime), None, SesameBlacklist.randomUUID)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -53,7 +53,7 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
     case _ => PartialSecureBlock(prime)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Blacklist]): Try[Set[Blacklist]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameBlacklist]): Try[Set[SesameBlacklist]] = {
     import defaultBindings.SemesterDescriptor
     import models.SesameSemester.isCurrent
 
@@ -63,7 +63,7 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
           semesters <- repository.getAll[SesameSemester]
           currentSemester = semesters.find(isCurrent)
           blacklists <- set
-        } yield currentSemester.fold(Set.empty[Blacklist]) { semester =>
+        } yield currentSemester.fold(Set.empty[SesameBlacklist]) { semester =>
           blacklists.map { blacklist =>
             blacklist.copy(blacklist.label, blacklist.dates.filter(date => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).contains(date)))
           }.filter(_.dates.nonEmpty)
@@ -78,7 +78,7 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
     (for { // TODO refactor to attempt
       blacklist <- blacklistService.fetchByYear(year)
-      _ <- Future.fromTry(repository.add[Blacklist](blacklist))
+      _ <- Future.fromTry(repository.add[SesameBlacklist](blacklist))
     } yield Created(Json.toJson(blacklist)(writes)).as(mimeType)) recover {
       case NonFatal(t) => InternalServerError(Json.obj(
         "status" -> "KO",

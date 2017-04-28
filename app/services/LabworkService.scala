@@ -5,7 +5,7 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{LabworkTable, PostgresDatabase, TableFilter}
+import store.{LabworkTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime.DateTimeConverter
 import slick.driver.PostgresDriver

@@ -18,7 +18,7 @@ import utils.LwmMimeType
 import scala.concurrent.Future
 import scala.util.Success
 
-class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistProtocol, Blacklist, Blacklist] {
+class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameBlacklistProtocol, SesameBlacklist, SesameBlacklist] {
 
   import bindings.BlacklistDescriptor
   import ops._
@@ -31,24 +31,24 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
   override val controller: BlacklistCRUDController = new BlacklistCRUDController(repository, sessionService, namespace, roleService, blacklistService) {
 
-    override protected def fromInput(input: BlacklistProtocol, existing: Option[Blacklist]): Blacklist = entityToPass
+    override protected def fromInput(input: SesameBlacklistProtocol, existing: Option[SesameBlacklist]): SesameBlacklist = entityToPass
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
     }
   }
 
-  override val entityToFail: Blacklist = Blacklist("blacklist to fail", dates)
+  override val entityToFail: SesameBlacklist = SesameBlacklist("blacklist to fail", dates)
 
-  override val entityToPass: Blacklist = Blacklist("blacklist to pass", dates)
+  override val entityToPass: SesameBlacklist = SesameBlacklist("blacklist to pass", dates)
 
-  override implicit val jsonWrites: Writes[Blacklist] = Blacklist.writes
+  override implicit val jsonWrites: Writes[SesameBlacklist] = SesameBlacklist.writes
 
-  override val atomizedEntityToPass: Blacklist = entityToPass
+  override val atomizedEntityToPass: SesameBlacklist = entityToPass
 
-  override val atomizedEntityToFail: Blacklist = entityToFail
+  override val atomizedEntityToFail: SesameBlacklist = entityToFail
 
-  override val jsonWritesAtom: Writes[Blacklist] = jsonWrites
+  override val jsonWritesAtom: Writes[SesameBlacklist] = jsonWrites
 
   implicit val blacklistBinder = BlacklistDescriptor.binder
 
@@ -72,7 +72,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
       val year = DateTime.now.getYear
 
       when(blacklistService.fetchByYear(anyObject())).thenReturn(Future.successful(entityToPass))
-      when(repository.add[Blacklist](anyObject())(anyObject())).thenReturn(Success(pointedGraph))
+      when(repository.add[SesameBlacklist](anyObject())(anyObject())).thenReturn(Success(pointedGraph))
 
       val request = FakeRequest(
         POST,
@@ -95,7 +95,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
       val semesters = SemesterCRUDControllerSpec.populate
       val blacklists = (0 until 10).map { i =>
         import scala.util.Random._
-        Blacklist(i.toString, (0 until 10).map(_ => DateTime.now.withMonthOfYear(nextInt(11) + 1).withDayOfMonth(nextInt(27) + 1).plusYears(if (nextBoolean) nextInt(2) + 1 * 1 else nextInt(2) + 1 * -1)).toSet)
+        SesameBlacklist(i.toString, (0 until 10).map(_ => DateTime.now.withMonthOfYear(nextInt(11) + 1).withDayOfMonth(nextInt(27) + 1).plusYears(if (nextBoolean) nextInt(2) + 1 * 1 else nextInt(2) + 1 * -1)).toSet)
       }.toSet
 
      doReturn(Success(blacklists)).doReturn(Success(semesters)).when(repository).getAll(anyObject())
@@ -115,7 +115,7 @@ class BlacklistCRUDControllerSpec extends AbstractCRUDControllerSpec[BlacklistPr
 
       val currentSemester = semesters.find(isCurrent)
       val currentBlacklists = currentSemester.map { semester =>
-        blacklists.foldLeft(Set.empty[Blacklist]) {
+        blacklists.foldLeft(Set.empty[SesameBlacklist]) {
           case (set, bl) =>
             val dates = bl.dates.filter(date => new Interval(semester.start.toDateTimeAtCurrentTime, semester.end.toDateTimeAtCurrentTime).contains(date))
             if (dates.nonEmpty) set + bl.copy(bl.label, dates) else set

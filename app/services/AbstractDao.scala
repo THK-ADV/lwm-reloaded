@@ -4,12 +4,11 @@ import java.sql.Timestamp
 import java.util.UUID
 
 import models.UniqueEntity
-import modules.DatabaseModule
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import slick.profile.FixedSqlAction
-import store.{PostgresDatabase, TableFilter, UniqueTable}
+import store.{TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 

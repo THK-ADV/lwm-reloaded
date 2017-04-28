@@ -5,7 +5,7 @@ import java.util.UUID
 
 import models.{PostgresSemester, SemesterDb}
 import org.joda.time.DateTime
-import store.{PostgresDatabase, SemesterTable, TableFilter}
+import store.{SemesterTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
