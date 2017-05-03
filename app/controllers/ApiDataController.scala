@@ -59,7 +59,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
   case class ReportCardEntryProtocol(label: String, date: String, start: String, end: String, room: UUID, entryTypes: Set[ReportCardEntryTypeProtocol])
   case class ReportCardEntryTypeProtocol(entryType: String, bool: Boolean, int: Int)
 
-  def appendReportCardEntries(course: String, preview: String) = Action(parse.json) { request =>
+  def appendReportCardEntries(labwork: String, preview: String) = Action(parse.json) { request =>
     import models.LwmDateTime._
     import bindings.{ReportCardEntryDescriptor, LabworkDescriptor}
     import models.ReportCardEntry._
@@ -74,7 +74,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
         errors => Failure(new Throwable(JsError.toJson(errors).toString)),
         reportCards => Success(reportCards)
       )
-      labworks <- repository.getAll[Labwork].map(_.filter(_.course == UUID.fromString(course)))
+      labworks <- repository.getAll[Labwork].map(_.filter(_.id == UUID.fromString(labwork)))
       _ = println(s"labworks $labworks")
       existingCards <- repository.getAll[ReportCardEntry].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
       _ = println(s"existingCards count ${existingCards.size}")
