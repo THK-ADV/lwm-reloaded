@@ -7,6 +7,7 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
+import slick.driver
 import slick.driver.PostgresDriver
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
@@ -62,7 +63,7 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[RoleDb]] = Some(new DatabaseExpander[RoleDb] {
-    override def expandCreationOf(entities: Seq[RoleDb]) = {
+    override def expandCreationOf[X <: Effect](entities: Seq[RoleDb]) = {
       val rolePermissions = entities.flatMap(r => r.permissions.map(p => RolePermission(r.id, p)))
 
       (rolePermissionQuery ++= rolePermissions).map(_ => entities)

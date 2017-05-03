@@ -99,7 +99,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {
-    override def expandCreationOf(entities: Seq[LabworkApplicationDb]) = {
+    override def expandCreationOf[X <: Effect](entities: Seq[LabworkApplicationDb]) = {
       val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
       (lappFriendQuery ++= friends).map(_ => entities)

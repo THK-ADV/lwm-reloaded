@@ -17,7 +17,7 @@ case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[Assign
 }
 
 case class AssignmentPlanCourseFilter(value: String) extends TableFilter[AssignmentPlanTable] {
-  override def predicate = _.joinLabwork.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
 }
 
 trait AssignmentPlanService
@@ -91,7 +91,7 @@ trait AssignmentPlanService
 
   override protected def databaseExpander: Option[DatabaseExpander[AssignmentPlanDb]] = Some(new DatabaseExpander[AssignmentPlanDb] {
 
-    override def expandCreationOf(entities: Seq[AssignmentPlanDb]) = {
+    override def expandCreationOf[X <: Effect](entities: Seq[AssignmentPlanDb]) = {
       val assignmentEntries = entities.flatMap(p => p.entries.map { entry =>
         val entryID = UUID.randomUUID
         val types = entry.types.map(t => AssignmentEntryTypeDb(entryID, t.entryType, t.bool, t.int))

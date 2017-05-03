@@ -13,7 +13,7 @@ import store.{TableFilter, UniqueTable}
 import scala.concurrent.Future
 
 trait DatabaseExpander[DbModel <: UniqueEntity] {
-  def expandCreationOf(entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write]
+  def expandCreationOf[E <: Effect](entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write with E]
   def expandUpdateOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
   def expandDeleteOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
 }
