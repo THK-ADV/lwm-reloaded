@@ -228,6 +228,7 @@ HEAD          /sessions                                                         
 # APIData
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
+POST          /api/appendReportCardEntries/:c/preview/:p                              controllers.ApiDataController.appendReportCardEntries(c, p)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
