@@ -87,23 +87,30 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
-      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
-      flatMap(_ => evaluate(labwork)).
-      flatMap(addLots).
-      map(evals => chunk(evals.toSet)).
-      mapResult(enum => Created.stream(enum).as(mimeType))
+    val result = for {
+      existing <- filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty)
+      newest <- evaluate(labwork)
+      newestEvaluated = reportCardService.removeThoseWhoAlreadyPassed(existing, newest)
+      toDelete = existing.filter(e => newestEvaluated.exists(_.student == e.student))
+      _ <- removeLots[ReportCardEvaluation](toDelete map ReportCardEvaluation.generateUri)
+      added <- addLots(newestEvaluated)
+    } yield chunk(added.toSet)
+
+    result.mapResult(enum => Created.stream(enum).as(mimeType))
   }
 
   def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
-    filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
-      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
-      flatMap(_ => evaluate(labwork)).
-      flatMap(addLots).
-      map(_.toSet).
-      flatMap(atomic).
-      map(atoms => chunk(atoms)).
-      mapResult(enum => Created.stream(enum).as(mimeType))
+    val result = for {
+      existing <- filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty)
+      newest <- evaluate(labwork)
+      newestEvaluated = reportCardService.removeThoseWhoAlreadyPassed(existing, newest)
+      toDelete = existing.filter(e => newestEvaluated.exists(_.student == e.student))
+      _ <- removeLots[ReportCardEvaluation](toDelete map ReportCardEvaluation.generateUri)
+      added <- addLots(newestEvaluated)
+      atoms <- atomic(added.toSet)
+    } yield chunk(atoms)
+
+    result.mapResult(enum => Created.stream(enum).as(mimeType))
   }
 
   def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
