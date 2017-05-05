@@ -139,10 +139,10 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   }
 
   def allWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
-    all(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
+    all(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree)))
   }
 
   def allAtomicWithDegree(degree: String) = contextFrom(GetAll) asyncAction { implicit request =>
-    allAtomic(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree), subscribableAttribute -> Seq(true.toString)))
+    allAtomic(NonSecureBlock)(rebase(degreeAttribute -> Seq(degree)))
   }
 }
