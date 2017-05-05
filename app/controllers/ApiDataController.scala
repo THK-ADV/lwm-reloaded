@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models._
 import org.joda.time.Interval
+import org.openrdf.model.impl.ValueFactoryImpl
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
 import store.SesameRepository
@@ -74,9 +75,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
         errors => Failure(new Throwable(JsError.toJson(errors).toString)),
         reportCards => Success(reportCards)
       )
-      labworks <- repository.getAll[Labwork].map(_.filter(_.id == UUID.fromString(labwork)))
-      _ = println(s"labworks $labworks")
-      existingCards <- repository.getAll[ReportCardEntry].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
+      existingCards <- repository.getAll[ReportCardEntry].map(_.filter(_.labwork == UUID.fromString(labwork)))
       _ = println(s"existingCards count ${existingCards.size}")
       newReportCardEntries = existingCards.groupBy(_.student).flatMap {
         case (student, cards) =>
@@ -99,6 +98,37 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
             "reportCardEntries" -> Json.toJson(cards)
           )
         }
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def appendSupervisorToScheduleEntries(supervisor: String, labwork: String, preview: String) = Action { request =>
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import bindings.{TimetableDescriptor, ScheduleEntryDescriptor}
+    import Timetable.writes
+    import ScheduleEntry.writes
+
+    val supervisorId = UUID.fromString(supervisor)
+
+    val entries = for {
+      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)).head)
+      newTimetable = timetable.copy(timetable.labwork, timetable.entries.map(e => e.copy(e.supervisor + supervisorId)))
+      _ <- if (preview.toBoolean) Success(ValueFactoryImpl.getInstance().createLiteral("")) else repository.update(newTimetable)(TimetableDescriptor, Timetable)
+      scheduleEntries <- repository.getAll[ScheduleEntry].map(_.filter(_.labwork == UUID.fromString(labwork)))
+      newScheduleEntries = scheduleEntries.map(e => e.copy(e.labwork, e.start, e.end, e.date, e.room, e.supervisor + supervisorId))
+      _ <- if (preview.toBoolean) Success(ValueFactoryImpl.getInstance().createLiteral("")) else newScheduleEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
+    } yield (newTimetable.entries, newScheduleEntries)
+
+    entries match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "timetableEntries" -> Json.toJson(s._1),
+        "scheduleEntries" -> Json.toJson(s._2)
       ))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",

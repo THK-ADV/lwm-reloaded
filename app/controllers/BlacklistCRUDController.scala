@@ -49,6 +49,7 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(blacklist.get)
+    case GetAll => PartialSecureBlock(blacklist.getAll)
     case _ => PartialSecureBlock(prime)
   }
 
