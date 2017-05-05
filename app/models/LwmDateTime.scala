@@ -11,7 +11,9 @@ object LwmDateTime {
 
   implicit def writes: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
 
-  def toDateTime(string: String) = DateTime.parse(string, formatter)
+  def toDateTime(dateTime: String) = DateTime.parse(dateTime, formatter)
+  def toLocalDate(localDate: String) = LocalDate.parse(localDate, DateTimeFormat.forPattern("yyyy-MM-dd"))
+  def toLocalTime(localTime: String) = LocalTime.parse(localTime, DateTimeFormat.forPattern("HH:mm"))
 
   def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
     val inputDateTimes = inputDates.map(s => toDateTime(s).toInstant)
