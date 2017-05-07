@@ -228,8 +228,9 @@ HEAD          /sessions                                                         
 # APIData
 GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
-POST          /api/appendReportCardEntries/labworks/:l/preview/:p                     controllers.ApiDataController.appendReportCardEntries(l, p)
+PUT           /api/appendReportCardEntries/labworks/:l/preview/:p                     controllers.ApiDataController.appendReportCardEntries(l, p)
 GET           /api/appendSupervisor/:s/labworks/:l/preview/:p                         controllers.ApiDataController.appendSupervisorToScheduleEntries(s, l, p)
+PUT           /api/swapGroup/preview/:p                                               controllers.ApiDataController.swapGroup(p)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

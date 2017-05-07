@@ -106,6 +106,8 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     }
   }
 
+  val fakeSuccessGraph = Success(ValueFactoryImpl.getInstance().createLiteral(""))
+
   def appendSupervisorToScheduleEntries(supervisor: String, labwork: String, preview: String) = Action { request =>
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
@@ -118,17 +120,77 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     val entries = for {
       timetable <- repository.getAll[Timetable].map(_.find(_.labwork == UUID.fromString(labwork)).head)
       newTimetable = timetable.copy(timetable.labwork, timetable.entries.map(e => e.copy(e.supervisor + supervisorId)))
-      _ <- if (preview.toBoolean) Success(ValueFactoryImpl.getInstance().createLiteral("")) else repository.update(newTimetable)(TimetableDescriptor, Timetable)
+      _ <- if (preview.toBoolean) fakeSuccessGraph else repository.update(newTimetable)(TimetableDescriptor, Timetable)
       scheduleEntries <- repository.getAll[ScheduleEntry].map(_.filter(_.labwork == UUID.fromString(labwork)))
       newScheduleEntries = scheduleEntries.map(e => e.copy(e.labwork, e.start, e.end, e.date, e.room, e.supervisor + supervisorId))
-      _ <- if (preview.toBoolean) Success(ValueFactoryImpl.getInstance().createLiteral("")) else newScheduleEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
+      _ <- if (preview.toBoolean) fakeSuccessGraph else newScheduleEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
     } yield (newTimetable.entries, newScheduleEntries)
 
     entries match {
-      case Success(s) => Ok(Json.obj(
+      case Success((timetableEntries, scheduleEntries)) => Ok(Json.obj(
         "status" -> "OK",
-        "timetableEntries" -> Json.toJson(s._1),
-        "scheduleEntries" -> Json.toJson(s._2)
+        "timetableEntries" -> Json.toJson(timetableEntries),
+        "scheduleEntries" -> Json.toJson(scheduleEntries)
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  // TODO expand group swap request and refactor to groupService at some time
+  case class GroupSwapRequest(srcLabwork: UUID, srcStudent: String, destGroup: String)
+
+  def swapGroup(preview: String) = Action(parse.json) { request =>
+    import bindings.{GroupDescriptor, ReportCardEntryDescriptor, StudentDescriptor}
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import models.LwmDateTime._
+    import models.Group._
+    import models.ReportCardEntry._
+
+    def replaceMembersIn(group: Group)(updateMembers: Set[UUID] => Set[UUID]): Group = {
+      group.copy(group.label, group.labwork, updateMembers(group.members))
+    }
+
+    implicit val reads = Json.reads[GroupSwapRequest]
+
+    val swappedGroups = for {
+      swapRequest <- request.body.validate[GroupSwapRequest].fold(
+        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
+        swapRequest => Success(swapRequest)
+      )
+      groups <- repository.getAll[Group].map(_.filter(_.labwork == swapRequest.srcLabwork))
+      srcStudent <- repository.getAll[Student].map(_.find(_.systemId == swapRequest.srcStudent).head).map(_.id)
+      currentGroup = groups.find(_.members.contains(srcStudent)).get
+      destinationGroup = groups.find(_.label == swapRequest.destGroup).get
+      destinationStudent = destinationGroup.members.head
+      updatedCurrentGroup = replaceMembersIn(currentGroup)(_ - srcStudent)
+      updatedDestinationGroup = replaceMembersIn(destinationGroup)(_ + srcStudent)
+      _ <- if (preview.toBoolean)
+        fakeSuccessGraph
+      else
+        List(updatedCurrentGroup, updatedDestinationGroup).map(g => repository.update(g)(GroupDescriptor, Group)).sequence
+      reportCardEntries <- repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == swapRequest.srcLabwork))
+      studentEntries = reportCardEntries.filter(_.student == srcStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
+      templateEntries = reportCardEntries.filter(_.student == destinationStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
+      updatedStudentEntries = for {
+        (origin, template) <- studentEntries.zip(templateEntries) if origin.date.getWeekOfWeekyear == template.date.getWeekOfWeekyear && origin.label == template.label
+      } yield origin.copy(origin.student, origin.labwork, origin.label, template.date, template.start, template.end, template.room)
+      _ <- if (preview.toBoolean)
+        fakeSuccessGraph
+      else
+        updatedStudentEntries.map(r => repository.update(r)(ReportCardEntryDescriptor, ReportCardEntry)).sequence
+    } yield (updatedCurrentGroup, updatedDestinationGroup, studentEntries, updatedStudentEntries)
+
+    swappedGroups match {
+      case Success((oldGroup, newGroup, oldCards, newCards)) => Ok(Json.obj(
+        "status" -> "OK",
+        "oldGroup" -> Json.toJson(oldGroup),
+        "newGroup" -> Json.toJson(newGroup),
+        "oldCards" -> Json.toJson(oldCards),
+        "newCards" -> Json.toJson(newCards)
       ))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
