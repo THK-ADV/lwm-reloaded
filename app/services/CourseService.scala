@@ -77,7 +77,6 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
     db.run(query.result.map(_.map(_.toCourse)))
   }
 
-  //TODO Create Expanden auf Role und Authority
   override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
 
     override def expandCreationOf(entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Write] = {
@@ -85,8 +84,7 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
     }
 
     override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-      DBIO.successful(Some(entity))
-      //TODO Authorities for new Lecturer
+      authorityService.updateWithCourse(entity).map(_ => Some(entity))
     }
 
     override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {

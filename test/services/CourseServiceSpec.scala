@@ -4,12 +4,14 @@ import java.util.UUID
 
 import models._
 import slick.dbio.Effect.Write
+import slick.lifted
 import store.{CourseTable, RoleTable, UserTable}
 
 /**
   * Created by florian on 4/10/17.
   */
-class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseService{
+class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseService {
+
   import services.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 
@@ -60,34 +62,127 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
 
       val lecturer = randomEmployee
 
-      val result = await(create(CourseDb("TestLabel","TestDescription","TL",lecturer.id,3)))
-      val authResult = await(db.run(authorityService.tableQuery.filter(_.user === lecturer.id).result))
-      val rolesResult = await(db.run(TableQuery[RoleTable].filter(role => role.label === Roles.CourseManagerLabel || role.label === Roles.RightsManagerLabel).result))
-      val rightsManager = rolesResult.find(_.label == Roles.RightsManagerLabel).get
-      val courseManager = rolesResult.find(_.label == Roles.CourseManagerLabel).get
-
-      authResult.exists(a => a.user == result.lecturer && a.role == rightsManager.id && a.course.isEmpty) shouldBe true
-      authResult.exists(a => a.user == result.lecturer && a.role == courseManager.id && a.course.contains(result.id)) shouldBe true
+      await(db.run(
+        for{
+          result <- createManyExpandedQuery(Seq(CourseDb("TestLabel", "TestDescription", "TL", lecturer.id, 3))).map(_.head)
+          auths <- authorityService.tableQuery.filter(_.user === lecturer.id).result
+          rightsManager <- getRightsManager
+          courseManager <- getCourseManager
+        } yield {
+          auths.exists(a => a.user == result.lecturer && a.role == rightsManager.get.id && a.course.isEmpty) shouldBe true
+          auths.exists(a => a.user == result.lecturer && a.role == courseManager.get.id && a.course.contains(result.id)) shouldBe true
+        }
+      ))
     }
 
-    //TODO Delete a course with dedicated roles
+    "update a course with dedicated roles" in {
+      val oldLecturer = employees(0)
+      val newLecturer = employees(1)
+
+      val course = CourseDb("TestLabel2", "TestDescription2", "TL2", oldLecturer.id, 3)
+
+      await(db.run(
+        for{
+          oldCourse <- createManyExpandedQuery(Seq(course)).map(_.head)
+          _ <- updateExpandedQuery(oldCourse.copy(oldCourse.label, oldCourse.description, oldCourse.abbreviation, newLecturer.id, oldCourse.semesterIndex))
+
+          authOldLecturer <- authorityService.tableQuery.filter(_.user === oldLecturer.id).result
+          authNewLecturer <- authorityService.tableQuery.filter(_.user === newLecturer.id).result
+
+          courseManager <- getCourseManager
+        } yield {
+          authOldLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe false
+          authNewLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe true
+        }
+      ))
+    }
+
+    "delete a course with dedicated roles" in {
+      val course = randomCourse
+
+      await(db.run(
+        for {
+          _ <- deleteExpandedQuery(course)
+          auths <- authorityService.tableQuery.filter(_.user === course.lecturer).result
+          rightsManager <- getRightsManager
+          courseManager <- getCourseManager
+        } yield {
+          auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id && a.course.contains(course.id)) shouldBe false
+          val hasOtherCourses = auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id)
+          auths.exists(a => a.role == rightsManager.get.id) shouldBe hasOtherCourses
+        }))
+
+    }
+
+    "delete RightsManager only if no course left" in {
+      val lecturer = DbUser("ai123", "lastname", "firstname", "email@email.email", User.EmployeeType, None, None)
+      val course1 = new CourseDb("label1", "desc1", "abb1", lecturer.id, 1)
+      val course2 = new CourseDb("label2", "desc2", "abb2", lecturer.id, 2)
+
+
+      await(db.run(DBIO.seq(
+        TableQuery[UserTable] += lecturer
+      ).andThen(
+        createManyExpandedQuery(Seq(course1, course2))
+      ).andThen(
+        shoulhHaveRightsManager(lecturer.id, flag=true)
+      ).andThen(
+        deleteExpandedQuery(course1)
+      ).andThen(
+        shoulhHaveRightsManager(lecturer.id, flag=true)
+      ).andThen(
+        deleteExpandedQuery(course2)
+      ).andThen(
+        shoulhHaveRightsManager(lecturer.id, flag=false)
+      )))
+    }
   }
 
-  override protected def name: String = "course"
 
   override protected val entity: CourseDb = CourseDb("label", "description", "abbreviation", randomEmployee.id, 3)
-
   override protected val invalidDuplicateOfEntity: CourseDb = CourseDb(entity.label, "description2", "abbreviation2", UUID.randomUUID(), entity.semesterIndex)
-
   override protected val invalidUpdateOfEntity: CourseDb = entity.copy("label2", entity.description, entity.abbreviation, entity.lecturer, 2)
-
   override protected val validUpdateOnEntity: CourseDb = entity.copy(entity.label, "updatedDescription", "updatedAbbreviation", randomEmployee.id, entity.semesterIndex)
-
   override protected val entities: List[CourseDb] = courses
-
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees)
   )
-
   override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
+
+  override protected def name: String = "course"
+
+  private def deleteExpandedQuery(course: CourseDb) = {
+    deleteQuery(course.id).flatMap { _ =>
+      databaseExpander.get.expandDeleteOf(course)
+    }
+  }
+
+  private def createManyExpandedQuery(courses: Seq[CourseDb]) = {
+    createManyQuery(courses).flatMap {
+      _ => databaseExpander.get.expandCreationOf(courses)
+    }
+  }
+
+  private def updateExpandedQuery(course: CourseDb) = {
+    updateQuery(course).flatMap {
+      _ => databaseExpander.get.expandUpdateOf(course)
+    }
+  }
+
+  private def shoulhHaveRightsManager(lecturer: UUID, flag: Boolean) = {
+    getRightsManager.flatMap { rm =>
+      authorityService.tableQuery.filter(auth => auth.user === lecturer && auth.role === rm.head.id).result.map { auths =>
+        if (flag) auths.size shouldBe 1 else auths shouldBe empty
+        auths.exists(a => a.user == lecturer && a.role == rm.head.id) shouldBe flag
+      }
+    }
+  }
+
+  private def getRightsManager = {
+    TableQuery[RoleTable].filter(role => role.label === Roles.RightsManagerLabel).result.headOption
+  }
+
+  private def getCourseManager = {
+    TableQuery[RoleTable].filter(role => role.label === Roles.CourseManagerLabel).result.headOption
+  }
 }

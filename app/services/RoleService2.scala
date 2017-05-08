@@ -7,6 +7,8 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
+import slick.dbio.Effect
+import slick.profile.SqlAction
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
@@ -56,8 +58,16 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] { self: Postgres
     }.toSeq))
   }
 
-  def byUserStatus(status: String): Future[Option[RoleDb]] = {
-    db.run(tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption)
+  def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
+    db.run(byUserStatusQuery(status))
+  }
+
+  def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption
+  }
+
+  def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    tableQuery.filter(_.isLabel(label)).result.headOption
   }
 
   def createManyWithPermissions(roles: List[RoleDb]): Future[Map[Option[PostgresRole], Seq[RolePermission]]] = {
