@@ -7,7 +7,7 @@ import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
 import models.LwmDateTime.DateTimeConverter
-import slick.driver
+import slick.dbio.Effect
 import slick.driver.PostgresDriver
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
@@ -21,10 +21,6 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
   protected val rolePermissionQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
-
-  final def byUserStatus(status: String): Future[Option[RoleDb]] = {
-    db.run(tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption)
-  }
 
   override protected def setInvalidated(entity: RoleDb): RoleDb = {
     val now = DateTime.now.timestamp
@@ -56,6 +52,18 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
     } yield (q, p)
 
     db.run(rolesWithPermissions.result.map(_.groupBy(_._1).map(r => buildRole(r._1, r._2)).toSeq))
+  }
+
+  def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
+    db.run(byUserStatusQuery(status))
+  }
+
+  def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption
+  }
+
+  def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    tableQuery.filter(_.isLabel(label)).result.headOption
   }
 
   override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {

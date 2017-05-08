@@ -52,11 +52,11 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
     override def expandDeleteOf(entity: TimetableDb) = {
       val supervisors = entity.entries.flatMap(_.supervisor)
 
-      val x = timetableEntrySupervisorQuery.filter { entrySupervisor =>
+      /*val x = timetableEntrySupervisorQuery.filter { entrySupervisor =>
         entrySupervisor.timetableEntryFk.map(e => (e.timetable, e.id)).filter {
           case (timetableId, entryId) => timetableId === entity.id && entryId === entrySupervisor.timetableEntry && entrySupervisor.supervisor.inSet(supervisors)
         }
-      }
+      }*/
 
       ???
     }

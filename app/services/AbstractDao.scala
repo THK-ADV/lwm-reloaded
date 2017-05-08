@@ -119,14 +119,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
   final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
 
   final def delete(id: UUID): Future[Option[DbModel]] = {
-    val found = tableQuery.filter(_.id === id)
-    val query = found.result.head.flatMap { existing =>
-      val invalidated = setInvalidated(existing)
-
-      found.update(invalidated).map { rowsAffected =>
-        if (rowsAffected > 0) Some(invalidated) else None
-      }
-    }
+    val query = deleteQuery(id)
 
     databaseExpander.fold {
       db.run(query)
@@ -138,16 +131,20 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     }
   }
 
-  final def update(entity: DbModel): Future[Option[DbModel]] = {
-    val found = tableQuery.filter(_.id === entity.id)
-    val query = found.result.head.flatMap { existing =>
-      if (shouldUpdate(existing, entity))
-        found.update(entity).map { rowsAffected =>
-          if (rowsAffected > 0) Some(entity) else None
-        }
-      else
-        DBIO.failed(ModelAlreadyExists(existing))
+  final def deleteQuery(id: UUID) = {
+    val found = tableQuery.filter(_.id === id)
+
+    found.result.head.flatMap { existing =>
+      val invalidated = setInvalidated(existing)
+
+      found.update(invalidated).map { rowsAffected =>
+        if (rowsAffected > 0) Some(invalidated) else None
+      }
     }
+  }
+
+  final def update(entity: DbModel): Future[Option[DbModel]] = {
+    val query = updateQuery(entity)
 
     databaseExpander.fold {
       db.run(query)
@@ -157,6 +154,19 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         e <- expander.expandUpdateOf(q.get)
       } yield e).transactionally)
     }
+  }
+
+  final def updateQuery(entity: DbModel) = {
+    val found = tableQuery.filter(_.id === entity.id)
+    val query = found.result.head.flatMap { existing =>
+      if (shouldUpdate(existing, entity))
+        found.update(entity).map { rowsAffected =>
+          if (rowsAffected > 0) Some(entity) else None
+        }
+      else
+        DBIO.failed(ModelAlreadyExists(existing))
+    }
+    query
   }
 
   def createSchema: Future[Unit] = db.run(tableQuery.schema.create)

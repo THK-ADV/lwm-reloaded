@@ -205,7 +205,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"courses ${courses.size}")
     } yield courses.map(_.toCourse)
 
-    result.jsonResult
+    result.jsonResult(PostgresCourse.writes)
   }
 
   def migrateLabworks = Action.async {

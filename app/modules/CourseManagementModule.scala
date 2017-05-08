@@ -1,6 +1,6 @@
 package modules
 
-import controllers.CourseCRUDController
+import controllers.{CourseCRUDController, CourseControllerPostgres}
 import services.{CourseService, CourseServiceImpl}
 
 trait CourseManagementModule {
@@ -21,6 +21,20 @@ trait CourseServiceModule { self: DatabaseModule =>
   def courseService: CourseService
 }
 
-trait DefaultCourseServiceModule extends CourseServiceModule { self: DatabaseModule =>
-  override lazy val courseService = new CourseServiceImpl(db)
+trait DefaultCourseServiceModule extends CourseServiceModule {
+  self: DatabaseModule with AuthorityServiceModule =>
+
+  override lazy val courseService = new CourseServiceImpl(db, authorityService)
+}
+
+trait CourseManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule  =>
+
+  def courseManagementControllerPostgres: CourseControllerPostgres
+}
+
+trait DefaultCourseManagementModuleImplPostgres extends CourseManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule with CourseServiceModule =>
+
+  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseService)
 }

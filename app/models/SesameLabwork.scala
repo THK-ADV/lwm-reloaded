@@ -67,7 +67,7 @@ object PostgresLabworkAtom {
     (JsPath \ "label").write[String] and
       (JsPath \ "description").write[String] and
       (JsPath \ "semester").write[PostgresSemester](PostgresSemester.writes) and
-      (JsPath \ "course").write[PostgresCourseAtom] and
+      (JsPath \ "course").write[PostgresCourseAtom](PostgresCourseAtom.writesAtom) and
       (JsPath \ "degree").write[PostgresDegree](PostgresDegree.writes) and
       (JsPath \ "subscribable").write[Boolean] and
       (JsPath \ "published").write[Boolean] and

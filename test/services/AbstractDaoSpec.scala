@@ -45,7 +45,7 @@ object AbstractDaoSpec {
   val employees = (0 until maxEmployees).map(i => DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)).toList
 
   val courses = (0 until maxCourses).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, 1)
+    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, i % 6)
   }.toList
 
   val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList

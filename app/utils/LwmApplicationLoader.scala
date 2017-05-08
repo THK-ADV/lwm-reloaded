@@ -43,6 +43,7 @@ with DegreeManagementModule
 with DegreeManagementModulePostgres
 with DegreeServiceModule
 with CourseManagementModule
+with CourseManagementModulePostgres
 with CourseServiceModule
 with GroupServiceManagementModule
 with GroupManagementModule
@@ -101,6 +102,7 @@ with LdapSyncModule {
     degreeManagementController,
     degreeManagementControllerPostgres,
     courseManagementController,
+    courseManagementControllerPostgres,
     groupManagementController,
     labworkManagementController,
     entryTypeController,
@@ -141,6 +143,7 @@ with DefaultDegreeManagementModuleImpl
 with DefaultDegreeManagementModuleImplPostgres
 with DefaultDegreeServiceModule
 with DefaultCourseManagementModuleImpl
+with DefaultCourseManagementModuleImplPostgres
 with DefaultCourseServiceModule
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl
