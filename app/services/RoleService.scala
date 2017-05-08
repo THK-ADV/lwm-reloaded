@@ -29,6 +29,8 @@ trait RoleServiceLike {
     * @return true/false
     */
   def checkAuthority(checkee: (Option[UUID], SesamePermission))(checker: SesameAuthority*): Try[Boolean]
+
+  def rolesForCourse(userId: UUID): Try[Set[SesameRole]]
 }
 
 class RoleService(private val repository: SesameRepository) extends RoleServiceLike {

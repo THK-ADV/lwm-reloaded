@@ -1,14 +1,14 @@
 package services
 
-import java.sql.Timestamp
 import java.util.UUID
 
 import models.{DegreeDb, PostgresDegree}
 import org.joda.time.DateTime
 import slick.lifted.Rep
-import store.{DegreeTable, PostgresDatabase, TableFilter}
+import store.{DegreeTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
 
@@ -22,7 +22,7 @@ case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
   override def predicate: (DegreeTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] { self: PostgresDatabase =>
+trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
@@ -52,4 +52,5 @@ trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
   override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toDegree)))
 }
 
-object DegreeService extends DegreeService with PostgresDatabase
+
+final class DegreeServiceImpl(val db: PostgresDriver.backend.Database) extends DegreeService

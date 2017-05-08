@@ -4,6 +4,8 @@ import java.util.UUID
 
 import models._
 import slick.dbio.Effect.Write
+import slick.driver
+import slick.driver.PostgresDriver
 import store.UserTable
 
 final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserService {
@@ -179,19 +181,49 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
 
   override protected val degreeService: DegreeService = new DegreeServiceSpec()
 
-  override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
+  override protected val authorityService: AuthorityService = {
+    lazy val sharedDb = db
 
-  override protected def labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2Spec()
+    new AuthorityService {
+
+      override protected def roleService: RoleService2 = new RoleService2 {
+
+        override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+      }
+
+      override protected def db: PostgresDriver.backend.Database = sharedDb
+    }
+  }
+
+  override protected val labworkApplicationService: LabworkApplicationService2 = {
+    lazy val sharedDb = db
+
+    new LabworkApplicationService2Spec {
+      override lazy val db = sharedDb // TODO STILL NEEDED?
+    }
+  }
 
   override protected def name: String = "user"
 
-  override protected val entity: DbUser = DbUser("delete", "delete", "delete", "delete", User.EmployeeType, None, None)
+  override protected val dbEntity: DbUser = DbUser("delete", "delete", "delete", "delete", User.StudentType, Some("regId"), Some(degrees.head.id))
 
-  override protected val entities: List[DbUser] = dbUser
+  override protected val dbEntities: List[DbUser] = dbUser
 
-  override protected def invalidDuplicateOfEntity: DbUser = DbUser(entity.systemId, "delete2", "delete2", "delete2", User.EmployeeType, None, None, lastModified, None, entity.id)
+  override protected val invalidDuplicateOfDbEntity: DbUser = DbUser(dbEntity.systemId, "delete2", "delete2", "delete2", User.StudentType, None, None, lastModified, None, dbEntity.id)
 
-  override protected def invalidUpdateOfEntity: DbUser = DbUser("new SystemId", "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
+  override protected val invalidUpdateOfDbEntity: DbUser = DbUser("new SystemId", "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
 
-  override protected def validUpdateOnEntity: DbUser = DbUser(entity.systemId, "new lastname", entity.firstname, entity.email, entity.status, None, None, lastModified, None, entity.id)
+  override protected val validUpdateOnDbEntity: DbUser = DbUser(dbEntity.systemId, "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
+
+  override protected val lwmEntity: User = dbEntity.toUser
+
+  override protected val lwmAtom: User = PostgresStudentAtom(
+    dbEntity.systemId,
+    dbEntity.lastname,
+    dbEntity.firstname,
+    dbEntity.email,
+    dbEntity.registrationId.get,
+    degrees.head.toDegree,
+    dbEntity.id
+  )
 }

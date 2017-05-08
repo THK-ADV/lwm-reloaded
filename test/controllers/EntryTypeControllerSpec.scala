@@ -1,7 +1,7 @@
 package controllers
 
 import base.TestBaseDefinition
-import models.AssignmentEntryType
+import models.SesameAssignmentEntryType
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
 import play.api.libs.json.{Json, Writes}
@@ -28,7 +28,7 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition { self =>
   "An EntryTypeController" should {
 
     "return all EntryTypes" in {
-      val expectedEntryType = AssignmentEntryType.all
+      val expectedEntryType = SesameAssignmentEntryType.all
 
       val request = FakeRequest(
         GET,
@@ -39,7 +39,7 @@ class EntryTypeControllerSpec extends WordSpec with TestBaseDefinition { self =>
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-      contentAsJson(result) shouldBe Json.toJson(expectedEntryType)(Writes.set(AssignmentEntryType.writes))
+      contentAsJson(result) shouldBe Json.toJson(expectedEntryType)(Writes.set(SesameAssignmentEntryType.writes))
     }
 
     "return the expected content type" in {

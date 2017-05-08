@@ -29,7 +29,7 @@ class LabworkApplicationServiceSpec extends WordSpec with TestBaseDefinition wit
   dateTimeBinder
   }
 
-  val emptyPlan = AssignmentPlan.empty
+  val emptyPlan = SesameAssignmentPlan.empty
 
   "An application service" should {
 

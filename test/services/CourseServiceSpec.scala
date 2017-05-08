@@ -4,7 +4,8 @@ import java.util.UUID
 
 import models._
 import slick.dbio.Effect.Write
-import slick.lifted
+import slick.driver.PostgresDriver
+import slick.{driver, lifted}
 import store.{CourseTable, RoleTable, UserTable}
 
 /**
@@ -45,14 +46,14 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
         CourseSemesterIndexFilter(labelAndSemesterIndexFilterSemesterIndexValue.toString)
       )
 
-      await(get(labelFilter, atomic = false)) shouldBe entities.filter(_.label == labelFilterValue).map(_.toCourse)
-      await(get(semesterIndexFilter, atomic = false)) shouldBe entities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toCourse)
-      await(get(abbreviationFilter, atomic = false)) shouldBe entities.filter(_.abbreviation == abbreviationFilterValue).map(_.toCourse)
-      await(get(abbreviationAndSemesterIndexFilter, atomic = false)) shouldBe entities.filter(course =>
+      await(get(labelFilter, atomic = false)) shouldBe dbEntities.filter(_.label == labelFilterValue).map(_.toCourse)
+      await(get(semesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toCourse)
+      await(get(abbreviationFilter, atomic = false)) shouldBe dbEntities.filter(_.abbreviation == abbreviationFilterValue).map(_.toCourse)
+      await(get(abbreviationAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.abbreviation == abbreviationAndSemesterIndexFilterAbbreviationValue
           && course.semesterIndex == abbreviationAndSemesterIndexFilterSemesterIndexValue
       ).map(_.toCourse)
-      await(get(labelAndSemesterIndexFilter, atomic = false)) shouldBe entities.filter(course =>
+      await(get(labelAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.label == labelAndSemesterIndexFilterLabelValue
           && course.semesterIndex == labelAndSemesterIndexFilterSemesterIndexValue
       ).map(_.toCourse)
@@ -63,7 +64,7 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
       val lecturer = randomEmployee
 
       await(db.run(
-        for{
+        for {
           result <- createManyExpandedQuery(Seq(CourseDb("TestLabel", "TestDescription", "TL", lecturer.id, 3))).map(_.head)
           auths <- authorityService.tableQuery.filter(_.user === lecturer.id).result
           rightsManager <- getRightsManager
@@ -82,7 +83,7 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
       val course = CourseDb("TestLabel2", "TestDescription2", "TL2", oldLecturer.id, 3)
 
       await(db.run(
-        for{
+        for {
           oldCourse <- createManyExpandedQuery(Seq(course)).map(_.head)
           _ <- updateExpandedQuery(oldCourse.copy(oldCourse.label, oldCourse.description, oldCourse.abbreviation, newLecturer.id, oldCourse.semesterIndex))
 
@@ -125,29 +126,52 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
       ).andThen(
         createManyExpandedQuery(Seq(course1, course2))
       ).andThen(
-        shoulhHaveRightsManager(lecturer.id, flag=true)
+        shoulhHaveRightsManager(lecturer.id, flag = true)
       ).andThen(
         deleteExpandedQuery(course1)
       ).andThen(
-        shoulhHaveRightsManager(lecturer.id, flag=true)
+        shoulhHaveRightsManager(lecturer.id, flag = true)
       ).andThen(
         deleteExpandedQuery(course2)
       ).andThen(
-        shoulhHaveRightsManager(lecturer.id, flag=false)
+        shoulhHaveRightsManager(lecturer.id, flag = false)
       )))
     }
   }
 
 
-  override protected val entity: CourseDb = CourseDb("label", "description", "abbreviation", randomEmployee.id, 3)
-  override protected val invalidDuplicateOfEntity: CourseDb = CourseDb(entity.label, "description2", "abbreviation2", UUID.randomUUID(), entity.semesterIndex)
-  override protected val invalidUpdateOfEntity: CourseDb = entity.copy("label2", entity.description, entity.abbreviation, entity.lecturer, 2)
-  override protected val validUpdateOnEntity: CourseDb = entity.copy(entity.label, "updatedDescription", "updatedAbbreviation", randomEmployee.id, entity.semesterIndex)
-  override protected val entities: List[CourseDb] = courses
+  override protected val dbEntity: CourseDb = CourseDb("label", "description", "abbreviation", randomEmployee.id, 3)
+  override protected val invalidDuplicateOfDbEntity: CourseDb = CourseDb(dbEntity.label, "description2", "abbreviation2", UUID.randomUUID(), dbEntity.semesterIndex)
+  override protected val invalidUpdateOfDbEntity: CourseDb = dbEntity.copy("label2", dbEntity.description, dbEntity.abbreviation, dbEntity.lecturer, 2)
+  override protected val validUpdateOnDbEntity: CourseDb = dbEntity.copy(dbEntity.label, "updatedDescription", "updatedAbbreviation", randomEmployee.id, dbEntity.semesterIndex)
+  override protected val dbEntities: List[CourseDb] = courses
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees)
   )
-  override protected val authorityService: AuthorityService = new AuthorityServiceSpec()
+  override protected val authorityService: AuthorityService = {
+    lazy val sharedDb = db
+
+    new AuthorityService {
+      override protected def roleService: RoleService2 = new RoleService2 {
+        override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+      }
+
+      override protected def db: PostgresDriver.backend.Database = sharedDb
+    }
+  }
+
+  override protected val lwmEntity: Course = dbEntity.toCourse
+
+  override protected val lwmAtom: Course = {
+    PostgresCourseAtom(
+      dbEntity.label,
+      dbEntity.description,
+      dbEntity.abbreviation,
+      employees.find(_.id == dbEntity.lecturer).get.toUser,
+      dbEntity.semesterIndex,
+      dbEntity.id
+    )
+  }
 
   override protected def name: String = "course"
 
@@ -185,4 +209,5 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
   private def getCourseManager = {
     TableQuery[RoleTable].filter(role => role.label === Roles.CourseManagerLabel).result.headOption
   }
+
 }

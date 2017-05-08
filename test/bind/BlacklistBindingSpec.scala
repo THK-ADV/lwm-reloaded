@@ -1,7 +1,7 @@
 package bind
 
 import base.SesameDbSpec
-import models.Blacklist
+import models.SesameBlacklist
 import org.joda.time.DateTime
 import org.w3.banana.PointedGraph
 
@@ -15,10 +15,10 @@ class BlacklistBindingSpec extends SesameDbSpec {
   implicit val blacklistBinder = BlacklistDescriptor.binder
 
   val dates = (0 until 10).map(DateTime.now.plusWeeks).toSet
-  val blacklist = Blacklist("blacklist", dates)
+  val blacklist = SesameBlacklist("blacklist", dates)
 
   val blacklistGraph = (
-    URI(Blacklist.generateUri(blacklist)).a(lwm.Blacklist)
+    URI(SesameBlacklist.generateUri(blacklist)).a(lwm.Blacklist)
       -- lwm.label ->- blacklist.label
       -- lwm.dates ->- blacklist.dates
       -- lwm.invalidated ->- blacklist.invalidated
@@ -33,7 +33,7 @@ class BlacklistBindingSpec extends SesameDbSpec {
     }
 
     "return a blacklist based on a RDF graph representation" in {
-      val expectedBlacklist = PointedGraph[Rdf](URI(Blacklist.generateUri(blacklist)), blacklistGraph).as[Blacklist]
+      val expectedBlacklist = PointedGraph[Rdf](URI(SesameBlacklist.generateUri(blacklist)), blacklistGraph).as[SesameBlacklist]
 
       expectedBlacklist match {
         case Success(s) =>

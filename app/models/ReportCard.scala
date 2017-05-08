@@ -66,13 +66,13 @@ object ReportCardEntryType extends UriGenerator[ReportCardEntryType] with JsonSe
 
   def all = Set(Attendance, Certificate, Bonus, Supplement)
 
-  def Attendance = ReportCardEntryType(AssignmentEntryType.Attendance.entryType)
+  def Attendance = ReportCardEntryType(SesameAssignmentEntryType.Attendance.entryType)
 
-  def Certificate = ReportCardEntryType(AssignmentEntryType.Certificate.entryType)
+  def Certificate = ReportCardEntryType(SesameAssignmentEntryType.Certificate.entryType)
 
-  def Bonus = ReportCardEntryType(AssignmentEntryType.Bonus.entryType)
+  def Bonus = ReportCardEntryType(SesameAssignmentEntryType.Bonus.entryType)
 
-  def Supplement = ReportCardEntryType(AssignmentEntryType.Supplement.entryType)
+  def Supplement = ReportCardEntryType(SesameAssignmentEntryType.Supplement.entryType)
 
   override def base: String = "reportCardEntryTypes"
 

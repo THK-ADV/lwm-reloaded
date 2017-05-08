@@ -8,17 +8,21 @@ import store.DegreeTable
 final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeService {
   import services.AbstractDaoSpec._
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
   override protected def name: String = "degree"
 
-  override protected val entity: DegreeDb = DegreeDb("label", "abbrev")
+  override protected val dbEntity: DegreeDb = DegreeDb("label", "abbrev")
 
-  override protected val invalidDuplicateOfEntity: DegreeDb = DegreeDb(entity.label, entity.abbreviation)
+  override protected val invalidDuplicateOfDbEntity: DegreeDb = DegreeDb(dbEntity.label, dbEntity.abbreviation)
 
-  override protected val invalidUpdateOfEntity: DegreeDb = DegreeDb("new label", "new abbrev", lastModified, entity.invalidated, entity.id)
+  override protected val invalidUpdateOfDbEntity: DegreeDb = DegreeDb("new label", "new abbrev", lastModified, dbEntity.invalidated, dbEntity.id)
 
-  override protected val validUpdateOnEntity: DegreeDb = DegreeDb("new label", entity.abbreviation, lastModified, entity.invalidated, entity.id)
+  override protected val validUpdateOnDbEntity: DegreeDb = DegreeDb("new label", dbEntity.abbreviation, lastModified, dbEntity.invalidated, dbEntity.id)
 
-  override protected val entities: List[DegreeDb] = degrees
+  override protected val dbEntities: List[DegreeDb] = degrees
+
+  override protected val lwmEntity: PostgresDegree = dbEntity.toDegree
+
+  override protected val lwmAtom: PostgresDegree = lwmEntity
 }

@@ -5,14 +5,15 @@ import java.util.UUID
 
 import models.UniqueEntity
 import slick.dbio.Effect.Write
+import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import slick.profile.FixedSqlAction
-import store.{PostgresDatabase, TableFilter, UniqueTable}
+import store.{TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 
 trait DatabaseExpander[DbModel <: UniqueEntity] {
-  def expandCreationOf(entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write]
+  def expandCreationOf[E <: Effect](entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write with E]
   def expandUpdateOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
   def expandDeleteOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
 }
@@ -22,8 +23,14 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
 }
 
 // TODO maybe we can get rid of DbModel
-trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] { self: PostgresDatabase =>
+trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] {
   import scala.concurrent.ExecutionContext.Implicits.global
+
+  case class IdFilter(value: String) extends TableFilter[T] {
+    override def predicate = _.id === UUID.fromString(value)
+  }
+
+  protected def db: PostgresDriver.backend.Database
 
   def tableQuery: TableQuery[T]
 
@@ -57,13 +64,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     }
   }
 
-  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = databaseExpander.fold {
-    db.run(createManyQuery(entities))
-  } { expander =>
-    db.run((for {
-      _ <- createManyQuery(entities)
-      e <- expander.expandCreationOf(entities)
-    } yield e).transactionally)
+  final def createMany(entities: List[DbModel]): Future[Seq[DbModel]] = {
+    databaseExpander.fold {
+      db.run(createManyQuery(entities))
+    } { expander =>
+      db.run((for {
+        _ <- createManyQuery(entities)
+        e <- expander.expandCreationOf(entities)
+      } yield e).transactionally)
+    }
   }
 
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
@@ -73,12 +82,16 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
   protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
-        t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
-          query.filter(nextFilter.predicate)
-        }
+          t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
+            query.filter(nextFilter.predicate)
+          }
       case _ => tableQuery
     }
 
+    filterBy(validOnly, sinceLastModified, query)
+  }
+
+  private def filterBy(validOnly: Boolean, sinceLastModified: Option[String], query: Query[T, DbModel, Seq]) = {
     val lastModified = sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
 
     if (validOnly) lastModified.filter(_.isValid) else lastModified
@@ -88,6 +101,19 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     val query = filterBy(tableFilter, validOnly, sinceLastModified)
 
     if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
+
+  // TODO refactor get functions... they are pretty messy right now
+
+  final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
+    val query = filterBy(validOnly, sinceLastModified, tableQuery.filter(_.id.inSet(ids)))
+
+    if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
+
+  // TODO use this function instead of get(tableFilter) for a single entity
+  final def getById(id: String, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Option[LwmModel]] = {
+    getMany(List(UUID.fromString(id)), atomic, validOnly, sinceLastModified).map(_.headOption)
   }
 
   final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
@@ -143,7 +169,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     query
   }
 
-  final def createSchema = db.run(tableQuery.schema.create)
+  def createSchema: Future[Unit] = db.run(tableQuery.schema.create)
 
-  final def dropSchema = db.run(tableQuery.schema.create)
+  def dropSchema: Future[Unit] = db.run(tableQuery.schema.create)
 }

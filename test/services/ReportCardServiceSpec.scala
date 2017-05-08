@@ -10,10 +10,10 @@ import org.scalatest.WordSpec
 
 object ReportCardServiceSpec {
 
-  def integer(assEntry: AssignmentEntry, appEntry: ScheduleEntryG, cEntry: ReportCardEntry): Boolean = {
-    def integerTypes(left: Set[AssignmentEntryType], right: Set[ReportCardEntryType]): Boolean = {
-      def toAssignmentEntryType(cardEntry: ReportCardEntryType): AssignmentEntryType = {
-        AssignmentEntryType(cardEntry.entryType, cardEntry.bool, cardEntry.int)
+  def integer(assEntry: SesameAssignmentEntry, appEntry: ScheduleEntryG, cEntry: ReportCardEntry): Boolean = {
+    def integerTypes(left: Set[SesameAssignmentEntryType], right: Set[ReportCardEntryType]): Boolean = {
+      def toAssignmentEntryType(cardEntry: ReportCardEntryType): SesameAssignmentEntryType = {
+        SesameAssignmentEntryType(cardEntry.entryType, cardEntry.bool, cardEntry.int)
       }
 
       left == right.map(toAssignmentEntryType)
@@ -31,16 +31,16 @@ object ReportCardServiceSpec {
     Group("", UUID.randomUUID(), members)
   }
 
-  def plan(amount: Int): AssignmentPlan = {
-    def randomTypes: Set[AssignmentEntryType] = {
+  def plan(amount: Int): SesameAssignmentPlan = {
+    def randomTypes: Set[SesameAssignmentEntryType] = {
       import scala.util.Random._
 
-      val types = AssignmentEntryType.all.toVector
+      val types = SesameAssignmentEntryType.all.toVector
       shuffle(types).take(nextInt(types.size)).toSet
     }
 
-    val pe = (0 until amount).map(n => AssignmentEntry(n, n.toString, randomTypes)).toSet
-    AssignmentPlan(UUID.randomUUID(), amount, amount, pe)
+    val pe = (0 until amount).map(n => SesameAssignmentEntry(n, n.toString, randomTypes)).toSet
+    SesameAssignmentPlan(UUID.randomUUID(), amount, amount, pe)
   }
 
   def schedule(amount: Int, aps: Int): ScheduleG = {
@@ -66,17 +66,17 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
   val reportCardService = new ReportCardService
 
   val planEntries = {
-    import models.AssignmentEntryType._
+    import models.SesameAssignmentEntryType._
 
     Vector(
-      AssignmentEntry(0, "Einführung", Set(Attendance)),
-      AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
-      AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
-      AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
-      AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
-      AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
-      AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
-      AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
+      SesameAssignmentEntry(0, "Einführung", Set(Attendance)),
+      SesameAssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
+      SesameAssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
+      SesameAssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
+      SesameAssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
+      SesameAssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
+      SesameAssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
+      SesameAssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
     )
   }
 
@@ -128,7 +128,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
+      val assignmentPlan = SesameAssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
@@ -151,7 +151,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 2, mandatory - 3, planEntries.toSet)
+      val assignmentPlan = SesameAssignmentPlan(UUID.randomUUID(), attendance - 2, mandatory - 3, planEntries.toSet)
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
@@ -179,7 +179,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
+      val assignmentPlan = SesameAssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
@@ -206,7 +206,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
-      val assignmentPlan = AssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
+      val assignmentPlan = SesameAssignmentPlan(UUID.randomUUID(), attendance - 1, mandatory, planEntries.toSet)
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 

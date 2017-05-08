@@ -26,9 +26,9 @@ object ScheduleServiceSpec {
     (unfold('A')(a => Option((a.toString, (a + 1).toChar))) take (amount % 27)).toVector
   }
 
-  def assignmentPlan(amount: Int, duration: Int = 1): AssignmentPlan = {
-    val entries = (0 until amount).map(n => AssignmentEntry(n, "label", Set.empty, duration)).toSet
-    AssignmentPlan(UUID.randomUUID(), amount, amount, entries)
+  def assignmentPlan(amount: Int, duration: Int = 1): SesameAssignmentPlan = {
+    val entries = (0 until amount).map(n => SesameAssignmentEntry(n, "label", Set.empty, duration)).toSet
+    SesameAssignmentPlan(UUID.randomUUID(), amount, amount, entries)
   }
 
   def population(n: Int): Vector[UUID] = (Stream.continually(UUID.randomUUID()) take n).toVector
@@ -56,8 +56,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "return scheduleG's when there are competitive schedules" in {} // TODO
 
     "populate initial schedules any times" in {
-      val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(SesameLabwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime])
+      val entries = (0 until 6).map(n => SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
+      val timetable = SesameTimetable(SesameLabwork.randomUUID, entries, LocalDate.now, Set.empty[DateTime])
       val plan = assignmentPlan(5)
       val groups = alph(8).map(a => Group(a, UUID.randomUUID(), Set.empty)).toSet
 
@@ -176,8 +176,8 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
     "evaluate a given schedule when there are no other schedules" in {
       val plan = assignmentPlan(5)
       val labwork = SesameLabwork("label", "description", SesameSemester.randomUUID, SesameCourse.randomUUID, UUID.randomUUID)
-      val entries = (0 until 6).map(n => TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
-      val timetable = Timetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
+      val entries = (0 until 6).map(n => SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(n).index, LocalTime.now, LocalTime.now)).toSet
+      val timetable = SesameTimetable(labwork.id, entries, LocalDate.now, Set.empty[DateTime])
 
       val groups = Set(
         Group("A", labwork.id, Set(UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)),
@@ -204,43 +204,43 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
 
       val ap1Entries = Set(
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
       val students = (0 until 300).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
       val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
+      val ap1T = SesameTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ma1T = SesameTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
 
       val extrapolatedAp1 = timetableService.extrapolateTimetableByWeeks(ap1T, weeks, plan, ap1G)
       val extrapolatedMa1 = timetableService.extrapolateTimetableByWeeks(ma1T, weeks, plan, ma1G)
@@ -398,34 +398,34 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1Prak = SesameLabwork("ap1Prak", "desc1", semester1.id, ap1.id, UUID.randomUUID)
 
       val ap1Entries = Set(
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
 
       import scala.util.Random._
       val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(200).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ap1T = SesameTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
 
       val result = scheduleService.generate(ap1T, ap1G, ap1Plan, semester, Vector.empty)
 
@@ -453,43 +453,43 @@ class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ma1Prak = SesameLabwork("ma1Prak", "desc2", semester1.id, ma1.id, degree)
 
       val ap1Entries = Set(
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
       val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(180).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toSet
       val ma1G = shuffle(students).take(180).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toSet
 
-      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
-      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
+      val ap1T = SesameTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty[DateTime])
+      val ma1T = SesameTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty[DateTime])
 
       val comp = scheduleService.generate(ap1T, ap1G, ap1Plan, semester, Vector.empty)._1.elem
       val result = scheduleService.generate(ma1T, ma1G, ma1Plan, semester, Vector(comp))

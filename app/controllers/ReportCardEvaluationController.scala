@@ -8,12 +8,13 @@ import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Json, Reads, Writes}
-import services.{ReportCardServiceLike, RoleService, SessionHandlingService}
+import services.{ReportCardServiceLike, RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.ReportCardEvaluationController._
+
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
@@ -23,7 +24,7 @@ object ReportCardEvaluationController {
   val studentAttribute = "student"
 }
 
-class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val reportCardService: ReportCardServiceLike) extends AbstractCRUDController[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
+class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val reportCardService: ReportCardServiceLike) extends AbstractCRUDController[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
@@ -197,7 +198,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         select(_.get("ap")).
         changeTo(_.headOption).
         map(_.stringValue)(optM).
-        request(repository.get[AssignmentPlan])
+        request(repository.get[SesameAssignmentPlan])
     }
 
     def reportCards = {

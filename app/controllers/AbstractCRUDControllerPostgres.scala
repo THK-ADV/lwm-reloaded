@@ -67,7 +67,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     with ContentTyped
     with Chunked
     with PostgresResult
-    with AttributeFilter {
+    with AttributeFilter
+    with RequestRebasePostgres {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -75,7 +76,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected implicit def reads: Reads[Protocol]
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
-  protected def idTableFilter(id: String): TableFilter[T]
   protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
@@ -88,7 +88,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     )
   }
 
-  def create: Action[JsValue] = contextFrom(Create) asyncContentTypedAction { request =>
+  def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     (for {
       protocol <- Future.fromTry(parse[Protocol](request))
       dbModel = toDbModel(protocol, None)
@@ -96,7 +96,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     } yield toLwmModel(created)).jsonResult
   }
 
-  def update(id: String): Action[JsValue] = contextFrom(Update) asyncContentTypedAction { request =>
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
 
     (for {
@@ -106,13 +106,13 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     } yield updated.map(toLwmModel)).jsonResult(uuid)
   }
 
-  def delete(id: String): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
+  def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
     val uuid = UUID.fromString(id)
 
     abstractDao.delete(uuid).map(_.map(toLwmModel)).jsonResult(uuid)
   }
 
-  def all: Action[AnyContent] = contextFrom(GetAll) asyncAction { request =>
+  def all(secureContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = secureContext asyncAction { request =>
     val (queryString, defaults) = extractAttributes(request.queryString)
 
     val filter = queryString.foldLeft(Try(List.empty[TableFilter[T]])) {
@@ -125,9 +125,9 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     } yield results).jsonResult
   }
 
-  def get(id: String): Action[AnyContent] = contextFrom(Get) asyncAction { request =>
+  def get(id: String, secureContext: SecureContext = contextFrom(Get)): Action[AnyContent] = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
 
-    abstractDao.get(List(idTableFilter(id)), atomic).map(_.headOption).jsonResult(id)
+    abstractDao.getById(id, atomic).jsonResult(id)
   }
 }

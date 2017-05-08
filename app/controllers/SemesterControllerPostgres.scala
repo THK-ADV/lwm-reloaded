@@ -21,7 +21,7 @@ object SemesterControllerPostgres {
   lazy val currentValue = "current"
 }
 
-final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val semesterService: SemesterService)
+final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val semesterService: SemesterService)
   extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
 
   override implicit val mimeType = LwmMimeType.semesterV1Json
@@ -37,8 +37,6 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
   override protected implicit val reads: Reads[SemesterProtocol] = PostgresSemester.reads
 
   override protected val abstractDao: AbstractDao[SemesterTable, SemesterDb, PostgresSemester] = semesterService
-
-  override protected def idTableFilter(id: String): TableFilter[SemesterTable] = SemesterIdFilter(id)
 
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
     import controllers.SemesterControllerPostgres._

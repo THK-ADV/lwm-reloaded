@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.Blacklist
+import models.SesameBlacklist
 import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -25,12 +25,12 @@ class BlacklistControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow non restricted context invocations when admin wants to create a blacklist" in new FakeApplication() {
-      import models.Blacklist.writes
+      import models.SesameBlacklist.writes
       
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((None, prime))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val json = Json.toJson(Blacklist.empty)
+      val json = Json.toJson(SesameBlacklist.empty)
 
       val request = FakeRequest(
         POST,

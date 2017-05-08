@@ -17,11 +17,11 @@ class TimetableBindingSpec extends SesameDbSpec {
   implicit val timetableBinder = TimetableDescriptor.binder
   implicit val timetableEntryBinder = TimetableEntryDescriptor.binder
 
-  val timetableEntry1 = TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 1, LocalTime.now, LocalTime.now)
-  val timetableEntry2 = TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 2, LocalTime.now, LocalTime.now)
-  val timetable = Timetable(SesameLabwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
+  val timetableEntry1 = SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 1, LocalTime.now, LocalTime.now)
+  val timetableEntry2 = SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, 2, LocalTime.now, LocalTime.now)
+  val timetable = SesameTimetable(SesameLabwork.randomUUID, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set.empty[DateTime])
 
-  val timetableGraph = URI(Timetable.generateUri(timetable)).a(lwm.Timetable)
+  val timetableGraph = URI(SesameTimetable.generateUri(timetable)).a(lwm.Timetable)
     .--(lwm.labwork).->-(timetable.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.entries).->-(timetable.entries)
     .--(lwm.start).->-(timetable.start)
@@ -45,7 +45,7 @@ class TimetableBindingSpec extends SesameDbSpec {
     }
 
     "return a timetable based on a RDF graph representation" in {
-      val expectedTimetable = PointedGraph[Rdf](URI(Timetable.generateUri(timetable)), timetableGraph).as[Timetable]
+      val expectedTimetable = PointedGraph[Rdf](URI(SesameTimetable.generateUri(timetable)), timetableGraph).as[SesameTimetable]
 
       expectedTimetable match {
         case Success(s) =>
@@ -62,7 +62,7 @@ class TimetableBindingSpec extends SesameDbSpec {
     }
 
     "return a timetable entry based on a RDF graph representation" in {
-      val expectedTimetableEntry = PointedGraph[Rdf](URI("#"), timetableEntryGraph).as[TimetableEntry]
+      val expectedTimetableEntry = PointedGraph[Rdf](URI("#"), timetableEntryGraph).as[SesameTimetableEntry]
 
       expectedTimetableEntry match {
         case Success(s) =>
@@ -81,13 +81,13 @@ class TimetableBindingSpec extends SesameDbSpec {
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
 
-      val timetableEntry1 = TimetableEntry(Set(supervisor1.id), room1.id, 1, LocalTime.now, LocalTime.now)
-      val timetableEntry2 = TimetableEntry(Set(supervisor2.id), room2.id, 4, LocalTime.now, LocalTime.now)
-      val timetable = Timetable(labwork.id, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set(DateTime.now, DateTime.now))
+      val timetableEntry1 = SesameTimetableEntry(Set(supervisor1.id), room1.id, 1, LocalTime.now, LocalTime.now)
+      val timetableEntry2 = SesameTimetableEntry(Set(supervisor2.id), room2.id, 4, LocalTime.now, LocalTime.now)
+      val timetable = SesameTimetable(labwork.id, Set(timetableEntry1, timetableEntry2), LocalDate.now, Set(DateTime.now, DateTime.now))
 
-      val timetableAtom = TimetableAtom(labwork, Set(
-        TimetableEntryAtom(Set(supervisor1), room1, timetableEntry1.dayIndex, timetableEntry1.start, timetableEntry1.end),
-        TimetableEntryAtom(Set(supervisor2), room2, timetableEntry2.dayIndex, timetableEntry2.start, timetableEntry2.end)
+      val timetableAtom = SesameTimetableAtom(labwork, Set(
+        SesameTimetableEntryAtom(Set(supervisor1), room1, timetableEntry1.dayIndex, timetableEntry1.start, timetableEntry1.end),
+        SesameTimetableEntryAtom(Set(supervisor2), room2, timetableEntry2.dayIndex, timetableEntry2.start, timetableEntry2.end)
       ), timetable.start, timetable.localBlacklist, timetable.invalidated, timetable.id)
 
       repo add labwork
@@ -95,7 +95,7 @@ class TimetableBindingSpec extends SesameDbSpec {
       repo addMany List(supervisor1, supervisor2)
       repo add timetable
 
-      repo.get[TimetableAtom](Timetable.generateUri(timetable)) match {
+      repo.get[SesameTimetableAtom](SesameTimetable.generateUri(timetable)) match {
         case Success(Some(atom)) =>
           atom.labwork shouldEqual timetableAtom.labwork
           atom.start isEqual timetableAtom.start shouldBe true

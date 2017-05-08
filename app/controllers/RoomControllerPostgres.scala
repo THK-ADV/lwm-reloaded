@@ -5,7 +5,6 @@ import java.util.UUID
 import models.Permissions.{prime, room}
 import models.{PostgresRoom, PostgresRoomProtocol, RoomDb}
 import play.api.libs.json.{Reads, Writes}
-import play.api.mvc.Controller
 import services._
 import store.{RoomTable, TableFilter}
 import utils.LwmMimeType
@@ -16,7 +15,7 @@ object RoomControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class RoomControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val roomService: RoomService) extends
+final class RoomControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val roomService: RoomService) extends
   AbstractCRUDControllerPostgres[PostgresRoomProtocol, RoomTable, RoomDb, PostgresRoom]{
 
   override implicit def mimeType = LwmMimeType.roomV1Json
@@ -33,8 +32,6 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
   override protected implicit def reads: Reads[PostgresRoomProtocol] = PostgresRoom.reads
 
   override protected def abstractDao: AbstractDao[RoomTable, RoomDb, PostgresRoom] = roomService
-
-  override protected def idTableFilter(id: String): TableFilter[RoomTable] = RoomIdFilter(id)
 
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
     import controllers.RoomControllerPostgres._

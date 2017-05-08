@@ -4,7 +4,7 @@ import models.Permissions._
 import models.{SesameRole, SesameRoleProtocol, UriGenerator}
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
@@ -12,7 +12,7 @@ import utils.LwmMimeType
 import scala.collection.Map
 import scala.util.{Success, Try}
 
-class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends AbstractCRUDController[SesameRoleProtocol, SesameRole, SesameRole] {
+class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameRoleProtocol, SesameRole, SesameRole] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 

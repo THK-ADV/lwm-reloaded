@@ -25,19 +25,19 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
-  val globalBlacklist = Set(Blacklist("Profil hoch 2", profileWeek), Blacklist("Weihnachten", christmas))
+  val globalBlacklist = Set(SesameBlacklist("Profil hoch 2", profileWeek), SesameBlacklist("Weihnachten", christmas))
   val members = (0 until 20).map(_ => User.randomUUID).toSet
 
   def timetable(localBlacklist: Set[DateTime] = Set.empty) = {
     val tEntries = Set(
-      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
-      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
-      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
-      TimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
+      SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+      SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
+      SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
+      SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
+      SesameTimetableEntry(Set(User.randomUUID), SesameRoom.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
     )
 
-    Timetable(SesameLabwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist ++ globalBlacklist.flatMap(_.dates))
+    SesameTimetable(SesameLabwork.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), localBlacklist ++ globalBlacklist.flatMap(_.dates))
   }
 
   "A TimetableService" should {
@@ -45,10 +45,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with blacklists applied" in {
       val tt = timetable()
       val aEntries = (0 until 7).map {
-        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
-        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
+        case e if e < 5 => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType])
+        case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
@@ -68,8 +68,8 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with blacklists applied" in {
       val tt = timetable()
-      val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val aEntries = (0 until 5).map(SesameAssignmentEntry(_, "label", Set.empty[SesameAssignmentEntryType], 2)).toSet
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
@@ -85,7 +85,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       checkAssertion(tt, plan, groups, expectedStart, result)
     }
 
-    def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
+    def checkAssertion(timetable: SesameTimetable, plan: SesameAssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
       import models.LwmDateTime.localDateTimeOrd
 
       val sortedResult = result.map(toLocalDateTime).sorted
@@ -113,10 +113,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
       val tt = timetable(localBlacklist)
       val aEntries = (0 until 7).map {
-        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
-        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
+        case e if e < 5 => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType])
+        case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
-      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(

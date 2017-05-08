@@ -18,7 +18,7 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
   "A SemesterServiceSpec " should {
 
     "return current semester" in {
-      val current = entities.map(_.toSemester).filter(PostgresSemester.isCurrent)
+      val current = dbEntities.map(_.toSemester).filter(PostgresSemester.isCurrent)
 
       val result = await(get(List(SemesterCurrentFilter(LocalDate.now.toString))))
 
@@ -29,21 +29,25 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
 
   override protected def name: String = "semester"
 
-  override protected val entity: SemesterDb = SemesterDb("label", "abbrev", now, tomorrow, exam)
+  override protected val dbEntity: SemesterDb = SemesterDb("label", "abbrev", now, tomorrow, exam)
 
-  override protected val invalidDuplicateOfEntity: SemesterDb = {
-    SemesterDb(entity.label, "other abbrev", entity.start, entity.end, entity.examStart)
+  override protected val invalidDuplicateOfDbEntity: SemesterDb = {
+    SemesterDb(dbEntity.label, "other abbrev", dbEntity.start, dbEntity.end, dbEntity.examStart)
   }
 
-  override protected val invalidUpdateOfEntity: SemesterDb = {
-    SemesterDb(entity.label, "abbrev update", entity.end, entity.start, entity.examStart, lastModified, entity.invalidated, entity.id)
+  override protected val invalidUpdateOfDbEntity: SemesterDb = {
+    SemesterDb(dbEntity.label, "abbrev update", dbEntity.end, dbEntity.start, dbEntity.examStart, lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
-  override protected val validUpdateOnEntity: SemesterDb = {
-    SemesterDb(entity.label, "abbrev update", entity.start, entity.end, entity.examStart, lastModified, entity.invalidated, entity.id)
+  override protected val validUpdateOnDbEntity: SemesterDb = {
+    SemesterDb(dbEntity.label, "abbrev update", dbEntity.start, dbEntity.end, dbEntity.examStart, lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
-  override protected val entities: List[SemesterDb] = semesters
+  override protected val dbEntities: List[SemesterDb] = semesters
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+
+  override protected val lwmEntity: PostgresSemester = dbEntity.toSemester
+
+  override protected val lwmAtom: PostgresSemester = lwmEntity
 }

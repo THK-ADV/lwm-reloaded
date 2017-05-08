@@ -2,13 +2,13 @@ package controllers
 
 import java.util.UUID
 
-import models.{SesamePermission, Permissions, UniqueEntity, UriGenerator}
+import models.{Permissions, SesamePermission, UniqueEntity, UriGenerator}
 import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.iteratee.{Enumeratee, Enumerator}
 import play.api.libs.json._
 import play.api.mvc._
-import services.{RoleService, SessionHandlingService}
+import services.{RoleService, RoleServiceLike, SessionHandlingService}
 import store.bind.Bindings
 import store.bind.Descriptor.Descriptor
 import store.sparql.Transitional
@@ -89,6 +89,17 @@ trait Consistent[I, O <: UniqueEntity] {
   protected def compareModel(input: I, output: O): Boolean
 }
 
+trait RequestRebasePostgres {
+
+  implicit class RebaseRequest[A](val request: Request[A]) {
+    def append(query: (String, Seq[String])*): Request[A] = {
+      val queryString = query.foldLeft(request.queryString)(_ + _)
+      val headers = request.copy(request.id, request.tags, request.uri, request.path, request.method, request.version, queryString)
+      Request(headers, request.body)
+    }
+  }
+}
+
 trait RequestRebase[O <: UniqueEntity] {
 
   final def rebase[A](implicit request: Request[A], uriGenerator: UriGenerator[O]): Request[A] = {
@@ -130,7 +141,7 @@ trait ContentTyped {
 }
 
 trait Secured {
-  implicit def roleService: RoleService
+  implicit def roleService: RoleServiceLike
 }
 
 /**

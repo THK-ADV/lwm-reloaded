@@ -20,15 +20,15 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-final class UserControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
+final class UserControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
   extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override implicit val mimeType = LwmMimeType.userV1Json
 
-  override def create = contextFrom(Create) asyncContentTypedAction { request =>
-    import models.User.writes
+  override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
+  import models.User.writes
     import models.PostgresAuthority.writesAtom
 
     (for {
@@ -91,8 +91,6 @@ final class UserControllerPostgres(val roleService: RoleService, val sessionServ
   override protected implicit val reads: Reads[UserProtocol] = User.reads
 
   override protected val abstractDao: AbstractDao[UserTable, DbUser, User] = userService
-
-  override protected def idTableFilter(id: String): TableFilter[UserTable] = UserIdFilter(id)
 
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
     import controllers.UserControllerPostgres._

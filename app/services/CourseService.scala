@@ -1,17 +1,14 @@
 package services
 
-import java.sql.Timestamp
-import java.util.UUID
-
-import models.{AuthorityDb, Course, CourseDb, PostgresCourseAtom}
-import org.joda.time.DateTime
-import store.{CourseTable, PostgresDatabase, TableFilter}
 import models.LwmDateTime.DateTimeConverter
-import slick.dbio.Effect.Write
+import models.{Course, CourseDb, PostgresCourseAtom}
+import org.joda.time.DateTime
+import slick.driver
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import store.{CourseTable, TableFilter}
 
 import scala.concurrent.Future
-import slick.driver.PostgresDriver.api._
 
 case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -21,15 +18,12 @@ case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTa
   override def predicate = _.semesterIndex === value.toInt
 }
 
-case class CourseIdFilter(value: String) extends TableFilter[CourseTable]{
-  override def predicate: (CourseTable) => Rep[Boolean]= _.id === UUID.fromString(value)
-}
-
-case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTable]{
+case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTable] {
   override def predicate: (CourseTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
 }
 
-trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: PostgresDatabase =>
+trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
@@ -79,20 +73,19 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] { self: P
 
   override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
 
-    override def expandCreationOf(entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Write] = {
-      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
-    }
-
     override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
       authorityService.updateWithCourse(entity).map(_ => Some(entity))
     }
 
     override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-        authorityService.deleteWithCourse(entity).map(_ => Some(entity))
+      authorityService.deleteWithCourse(entity).map(_ => Some(entity))
+    }
+
+    override def expandCreationOf[E <: Effect](entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Effect.Write with E] = {
+      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
     }
   })
 }
 
-object CourseService extends CourseService with PostgresDatabase{
-  override protected def authorityService: AuthorityService = AuthorityService
-}
+final class CourseServiceImpl(val db: PostgresDriver.backend.Database, val authorityService: AuthorityService) extends CourseService
+

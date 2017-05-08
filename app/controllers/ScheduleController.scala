@@ -50,7 +50,7 @@ object ScheduleController {
 }
 
 // TODO ScheduleProtocol, ScheduleG -> ScheduleAtom, PUT for Schedules
-class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
+class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
   extends AbstractCRUDController[Schedule, Schedule, ScheduleAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
@@ -140,8 +140,8 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
       lab <- repository.get[SesameLabworkAtom](SesameLabwork.generateUri(labId))
       semester = lab map (_.semester)
       groups <- groupService.groupBy(labId, groupStrategy)
-      timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
-      plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labId))
+      timetable <- repository.getAll[SesameTimetable].map(_.find(_.labwork == labId))
+      plans <- repository.getAll[SesameAssignmentPlan].map(_.find(_.labwork == labId))
       all <- repository.getAll[ScheduleAtom]
       comp = scheduleGenesisService.competitive(lab, all)
       valueOf = extract(request.queryString) _

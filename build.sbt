@@ -62,7 +62,7 @@ lazy val lwmDependencies = Seq(
 
 lazy val postgresDependencies = Seq(
   "com.typesafe.slick" %% "slick" % "3.0.0",
-  "com.zaxxer" % "HikariCP-java6" % "2.3.2",
+  "com.zaxxer" % "HikariCP-java6" % "2.3.7",
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
 )
 

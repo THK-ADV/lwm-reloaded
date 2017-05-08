@@ -8,12 +8,13 @@ import modules.BaseNamespace
 import org.w3.banana.sesame.Sesame
 import play.api.libs.json._
 import play.api.mvc.{Controller, Request, Result}
-import services.{LdapService, RoleService, SessionHandlingService}
+import services.{LdapService, RoleService, RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, Resolvers, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
+
 import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
@@ -62,7 +63,7 @@ object UserController {
   val lastnameAttribute = "lastname"
 }
 
-class UserController(val roleService: RoleService, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace, val resolvers: Resolvers, val ldapService: LdapService) extends Controller
+class UserController(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val repository: SesameRepository, val namespace: Namespace, val resolvers: Resolvers, val ldapService: LdapService) extends Controller
   with Secured
   with SessionChecking
   with SecureControllerContext

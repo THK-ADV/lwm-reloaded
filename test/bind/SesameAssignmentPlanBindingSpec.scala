@@ -3,13 +3,13 @@ package bind
 import java.util.UUID
 
 import base.SesameDbSpec
-import models.AssignmentEntryType._
-import models.{AssignmentEntry, AssignmentPlan, SesameLabwork}
+import models.SesameAssignmentEntryType._
+import models.{SesameAssignmentEntry, SesameAssignmentPlan, SesameLabwork}
 import org.w3.banana.PointedGraph
 
 import scala.util.{Failure, Success}
 
-class AssignmentPlanBindingSpec extends SesameDbSpec {
+class SesameAssignmentPlanBindingSpec extends SesameDbSpec {
 
   import bindings.{AssignmentEntryDescriptor, AssignmentEntryTypeDescriptor, AssignmentPlanDescriptor, dateTimeBinder, uuidBinder, uuidRefBinder}
   import ops._
@@ -18,15 +18,15 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
   implicit val assignmentEntryBinder = AssignmentEntryDescriptor.binder
   implicit val assignmentEntryTypeBinder = AssignmentEntryTypeDescriptor.binder
 
-  val assignmentPlan = AssignmentPlan(UUID.randomUUID(), 2, 2, Set(
-    AssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
-    AssignmentEntry(1, "label 2", Set(Attendance, Bonus))
+  val assignmentPlan = SesameAssignmentPlan(UUID.randomUUID(), 2, 2, Set(
+    SesameAssignmentEntry(0, "label 1", Set(Attendance, Certificate)),
+    SesameAssignmentEntry(1, "label 2", Set(Attendance, Bonus))
   ))
 
   val assignmentEntry = assignmentPlan.entries.head
 
   val assignmentPlanGraph = (
-    URI(AssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
+    URI(SesameAssignmentPlan.generateUri(assignmentPlan)).a(lwm.AssignmentPlan)
       .--(lwm.labwork).->-(assignmentPlan.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
       -- lwm.attendance ->- assignmentPlan.attendance
       -- lwm.mandatory ->- assignmentPlan.mandatory
@@ -58,7 +58,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
     }
 
     "return an assignmentPlan based on a RDF representation" in {
-      val expectedAssignmentPlan = PointedGraph[Rdf](URI(AssignmentPlan.generateUri(assignmentPlan)), assignmentPlanGraph).as[AssignmentPlan]
+      val expectedAssignmentPlan = PointedGraph[Rdf](URI(SesameAssignmentPlan.generateUri(assignmentPlan)), assignmentPlanGraph).as[SesameAssignmentPlan]
 
       expectedAssignmentPlan match {
         case Success(s) =>
@@ -69,7 +69,7 @@ class AssignmentPlanBindingSpec extends SesameDbSpec {
     }
 
     "return an assignmentEntry based on a RDF representation" in {
-      val expectedAssignmentEntry = PointedGraph[Rdf](URI("#"), assignmentEntryGraph).as[AssignmentEntry]
+      val expectedAssignmentEntry = PointedGraph[Rdf](URI("#"), assignmentEntryGraph).as[SesameAssignmentEntry]
 
       expectedAssignmentEntry match {
         case Success(s) =>

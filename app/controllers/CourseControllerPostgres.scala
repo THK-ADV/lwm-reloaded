@@ -19,16 +19,14 @@ object CourseControllerPostgres{
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
-final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleService, val courseService: CourseService)
+final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val courseService: CourseService)
   extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course]{
 
-  override protected implicit def writes: Writes[Course] = Course.writes
+  override protected implicit val writes: Writes[Course] = Course.writes
 
-  override protected implicit def reads: Reads[PostgresCourseProtocol] = PostgresCourse.reads
+  override protected implicit val reads: Reads[PostgresCourseProtocol] = PostgresCourse.reads
 
-  override protected def abstractDao: AbstractDao[CourseTable, CourseDb, Course] = courseService
-
-  override protected def idTableFilter(id: String): TableFilter[CourseTable] = CourseIdFilter(id)
+  override protected val abstractDao: AbstractDao[CourseTable, CourseDb, Course] = courseService
 
   override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
     import controllers.CourseControllerPostgres._
@@ -45,7 +43,7 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected def toLwmModel(dbModel: CourseDb): PostgresCourse = dbModel.toCourse
 
-  override implicit def mimeType: LwmMimeType = LwmMimeType.courseV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(course.get)

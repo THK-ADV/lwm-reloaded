@@ -1,16 +1,16 @@
 package controllers
 
-import models.{AssignmentEntryType, Permissions}
+import models.{SesameAssignmentEntryType}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
-import services.{RoleService, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import utils.LwmMimeType._
 import models.Permissions.{entryType, god}
 import modules.BaseNamespace
 
-class EntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleService) extends Controller
+class EntryTypeController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends Controller
   with ContentTyped
   with BaseNamespace
   with Secured
@@ -20,7 +20,7 @@ class EntryTypeController(val repository: SesameRepository, val sessionService: 
   override implicit val mimeType: LwmMimeType = entryTypeV1Json
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext action { implicit request =>
-    Ok(Json.toJson(AssignmentEntryType.all)(Writes.set(AssignmentEntryType.writes))).as(mimeType)
+    Ok(Json.toJson(SesameAssignmentEntryType.all)(Writes.set(SesameAssignmentEntryType.writes))).as(mimeType)
   }
 
   def header() = Action { implicit request =>

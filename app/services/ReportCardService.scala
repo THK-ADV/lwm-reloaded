@@ -6,23 +6,23 @@ import models._
 
 object ReportCardService {
 
-  private def toReportCardEntryType(types: Set[AssignmentEntryType]): Set[ReportCardEntryType] = {
+  private def toReportCardEntryType(types: Set[SesameAssignmentEntryType]): Set[ReportCardEntryType] = {
     types.map(t => ReportCardEntryType(t.entryType))
   }
 }
 
 trait ReportCardServiceLike {
 
-  def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry]
+  def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[ReportCardEntry]
 
-  def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation]
+  def evaluate(assignmentPlan: SesameAssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation]
 
   def evaluateExplicit(student: UUID, labwork: UUID): Set[ReportCardEvaluation]
 }
 
 class ReportCardService extends ReportCardServiceLike {
 
-  override def reportCards(schedule: ScheduleG, assignmentPlan: AssignmentPlan): Set[ReportCardEntry] = {
+  override def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[ReportCardEntry] = {
     import models.TimetableDateEntry.toLocalDateTime
     import services.ReportCardService.toReportCardEntryType
     import models.LwmDateTime.localDateTimeOrd
@@ -38,13 +38,13 @@ class ReportCardService extends ReportCardServiceLike {
     }.toSet
   }
 
-  override def evaluate(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
+  override def evaluate(assignmentPlan: SesameAssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
     reportCardEntries.groupBy(_.student).flatMap {
       case ((_, entries)) => evaluateStudent(assignmentPlan, entries)
     }.toSet
   }
 
-  private def evaluateStudent(assignmentPlan: AssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
+  private def evaluateStudent(assignmentPlan: SesameAssignmentPlan, reportCardEntries: Set[ReportCardEntry]): Set[ReportCardEvaluation] = {
     val entries = reportCardEntries.flatMap(_.entryTypes)
     val student = reportCardEntries.head.student
     val labwork = reportCardEntries.head.labwork

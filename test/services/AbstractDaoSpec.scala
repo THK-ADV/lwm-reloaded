@@ -19,6 +19,7 @@ object AbstractDaoSpec {
   val maxCourses = 10
   val maxRooms = 10
   val maxEmployees = 10
+  val maxAssignmentPlans = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -54,6 +55,15 @@ object AbstractDaoSpec {
   }.toList
 
   val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
+
+  val assignmentPlans = (0 until maxAssignmentPlans).map { i =>
+    val entries = (0 until 10).map { j =>
+      val allTypes = PostgresAssignmentEntryType.all
+      PostgresAssignmentEntry(j, j.toString, allTypes.take(nextInt(allTypes.size - 1) + 1))
+    }
+
+    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
+  }.toList
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
@@ -67,38 +77,46 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   }
 
   protected def name: String
-  protected def entity: DbModel
-  protected def invalidDuplicateOfEntity: DbModel
-  protected def invalidUpdateOfEntity: DbModel
-  protected def validUpdateOnEntity: DbModel
-  protected def entities: List[DbModel]
+  protected def dbEntity: DbModel // dbEntity should not expand
+  protected def invalidDuplicateOfDbEntity: DbModel // invalidDuplicateOfDbEntity should not expand
+  protected def invalidUpdateOfDbEntity: DbModel // invalidUpdateOfDbEntity should not expand
+  protected def validUpdateOnDbEntity: DbModel // validUpdateOnDbEntity should not expand
+  protected def dbEntities: List[DbModel] // dbEntities should not expand
+
+  protected def lwmEntity: LwmModel
+  protected def lwmAtom: LwmModel
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write]
 
   s"A AbstractDaoSpec with $name " should {
 
     s"create a $name" in {
-      await(create(entity)) shouldBe entity
+      await(create(dbEntity)) shouldBe dbEntity
+    }
+
+    s"get a $name" in {
+      await(getById(dbEntity.id.toString, atomic = false)) shouldBe Some(lwmEntity)
+      await(getById(dbEntity.id.toString)) shouldBe Some(lwmAtom)
     }
 
     s"not create a $name because model already exists" in {
-      await(create(invalidDuplicateOfEntity).failed) shouldBe ModelAlreadyExists(Seq(entity))
+      await(create(invalidDuplicateOfDbEntity).failed) shouldBe ModelAlreadyExists(Seq(dbEntity))
     }
 
     s"not update a $name because model already exists" in {
-      await(update(invalidUpdateOfEntity).failed) shouldBe ModelAlreadyExists(entity)
+      await(update(invalidUpdateOfDbEntity).failed) shouldBe ModelAlreadyExists(dbEntity)
     }
 
     s"update a $name properly" in {
-      await(update(validUpdateOnEntity)) shouldBe Some(validUpdateOnEntity)
+      await(update(validUpdateOnDbEntity)) shouldBe Some(validUpdateOnDbEntity)
     }
 
     s"create many $name" in {
-      await(createMany(entities)) shouldBe entities
+      await(createMany(dbEntities)) shouldBe dbEntities
     }
 
     s"delete a $name by invalidating it" in {
-      await(delete(entity)) shouldBe defined
+      await(delete(dbEntity)) shouldBe defined
     }
   }
 }

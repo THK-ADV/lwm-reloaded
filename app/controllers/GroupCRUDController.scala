@@ -36,7 +36,7 @@ object GroupCRUDController {
   }
 }
 
-class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleService, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
+class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 

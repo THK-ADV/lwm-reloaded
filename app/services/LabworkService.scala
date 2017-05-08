@@ -5,9 +5,10 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{LabworkTable, PostgresDatabase, TableFilter}
+import store.{LabworkTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
 
@@ -27,7 +28,7 @@ case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] 
   override def predicate = _.course === UUID.fromString(value)
 }
 
-trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { self: PostgresDatabase =>
+trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
@@ -75,8 +76,6 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
       l <- c.joinLecturer
     } yield (q, c, s, d, l)
 
-    joinedQuery.result.statements.foreach(println)
-
     db.run(joinedQuery.result.map(_.map{
       case (l, c, s, d, u) =>
         val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, u.toUser, c.semesterIndex, c.id)
@@ -89,4 +88,4 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] { sel
   }
 }
 
-object LabworkService extends LabworkService with PostgresDatabase
+final class LabworkServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkService

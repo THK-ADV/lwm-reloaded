@@ -6,7 +6,7 @@ import base.StreamHandler._
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.Permissions._
-import models.{Timetable, TimetableEntry}
+import models.{SesameTimetable, SesameTimetableEntry}
 import org.joda.time.{DateTime, LocalDate}
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -27,13 +27,13 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a timetable" in new FakeApplication() {
-      import models.Timetable.writes
+      import models.SesameTimetable.writes
       
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.update))(FakeAdminAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+        SesameTimetable(UUID.randomUUID(), Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(
@@ -52,13 +52,13 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Allow restricted context invocations when mv wants to create a timetable" in new FakeApplication() {
-      import models.Timetable.writes
+      import models.SesameTimetable.writes
 
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+        SesameTimetable(UUID.randomUUID(), Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(
@@ -146,13 +146,13 @@ class TimetableControllerSecuritySpec extends WordSpec with TestBaseDefinition w
     }
 
     "Block restricted context invocations when ma wants to create timetable" in new FakeApplication() {
-      import models.Timetable.writes
+      import models.SesameTimetable.writes
       
       when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), timetable.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Timetable(UUID.randomUUID(), Set.empty[TimetableEntry], LocalDate.now, Set.empty[DateTime])
+        SesameTimetable(UUID.randomUUID(), Set.empty[SesameTimetableEntry], LocalDate.now, Set.empty[DateTime])
       )
 
       val request = FakeRequest(

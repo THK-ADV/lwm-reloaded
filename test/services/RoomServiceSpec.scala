@@ -13,13 +13,17 @@ final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresR
 
   override protected def name: String = "room"
 
-  override protected val entity: RoomDb = RoomDb("label", "description")
+  override protected val dbEntity: RoomDb = RoomDb("label", "description")
 
-  override protected val invalidDuplicateOfEntity: RoomDb = RoomDb(entity.label, "description2")
+  override protected val invalidDuplicateOfDbEntity: RoomDb = RoomDb(dbEntity.label, "description2")
 
-  override protected val invalidUpdateOfEntity: RoomDb = entity.copy("new label", entity.description)
+  override protected val invalidUpdateOfDbEntity: RoomDb = dbEntity.copy("new label", dbEntity.description)
 
-  override protected val validUpdateOnEntity: RoomDb = entity.copy(entity.label, "new description")
+  override protected val validUpdateOnDbEntity: RoomDb = dbEntity.copy(dbEntity.label, "new description")
 
-  override protected val entities: List[RoomDb] = rooms
+  override protected val dbEntities: List[RoomDb] = rooms
+
+  override protected val lwmEntity: PostgresRoom = dbEntity.toRoom
+
+  override protected val lwmAtom: PostgresRoom = lwmEntity
 }

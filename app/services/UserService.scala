@@ -4,86 +4,53 @@ import java.util.UUID
 
 import models._
 import org.joda.time.DateTime
-import store.{PostgresDatabase, TableFilter, UserTable}
+import store.{TableFilter, UserTable}
 
 import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import models.LwmDateTime.DateTimeConverter
+import slick.driver.PostgresDriver
 
 sealed trait BuddyResult
+
 case object Allowed extends BuddyResult
+
 case object Almost extends BuddyResult
+
 case object Denied extends BuddyResult
+
 case object NotExisting extends BuddyResult
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
 }
+
 case class UserSystemIdFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.systemId.toLowerCase === value.toLowerCase
 }
+
 case class UserLastnameFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.lastname.toLowerCase like s"%${value.toLowerCase}%"
 }
+
 case class UserFirstnameFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.firstname.toLowerCase like s"%${value.toLowerCase}%"
 }
+
 case class UserDegreeFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.enrollment.map(_ === UUID.fromString(value)).getOrElse(false)
 }
+
 case class UserIdFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresDatabase =>
+trait UserService extends AbstractDao[UserTable, DbUser, User] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  protected def degreeService: DegreeService
-  protected def authorityService: AuthorityService
-  protected def labworkApplicationService: LabworkApplicationService2
-
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
-
-  override protected def setInvalidated(entity: DbUser): DbUser = {
-    val now = DateTime.now.timestamp
-
-    DbUser(
-      entity.systemId,
-      entity.lastname,
-      entity.firstname,
-      entity.email,
-      entity.status,
-      entity.registrationId,
-      entity.enrollment,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
-  override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
-    (existing.enrollment != toUpdate.enrollment ||
-      existing.lastname != toUpdate.lastname ||
-      existing.firstname != toUpdate.firstname ||
-      existing.email != toUpdate.email) &&
-    existing.systemId == toUpdate.systemId
-  }
-
-  override protected def existsQuery(entity: DbUser): Query[UserTable, DbUser, Seq] = {
-    filterBy(List(UserSystemIdFilter(entity.systemId)))
-  }
-
-  override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.result.map(_.map(_.toUser)))
-  }
-
-  override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
-      case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toDegree, s.id)
-      case ((dbUser, None)) => dbUser.toUser
-    }))
-  }
 
   final def createOrUpdate(ldapUser: LdapUser): Future[(User, Option[PostgresAuthorityAtom])] = {
     for {
@@ -126,12 +93,56 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] { self: PostgresD
       }
     })
   }
+
+  protected def degreeService: DegreeService
+
+  protected def authorityService: AuthorityService
+
+  protected def labworkApplicationService: LabworkApplicationService2
+
+  override protected def setInvalidated(entity: DbUser): DbUser = {
+    val now = DateTime.now.timestamp
+
+    DbUser(
+      entity.systemId,
+      entity.lastname,
+      entity.firstname,
+      entity.email,
+      entity.status,
+      entity.registrationId,
+      entity.enrollment,
+      now,
+      Some(now),
+      entity.id
+    )
+  }
+
+  override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
+    (existing.enrollment != toUpdate.enrollment ||
+      existing.lastname != toUpdate.lastname ||
+      existing.firstname != toUpdate.firstname ||
+      existing.email != toUpdate.email) &&
+      existing.systemId == toUpdate.systemId
+  }
+
+  override protected def existsQuery(entity: DbUser): Query[UserTable, DbUser, Seq] = {
+    filterBy(List(UserSystemIdFilter(entity.systemId)))
+  }
+
+  override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
+    db.run(query.result.map(_.map(_.toUser)))
+  }
+
+  override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
+    db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
+      case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toDegree, s.id)
+      case ((dbUser, None)) => dbUser.toUser
+    }))
+  }
 }
 
-object UserService extends UserService with PostgresDatabase {
-  override protected def degreeService: DegreeService = DegreeService
-
-  override protected def authorityService: AuthorityService = AuthorityService
-
-  override protected def labworkApplicationService: LabworkApplicationService2 = LabworkApplicationService2
-}
+final class UserServiceImpl(val db: PostgresDriver.backend.Database,
+                            val authorityService: AuthorityService,
+                            val degreeService: DegreeService,
+                            val labworkApplicationService: LabworkApplicationService2
+                           ) extends UserService

@@ -17,7 +17,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success}
 
-class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[AssignmentPlanProtocol, AssignmentPlan, AssignmentPlanAtom] {
+class SesameAssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameAssignmentPlanProtocol, SesameAssignmentPlan, SesameAssignmentPlanAtom] {
 
   override def entityTypeName: String = "assignmentPlan"
 
@@ -31,42 +31,42 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       case _ => NonSecureBlock
     }
 
-    override protected def fromInput(input: AssignmentPlanProtocol, existing: Option[AssignmentPlan]): AssignmentPlan = entityToPass
+    override protected def fromInput(input: SesameAssignmentPlanProtocol, existing: Option[SesameAssignmentPlan]): SesameAssignmentPlan = entityToPass
   }
 
   val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
   val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
 
-  override val entityToFail: AssignmentPlan = AssignmentPlan(labworkToFail.id, 5, 5, entries("fail"))
+  override val entityToFail: SesameAssignmentPlan = SesameAssignmentPlan(labworkToFail.id, 5, 5, entries("fail"))
 
-  override val entityToPass: AssignmentPlan = AssignmentPlan(labworkToPass.id, 5, 5, entries("pass"))
+  override val entityToPass: SesameAssignmentPlan = SesameAssignmentPlan(labworkToPass.id, 5, 5, entries("pass"))
 
-  override val atomizedEntityToPass: AssignmentPlanAtom =
-    AssignmentPlanAtom(
+  override val atomizedEntityToPass: SesameAssignmentPlanAtom =
+    SesameAssignmentPlanAtom(
       labworkToPass,
       entityToPass.attendance,
       entityToPass.mandatory,
-      Set.empty[AssignmentEntry],
+      Set.empty[SesameAssignmentEntry],
       entityToPass.invalidated,
       entityToPass.id)
 
-  override val atomizedEntityToFail: AssignmentPlanAtom =
-    AssignmentPlanAtom(
+  override val atomizedEntityToFail: SesameAssignmentPlanAtom =
+    SesameAssignmentPlanAtom(
       labworkToFail,
       entityToFail.attendance,
       entityToFail.mandatory,
-      Set.empty[AssignmentEntry],
+      Set.empty[SesameAssignmentEntry],
       entityToPass.invalidated,
       entityToFail.id)
 
 
-  override implicit val jsonWrites: Writes[AssignmentPlan] = AssignmentPlan.writes
+  override implicit val jsonWrites: Writes[SesameAssignmentPlan] = SesameAssignmentPlan.writes
 
-  override implicit def jsonWritesAtom: Writes[AssignmentPlanAtom] = AssignmentPlan.writesAtom
+  override implicit def jsonWritesAtom: Writes[SesameAssignmentPlanAtom] = SesameAssignmentPlan.writesAtom
 
-  def entries(s: String): Set[AssignmentEntry] = (0 until 5).map(n =>
-    AssignmentEntry(n, s"${n.toString} to $s", AssignmentEntryType.all)
+  def entries(s: String): Set[SesameAssignmentEntry] = (0 until 5).map(n =>
+    SesameAssignmentEntry(n, s"${n.toString} to $s", SesameAssignmentEntryType.all)
   ).toSet
 
   override val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
@@ -95,12 +95,12 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
 
     "return all assignment plans for a given labwork" in {
       val labwork = UUID.randomUUID
-      val ap1 = AssignmentPlan(labwork, 0, 0, entries("ap1"))
-      val ap2 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap2"))
-      val ap3 = AssignmentPlan(labwork, 0, 0, entries("ap3"))
-      val ap4 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap4"))
+      val ap1 = SesameAssignmentPlan(labwork, 0, 0, entries("ap1"))
+      val ap2 = SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries("ap2"))
+      val ap3 = SesameAssignmentPlan(labwork, 0, 0, entries("ap3"))
+      val ap4 = SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries("ap4"))
 
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(ap1, ap2, ap3, ap4)))
+      when(repository.getAll[SesameAssignmentPlan](anyObject())).thenReturn(Success(Set(ap1, ap2, ap3, ap4)))
 
       val request = FakeRequest(
         GET,
@@ -118,7 +118,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val labwork = UUID.randomUUID
       val errorMessage = "Oops, something went wrong"
 
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
+      when(repository.getAll[SesameAssignmentPlan](anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
 
       val request = FakeRequest(
         GET,
@@ -138,16 +138,16 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val course = UUID.randomUUID
       val lab1 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      val ap1 = AssignmentPlan(lab1.id, 0, 0, entries("ap1"))
-      val ap2 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap2"))
-      val ap3 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap3"))
-      val ap4 = AssignmentPlan(lab1.id, 0, 0, entries("ap4"))
-      val ap5 = AssignmentPlan(lab2.id, 0, 0, entries("ap5"))
-      val ap6 = AssignmentPlan(UUID.randomUUID, 0, 0, entries("ap6"))
-      val ap7 = AssignmentPlan(lab2.id, 0, 0, entries("ap7"))
-      val ap8 = AssignmentPlan(lab1.id, 0, 0, entries("ap8"))
+      val ap1 = SesameAssignmentPlan(lab1.id, 0, 0, entries("ap1"))
+      val ap2 = SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries("ap2"))
+      val ap3 = SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries("ap3"))
+      val ap4 = SesameAssignmentPlan(lab1.id, 0, 0, entries("ap4"))
+      val ap5 = SesameAssignmentPlan(lab2.id, 0, 0, entries("ap5"))
+      val ap6 = SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries("ap6"))
+      val ap7 = SesameAssignmentPlan(lab2.id, 0, 0, entries("ap7"))
+      val ap8 = SesameAssignmentPlan(lab1.id, 0, 0, entries("ap8"))
 
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(Set(
+      when(repository.getAll[SesameAssignmentPlan](anyObject())).thenReturn(Success(Set(
         ap1, ap2, ap3, ap4, ap5, ap6, ap7, ap8
       )))
       when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
@@ -168,9 +168,9 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       val course = UUID.randomUUID
       val lab1 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
       val lab2 = SesameLabwork("", "", UUID.randomUUID, course, UUID.randomUUID)
-      val aps = (0 until 1).map(i => AssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
+      val aps = (0 until 1).map(i => SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
 
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(aps))
+      when(repository.getAll[SesameAssignmentPlan](anyObject())).thenReturn(Success(aps))
       when(repository.getMany[SesameLabwork](anyObject())(anyObject())).thenReturn(Success(Set(lab1, lab2)))
 
       val request = FakeRequest(
@@ -185,9 +185,9 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     }
 
     "not return assignment plans when there is an invalid query attribute" in {
-      val aps = (0 until 1).map(i => AssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
+      val aps = (0 until 1).map(i => SesameAssignmentPlan(UUID.randomUUID, 0, 0, entries(i.toString))).toSet
 
-      when(repository.getAll[AssignmentPlan](anyObject())).thenReturn(Success(aps))
+      when(repository.getAll[SesameAssignmentPlan](anyObject())).thenReturn(Success(aps))
 
       val request = FakeRequest(
         GET,
@@ -206,9 +206,9 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
     s"handle this model issue when creating a new assignmentplan which already exists" in {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(AssignmentPlan.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameAssignmentPlan.generateUri(entityToPass)))
       )))
-      when(repository.get[AssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
+      when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(entityToPass)))
 
       val request = FakeRequest(
         POST,
@@ -231,7 +231,7 @@ class AssignmentPlanCRUDControllerSpec extends AbstractCRUDControllerSpec[Assign
       doReturn(Success(None)).doReturn(Success(Some(entityToPass))).when(repository).get(anyObject())(anyObject())
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.execute(anyObject())).thenReturn(Success(Map(
-        "s" -> List(factory.createLiteral(AssignmentPlan.generateUri(entityToPass)))
+        "s" -> List(factory.createLiteral(SesameAssignmentPlan.generateUri(entityToPass)))
       )))
 
       val request = FakeRequest(
