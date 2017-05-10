@@ -198,4 +198,40 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       ))
     }
   }
+
+  case class ScheduleSupervisorSwapRequest(srcSupervisor: UUID, destSupervisor: UUID, groupLabel: String)
+
+  def swapSupervisor(scheduleId: String, preview: String) = Action(parse.json) { request =>
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import bindings.{ScheduleDescriptor, GroupDescriptor, ScheduleEntryDescriptor}
+    import models.ScheduleEntry._
+
+    implicit val reads = Json.reads[ScheduleSupervisorSwapRequest]
+
+    val scheduleEntries = for {
+      swapRequest <- request.body.validate[ScheduleSupervisorSwapRequest].fold(
+        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
+        swapRequest => Success(swapRequest)
+      )
+      schedule <- repository.get[Schedule](Schedule.generateUri(UUID.fromString(scheduleId))).map(_.get)
+      group <- repository.getAll[Group].map(_.find(g => g.labwork == schedule.labwork && g.label == swapRequest.groupLabel).get)
+      scheduleEntries = schedule.entries.filter(_.group == group.id).map { entry =>
+        entry.copy(entry.labwork, entry.start, entry.end, entry.date, entry.room, (entry.supervisor - swapRequest.srcSupervisor) + swapRequest.destSupervisor)
+      }
+      _ = println(s"new ${scheduleEntries.map(e => e.date.toLocalDateTime(e.start))}")
+      _ <- if (preview.toBoolean) fakeSuccessGraph else scheduleEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
+    } yield scheduleEntries
+
+    scheduleEntries match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "entries" -> Json.toJson(s)
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
 }
