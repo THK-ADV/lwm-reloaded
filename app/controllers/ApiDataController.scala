@@ -200,7 +200,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
   }
 
   case class ScheduleSupervisorSwapRequest(srcSupervisor: UUID, destSupervisor: UUID, groupLabel: String)
-
+  // this implementation assumes that one supervisor consists on his groups
   def swapSupervisor(scheduleId: String, preview: String) = Action(parse.json) { request =>
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
@@ -227,6 +227,98 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       case Success(s) => Ok(Json.obj(
         "status" -> "OK",
         "entries" -> Json.toJson(s)
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  case class SwapReportCardAssignmentRequest(labwork: String, firstIndex: Int, secondIndex: Int, appointments: Int, firstLabelAssumption: String, secondLabelAssumption: String)
+  // this implementation assumes that reportCardEntries are sorted by date and start in order to be accessible by an index
+  def swapReportCardAssignments(preview: String) = Action(parse.json) { request =>
+    import bindings.ReportCardEntryDescriptor
+    import models.LwmDateTime._
+    import models.ReportCardEntry._
+
+    def assertProperSorting(groupedByStudent: Map[UUID, List[ReportCardEntry]]): Unit = {
+      val sortedProperly = groupedByStudent.values.toList.forall { entries =>
+        entries.drop(1).foldLeft((true, entries.head)) {
+          case ((bool, prev), curr) =>
+            println(prev.date.toLocalDateTime(prev.start))
+            val properly = prev.date.toLocalDateTime(prev.start).isBefore(curr.date.toLocalDateTime(curr.start))
+            (properly && bool, curr)
+        }._1
+      }
+
+      assert(sortedProperly, "Oops, sorting failed")
+    }
+
+    def sort(entries: List[ReportCardEntry]) = {
+      entries.sortBy(e => e.date.toLocalDateTime(e.start))
+    }
+
+    def copy(first: ReportCardEntry, second: ReportCardEntry) = {
+      ReportCardEntry(
+        first.student,
+        first.labwork,
+        second.label,
+        first.date,
+        first.start,
+        first.end,
+        first.room,
+        second.entryTypes,
+        first.rescheduled,
+        first.invalidated,
+        first.id
+      )
+    }
+
+    implicit val reads = Json.reads[SwapReportCardAssignmentRequest]
+
+    val swappedReportCards = for {
+      swapRequest <- request.body.validate[SwapReportCardAssignmentRequest].fold(
+        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
+        swapRequest => Success(swapRequest)
+      )
+      reportCards <- repository.getAll[ReportCardEntry].map(_.filter(_.labwork == UUID.fromString(swapRequest.labwork)))
+      groupedByStudent = reportCards.toList.groupBy(_.student).mapValues(e => sort(e).take(swapRequest.appointments))
+      firstLabelAssumption = swapRequest.firstLabelAssumption
+      secondLabelAssumption = swapRequest.secondLabelAssumption
+      _ = assertProperSorting(groupedByStudent)
+      swappedReportCards = groupedByStudent.mapValues { entries =>
+        val first = entries(swapRequest.firstIndex)
+        val second = entries(swapRequest.secondIndex)
+
+        assert(first.label == firstLabelAssumption, s"failed firstLabelAssumption $firstLabelAssumption with ${first.label}")
+        assert(second.label == secondLabelAssumption, s"failed secondLabelAssumption $secondLabelAssumption with ${second.label}")
+
+        val swappedEntries = List(copy(first, second), copy(second, first))
+
+        if (!preview.toBoolean) {
+          val succeeded = swappedEntries.map(e => repository.update(e)(ReportCardEntryDescriptor, ReportCardEntry)).forall(_.isSuccess)
+          assert(succeeded, "Oops, repository.update failed")
+        }
+
+        val all = sort(swappedEntries ::: entries.filterNot(e => e.id == first.id || e.id == second.id))
+        assert(all.size == swapRequest.appointments, "Oops, wrong size")
+        assert(all.groupBy(_.id).values.forall(_.size == 1), "Oops, size is broken")
+
+        all
+      }
+      _ = assertProperSorting(swappedReportCards)
+    } yield swappedReportCards
+
+    swappedReportCards match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "swapped reportCards" -> s.map {
+          case (student, entries) => Json.obj(
+            "student" -> student,
+            "entries" -> Json.toJson(entries)
+          )
+        }
       ))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
