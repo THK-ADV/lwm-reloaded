@@ -231,6 +231,8 @@ GET           /api/multipleReportCardEntries/:c                                 
 PUT           /api/appendReportCardEntries/labworks/:l/preview/:p                     controllers.ApiDataController.appendReportCardEntries(l, p)
 GET           /api/appendSupervisor/:s/labworks/:l/preview/:p                         controllers.ApiDataController.appendSupervisorToScheduleEntries(s, l, p)
 PUT           /api/swapGroup/preview/:p                                               controllers.ApiDataController.swapGroup(p)
+PUT           /api/swapSupervisor/schedules/:s/preview/:p                             controllers.ApiDataController.swapSupervisor(s, p)
+PUT           /api/swapReportCardAssignments/preview/:p                               controllers.ApiDataController.swapReportCardAssignments(p)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
