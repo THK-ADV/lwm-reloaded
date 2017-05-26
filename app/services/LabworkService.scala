@@ -1,14 +1,14 @@
 package services
 
-import java.sql.Timestamp
 import java.util.UUID
 
+import models.LwmDateTime.DateTimeConverter
 import models._
 import org.joda.time.DateTime
-import store.{LabworkTable, TableFilter}
-import slick.driver.PostgresDriver.api._
-import models.LwmDateTime.DateTimeConverter
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
+import store.{LabworkTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -26,6 +26,10 @@ case class LabworkSemesterFilter(value: String) extends TableFilter[LabworkTable
 
 case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate = _.course === UUID.fromString(value)
+}
+
+case class LabworkLabelFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
 trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
@@ -86,6 +90,15 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
     db.run(query.result.map(_.map(_.toLabwork)))
   }
+
+  protected def courseService: CourseService
+  protected def userService: UserService
+  protected def degreeService: DegreeService
+  protected def semesterService: SemesterService
 }
 
-final class LabworkServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkService
+final class LabworkServiceImpl(val db: PostgresDriver.backend.Database,
+                                val courseService: CourseService,
+                                val userService: UserService,
+                                val degreeService: DegreeService,
+                                val semesterService: SemesterService) extends LabworkService

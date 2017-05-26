@@ -1,6 +1,6 @@
 package modules
 
-import controllers.LabworkCRUDController
+import controllers.{LabworkCRUDController, LabworkControllerPostgres}
 import services.{LabworkService, LabworkServiceImpl}
 
 trait LabworkManagementModule {
@@ -18,10 +18,23 @@ trait DefaultLabworkManagementModuleImpl extends LabworkManagementModule {
 
 // POSTGRES
 
-trait LabworkServiceModule { self: DatabaseModule =>
+trait LabworkServiceModule {
+  self: DatabaseModule with CourseServiceModule with UserServiceModule with DegreeServiceModule with SemesterServiceModule =>
   def labworkService: LabworkService
 }
 
-trait DefaultLabworkServiceModule extends LabworkServiceModule { self: DatabaseModule =>
-  override lazy val labworkService = new LabworkServiceImpl(db)
+trait DefaultLabworkServiceModule extends LabworkServiceModule {
+  self: DatabaseModule with CourseServiceModule with UserServiceModule with DegreeServiceModule with SemesterServiceModule =>
+  override lazy val labworkService = new LabworkServiceImpl(db, courseService, userService, degreeService, semesterService)
+}
+
+trait LabworkManagementModulePostgres {
+  def labworControllerPostgres: LabworkControllerPostgres
+}
+
+
+trait DefaultLabworkManagementModulePostgres extends LabworkManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule with LabworkServiceModule with RoleServiceModule=>
+
+  override lazy val labworControllerPostgres: LabworkControllerPostgres = new LabworkControllerPostgres(sessionService, roleService, labworkService)
 }
