@@ -95,7 +95,7 @@ object LabworkApplication {
 object PostgresLabworkApplicationAtom {
 
   implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = (
-    (JsPath \ "labwork").write[PostgresLabworkAtom] and
+    (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writesAtom) and
       (JsPath \ "applicant").write[User] and
       (JsPath \ "friends").writeSet[User] and
       (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and

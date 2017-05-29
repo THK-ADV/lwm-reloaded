@@ -60,6 +60,14 @@ GET           /courses/:course/labworks/:id                                     
 GET           /courses/:course/atomic/labworks/:id                                    controllers.LabworkCRUDController.getAtomicFrom(course, id)
 DELETE        /courses/:course/labworks/:id                                           controllers.LabworkCRUDController.deleteFrom(course, id)
 
+
+# Labwork 2.0
+POST          /api2/labworks                                                          controllers.LabworkControllerPostgres.create()
+PUT           /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.update(id)
+GET           /api2/labworks                                                          controllers.LabworkControllerPostgres.all()
+GET           /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.get(id)
+DELETE        /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.delete(id)
+
 # Labwork Entry Type
 GET           /entryTypes                                                             controllers.EntryTypeController.all()
 HEAD          /entryTypes                                                             controllers.EntryTypeController.header()

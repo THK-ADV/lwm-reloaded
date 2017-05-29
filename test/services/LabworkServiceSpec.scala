@@ -24,7 +24,7 @@ final class LabworkServiceSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, 
 
   override protected val dbEntity: LabworkDb = LabworkDb("label", "description",semesters.head.id,courses.head.id,degrees.head.id)
 
-  override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb("label2", "description2", dbEntity.semester, dbEntity.course, dbEntity.degree)
+  override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb(dbEntity.label, dbEntity.description, dbEntity.semester, dbEntity.course, dbEntity.degree, dbEntity.subscribable, dbEntity.published)
 
   override protected val invalidUpdateOfDbEntity: LabworkDb = dbEntity.copy(dbEntity.label, dbEntity.description, semesters(1).id, courses(1).id, degrees(1).id, dbEntity.subscribable, dbEntity.published)
 
@@ -55,37 +55,50 @@ final class LabworkServiceSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, 
     )
   }
 
-  override protected def courseService: CourseService = new CourseService {
-    override protected def authorityService: AuthorityService = new AuthorityService {
-      override protected def roleService: RoleService2 = new RoleService2 {
-        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
+  override protected def courseService: CourseService = {
+    lazy val sharedDb = db
+
+    new CourseService {
+      override protected def authorityService: AuthorityService = new AuthorityService {
+        override protected def roleService: RoleService2 = new RoleService2 {
+          override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
+        }
+
+        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
       }
 
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
+      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
     }
-
-    override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
   }
 
-  override protected def userService: UserService = new UserService {
-    override protected def authorityService: AuthorityService = authorityService
+  override protected def userService: UserService = {
+    lazy val sharedDb = db
+    new UserService {
+      override protected def authorityService: AuthorityService = authorityService
 
-    override protected def degreeService: DegreeService = new DegreeService {
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
+      override protected def degreeService: DegreeService = new DegreeService {
+        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
+      }
+
+      override protected def labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2 {
+        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
+      }
+
+      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
     }
-
-    override protected def labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2 {
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
+  }
+  override protected def degreeService: DegreeService = {
+    lazy val sharedDb = db
+    new DegreeService {
+      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
     }
-
-    override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
   }
 
-  override protected def degreeService: DegreeService = new DegreeService {
-    override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
+  override protected def semesterService: SemesterService = {
+    lazy val sharedDb = db
+    new SemesterService {
+      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
+    }
   }
 
-  override protected def semesterService: SemesterService = new SemesterService {
-    override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = db
-  }
 }

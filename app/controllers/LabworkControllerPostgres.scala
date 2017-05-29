@@ -19,7 +19,7 @@ object LabworkControllerPostgres {
 }
 
 final class LabworkControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val labworkService: LabworkService) extends
-  AbstractCRUDControllerPostgres[PostgresLabworkProtocol, LabworkTable, LabworkDb, LabworkProtocol] {
+  AbstractCRUDControllerPostgres[PostgresLabworkProtocol, LabworkTable, LabworkDb, Labwork] {
 
   override implicit def mimeType = LwmMimeType.labworkV1Json
 
@@ -30,9 +30,9 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
     case _ => PartialSecureBlock(god)
   }
 
-  override protected implicit def writes: Writes[PostgresLabwork] = PostgresLabwork.writes
+  override protected implicit def writes: Writes[Labwork] = Labwork.writes
 
-  override protected implicit def reads: Reads[PostgresLabworkProtocol] = PostgresLabwork.reads
+  override protected implicit def reads: Reads[PostgresLabworkProtocol] = Labwork.reads
 
   override protected def abstractDao: AbstractDao[LabworkTable, LabworkDb, Labwork] = labworkService
 
@@ -42,9 +42,9 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
 
     (appendTo, (attribute, values)) match {
       case (list, (`labelAttribute`, label)) => list.map(_.+:(LabworkLabelFilter(label.head)))
-      case (list, (`degreeAttribute`, label)) => list.map(_.+:(LabworkDegreeFilter(label.head)))
-      case (list, (`semesterAttribute`, label)) => list.map(_.+:(LabworkSemesterFilter(label.head)))
-      case (list, (`courseAttribute`, label)) => list.map(_.+:(LabworkCourseFilter(label.head)))
+      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(LabworkDegreeFilter(degree.head)))
+      case (list, (`semesterAttribute`, semester)) => list.map(_.+:(LabworkSemesterFilter(semester.head)))
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(LabworkCourseFilter(course.head)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

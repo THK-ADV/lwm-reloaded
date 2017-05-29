@@ -118,7 +118,7 @@ object AssignmentPlan {
 object PostgresAssignmentPlanAtom {
 
   implicit def writesAtom: Writes[PostgresAssignmentPlanAtom] = (
-    (JsPath \ "labwork").write[PostgresLabwork] and
+    (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
       (JsPath \ "attendance").write[Int] and
       (JsPath \ "mandatory").write[Int] and
       (JsPath \ "entries").writeSet[PostgresAssignmentEntry] and

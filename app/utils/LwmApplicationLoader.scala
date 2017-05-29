@@ -48,6 +48,7 @@ with CourseServiceModule
 with GroupServiceManagementModule
 with GroupManagementModule
 with LabworkManagementModule
+with LabworkManagementModulePostgres
 with LabworkServiceModule
 with RoomManagementModule
 with RoomManagementModulePostgres
@@ -105,6 +106,7 @@ with LdapSyncModule {
     courseManagementControllerPostgres,
     groupManagementController,
     labworkManagementController,
+    labworControllerPostgres,
     entryTypeController,
     roomManagementController,
     roomManagementControllerPostgres,
@@ -148,6 +150,7 @@ with DefaultCourseServiceModule
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
+with DefaultLabworkManagementModulePostgres
 with DefaultLabworkServiceModule
 with DefaultRoomManagementModuleImpl
 with DefaultRoomManagementModuleImplPostgres

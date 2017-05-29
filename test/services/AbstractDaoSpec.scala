@@ -100,6 +100,8 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"not create a $name because model already exists" in {
+      println(dbEntity)
+      println(invalidDuplicateOfDbEntity)
       await(create(invalidDuplicateOfDbEntity).failed) shouldBe ModelAlreadyExists(Seq(dbEntity))
     }
 

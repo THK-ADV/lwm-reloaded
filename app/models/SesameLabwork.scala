@@ -63,6 +63,16 @@ object PostgresLabwork extends JsonSerialisation[PostgresLabworkProtocol, Postgr
   override implicit def writesAtom: Writes[PostgresLabworkAtom] = PostgresLabworkAtom.writesAtom
 }
 
+object Labwork{
+  implicit def writes: Writes[Labwork] = new Writes[Labwork] {
+    override def writes(labwork: Labwork): JsValue = labwork match {
+      case postgresLabwork: PostgresLabwork => Json.toJson(postgresLabwork)(PostgresLabwork.writes)
+      case postgresLabworkAtom: PostgresLabworkAtom => Json.toJson(postgresLabworkAtom)(PostgresLabwork.writesAtom)
+    }
+  }
+  implicit def reads: Reads[PostgresLabworkProtocol] = Json.reads[PostgresLabworkProtocol]
+}
+
 object PostgresLabworkAtom {
 
   implicit def writesAtom: Writes[PostgresLabworkAtom] = (

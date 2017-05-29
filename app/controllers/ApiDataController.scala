@@ -210,6 +210,7 @@ final class ApiDataController(private val repository: SesameRepository,
 
   def migrateLabworks = Action.async {
     import bindings.LabworkDescriptor
+    import models.PostgresLabwork.writes
 
     val result = for {
       _ <- labworkService.createSchema
