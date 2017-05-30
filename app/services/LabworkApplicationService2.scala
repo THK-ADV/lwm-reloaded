@@ -79,8 +79,7 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
-                              (build: LabworkApplicationDependencies => LabworkApplication)
-  : Future[Seq[LabworkApplication]] = {
+                              (build: LabworkApplicationDependencies => LabworkApplication): Future[Seq[LabworkApplication]] = {
     val mandatory = for {
       q <- query
       l <- q.joinLabwork

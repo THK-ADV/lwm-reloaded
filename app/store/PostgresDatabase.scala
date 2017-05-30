@@ -277,6 +277,8 @@ class TimetableTable(tag: Tag) extends Table[TimetableDb](tag, "TIMETABLE") with
 class TimetableBlacklistTable(tag: Tag) extends Table[TimetableBlacklist](tag, "TIMETABLE_BLACKLIST") with UniqueTable with TimetableIdTable {
   def blacklist = column[UUID]("BLACKLIST")
 
+  def joinBlacklist = TableQuery[BlacklistTable].filter(_.id === blacklist)
+
   def blacklistFk = foreignKey("BLACKLISTS_fkey", blacklist, TableQuery[BlacklistTable])(_.id)
 
   override def * = (timetable, blacklist, id) <> ((TimetableBlacklist.apply _).tupled, TimetableBlacklist.unapply)

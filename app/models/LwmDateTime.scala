@@ -16,6 +16,10 @@ object LwmDateTime {
     def sqlTime: Time = Time.valueOf(time.toString)
   }
 
+  implicit class TimeConverter(val time: Time) {
+    def localTime: LocalTime = new LocalTime(time.getTime)
+  }
+
   implicit class DateTimeConverter(val date: DateTime) {
     def timestamp: Timestamp= new Timestamp(date.getMillis)
   }

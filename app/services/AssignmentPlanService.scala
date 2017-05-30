@@ -75,7 +75,7 @@ trait AssignmentPlanService
   override protected def setInvalidated(entity: AssignmentPlanDb): AssignmentPlanDb = {
     val now = DateTime.now.timestamp
 
-    entity.copy(entity.labwork, entity.attendance, entity.mandatory, entity.entries, now, Some(now))
+    entity.copy(lastModified = now, invalidated = Some(now))
   }
 
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {
@@ -116,7 +116,7 @@ trait AssignmentPlanService
     }
 
     override def expandUpdateOf(entity: AssignmentPlanDb) = {
-        for { // TODO check this too, but it seems to be a good idea
+        for {
           d <- expandDeleteOf(entity) if d.isDefined
           c <- expandCreationOf(Seq(entity))
         } yield c.headOption

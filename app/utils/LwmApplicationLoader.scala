@@ -78,6 +78,7 @@ with ScheduleManagementModule
 with ScheduleEntryManagementModule
 with TimetableManagementModule
 with TimetableServiceManagementModule
+with TimetableService2ManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
 with BlacklistServiceManagementModule
@@ -175,6 +176,7 @@ with DefaultScheduleManagementModuleImpl
 with DefaultScheduleEntryManagementModule
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableServiceManagementModule
+with DefaultTimetableService2Module
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklistServiceManagementModule
