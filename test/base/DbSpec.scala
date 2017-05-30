@@ -38,7 +38,12 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition {
     TableQuery[RoomTable].schema,
     TableQuery[AssignmentPlanTable].schema,
     TableQuery[AssignmentEntryTable].schema,
-    TableQuery[AssignmentEntryTypeTable].schema
+    TableQuery[AssignmentEntryTypeTable].schema,
+    TableQuery[BlacklistTable].schema,
+    TableQuery[TimetableTable].schema,
+    TableQuery[TimetableBlacklistTable].schema,
+    TableQuery[TimetableEntryTable].schema,
+    TableQuery[TimetableEntrySupervisorTable].schema
   )
 
   private val mandatoryFill = DBIO.seq(

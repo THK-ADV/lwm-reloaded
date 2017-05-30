@@ -1,7 +1,6 @@
 package services
 
 import models._
-import slick.dbio.Effect
 import store._
 import slick.driver.PostgresDriver.api._
 
@@ -88,7 +87,7 @@ final class AssignmentPlanServiceSpec
     "delete an assignmentPlan with entries and entry types" in {
       val deleted = plans(4)
 
-      await(delete(deleted)) shouldBe defined
+      await(delete(deleted)).flatMap(_.invalidated) shouldBe defined
       await(getById(deleted.id.toString, atomic = false)) shouldBe None
       await(getById(deleted.id.toString)) shouldBe None
 
@@ -152,13 +151,7 @@ final class AssignmentPlanServiceSpec
 
   override protected val lwmEntity: AssignmentPlan = dbEntity.toAssignmentPlan
 
-  override protected val lwmAtom: AssignmentPlan = PostgresAssignmentPlanAtom(
-    labworks.head.toLabwork,
-    dbEntity.attendance,
-    dbEntity.mandatory,
-    dbEntity.entries,
-    dbEntity.id
-  )
+  override protected val lwmAtom: AssignmentPlan = atom(dbEntity)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees),

@@ -1,17 +1,17 @@
 package services
 
 import java.sql.{Date, Timestamp}
-import java.util.UUID
+import models.LwmDateTime._
 
 import base.PostgresDbSpec
 import models._
-import org.joda.time.LocalDate
+import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import store.UniqueTable
 import slick.driver.PostgresDriver.api._
 
 object AbstractDaoSpec {
-  import scala.util.Random.nextInt
+  import scala.util.Random.{nextInt, nextBoolean}
 
   val maxDegrees = 10
   val maxLabworks = 20
@@ -20,6 +20,8 @@ object AbstractDaoSpec {
   val maxRooms = 10
   val maxEmployees = 10
   val maxAssignmentPlans = 10
+  val maxBlacklists = 20
+  val maxTimetables = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -27,6 +29,34 @@ object AbstractDaoSpec {
   def randomLabwork = labworks(nextInt(maxDegrees))
   def randomRoom = rooms(nextInt(maxRooms))
   def randomEmployee = employees(nextInt(maxEmployees))
+
+  def takeSomeOf[A](traversable: Traversable[A]) = {
+    traversable.take(nextInt(traversable.size - 1) + 1)
+  }
+
+  def populateBlacklists(amount: Int) = (0 until amount).map { i =>
+    val date = LocalDate.now.plusDays(i)
+    val start = LocalTime.now.plusHours(i)
+    val end = start.plusHours(1)
+
+    BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, nextBoolean)
+  }.toList
+
+  def populateLabworks(amount: Int) = (0 until amount).map { i =>
+    LabworkDb(i.toString, i.toString, randomSemester.id, randomCourse.id, randomDegree.id)
+  }.toList
+
+  def populateEmployees(amount: Int) = (0 until amount).map { i =>
+    DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
+  }.toList
+
+  def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[DbUser], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
+    val entries = (0 until numberOfEntries).map { j =>
+      PostgresTimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j), LocalTime.now.plusHours(j + 1))
+    }
+
+    TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
+  }.toList
 
   val semesters = {
     val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
@@ -42,7 +72,7 @@ object AbstractDaoSpec {
     }._1
   }
 
-  val employees = (0 until maxEmployees).map(i => DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)).toList
+  val employees = populateEmployees(maxEmployees)
 
   val courses = (0 until maxCourses).map { i =>
     CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, 1)
@@ -50,20 +80,22 @@ object AbstractDaoSpec {
 
   val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
 
-  val labworks = (0 until maxLabworks).map { i =>
-    LabworkDb(i.toString, i.toString, randomSemester.id, randomCourse.id, randomDegree.id)
-  }.toList
+  val labworks = populateLabworks(maxLabworks)
 
   val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 
   val assignmentPlans = (0 until maxAssignmentPlans).map { i =>
     val entries = (0 until 10).map { j =>
       val allTypes = PostgresAssignmentEntryType.all
-      PostgresAssignmentEntry(j, j.toString, allTypes.take(nextInt(allTypes.size - 1) + 1))
+      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet)
     }
 
     AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
   }.toList
+
+  val blacklists = populateBlacklists(maxBlacklists)
+
+  val timetables = populateTimetables(maxTimetables, 6)(employees, labworks.drop(1), blacklists)
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]

@@ -118,7 +118,17 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
 
   final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
 
-  final def delete(id: UUID): Future[Option[DbModel]] = {
+  final def delete(id: UUID): Future[Option[DbModel]] = db.run(delete0(id))
+
+  final def deleteManyEntities(ids: List[DbModel]) = deleteMany(ids.map(_.id))
+
+  final def deleteMany(ids: List[UUID]): Future[List[Option[DbModel]]] = {
+    val query = ids.map(delete0)
+
+    db.run(DBIO.sequence(query))
+  }
+
+  private final def delete0(id: UUID) = {
     val found = tableQuery.filter(_.id === id)
     val query = found.result.head.flatMap { existing =>
       val invalidated = setInvalidated(existing)
@@ -128,17 +138,23 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
       }
     }
 
-    databaseExpander.fold {
-      db.run(query)
-    } { expander =>
-      db.run((for {
+    databaseExpander.map { expander =>
+      (for {
         q <- query if q.isDefined
         e <- expander.expandDeleteOf(q.get)
-      } yield e).transactionally)
-    }
+      } yield e).transactionally
+    } getOrElse query
   }
 
-  final def update(entity: DbModel): Future[Option[DbModel]] = {
+  final def update(entity: DbModel): Future[Option[DbModel]] = db.run(update0(entity))
+
+  final def updateMany(entities: List[DbModel]): Future[List[Option[DbModel]]] = {
+    val query = entities.map(update0)
+
+    db.run(DBIO.sequence(query))
+  }
+
+  private final def update0(entity: DbModel) = {
     val found = tableQuery.filter(_.id === entity.id)
     val query = found.result.head.flatMap { existing =>
       if (shouldUpdate(existing, entity))
@@ -149,14 +165,12 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
         DBIO.failed(ModelAlreadyExists(existing))
     }
 
-    databaseExpander.fold {
-      db.run(query)
-    } { expander =>
-      db.run((for {
+    databaseExpander.map { expander =>
+      (for {
         q <- query if q.isDefined
         e <- expander.expandUpdateOf(q.get)
-      } yield e).transactionally)
-    }
+      } yield e).transactionally
+    } getOrElse query
   }
 
   def createSchema: Future[Unit] = db.run(tableQuery.schema.create)

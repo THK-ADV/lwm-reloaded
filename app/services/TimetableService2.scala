@@ -15,6 +15,10 @@ case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTa
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
+case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
+  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+}
+
 trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -38,7 +42,7 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
         case ((e, _), s) => PostgresTimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
       }
 
-      PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toBlacklist).toSet, timetable.id)
+      PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
   }
 
   private final def collectDependencies(query: Query[TimetableTable, TimetableDb, Seq])
@@ -90,16 +94,12 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
         }
       }
 
-      val supervisors = timetableEntries.flatMap { entry =>
-        entry.supervisor.map(supervisor => TimetableEntrySupervisor(entry.id, supervisor))
-      }
-
-      val blacklists = entities.flatMap(t => t.localBlacklist.map(bl => TimetableBlacklist(t.id, bl)))
-
       for {
         _ <- timetableEntryQuery ++= timetableEntries
-        _ <- timetableEntrySupervisorQuery ++= supervisors
-        _ <- timetableBlacklistQuery ++= blacklists
+        _ <- timetableEntrySupervisorQuery ++= timetableEntries.flatMap { entry =>
+          entry.supervisor.map(supervisor => TimetableEntrySupervisor(entry.id, supervisor))
+        }
+        _ <- timetableBlacklistQuery ++= entities.flatMap(t => t.localBlacklist.map(bl => TimetableBlacklist(t.id, bl)))
       } yield entities
     }
 

@@ -9,11 +9,11 @@ import play.api.libs.json.{JsString, Writes}
 object LwmDateTime {
 
   implicit class LocalDateConverter(val date: LocalDate) {
-    def sqlDate: Date = Date.valueOf(date.toString)
+    def sqlDate: Date = Date.valueOf(date.toString(datePattern))
   }
 
   implicit class LocalTimeConverter(val time: LocalTime) {
-    def sqlTime: Time = Time.valueOf(time.toString)
+    def sqlTime: Time = new Time(time.toDateTimeToday.getMillis)
   }
 
   implicit class TimeConverter(val time: Time) {
@@ -33,6 +33,7 @@ object LwmDateTime {
   }
 
   lazy val pattern = "yyyy-MM-dd'T'HH:mm"
+  lazy val datePattern = "yyyy-MM-dd"
   lazy val formatter = DateTimeFormat.forPattern(pattern)
 
   implicit def writes: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
