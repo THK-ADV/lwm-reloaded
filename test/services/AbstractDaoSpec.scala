@@ -20,7 +20,7 @@ object AbstractDaoSpec {
   val maxRooms = 10
   val maxEmployees = 10
   val maxAssignmentPlans = 10
-  val maxBlacklists = 20
+  val maxBlacklists = 30
   val maxTimetables = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
@@ -29,17 +29,29 @@ object AbstractDaoSpec {
   def randomLabwork = labworks(nextInt(maxDegrees))
   def randomRoom = rooms(nextInt(maxRooms))
   def randomEmployee = employees(nextInt(maxEmployees))
+  def randomBlacklist = blacklists(nextInt(maxBlacklists))
 
   def takeSomeOf[A](traversable: Traversable[A]) = {
     traversable.take(nextInt(traversable.size - 1) + 1)
   }
 
   def populateBlacklists(amount: Int) = (0 until amount).map { i =>
-    val date = LocalDate.now.plusDays(i)
-    val start = LocalTime.now.plusHours(i)
-    val end = start.plusHours(1)
+    val global = nextBoolean
 
-    BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, nextBoolean)
+    val (date, start, end) = {
+      val date = LocalDate.now.plusDays(i)
+
+      if (global) {
+        (date, PostgresBlacklist.startOfDay, PostgresBlacklist.endOfDay)
+      } else {
+        val start = LocalTime.now.withHourOfDay(nextInt(23))
+        val end = start.plusHours(1)
+        (date, start, end)
+      }
+    }
+
+    BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, global)
+
   }.toList
 
   def populateLabworks(amount: Int) = (0 until amount).map { i =>

@@ -53,9 +53,18 @@ case class PostgresBlacklistProtocol(label: String, date: String, start: String,
 
 case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toBlacklist = PostgresBlacklist(label, date.localDate, start.localTime, end.localTime, global, id)
+
+  override def equals(that: scala.Any) = that match {
+    case BlacklistDb(l, d, s, e, g, _, _, i) =>
+      l == label && d.localDate.isEqual(date.localDate) && s.localTime.isEqual(start.localTime) && e.localTime.isEqual(end.localTime) && g == global && i == id
+    case _ => false
+  }
 }
 
 object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, PostgresBlacklist, PostgresBlacklist] {
+
+  val startOfDay = LocalTime.MIDNIGHT
+  val endOfDay = startOfDay.minusSeconds(1)
 
   override implicit def reads = Json.reads[PostgresBlacklistProtocol]
 

@@ -38,6 +38,8 @@ case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTabl
 }
 
 trait BlacklistService2 extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   override val tableQuery = TableQuery[BlacklistTable]
 
   override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = toUniqueEntity(query)
@@ -62,10 +64,10 @@ trait BlacklistService2 extends AbstractDao[BlacklistTable, BlacklistDb, Postgre
   }
 
   override protected def shouldUpdate(existing: BlacklistDb, toUpdate: BlacklistDb): Boolean = {
-    existing.label != existing.label &&
-      (existing.date.equals(toUpdate.date) &&
-        existing.start.equals(toUpdate.start) &&
-        existing.end.equals(toUpdate.end) &&
+    existing.label != toUpdate.label &&
+      (existing.date.localDate.isEqual(toUpdate.date.localDate) &&
+        existing.start.localTime.isEqual(toUpdate.start.localTime) &&
+        existing.end.localTime.isEqual(toUpdate.end.localTime) &&
         existing.global == toUpdate.global)
   }
 }
