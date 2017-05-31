@@ -77,6 +77,7 @@ with LabworkApplication2ServiceModule
 with ScheduleManagementModule
 with ScheduleEntryManagementModule
 with TimetableManagementModule
+with TimetableManagementModulePostgres
 with TimetableServiceManagementModule
 with TimetableService2ManagementModule
 with ScheduleServiceManagementModule
@@ -117,6 +118,7 @@ with LdapSyncModule {
     scheduleManagementController,
     scheduleEntryController,
     timetableManagementController,
+    timetableControllerPostgres,
     blacklistManagementController,
     reportCardEntryManagementController,
     reportCardEntryTypeManagementController,
@@ -175,6 +177,7 @@ with DefaultLabworkApplication2ServiceModule
 with DefaultScheduleManagementModuleImpl
 with DefaultScheduleEntryManagementModule
 with DefaultTimetableManagementModuleImpl
+with DefaultTimetableManagementModulePostgres
 with DefaultTimetableServiceManagementModule
 with DefaultTimetableService2Module
 with DefaultScheduleServiceManagementModule

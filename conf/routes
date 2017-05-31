@@ -168,6 +168,14 @@ GET           /courses/:c/timetables/:id                                        
 GET           /courses/:c/atomic/timetables/:id                                       controllers.TimetableCRUDController.getAtomicFrom(c, id)
 DELETE        /courses/:c/timetables/:id                                              controllers.TimetableCRUDController.deleteFrom(c, id)
 
+# Timetable 2.0 restricted
+
+POST          /api2/courses/:c/timetables                                             controllers.TimetableControllerPostgres.createFrom(c)
+PUT           /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.updateFrom(c, id)
+GET           /api2/courses/:c/timetables                                             controllers.TimetableControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.getFrom(c, id)
+DELETE        /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.deleteFrom(c, id)
+
 # Blacklist
 POST          /blacklists                                                             controllers.BlacklistCRUDController.create()
 POST          /blacklists/year/:year                                                  controllers.BlacklistCRUDController.createFor(year)

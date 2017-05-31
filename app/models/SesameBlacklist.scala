@@ -49,6 +49,17 @@ object SesameBlacklist extends UriGenerator[SesameBlacklist] with JsonSerialisat
 
 case class PostgresBlacklist(label: String, date: LocalDate, start: LocalTime, end: LocalTime, global: Boolean, id: UUID = UUID.randomUUID) extends UniqueEntity
 
+case class PostgresBlacklistProtocol(label: String, date: String, start: String, end: String, global: Boolean)
+
 case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
   def toBlacklist = PostgresBlacklist(label, date.localDate, start.localTime, end.localTime, global, id)
+}
+
+object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, PostgresBlacklist, PostgresBlacklist] {
+
+  override implicit def reads = Json.reads[PostgresBlacklistProtocol]
+
+  override implicit def writes = Json.writes[PostgresBlacklist]
+
+  override implicit def writesAtom = writes
 }

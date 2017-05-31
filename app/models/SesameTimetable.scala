@@ -136,3 +136,50 @@ case class TimetableEntryDb(timetable: UUID, room: UUID, supervisor: Set[UUID], 
 case class TimetableEntrySupervisor(timetableEntry: UUID, supervisor: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class TimetableBlacklist(timetable: UUID, blacklist: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
+
+object TimetableDb {
+  def from(p: PostgresTimetableProtocol, existing: Option[UUID]) = {
+    TimetableDb(p.labwork, p.entries, p.start.sqlDate, p.localBlacklist, id = existing getOrElse UUID.randomUUID)
+  }
+}
+
+object PostgresTimetable extends JsonSerialisation[PostgresTimetableProtocol, PostgresTimetable, PostgresTimetableAtom] {
+
+  override implicit def reads = Json.reads[PostgresTimetableProtocol]
+
+  override implicit def writes = Json.writes[PostgresTimetable]
+
+  override implicit def writesAtom = ???
+}
+
+object PostgresTimetableEntryAtom {
+
+  implicit def writesAtom: Writes[PostgresTimetableEntryAtom] = (
+    (JsPath \ "supervisor").writeSet[User] and
+      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
+      (JsPath \ "dayIndex").write[Int] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime]
+    ) (unlift(PostgresTimetableEntryAtom.unapply))
+}
+
+object PostgresTimetableAtom {
+
+  implicit def writesAtom: Writes[PostgresTimetableAtom] = (
+    (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
+      (JsPath \ "entries").writeSet[PostgresTimetableEntryAtom] and
+      (JsPath \ "start").write[LocalDate] and
+      (JsPath \ "localBlacklist").writeSet[PostgresBlacklist](PostgresBlacklist.writes) and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresTimetableAtom.unapply))
+}
+
+object Timetable {
+
+  implicit val writes: Writes[Timetable] = new Writes[Timetable] {
+    override def writes(t: Timetable) = t match {
+      case timetable: PostgresTimetable => Json.toJson(timetable)(PostgresTimetable.writes)
+      case atom: PostgresTimetableAtom => Json.toJson(atom)(PostgresTimetableAtom.writesAtom)
+    }
+  }
+}

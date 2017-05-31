@@ -1,6 +1,6 @@
 package modules
 
-import controllers.TimetableCRUDController
+import controllers.{TimetableCRUDController, TimetableControllerPostgres}
 import services.{TimetableService, TimetableService2, TimetableService2Impl, TimetableServiceLike}
 import utils.LwmApplication
 
@@ -38,4 +38,16 @@ trait TimetableService2ManagementModule { self: DatabaseModule =>
 trait DefaultTimetableService2Module extends TimetableService2ManagementModule { self: DatabaseModule =>
 
   override lazy val timetableService2: TimetableService2 = new TimetableService2Impl(db)
+}
+
+trait TimetableManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule with TimetableService2ManagementModule =>
+
+  def timetableControllerPostgres: TimetableControllerPostgres
+}
+
+trait DefaultTimetableManagementModulePostgres extends TimetableManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule with TimetableService2ManagementModule =>
+
+  override lazy val timetableControllerPostgres = new TimetableControllerPostgres(roleService, sessionService, timetableService2)
 }
