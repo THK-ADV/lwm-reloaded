@@ -33,12 +33,12 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
 
   override protected def abstractDao: AbstractDao[RoomTable, RoomDb, PostgresRoom] = roomService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
     import controllers.RoomControllerPostgres._
 
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoomLabelFilter(label.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoomLabelFilter(label)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

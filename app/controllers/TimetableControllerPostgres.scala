@@ -25,12 +25,12 @@ final class TimetableControllerPostgres(val roleService: RoleServiceLike, val se
 
   override protected val abstractDao: AbstractDao[TimetableTable, TimetableDb, Timetable] = timetableService2
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[TimetableTable]]]): Try[List[TableFilter[TimetableTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[TimetableTable]]]): Try[List[TableFilter[TimetableTable]]] = {
     import controllers.TimetableControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(TimetableCourseFilter(course.head)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(TimetableLabworkFilter(labwork.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(TimetableCourseFilter(course)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(TimetableLabworkFilter(labwork)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

@@ -34,12 +34,12 @@ final class DegreeControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected val abstractDao: AbstractDao[DegreeTable, DegreeDb, PostgresDegree] = degreeService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
     import controllers.DegreeControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

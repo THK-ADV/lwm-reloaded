@@ -1,6 +1,7 @@
 package models
 
 import java.sql.{Date, Time, Timestamp}
+import java.util.Locale
 
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
@@ -9,14 +10,22 @@ import play.api.libs.json.{JsString, Writes}
 object LwmDateTime {
 
   implicit class LocalDateConverter(val date: LocalDate) {
-    def sqlDate: Date = Date.valueOf(date.toString(datePattern))
+    def string: String = date.toDateTimeAtStartOfDay.getMillis.toString
+    def sqlDate: Date = date.string.sqlDate
+  }
+
+  implicit class StringDateConverter(val string: String) {
+    def sqlDate: Date = new Date(string.toLong)
+    def sqlTime: Time = new Time(string.toLong)
   }
 
   implicit class LocalTimeConverter(val time: LocalTime) {
-    def sqlTime: Time = new Time(time.toDateTimeToday.getMillis)
+    def string: String = time.toDateTimeToday.getMillis.toString
+    def sqlTime: Time = time.string.sqlTime
   }
 
   implicit class TimeConverter(val time: Time) {
+    def string: String = time.localTime.string
     def localTime: LocalTime = new LocalTime(time.getTime)
   }
 
@@ -25,6 +34,7 @@ object LwmDateTime {
   }
 
   implicit class SqlDateConverter(val date: Date) {
+    def string: String = date.localDate.string
     def localDate: LocalDate = new LocalDate(date.getTime)
   }
 

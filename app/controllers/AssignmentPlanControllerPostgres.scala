@@ -24,12 +24,12 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override protected val abstractDao: AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] = assignmentPlanService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
     import controllers.AssignmentPlanControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course.head)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

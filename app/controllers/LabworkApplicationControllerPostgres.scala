@@ -29,11 +29,11 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
 
   override protected val abstractDao: LabworkApplicationService2 = labworkApplicationService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[LabworkApplicationTable]]]): Try[List[TableFilter[LabworkApplicationTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[LabworkApplicationTable]]]): Try[List[TableFilter[LabworkApplicationTable]]] = {
     import controllers.LabworkApplicationControllerPostgres._
 
-    (appendTo, (attribute, values)) match { // TODO expand by attributes
-      case (list, (`labworkAttribute`, labworks)) => list.map(_.+:(LabworkApplicationLabworkFilter(labworks.head)))
+    (appendTo, (attribute, value)) match { // TODO expand by attributes
+      case (list, (`labworkAttribute`, labworks)) => list.map(_.+:(LabworkApplicationLabworkFilter(labworks)))
     }
   }
 

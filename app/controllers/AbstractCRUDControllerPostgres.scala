@@ -76,7 +76,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected implicit def reads: Reads[Protocol]
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
-  protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
+  protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
   protected def toLwmModel(dbModel: DbModel): LwmModel
@@ -116,7 +116,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     val (queryString, defaults) = extractAttributes(request.queryString)
 
     val filter = queryString.foldLeft(Try(List.empty[TableFilter[T]])) {
-      case (list, (attribute, values)) => tableFilter(attribute, values)(list)
+      case (list, (attribute, values)) => tableFilter(attribute, values.head)(list)
     }
 
     (for{

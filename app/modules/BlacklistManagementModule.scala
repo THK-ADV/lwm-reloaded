@@ -1,7 +1,7 @@
 package modules
 
 import controllers.BlacklistCRUDController
-import services.{BlacklistService, BlacklistServiceLike}
+import services.{BlacklistService, BlacklistService2, BlacklistServiceImpl, BlacklistServiceLike}
 import utils.LwmApplication
 
 trait BlacklistServiceManagementModule {
@@ -28,4 +28,16 @@ trait DefaultBlacklistManagementModuleImpl extends BlacklistManagementModule {
   lazy val blacklistManagementController: BlacklistCRUDController = new BlacklistCRUDController(repository, sessionService, namespace, roleService, blacklistService)
 }
 
+// POSTGRES
 
+trait BlacklistService2ManagementModule {
+  self: DatabaseModule =>
+
+  def blacklistService2: BlacklistService2
+}
+
+trait DefaultBlacklistService2ManagementModule extends BlacklistService2ManagementModule {
+  self: DatabaseModule =>
+
+  override lazy val blacklistService2 = new BlacklistServiceImpl(db)
+}

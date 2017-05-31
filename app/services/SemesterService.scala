@@ -1,6 +1,5 @@
 package services
 
-import java.sql.Date
 import java.util.UUID
 
 import models.{PostgresSemester, SemesterDb}
@@ -9,7 +8,7 @@ import store.{SemesterTable, TableFilter}
 import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
-import models.LwmDateTime.DateTimeConverter
+import models.LwmDateTime._
 import slick.driver.PostgresDriver
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
@@ -21,15 +20,23 @@ case class SemesterAbbreviationFilter(value: String) extends TableFilter[Semeste
 }
 
 case class SemesterStartFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.start === Date.valueOf(value)
+  override def predicate = _.start === value.sqlDate
+}
+
+case class SemesterSinceFilter(value: String) extends TableFilter[SemesterTable] {
+  override def predicate = _.start >= value.sqlDate
+}
+
+case class SemesterUntilFilter(value: String) extends TableFilter[SemesterTable] {
+  override def predicate = _.end <= value.sqlDate
 }
 
 case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.end === Date.valueOf(value)
+  override def predicate = _.end === value.sqlDate
 }
 
 case class SemesterCurrentFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = t => t.start <= Date.valueOf(value) && t.end >= Date.valueOf(value)
+  override def predicate = t => t.start <= value.sqlDate && t.end >= value.sqlDate
 }
 
 case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
@@ -65,8 +72,8 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   override protected def existsQuery(entity: SemesterDb): Query[SemesterTable, SemesterDb, Seq] = {
     filterBy(List(
       SemesterLabelFilter(entity.label),
-      SemesterStartFilter(entity.start.toString),
-      SemesterEndFilter(entity.end.toString)
+      SemesterStartFilter(entity.start.string),
+      SemesterEndFilter(entity.end.string)
     ))
   }
 

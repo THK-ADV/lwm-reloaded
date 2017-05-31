@@ -63,11 +63,11 @@ object AbstractDaoSpec {
 
     (0 until maxSemesters).foldLeft((List.empty[SemesterDb], template)) {
       case ((list, t), i) =>
-        val start = new Date(t.plusDays(1).toDateTimeAtStartOfDay.getMillis)
-        val end = t.plusDays(1).plusMonths(6)
-        val exam = new Date(t.plusDays(1).plusMonths(5).toDateTimeAtStartOfDay.getMillis)
+        val start = t.plusDays(1)
+        val end = start.plusMonths(6)
+        val exam = end.minusMonths(1)
 
-        val current = SemesterDb(i.toString, i.toString, start, new Date(end.toDateTimeAtStartOfDay.getMillis), exam)
+        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
         (list.:+(current), end)
     }._1
   }

@@ -92,15 +92,15 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
 
   override protected val abstractDao: AbstractDao[UserTable, DbUser, User] = userService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
     import controllers.UserControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status.head)))
-      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId.head)))
-      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname.head)))
-      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname.head)))
-      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status)))
+      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId)))
+      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname)))
+      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname)))
+      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
