@@ -145,11 +145,20 @@ object TimetableDb {
 
 object PostgresTimetable extends JsonSerialisation[PostgresTimetableProtocol, PostgresTimetable, PostgresTimetableAtom] {
 
-  override implicit def reads = Json.reads[PostgresTimetableProtocol]
+  override implicit def reads: Reads[PostgresTimetableProtocol] = Json.reads[PostgresTimetableProtocol]
 
-  override implicit def writes = Json.writes[PostgresTimetable]
+  override implicit def writes: Writes[PostgresTimetable] = Json.writes[PostgresTimetable]
 
-  override implicit def writesAtom = ???
+  override implicit def writesAtom: Writes[PostgresTimetableAtom] = PostgresTimetableAtom.writesAtom
+}
+
+object PostgresTimetableEntry extends JsonSerialisation[PostgresTimetableEntry, PostgresTimetableEntry, PostgresTimetableEntryAtom] {
+
+  override implicit def reads: Reads[PostgresTimetableEntry] = Json.reads[PostgresTimetableEntry]
+
+  override implicit def writes: Writes[PostgresTimetableEntry] = Json.writes[PostgresTimetableEntry]
+
+  override implicit def writesAtom: Writes[PostgresTimetableEntryAtom] = PostgresTimetableEntryAtom.writesAtom
 }
 
 object PostgresTimetableEntryAtom {

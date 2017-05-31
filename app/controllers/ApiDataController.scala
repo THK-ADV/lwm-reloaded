@@ -24,7 +24,8 @@ final class ApiDataController(private val repository: SesameRepository,
                               val permissionService: PermissionService,
                               val roleService: RoleService2,
                               val roomService: RoomService,
-                              val semesterService: SemesterService
+                              val semesterService: SemesterService,
+                              val timetableService2: TimetableService2
                              ) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
@@ -284,6 +285,32 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"planDbsEntryTypes ${planDbs.flatMap(_.entries.flatMap(_.types)).size}")
       plans <- assignmentPlanService.createMany(planDbs.toList)
     } yield plans.map(_.toAssignmentPlan)
+
+    result.jsonResult
+  }
+
+  // TODO MIGRATE BLACKLISTS AND THOSE WHO ARE COMING FROM TIMETABLE'S LOCALBLACKLIST
+
+  def migrateTimetables = Action.async {
+    import bindings.TimetableDescriptor
+    import models.PostgresTimetable.writes
+
+    val result = for {
+      _ <- timetableService2.createSchema
+      sesameTimetables <- Future.fromTry(repository.getAll[SesameTimetable])
+      _ = println(s"sesameTimetables ${sesameTimetables.size}")
+      _ = println(s"sesameTimetableEntries ${sesameTimetables.flatMap(_.entries).size}")
+      timetableDbs = sesameTimetables.map { t =>
+        val entries = t.entries.map { e =>
+          PostgresTimetableEntry(e.supervisor, e.room, e.dayIndex, e.start, e.end)
+        }
+
+        TimetableDb(t.labwork, entries, t.start.sqlDate, ???, invalidated = t.invalidated.map(_.timestamp), id = t.id)
+      }
+      _ = println(s"timetableDbs ${timetableDbs.size}")
+      _ = println(s"timetableDbEntries ${timetableDbs.flatMap(_.entries).size}")
+      timetables <- timetableService2.createMany(timetableDbs.toList)
+    } yield timetables.map(_.toTimetable)
 
     result.jsonResult
   }
