@@ -292,20 +292,21 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateBlacklists = Action.async { // TODO TEST
-    import bindings.{BlacklistDescriptor, TimetableAtomDescriptor}
+  def migrateBlacklists = Action.async {
+    import bindings.{BlacklistDescriptor, TimetableAtomDescriptor, SemesterDescriptor}
     import models.PostgresBlacklist.{writes, startOfDay, endOfDay}
 
-    def toBlacklistDb(dates: Set[DateTime], label: String) = {
-      dates.map(d => BlacklistDb(label, d.toLocalDate.sqlDate, startOfDay.sqlTime, endOfDay.sqlTime, global = true))
+    def toBlacklistDb(dates: Set[DateTime], label: String, global: Boolean) = {
+      dates.map(d => BlacklistDb(label, d.toLocalDate.sqlDate, startOfDay.sqlTime, endOfDay.sqlTime, global))
     }
 
     val result = for {
       _ <- blacklistService2.createSchema
+      semesters <- Future.fromTry(repository.getAll[SesameSemester])
       sesameBlacklists <- Future.fromTry(repository.getAll[SesameBlacklist])
       _ = println(s"sesameBlacklists ${sesameBlacklists.flatMap(_.dates).size}")
       blacklistDbs = sesameBlacklists.flatMap { b =>
-        toBlacklistDb(b.dates, b.label)
+        toBlacklistDb(b.dates, b.label, global = true)
       }
       _ = println(s"blacklistDbs ${blacklistDbs.size}")
       _ = blacklistDbs.foreach { b =>
@@ -314,7 +315,7 @@ final class ApiDataController(private val repository: SesameRepository,
       sesameTimetables <- Future.fromTry(repository.getAll[SesameTimetableAtom])
       _ = println(s"timetable blacklists ${sesameTimetables.flatMap(_.localBlacklist).size}")
       localBlacklists = sesameTimetables.flatMap { t =>
-        toBlacklistDb(t.localBlacklist, t.labwork.label)
+        toBlacklistDb(t.localBlacklist, s"${t.labwork.label}, ${semesters.find(_.id == t.labwork.semester).get.abbreviation}", global = false)
       }
       _ = println(s"localBlacklists ${localBlacklists.size}")
       mixedBlacklists = blacklistDbs ++ localBlacklists
@@ -324,7 +325,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateTimetables = Action.async { // TODO TEST, ESPECIALLY THE PART WITH LOCAL BLACKLISTS
+  def migrateTimetables = Action.async {
     import bindings.TimetableDescriptor
     import models.PostgresTimetable.writes
 
@@ -333,16 +334,12 @@ final class ApiDataController(private val repository: SesameRepository,
       sesameTimetables <- Future.fromTry(repository.getAll[SesameTimetable])
       _ = println(s"sesameTimetables ${sesameTimetables.size}")
       _ = println(s"sesameTimetableEntries ${sesameTimetables.flatMap(_.entries).size}")
-      blacklists <- blacklistService2.get(atomic = false)
       timetableDbs = sesameTimetables.map { t =>
         val entries = t.entries.map { e =>
           PostgresTimetableEntry(e.supervisor, e.room, e.dayIndex, e.start, e.end)
         }
-        val blIds = blacklists.filter(b => b.global && t.localBlacklist.exists(_.toLocalDate.isEqual(b.date))).map(_.id).toSet
 
-        assert(blIds.size == t.localBlacklist.size, "blacklists does not match")
-
-        TimetableDb(t.labwork, entries, t.start.sqlDate, blIds, invalidated = t.invalidated.map(_.timestamp), id = t.id)
+        TimetableDb(t.labwork, entries, t.start.sqlDate, Set.empty, invalidated = t.invalidated.map(_.timestamp), id = t.id)
       }
       _ = println(s"timetableDbs ${timetableDbs.size}")
       _ = println(s"timetableDbEntries ${timetableDbs.flatMap(_.entries).size}")
