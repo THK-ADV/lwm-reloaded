@@ -326,4 +326,87 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
       ))
     }
   }
+
+  def bumpBonus(course: String, preview: String) = Action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, ReportCardEntryTypeDescriptor, SemesterDescriptor}
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import models.ReportCardEntryType._
+
+    val result = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntry].map(_.filter(l => labworks.exists(_.id == l.labwork)))
+      _ = println(s"students ${reportCards.groupBy(_.student).keys.size}")
+      assignment = reportCards.filter(e => e.label == "Pflichtteil 1 - Server")
+      _ = println(s"assignment ${assignment.size}")
+      passedAssignment = assignment.filter(_.entryTypes.exists(t => t.entryType == ReportCardEntryType.Certificate.entryType && t.bool))
+      _ = println(s"passedAssignment ${passedAssignment.size}")
+      bumped = passedAssignment.map(e => e.entryTypes.find(_.entryType == ReportCardEntryType.Bonus.entryType).get.copy(int = 50))
+      _ = println(s"bumped ${bumped.size}")
+      _ <- if (preview.toBoolean) fakeSuccessGraph else bumped.map(e => repository.update(e)(ReportCardEntryTypeDescriptor, ReportCardEntryType)).sequence
+    } yield bumped
+
+    result match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "bumped" -> Json.toJson(s)
+        ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def assignmentStatistic(course: String) = Action { request =>
+    import bindings.{LabworkAtomDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
+
+    def percentage(of: Int, total: Int) = (100 * of) / total
+    def entryTypeJson(of: Int, total: Int) = Json.obj(
+      "absolute" -> of,
+      "percentage" -> percentage(of, total)
+    )
+
+    val statistic = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[LabworkAtom].map(_.filter(l => l.course.id == UUID.fromString(course) && semesters.exists(_.id == l.semester.id)))
+      reportCards <- repository.getAll[ReportCardEntry].map(_.filter(l => labworks.exists(_.id == l.labwork)))
+      grouping = reportCards.groupBy(_.labwork)
+    } yield (semesters.head, labworks, grouping)
+
+    statistic match {
+      case Success((semester, labworks, grouping)) => Ok(Json.obj(
+        "status" -> "OK",
+        "semester" -> semester.label,
+        "statistic" -> grouping.map {
+          case (labwork, reportCards) =>
+            val assignments = reportCards.groupBy(_.label).mapValues(_.flatMap(_.entryTypes)) // TODO ordering
+            val students = reportCards.groupBy(_.student).size
+
+            Json.obj(
+              "labwork" -> labworks.find(_.id == labwork).get.label,
+              "students" -> students,
+              "assignments" -> assignments.map {
+                case (label, entryTypes) =>
+                  val attendance = entryTypes.count(e => e.entryType == ReportCardEntryType.Attendance.entryType && e.bool)
+                  val testat = entryTypes.count(e => e.entryType == ReportCardEntryType.Certificate.entryType && e.bool)
+                  val points = entryTypes.count(e => e.entryType == ReportCardEntryType.Bonus.entryType && e.int > 0)
+
+                  Json.obj(
+                    "label" -> label,
+                    "attendance" -> entryTypeJson(attendance, students),
+                    "testat" -> entryTypeJson(testat, students),
+                    "points" -> entryTypeJson(points, students)
+                )
+              }
+          )
+        }
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
 }
