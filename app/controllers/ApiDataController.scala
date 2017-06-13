@@ -294,10 +294,10 @@ final class ApiDataController(private val repository: SesameRepository,
 
   def migrateBlacklists = Action.async {
     import bindings.{BlacklistDescriptor, TimetableAtomDescriptor, SemesterDescriptor}
-    import models.PostgresBlacklist.{writes, startOfDay, endOfDay}
+    import models.PostgresBlacklist.writes
 
     def toBlacklistDb(dates: Set[DateTime], label: String, global: Boolean) = {
-      dates.map(d => BlacklistDb(label, d.toLocalDate.sqlDate, startOfDay.sqlTime, endOfDay.sqlTime, global))
+      dates.map(d => BlacklistDb.entireDay(label, d.toLocalDate.sqlDate, global))
     }
 
     val result = for {

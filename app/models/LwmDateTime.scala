@@ -17,6 +17,8 @@ object LwmDateTime {
   implicit class StringDateConverter(val string: String) {
     def sqlDate: Date = new Date(string.toLong)
     def sqlTime: Time = new Time(string.toLong)
+
+    def localDate: LocalDate = LocalDate.parse(string, DateTimeFormat.forPattern(datePattern))
   }
 
   implicit class LocalTimeConverter(val time: LocalTime) {

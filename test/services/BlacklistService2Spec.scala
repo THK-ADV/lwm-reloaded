@@ -12,6 +12,8 @@ final class BlacklistService2Spec extends AbstractDaoSpec[BlacklistTable, Blackl
 
   "A BlacklistService2Spec also" should {
 
+    // TODO ADD FETCHING SPEC FROM BLACKLISTSERVICESPEC
+
     "filter properly" in {
       val (since, until) = {
         val chosen = takeSomeOf(dbEntities.filter(b => !b.start.localTime.isEqual(startOfDay))).toList.sortWith((a, b) => a.date.localDate.isBefore(b.date.localDate))
@@ -48,7 +50,7 @@ final class BlacklistService2Spec extends AbstractDaoSpec[BlacklistTable, Blackl
 
   override protected def name: String = "blacklist"
 
-  override protected val dbEntity: BlacklistDb = BlacklistDb("label", LocalDate.now.sqlDate, startOfDay.sqlTime, endOfDay.sqlTime, global = true)
+  override protected val dbEntity: BlacklistDb = BlacklistDb.entireDay("label", LocalDate.now.sqlDate, global = true)
 
   override protected val invalidDuplicateOfDbEntity: BlacklistDb = dbEntity.copy("label 2")
 

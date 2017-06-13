@@ -185,6 +185,14 @@ GET           /blacklists/:id                                                   
 DELETE        /blacklists/:id                                                         controllers.BlacklistCRUDController.delete(id)
 HEAD          /blacklists                                                             controllers.BlacklistCRUDController.header
 
+# Blacklist 2.0
+POST          /api2/blacklists                                                        controllers.BlacklistControllerPostgres.create()
+POST          /api2//blacklists/year/:year                                            controllers.BlacklistControllerPostgres.createFor(year)
+PUT           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.update(id)
+GET           /api2//blacklists                                                       controllers.BlacklistControllerPostgres.all()
+GET           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.get(id)
+DELETE        /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.delete(id)
+
 # ReportCardEntry
 GET           /reportCardEntries/student/:s                                           controllers.ReportCardEntryController.get(s)
 GET           /atomic/reportCardEntries/student/:s                                    controllers.ReportCardEntryController.getAtomic(s)

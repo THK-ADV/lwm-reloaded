@@ -63,12 +63,24 @@ case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global
 
 object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, PostgresBlacklist, PostgresBlacklist] {
 
-  val startOfDay = LocalTime.MIDNIGHT
-  val endOfDay = startOfDay.minusSeconds(1)
+  val startOfDay: LocalTime = LocalTime.MIDNIGHT
+  val endOfDay: LocalTime = startOfDay.minusSeconds(1)
 
   override implicit def reads = Json.reads[PostgresBlacklistProtocol]
 
   override implicit def writes = Json.writes[PostgresBlacklist]
 
   override implicit def writesAtom = writes
+}
+
+object BlacklistDb {
+  import models.PostgresBlacklist.{endOfDay, startOfDay}
+
+  def from(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
+    BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+  }
+
+  def entireDay(label: String, date: LocalDate, global: Boolean): BlacklistDb = entireDay(label, date.sqlDate, global)
+
+  def entireDay(label: String, date: Date, global: Boolean): BlacklistDb = BlacklistDb(label, date, startOfDay.sqlTime, endOfDay.sqlTime, global)
 }

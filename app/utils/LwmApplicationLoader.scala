@@ -82,6 +82,7 @@ with TimetableServiceManagementModule
 with TimetableService2ManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
+with Blacklist2ManagementModule
 with BlacklistServiceManagementModule
 with BlacklistService2ManagementModule
 with ReportCardServiceManagementModule
@@ -121,6 +122,7 @@ with LdapSyncModule {
     timetableManagementController,
     timetableControllerPostgres,
     blacklistManagementController,
+    blacklistControllerPostgres,
     reportCardEntryManagementController,
     reportCardEntryTypeManagementController,
     reportCardEvaluationManagementController,
@@ -183,6 +185,7 @@ with DefaultTimetableServiceManagementModule
 with DefaultTimetableService2Module
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
+with DefaultBlacklist2ManagementModule
 with DefaultBlacklistServiceManagementModule
 with DefaultBlacklistService2ManagementModule
 with DefaultReportCardServiceManagementModule

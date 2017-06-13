@@ -1,7 +1,8 @@
 package services
 
-import models.{SesameBlacklist, TimetableDateEntry}
+import models.{BlacklistDb, SesameBlacklist, TimetableDateEntry}
 import org.joda.time.DateTime
+import play.api.libs.json.{JsArray, JsObject, JsValue}
 
 import scala.concurrent.Future
 
@@ -24,7 +25,11 @@ case class PartialDate(date: DateTime) extends BlacklistDate
 
 object BlacklistService {
 
-  def legalHolidayLabel(year: String) = s"NRW Feiertage $year"
+  def fullLegalHolidayLabel(year: String) = s"NRW Feiertage $year"
+
+  def shortLegalHolidayLabel(year: String) = s"NRW $year"
+
+  def legalHolidayLabel(year: String, holiday: String) = s"${shortLegalHolidayLabel(year)} - $holiday"
 
   def apiUri(year: String) = s"http://feiertage.jarmedia.de/api/?jahr=$year&nur_land=NW"
 }
@@ -34,6 +39,8 @@ trait BlacklistServiceLike {
   def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry]
 
   def fetchByYear(year: String): Future[SesameBlacklist]
+
+  def fetchByYear2(year: String): Future[List[BlacklistDb]]
 }
 
 class BlacklistService extends BlacklistServiceLike {
@@ -52,7 +59,24 @@ class BlacklistService extends BlacklistServiceLike {
       json = response.json.toString
       dates = (pattern findAllMatchIn json map (matches => DateTime.parse(matches.matched.split(":")(1).replace("\"", "")))).toSet
       _ <- Future.successful(sslClient.close())
-    } yield SesameBlacklist(legalHolidayLabel(year), dates)
+    } yield SesameBlacklist(fullLegalHolidayLabel(year), dates)
+  }
+
+  override def fetchByYear2(year: String): Future[List[BlacklistDb]] = {
+    import services.BlacklistService._
+    import play.api.libs.ws.ning._
+    import scala.concurrent.ExecutionContext.Implicits.global
+    import models.LwmDateTime._
+
+    for {
+      sslClient <- Future.successful(NingWSClient())
+      response <- sslClient.url(apiUri(year)).get
+      json = response.json.asOpt[JsObject].fold(Seq.empty[(String, JsValue)])(_.fields)
+      blacklistDbs = json.foldLeft(List.empty[BlacklistDb]) {
+        case (list, (key, value)) => value.\("datum").asOpt[String].map(_.localDate).fold(list)(date => list.+:(BlacklistDb.entireDay(legalHolidayLabel(year, key), date, global = true)))
+      }
+      _ <- Future.successful(sslClient.close())
+    } yield blacklistDbs
   }
 
   private def lift(blacklist: Set[DateTime]): Set[BlacklistDate] = blacklist map {
