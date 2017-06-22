@@ -115,9 +115,29 @@ object TimetableDateEntry {
 
 sealed trait Timetable extends UniqueEntity
 
-case class PostgresTimetable(labwork: UUID, entries: Set[PostgresTimetableEntry], start: LocalDate, localBlacklist: Set[UUID], id: UUID = UUID.randomUUID) extends Timetable
+case class PostgresTimetable(labwork: UUID, entries: Set[PostgresTimetableEntry], start: LocalDate, localBlacklist: Set[UUID], id: UUID = UUID.randomUUID) extends Timetable {
+  override def equals(that: scala.Any) = that match {
+    case PostgresTimetable(l, e, s, lb, i) =>
+      l == labwork &&
+      e == entries &&
+      s.isEqual(start) &&
+      lb == localBlacklist &&
+      i == id
+    case _ => false
+  }
+}
 
-case class PostgresTimetableEntry(supervisor: Set[UUID], room: UUID, dayIndex: Int, start: LocalTime, end: LocalTime)
+case class PostgresTimetableEntry(supervisor: Set[UUID], room: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
+  override def equals(that: scala.Any) = that match {
+    case PostgresTimetableEntry(s, r, d, st, et) =>
+      s == supervisor &&
+      r == room &&
+      d == dayIndex &&
+      st.isEqual(start) &&
+      et.isEqual(end)
+    case _ => false
+  }
+}
 
 case class PostgresTimetableProtocol(labwork: UUID, entries: Set[PostgresTimetableEntry], start: LocalDate, localBlacklist: Set[UUID])
 

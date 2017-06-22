@@ -4,15 +4,15 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
-import models.ReportCardEntryType._
+import models.SesameReportCardEntryType._
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
 object ReportCardServiceSpec {
 
-  def integer(assEntry: SesameAssignmentEntry, appEntry: ScheduleEntryG, cEntry: ReportCardEntry): Boolean = {
-    def integerTypes(left: Set[SesameAssignmentEntryType], right: Set[ReportCardEntryType]): Boolean = {
-      def toAssignmentEntryType(cardEntry: ReportCardEntryType): SesameAssignmentEntryType = {
+  def integer(assEntry: SesameAssignmentEntry, appEntry: ScheduleEntryG, cEntry: SesameReportCardEntry): Boolean = {
+    def integerTypes(left: Set[SesameAssignmentEntryType], right: Set[SesameReportCardEntryType]): Boolean = {
+      def toAssignmentEntryType(cardEntry: SesameReportCardEntryType): SesameAssignmentEntryType = {
         SesameAssignmentEntryType(cardEntry.entryType, cardEntry.bool, cardEntry.int)
       }
 
@@ -117,13 +117,13 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val bonusPoints = 10
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, !(e.index == 0), 0)
-          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, bool = true, 0)
-          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, bool = false, bonusPoints)
-          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
+          case att if att.entryType == Attendance.entryType => SesameReportCardEntryType(att.entryType, !(e.index == 0), 0)
+          case cert if cert.entryType == Certificate.entryType => SesameReportCardEntryType(cert.entryType, bool = true, 0)
+          case bonus if bonus.entryType == Bonus.entryType => SesameReportCardEntryType(bonus.entryType, bool = false, bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => SesameReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        SesameReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -132,7 +132,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
-      result.size shouldBe ReportCardEntryType.all.size
+      result.size shouldBe SesameReportCardEntryType.all.size
       result.forall(_.bool)
       result.forall(_.int == bonusPoints)
     }
@@ -140,13 +140,13 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "pass a student's report card even when he barley performed" in {
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, !(e.index == 0 || e.index == 1), 0)
-          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, !(e.index == 1 || e.index == 2 || e.index == 7), 0)
-          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, bool = false, 0)
-          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
+          case att if att.entryType == Attendance.entryType => SesameReportCardEntryType(att.entryType, !(e.index == 0 || e.index == 1), 0)
+          case cert if cert.entryType == Certificate.entryType => SesameReportCardEntryType(cert.entryType, !(e.index == 1 || e.index == 2 || e.index == 7), 0)
+          case bonus if bonus.entryType == Bonus.entryType => SesameReportCardEntryType(bonus.entryType, bool = false, 0)
+          case supp if supp.entryType == Supplement.entryType => SesameReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        SesameReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -155,7 +155,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
-      result.size shouldBe ReportCardEntryType.all.size
+      result.size shouldBe SesameReportCardEntryType.all.size
       result.foreach {
         case att if att.label == Attendance.entryType => att.bool shouldBe true
         case cert if cert.label == Certificate.entryType => cert.bool shouldBe true
@@ -168,13 +168,13 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val bonusPoints = 5
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, bool = true, 0)
-          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, !(e.index == 2 || e.index == 5), 0)
-          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, bool = false, bonusPoints)
-          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, bool = true, 0)
+          case att if att.entryType == Attendance.entryType => SesameReportCardEntryType(att.entryType, bool = true, 0)
+          case cert if cert.entryType == Certificate.entryType => SesameReportCardEntryType(cert.entryType, !(e.index == 2 || e.index == 5), 0)
+          case bonus if bonus.entryType == Bonus.entryType => SesameReportCardEntryType(bonus.entryType, bool = false, bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => SesameReportCardEntryType(supp.entryType, bool = true, 0)
         }
 
-        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        SesameReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -183,7 +183,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
-      result.size shouldBe ReportCardEntryType.all.size
+      result.size shouldBe SesameReportCardEntryType.all.size
       result.foreach {
         case att if att.label == Attendance.entryType => att.bool shouldBe true
         case cert if cert.label == Certificate.entryType => cert.bool shouldBe false
@@ -195,13 +195,13 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "deny a student's report card when a supplement is missing" in {
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, bool = true, 0)
-          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, bool = true, 0)
-          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, bool = false, 0)
-          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, !(e.index == 7), 0)
+          case att if att.entryType == Attendance.entryType => SesameReportCardEntryType(att.entryType, bool = true, 0)
+          case cert if cert.entryType == Certificate.entryType => SesameReportCardEntryType(cert.entryType, bool = true, 0)
+          case bonus if bonus.entryType == Bonus.entryType => SesameReportCardEntryType(bonus.entryType, bool = false, 0)
+          case supp if supp.entryType == Supplement.entryType => SesameReportCardEntryType(supp.entryType, !(e.index == 7), 0)
         }
 
-        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        SesameReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -210,7 +210,7 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = reportCardService.evaluate(assignmentPlan, cardEntries.toSet)
 
-      result.size shouldBe ReportCardEntryType.all.size
+      result.size shouldBe SesameReportCardEntryType.all.size
       result.foreach {
         case att if att.label == Attendance.entryType => att.bool shouldBe true
         case cert if cert.label == Certificate.entryType => cert.bool shouldBe true
@@ -225,8 +225,8 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val result = reportCardService.evaluateExplicit(student, labwork)
 
       result.forall(eval => eval.student == student && eval.labwork == labwork) shouldBe true
-      result.size shouldBe ReportCardEntryType.all.size
-      result.forall(eval => ReportCardEntryType.all.count(_.entryType == eval.label) == 1) shouldBe true
+      result.size shouldBe SesameReportCardEntryType.all.size
+      result.forall(eval => SesameReportCardEntryType.all.count(_.entryType == eval.label) == 1) shouldBe true
     }
   }
 }

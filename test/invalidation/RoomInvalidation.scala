@@ -13,9 +13,9 @@ class RoomInvalidation extends SesameDbSpec {
 
   "A Room invalidation" should {
 
-    def rce(room: UUID): Stream[ReportCardEntry] = Stream.continually {
-      if (nextBoolean()) ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, room, Set())
-      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+    def rce(room: UUID): Stream[SesameReportCardEntry] = Stream.continually {
+      if (nextBoolean()) SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, room, Set())
+      else SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
     }
 
     def sce(room: UUID): Stream[ScheduleEntry] = Stream.continually {
@@ -41,14 +41,14 @@ class RoomInvalidation extends SesameDbSpec {
       val timetables = (tt(room.id) take 100).toSet
 
       repo.add[SesameRoom](room)
-      repo.addMany[ReportCardEntry](reportCardEntries)
+      repo.addMany[SesameReportCardEntry](reportCardEntries)
       repo.addMany[ScheduleEntry](scheduleEntries)
       repo.addMany[SesameTimetable](timetables)
 
       repo.invalidate[SesameRoom](SesameRoom.generateUri(room))
 
       repo.get[SesameRoom](SesameRoom.generateUri(room)) shouldBe Success(None)
-      repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries filter (_.room != room.id))
+      repo.getAll[SesameReportCardEntry] shouldBe Success(reportCardEntries filter (_.room != room.id))
       repo.getAll[ScheduleEntry] shouldBe Success(scheduleEntries filter (_.room != room.id))
       repo.getAll[SesameTimetable] match {
         case Success(set) =>
@@ -60,7 +60,7 @@ class RoomInvalidation extends SesameDbSpec {
       }
 
       repo.deepGet[SesameRoom](SesameRoom.generateUri(room)) map (_ map (_.id)) shouldBe Success(Some(room.id))
-      repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
+      repo.deepGetAll[SesameReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
       repo.deepGetAll[SesameTimetable] map (_ map (_.id)) shouldBe Success(timetables map (_.id))
       repo.deepGetAll[ScheduleEntry] map (_ map (_.id)) shouldBe Success(scheduleEntries map (_.id))
     }

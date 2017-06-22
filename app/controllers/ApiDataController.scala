@@ -41,7 +41,7 @@ final class ApiDataController(private val repository: SesameRepository,
       semester <- repository.getAll[SesameSemester]
       currentSemester = semester.find(SesameSemester.isCurrent).get
       labworks <- repository.getAll[SesameLabwork].map(_.filter(_.semester == currentSemester.id))
-      cards <- repository.getAll[ReportCardEntry].map(_.filter(c => labworks.exists(_.id == c.labwork)))
+      cards <- repository.getAll[SesameReportCardEntry].map(_.filter(c => labworks.exists(_.id == c.labwork)))
       byStudents = cards.groupBy(_.student)
     } yield byStudents.mapValues(e => e.map(ee => new Interval(ee.date.toDateTime(ee.start), ee.date.toDateTime(ee.end))))
 
@@ -60,7 +60,7 @@ final class ApiDataController(private val repository: SesameRepository,
     for {
       labworks <- repository.getAll[SesameLabwork].map(_.filter(_.course == UUID.fromString(course)))
       _ = println(labworks)
-      entries <- repository.getAll[ReportCardEntry].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
+      entries <- repository.getAll[SesameReportCardEntry].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
       _ = println(entries.groupBy(_.labwork).keys)
       aps <- repository.getAll[SesameAssignmentPlan].map(_.filter(entry => labworks.exists(_.id == entry.labwork)))
       grouped = entries.groupBy(_.student)

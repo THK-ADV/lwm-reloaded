@@ -34,6 +34,13 @@ trait TimetableIdTable { self: Table[_] =>
   def timetableFk = foreignKey("TIMETABLES_fkey", timetable, TableQuery[TimetableTable])(_.id)
 }
 
+trait ReportCardEntryIdTable { self: Table[_] =>
+  def reportCardEntry = column[UUID]("REPORT_CARD_ENTRY")
+
+  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id)
+  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
+}
+
 trait LabelTable { self: Table[_] =>
   def label = column[String]("LABEL")
 }
@@ -44,6 +51,12 @@ trait DescriptionTable { self: Table[_] =>
 
 trait AbbreviationTable { self: Table[_] =>
   def abbreviation = column[String]("ABBREVIATION")
+}
+
+trait DateStartEndTable { self: Table[_] =>
+  def date = column[Date]("DATE")
+  def start = column[Time]("START")
+  def end = column[Time]("END")
 }
 
 trait TableFilter[T <: Table[_]] {
@@ -250,10 +263,7 @@ class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](ta
   override def * = (assignmentEntry, entryType, bool, int, id) <> ((AssignmentEntryTypeDb.apply _).tupled, AssignmentEntryTypeDb.unapply)
 }
 
-class BlacklistTable(tag: Tag) extends Table[BlacklistDb](tag, "BLACKLIST") with UniqueTable with LabelTable {
-  def date = column[Date]("DATE")
-  def start = column[Time]("START")
-  def end = column[Time]("END")
+class BlacklistTable(tag: Tag) extends Table[BlacklistDb](tag, "BLACKLIST") with UniqueTable with LabelTable with DateStartEndTable {
   def global = column[Boolean]("GLOBAL")
 
   override def * = (label, date, start, end, global, lastModified, invalidated, id) <> ((BlacklistDb.apply _).tupled, BlacklistDb.unapply)
@@ -282,10 +292,8 @@ class TimetableBlacklistTable(tag: Tag) extends Table[TimetableBlacklist](tag, "
   override def * = (timetable, blacklist, id) <> ((TimetableBlacklist.apply _).tupled, TimetableBlacklist.unapply)
 }
 
-class TimetableEntryTable(tag: Tag) extends Table[TimetableEntryDb](tag, "TIMETABLE_ENTRY") with UniqueTable with TimetableIdTable with RoomIdTable {
+class TimetableEntryTable(tag: Tag) extends Table[TimetableEntryDb](tag, "TIMETABLE_ENTRY") with UniqueTable with TimetableIdTable with RoomIdTable with DateStartEndTable {
   def dayIndex = column[Int]("DAY_INDEX")
-  def start = column[Time]("START")
-  def end = column[Time]("END")
 
   override def * = (timetable, room, dayIndex, start, end, id) <> (mapRow, unmapRow)
 
@@ -307,4 +315,59 @@ class TimetableEntrySupervisorTable(tag: Tag) extends Table[TimetableEntrySuperv
   def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
 
   override def * = (timetableEntry, supervisor, id) <> ((TimetableEntrySupervisor.apply _).tupled, TimetableEntrySupervisor.unapply)
+}
+
+class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable {
+  def student = column[UUID]("STUDENT")
+
+  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
+
+  override def * = (student, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
+    case (student, labwork, label, date, start, end, room, lastModified, invalidated, id) =>
+      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, None, None, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ReportCardEntryDb) => Option[(UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ReportCardRetryTable(tag: Tag) extends Table[ReportCardRetryDb](tag, "REPORT_CARD_RETRY") with UniqueTable with DateStartEndTable with RoomIdTable with ReportCardEntryIdTable {
+  def reason = column[Option[String]]("REASON")
+
+  override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Date, Time, Time, UUID, Option[String], Timestamp, Option[Timestamp], UUID)) => ReportCardRetryDb = {
+    case (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) =>
+      ReportCardRetryDb(reportCardEntry, date, start, end, room, Set.empty, reason, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ReportCardRetryDb) => Option[(UUID, Date, Time, Time, UUID, Option[String], Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.reportCardEntry, entry.date, entry.start, entry.end, entry.room, entry.reason, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ReportCardRescheduledTable(tag: Tag) extends Table[ReportCardRescheduledDb](tag, "REPORT_CARD_RESCHEDULED") with UniqueTable with DateStartEndTable with RoomIdTable with ReportCardEntryIdTable {
+  def reason = column[Option[String]]("REASON")
+
+  override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> ((ReportCardRescheduledDb.apply _).tupled, ReportCardRescheduledDb.unapply)
+}
+
+class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](tag, "REPORT_CARD_ENTRY_TYPE") with UniqueTable {
+  def entryType = column[String]("ENTRY_TYPE")
+  def bool = column[Option[Boolean]]("BOOL")
+  def int = column[Int]("INT")
+
+  // reportCardEntries types can either be created from reportCardEntry or reportCardRetry. thus both ids are optional
+  def reportCardEntry = column[Option[UUID]]("REPORT_CARD_ENTRY")
+  def reportCardRetry = column[Option[UUID]]("REPORT_CARD_RETRY")
+
+  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
+  def joinReportCardRetry = TableQuery[ReportCardRetryTable].filter(_.id === reportCardRetry)
+  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id.?)
+  def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
+
+  override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }

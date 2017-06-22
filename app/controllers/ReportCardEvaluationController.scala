@@ -24,25 +24,25 @@ object ReportCardEvaluationController {
   val studentAttribute = "student"
 }
 
-class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val reportCardService: ReportCardServiceLike) extends AbstractCRUDController[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
+class ReportCardEvaluationController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val reportCardService: ReportCardServiceLike) extends AbstractCRUDController[SesameReportCardEvaluation, SesameReportCardEvaluation, SesameReportCardEvaluationAtom]{
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, ReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameReportCardEvaluation] = defaultBindings.ReportCardEvaluationDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, ReportCardEvaluationAtom] = defaultBindings.ReportCardEvaluationAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameReportCardEvaluationAtom] = defaultBindings.ReportCardEvaluationAtomDescriptor
 
-  override implicit val reads: Reads[ReportCardEvaluation] = ReportCardEvaluation.reads
+  override implicit val reads: Reads[SesameReportCardEvaluation] = SesameReportCardEvaluation.reads
 
-  override implicit val writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
+  override implicit val writes: Writes[SesameReportCardEvaluation] = SesameReportCardEvaluation.writes
 
-  override implicit val writesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
+  override implicit val writesAtom: Writes[SesameReportCardEvaluationAtom] = SesameReportCardEvaluation.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[ReportCardEvaluation] = ReportCardEvaluation
+  override implicit val uriGenerator: UriGenerator[SesameReportCardEvaluation] = SesameReportCardEvaluation
 
-  override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = false
+  override protected def compareModel(input: SesameReportCardEvaluation, output: SesameReportCardEvaluation): Boolean = false
 
-  override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = input
+  override protected def fromInput(input: SesameReportCardEvaluation, existing: Option[SesameReportCardEvaluation]): SesameReportCardEvaluation = input
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
@@ -56,7 +56,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEvaluation]): Try[Set[ReportCardEvaluation]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameReportCardEvaluation]): Try[Set[SesameReportCardEvaluation]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances.listM
@@ -82,14 +82,14 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         .select(_.get("entries"))
         .transform(_.fold(List.empty[Value])(identity))
         .map(_.stringValue())
-        .requestAll(repository.getMany[ReportCardEvaluation](_))
+        .requestAll(repository.getMany[SesameReportCardEvaluation](_))
         .run
     }
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
-      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
+      flatMap(evals => removeLots[SesameReportCardEvaluation](evals map SesameReportCardEvaluation.generateUri)).
       flatMap(_ => evaluate(labwork)).
       flatMap(addLots).
       map(evals => chunk(evals.toSet)).
@@ -98,7 +98,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def createAtomicFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
-      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
+      flatMap(evals => removeLots[SesameReportCardEvaluation](evals map SesameReportCardEvaluation.generateUri)).
       flatMap(_ => evaluate(labwork)).
       flatMap(addLots).
       map(_.toSet).
@@ -109,10 +109,10 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     filter(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
-      when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
+      when(evals => evals.isEmpty || evals.size == SesameReportCardEntryType.all.size, evals => removeLots[SesameReportCardEvaluation](evals map SesameReportCardEvaluation.generateUri)) {
         PreconditionFailed(Json.obj(
           "status" -> "KO",
-          "message" -> s"More than ${ReportCardEntryType.all.size} reportcard evaluations found for $student"
+          "message" -> s"More than ${SesameReportCardEntryType.all.size} reportcard evaluations found for $student"
         ))
       }.map(_ => reportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).
       flatMap(addLots).
@@ -122,10 +122,10 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def createAtomicForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
     filter(rebase(labworkAttribute -> Seq(labwork), studentAttribute -> Seq(student)))(Set.empty).
-      when(evals => evals.isEmpty || evals.size == ReportCardEntryType.all.size, evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)) {
+      when(evals => evals.isEmpty || evals.size == SesameReportCardEntryType.all.size, evals => removeLots[SesameReportCardEvaluation](evals map SesameReportCardEvaluation.generateUri)) {
         PreconditionFailed(Json.obj(
           "status" -> "KO",
-          "message" -> s"More than ${ReportCardEntryType.all.size} reportcard evaluations found for $student"
+          "message" -> s"More than ${SesameReportCardEntryType.all.size} reportcard evaluations found for $student"
         ))
       }.map(_ => reportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).
       flatMap(addLots).
@@ -143,7 +143,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def allAtomicFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) action { implicit request =>
     filter(rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))(Set.empty)
-      .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
+      .flatMap(set => retrieveLots[SesameReportCardEvaluationAtom](set map SesameReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -156,7 +156,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
 
   def getAtomic(student: String) = contextFrom(Get) action { implicit request =>
     filter(rebase(studentAttribute -> Seq(student)))(Set.empty)
-      .flatMap(set => retrieveLots[ReportCardEvaluationAtom](set map ReportCardEvaluation.generateUri))
+      .flatMap(set => retrieveLots[SesameReportCardEvaluationAtom](set map SesameReportCardEvaluation.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -174,7 +174,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  private def evaluate(labwork: String): Attempt[Set[ReportCardEvaluation]] = {
+  private def evaluate(labwork: String): Attempt[Set[SesameReportCardEvaluation]] = {
     import defaultBindings.{AssignmentPlanDescriptor, ReportCardEntryDescriptor}
     import store.sparql.select
     import store.sparql.select._
@@ -213,7 +213,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         select(_.get("cards")).
         transform(_.fold(List.empty[Value])(identity)).
         map(_.stringValue).
-        requestAll[Set, ReportCardEntry](repository.getMany[ReportCardEntry])
+        requestAll[Set, SesameReportCardEntry](repository.getMany[SesameReportCardEntry])
     }
 
     optional {
@@ -224,7 +224,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
-  private def atomic(evals: Set[ReportCardEvaluation]): Attempt[Set[ReportCardEvaluationAtom]] = {
+  private def atomic(evals: Set[SesameReportCardEvaluation]): Attempt[Set[SesameReportCardEvaluationAtom]] = {
     import defaultBindings.{LabworkAtomDescriptor, StudentDescriptor}
 
     SemanticUtils.collect {
@@ -234,7 +234,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
           optStudent <- repository.get[SesameStudent](User.generateUri(eval.student))
         } yield for {
           l <- optLabwork; s <- optStudent
-        } yield ReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.timestamp, eval.invalidated, eval.id)
+        } yield SesameReportCardEvaluationAtom(s, l, eval.label, eval.bool, eval.int, eval.timestamp, eval.invalidated, eval.id)
       }
     } match {
       case Success(set) => Continue(set)
@@ -246,7 +246,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     }
   }
 
-  override protected def coAtomic(atom: ReportCardEvaluationAtom): ReportCardEvaluation = ReportCardEvaluation(
+  override protected def coAtomic(atom: SesameReportCardEvaluationAtom): SesameReportCardEvaluation = SesameReportCardEvaluation(
     atom.student.id,
     atom.labwork.id,
     atom.label,

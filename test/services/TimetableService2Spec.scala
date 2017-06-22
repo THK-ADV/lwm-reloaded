@@ -34,17 +34,20 @@ final class TimetableService2Spec extends AbstractDaoSpec[TimetableTable, Timeta
 
   "A TimetableService2Spec also" should {
 
-    val timetables = populateTimetables(10, 8)(privateEmployees, privateLabs, privateBlacklists)
+    val toAdd = populateTimetables(10, 8)(privateEmployees, privateLabs, privateBlacklists)
+    val toUpdate = toAdd.take(2)
+    val toDelete = toAdd.slice(toUpdate.size, toUpdate.size + 3)
+    val remainingAfterDelete = toAdd.drop(toUpdate.size + toDelete.size)
 
     def assertEverythingOf(timetables: List[TimetableDb], isDefined: Boolean) {
       val ids = timetables.map(_.id)
       val ts = timetables.map(_.toTimetable)
       val tas = timetables.map(t => atom(t)(privateEmployees, privateLabs, privateBlacklists, rooms))
 
-      await(getMany(ids, atomic = false)).count(ts.contains) shouldBe (if (isDefined) ts.size else 0)
-      await(getMany(ids)).count(tas.contains) shouldBe (if (isDefined) tas.size else 0)
+      zipAndCompare(await(getMany(ids, atomic = false)), ts) shouldBe isDefined
+      zipAndCompare(await(getMany(ids)), tas) shouldBe isDefined
 
-      timetables.foreach { t =>
+      timetables foreach { t =>
         val timetableEntries = timetableEntryQuery.filter(_.timetable === t.id)
 
         run(DBIO.seq(
@@ -63,15 +66,15 @@ final class TimetableService2Spec extends AbstractDaoSpec[TimetableTable, Timeta
       }
     }
 
-    "create timetables with blacklists, entries and supervisors" in {
-      await(createMany(timetables)) shouldBe timetables
+    "create toAdd with blacklists, entries and supervisors" in {
+      await(createMany(toAdd)) shouldBe toAdd
 
-      assertEverythingOf(timetables, isDefined = true)
+      assertEverythingOf(toAdd, isDefined = true)
     }
 
     "update a timetable with blacklists, entries and supervisors" in {
-      val chosen1 = timetables.head
-      val chosen2 = timetables.last
+      val chosen1 = toUpdate.head
+      val chosen2 = toUpdate.last
 
       val updated = List(
         chosen1.copy(entries = chosen1.entries.drop(chosen1.entries.size/2), localBlacklist = Set.empty),
@@ -83,10 +86,20 @@ final class TimetableService2Spec extends AbstractDaoSpec[TimetableTable, Timeta
     }
 
     "delete a timetable with blacklists, entries and supervisors" in {
-      val chosen = takeSomeOf(timetables).toList
+      await(deleteManyEntities(toDelete)).flatMap(_.flatMap(_.invalidated)).size shouldBe toDelete.size
+      await(getMany(remainingAfterDelete.map(_.id), atomic = false)).size shouldBe remainingAfterDelete.map(_.toTimetable).size
 
-      await(deleteManyEntities(chosen)).flatMap(_.flatMap(_.invalidated)).size shouldBe chosen.size
-      assertEverythingOf(chosen, isDefined = false)
+      assertEverythingOf(toDelete, isDefined = false)
+    }
+
+    "get atomic and non-atomic properly" in {
+      val remaining = remainingAfterDelete.map(_.id)
+
+      val nonAtomic = await(getMany(remaining, atomic = false))
+      val atomic = await(getMany(remaining))
+
+      zipAndCompare(remainingAfterDelete.map(_.toTimetable), nonAtomic) shouldBe true
+      zipAndCompare(remainingAfterDelete.map(t => atom(t)(privateEmployees, privateLabs, privateBlacklists, rooms)), atomic) shouldBe true
     }
   }
 

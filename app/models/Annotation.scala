@@ -17,7 +17,7 @@ case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, messa
 
 case class AnnotationProtocol(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String)
 
-case class AnnotationAtom(student: SesameStudent, labwork: SesameLabwork, reportCardEntry: ReportCardEntry, message: String, timestamp: DateTime, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
+case class AnnotationAtom(student: SesameStudent, labwork: SesameLabwork, reportCardEntry: SesameReportCardEntry, message: String, timestamp: DateTime, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
 
 object Annotation extends UriGenerator[Annotation] with JsonSerialisation[AnnotationProtocol, Annotation, AnnotationAtom] {
 
@@ -43,7 +43,7 @@ object AnnotationAtom {
   implicit def writesAtom: Writes[AnnotationAtom] = (
     (JsPath \ "student").write[SesameStudent](SesameStudent.writes) and
       (JsPath \ "labwork").write[SesameLabwork] and
-      (JsPath \ "reportCardEntry").write[ReportCardEntry] and
+      (JsPath \ "reportCardEntry").write[SesameReportCardEntry] and
       (JsPath \ "message").write[String] and
       (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
       (JsPath \ "invalidated").writeNullable[DateTime] and

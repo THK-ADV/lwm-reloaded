@@ -40,14 +40,14 @@ class SemesterInvalidation extends SesameDbSpec {
       else Schedule(SesameLabwork.randomUUID, Set())
     }
 
-    def rce(labwork: UUID): Stream[ReportCardEntry] = Stream.continually {
-      if (nextBoolean()) ReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
-      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+    def rce(labwork: UUID): Stream[SesameReportCardEntry] = Stream.continually {
+      if (nextBoolean()) SesameReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+      else SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
     }
 
-    def rceval(labwork: UUID): Stream[ReportCardEvaluation] = Stream.continually {
-      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
-      else ReportCardEvaluation(User.randomUUID, SesameLabwork.randomUUID, "Label", bool = true, 0)
+    def rceval(labwork: UUID): Stream[SesameReportCardEvaluation] = Stream.continually {
+      if (nextBoolean()) SesameReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
+      else SesameReportCardEvaluation(User.randomUUID, SesameLabwork.randomUUID, "Label", bool = true, 0)
     }
 
     def labapp(labwork: UUID): Stream[SesameLabworkApplication] = Stream.continually {
@@ -56,8 +56,8 @@ class SemesterInvalidation extends SesameDbSpec {
     }
 
     def annot(labwork: UUID): Stream[Annotation] = Stream.continually {
-      if (nextBoolean()) Annotation(User.randomUUID, labwork, ReportCardEntry.randomUUID, "Message")
-      else Annotation(User.randomUUID, SesameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message")
+      if (nextBoolean()) Annotation(User.randomUUID, labwork, SesameReportCardEntry.randomUUID, "Message")
+      else Annotation(User.randomUUID, SesameLabwork.randomUUID, SesameReportCardEntry.randomUUID, "Message")
     }
 
     "invalidate the semester and subsequent labworks" in {
@@ -83,8 +83,8 @@ class SemesterInvalidation extends SesameDbSpec {
       repo.addMany[SesameAssignmentPlan](assPlans)
       repo.addMany[Group](groups)
       repo.addMany[Schedule](schedules)
-      repo.addMany[ReportCardEntry](reportCardEntries)
-      repo.addMany[ReportCardEvaluation](reportCardEvaluations)
+      repo.addMany[SesameReportCardEntry](reportCardEntries)
+      repo.addMany[SesameReportCardEvaluation](reportCardEvaluations)
       repo.addMany[SesameTimetable](timetables)
       repo.addMany[SesameLabworkApplication](applications)
       repo.addMany[Annotation](annotations)
@@ -96,7 +96,7 @@ class SemesterInvalidation extends SesameDbSpec {
       repo.getAll[SesameAssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[Schedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))
-      repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[SesameTimetable] shouldBe Success(timetables filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[SesameLabworkApplication] match {
         case Success(set) =>
@@ -114,7 +114,7 @@ class SemesterInvalidation extends SesameDbSpec {
       repo.deepGetAll[SesameAssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
       repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))
       repo.deepGetAll[Schedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
-      repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
+      repo.deepGetAll[SesameReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
       repo.deepGetAll[SesameTimetable] map (_ map (_.id)) shouldBe Success(timetables map (_.id))
       repo.deepGetAll[SesameLabworkApplication] map (_ map (_.id)) shouldBe Success(applications map (_.id))
       repo.deepGetAll[Annotation] map (_ map (_.id)) shouldBe Success(annotations map (_.id))

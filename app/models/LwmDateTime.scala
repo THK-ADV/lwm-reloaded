@@ -1,13 +1,16 @@
 package models
 
 import java.sql.{Date, Time, Timestamp}
-import java.util.Locale
+import java.util.{Calendar, Locale}
 
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.{JsString, Writes}
 
 object LwmDateTime {
+
+  def sqlDateNow: Date = new Date(Calendar.getInstance.getTimeInMillis)
+  def sqlTimeNow: Time = new Time(sqlDateNow.getTime)
 
   implicit class LocalDateConverter(val date: LocalDate) {
     def string: String = date.toDateTimeAtStartOfDay.getMillis.toString

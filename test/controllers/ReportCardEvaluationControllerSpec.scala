@@ -21,7 +21,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[ReportCardEvaluation, ReportCardEvaluation, ReportCardEvaluationAtom]{
+class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[SesameReportCardEvaluation, SesameReportCardEvaluation, SesameReportCardEvaluationAtom]{
 
   val reportCardService = mock[ReportCardService]
 
@@ -29,9 +29,9 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
 
   val controller: ReportCardEvaluationController = new ReportCardEvaluationController(repository, sessionService, namespace, roleService, reportCardService) {
 
-    override protected def fromInput(input: ReportCardEvaluation, existing: Option[ReportCardEvaluation]): ReportCardEvaluation = entityToPass
+    override protected def fromInput(input: SesameReportCardEvaluation, existing: Option[SesameReportCardEvaluation]): SesameReportCardEvaluation = entityToPass
 
-    override protected def compareModel(input: ReportCardEvaluation, output: ReportCardEvaluation): Boolean = input == output
+    override protected def compareModel(input: SesameReportCardEvaluation, output: SesameReportCardEvaluation): Boolean = input == output
 
     override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -65,12 +65,12 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
   val studentToPass = SesameStudent("systemId to pass", "last name to pass", "first name to pass", "email to pass", "regId to pass", UUID.randomUUID())
   val studentToFail = SesameStudent("systemId to fail", "last name to fail", "first name to fail", "email to fail", "regId to fail", UUID.randomUUID())
 
-  override val entityToPass: ReportCardEvaluation = ReportCardEvaluation(studentToPass.id, labworkToPass.id, "label to pass", bool = true, 2)
-  override val entityToFail: ReportCardEvaluation = ReportCardEvaluation(studentToFail.id, labworkToFail.id, "label to fail", bool = false, 2)
+  override val entityToPass: SesameReportCardEvaluation = SesameReportCardEvaluation(studentToPass.id, labworkToPass.id, "label to pass", bool = true, 2)
+  override val entityToFail: SesameReportCardEvaluation = SesameReportCardEvaluation(studentToFail.id, labworkToFail.id, "label to fail", bool = false, 2)
 
   override val pointedGraph: PointedGraph[Sesame] = entityToPass.toPG
 
-  override val atomizedEntityToPass: ReportCardEvaluationAtom = ReportCardEvaluationAtom(
+  override val atomizedEntityToPass: SesameReportCardEvaluationAtom = SesameReportCardEvaluationAtom(
     studentToPass,
     labworkToPass,
     entityToPass.label,
@@ -81,7 +81,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
     entityToPass.id
   )
 
-  override val atomizedEntityToFail: ReportCardEvaluationAtom = ReportCardEvaluationAtom(
+  override val atomizedEntityToFail: SesameReportCardEvaluationAtom = SesameReportCardEvaluationAtom(
     studentToFail,
     labworkToFail,
     entityToFail.label,
@@ -114,15 +114,15 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
     "id" -> entityToPass.id
   )
 
-  override implicit def jsonWrites: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
+  override implicit def jsonWrites: Writes[SesameReportCardEvaluation] = SesameReportCardEvaluation.writes
 
-  override implicit def jsonWritesAtom: Writes[ReportCardEvaluationAtom] = ReportCardEvaluation.writesAtom
+  override implicit def jsonWritesAtom: Writes[SesameReportCardEvaluationAtom] = SesameReportCardEvaluation.writesAtom
 
   def evaluations(student: UUID = UUID.randomUUID, labwork: UUID = UUID.randomUUID) = (0 until 20).map { i =>
-    ReportCardEvaluation(student, labwork, i.toString, i % 2 == 0, i % 10)
+    SesameReportCardEvaluation(student, labwork, i.toString, i % 2 == 0, i % 10)
   }.toSet
 
-  def toJson(entries: Set[ReportCardEvaluation]) = entries.map(e => Json.toJson(e))
+  def toJson(entries: Set[SesameReportCardEvaluation]) = entries.map(e => Json.toJson(e))
 
   "A ReportCardEvaluationControllerSpec " should {
 
@@ -152,7 +152,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Failure(new Exception(errMsg)))
+      when(repository.getMany[SesameReportCardEvaluation](anyObject())(anyObject())).thenReturn(Failure(new Exception(errMsg)))
 
       val request = FakeRequest(
         GET,
@@ -168,11 +168,11 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       )
     }
 
-    def whenFiltered(evals: Set[ReportCardEvaluation]): OngoingStubbing[Try[Set[ReportCardEvaluation]]] = {
+    def whenFiltered(evals: Set[SesameReportCardEvaluation]): OngoingStubbing[Try[Set[SesameReportCardEvaluation]]] = {
       when(repository.prepareQuery(anyObject())).thenReturn(query)
       when(qe.parse(anyObject())).thenReturn(sparqlOps.parseSelect("SELECT * where {}"))
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
-      when(repository.getMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(evals))
+      when(repository.getMany[SesameReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(evals))
     }
 
     "successfully return all report card evaluations for a given course and labwork" in {
@@ -194,16 +194,16 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
-    def whenPreview(evals: Set[ReportCardEvaluation]): OngoingStubbing[Set[ReportCardEvaluation]] = {
+    def whenPreview(evals: Set[SesameReportCardEvaluation]): OngoingStubbing[Set[SesameReportCardEvaluation]] = {
       doReturn(query).when(repository).prepareQuery(anyObject())
       doReturn(Success(
         Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
-        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+        Map("cards" -> List(factory.createURI(SesameReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
       when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[ReportCardEntry]))
+      when(repository.getMany[SesameReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[SesameReportCardEntry]))
 
       when(reportCardService.evaluate(anyObject(), anyObject())).thenReturn(evals)
     }
@@ -227,9 +227,9 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       contentFromStream(result) shouldBe evals.map(eval => Json.toJson(eval))
     }
 
-    def whenDeleteAndCreate(deleted: Set[Unit], added: Set[ReportCardEvaluation]): OngoingStubbing[Try[Set[PointedGraph[Sesame]]]] = {
-      when(repository.deleteMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(deleted))
-      when(repository.addMany[ReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(added.map(_.toPG)))
+    def whenDeleteAndCreate(deleted: Set[Unit], added: Set[SesameReportCardEvaluation]): OngoingStubbing[Try[Set[PointedGraph[Sesame]]]] = {
+      when(repository.deleteMany[SesameReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(deleted))
+      when(repository.addMany[SesameReportCardEvaluation](anyObject())(anyObject())).thenReturn(Success(added.map(_.toPG)))
     }
 
     "successfully create report card evaluations for a given labwork" in {
@@ -241,7 +241,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
         Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
-        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+        Map("cards" -> List(factory.createURI(SesameReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
       when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
@@ -274,7 +274,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       doReturn(Success(Map.empty[String, List[Value]])).doReturn(Success(
         Map("ap" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       )).doReturn(Success(
-        Map("cards" -> List(factory.createURI(ReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
+        Map("cards" -> List(factory.createURI(SesameReportCardEntry.generateUri(UUID.randomUUID())(namespace))))
       )).when(qe).execute(anyObject())
 
       when(repository.get[SesameAssignmentPlan](anyObject())(anyObject())).thenReturn(Success(Some(SesameAssignmentPlan.empty)))
@@ -302,7 +302,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       val course = UUID.randomUUID
       val labwork = UUID.randomUUID
       val student = UUID.randomUUID
-      val evals = evaluations(student, labwork).take(ReportCardEntryType.all.size)
+      val evals = evaluations(student, labwork).take(SesameReportCardEntryType.all.size)
 
       whenFiltered(Set.empty)
       whenDeleteAndCreate(Set.empty[Unit], evals)
@@ -326,7 +326,7 @@ class ReportCardEvaluationControllerSpec extends AbstractCRUDControllerSpec[Repo
       val course = UUID.randomUUID
       val labwork = UUID.randomUUID
       val student = UUID.randomUUID
-      val evals = evaluations(student, labwork).take(ReportCardEntryType.all.size)
+      val evals = evaluations(student, labwork).take(SesameReportCardEntryType.all.size)
 
       whenFiltered(evals)
       whenDeleteAndCreate(evals.map(_ => ()), evals)

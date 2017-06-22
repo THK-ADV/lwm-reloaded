@@ -158,7 +158,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     val found = tableQuery.filter(_.id === entity.id)
     val query = found.result.head.flatMap { existing =>
       if (shouldUpdate(existing, entity))
-        found.update(entity).map { rowsAffected =>
+        found.update(entity).map { rowsAffected => // TODO set lastModified, lift DbModel to trait and force this property
           if (rowsAffected > 0) Some(entity) else None
         }
       else

@@ -5,7 +5,7 @@ import java.util.UUID
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
 import models.Permissions._
-import models.ReportCardEntryType
+import models.SesameReportCardEntryType
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
@@ -24,9 +24,9 @@ class ReportCardEntryTypeControllerSecuritySpec extends WordSpec with TestBaseDe
 
   val id = UUID.randomUUID
   val json = {
-    import models.ReportCardEntryType._
+    import models.SesameReportCardEntryType._
     import scala.util.Random.nextBoolean
-    Json.toJson(ReportCardEntryType(Attendance.entryType, bool = nextBoolean, 0, None, id))
+    Json.toJson(SesameReportCardEntryType(Attendance.entryType, bool = nextBoolean, 0, None, id))
   }
 
   "A ReportCardEntryTypeControllerSecuritySpec " should {

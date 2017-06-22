@@ -42,11 +42,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   val labwork = SesameLabwork("label", "desc", UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)
   val room = SesameRoom("label", "desc")
   val entries = (0 until 2).map(n =>
-    ReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, ReportCardEntryType.all)
+    SesameReportCardEntry(student.id, labwork.id, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), room.id, SesameReportCardEntryType.all)
   ).toSet
   val atomizedEntries = entries.map { e =>
-    val rescheduledAtom = RescheduledAtom(e.date, e.start, e.end, room)
-    ReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, Some(rescheduledAtom), e.invalidated, e.id)
+    val rescheduledAtom = SesameRescheduledAtom(e.date, e.start, e.end, room)
+    SesameReportCardEntryAtom(student, labwork, e.label, e.date, e.start, e.end, room, e.entryTypes, Some(rescheduledAtom), e.invalidated, e.id)
   }
 
   val entry = entries.head
@@ -66,11 +66,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
   "A ReportCardEntryControllerSpec " should {
 
     "successfully reschedule a student's report card entry" in {
-      import models.ReportCardEntry.writes
+      import models.SesameReportCardEntry.writes
 
       val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
+        val rescheduled = SesameRescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+        SesameReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
@@ -90,8 +90,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
     "not update when there is an inconsistency" in {
       val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
+        val rescheduled = SesameRescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+        SesameReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       val request = FakeRequest(
@@ -123,8 +123,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     "not update a report card entry type when there is an exception" in {
       val errorMessage = "Oops, something went wrong"
       val rescheduledEntry = {
-        val rescheduled = Rescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
-        ReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
+        val rescheduled = SesameRescheduled(entry.date.plusDays(3), entry.start.plusHours(1), entry.end.plusHours(1), UUID.randomUUID)
+        SesameReportCardEntry(entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.entryTypes, Some(rescheduled), entry.invalidated, entry.id)
       }
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Failure(new Throwable(errorMessage)))
@@ -151,9 +151,9 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       when(qe.execute(anyObject())).thenReturn(Success(Map.empty[String, List[Value]]))
     }
 
-    def whenFiltered(returnValue: Try[Set[ReportCardEntry]]) = {
+    def whenFiltered(returnValue: Try[Set[SesameReportCardEntry]]) = {
       whenQueryIsPrepared
-      when(repository.getMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(returnValue)
+      when(repository.getMany[SesameReportCardEntry](anyObject())(anyObject())).thenReturn(returnValue)
     }
 
     "successfully return a student's report card entries" in {
@@ -172,7 +172,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "return an empty json when entries are not found" in {
-      whenFiltered(Success(Set.empty[ReportCardEntry]))
+      whenFiltered(Success(Set.empty[SesameReportCardEntry]))
 
       val request = FakeRequest(
         GET,
@@ -183,7 +183,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       status(result) shouldBe OK
       contentType(result) shouldBe Some(mimeType.value)
-      contentAsJson(result) shouldBe Json.toJson(Set.empty[ReportCardEntry])
+      contentAsJson(result) shouldBe Json.toJson(Set.empty[SesameReportCardEntry])
     }
 
     "not return a student's report card entries when there is an exception" in {
@@ -207,7 +207,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
 
     "successfully return a student's report card entries atomized" in {
-      import models.ReportCardEntry.writesAtom
+      import models.SesameReportCardEntry.writesAtom
 
       whenQueryIsPrepared
       doReturn(Success(entries))
@@ -239,7 +239,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         doReturn(Success(Some(Schedule.empty))).
         doReturn(Success(Some(Group.empty))).
         when(repository).get(anyObject())(anyObject())
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[SesameReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(
@@ -271,7 +271,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         doReturn(Success(Some(Schedule.empty))).
         doReturn(Success(Some(Group.empty))).
         when(repository).get(anyObject())(anyObject())
-      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[ReportCardEntry])
+      when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[SesameReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val request = FakeRequest(
@@ -324,11 +324,11 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, Set(User.randomUUID), UUID.randomUUID())
       val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, Set(User.randomUUID), UUID.randomUUID())
-      val entry1 = ReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Attendance))
-      val entry2 = ReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(ReportCardEntryType.Bonus, ReportCardEntryType.Attendance))
-      val entry3 = ReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(ReportCardEntryType.Certificate, ReportCardEntryType.Bonus))
-      val entry4 = ReportCardEntry(student3, labwork1.id, "Label 4", date1, start1, end1, room1, Set(ReportCardEntryType.Supplement),
-        Some(Rescheduled(date1, start2, end2, room2)))
+      val entry1 = SesameReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(SesameReportCardEntryType.Certificate, SesameReportCardEntryType.Attendance))
+      val entry2 = SesameReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(SesameReportCardEntryType.Bonus, SesameReportCardEntryType.Attendance))
+      val entry3 = SesameReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(SesameReportCardEntryType.Certificate, SesameReportCardEntryType.Bonus))
+      val entry4 = SesameReportCardEntry(student3, labwork1.id, "Label 4", date1, start1, end1, room1, Set(SesameReportCardEntryType.Supplement),
+        Some(SesameRescheduled(date1, start2, end2, room2)))
 
       realRepo addMany List(course1)
       realRepo addMany List(labwork1, labwork2)
@@ -368,7 +368,7 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       List(result1, result2, result3, result4, result5) zip List(expected1, expected2, expected3, expected4, expected5) foreach {
         case (result, expected) =>
-          typedContentFromStream[ReportCardEntry](result) shouldBe expected
+          typedContentFromStream[SesameReportCardEntry](result) shouldBe expected
       }
     }
 
@@ -387,10 +387,10 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
       )
 
       whenFiltered(Success(entries))
-      when(repository.addMany[ReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
+      when(repository.addMany[SesameReportCardEntry](anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
 
       val result = controller.copy(course)(request)
-      val resultEntries = typedContentFromStream[ReportCardEntry](result)
+      val resultEntries = typedContentFromStream[SesameReportCardEntry](result)
 
       status(result) shouldBe OK
       resultEntries.forall { entry =>
