@@ -140,4 +140,4 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 }
 
-final class ReportCardEntryImpl(val db: PostgresDriver.backend.Database) extends ReportCardEntryDao
+final class ReportCardEntryDaoImpl(val db: PostgresDriver.backend.Database) extends ReportCardEntryDao
