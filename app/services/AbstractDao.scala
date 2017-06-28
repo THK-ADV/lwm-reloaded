@@ -3,16 +3,17 @@ package services
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.UniqueEntity
+import models.{UniqueDbEntity, UniqueEntity}
+import org.joda.time.DateTime
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import slick.profile.FixedSqlAction
 import store.{TableFilter, UniqueTable}
-
+import models.LwmDateTime._
 import scala.concurrent.Future
 
-trait DatabaseExpander[DbModel <: UniqueEntity] {
+trait DatabaseExpander[DbModel <: UniqueDbEntity] {
   def expandCreationOf[E <: Effect](entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write with E]
   def expandUpdateOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
   def expandDeleteOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
@@ -22,8 +23,7 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
   override def getMessage = s"model already exists $value"
 }
 
-// TODO maybe we can get rid of DbModel
-trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity] {
+trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   case class IdFilter(value: String) extends TableFilter[T] {
@@ -37,8 +37,6 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
   protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
-
-  protected def setInvalidated(entity: DbModel): DbModel
 
   protected def existsQuery(entity: DbModel): Query[T, DbModel, Seq]
 
@@ -116,34 +114,36 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     getMany(List(UUID.fromString(id)), atomic, validOnly, sinceLastModified).map(_.headOption)
   }
 
-  final def delete(entity: DbModel): Future[Option[DbModel]] = delete(entity.id)
+  final def delete(entity: DbModel): Future[Option[Timestamp]] = delete(entity.id)
 
-  final def delete(id: UUID): Future[Option[DbModel]] = db.run(delete0(id))
+  final def delete(id: UUID): Future[Option[Timestamp]] = db.run(delete0(id))
 
-  final def deleteManyEntities(ids: List[DbModel]) = deleteMany(ids.map(_.id))
+  final def deleteManyEntities(ids: List[DbModel]): Future[List[Option[Timestamp]]] = deleteMany(ids.map(_.id))
 
-  final def deleteMany(ids: List[UUID]): Future[List[Option[DbModel]]] = {
+  final def deleteMany(ids: List[UUID]): Future[List[Option[Timestamp]]] = {
     val query = ids.map(delete0)
 
     db.run(DBIO.sequence(query))
   }
 
   private final def delete0(id: UUID) = {
+    val now = DateTime.now.timestamp
     val found = tableQuery.filter(_.id === id)
     val query = found.result.head.flatMap { existing =>
-      val invalidated = setInvalidated(existing)
-
-      found.update(invalidated).map { rowsAffected =>
-        if (rowsAffected > 0) Some(invalidated) else None
+      (for {
+        u1 <- found.update(existing)
+        u2 <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
+      } yield u1 + u2).transactionally.map { rowsAffected =>
+        if (rowsAffected >= 2) Some(existing) else None
       }
     }
 
-    databaseExpander.map { expander =>
+    databaseExpander.fold(query) { expander =>
       (for {
         q <- query if q.isDefined
         e <- expander.expandDeleteOf(q.get)
       } yield e).transactionally
-    } getOrElse query
+    }.map(_.map(_ => now))
   }
 
   final def update(entity: DbModel): Future[Option[DbModel]] = db.run(update0(entity))
@@ -158,19 +158,22 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity,
     val found = tableQuery.filter(_.id === entity.id)
     val query = found.result.head.flatMap { existing =>
       if (shouldUpdate(existing, entity))
-        found.update(entity).map { rowsAffected => // TODO set lastModified, lift DbModel to trait and force this property
-          if (rowsAffected > 0) Some(entity) else None
+        (for {
+          u1 <- found.update(entity)
+          u2 <- found.map(_.lastModified).update(DateTime.now.timestamp)
+        } yield u1 + u2).transactionally.map { rowsAffected =>
+          if (rowsAffected >= 2) Some(entity) else None
         }
       else
         DBIO.failed(ModelAlreadyExists(existing))
     }
 
-    databaseExpander.map { expander =>
+    databaseExpander.fold(query) { expander =>
       (for {
         q <- query if q.isDefined
         e <- expander.expandUpdateOf(q.get)
       } yield e).transactionally
-    } getOrElse query
+    }
   }
 
   def createSchema: Future[Unit] = db.run(tableQuery.schema.create)

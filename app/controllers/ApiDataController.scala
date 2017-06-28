@@ -100,7 +100,7 @@ final class ApiDataController(private val repository: SesameRepository,
       dbUsers = postgresStudents ++ postgresEmployees
       _ = println(s"dbUsers ${dbUsers.size}")
       users <- userService.createMany(dbUsers.toList)
-    } yield users.map(_.toUser)
+    } yield users.map(_.toLwmModel)
 
     result.map { users =>
       println(s"users ${users.size}")
@@ -122,7 +122,7 @@ final class ApiDataController(private val repository: SesameRepository,
       postgresDegrees = sesameDegrees.map(s => DegreeDb(s.label, s.abbreviation, DateTime.now.timestamp, s.invalidated.map(_.timestamp), s.id))
       _ = println(s"postgresDegrees ${postgresDegrees.size}")
       degrees <- degreeService.createMany(postgresDegrees.toList)
-    } yield degrees.map(_.toDegree)
+    } yield degrees.map(_.toLwmModel)
 
     result.map { degrees =>
       Ok(Json.toJson(degrees))
@@ -147,7 +147,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"postgresPermissions ${postgresPermissions.size}")
       ps <- permissionService.createMany(postgresPermissions.toList)
       _ = println(s"ps ${ps.size}")
-    } yield ps.map(_.toPermission)
+    } yield ps.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -170,7 +170,7 @@ final class ApiDataController(private val repository: SesameRepository,
       roles <- roleService.createMany(postgresRoles.toList)
       _ = println(s"roles ${roles.size}")
       _ = println(s"permissions ${roles.flatMap(_.permissions).size}")
-    } yield roles.map(_.toRole)
+    } yield roles.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -189,7 +189,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"semesterDbs ${semesterDbs.size}")
       semester <- semesterService.createMany(semesterDbs.toList)
       _ = println(s"semester ${semester.size}")
-    } yield semester.map(_.toSemester)
+    } yield semester.map(_.toLwmModel)
 
     result.jsonResult(PostgresSemester.writes)
   }
@@ -207,7 +207,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"coursesDbs ${coursesDbs.size}")
       courses <- courseService.createMany(coursesDbs.toList)
       _ = println(s"courses ${courses.size}")
-    } yield courses.map(_.toCourse)
+    } yield courses.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -225,7 +225,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"labworkDbs ${labworkDbs.size}")
       labworks <- labworkService.createMany(labworkDbs.toList)
       _ = println(s"labworks ${labworks.size}")
-    } yield labworks.map(_.toLabwork)
+    } yield labworks.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -243,7 +243,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"roomDbs ${roomDbs.size}")
 
       rooms <- roomService.createMany(roomDbs.toList)
-    } yield rooms.map(_.toRoom)
+    } yield rooms.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -261,7 +261,7 @@ final class ApiDataController(private val repository: SesameRepository,
       )
       _ = println(s"lappDbs ${lappDbs.size}")
       lapps <- labworkApplicationService.createMany(lappDbs.toList)
-    } yield lapps.map(_.toLabworkApplication)
+    } yield lapps.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -287,7 +287,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"planDbsEntries ${planDbs.flatMap(_.entries).size}")
       _ = println(s"planDbsEntryTypes ${planDbs.flatMap(_.entries.flatMap(_.types)).size}")
       plans <- assignmentPlanService.createMany(planDbs.toList)
-    } yield plans.map(_.toAssignmentPlan)
+    } yield plans.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -320,7 +320,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"localBlacklists ${localBlacklists.size}")
       mixedBlacklists = blacklistDbs ++ localBlacklists
       blacklists <- blacklistService2.createMany(mixedBlacklists.toList)
-    } yield blacklists.map(_.toBlacklist)
+    } yield blacklists.map(_.toLwmModel)
 
     result.jsonResult
   }
@@ -344,7 +344,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"timetableDbs ${timetableDbs.size}")
       _ = println(s"timetableDbEntries ${timetableDbs.flatMap(_.entries).size}")
       timetables <- timetableService2.createMany(timetableDbs.toList)
-    } yield timetables.map(_.toTimetable)
+    } yield timetables.map(_.toLwmModel)
 
     result.jsonResult
   }

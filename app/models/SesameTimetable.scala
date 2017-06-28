@@ -145,8 +145,8 @@ case class PostgresTimetableAtom(labwork: PostgresLabwork, entries: Set[Postgres
 
 case class PostgresTimetableEntryAtom(supervisor: Set[User], room: PostgresRoom, dayIndex: Int, start: LocalTime, end: LocalTime)
 
-case class TimetableDb(labwork: UUID, entries: Set[PostgresTimetableEntry], start: Date, localBlacklist: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toTimetable = PostgresTimetable(labwork, entries, start.localDate, localBlacklist, id)
+case class TimetableDb(labwork: UUID, entries: Set[PostgresTimetableEntry], start: Date, localBlacklist: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresTimetable(labwork, entries, start.localDate, localBlacklist, id)
 }
 
 case class TimetableEntryDb(timetable: UUID, room: UUID, supervisor: Set[UUID], dayIndex: Int, start: Time, end: Time, id: UUID = UUID.randomUUID) extends UniqueEntity {

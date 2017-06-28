@@ -2,12 +2,11 @@ package services
 
 import java.util.UUID
 
-import models._
-import org.joda.time.DateTime
-import store._
-import slick.driver.PostgresDriver.api._
 import models.LwmDateTime._
+import models._
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import store._
 
 import scala.concurrent.Future
 
@@ -34,20 +33,6 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
     } yield friends
   }
 
-  override protected def setInvalidated(entity: LabworkApplicationDb): LabworkApplicationDb = {
-    val now = DateTime.now.timestamp
-
-    LabworkApplicationDb(
-      entity.labwork,
-      entity.applicant,
-      entity.friends,
-      entity.timestamp,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
   override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = {
     existing.friends != toUpdate.friends &&
       (existing.applicant == toUpdate.applicant && existing.labwork == toUpdate.labwork)
@@ -63,13 +48,13 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
     case (labworkApplication, dependencies) =>
       val ((lapp, lab, applicant, (course, degree, semester, lecturer)), _) = dependencies.find(_._1._1.id == labworkApplication.id).get
-      val friends = dependencies.flatMap(_._2.map(_.toUser))
+      val friends = dependencies.flatMap(_._2.map(_.toLwmModel))
       val labworkAtom = {
-        val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toUser, course.semesterIndex, course.id)
-        PostgresLabworkAtom(lab.label, lab.description, semester.toSemester, courseAtom, degree.toDegree, lab.subscribable, lab.published, lab.id)
+        val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toLwmModel, course.semesterIndex, course.id)
+        PostgresLabworkAtom(lab.label, lab.description, semester.toLwmModel, courseAtom, degree.toLwmModel, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresLabworkApplicationAtom(labworkAtom, applicant.toUser, friends.toSet, lapp.timestamp.dateTime, lapp.id)
+      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.timestamp.dateTime, lapp.id)
   }
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {

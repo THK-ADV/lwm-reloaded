@@ -17,7 +17,7 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
   "A SemesterServiceSpec " should {
 
     "return current semester" in {
-      val current = dbEntities.map(_.toSemester).filter(PostgresSemester.isCurrent)
+      val current = dbEntities.map(_.toLwmModel).filter(PostgresSemester.isCurrent)
 
       val result = await(get(List(SemesterCurrentFilter(LocalDate.now.string))))
 
@@ -70,7 +70,7 @@ final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterD
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
-  override protected val lwmEntity: PostgresSemester = dbEntity.toSemester
+  override protected val lwmEntity: PostgresSemester = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresSemester = lwmEntity
 }

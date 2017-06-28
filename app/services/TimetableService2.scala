@@ -2,12 +2,11 @@ package services
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models._
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store._
-import org.joda.time.DateTime
-import models.LwmDateTime._
 
 import scala.concurrent.Future
 
@@ -30,10 +29,10 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
   override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) =>
       val timetableEntries = entries.map {
-        case ((e, r), s) => PostgresTimetableEntryAtom(s.map(_.toUser).toSet, r.toRoom, e.dayIndex, e.start.localTime, e.end.localTime)
+        case ((e, r), s) => PostgresTimetableEntryAtom(s.map(_.toLwmModel).toSet, r.toLwmModel, e.dayIndex, e.start.localTime, e.end.localTime)
       }
 
-      PostgresTimetableAtom(labwork.toLabwork, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toBlacklist).toSet, timetable.id)
+      PostgresTimetableAtom(labwork.toLwmModel, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toLwmModel).toSet, timetable.id)
   }
 
   override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
@@ -67,12 +66,6 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
     }.toSeq)
 
     db.run(action)
-  }
-
-  override protected def setInvalidated(entity: TimetableDb): TimetableDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(lastModified = now, invalidated = Some(now))
   }
 
   override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = {

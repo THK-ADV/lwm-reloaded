@@ -60,7 +60,7 @@ final class BlacklistService2Spec extends AbstractDaoSpec[BlacklistTable, Blackl
 
   override protected val dbEntities: List[BlacklistDb] = blacklists
 
-  override protected val lwmEntity: PostgresBlacklist = dbEntity.toBlacklist
+  override protected val lwmEntity: PostgresBlacklist = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresBlacklist = lwmEntity
 

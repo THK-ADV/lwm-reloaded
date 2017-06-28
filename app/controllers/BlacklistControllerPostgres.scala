@@ -47,7 +47,7 @@ final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val se
 
   override protected def toDbModel(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: BlacklistDb): PostgresBlacklist = dbModel.toBlacklist
+  override protected def toLwmModel(dbModel: BlacklistDb): PostgresBlacklist = dbModel.toLwmModel
 
   override implicit val mimeType = LwmMimeType.blacklistV1Json
 

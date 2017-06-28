@@ -51,8 +51,8 @@ case class PostgresBlacklist(label: String, date: LocalDate, start: LocalTime, e
 
 case class PostgresBlacklistProtocol(label: String, date: String, start: String, end: String, global: Boolean)
 
-case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toBlacklist = PostgresBlacklist(label, date.localDate, start.localTime, end.localTime, global, id)
+case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresBlacklist(label, date.localDate, start.localTime, end.localTime, global, id)
 
   override def equals(that: scala.Any) = that match {
     case BlacklistDb(l, d, s, e, g, _, _, i) =>

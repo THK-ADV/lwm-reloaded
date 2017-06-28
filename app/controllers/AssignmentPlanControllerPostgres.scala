@@ -36,7 +36,7 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override protected def toDbModel(protocol: PostgresAssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: AssignmentPlanDb): AssignmentPlan = dbModel.toAssignmentPlan
+  override protected def toLwmModel(dbModel: AssignmentPlanDb): AssignmentPlan = dbModel.toLwmModel
 
   override implicit val mimeType = LwmMimeType.assignmentPlanV1Json
 

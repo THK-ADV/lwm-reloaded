@@ -2,13 +2,12 @@ package services
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models._
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
 import slick.lifted.TableQuery
 import store._
-import slick.driver.PostgresDriver.api._
-import models.LwmDateTime._
-import org.joda.time.DateTime
 
 import scala.concurrent.Future
 
@@ -35,26 +34,26 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
 
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
     case ((entry, labwork, student, room), optRs, optRt, entryTypes) => PostgresReportCardEntryAtom(
-      student.toUser,
-      labwork.toLabwork,
+      student.toLwmModel,
+      labwork.toLwmModel,
       entry.label,
       entry.date.localDate,
       entry.start.localTime,
       entry.end.localTime,
-      room.toRoom,
-      entryTypes.map(_.toReportCardEntryType).toSet,
-      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toRoom, rs.reason, rs.id) },
-      optRt.map { case (rt, r, ts) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toRoom, ts.map(_.toReportCardEntryType).toSet, rt.reason, rt.id) },
+      room.toLwmModel,
+      entryTypes.map(_.toLwmModel).toSet,
+      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toLwmModel, rs.reason, rs.id) },
+      optRt.map { case (rt, r) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toLwmModel, rt.entryTypes.map(_.toLwmModel), rt.reason, rt.id) },
       entry.id
     )
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.toReportCardEntry(entryTypes, optRs.map(_._1), optRt.map(t => (t._1, t._3)))
+    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toLwmModel
   }
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-                                 (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb, Seq[ReportCardEntryTypeDb])], Seq[ReportCardEntryTypeDb]) => ReportCardEntry) = {
+                                 (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntry) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
@@ -77,18 +76,12 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
         val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
         val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-        val retryWithEntryTypes = retry.map(t => (t._1._1, t._2, retryEntryTypes))
+        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
 
         build(entry, rescheduled, retryWithEntryTypes, entryTypes)
     }.toSeq)
 
     db.run(action)
-  }
-
-  override protected def setInvalidated(entity: ReportCardEntryDb): ReportCardEntryDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(lastModified = now, invalidated = Some(now))
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {

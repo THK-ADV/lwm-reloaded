@@ -27,9 +27,8 @@ object SesameRoom extends UriGenerator[SesameRoom] with JsonSerialisation[Sesame
 
 case class PostgresRoom(label: String, description: String, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity
 
-case class RoomDb(label: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity{
-
-  def toRoom = PostgresRoom(label, description, id)
+case class RoomDb(label: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresRoom(label, description, id)
 }
 
 case class PostgresRoomProtocol(label: String, description: String)

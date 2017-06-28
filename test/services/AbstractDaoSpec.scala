@@ -179,7 +179,7 @@ object AbstractDaoSpec {
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 }
 
-abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
+abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
 
   protected val lastModified: Timestamp = {
@@ -187,12 +187,6 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     import org.joda.time.DateTime
 
     DateTime.now.timestamp
-  }
-
-  def zipAndCompare[Db, Lwm <: UniqueEntity](lhs: Traversable[Db], rhs: Traversable[Lwm]): Boolean = {
-    if (lhs.isEmpty) false else (lhs.map(_.asInstanceOf[Lwm]) ++ rhs).groupBy(_.id).forall {
-      case (id, pairs) => pairs.size == 2 && pairs.forall(_.id == id) && pairs.head == pairs.last
-    }
   }
 
   protected def name: String
@@ -227,6 +221,8 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"update a $name properly" in {
+      // TODO uniqueDbEntity should have toLwmModel which should be used here for comparision
+      // TODO check lastModified also
       await(update(validUpdateOnDbEntity)) shouldBe Some(validUpdateOnDbEntity)
     }
 

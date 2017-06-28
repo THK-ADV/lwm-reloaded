@@ -50,9 +50,9 @@ case class DbUser(
                    lastModified: Timestamp = DateTime.now.timestamp,
                    invalidated: Option[Timestamp] = None,
                    id: UUID = UUID.randomUUID
-                 ) extends UniqueEntity {
+                 ) extends UniqueDbEntity {
 
-  def toUser: User = this match {
+  override def toLwmModel: User = this match {
     case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), _, _, studentId) if stat == User.StudentType =>
       PostgresStudent(sId, last, first, mail, regId, enroll, studentId)
     case DbUser(sId, last, first, mail, stat, None, None, _, _, employeeId) if stat == User.EmployeeType =>

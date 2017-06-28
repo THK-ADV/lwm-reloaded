@@ -1,14 +1,11 @@
 package services
 
 import models._
-import org.joda.time.DateTime
-import store.{RolePermissionTable, RoleTable, TableFilter}
+import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
+import store.{RolePermissionTable, RoleTable, TableFilter}
 
 import scala.concurrent.Future
-import models.LwmDateTime.DateTimeConverter
-import slick.driver
-import slick.driver.PostgresDriver
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
@@ -24,12 +21,6 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
 
   final def byUserStatus(status: String): Future[Option[RoleDb]] = {
     db.run(tableQuery.filter(_.isLabel(Roles.fromUserStatus(status))).result.headOption)
-  }
-
-  override protected def setInvalidated(entity: RoleDb): RoleDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(entity.label, entity.permissions, now, Some(now))
   }
 
   override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = {

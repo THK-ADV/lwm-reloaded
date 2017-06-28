@@ -45,5 +45,5 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
 
   override protected def toDbModel(protocol: PostgresRoomProtocol, existingId: Option[UUID]): RoomDb = RoomDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: RoomDb): PostgresRoom = dbModel.toRoom
+  override protected def toLwmModel(dbModel: RoomDb): PostgresRoom = dbModel.toLwmModel
 }

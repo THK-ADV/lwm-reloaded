@@ -1,11 +1,10 @@
 package services
 
+import models.LwmDateTime._
 import models.{BlacklistDb, PostgresBlacklist}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store.{BlacklistTable, TableFilter}
-import models.LwmDateTime._
-import org.joda.time.DateTime
 
 import scala.concurrent.Future
 
@@ -45,13 +44,7 @@ trait BlacklistService2 extends AbstractDao[BlacklistTable, BlacklistDb, Postgre
   override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = toUniqueEntity(query)
 
   override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = {
-    db.run(query.result.map(_.map(_.toBlacklist)))
-  }
-
-  override protected def setInvalidated(entity: BlacklistDb): BlacklistDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(lastModified = now, invalidated = Some(now))
+    db.run(query.result.map(_.map(_.toLwmModel)))
   }
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {

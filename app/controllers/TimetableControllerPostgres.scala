@@ -37,7 +37,7 @@ final class TimetableControllerPostgres(val roleService: RoleServiceLike, val se
 
   override protected def toDbModel(protocol: PostgresTimetableProtocol, existingId: Option[UUID]): TimetableDb = TimetableDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: TimetableDb): Timetable = dbModel.toTimetable
+  override protected def toLwmModel(dbModel: TimetableDb): Timetable = dbModel.toLwmModel
 
   override implicit val mimeType = LwmMimeType.timetableV1Json
 

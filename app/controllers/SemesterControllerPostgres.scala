@@ -59,5 +59,5 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
 
   override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: SemesterDb): PostgresSemester = dbModel.toSemester
+  override protected def toLwmModel(dbModel: SemesterDb): PostgresSemester = dbModel.toLwmModel
 }

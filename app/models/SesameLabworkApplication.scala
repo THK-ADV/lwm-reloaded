@@ -62,11 +62,13 @@ case class PostgresLabworkApplicationProtocol(labwork: UUID, applicant: UUID, fr
 
 case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toLabworkApplication = PostgresLabworkApplication(labwork, applicant, friends, timestamp.dateTime, id)
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresLabworkApplication(labwork, applicant, friends, timestamp.dateTime, id)
 }
 
-case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = this
+}
 
 object PostgresLabworkApplication extends JsonSerialisation[PostgresLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
   override implicit def reads: Reads[PostgresLabworkApplicationProtocol] = Json.reads[PostgresLabworkApplicationProtocol]

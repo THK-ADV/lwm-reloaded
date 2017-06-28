@@ -210,7 +210,7 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
   def permissionFk = foreignKey("PERMISSIONS_fkey", permission, TableQuery[PermissionTable])(_.id)
 
-  override def * = (role, permission,lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+  override def * = (role, permission, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
 }
 
 class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable with LabelTable with DescriptionTable {
@@ -369,5 +369,5 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
   def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id.?)
   def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
 
-  override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
+  override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }

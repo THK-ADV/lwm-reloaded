@@ -1,14 +1,11 @@
 package services
 
-import java.sql.Timestamp
 import java.util.UUID
 
 import models._
-import org.joda.time.DateTime
-import store.{LabworkTable, TableFilter}
-import slick.driver.PostgresDriver.api._
-import models.LwmDateTime.DateTimeConverter
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import store.{LabworkTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -32,23 +29,6 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
-
-  override protected def setInvalidated(entity: LabworkDb): LabworkDb = {
-    val now = DateTime.now.timestamp
-
-    LabworkDb(
-      entity.label,
-      entity.description,
-      entity.semester,
-      entity.course,
-      entity.degree,
-      entity.subscribable,
-      entity.published,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
 
   override protected def shouldUpdate(existing: LabworkDb, toUpdate: LabworkDb): Boolean = {
     (existing.label != toUpdate.label ||
@@ -78,13 +58,13 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
 
     db.run(joinedQuery.result.map(_.map{
       case (l, c, s, d, u) =>
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, u.toUser, c.semesterIndex, c.id)
-        PostgresLabworkAtom(l.label, l.description, s.toSemester, courseAtom, d.toDegree, l.subscribable, l.published, l.id)
+        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, u.toLwmModel, c.semesterIndex, c.id)
+        PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
     }))
   }
 
   override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
-    db.run(query.result.map(_.map(_.toLabwork)))
+    db.run(query.result.map(_.map(_.toLwmModel)))
   }
 }
 

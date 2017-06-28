@@ -33,8 +33,8 @@ sealed trait Authority extends UniqueEntity
 
 case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends Authority
 
-case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toAuthority = PostgresAuthority(user, role, course, id)
+case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresAuthority(user, role, course, id)
 }
 
 case class PostgresAuthorityProtocol(user: UUID, roleLabel: String, course: Option[UUID] = None)

@@ -2,14 +2,13 @@ package services
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models.{PostgresSemester, SemesterDb}
-import org.joda.time.DateTime
-import store.{SemesterTable, TableFilter}
+import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
+import store.{SemesterTable, TableFilter}
 
 import scala.concurrent.Future
-import models.LwmDateTime._
-import slick.driver.PostgresDriver
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -48,21 +47,6 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
-  override protected def setInvalidated(entity: SemesterDb): SemesterDb = {
-    val now = DateTime.now.timestamp
-
-    SemesterDb(
-      entity.label,
-      entity.abbreviation,
-      entity.start,
-      entity.end,
-      entity.examStart,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
     (existing.abbreviation != toUpdate.abbreviation ||
       !existing.examStart.equals(toUpdate.examStart)) &&
@@ -80,7 +64,7 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
 
   override protected def toUniqueEntity(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
-    db.run(query.result.map(_.map(_.toSemester)))
+    db.run(query.result.map(_.map(_.toLwmModel)))
   }
 }
 

@@ -4,9 +4,10 @@ import models._
 import store._
 import slick.driver.PostgresDriver.api._
 
-object AssignmentPlanServiceSpec {
-  import scala.util.Random.nextInt
-  import services.AbstractDaoSpec.{labworks, maxLabworks}
+import scala.util.Random.nextInt
+
+final class AssignmentPlanServiceSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanService {
+  import services.AbstractDaoSpec._
 
   def assignmentPlan(labwork: LabworkDb, number: Int) = {
     val types = PostgresAssignmentEntryType.all
@@ -17,85 +18,7 @@ object AssignmentPlanServiceSpec {
     AssignmentPlanDb(labwork.id, number, number, entries)
   }
 
-  def atom(plan: AssignmentPlanDb) = PostgresAssignmentPlanAtom(
-    labworks.find(_.id == plan.labwork).get.toLabwork,
-    plan.attendance,
-    plan.mandatory,
-    plan.entries,
-    plan.id
-  )
-
-  val plans = labworks.drop(maxLabworks - 5).zip(List(5, 8, 3, 9, 4)).map {
-    case (labwork, number) => assignmentPlan(labwork, number)
-  }
-
-  def merge(entries: Seq[AssignmentEntryDb], types: Seq[AssignmentEntryTypeDb]): Set[PostgresAssignmentEntry] = {
-    entries.map { e =>
-      val entryTypes = types.filter(_.assignmentEntry == e.id).map { t =>
-        PostgresAssignmentEntryType(t.entryType, t.bool, t.int)
-      }
-
-      PostgresAssignmentEntry(e.index, e.label, entryTypes.toSet, e.duration)
-    }.toSet
-  }
-}
-
-final class AssignmentPlanServiceSpec
-  extends AbstractDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanService {
-
-  import services.AbstractDaoSpec._
-  import services.AssignmentPlanServiceSpec._
-
-  def getEntriesAndTypesFromDb(plan: AssignmentPlanDb): (Seq[AssignmentEntryDb], Seq[AssignmentEntryTypeDb]) = {
-    val entryQuery = assignmentEntryQuery.filter(_.assignmentPlan === plan.id)
-    val entries = run(entryQuery.result)
-    val types = run(assignmentEntryTypeQuery.filter(_.assignmentEntry in entryQuery.map(_.id)).result)
-
-    (entries, types)
-  }
-
   "A AssignmentPlanServiceSpec" should {
-
-    "create assignmentPlans with entries and entry types" in {
-      plans.foreach { plan =>
-        await(create(plan)) shouldBe plan
-        await(getById(plan.id.toString, atomic = false)) shouldBe Some(plan.toAssignmentPlan)
-        await(getById(plan.id.toString)) shouldBe Some(atom(plan))
-
-        val (entries, types) = getEntriesAndTypesFromDb(plan)
-
-        plan.entries shouldBe merge(entries, types)
-      }
-    }
-
-    "update an assignmentPlan with entries and entry types" in {
-      val chosen = plans(3)
-      val updated = chosen.copy(chosen.labwork, 1, 1, chosen.entries.drop(2) ++ Set(
-        PostgresAssignmentEntry(10, 10.toString, PostgresAssignmentEntryType.all.take(1)),
-        PostgresAssignmentEntry(11, 11.toString, Set.empty)
-      ))
-
-      await(update(updated)) shouldBe Some(updated)
-      await(getById(updated.id.toString, atomic = false)) shouldBe Some(updated.toAssignmentPlan)
-      await(getById(updated.id.toString)) shouldBe Some(atom(updated))
-
-      val (entries, types) = getEntriesAndTypesFromDb(updated)
-
-      updated.entries shouldBe merge(entries, types)
-    }
-
-    "delete an assignmentPlan with entries and entry types" in {
-      val deleted = plans(4)
-
-      await(delete(deleted)).flatMap(_.invalidated) shouldBe defined
-      await(getById(deleted.id.toString, atomic = false)) shouldBe None
-      await(getById(deleted.id.toString)) shouldBe None
-
-      val (entries, types) = getEntriesAndTypesFromDb(deleted)
-
-      entries shouldBe empty
-      types shouldBe empty
-    }
 
     "get assignmentPlans for a given course" in {
       val semester = randomSemester.id
@@ -149,7 +72,7 @@ final class AssignmentPlanServiceSpec
 
   override protected val dbEntities: List[AssignmentPlanDb] = assignmentPlans
 
-  override protected val lwmEntity: AssignmentPlan = dbEntity.toAssignmentPlan
+  override protected val lwmEntity: AssignmentPlan = dbEntity.toLwmModel
 
   override protected val lwmAtom: AssignmentPlan = atom(dbEntity)
 
@@ -160,4 +83,37 @@ final class AssignmentPlanServiceSpec
     TableQuery[DegreeTable].forceInsertAll(degrees),
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
+
+  override protected val toAdd: List[AssignmentPlanDb] = labworks.drop(maxLabworks - 5).zip(List(5, 8, 3, 9, 4)).map {
+    case (labwork, number) => assignmentPlan(labwork, number)
+  }
+
+  override protected val numberOfUpdates: Int = 1
+
+  override protected val numberOfDeletions: Int = 1
+
+  override protected def update(toUpdate: List[AssignmentPlanDb]): List[AssignmentPlanDb] = {
+    toUpdate.map { chosen =>
+      chosen.copy(chosen.labwork, 1, 1, chosen.entries.drop(2) ++ Set(
+        PostgresAssignmentEntry(10, 10.toString, PostgresAssignmentEntryType.all.take(1)),
+        PostgresAssignmentEntry(11, 11.toString, Set.empty)
+      ))
+    }
+  }
+
+  override protected def atom(dbModel: AssignmentPlanDb): AssignmentPlan = PostgresAssignmentPlanAtom(
+    labworks.find(_.id == dbModel.labwork).get.toLwmModel,
+    dbModel.attendance,
+    dbModel.mandatory,
+    dbModel.entries,
+    dbModel.id
+  )
+
+  override protected def expanderSpecs(dbModel: AssignmentPlanDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
+    assignmentEntryQuery.filter(_.assignmentPlan === dbModel.id).joinLeft(assignmentEntryTypeQuery).on(_.id === _.assignmentEntry).result.map(_.groupBy(_._1).map {
+      case (entry, values) =>
+        val types = values.flatMap(_._2).map(t => PostgresAssignmentEntryType(t.entryType,  t.bool, t.int))
+        PostgresAssignmentEntry(entry.index, entry.label, types.toSet, entry.duration)
+    }).map(entries => entries.toSet shouldBe (if (isDefined) dbModel.entries else Set.empty))
+  }
 }

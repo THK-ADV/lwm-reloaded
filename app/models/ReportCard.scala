@@ -56,8 +56,23 @@ case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: Local
 
 // DB
 
-case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], rescheduled: Option[ReportCardRescheduledDb] = None, retry: Option[ReportCardRetryDb] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toReportCardEntry: PostgresReportCardEntry = toReportCardEntry(entryTypes.toSeq, rescheduled, retry.map(r => (r, r.entryTypes.toSeq)))
+case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], rescheduled: Option[ReportCardRescheduledDb] = None, retry: Option[ReportCardRetryDb] = None, var lastModified: Timestamp = DateTime.now.timestamp, var invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+
+  override def toLwmModel = PostgresReportCardEntry(
+    student,
+    labwork,
+    label,
+    date.localDate,
+    start.localTime,
+    end.localTime,
+    room,
+    entryTypes.map(_.toLwmModel),
+    rescheduled.map(_.toLwmModel),
+    retry.map(_.toLwmModel),
+    id
+  )
+
+  /*def toReportCardEntry: PostgresReportCardEntry = toReportCardEntry(entryTypes.toSeq, rescheduled, retry.map(r => (r, r.entryTypes.toSeq)))
 
   def toReportCardEntry(types: Seq[ReportCardEntryTypeDb], optRs: Option[ReportCardRescheduledDb], optRt: Option[(ReportCardRetryDb, Seq[ReportCardEntryTypeDb])]): PostgresReportCardEntry = PostgresReportCardEntry(
     student,
@@ -71,7 +86,7 @@ case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: 
     optRs.map(_.toReportCardRescheduled),
     optRt.map(r => r._1.toReportCardRetry(r._2)),
     id
-  )
+  )*/
 
   override def equals(that: scala.Any) = that match {
     case ReportCardEntryDb(s, l, lb, dt, st, et, r, ts, rs, rt, _, _, i) =>
@@ -90,14 +105,16 @@ case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: 
   }
 }
 
-case class ReportCardEntryTypeDb(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID], entryType: String, bool: Option[Boolean] = None, int: Int = 0, lastModified: Timestamp = DateTime.now.timestamp, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toReportCardEntryType = PostgresReportCardEntryType(entryType, bool, int, id)
+case class ReportCardEntryTypeDb(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID], entryType: String, bool: Option[Boolean] = None, int: Int = 0, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresReportCardEntryType(entryType, bool, int, id)
 }
 
-case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, id)
+}
 
-case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toReportCardRescheduled = PostgresReportCardRescheduled(date.localDate, start.localTime, end.localTime, room, reason, id)
+case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresReportCardRescheduled(date.localDate, start.localTime, end.localTime, room, reason, id)
 
   override def equals(that: scala.Any) = that match {
     case ReportCardRescheduledDb(rc, dt, st, et, r, rs, _, _, i) =>
@@ -111,8 +128,8 @@ case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Tim
   }
 }
 
-case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toReportCardRetry(types: Seq[ReportCardEntryTypeDb]) = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, types.map(_.toReportCardEntryType).toSet, reason, id)
+case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  //def toReportCardRetry(types: Seq[ReportCardEntryTypeDb]) = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, types.map(_.toLwmModel).toSet, reason, id)
 
   override def equals(that: scala.Any) = that match {
     case ReportCardRetryDb(rc, dt, st, et, r, ts, rs, _, _, i) =>
@@ -125,6 +142,8 @@ case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end
         rs == reason &&
         i == id
   }
+
+  override def toLwmModel = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, entryTypes.map(_.toLwmModel), reason, id)
 }
 
 /**

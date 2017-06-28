@@ -107,5 +107,5 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
 
   override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): DbUser = ???
 
-  override protected def toLwmModel(dbModel: DbUser): User = dbModel.toUser
+  override protected def toLwmModel(dbModel: DbUser): User = dbModel.toLwmModel
 }

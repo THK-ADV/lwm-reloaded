@@ -39,7 +39,7 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
 
   override protected def toDbModel(protocol: PostgresLabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = LabworkApplicationDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: LabworkApplicationDb): PostgresLabworkApplication = dbModel.toLabworkApplication
+  override protected def toLwmModel(dbModel: LabworkApplicationDb): PostgresLabworkApplication = dbModel.toLwmModel
 
   override implicit val mimeType = LwmMimeType.labworkApplicationV1Json
 

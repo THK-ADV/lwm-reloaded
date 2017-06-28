@@ -29,8 +29,8 @@ object SesamePermission extends JsonSerialisation[SesamePermission, SesamePermis
 
 case class PostgresPermission(value: String, description: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class PermissionDb(value: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toPermission = PostgresPermission(value, description, id)
+case class PermissionDb(value: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresPermission(value, description, id)
 }
 
 case class PostgresPermissionProtocol(value: String, description: String)
