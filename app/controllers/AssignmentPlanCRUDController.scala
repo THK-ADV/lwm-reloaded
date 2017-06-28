@@ -16,7 +16,6 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.AssignmentPlanCRUDController._
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object AssignmentPlanCRUDController {

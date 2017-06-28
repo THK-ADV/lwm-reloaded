@@ -88,6 +88,7 @@ with BlacklistService2ManagementModule
 with ReportCardServiceManagementModule
 with ReportCardEntryDaoModule
 with ReportCardEntryManagementModule
+with ReportCardEntryManagementModule2
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with AssignmentPlanManagementModulePostgres
@@ -125,6 +126,7 @@ with LdapSyncModule {
     blacklistManagementController,
     blacklistControllerPostgres,
     reportCardEntryManagementController,
+    reportCardEntryControllerPostgres,
     reportCardEntryTypeManagementController,
     reportCardEvaluationManagementController,
     assignmentPlanManagementController,
@@ -192,6 +194,7 @@ with DefaultBlacklistService2ManagementModule
 with DefaultReportCardServiceManagementModule
 with DefaultReportCardEntryDaoModule
 with DefaultReportCardEntryManagementModuleImpl
+with DefaultReportCardEntryManagementModule2
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImplPostgres

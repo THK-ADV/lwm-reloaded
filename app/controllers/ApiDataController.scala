@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import models.LwmDateTime._
 
-import scala.reflect.macros.blackbox
+import scala.util.{Failure, Success}
 
 final class ApiDataController(private val repository: SesameRepository,
                               val userService: UserService,
@@ -28,7 +28,8 @@ final class ApiDataController(private val repository: SesameRepository,
                               val roomService: RoomService,
                               val semesterService: SemesterService,
                               val timetableService2: TimetableService2,
-                              val blacklistService2: BlacklistService2
+                              val blacklistService2: BlacklistService2,
+                              val reportCardEntryDao: ReportCardEntryDao
                              ) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
@@ -345,6 +346,37 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"timetableDbEntries ${timetableDbs.flatMap(_.entries).size}")
       timetables <- timetableService2.createMany(timetableDbs.toList)
     } yield timetables.map(_.toLwmModel)
+
+    result.jsonResult
+  }
+
+  def migrateReportCardEntries = Action.async {
+    import bindings.{ReportCardEntryDescriptor, LabworkDescriptor}
+    import models.ReportCardEntry.writes
+
+    val result = for {
+      _ <- reportCardEntryDao.createSchema
+      seasmeLabs <- Future.fromTry(repository.getAll[SesameLabwork])
+      sesameReportCardEntries <- Future.fromTry(repository.getAll[SesameReportCardEntry])
+      _ = println(s"sesameReportCardEntries ${sesameReportCardEntries.size}")
+      _ = println(s"sesameReportCardEntryTypes ${sesameReportCardEntries.flatMap(_.entryTypes).size}")
+      _ = println(s"sesameReportCardRescheduled ${sesameReportCardEntries.flatMap(_.rescheduled).size}")
+      good = sesameReportCardEntries.filter(e => seasmeLabs.exists(_.id == e.labwork))
+      _ = println(s"good ${good.size}")
+      reportCardEntryDb = good .map { e =>
+        val types = e.entryTypes.map { t =>
+          ReportCardEntryTypeDb(Some(e.id), None, t.entryType, Some(t.bool), t.int, invalidated = t.invalidated.map(_.timestamp), id = t.id)
+        }
+
+        val rs = e.rescheduled.map(r => ReportCardRescheduledDb(e.id, r.date.sqlDate, r.start.sqlTime, r.end.sqlTime, r.room, None))
+
+        ReportCardEntryDb(e.student, e.labwork, e.label, e.date.sqlDate, e.start.sqlTime, e.end.sqlTime, e.room, types, rs, invalidated = e.invalidated.map(_.timestamp), id = e.id)
+      }
+      _ = println(s"reportCardEntryDbEntries ${reportCardEntryDb.size}")
+      _ = println(s"reportCardEntryDbTypes ${reportCardEntryDb.flatMap(_.entryTypes).size}")
+      _ = println(s"reportCardEntryDbRescheduled ${reportCardEntryDb.flatMap(_.rescheduled).size}")
+      reportCardEntries <- reportCardEntryDao.createMany(reportCardEntryDb.toList)
+    } yield reportCardEntries.map(_.toLwmModel)
 
     result.jsonResult
   }

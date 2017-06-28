@@ -15,7 +15,6 @@ import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.ReportCardEvaluationController._
 
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 object ReportCardEvaluationController {

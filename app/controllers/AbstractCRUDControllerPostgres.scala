@@ -79,7 +79,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
-  protected def toLwmModel(dbModel: DbModel): LwmModel
+  private def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toLwmModel.asInstanceOf[LwmModel]
 
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](

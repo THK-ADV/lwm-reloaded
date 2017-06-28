@@ -9,7 +9,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.collection.Map
 import scala.util.{Success, Try}
 
 class RoleController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameRoleProtocol, SesameRole, SesameRole] {

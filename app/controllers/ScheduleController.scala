@@ -16,7 +16,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{Attempt, Gen, LwmMimeType}
 import controllers.ScheduleController._
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object ScheduleController {

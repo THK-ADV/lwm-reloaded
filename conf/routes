@@ -209,6 +209,15 @@ POST          /courses/:c/reportCardEntries/copy                                
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                        controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries                 controllers.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
 
+# ReportCardEntry 2.0
+GET           /api2/reportCardEntries/student/:s                                      controllers.ReportCardEntryControllerPostgres.getForStudent(s)
+
+POST          /api2/courses/:c/labworks/:l/reportCardEntries                          controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
+POST          /api2/courses/:c/reportCardEntries/copy                                 controllers.ReportCardEntryControllerPostgres.createByCopy(c)
+
+GET           /api2/courses/:c/reportCardEntries                                      controllers.ReportCardEntryControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries                   controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
+
 # ReportCardEntryType
 PUT           /courses/:c/reportCardEntryTypes/:t                                     controllers.ReportCardEntryTypeController.update(c, t)
 HEAD          /reportCardEntryTypes                                                   controllers.ReportCardEntryTypeController.header()
@@ -296,6 +305,7 @@ GET           /api/migrate/rooms                                                
 GET           /api/migrate/assignmentPlans                                            controllers.ApiDataController.migrateAssignmentPlans()
 GET           /api/migrate/blacklists                                                 controllers.ApiDataController.migrateBlacklists()
 GET           /api/migrate/timetables                                                 controllers.ApiDataController.migrateTimetables()
+GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

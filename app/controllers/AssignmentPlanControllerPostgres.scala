@@ -11,18 +11,16 @@ import utils.LwmMimeType
 import scala.util.{Failure, Try}
 
 object AssignmentPlanControllerPostgres {
-  val labworkAttribute = "labwork"
-  val courseAttribute = "course"
+  lazy val labworkAttribute = "labwork"
+  lazy val courseAttribute = "course"
 }
 
-final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val assignmentPlanService: AssignmentPlanService)
+final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: AssignmentPlanService)
   extends AbstractCRUDControllerPostgres[PostgresAssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
 
   override protected implicit val writes: Writes[AssignmentPlan] = AssignmentPlan.writes
 
   override protected implicit val reads: Reads[PostgresAssignmentPlanProtocol] = PostgresAssignmentPlan.reads
-
-  override protected val abstractDao: AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] = assignmentPlanService
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
     import controllers.AssignmentPlanControllerPostgres._
@@ -35,8 +33,6 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
   }
 
   override protected def toDbModel(protocol: PostgresAssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: AssignmentPlanDb): AssignmentPlan = dbModel.toLwmModel
 
   override implicit val mimeType = LwmMimeType.assignmentPlanV1Json
 

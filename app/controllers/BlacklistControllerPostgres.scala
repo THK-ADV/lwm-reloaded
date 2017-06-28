@@ -21,14 +21,12 @@ object BlacklistControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val blacklistService2: BlacklistService2, val blacklistService: BlacklistServiceLike)
+final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: BlacklistService2, val blacklistService: BlacklistServiceLike)
   extends AbstractCRUDControllerPostgres[PostgresBlacklistProtocol, BlacklistTable, BlacklistDb, PostgresBlacklist] {
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes
 
   override protected implicit val reads: Reads[PostgresBlacklistProtocol] = PostgresBlacklist.reads
-
-  override protected val abstractDao: AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] = blacklistService2
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[BlacklistTable]]]): Try[List[TableFilter[BlacklistTable]]] = {
     import controllers.BlacklistControllerPostgres._
@@ -47,8 +45,6 @@ final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val se
 
   override protected def toDbModel(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
 
-  override protected def toLwmModel(dbModel: BlacklistDb): PostgresBlacklist = dbModel.toLwmModel
-
   override implicit val mimeType = LwmMimeType.blacklistV1Json
 
   def createFor(year: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
@@ -57,7 +53,7 @@ final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val se
     (for {
       blacklists <- blacklistService.fetchByYear2(year)
       created <- abstractDao.createMany(blacklists)
-    } yield created.map(toLwmModel)).jsonResult
+    } yield created.map(_.toLwmModel)).jsonResult
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

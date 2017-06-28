@@ -17,7 +17,6 @@ import store.{Namespace, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.ReportCardEntryController._
 
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 case class ReportCardCopyRequest(srcLabwork: UUID, srcStudent: UUID, destLabwork: UUID, destStudent: UUID)

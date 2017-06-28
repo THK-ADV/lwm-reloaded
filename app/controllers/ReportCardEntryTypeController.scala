@@ -13,7 +13,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.collection.Map
 import scala.util.{Success, Try}
 
 // TODO inherit from AbstractCRUDController

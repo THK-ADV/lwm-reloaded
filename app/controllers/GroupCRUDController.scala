@@ -10,7 +10,6 @@ import store.bind.Descriptor.Descriptor
 import store.{Namespace, SemanticUtils, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.GroupCRUDController._
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import models.Permissions.{group, god}
 

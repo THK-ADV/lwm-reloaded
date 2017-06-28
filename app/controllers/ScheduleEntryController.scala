@@ -18,7 +18,6 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.ScheduleEntryController._
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object ScheduleEntryController {

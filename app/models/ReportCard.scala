@@ -41,7 +41,6 @@ case class SesameRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, 
 
 sealed trait ReportCardEntry extends UniqueEntity
 
-// maybe we can get rid of rescheduled and retry dependency from reportCardEntry
 case class PostgresReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], rescheduled: Option[PostgresReportCardRescheduled] = None, retry: Option[PostgresReportCardRetry] = None, id: UUID = UUID.randomUUID) extends ReportCardEntry
 
 case class PostgresReportCardEntryProtocol(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
@@ -289,4 +288,76 @@ object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardE
   override def writesAtom: Writes[PostgresReportCardEntryType] = writes
 
   override implicit def writes: Writes[PostgresReportCardEntryType] = Json.writes[PostgresReportCardEntryType]
+}
+
+object PostgresReportCardEntry extends JsonSerialisation[PostgresReportCardEntryProtocol, PostgresReportCardEntry, PostgresReportCardEntryAtom] {
+  override implicit def reads = Json.reads[PostgresReportCardEntryProtocol]
+
+  override implicit def writes = Json.writes[PostgresReportCardEntry]
+
+  override implicit def writesAtom = PostgresReportCardEntryAtom.writesAtom
+}
+
+object PostgresReportCardRescheduled extends JsonSerialisation[PostgresReportCardRescheduled, PostgresReportCardRescheduled, PostgresReportCardRescheduledAtom] {
+  override implicit def reads = Json.reads[PostgresReportCardRescheduled]
+
+  override implicit def writes = Json.writes[PostgresReportCardRescheduled]
+
+  override implicit def writesAtom = PostgresReportCardRescheduledAtom.writesAtom
+}
+
+object PostgresReportCardRetry extends JsonSerialisation[PostgresReportCardRetry, PostgresReportCardRetry, PostgresReportCardRetryAtom] {
+  override implicit def reads = Json.reads[PostgresReportCardRetry]
+
+  override implicit def writes = Json.writes[PostgresReportCardRetry]
+
+  override implicit def writesAtom = PostgresReportCardRetryAtom.writesAtom
+}
+
+object PostgresReportCardRescheduledAtom {
+  implicit def writesAtom: Writes[PostgresReportCardRescheduledAtom] = (
+    (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
+      (JsPath \ "reason").writeNullable[String] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresReportCardRescheduledAtom.unapply))
+}
+
+object PostgresReportCardRetryAtom {
+  implicit def writesAtom: Writes[PostgresReportCardRetryAtom] = (
+    (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
+      (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
+      (JsPath \ "reason").writeNullable[String] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresReportCardRetryAtom.unapply))
+}
+
+object PostgresReportCardEntryAtom {
+  implicit def writesAtom: Writes[PostgresReportCardEntryAtom] = (
+    (JsPath \ "student").write[User] and
+      (JsPath \ "labwork").write[PostgresLabwork] and
+      (JsPath \ "label").write[String] and
+      (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
+      (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
+      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduledAtom] and
+      (JsPath \ "retry").writeNullable[PostgresReportCardRetryAtom] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresReportCardEntryAtom.unapply))
+}
+
+object ReportCardEntry {
+  implicit def writes[ReportCardEntry]: Writes[ReportCardEntry] = new Writes[ReportCardEntry] {
+    override def writes(entry: ReportCardEntry) = entry match {
+      case postgresReportCardEntry: PostgresReportCardEntry => Json.toJson(postgresReportCardEntry)(PostgresReportCardEntry.writes)
+      case postgresReportCardEntryAtom: PostgresReportCardEntryAtom => Json.toJson(postgresReportCardEntryAtom)(PostgresReportCardEntryAtom.writesAtom)
+    }
+  }
 }

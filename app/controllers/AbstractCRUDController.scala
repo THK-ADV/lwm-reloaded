@@ -17,7 +17,6 @@ import utils.LwmActions._
 import utils.Ops.MonadInstances.optM
 import utils.{Attempt, Continue, LwmMimeType, Return}
 
-import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -94,7 +93,12 @@ trait RequestRebasePostgres {
   implicit class RebaseRequest[A](val request: Request[A]) {
     def append(query: (String, Seq[String])*): Request[A] = {
       val queryString = query.foldLeft(request.queryString)(_ + _)
-      val headers = request.copy(request.id, request.tags, request.uri, request.path, request.method, request.version, queryString)
+      val headers = request.copy(queryString = queryString)
+      Request(headers, request.body)
+    }
+
+    def overrideQueryString(query: Map[String, Seq[String]]): Request[A] = {
+      val headers = request.copy(queryString = query)
       Request(headers, request.body)
     }
   }

@@ -1,6 +1,6 @@
 package controllers
 
-import models.{SesameAssignmentEntryType}
+import models.SesameAssignmentEntryType
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, Controller}
 import services.{RoleServiceLike, SessionHandlingService}

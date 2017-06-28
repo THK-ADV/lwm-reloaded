@@ -17,7 +17,6 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.LabworkApplicationCRUDController._
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object LabworkApplicationCRUDController {

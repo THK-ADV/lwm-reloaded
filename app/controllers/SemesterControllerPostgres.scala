@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models.Permissions.{prime, semester}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}
 import org.joda.time.LocalDate
@@ -9,7 +10,6 @@ import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{SemesterTable, TableFilter}
 import utils.LwmMimeType
-import models.LwmDateTime._
 
 import scala.util.{Failure, Try}
 
@@ -24,7 +24,7 @@ object SemesterControllerPostgres {
   lazy val currentValue = "current"
 }
 
-final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val semesterService: SemesterService)
+final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: SemesterService)
   extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
 
   override implicit val mimeType = LwmMimeType.semesterV1Json
@@ -38,8 +38,6 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
   override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
 
   override protected implicit val reads: Reads[SemesterProtocol] = PostgresSemester.reads
-
-  override protected val abstractDao: AbstractDao[SemesterTable, SemesterDb, PostgresSemester] = semesterService
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
     import controllers.SemesterControllerPostgres._
@@ -58,6 +56,4 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
   }
 
   override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: SemesterDb): PostgresSemester = dbModel.toLwmModel
 }

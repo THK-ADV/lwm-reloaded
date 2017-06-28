@@ -20,7 +20,7 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-final class UserControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val ldapService: LdapService, val userService: UserService)
+final class UserControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val ldapService: LdapService, val abstractDao: UserService)
   extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,13 +28,13 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
   override implicit val mimeType = LwmMimeType.userV1Json
 
   override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
-  import models.User.writes
     import models.PostgresAuthority.writesAtom
+    import models.User.writes
 
     (for {
       userProtocol <- Future.fromTry(parse[UserProtocol](request))
       ldapUser <- ldapService.user2(userProtocol.systemId)
-      userWithAuth <- userService.createOrUpdate(ldapUser)
+      userWithAuth <- abstractDao.createOrUpdate(ldapUser)
     } yield userWithAuth).jsonResult { userWithAuth =>
       val (user, maybeAuth) = userWithAuth
       val userJson = Json.toJson(user)
@@ -53,7 +53,7 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
   def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
     val requesterId = request.session(SessionController.userId)
 
-    userService.buddyResult(requesterId, systemId, labwork).jsonResult { buddyResult =>
+    abstractDao.buddyResult(requesterId, systemId, labwork).jsonResult { buddyResult =>
       buddyResult match {
         case Allowed => Ok(Json.obj(
           "status" -> "OK",
@@ -90,8 +90,6 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
 
   override protected implicit val reads: Reads[UserProtocol] = User.reads
 
-  override protected val abstractDao: AbstractDao[UserTable, DbUser, User] = userService
-
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
     import controllers.UserControllerPostgres._
 
@@ -106,6 +104,4 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
   }
 
   override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): DbUser = ???
-
-  override protected def toLwmModel(dbModel: DbUser): User = dbModel.toLwmModel
 }
