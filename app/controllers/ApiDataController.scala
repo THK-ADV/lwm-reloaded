@@ -3,9 +3,9 @@ package controllers
 import java.util.UUID
 
 import models._
-import org.joda.time.Interval
+import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json.{JsArray, JsError, JsValue, Json}
 import play.api.mvc.{Action, BodyParsers, Controller}
 import store.SesameRepository
 import store.bind.Bindings
@@ -403,6 +403,72 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
           )
         }
       ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def bonicheck(course: String) = Action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
+    import models.Student.writes
+
+    val eval = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntryAtom].map(_.filter(l => labworks.exists(_.id == l.labwork.id)))
+      grouping = reportCards.groupBy(_.student)
+    } yield grouping
+
+    eval match {
+      case Success(s) => Ok(Json.toJson(s.map {
+        case (student, cards) =>
+
+          val missingBonusPoints = cards.foldLeft(Set.empty[Student]) {
+            case (students, c) =>
+              val cert = c.entryTypes.exists(t => t.entryType == ReportCardEntryType.Certificate.entryType && t.bool)
+              val noBonus = c.entryTypes.exists(t => t.entryType == ReportCardEntryType.Bonus.entryType && t.int == 0)
+
+              if (cert && noBonus) students + student else students
+          }
+
+          Json.toJson(missingBonusPoints)
+      }))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def assignmentEvaluation(course: String) = Action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
+
+    val eval = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntryAtom].map(_.filter(l => labworks.exists(_.id == l.labwork.id)))
+      grouping = reportCards.groupBy(_.student)
+    } yield grouping
+
+    eval match {
+      case Success(s) => Ok(Json.toJson(s.map {
+        case (student, cards) =>
+          val points = cards.flatMap(_.entryTypes).foldLeft(0) {
+            case (sum, e) => e.int + sum
+          }
+
+          Json.obj(
+            "Nachname" -> student.lastname,
+            "Vorname" -> student.firstname,
+            "GMID" -> student.systemId,
+            "Matrikelnummer" -> student.registrationId,
+            "Punkte" -> points,
+            "Bestanden" -> (points >= 100).toString,
+            "Datum" -> LocalDateTime.now.toString
+        )
+      }))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
         "message" -> e.getMessage
