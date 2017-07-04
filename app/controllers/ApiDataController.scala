@@ -5,7 +5,7 @@ import java.util.UUID
 import models._
 import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
-import play.api.libs.json.{JsArray, JsError, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc.{Action, BodyParsers, Controller}
 import store.SesameRepository
 import store.bind.Bindings
@@ -444,6 +444,7 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
 
   def assignmentEvaluation(course: String) = Action { request =>
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
+    import models.LwmDateTime._
 
     val eval = for {
       semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
@@ -459,15 +460,20 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
             case (sum, e) => e.int + sum
           }
 
+          val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).groupBy(_.label).mapValues { entries =>
+            entries.flatMap(_.entryTypes).find(t => ReportCardEntryType.Certificate.entryType == t.entryType).map(_.bool)
+          }.filter(_._2.isDefined).mapValues(o => Json.toJson(o.get))
+
           Json.obj(
+            "Datum" -> LocalDateTime.now.toString,
             "Nachname" -> student.lastname,
             "Vorname" -> student.firstname,
+            "Email" -> student.email,
             "GMID" -> student.systemId,
             "Matrikelnummer" -> student.registrationId,
             "Punkte" -> points,
-            "Bestanden" -> (points >= 100).toString,
-            "Datum" -> LocalDateTime.now.toString
-        )
+            "Bestanden" -> (points >= 100)
+        ) ++ JsObject(assignments.toSeq)
       }))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
