@@ -9,7 +9,7 @@ trait ApiDataModule {
 }
 
 trait DefaultApiDataModule extends ApiDataModule {
-  self: SemanticRepositoryModule =>
+  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
 
-  override lazy val apiDataController: ApiDataController = new ApiDataController(repository)
+  override lazy val apiDataController: ApiDataController = new ApiDataController(repository, sessionService, roleService)
 }

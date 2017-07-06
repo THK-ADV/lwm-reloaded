@@ -3,16 +3,20 @@ package controllers
 import java.util.UUID
 
 import models._
-import org.joda.time.Interval
+import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
-import play.api.libs.json.{JsError, JsValue, Json}
-import play.api.mvc.{Action, BodyParsers, Controller}
+import play.api.libs.json._
+import play.api.mvc.{Action, Controller}
+import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class ApiDataController(private val repository: SesameRepository) extends Controller {
+class ApiDataController(val repository: SesameRepository,
+                        val sessionService: SessionHandlingService,
+                        val roleService: RoleService) extends Controller with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
@@ -320,6 +324,168 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
           )
         }
       ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def bumpBonus(course: String, preview: String) = Action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, ReportCardEntryTypeDescriptor, SemesterDescriptor}
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import models.ReportCardEntryType._
+
+    val result = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntry].map(_.filter(l => labworks.exists(_.id == l.labwork)))
+      _ = println(s"students ${reportCards.groupBy(_.student).keys.size}")
+      assignment = reportCards.filter(e => e.label == "Pflichtteil 1 - Server")
+      _ = println(s"assignment ${assignment.size}")
+      passedAssignment = assignment.filter(_.entryTypes.exists(t => t.entryType == ReportCardEntryType.Certificate.entryType && t.bool))
+      _ = println(s"passedAssignment ${passedAssignment.size}")
+      bumped = passedAssignment.map(e => e.entryTypes.find(_.entryType == ReportCardEntryType.Bonus.entryType).get.copy(int = 50))
+      _ = println(s"bumped ${bumped.size}")
+      _ <- if (preview.toBoolean) fakeSuccessGraph else bumped.map(e => repository.update(e)(ReportCardEntryTypeDescriptor, ReportCardEntryType)).sequence
+    } yield bumped
+
+    result match {
+      case Success(s) => Ok(Json.obj(
+        "status" -> "OK",
+        "bumped" -> Json.toJson(s)
+        ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def assignmentStatistic(course: String) = Action { request =>
+    import bindings.{LabworkAtomDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
+
+    def percentage(of: Int, total: Int) = (100 * of) / total
+    def entryTypeJson(of: Int, total: Int) = Json.obj(
+      "absolute" -> of,
+      "percentage" -> percentage(of, total)
+    )
+
+    val statistic = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[LabworkAtom].map(_.filter(l => l.course.id == UUID.fromString(course) && semesters.exists(_.id == l.semester.id)))
+      reportCards <- repository.getAll[ReportCardEntry].map(_.filter(l => labworks.exists(_.id == l.labwork)))
+      grouping = reportCards.groupBy(_.labwork)
+    } yield (semesters.head, labworks, grouping)
+
+    statistic match {
+      case Success((semester, labworks, grouping)) => Ok(Json.obj(
+        "status" -> "OK",
+        "semester" -> semester.label,
+        "statistic" -> grouping.map {
+          case (labwork, reportCards) =>
+            val assignments = reportCards.groupBy(_.label).mapValues(_.flatMap(_.entryTypes)) // TODO ordering
+            val students = reportCards.groupBy(_.student).size
+
+            Json.obj(
+              "labwork" -> labworks.find(_.id == labwork).get.label,
+              "students" -> students,
+              "assignments" -> assignments.map {
+                case (label, entryTypes) =>
+                  val attendance = entryTypes.count(e => e.entryType == ReportCardEntryType.Attendance.entryType && e.bool)
+                  val testat = entryTypes.count(e => e.entryType == ReportCardEntryType.Certificate.entryType && e.bool)
+                  val points = entryTypes.count(e => e.entryType == ReportCardEntryType.Bonus.entryType && e.int > 0)
+
+                  Json.obj(
+                    "label" -> label,
+                    "attendance" -> entryTypeJson(attendance, students),
+                    "testat" -> entryTypeJson(testat, students),
+                    "points" -> entryTypeJson(points, students)
+                )
+              }
+          )
+        }
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  def bonicheck(course: String) = Action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
+    import models.Student.writes
+
+    val eval = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntryAtom].map(_.filter(l => labworks.exists(_.id == l.labwork.id)))
+      grouping = reportCards.groupBy(_.student)
+    } yield grouping
+
+    eval match {
+      case Success(s) => Ok(Json.toJson(s.map {
+        case (student, cards) =>
+
+          val missingBonusPoints = cards.foldLeft(Set.empty[Student]) {
+            case (students, c) =>
+              val cert = c.entryTypes.exists(t => t.entryType == ReportCardEntryType.Certificate.entryType && t.bool)
+              val noBonus = c.entryTypes.exists(t => t.entryType == ReportCardEntryType.Bonus.entryType && t.int == 0)
+
+              if (cert && noBonus) students + student else students
+          }
+
+          Json.toJson(missingBonusPoints)
+      }))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
+  override implicit def mimeType = LwmMimeType.reportCardEvaluationV1Json
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, Permissions.reportCardEvaluation.create)
+    case _ => PartialSecureBlock(Permissions.god)
+  }
+
+  def assignmentEvaluation(course: String) = restrictedContext(course)(Create) action { request =>
+    import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
+    import models.LwmDateTime._
+
+    val eval = for {
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
+      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      reportCards <- repository.getAll[ReportCardEntryAtom].map(_.filter(l => labworks.exists(_.id == l.labwork.id)))
+      grouping = reportCards.groupBy(_.student)
+    } yield grouping
+
+    eval match {
+      case Success(s) => Ok(Json.toJson(s.map {
+        case (student, cards) =>
+          val points = cards.flatMap(_.entryTypes).foldLeft(0) {
+            case (sum, e) => e.int + sum
+          }
+
+          val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).groupBy(_.label).mapValues { entries =>
+            entries.flatMap(_.entryTypes).find(t => ReportCardEntryType.Certificate.entryType == t.entryType).map(_.bool)
+          }.filter(_._2.isDefined).mapValues(o => Json.toJson(o.get))
+
+          Json.obj(
+            "Datum" -> LocalDateTime.now.toString,
+            "Nachname" -> student.lastname,
+            "Vorname" -> student.firstname,
+            "Email" -> student.email,
+            "GMID" -> student.systemId,
+            "Matrikelnummer" -> student.registrationId,
+            "Punkte" -> points,
+            "Bestanden" -> (points >= 100)
+        ) ++ JsObject(assignments.toSeq)
+      }))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
         "message" -> e.getMessage
