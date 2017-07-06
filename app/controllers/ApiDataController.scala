@@ -6,13 +6,17 @@ import models._
 import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
 import play.api.libs.json._
-import play.api.mvc.{Action, BodyParsers, Controller}
+import play.api.mvc.{Action, Controller}
+import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
+import utils.LwmMimeType
 
 import scala.util.{Failure, Success, Try}
 
-class ApiDataController(private val repository: SesameRepository) extends Controller {
+class ApiDataController(val repository: SesameRepository,
+                        val sessionService: SessionHandlingService,
+                        val roleService: RoleService) extends Controller with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
@@ -442,7 +446,14 @@ class ApiDataController(private val repository: SesameRepository) extends Contro
     }
   }
 
-  def assignmentEvaluation(course: String) = Action { request =>
+  override implicit def mimeType = LwmMimeType.reportCardEvaluationV1Json
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, Permissions.reportCardEvaluation.create)
+    case _ => PartialSecureBlock(Permissions.god)
+  }
+
+  def assignmentEvaluation(course: String) = restrictedContext(course)(Create) action { request =>
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
     import models.LwmDateTime._
 
