@@ -1,11 +1,11 @@
 package utils
 
-/*import TypeClasses._
-import Gen._
+import utils.TypeClasses._
+import utils.Gen._
 import scalaz.Monoid
 import scala.util.Random._
 
-object Genesis {
+object Genesis2 {
 
   type GenAcc[A, E, V] = (Vector[Gen[A, E, V]], List[Evaluation[E, V]])
 
@@ -78,14 +78,14 @@ object Genesis {
     case (v, l) =>
       println(v.map(_.evaluate.value))
       (0 until times).foldLeft(v) {
-      case (vec, _) =>
-        val s = vec.size
-        if (nextBoolean()) vec :+ vec(nextInt(s)).fold((a, e) => withValue[A, E, V](mut(a, e)))
-        else {
-          val (l, r) = cross(vec(nextInt(s)).fold((_, _)), vec(nextInt(s)).fold((_, _)))
-          vec :+ withValue(l) :+ withValue(r)
-        }
-    }
+        case (vec, _) =>
+          val s = vec.size
+          if (nextBoolean()) vec :+ vec(nextInt(s)).fold((a, e) => withValue[A, E, V](mut(a, e)))
+          else {
+            val (l, r) = cross(vec(nextInt(s)).fold((_, _)), vec(nextInt(s)).fold((_, _)))
+            vec :+ withValue(l) :+ withValue(r)
+          }
+      }
   }
 }
 
@@ -150,4 +150,4 @@ object TypeClasses {
       override def apply(a: A): Boolean = f(a)
     }
   }
-}*/
+}

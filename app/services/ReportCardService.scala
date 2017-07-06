@@ -13,7 +13,7 @@ object ReportCardService {
 
 trait ReportCardServiceLike {
 
-  def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[SesameReportCardEntry]
+  //def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[SesameReportCardEntry]
 
   def evaluate(assignmentPlan: SesameAssignmentPlan, reportCardEntries: Set[SesameReportCardEntry]): Set[SesameReportCardEvaluation]
 
@@ -22,7 +22,7 @@ trait ReportCardServiceLike {
 
 class ReportCardService extends ReportCardServiceLike {
 
-  override def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[SesameReportCardEntry] = {
+  /*override def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[SesameReportCardEntry] = {
     import models.TimetableDateEntry.toLocalDateTime
     import services.ReportCardService.toReportCardEntryType
     import models.LwmDateTime.localDateTimeOrd
@@ -36,7 +36,7 @@ class ReportCardService extends ReportCardServiceLike {
         case (se, ap) => SesameReportCardEntry(student, assignmentPlan.labwork, ap.label, se.date, se.start, se.end, se.room, toReportCardEntryType(ap.types))
       } ++ vec
     }.toSet
-  }
+  }*/
 
   override def evaluate(assignmentPlan: SesameAssignmentPlan, reportCardEntries: Set[SesameReportCardEntry]): Set[SesameReportCardEvaluation] = {
     reportCardEntries.groupBy(_.student).flatMap {

@@ -1,6 +1,6 @@
 package services
 
-import java.util.UUID
+/*import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
@@ -26,9 +26,9 @@ object ReportCardServiceSpec {
       appEntry.room == cEntry.room
   }
 
-  def group(students: Int): Group = {
+  def group(students: Int): SesameGroup = {
     val members = (0 until students).map(_ => UUID.randomUUID()).toSet
-    Group("", UUID.randomUUID(), members)
+    SesameGroup("", UUID.randomUUID(), members)
   }
 
   def plan(amount: Int): SesameAssignmentPlan = {
@@ -230,3 +230,4 @@ class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     }
   }
 }
+*/

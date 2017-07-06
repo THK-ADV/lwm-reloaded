@@ -7,7 +7,6 @@ import controllers.JsonSerialisation
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import services.ScheduleEntryG
 import utils.Ops.JsPathX
 import models.LwmDateTime._
 
@@ -106,9 +105,9 @@ object TimetableDateEntry {
     entry.date.toLocalDateTime(entry.start)
   }
 
-  def toLocalDateTime(entry: ScheduleEntryG): LocalDateTime = {
+  /*def toLocalDateTime(entry: ScheduleEntryG): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
-  }
+  }*/
 }
 
 // POSTGRES

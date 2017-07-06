@@ -59,6 +59,19 @@ trait DateStartEndTable { self: Table[_] =>
   def end = column[Time]("END")
 }
 
+trait GroupIdTable { self: Table[_] =>
+  def group = column[UUID]("GROUP")
+
+  def groupFk = foreignKey("GROUP_fkey", group, TableQuery[GroupTable])(_.id)
+  def joinGroup = TableQuery[GroupTable].filter(_.id === group)
+}
+
+trait StudentIdTable { self: Table[_] =>
+  def student = column[UUID]("STUDENT")
+
+  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
+}
+
 trait TableFilter[T <: Table[_]] {
   def value: String
 
@@ -317,10 +330,7 @@ class TimetableEntrySupervisorTable(tag: Tag) extends Table[TimetableEntrySuperv
   override def * = (timetableEntry, supervisor, id) <> ((TimetableEntrySupervisor.apply _).tupled, TimetableEntrySupervisor.unapply)
 }
 
-class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable {
-  def student = column[UUID]("STUDENT")
-
-  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
+class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable with StudentIdTable {
 
   override def * = (student, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
@@ -370,4 +380,45 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
   def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
 
   override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
+}
+
+class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE_ENTRY") with UniqueTable with LabworkIdTable with RoomIdTable with GroupIdTable with DateStartEndTable {
+
+  override def * = (labwork, start, end, date, room, group, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Time, Time, Date, UUID, UUID, Timestamp, Option[Timestamp], UUID)) => ScheduleEntryDb = {
+    case (labwork, start, end, date, room, group, lastModified, invalidated, id) =>
+      ScheduleEntryDb(labwork, start, end, date, room, Set.empty, group, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ScheduleEntryDb) => Option[(UUID, Time, Time, Date, UUID, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.labwork, entry.start, entry.end, entry.date, entry.room, entry.group, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervisor](tag, "SCHEDULE_ENTRY_SUPERVISOR") with UniqueTable {
+  def scheduleEntry = column[UUID]("SCHEDULE_ENTRY")
+  def supervisor = column[UUID]("SUPERVISOR")
+
+  def scheduleEntryFk = foreignKey("SCHEDULE_ENTRIES_fkey", scheduleEntry, TableQuery[ScheduleEntryTable])(_.id)
+  def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
+
+  override def * = (scheduleEntry, supervisor, id) <> ((ScheduleEntrySupervisor.apply _).tupled, ScheduleEntrySupervisor.unapply)
+}
+
+class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable with LabworkIdTable with LabelTable {
+
+  override def * = (label, labwork, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((String, UUID, Timestamp, Option[Timestamp], UUID)) => GroupDb = {
+    case (label, labwork, lastModified, invalidated, id) => GroupDb(label, labwork, Set.empty, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (GroupDb) => Option[(String, UUID, Timestamp, Option[Timestamp], UUID)] = { group =>
+    Option((group.label, group.labwork, group.lastModified, group.invalidated, group.id))
+  }
+}
+
+class GroupMembershipTable(tag: Tag) extends Table[GroupMembership](tag, "GROUP_MEMBERSHIP") with UniqueTable with GroupIdTable with StudentIdTable {
+  override def * = (group, student, id) <> ((GroupMembership.apply _).tupled, GroupMembership.unapply)
 }

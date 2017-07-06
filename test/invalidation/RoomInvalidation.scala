@@ -18,9 +18,9 @@ class RoomInvalidation extends SesameDbSpec {
       else SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
     }
 
-    def sce(room: UUID): Stream[ScheduleEntry] = Stream.continually {
-      if (nextBoolean()) ScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, Set(User.randomUUID), Group.randomUUID)
-      else ScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, SesameRoom.randomUUID, Set(User.randomUUID), Group.randomUUID)
+    def sce(room: UUID): Stream[SesameScheduleEntry] = Stream.continually {
+      if (nextBoolean()) SesameScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, room, Set(User.randomUUID), SesameGroup.randomUUID)
+      else SesameScheduleEntry(SesameLabwork.randomUUID, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, SesameRoom.randomUUID, Set(User.randomUUID), SesameGroup.randomUUID)
     }
 
     def tte(room: UUID): Stream[SesameTimetableEntry] = Stream.continually(SesameTimetableEntry(Set(User.randomUUID), room, 1, LocalTime.now, LocalTime.now plusHours 2))
@@ -42,14 +42,14 @@ class RoomInvalidation extends SesameDbSpec {
 
       repo.add[SesameRoom](room)
       repo.addMany[SesameReportCardEntry](reportCardEntries)
-      repo.addMany[ScheduleEntry](scheduleEntries)
+      repo.addMany[SesameScheduleEntry](scheduleEntries)
       repo.addMany[SesameTimetable](timetables)
 
       repo.invalidate[SesameRoom](SesameRoom.generateUri(room))
 
       repo.get[SesameRoom](SesameRoom.generateUri(room)) shouldBe Success(None)
       repo.getAll[SesameReportCardEntry] shouldBe Success(reportCardEntries filter (_.room != room.id))
-      repo.getAll[ScheduleEntry] shouldBe Success(scheduleEntries filter (_.room != room.id))
+      repo.getAll[SesameScheduleEntry] shouldBe Success(scheduleEntries filter (_.room != room.id))
       repo.getAll[SesameTimetable] match {
         case Success(set) =>
           set shouldBe
@@ -62,7 +62,7 @@ class RoomInvalidation extends SesameDbSpec {
       repo.deepGet[SesameRoom](SesameRoom.generateUri(room)) map (_ map (_.id)) shouldBe Success(Some(room.id))
       repo.deepGetAll[SesameReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
       repo.deepGetAll[SesameTimetable] map (_ map (_.id)) shouldBe Success(timetables map (_.id))
-      repo.deepGetAll[ScheduleEntry] map (_ map (_.id)) shouldBe Success(scheduleEntries map (_.id))
+      repo.deepGetAll[SesameScheduleEntry] map (_ map (_.id)) shouldBe Success(scheduleEntries map (_.id))
     }
   }
 }

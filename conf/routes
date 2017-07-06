@@ -129,16 +129,16 @@ GET           /api2/labworkApplications/:id                                     
 DELETE        /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.delete(id)
 
 # Schedule
-HEAD          /schedules                                                              controllers.ScheduleController.header
+#HEAD          /schedules                                                              controllers.ScheduleController.header
 
 # Schedule restricted
-POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
-POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
-GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
-GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
-DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
+#POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
+#POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
+#GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
+#GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
+#GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
+#GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
+#DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
 
 # ScheduleEntries
 HEAD          /scheduleEntries                                                        controllers.ScheduleEntryController.header
@@ -153,6 +153,16 @@ GET           /courses/:c/scheduleEntries/:id                                   
 GET           /courses/:c/atomic/scheduleEntries/:id                                  controllers.ScheduleEntryController.getAtomic(c, id)
 PUT           /courses/:c/scheduleEntries/:id                                         controllers.ScheduleEntryController.update(c, id)
 PUT           /courses/:c/atomic/scheduleEntries/:id                                  controllers.ScheduleEntryController.updateAtomic(c, id)
+
+# Schedule / ScheduleEntries 2.0
+POST          /api2/courses/:c/scheduleEntries                                        controllers.ScheduleEntryControllerPostgres.createFrom(c)
+GET           /api2/courses/:c/labworks/:l/scheduleEntries/preview                    controllers.ScheduleEntryControllerPostgres.preview(c, l)
+
+GET           /api2/courses/:c/scheduleEntries                                        controllers.ScheduleEntryControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/labworks/:l/scheduleEntries                            controllers.ScheduleEntryControllerPostgres.allFromLabwork(c, l)
+GET           /api2/courses/:c/scheduleEntries/:id                                    controllers.ScheduleEntryControllerPostgres.getFrom(c, id)
+PUT           /api2/courses/:c/scheduleEntries/:id                                    controllers.ScheduleEntryControllerPostgres.updateFrom(c, id)
+DELETE        /api2/courses/:c/labworks/:l/scheduleEntries                            controllers.ScheduleEntryControllerPostgres.deleteFrom(c, l)
 
 # Timetable
 HEAD          /timetables                                                             controllers.TimetableCRUDController.header

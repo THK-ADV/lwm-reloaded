@@ -62,8 +62,8 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "generate groups by given strategy" in {
-      val count = Count("8")
-      val range = Range("13", "15")
+      val count = CountGrouping("8")
+      val range = RangeGrouping("13", "15")
 
       when(applicationService.applicationsFor(labwork)).thenReturn(Success(apps))
 
@@ -87,7 +87,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
     "stop creating groups when no applications have been found" in {
       when(applicationService.applicationsFor(labwork)).thenReturn(Success(Set.empty[SesameLabworkApplication]))
 
-      groupService.groupBy(labwork, Count("1")) match {
+      groupService.groupBy(labwork, CountGrouping("1")) match {
         case Failure(e) =>
           e.getMessage should include ("Predicate does not hold")
         case _ => fail("group service did not stop working on failure case")
@@ -97,7 +97,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
     "stop creating groups when max is lower than min" in {
       when(applicationService.applicationsFor(labwork)).thenReturn(Success(apps))
 
-      groupService.groupBy(labwork, Range("5", "3")) match {
+      groupService.groupBy(labwork, RangeGrouping("5", "3")) match {
         case Failure(e) =>
           e.getMessage should include ("Predicate does not hold")
         case _ => fail("group service did not stop working on failure case")

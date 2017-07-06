@@ -15,8 +15,8 @@ class GroupBindingSpec extends SesameDbSpec {
 
   implicit val groupBinder = GroupDescriptor.binder
 
-  val group = Group("Label", SesameLabwork.randomUUID, Set(User.randomUUID, User.randomUUID))
-  val groupGraph = URI(Group.generateUri(group)).a(lwm.Group)
+  val group = SesameGroup("Label", SesameLabwork.randomUUID, Set(User.randomUUID, User.randomUUID))
+  val groupGraph = URI(SesameGroup.generateUri(group)).a(lwm.Group)
     .--(lwm.label).->-(group.label)
     .--(lwm.labwork).->-(group.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.members).->-(group.members)(ops, uuidRefBinder(User.splitter))
@@ -32,7 +32,7 @@ class GroupBindingSpec extends SesameDbSpec {
     }
 
     "return a group based on a RDF graph representation" in {
-      val expectedGroup = PointedGraph[Rdf](URI(Group.generateUri(group)), groupGraph).as[Group]
+      val expectedGroup = PointedGraph[Rdf](URI(SesameGroup.generateUri(group)), groupGraph).as[SesameGroup]
 
       expectedGroup match {
         case Success(s) =>
@@ -48,16 +48,16 @@ class GroupBindingSpec extends SesameDbSpec {
       val labwork = SesameLabwork("Label", "Description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
       val student1 = SesameStudent("systemid1", "lastname1", "firstname1", "email1", "registrationId1", UUID.randomUUID())
       val student2 = SesameStudent("systemid2", "lastname2", "firstname2", "email2", "registrationId2", UUID.randomUUID())
-      val group = Group("label", labwork.id, Set(student1.id, student2.id))
+      val group = SesameGroup("label", labwork.id, Set(student1.id, student2.id))
 
-      val groupAtom = GroupAtom(group.label, labwork, Set(student1, student2), group.invalidated, group.id)
+      val groupAtom = SesameGroupAtom(group.label, labwork, Set(student1, student2), group.invalidated, group.id)
 
       repo.add[SesameLabwork](labwork)
       repo.add[SesameStudent](student1)
       repo.add[SesameStudent](student2)
-      repo.add[Group](group)
+      repo.add[SesameGroup](group)
 
-      repo.get[GroupAtom](Group.generateUri(group.id)) match {
+      repo.get[SesameGroupAtom](SesameGroup.generateUri(group.id)) match {
         case Success(Some(dgroup)) =>
           dgroup shouldEqual groupAtom
         case Success(None) =>

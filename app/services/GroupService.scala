@@ -2,30 +2,47 @@ package services
 
 import java.util.UUID
 
-import models.Group
+import models.{PostgresGroup, PostgresLabworkApplication, SesameGroup}
 import utils.PreferenceSort
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 import scalaz.StreamT._
 
-sealed trait Strategy {
-  def apply(people: Vector[UUID]) = this match {
-    case Count(value) =>
-      Try(value.toInt) map (count => (people.size / count) + 1)
-    case Range(min, max) =>
-      def range(min: Int, max: Int, s: Int): Int = (min to max) reduce { (prev, curr) =>
-        if (prev % s < curr % s) curr else prev
-      }
+sealed trait GroupingStrategy {
 
-      for {
-        min <- Try(min.toInt)
-        max <- Try(max.toInt) if min <= max
-      } yield range(min, max, people.size)
+  @scala.annotation.tailrec
+  private def go(min: Int, max: Int, p: Vector[UUID]): List[Vector[UUID]] = {
+    (p.size % min, p.size / min) match {
+      case (m, d) if m == d =>
+        p.grouped(min + 1).toList
+      case (m, d) if m < d =>
+        val g = p.grouped(min).toList
+
+        g.take(g.size - 1).zipAll(g.last.map(Option.apply), Vector.empty, None).map {
+          case (list, Some(toAdd)) => list.+:(toAdd)
+          case (list, None) => list
+        }
+      case (m, d) if m > d =>
+        go(min + 1, max, p)
+      case _ =>
+        List.empty
+    }
+  }
+
+  def apply(people: Vector[UUID]): List[Vector[UUID]] = this match {
+    case CountGrouping(value) =>
+      val count = value.toInt
+      val min = people.size / count
+      val max = min + 1
+
+      go(min, max, people)
+
+    case RangeGrouping(min, max) => go(min.toInt, max.toInt, people)
   }
 }
 
-case class Count(value: String) extends Strategy
-case class Range(min: String, max: String) extends Strategy
+case class CountGrouping(value: String) extends GroupingStrategy
+case class RangeGrouping(min: String, max: String) extends GroupingStrategy
 
 trait GroupServiceLike {
 
@@ -36,7 +53,7 @@ trait GroupServiceLike {
   // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
   def sortApplicantsFor(labwork: UUID): Try[Vector[UUID]]
 
-  def groupBy(labwork: UUID, strategy: Strategy): Try[Set[Group]]
+  def groupBy(labwork: UUID, strategy: GroupingStrategy): Try[Set[SesameGroup]]
 }
 
 class GroupService(private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
@@ -48,13 +65,36 @@ class GroupService(private val applicationService: LabworkApplicationServiceLike
     }
   }
 
-  override def groupBy(labwork: UUID, strategy: Strategy): Try[Set[Group]] = {
-    for {
+  override def groupBy(labwork: UUID, strategy: GroupingStrategy): Try[Set[SesameGroup]] = {
+    /*for {
       people <- sortApplicantsFor(labwork) if people.nonEmpty
       groupSize <- strategy.apply(people)
       grouped = people.grouped(groupSize).toList
       zipped = alphabeticalOrdering(grouped.size) zip grouped
-      mapped = zipped map (t => Group(t._1, labwork, t._2.toSet))
-    } yield mapped.toSet
+      mapped = zipped map (t => SesameGroup(t._1, labwork, t._2.toSet))
+    } yield mapped.toSet*/
+
+    Failure(new Exception("not implemented"))
+  }
+}
+
+object GroupService {
+
+  def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
+
+  def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
+
+  // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
+  def sort(applicants: List[PostgresLabworkApplication]): Vector[UUID] = {
+    val nodes = applicants map (app => (app.applicant, app.friends))
+    PreferenceSort.sort(nodes)
+  }
+
+  def groupApplicantsBy(labwork: UUID, applicants: List[PostgresLabworkApplication], strategy: GroupingStrategy): List[PostgresGroup] = {
+    val people = sort(applicants)
+    val grouped = strategy.apply(people)
+    val zipped = alphabeticalOrdering(grouped.size) zip grouped
+
+    zipped.map(t => PostgresGroup(t._1, labwork, t._2.toSet))
   }
 }

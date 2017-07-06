@@ -25,41 +25,41 @@ object GroupCRUDController {
   def strategyFrom(queryString: Map[String, Seq[String]]) = {
     def valueOf(attribute: String) = queryString.get(attribute).flatMap(_.headOption)
 
-    valueOf(countAttribute).fold[Option[Strategy]] {
+    valueOf(countAttribute).fold[Option[GroupingStrategy]] {
       valueOf(minAttribute).zip(valueOf(maxAttribute)).map {
-        case ((min, max)) => Range(min, max)
+        case ((min, max)) => RangeGrouping(min, max)
       }.headOption
     } { count =>
-      Some(Count(count))
+      Some(CountGrouping(count))
     }
   }
 }
 
-class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val groupService: GroupServiceLike) extends AbstractCRUDController[GroupProtocol, Group, GroupAtom] {
+class GroupCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val groupService: GroupServiceLike) extends AbstractCRUDController[SesameGroupProtocol, SesameGroup, SesameGroupAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, Group] = defaultBindings.GroupDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameGroup] = defaultBindings.GroupDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, GroupAtom] = defaultBindings.GroupAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameGroupAtom] = defaultBindings.GroupAtomDescriptor
 
-  override implicit val uriGenerator: UriGenerator[Group] = Group
+  override implicit val uriGenerator: UriGenerator[SesameGroup] = SesameGroup
 
-  override implicit val reads: Reads[GroupProtocol] = Group.reads
+  override implicit val reads: Reads[SesameGroupProtocol] = SesameGroup.reads
 
-  override implicit val writes: Writes[Group] = Group.writes
+  override implicit val writes: Writes[SesameGroup] = SesameGroup.writes
 
-  override implicit val writesAtom: Writes[GroupAtom] = Group.writesAtom
+  override implicit val writesAtom: Writes[SesameGroupAtom] = SesameGroup.writesAtom
 
-  override protected def coAtomic(atom: GroupAtom): Group = Group(atom.label, atom.labwork.id, atom.members map (_.id), atom.invalidated, atom.id)
+  override protected def coAtomic(atom: SesameGroupAtom): SesameGroup = SesameGroup(atom.label, atom.labwork.id, atom.members map (_.id), atom.invalidated, atom.id)
 
-  override protected def compareModel(input: GroupProtocol, output: Group): Boolean = {
+  override protected def compareModel(input: SesameGroupProtocol, output: SesameGroup): Boolean = {
     input.label == output.label && input.members == output.members
   }
 
-  override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = existing match {
-    case Some(group) => Group(input.label, input.labwork, input.members, group.invalidated, group.id)
-    case None => Group(input.label, input.labwork, input.members)
+  override protected def fromInput(input: SesameGroupProtocol, existing: Option[SesameGroup]): SesameGroup = existing match {
+    case Some(group) => SesameGroup(input.label, input.labwork, input.members, group.invalidated, group.id)
+    case None => SesameGroup(input.label, input.labwork, input.members)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -68,9 +68,9 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[Group]): Try[Set[Group]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameGroup]): Try[Set[SesameGroup]] = {
 
-    queryString.foldRight(Try[Set[Group]](all)) {
+    queryString.foldRight(Try[Set[SesameGroup]](all)) {
       case ((`labworkAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.labwork == p)))
       case ((`studentAttribute`, v), t) => t flatMap (set => Try(UUID.fromString(v.head)).map(p => set.filter(_.members.contains(p))))
       case ((`labelAttribute`, v), t) => t.map(_.filter(_.label == v.head))
@@ -79,11 +79,11 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
-    import models.Group.protocolWrites
+    import models.SesameGroup.protocolWrites
 
     optional2(strategyFrom(request.queryString))
       .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
-      .map(_ map (g => GroupProtocol(g.label, g.labwork, g.members)))
+      .map(_ map (g => SesameGroupProtocol(g.label, g.labwork, g.members)))
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
   }
 
@@ -102,7 +102,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     allAtomic(NonSecureBlock)(rebase(labworkAttribute -> Seq(labwork)))
   }
 
-  def atomic(groups: Set[Group]): Attempt[Set[GroupAtom]] = {
+  def atomic(groups: Set[SesameGroup]): Attempt[Set[SesameGroupAtom]] = {
     import defaultBindings.{LabworkDescriptor, StudentDescriptor}
 
     SemanticUtils.collect {
@@ -110,7 +110,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
         for {
           optLabwork <- repository.get[SesameLabwork](SesameLabwork.generateUri(group.labwork))
           students <- repository.getMany[SesameStudent](group.members map User.generateUri)
-        } yield optLabwork map (GroupAtom(group.label, _, students, group.invalidated, group.id))
+        } yield optLabwork map (SesameGroupAtom(group.label, _, students, group.invalidated, group.id))
       }
     } match {
       case Success(set) => Continue(set)

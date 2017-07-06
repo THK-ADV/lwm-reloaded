@@ -1,7 +1,7 @@
 package services
 
-import models.{BlacklistDb, SesameBlacklist, TimetableDateEntry}
-import org.joda.time.DateTime
+import models.{BlacklistDb, PostgresBlacklist, SesameBlacklist, TimetableDateEntry}
+import org.joda.time.{DateTime, Interval}
 import play.api.libs.json.{JsArray, JsObject, JsValue}
 
 import scala.concurrent.Future
@@ -39,7 +39,6 @@ trait BlacklistServiceLike {
   def filterBy(entries: Vector[TimetableDateEntry], blacklists: Set[DateTime]): Vector[TimetableDateEntry]
 
   def fetchByYear(year: String): Future[SesameBlacklist]
-
   def fetchByYear2(year: String): Future[List[BlacklistDb]]
 }
 

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.{SecurityBaseDefinition, TestBaseDefinition}
 import controllers.SessionController
-import models.Group
+import models.SesameGroup
 import models.Permissions._
 import org.mockito.Matchers
 import org.mockito.Mockito._
@@ -20,7 +20,7 @@ class GroupControllerSecuritySpec extends WordSpec with TestBaseDefinition with 
   "A GroupControllerSecuritySpec " should {
 
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
-    when(groupService.groupBy(Matchers.anyObject(), Matchers.anyObject())).thenReturn(Success(Set.empty[Group]))
+    when(groupService.groupBy(Matchers.anyObject(), Matchers.anyObject())).thenReturn(Success(Set.empty[SesameGroup]))
 
     "Allow restricted invocations when mv wants to preview a group" in new FakeApplication() {
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))

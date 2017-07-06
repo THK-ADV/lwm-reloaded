@@ -141,7 +141,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         run
     }
 
-    val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(entry))(namespace)
+    val scheduleEntryUri = SesameScheduleEntry.generateUri(UUID.fromString(entry))(namespace)
 
     val entryQuery = select distinct("entries", "rescheduled") where {
       **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
@@ -189,7 +189,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
   }
 
   def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    import controllers.ScheduleController._
+    /*import controllers.ScheduleController._
     import defaultBindings.{ScheduleDescriptor, AssignmentPlanDescriptor}
     import store.sparql.select
     import store.sparql.select._
@@ -202,7 +202,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
     val scheduleId = UUID.fromString(schedule)
-    val scheduleUri = Schedule.generateUri(scheduleId)
+    val scheduleUri = SesameSchedule.generateUri(scheduleId)
 
     val query = select("plan") where {
       **(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
@@ -218,7 +218,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
     (for {
       optPlan <- attemptPlan.run
-      optSchedule <- repository.get[Schedule](scheduleUri)
+      optSchedule <- repository.get[SesameSchedule](scheduleUri)
       optScheduleG = optSchedule flatMap (toScheduleG(_, repository))
       reportCards = (optScheduleG |@| optPlan) (reportCardService.reportCards) getOrElse Set.empty[SesameReportCardEntry]
       _ <- repository addMany reportCards
@@ -233,7 +233,9 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
           "status" -> "KO",
           "errors" -> e.getMessage
         ))
-    }
+    }*/
+
+    ???
   }
 
   def copy(course: String) = restrictedContext(course)(Update) contentTypedAction { implicit request =>

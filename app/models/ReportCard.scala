@@ -55,7 +55,7 @@ case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: Local
 
 // DB
 
-case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], rescheduled: Option[ReportCardRescheduledDb] = None, retry: Option[ReportCardRetryDb] = None, var lastModified: Timestamp = DateTime.now.timestamp, var invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], rescheduled: Option[ReportCardRescheduledDb] = None, retry: Option[ReportCardRetryDb] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
 
   override def toLwmModel = PostgresReportCardEntry(
     student,

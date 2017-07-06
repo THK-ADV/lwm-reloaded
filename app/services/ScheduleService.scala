@@ -1,6 +1,6 @@
 package services
 
-import java.util.UUID
+/*import java.util.UUID
 
 import models._
 import org.joda.time._
@@ -16,12 +16,12 @@ import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 
-case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: Group)
+case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: SesameGroup)
 case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: Group)
+case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: SesameGroup)
 
 trait ScheduleServiceLike {
-  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG]
+  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): Vector[ScheduleG]
   def mutate: Mutator
   def mutateDestructive: Mutator
   def crossover: Crossover
@@ -34,8 +34,8 @@ trait ScheduleServiceLike {
 }
 
 trait ScheduleGenesisServiceLike {
-  def generate(timetable: SesameTimetable, groups: Set[Group], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
-  def competitive(labwork: Option[SesameLabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG]
+  def generate(timetable: SesameTimetable, groups: Set[SesameGroup], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
+  def competitive(labwork: Option[SesameLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleG]
 }
 
 object ScheduleService {
@@ -59,21 +59,21 @@ object ScheduleService {
   def randomOne[A](v: Vector[A]): A = shuffle(v).head
 
   @annotation.tailrec
-  def randomAvoiding(avoiding: Group)(implicit groups: Vector[Group]): Group = {
+  def randomAvoiding(avoiding: SesameGroup)(implicit groups: Vector[SesameGroup]): SesameGroup = {
     val grp = randomGroup
     if(grp.id == avoiding.id) randomAvoiding(avoiding)
     else grp
   }
 
-  def randomGroup(implicit groups: Vector[Group]): Group = groups(nextInt(groups.size))
+  def randomGroup(implicit groups: Vector[SesameGroup]): SesameGroup = groups(nextInt(groups.size))
 
-  def replaceGroup(s: Group)(f: Set[UUID] => Set[UUID]): Group = Group(s.label, s.labwork, f(s.members), s.invalidated, s.id)
+  def replaceGroup(s: SesameGroup)(f: Set[UUID] => Set[UUID]): SesameGroup = SesameGroup(s.label, s.labwork, f(s.members), s.invalidated, s.id)
 
   def replaceSchedule(s: ScheduleG)(f: ScheduleEntryG => ScheduleEntryG): ScheduleG = ScheduleG(s.labwork, s.entries map f, s.id)
 
-  def replaceEntry(e: ScheduleEntryG)(f: Group => Group) = ScheduleEntryG(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
+  def replaceEntry(e: ScheduleEntryG)(f: SesameGroup => SesameGroup) = ScheduleEntryG(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
 
-  def replaceWithin(s: ScheduleG)(left: Group, right: Group): ScheduleG = replaceSchedule(s)(
+  def replaceWithin(s: ScheduleG)(left: SesameGroup, right: SesameGroup): ScheduleG = replaceSchedule(s)(
     replaceEntry(_) {
       case x if x.id == left.id => right
       case y if y.id == right.id => left
@@ -93,7 +93,7 @@ object ScheduleService {
 
 class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
 
-  override def generate(timetable: SesameTimetable, groups: Set[Group], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
+  override def generate(timetable: SesameTimetable, groups: Set[SesameGroup], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
     val entries = timetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups)
     val pop = population(p getOrElse pops, timetable.labwork, entries, groups)
 
@@ -109,11 +109,11 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
     gen
   }
 
-  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): Vector[ScheduleG] = {
+  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): Vector[ScheduleG] = {
     (0 until times).map(_ => populate(labwork, entries, groups)).toVector
   }
 
-  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[Group]): ScheduleG = {
+  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): ScheduleG = {
     import models.LwmDateTime.localDateTimeOrd
 
     val shuffled = shuffle(groups.toVector)
@@ -121,7 +121,7 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
       case (t, group) => ScheduleEntryG(t.start, t.end, t.date, t.room, t.supervisor, group)
     }).toVector
 
-    ScheduleG(labwork, scheduleEntries, Schedule.randomUUID)
+    ScheduleG(labwork, scheduleEntries, SesameSchedule.randomUUID)
   }
 
   override def mutate: Mutator = mutation { (s, e) =>
@@ -193,7 +193,7 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
     } map (_ * conflicts.count(_.isDefined))
   }
 
-  override def competitive(labwork: Option[SesameLabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG] = {
+  override def competitive(labwork: Option[SesameLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleG] = {
     labwork.fold(Set.empty[ScheduleG]) { item =>
       val filtered = all
         .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
@@ -206,4 +206,4 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
       }
     }
   }
-}
+}*/

@@ -1,6 +1,6 @@
 package controllers
 
-import java.util.UUID
+/*import java.util.UUID
 
 import base.StreamHandler._
 import base.{StreamHandler, TestBaseDefinition}
@@ -236,8 +236,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         Map("plan" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       ))
       doReturn(Success(Some(SesameAssignmentPlan.empty))).
-        doReturn(Success(Some(Schedule.empty))).
-        doReturn(Success(Some(Group.empty))).
+        doReturn(Success(Some(SesameSchedule.empty))).
+        doReturn(Success(Some(SesameGroup.empty))).
         when(repository).get(anyObject())(anyObject())
       when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[SesameReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
@@ -268,8 +268,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
         Map("plan" -> List(factory.createURI(SesameAssignmentPlan.generateUri(UUID.randomUUID())(namespace))))
       ))
       doReturn(Failure(new Exception(errorMessage))).
-        doReturn(Success(Some(Schedule.empty))).
-        doReturn(Success(Some(Group.empty))).
+        doReturn(Success(Some(SesameSchedule.empty))).
+        doReturn(Success(Some(SesameGroup.empty))).
         when(repository).get(anyObject())(anyObject())
       when(reportCardService.reportCards(anyObject(), anyObject())).thenReturn(Set.empty[SesameReportCardEntry])
       when(repository.addMany(anyObject())(anyObject())).thenReturn(Success(Set.empty[PointedGraph[Sesame]]))
@@ -322,8 +322,8 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
 
       val student3 = UUID.randomUUID()
 
-      val scheduleEntry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1, Set(User.randomUUID), UUID.randomUUID())
-      val scheduleEntry2 = ScheduleEntry(labwork1.id, start2, end2, date1, room2, Set(User.randomUUID), UUID.randomUUID())
+      val scheduleEntry1 = SesameScheduleEntry(labwork1.id, start1, end1, date1, room1, Set(User.randomUUID), UUID.randomUUID())
+      val scheduleEntry2 = SesameScheduleEntry(labwork1.id, start2, end2, date1, room2, Set(User.randomUUID), UUID.randomUUID())
       val entry1 = SesameReportCardEntry(student1, labwork1.id, "Label 1", date1, start1, end1, room1, Set(SesameReportCardEntryType.Certificate, SesameReportCardEntryType.Attendance))
       val entry2 = SesameReportCardEntry(student2, labwork2.id, "Label 2", date2, start1, end1, room1, Set(SesameReportCardEntryType.Bonus, SesameReportCardEntryType.Attendance))
       val entry3 = SesameReportCardEntry(student1, labwork1.id, "Label 3", date1, start2, end2, room2, Set(SesameReportCardEntryType.Certificate, SesameReportCardEntryType.Bonus))
@@ -435,3 +435,4 @@ class ReportCardEntryControllerSpec extends WordSpec with TestBaseDefinition wit
     }
   }
 }
+*/

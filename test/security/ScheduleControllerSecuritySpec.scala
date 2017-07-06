@@ -26,12 +26,12 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     when(sessionService.isValid(Matchers.anyObject())).thenReturn(Future.successful(true))
 
     "Allow restricted context invocations when admin wants to update a schedule entry" in new FakeApplication() {
-      import models.ScheduleEntry.writes
+      import models.SesameScheduleEntry.writes
 
       when(roleService.authorities(FakeAdmin)).thenReturn(Success(Set(FakeAdminAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), scheduleEntry.update))(FakeAdminAuth)).thenReturn(Success(true))
 
-      val entry = ScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, Set(UUID.randomUUID), UUID.randomUUID)
+      val entry = SesameScheduleEntry(UUID.randomUUID, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, Set(UUID.randomUUID), UUID.randomUUID)
       val request = FakeRequest(
         PUT,
         s"$FakeCourseUri/scheduleEntries/${entry.id}",
@@ -48,13 +48,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Allow restricted context invocations when mv wants to create a schedule" in new FakeApplication() {
-      import models.Schedule.writes
+      import models.SesameSchedule.writes
 
       when(roleService.authorities(FakeMv)).thenReturn(Success(Set(FakeMvAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), schedule.create))(FakeMvAuth)).thenReturn(Success(true))
 
       val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
+        SesameSchedule(UUID.randomUUID(), Set.empty[SesameScheduleEntry])
       )
 
       val request = FakeRequest(
@@ -141,13 +141,13 @@ class ScheduleControllerSecuritySpec extends WordSpec with TestBaseDefinition wi
     }
 
     "Block restricted context invocations when ma wants to create schedule" in new FakeApplication() {
-      import models.Schedule.writes
+      import models.SesameSchedule.writes
 
       when(roleService.authorities(FakeMa)).thenReturn(Success(Set(FakeMaAuth)))
       when(roleService.checkAuthority((Some(FakeCourse), schedule.create))(FakeMaAuth)).thenReturn(Success(false))
 
       val json = Json.toJson(
-        Schedule(UUID.randomUUID(), Set.empty[ScheduleEntry])
+        SesameSchedule(UUID.randomUUID(), Set.empty[SesameScheduleEntry])
       )
 
       val request = FakeRequest(

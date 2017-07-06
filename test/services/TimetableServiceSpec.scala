@@ -49,7 +49,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
       val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
-      val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
+      val groups = (0 until 6).map(n => SesameGroup(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
         fdt.parseDateTime("19/10/2015 11:00:00"),
@@ -70,7 +70,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       val tt = timetable()
       val aEntries = (0 until 5).map(SesameAssignmentEntry(_, "label", Set.empty[SesameAssignmentEntryType], 2)).toSet
       val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
-      val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
+      val groups = (0 until 6).map(n => SesameGroup(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
         fdt.parseDateTime("19/10/2015 11:00:00"),
@@ -85,7 +85,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       checkAssertion(tt, plan, groups, expectedStart, result)
     }
 
-    def checkAssertion(timetable: SesameTimetable, plan: SesameAssignmentPlan, groups: Set[Group], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
+    def checkAssertion(timetable: SesameTimetable, plan: SesameAssignmentPlan, groups: Set[SesameGroup], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
       import models.LwmDateTime.localDateTimeOrd
 
       val sortedResult = result.map(toLocalDateTime).sorted
@@ -117,7 +117,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         case e => SesameAssignmentEntry(e, "label", Set.empty[SesameAssignmentEntryType], e - 3)
       }.toSet
       val plan = SesameAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
-      val groups = (0 until 6).map(n => Group(n.toString, tt.labwork, members)).toSet
+      val groups = (0 until 6).map(n => SesameGroup(n.toString, tt.labwork, members)).toSet
 
       val expectedStart = Vector(
         fdt.parseDateTime("19/10/2015 11:00:00"),
