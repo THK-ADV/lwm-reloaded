@@ -10,8 +10,8 @@ trait ApiDataModule {
 
 trait DefaultApiDataModule extends ApiDataModule {
   self: SemanticRepositoryModule with UserServiceModule with AssignmentPlanServiceModule with CourseServiceModule with DegreeServiceModule with LabworkApplication2ServiceModule
-    with LabworkServiceModule with PermissionServiceModule with RoleServiceModule with RoomServiceModule with SemesterServiceModule =>
+    with LabworkServiceModule with PermissionServiceModule with RoleServiceModule with RoomServiceModule with SemesterServiceModule with AuthorityServiceModule =>
 
   override lazy val apiDataController: ApiDataController = new ApiDataController(repository, userService, assignmentPlanService, courseService, degreeService, labworkApplicationService2,
-    labworkService, permissionService, roleService2, roomService, semesterService)
+    labworkService, permissionService, roleService2, roomService, semesterService, authorityService)
 }

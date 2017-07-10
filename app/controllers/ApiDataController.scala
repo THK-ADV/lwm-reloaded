@@ -24,7 +24,8 @@ final class ApiDataController(private val repository: SesameRepository,
                               val permissionService: PermissionService,
                               val roleService: RoleService2,
                               val roomService: RoomService,
-                              val semesterService: SemesterService
+                              val semesterService: SemesterService,
+                              val authorityService: AuthorityService
                              ) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
@@ -285,6 +286,23 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"planDbsEntryTypes ${planDbs.flatMap(_.entries.flatMap(_.types)).size}")
       plans <- assignmentPlanService.createMany(planDbs.toList)
     } yield plans.map(_.toAssignmentPlan)
+
+    result.jsonResult
+  }
+
+  def migrateAuthorities = Action.async {
+    import bindings.AuthorityDescriptor
+
+    val result = for {
+      _ <- authorityService.createSchema
+      sesameAuthorities <- Future.fromTry(repository.getAll[SesameAuthority])
+      _ = println(s"sesameAuthorities ${sesameAuthorities.size}")
+      authorityDbs = sesameAuthorities.map{ auth =>
+        AuthorityDb(auth.user, auth.role, auth.course, DateTime.now.timestamp, auth.invalidated.map(_.timestamp), auth.id);
+      }
+      _ = println(s"authoritiyDbs ${authorityDbs.size}")
+      authorities <- authorityService.createMany(authorityDbs.toList)
+    } yield authorities.map(_.toAuthority)
 
     result.jsonResult
   }

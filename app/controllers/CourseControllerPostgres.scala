@@ -4,11 +4,13 @@ import java.util.UUID
 
 import models.Permissions.{course, prime}
 import models.{Course, CourseDb, PostgresCourse, PostgresCourseProtocol}
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{JsValue, Reads, Writes}
+import play.api.mvc.{Action, AnyContent}
 import services._
 import store.{CourseTable, TableFilter}
 import utils.LwmMimeType
 
+import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 
@@ -19,9 +21,10 @@ object CourseControllerPostgres{
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
-final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val courseService: CourseService)
+final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val courseService: CourseService, val authorityService: AuthorityService)
   extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course]{
 
+  import scala.concurrent.ExecutionContext.Implicits.global
   override protected implicit val writes: Writes[Course] = Course.writes
 
   override protected implicit val reads: Reads[PostgresCourseProtocol] = PostgresCourse.reads
@@ -51,4 +54,31 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     case _ => PartialSecureBlock(prime)
   }
 
+  override def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
+    (for {
+      protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
+      dbModel = toDbModel(protocol, None)
+      _ <- courseService.transaction(courseService.createQuery(dbModel), authorityService.createByCourse(dbModel))
+    } yield toLwmModel(dbModel)).jsonResult
+  }
+
+  /*override def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
+    val uuid = UUID.fromString(id)
+
+    (for {
+      protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
+      dbModel = toDbModel(protocol, Some(uuid))
+      updatedCourse <- courseService.update(dbModel)
+      _ <- authorityService.updateWithCourse(dbModel)
+    } yield updatedCourse.map(toLwmModel)).jsonResult(uuid)
+  }
+
+  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
+    val uuid = UUID.fromString(id)
+
+    (for {
+      deletedCourse <- courseService.delete(uuid) if deletedCourse.isDefined
+      _ <- authorityService.deleteByCourse(deletedCourse.get)
+    } yield deletedCourse.map(toLwmModel)).jsonResult(uuid)
+  }*/
 }

@@ -41,17 +41,12 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition {
     TableQuery[AssignmentEntryTypeTable].schema
   )
 
-  private val mandatoryFill = DBIO.seq(
-    TableQuery[RoleTable].forceInsertAll(Roles.all.map(l => RoleDb(l, Set.empty)))
-  )
-
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
     await(db.run(DBIO.seq(
       schema.map(_.create): _*
     ).andThen(dependencies).
-      andThen(mandatoryFill).
       transactionally)
     )
   }

@@ -43,6 +43,12 @@ object PostgresPermission extends JsonSerialisation[PostgresPermissionProtocol, 
 
   override implicit def writesAtom: Writes[PostgresPermission] = writes
 }
+
+object PermissionDb{
+  def from(protocol: PostgresPermissionProtocol, existingId: Option[UUID]) = {
+    PermissionDb(protocol.value, protocol.description, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID()))
+  }
+}
 /*
   missing permissions directly implicate either admin or god and are therefore not modelled
  */

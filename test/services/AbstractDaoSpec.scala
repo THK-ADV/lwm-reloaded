@@ -7,11 +7,11 @@ import base.PostgresDbSpec
 import models._
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
-import store.UniqueTable
+import store.{RoleTable, UniqueTable}
 import slick.driver.PostgresDriver.api._
 
 object AbstractDaoSpec {
-  import scala.util.Random.nextInt
+  import scala.util.Random.{nextInt, nextBoolean}
 
   val maxDegrees = 10
   val maxLabworks = 20
@@ -20,6 +20,8 @@ object AbstractDaoSpec {
   val maxRooms = 10
   val maxEmployees = 10
   val maxAssignmentPlans = 10
+  val maxPermissions = 10
+  val maxAuthorities = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -27,6 +29,9 @@ object AbstractDaoSpec {
   def randomLabwork = labworks(nextInt(maxDegrees))
   def randomRoom = rooms(nextInt(maxRooms))
   def randomEmployee = employees(nextInt(maxEmployees))
+  def randomPermission = permissions(nextInt(maxPermissions))
+  def randomRole = roles(nextInt(roles.length))
+  def randomAuthority = authorities(nextInt(maxAuthorities))
 
   val semesters = {
     val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
@@ -48,6 +53,14 @@ object AbstractDaoSpec {
     CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, i % 6)
   }.toList
 
+  val authorities = (0 until maxAuthorities).map{ i =>
+    val role:RoleDb = roles((i*3)%roles.length)
+    val course:Option[UUID] = if(role.label == Roles.RightsManagerLabel) Some(courses((i*6)%maxCourses).id) else None
+    AuthorityDb(employees(i%maxEmployees).id, role.id, course)
+  }.toList
+
+  lazy val roles = Roles.all.map(l => RoleDb(l, Set.empty))
+
   val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
 
   val labworks = (0 until maxLabworks).map { i =>
@@ -64,6 +77,11 @@ object AbstractDaoSpec {
 
     AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
   }.toList
+
+  val permissions = (0 until maxPermissions).map{ i =>
+    PermissionDb(s"label$i", s"description$i")
+  }.toList
+
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
@@ -100,8 +118,6 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"not create a $name because model already exists" in {
-      println(dbEntity)
-      println(invalidDuplicateOfDbEntity)
       await(create(invalidDuplicateOfDbEntity).failed) shouldBe ModelAlreadyExists(Seq(dbEntity))
     }
 
