@@ -71,17 +71,17 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[RoleDb]] = Some(new DatabaseExpander[RoleDb] {
-    override def expandCreationOf[X <: Effect](entities: Seq[RoleDb]) = {
+    override def expandCreationOf[X <: Effect](entities: Seq[RoleDb]): DBIOAction[Seq[RoleDb], NoStream, Effect.Write] = {
       val rolePermissions = entities.flatMap(r => r.permissions.map(p => RolePermission(r.id, p)))
 
       (rolePermissionQuery ++= rolePermissions).map(_ => entities)
     }
 
-    override def expandDeleteOf(entity: RoleDb) = {
+    override def expandDeleteOf(entity: RoleDb): DBIOAction[Some[RoleDb], NoStream, Effect.Write] = {
       rolePermissionQuery.filter(_.role === entity.id).delete.map(_ => Some(entity))
     }
 
-    override def expandUpdateOf(entity: RoleDb) = {
+    override def expandUpdateOf(entity: RoleDb): DBIOAction[Option[RoleDb], NoStream, Effect.Write with Effect.Write] = {
       for {
         deleted <- expandDeleteOf(entity) if deleted.isDefined
         created <- expandCreationOf(Seq(entity))
