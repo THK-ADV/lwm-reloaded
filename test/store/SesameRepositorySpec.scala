@@ -157,10 +157,10 @@ class SesameRepositorySpec extends SesameDbSpec {
     "delete arbitrarily nested entities from many others" in {
       import bindings.ReportCardEntryDescriptor
 
-      def entries(labwork: UUID, amount: Int): Vector[ReportCardEntry] = (0 to amount).map { i =>
-        ReportCardEntry(UUID.randomUUID(), labwork, s"entry$i", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(),
-          Set(ReportCardEntryType(s"type$i", i % 2 == 0, scala.util.Random.nextInt),
-            ReportCardEntryType(s"type$i", i % 3 == 0, scala.util.Random.nextInt)))
+      def entries(labwork: UUID, amount: Int): Vector[SesameReportCardEntry] = (0 to amount).map { i =>
+        SesameReportCardEntry(UUID.randomUUID(), labwork, s"entry$i", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(),
+          Set(SesameReportCardEntryType(s"type$i", i % 2 == 0, scala.util.Random.nextInt),
+            SesameReportCardEntryType(s"type$i", i % 3 == 0, scala.util.Random.nextInt)))
       }.toVector
 
       val batch1 = entries(UUID.randomUUID(), 15)
@@ -169,9 +169,9 @@ class SesameRepositorySpec extends SesameDbSpec {
       repo addMany batch1
       repo addMany batch2
 
-      repo.delete[ReportCardEntry](ReportCardEntry.generateUri(batch2.head))
+      repo.delete[SesameReportCardEntry](SesameReportCardEntry.generateUri(batch2.head))
 
-      repo.getAll[ReportCardEntry] match {
+      repo.getAll[SesameReportCardEntry] match {
         case Success(ents) =>
           (batch1 ++ batch2.tail) foreach { elm =>
             ents contains elm shouldBe true

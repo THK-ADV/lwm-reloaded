@@ -26,7 +26,7 @@ import scala.util.Success
 
 class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with SesameModule {
 
-  import models.ScheduleEntry.writesAtom
+  import models.SesameScheduleEntry.writesAtom
 
   val repository = mock[SesameRepository]
   val sessionService = mock[SessionHandlingService]
@@ -41,13 +41,13 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
   val controller: ScheduleEntryController = new ScheduleEntryController(repository, sessionService, ns, roleService) {
 
     override def allFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      retrieveAll[ScheduleEntry]
+      retrieveAll[SesameScheduleEntry]
         .map(set => chunk(set))
         .mapResult(enum => Ok.stream(enum).as(mimeType))
     }
 
     override def allAtomicFrom(course: String): Action[AnyContent] = Action { implicit request =>
-      retrieveAll[ScheduleEntryAtom]
+      retrieveAll[SesameScheduleEntryAtom]
         .map(set => chunk(set))
         .mapResult(enum => Ok.stream(enum).as(mimeType))
     }
@@ -61,11 +61,11 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     }
   }
 
-  def entries(labwork: UUID): Int => Vector[ScheduleEntry] = amount => ((0 until amount) map { _ =>
-    ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, UUID.randomUUID(), Set(UUID.randomUUID()), UUID.randomUUID())
+  def entries(labwork: UUID): Int => Vector[SesameScheduleEntry] = amount => ((0 until amount) map { _ =>
+    SesameScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, UUID.randomUUID(), Set(UUID.randomUUID()), UUID.randomUUID())
   }).toVector
 
-  def atomizeEntries(ents: Vector[ScheduleEntry]): Vector[ScheduleEntryAtom] = ents map { e =>
+  def atomizeEntries(ents: Vector[SesameScheduleEntry]): Vector[SesameScheduleEntryAtom] = ents map { e =>
     val semester = SesameSemester("label to pass", "abbrev to pass", LocalDate.now, LocalDate.now, LocalDate.now)
     val employee = SesameEmployee("systemId to pass", "last name to pass", "first name to pass", "email to pass", "employee")
     val courseAtom = SesameCourseAtom("label to pass", "desc to pass", "abbrev to pass", employee, 1, None, UUID.randomUUID)
@@ -74,15 +74,15 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
     val labworkAtom = SesameLabworkAtom("labwork", "desc", semester, courseAtom, degree, subscribable = false, published = false, None, e.labwork)
     val room = SesameRoom("room", "desc", None, e.room)
     val supervisor: Set[User] = e.supervisor map (SesameEmployee("systemid", "lastname", "firstname", "email", "supervisor", None, _))
-    val group = Group("label", labworkAtom.id, Set(), None, e.group)
-    ScheduleEntryAtom(labworkAtom, e.start, e.end, e.date, room, supervisor, group, None, e.id)
+    val group = SesameGroup("label", labworkAtom.id, Set(), None, e.group)
+    SesameScheduleEntryAtom(labworkAtom, e.start, e.end, e.date, room, supervisor, group, None, e.id)
   }
 
   "A ScheduleEntry controller" should {
 
     "get specific entries" in {
       val entry = entries(UUID.randomUUID())(1).head
-      when(repository.get[ScheduleEntry](anyObject())(anyObject())).thenReturn(Success(Some(entry)))
+      when(repository.get[SesameScheduleEntry](anyObject())(anyObject())).thenReturn(Success(Some(entry)))
 
       val labworkID = UUID.randomUUID()
       val courseID = UUID.randomUUID()
@@ -107,7 +107,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val entry = entries(labwork.id)(1)
       val atomized = atomizeEntries(entry)
 
-      when(repository.get[ScheduleEntryAtom](anyObject())(anyObject())).thenReturn(Success(Some(atomized.head)))
+      when(repository.get[SesameScheduleEntryAtom](anyObject())(anyObject())).thenReturn(Success(Some(atomized.head)))
 
       val request = FakeRequest(
         GET,
@@ -128,7 +128,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
 
       val entry = entries(labworkID)(3)
 
-      when(repository.getAll[ScheduleEntry](anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
+      when(repository.getAll[SesameScheduleEntry](anyObject())).thenReturn(Success(Set(entry(0), entry(1), entry(2))))
       val request = FakeRequest(
         GET,
         s"/courses/$courseID/labwork/$labworkID/entries"
@@ -150,7 +150,7 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val entry = entries(labwork.id)(3)
       val atomized = atomizeEntries(entry)
 
-      when(repository.getAll[ScheduleEntryAtom](anyObject())).thenReturn(Success(atomized.toSet))
+      when(repository.getAll[SesameScheduleEntryAtom](anyObject())).thenReturn(Success(atomized.toSet))
 
       val request = FakeRequest(
         GET,
@@ -239,9 +239,9 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val labwork2 = SesameLabwork("Label2", "Desc2", UUID.randomUUID(), courseID2, UUID.randomUUID())
       val labwork3 = SesameLabwork("Label3", "Desc3", UUID.randomUUID(), courseID, UUID.randomUUID())
 
-      val group1 = Group("Label1", labwork1.id, Set.empty)
-      val group2 = Group("Label2", labwork2.id, Set.empty)
-      val group3 = Group("Label3", labwork3.id, Set.empty)
+      val group1 = SesameGroup("Label1", labwork1.id, Set.empty)
+      val group2 = SesameGroup("Label2", labwork2.id, Set.empty)
+      val group3 = SesameGroup("Label3", labwork3.id, Set.empty)
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
       val supervisor3 = SesameEmployee("systemid3", "lastname3", "firstname3", "email3", "status3")
@@ -260,12 +260,12 @@ class ScheduleEntryControllerSpec extends WordSpec with TestBaseDefinition with 
       val date3 = LocalDate.now plusDays 2
       val date4 = LocalDate.now plusDays 4
 
-      val sentry1 = ScheduleEntry(labwork1.id, start1, end1, date1, room1.id, Set(supervisor1.id), group1.id)
-      val sentry2 = ScheduleEntry(labwork1.id, start1, end2, date2, room1.id, Set(supervisor1.id), group1.id)
-      val sentry3 = ScheduleEntry(labwork2.id, start3, end3, date2, room2.id, Set(supervisor2.id), group2.id)
-      val sentry4 = ScheduleEntry(labwork2.id, start2, end2, date3, room2.id, Set(supervisor2.id), group2.id)
-      val sentry5 = ScheduleEntry(labwork1.id, start3, end2, date2, room1.id, Set(supervisor1.id), group2.id)
-      val sentry6 = ScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, Set(supervisor3.id), group3.id)
+      val sentry1 = SesameScheduleEntry(labwork1.id, start1, end1, date1, room1.id, Set(supervisor1.id), group1.id)
+      val sentry2 = SesameScheduleEntry(labwork1.id, start1, end2, date2, room1.id, Set(supervisor1.id), group1.id)
+      val sentry3 = SesameScheduleEntry(labwork2.id, start3, end3, date2, room2.id, Set(supervisor2.id), group2.id)
+      val sentry4 = SesameScheduleEntry(labwork2.id, start2, end2, date3, room2.id, Set(supervisor2.id), group2.id)
+      val sentry5 = SesameScheduleEntry(labwork1.id, start3, end2, date2, room1.id, Set(supervisor1.id), group2.id)
+      val sentry6 = SesameScheduleEntry(labwork3.id, LocalTime.now plusHours 8, LocalTime.now plusHours 9, LocalDate.now plusDays 9, room1.id, Set(supervisor3.id), group3.id)
 
 
       realRepository addMany List(labwork1, labwork2, labwork3)

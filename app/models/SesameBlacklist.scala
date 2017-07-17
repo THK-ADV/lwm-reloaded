@@ -5,7 +5,7 @@ import java.util.UUID
 
 import controllers.JsonSerialisation
 import models.LwmDateTime.dateTimeOrd
-import org.joda.time.{DateTime, LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
@@ -49,4 +49,54 @@ object SesameBlacklist extends UriGenerator[SesameBlacklist] with JsonSerialisat
 
 case class PostgresBlacklist(label: String, date: LocalDate, start: LocalTime, end: LocalTime, global: Boolean, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class PostgresBlacklistProtocol(label: String, date: String, start: String, end: String, global: Boolean)
+
+case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global: Boolean, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresBlacklist(label, date.localDate, start.localTime, end.localTime, global, id)
+
+  override def equals(that: scala.Any) = that match {
+    case BlacklistDb(l, d, s, e, g, _, _, i) =>
+      l == label && d.localDate.isEqual(date.localDate) && s.localTime.isEqual(start.localTime) && e.localTime.isEqual(end.localTime) && g == global && i == id
+    case _ => false
+  }
+}
+
+object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, PostgresBlacklist, PostgresBlacklist] {
+
+  val startOfDay: LocalTime = LocalTime.MIDNIGHT
+  val endOfDay: LocalTime = startOfDay.minusSeconds(1)
+
+  def entireDay(label: String, date: LocalDate, global: Boolean): PostgresBlacklist = {
+    PostgresBlacklist(label, date, startOfDay, endOfDay, global)
+  }
+
+  def entireDay(label: String, dates: Vector[LocalDate], global: Boolean): Vector[PostgresBlacklist] = {
+    dates.map(d => entireDay(label, d, global))
+  }
+
+  def partialDay(label: String, localDateTime: LocalDateTime, hourPadding: Int, global: Boolean): PostgresBlacklist = {
+    val date = localDateTime.toLocalDate
+    val start = localDateTime.toLocalTime
+    val end = start.plusHours(hourPadding)
+
+    PostgresBlacklist(label, date, start, end, global)
+  }
+
+  override implicit def reads = Json.reads[PostgresBlacklistProtocol]
+
+  override implicit def writes = Json.writes[PostgresBlacklist]
+
+  override implicit def writesAtom = writes
+}
+
+object BlacklistDb {
+  import models.PostgresBlacklist.{endOfDay, startOfDay}
+
+  def from(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
+    BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+  }
+
+  def entireDay(label: String, date: LocalDate, global: Boolean): BlacklistDb = entireDay(label, date.sqlDate, global)
+
+  def entireDay(label: String, date: Date, global: Boolean): BlacklistDb = BlacklistDb(label, date, startOfDay.sqlTime, endOfDay.sqlTime, global)
+}

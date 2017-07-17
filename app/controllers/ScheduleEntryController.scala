@@ -18,7 +18,6 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.ScheduleEntryController._
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object ScheduleEntryController {
@@ -36,39 +35,39 @@ object ScheduleEntryController {
 class ScheduleEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike)
   extends Controller
     with BaseNamespace
-    with Filterable[ScheduleEntry]
+    with Filterable[SesameScheduleEntry]
     with ContentTyped
     with Secured
     with SessionChecking
     with SecureControllerContext
     with Chunked
     with Stored
-    with RdfSerialisation[ScheduleEntry, ScheduleEntryAtom]
-    with JsonSerialisation[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
-    with ModelConverter[ScheduleEntry, ScheduleEntry]
-    with Consistent[ScheduleEntry, ScheduleEntry]
-    with Basic[ScheduleEntry, ScheduleEntry, ScheduleEntryAtom]
-    with RequestRebase[ScheduleEntry] {
+    with RdfSerialisation[SesameScheduleEntry, SesameScheduleEntryAtom]
+    with JsonSerialisation[SesameScheduleEntry, SesameScheduleEntry, SesameScheduleEntryAtom]
+    with ModelConverter[SesameScheduleEntry, SesameScheduleEntry]
+    with Consistent[SesameScheduleEntry, SesameScheduleEntry]
+    with Basic[SesameScheduleEntry, SesameScheduleEntry, SesameScheduleEntryAtom]
+    with RequestRebase[SesameScheduleEntry] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, ScheduleEntry] = defaultBindings.ScheduleEntryDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameScheduleEntry] = defaultBindings.ScheduleEntryDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, ScheduleEntryAtom] = defaultBindings.ScheduleEntryAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameScheduleEntryAtom] = defaultBindings.ScheduleEntryAtomDescriptor
 
-  override implicit val reads: Reads[ScheduleEntry] = ScheduleEntry.reads
+  override implicit val reads: Reads[SesameScheduleEntry] = SesameScheduleEntry.reads
 
-  override implicit val writes: Writes[ScheduleEntry] = ScheduleEntry.writes
+  override implicit val writes: Writes[SesameScheduleEntry] = SesameScheduleEntry.writes
 
-  override implicit val writesAtom: Writes[ScheduleEntryAtom] = ScheduleEntry.writesAtom
+  override implicit val writesAtom: Writes[SesameScheduleEntryAtom] = SesameScheduleEntry.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[ScheduleEntry] = ScheduleEntry
+  override implicit val uriGenerator: UriGenerator[SesameScheduleEntry] = SesameScheduleEntry
 
-  def coatomic(atom: ScheduleEntryAtom): ScheduleEntry = ScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor map (_.id), atom.group.id, atom.invalidated, atom.id)
+  def coatomic(atom: SesameScheduleEntryAtom): SesameScheduleEntry = SesameScheduleEntry(atom.labwork.id, atom.start, atom.end, atom.date, atom.room.id, atom.supervisor map (_.id), atom.group.id, atom.invalidated, atom.id)
 
-  override protected def compareModel(input: ScheduleEntry, output: ScheduleEntry): Boolean = input == output
+  override protected def compareModel(input: SesameScheduleEntry, output: SesameScheduleEntry): Boolean = input == output
 
-  override protected def fromInput(input: ScheduleEntry, existing: Option[ScheduleEntry]): ScheduleEntry = input
+  override protected def fromInput(input: SesameScheduleEntry, existing: Option[SesameScheduleEntry]): SesameScheduleEntry = input
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case GetAll => SecureBlock(restrictionId, scheduleEntry.getAll)
@@ -77,7 +76,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ScheduleEntry]): Try[Set[ScheduleEntry]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameScheduleEntry]): Try[Set[SesameScheduleEntry]] = {
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
 
@@ -91,7 +90,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
         _ append **(v("entries"), p(lwm.labwork), s(SesameLabwork.generateUri(UUID.fromString(values.head))))
       }
       case ((`groupAttribute`, values), clause) => clause map {
-        _ append **(v("entries"), p(lwm.group), s(Group.generateUri(UUID.fromString(values.head))))
+        _ append **(v("entries"), p(lwm.group), s(SesameGroup.generateUri(UUID.fromString(values.head))))
       }
       case ((`supervisorAttribute`, values), clause) => clause map {
         _ append **(v("entries"), p(lwm.supervisor), s(User.generateUri(UUID.fromString(values.head))))
@@ -121,7 +120,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
       repository.prepareQuery(query).
         select(_.get("entries")).
         transform(_.fold(List.empty[String])(_ map (_.stringValue()))).
-        requestAll(repository.getMany[ScheduleEntry]).
+        requestAll(repository.getMany[SesameScheduleEntry]).
         run
     }
   }
@@ -138,7 +137,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     val rebased = rebase(courseAttribute -> Seq(course))
 
     filter(rebased)(Set.empty)
-      .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
+      .flatMap(set => retrieveLots[SesameScheduleEntryAtom](set map SesameScheduleEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -155,22 +154,22 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
     val rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork))
 
     filter(rebased)(Set.empty)
-      .flatMap(set => retrieveLots[ScheduleEntryAtom](set map ScheduleEntry.generateUri))
+      .flatMap(set => retrieveLots[SesameScheduleEntryAtom](set map SesameScheduleEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def get(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val uri = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+    val uri = (UUID.fromString _ andThen SesameScheduleEntry.generateUri) (entry)
 
-    retrieve[ScheduleEntry](uri)
+    retrieve[SesameScheduleEntry](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
   def getAtomic(course: String, entry: String) = restrictedContext(course)(Get) action { request =>
-    val uri = (UUID.fromString _ andThen ScheduleEntry.generateUri) (entry)
+    val uri = (UUID.fromString _ andThen SesameScheduleEntry.generateUri) (entry)
 
-    retrieve[ScheduleEntryAtom](uri)
+    retrieve[SesameScheduleEntryAtom](uri)
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 
@@ -193,7 +192,7 @@ class ScheduleEntryController(val repository: SesameRepository, val sessionServi
           "status" -> "KO",
           "message" -> s"Id found in body does not match id found in resource ($entry)"
         )))
-      .flatMap(s => retrieve[ScheduleEntryAtom](ScheduleEntry.generateUri(s)))
+      .flatMap(s => retrieve[SesameScheduleEntryAtom](SesameScheduleEntry.generateUri(s)))
       .mapResult(s => Ok(Json.toJson(s)).as(mimeType))
   }
 

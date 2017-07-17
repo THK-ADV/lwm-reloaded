@@ -3,14 +3,12 @@ package services
 import java.util.UUID
 
 import models._
+import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
 import slick.lifted.TableQuery
 import store._
-import slick.driver.PostgresDriver.api._
 
 import scala.concurrent.Future
-import models.LwmDateTime.DateTimeConverter
-import org.joda.time.DateTime
-import slick.driver.PostgresDriver
 
 case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[AssignmentPlanTable] {
   override def predicate = _.labwork === UUID.fromString(value)
@@ -31,7 +29,7 @@ trait AssignmentPlanService
   protected val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
 
   override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlan]] = collectDependencies(query) {
-    case (plan, labwork, entries) => PostgresAssignmentPlanAtom(labwork.toLabwork, plan.attendance, plan.mandatory, entries, plan.id)
+    case (plan, labwork, entries) => PostgresAssignmentPlanAtom(labwork.toLwmModel, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
   // TODO this is a better implementation than LabworkApplicationService.joinDependencies. test first and adjust when they succeed
@@ -72,12 +70,6 @@ trait AssignmentPlanService
     case (plan, labwork, entries) => PostgresAssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
-  override protected def setInvalidated(entity: AssignmentPlanDb): AssignmentPlanDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(entity.labwork, entity.attendance, entity.mandatory, entity.entries, now, Some(now))
-  }
-
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {
     filterBy(List(AssignmentPlanLabworkFilter(entity.labwork.toString)))
   }
@@ -116,7 +108,7 @@ trait AssignmentPlanService
     }
 
     override def expandUpdateOf(entity: AssignmentPlanDb) = {
-        for { // TODO check this too, but it seems to be a good idea
+        for {
           d <- expandDeleteOf(entity) if d.isDefined
           c <- expandCreationOf(Seq(entity))
         } yield c.headOption

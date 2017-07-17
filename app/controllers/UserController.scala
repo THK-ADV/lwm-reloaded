@@ -15,7 +15,6 @@ import store.{Namespace, Resolvers, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import utils.Ops.MonadInstances.optM
 
-import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}

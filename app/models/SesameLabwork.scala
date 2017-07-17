@@ -51,8 +51,8 @@ case class PostgresLabworkProtocol(label: String, description: String, semester:
 
 case class PostgresLabworkAtom(label: String, description: String, semester: PostgresSemester, course: PostgresCourseAtom, degree: PostgresDegree, subscribable: Boolean, published: Boolean, id: UUID) extends Labwork
 
-case class LabworkDb(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toLabwork = PostgresLabwork(label, description, semester, course, degree, subscribable, published, id)
+case class LabworkDb(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresLabwork(label, description, semester, course, degree, subscribable, published, id)
 }
 
 object PostgresLabwork extends JsonSerialisation[PostgresLabworkProtocol, PostgresLabwork, PostgresLabworkAtom] {

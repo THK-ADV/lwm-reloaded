@@ -71,7 +71,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
       val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", SesameDegree.randomUUID)
       val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", SesameDegree.randomUUID)
       val s3 = SesameStudent("mi1313", "Carl3", "Heinz", "171711", "mi1313@gm.fh-koeln.de", SesameDegree.randomUUID)
-      val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, s3.id))
+      val group = SesameGroup("A", UUID.randomUUID(), Set(s1.id, s2.id, s3.id))
 
       repo addMany List(s1, s2, s3)
       repo add group
@@ -103,7 +103,7 @@ class SPARQLQueryEngineSpec extends WordSpec with TestBaseDefinition {
 
       val s1 = SesameStudent("mi1111", "Carl1", "Heinz", "117272", "mi1111@gm.fh-koeln.de", SesameDegree.randomUUID)
       val s2 = SesameStudent("mi1212", "Carl2", "Heinz", "177772", "mi1212@gm.fh-koeln.de", SesameDegree.randomUUID)
-      val group = Group("A", UUID.randomUUID(), Set(s1.id, s2.id, UUID.randomUUID()))
+      val group = SesameGroup("A", UUID.randomUUID(), Set(s1.id, s2.id, UUID.randomUUID()))
 
       repo addMany List(s1, s2)
       repo add group

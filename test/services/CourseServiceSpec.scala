@@ -46,17 +46,17 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
         CourseSemesterIndexFilter(labelAndSemesterIndexFilterSemesterIndexValue.toString)
       )
 
-      await(get(labelFilter, atomic = false)) shouldBe dbEntities.filter(_.label == labelFilterValue).map(_.toCourse)
-      await(get(semesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toCourse)
-      await(get(abbreviationFilter, atomic = false)) shouldBe dbEntities.filter(_.abbreviation == abbreviationFilterValue).map(_.toCourse)
+      await(get(labelFilter, atomic = false)) shouldBe dbEntities.filter(_.label == labelFilterValue).map(_.toLwmModel)
+      await(get(semesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toLwmModel)
+      await(get(abbreviationFilter, atomic = false)) shouldBe dbEntities.filter(_.abbreviation == abbreviationFilterValue).map(_.toLwmModel)
       await(get(abbreviationAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.abbreviation == abbreviationAndSemesterIndexFilterAbbreviationValue
           && course.semesterIndex == abbreviationAndSemesterIndexFilterSemesterIndexValue
-      ).map(_.toCourse)
+      ).map(_.toLwmModel)
       await(get(labelAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.label == labelAndSemesterIndexFilterLabelValue
           && course.semesterIndex == labelAndSemesterIndexFilterSemesterIndexValue
-      ).map(_.toCourse)
+      ).map(_.toLwmModel)
     }
 
     "create a course with dedicated roles" in {
@@ -160,14 +160,14 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
     }
   }
 
-  override protected val lwmEntity: Course = dbEntity.toCourse
+  override protected val lwmEntity: Course = dbEntity.toLwmModel
 
   override protected val lwmAtom: Course = {
     PostgresCourseAtom(
       dbEntity.label,
       dbEntity.description,
       dbEntity.abbreviation,
-      employees.find(_.id == dbEntity.lecturer).get.toUser,
+      employees.find(_.id == dbEntity.lecturer).get.toLwmModel,
       dbEntity.semesterIndex,
       dbEntity.id
     )

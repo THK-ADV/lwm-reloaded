@@ -18,7 +18,6 @@ import utils.LwmMimeType
 import utils.Ops.MonadInstances.listM
 import controllers.AuthorityController._
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object AuthorityController {

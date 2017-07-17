@@ -11,32 +11,28 @@ import utils.LwmMimeType
 import scala.util.{Failure, Try}
 
 object AssignmentPlanControllerPostgres {
-  val labworkAttribute = "labwork"
-  val courseAttribute = "course"
+  lazy val labworkAttribute = "labwork"
+  lazy val courseAttribute = "course"
 }
 
-final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val assignmentPlanService: AssignmentPlanService)
+final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: AssignmentPlanService)
   extends AbstractCRUDControllerPostgres[PostgresAssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
 
   override protected implicit val writes: Writes[AssignmentPlan] = AssignmentPlan.writes
 
   override protected implicit val reads: Reads[PostgresAssignmentPlanProtocol] = PostgresAssignmentPlan.reads
 
-  override protected val abstractDao: AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] = assignmentPlanService
-
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
     import controllers.AssignmentPlanControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course.head)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
   override protected def toDbModel(protocol: PostgresAssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: AssignmentPlanDb): AssignmentPlan = dbModel.toAssignmentPlan
 
   override implicit val mimeType = LwmMimeType.assignmentPlanV1Json
 

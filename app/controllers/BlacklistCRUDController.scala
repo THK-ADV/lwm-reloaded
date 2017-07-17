@@ -11,7 +11,6 @@ import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 import controllers.BlacklistCRUDController._
 
-import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Try}

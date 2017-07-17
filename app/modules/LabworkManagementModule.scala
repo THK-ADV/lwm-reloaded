@@ -19,13 +19,15 @@ trait DefaultLabworkManagementModuleImpl extends LabworkManagementModule {
 // POSTGRES
 
 trait LabworkServiceModule {
-  self: DatabaseModule with CourseServiceModule with UserServiceModule with DegreeServiceModule with SemesterServiceModule =>
+  self: DatabaseModule =>
+
   def labworkService: LabworkService
 }
 
 trait DefaultLabworkServiceModule extends LabworkServiceModule {
-  self: DatabaseModule with CourseServiceModule with UserServiceModule with DegreeServiceModule with SemesterServiceModule =>
-  override lazy val labworkService = new LabworkServiceImpl(db, courseService, userService, degreeService, semesterService)
+  self: DatabaseModule =>
+
+  override lazy val labworkService = new LabworkServiceImpl(db)
 }
 
 trait LabworkManagementModulePostgres {

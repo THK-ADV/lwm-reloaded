@@ -11,12 +11,12 @@ import org.w3.banana.sesame.Sesame
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
-import services.{Count, Range}
+import services.{CountGrouping, RangeGrouping}
 import utils.LwmMimeType
 
 import scala.util.Success
 
-class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, Group, GroupAtom] {
+class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[SesameGroupProtocol, SesameGroup, SesameGroupAtom] {
 
   val labworkToPass = SesameLabwork("label to pass", "desc to pass", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
   val labworkToFail = SesameLabwork("label to fail", "desc to fail", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
@@ -30,11 +30,11 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     SesameStudent("systemId2 to fail", "last name 2 to fail", "first name 2 to fail", "email2 to fail", "regId2 to fail", UUID.randomUUID())
   )
 
-  override val entityToPass: Group = Group("label to pass", labworkToPass.id, studentsToPass.map(_.id))
+  override val entityToPass: SesameGroup = SesameGroup("label to pass", labworkToPass.id, studentsToPass.map(_.id))
 
   override val controller: GroupCRUDController = new GroupCRUDController(repository, sessionService, namespace, roleService, groupService) {
 
-    override protected def fromInput(input: GroupProtocol, existing: Option[Group]): Group = entityToPass
+    override protected def fromInput(input: SesameGroupProtocol, existing: Option[SesameGroup]): SesameGroup = entityToPass
 
     override protected def restrictedContext(moduleId: String): PartialFunction[Rule, SecureContext] = {
       case _ => NonSecureBlock
@@ -45,11 +45,11 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
   }
 
-  override val entityToFail: Group = Group("label to fail", labworkToFail.id, studentsToFail.map(_.id))
+  override val entityToFail: SesameGroup = SesameGroup("label to fail", labworkToFail.id, studentsToFail.map(_.id))
 
-  override implicit val jsonWrites: Writes[Group] = Group.writes
+  override implicit val jsonWrites: Writes[SesameGroup] = SesameGroup.writes
 
-  override implicit def jsonWritesAtom: Writes[GroupAtom] = Group.writesAtom
+  override implicit def jsonWritesAtom: Writes[SesameGroupAtom] = SesameGroup.writesAtom
 
   override val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
@@ -65,8 +65,8 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     "members" -> (entityToPass.members + User.randomUUID)
   )
 
-  override val atomizedEntityToPass = GroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.invalidated, entityToPass.id)
-  override val atomizedEntityToFail = GroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToPass.invalidated, entityToFail.id)
+  override val atomizedEntityToPass = SesameGroupAtom(entityToPass.label, labworkToPass, studentsToPass, entityToPass.invalidated, entityToPass.id)
+  override val atomizedEntityToFail = SesameGroupAtom(entityToFail.label, labworkToFail, studentsToFail, entityToPass.invalidated, entityToFail.id)
 
   override def entityTypeName: String = "group"
 
@@ -80,10 +80,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
   def groups(labwork: UUID, amount: Int) = {
     def students = (0 until 20).map(_ => UUID.randomUUID).toVector
 
-    (0 until amount).map(_ => Group("label", labwork, students.take(15).toSet)).toSet
+    (0 until amount).map(_ => SesameGroup("label", labwork, students.take(15).toSet)).toSet
   }
 
-  implicit val groupReads = Json.reads[Group]
+  implicit val groupReads = Json.reads[SesameGroup]
 
 
   "A GroupCRUDController also" should {
@@ -276,13 +276,13 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val broken = Map("wrongAttribute" -> Seq("broken"))
 
       strategyFrom(count) match {
-        case Some(c: Count) => c.value shouldBe countValue
+        case Some(c: CountGrouping) => c.value shouldBe countValue
         case Some(_) => fail("strategy type should be count but was strategy")
         case None => fail("there should be at least one attribute")
       }
 
       strategyFrom(range) match {
-        case Some(r: Range) =>
+        case Some(r: RangeGrouping) =>
           r.min shouldBe minValue
           r.max shouldBe maxValue
         case Some(_) => fail("strategy type should be range but was count")
@@ -293,7 +293,7 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
     }
 
     "preview groups given some arbitrary group size and range" in {
-      import models.Group.protocolWrites
+      import models.SesameGroup.protocolWrites
 
       val labwork = SesameLabwork.randomUUID
       val course = SesameCourse.randomUUID
@@ -322,10 +322,10 @@ class GroupCRUDControllerSpec extends AbstractCRUDControllerSpec[GroupProtocol, 
       val rangeResult = controller.preview(course.toString, labwork.toString)(rangeRequest).run
 
       status(countResult) shouldBe OK
-      contentAsJson(countResult) shouldBe Json.toJson(gs.map(g => GroupProtocol(g.label, g.labwork, g.members)))
+      contentAsJson(countResult) shouldBe Json.toJson(gs.map(g => SesameGroupProtocol(g.label, g.labwork, g.members)))
 
       status(rangeResult) shouldBe OK
-      contentAsJson(rangeResult) shouldBe Json.toJson(gs.map(g => GroupProtocol(g.label, g.labwork, g.members)))
+      contentAsJson(rangeResult) shouldBe Json.toJson(gs.map(g => SesameGroupProtocol(g.label, g.labwork, g.members)))
     }
   }
 }

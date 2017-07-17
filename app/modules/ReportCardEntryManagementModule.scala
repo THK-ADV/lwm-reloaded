@@ -1,6 +1,7 @@
 package modules
 
-import controllers.ReportCardEntryController
+import controllers.{ReportCardEntryController, ReportCardEntryControllerPostgres}
+import services.{ReportCardEntryDao, ReportCardEntryDaoImpl}
 
 trait ReportCardEntryManagementModule {
 
@@ -11,4 +12,30 @@ trait DefaultReportCardEntryManagementModuleImpl extends ReportCardEntryManageme
   self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule with ReportCardServiceManagementModule =>
 
   lazy val reportCardEntryManagementController: ReportCardEntryController = new ReportCardEntryController(repository, sessionService, namespace, roleService, reportCardService)
+}
+
+// POSTGRES
+
+trait ReportCardEntryDaoModule {
+  self: DatabaseModule =>
+
+  def reportCardEntryDao: ReportCardEntryDao
+}
+
+trait DefaultReportCardEntryDaoModule extends ReportCardEntryDaoModule {
+  self: DatabaseModule =>
+
+  override lazy val reportCardEntryDao = new ReportCardEntryDaoImpl(db)
+}
+
+trait ReportCardEntryManagementModule2 {
+  self: SecurityManagementModule with SessionRepositoryModule with ReportCardEntryDaoModule with ReportCardServiceManagementModule =>
+
+  def reportCardEntryControllerPostgres: ReportCardEntryControllerPostgres
+}
+
+trait DefaultReportCardEntryManagementModule2 extends ReportCardEntryManagementModule2 {
+  self: SecurityManagementModule with SessionRepositoryModule with ReportCardEntryDaoModule with ReportCardServiceManagementModule =>
+
+  override lazy val reportCardEntryControllerPostgres = new ReportCardEntryControllerPostgres(sessionService, roleService, reportCardEntryDao, reportCardService)
 }

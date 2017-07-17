@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.ReportCardEntryType
+import models.SesameReportCardEntryType
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.openrdf.model.impl.ValueFactoryImpl
@@ -33,7 +33,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
   val qe = mock[QueryExecutor[SelectClause]]
   val query = QueryEngine.empty(qe)
 
-  val types = ReportCardEntryType.all
+  val types = SesameReportCardEntryType.all
   val entry = UUID.randomUUID
   val course = UUID.randomUUID.toString
 
@@ -50,10 +50,10 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
   "A ReportCardEntryTypeControllerSpec " should {
 
     "successfully update a report card entry type" in {
-      import models.ReportCardEntryType._
+      import models.SesameReportCardEntryType._
 
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
+      val toUpdate = SesameReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
 
       when(repository.update(anyObject())(anyObject(), anyObject())).thenReturn(Success(PointedGraph[repository.Rdf](factory.createBNode(""))))
 
@@ -73,7 +73,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
     "not update when there is an inconsistency" in {
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
+      val toUpdate = SesameReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
 
       val request = FakeRequest(
         PUT,
@@ -113,7 +113,7 @@ class ReportCardEntryTypeControllerSpec extends WordSpec with TestBaseDefinition
 
     "not update a report card entry type when there is an exception" in {
       val entryType = types.head
-      val toUpdate = ReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
+      val toUpdate = SesameReportCardEntryType(entryType.entryType, !entryType.bool, entryType.int, entryType.invalidated, entryType.id)
       val course = UUID.randomUUID()
       val errorMessage = "Oops, something went wrong"
 

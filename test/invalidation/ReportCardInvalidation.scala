@@ -15,12 +15,12 @@ class ReportCardInvalidation extends SesameDbSpec {
 
     def annot(reportCardEntry: UUID): Stream[Annotation] = Stream.continually {
       if (nextBoolean()) Annotation(User.randomUUID, SesameLabwork.randomUUID, reportCardEntry, "Message")
-      else Annotation(User.randomUUID, SesameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message")
+      else Annotation(User.randomUUID, SesameLabwork.randomUUID, SesameReportCardEntry.randomUUID, "Message")
     }
 
-    def rcetypes: Stream[ReportCardEntryType] = Stream.continually(ReportCardEntryType(s"String$nextInt", nextBoolean()))
-    def rce: Stream[ReportCardEntry] = Stream.continually(
-      ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, (rcetypes take 10).toSet))
+    def rcetypes: Stream[SesameReportCardEntryType] = Stream.continually(SesameReportCardEntryType(s"String$nextInt", nextBoolean()))
+    def rce: Stream[SesameReportCardEntry] = Stream.continually(
+      SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, (rcetypes take 10).toSet))
 
     "invalidate the report card and subsequent report card entries and annotations" in {
       import bindings.{AnnotationDescriptor, ReportCardEntryDescriptor}
@@ -30,12 +30,12 @@ class ReportCardInvalidation extends SesameDbSpec {
       val annotations = toInvalidate flatMap (e => (annot(e.id) take 5).toSet)
 
 
-      repo.addMany[ReportCardEntry](reportCardEntries)
+      repo.addMany[SesameReportCardEntry](reportCardEntries)
       repo.addMany[Annotation](annotations)
 
-      toInvalidate foreach (a => repo.invalidate[ReportCardEntry](ReportCardEntry.generateUri(a)))
+      toInvalidate foreach (a => repo.invalidate[SesameReportCardEntry](SesameReportCardEntry.generateUri(a)))
 
-      repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries diff toInvalidate)
+      repo.getAll[SesameReportCardEntry] shouldBe Success(reportCardEntries diff toInvalidate)
 
       repo.getAll[Annotation] match {
         case Success(set) =>
@@ -43,7 +43,7 @@ class ReportCardInvalidation extends SesameDbSpec {
         case Failure(e) => fail("no")
       }
 
-      repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
+      repo.deepGetAll[SesameReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
       repo.deepGetAll[Annotation] map (_ map (_.id)) shouldBe Success(annotations map (_.id))
     }
   }

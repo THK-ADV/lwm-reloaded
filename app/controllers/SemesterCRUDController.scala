@@ -12,7 +12,6 @@ import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.collection.Map
 import scala.util.{Failure, Try}
 
 object SemesterCRUDController {

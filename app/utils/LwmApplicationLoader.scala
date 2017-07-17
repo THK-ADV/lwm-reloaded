@@ -76,15 +76,22 @@ with LabworkApplicationManagementModule
 with LabworkApplicationManagementModulePostgres
 with LabworkApplicationServiceModule
 with LabworkApplication2ServiceModule
-with ScheduleManagementModule
+with ScheduleEntryDaoModule
 with ScheduleEntryManagementModule
+with ScheduleEntryManagementModule2
 with TimetableManagementModule
+with TimetableManagementModulePostgres
 with TimetableServiceManagementModule
+with TimetableService2ManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
+with Blacklist2ManagementModule
 with BlacklistServiceManagementModule
+with BlacklistService2ManagementModule
 with ReportCardServiceManagementModule
+with ReportCardEntryDaoModule
 with ReportCardEntryManagementModule
+with ReportCardEntryManagementModule2
 with ReportCardEntryTypeManagementModule
 with AssignmentPlanManagementModule
 with AssignmentPlanManagementModulePostgres
@@ -117,11 +124,14 @@ with LdapSyncModule {
     permissionManagementController,
     labworkApplicationController,
     labworkApplicationControllerPostgres,
-    scheduleManagementController,
     scheduleEntryController,
+    scheduleEntryControllerPostgres,
     timetableManagementController,
+    timetableControllerPostgres,
     blacklistManagementController,
+    blacklistControllerPostgres,
     reportCardEntryManagementController,
+    reportCardEntryControllerPostgres,
     reportCardEntryTypeManagementController,
     reportCardEvaluationManagementController,
     assignmentPlanManagementController,
@@ -177,15 +187,22 @@ with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationManagementModulePostgres
 with DefaultLabworkApplicationServiceModule
 with DefaultLabworkApplication2ServiceModule
-with DefaultScheduleManagementModuleImpl
+with DefaultScheduleEntryDaoModule
 with DefaultScheduleEntryManagementModule
+with DefaultScheduleEntryManagementModule2
 with DefaultTimetableManagementModuleImpl
+with DefaultTimetableManagementModulePostgres
 with DefaultTimetableServiceManagementModule
+with DefaultTimetableService2Module
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
+with DefaultBlacklist2ManagementModule
 with DefaultBlacklistServiceManagementModule
+with DefaultBlacklistService2ManagementModule
 with DefaultReportCardServiceManagementModule
+with DefaultReportCardEntryDaoModule
 with DefaultReportCardEntryManagementModuleImpl
+with DefaultReportCardEntryManagementModule2
 with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImplPostgres

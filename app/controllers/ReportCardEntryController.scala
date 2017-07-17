@@ -17,7 +17,6 @@ import store.{Namespace, SesameRepository}
 import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.ReportCardEntryController._
 
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 
 case class ReportCardCopyRequest(srcLabwork: UUID, srcStudent: UUID, destLabwork: UUID, destStudent: UUID)
@@ -39,21 +38,21 @@ object ReportCardEntryController {
 }
 
 class ReportCardEntryController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val reportCardService: ReportCardServiceLike)
-  extends AbstractCRUDController[ReportCardEntry, ReportCardEntry, ReportCardEntryAtom] {
+  extends AbstractCRUDController[SesameReportCardEntry, SesameReportCardEntry, SesameReportCardEntryAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 
-  override implicit val descriptor: Descriptor[Sesame, ReportCardEntry] = defaultBindings.ReportCardEntryDescriptor
+  override implicit val descriptor: Descriptor[Sesame, SesameReportCardEntry] = defaultBindings.ReportCardEntryDescriptor
 
-  override implicit val descriptorAtom: Descriptor[Sesame, ReportCardEntryAtom] = defaultBindings.ReportCardEntryAtomDescriptor
+  override implicit val descriptorAtom: Descriptor[Sesame, SesameReportCardEntryAtom] = defaultBindings.ReportCardEntryAtomDescriptor
 
-  override implicit val reads: Reads[ReportCardEntry] = ReportCardEntry.reads
+  override implicit val reads: Reads[SesameReportCardEntry] = SesameReportCardEntry.reads
 
-  override implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes
+  override implicit val writes: Writes[SesameReportCardEntry] = SesameReportCardEntry.writes
 
-  override implicit val writesAtom: Writes[ReportCardEntryAtom] = ReportCardEntry.writesAtom
+  override implicit val writesAtom: Writes[SesameReportCardEntryAtom] = SesameReportCardEntry.writesAtom
 
-  override implicit val uriGenerator: UriGenerator[ReportCardEntry] = ReportCardEntry
+  override implicit val uriGenerator: UriGenerator[SesameReportCardEntry] = SesameReportCardEntry
 
   def get(student: String) = contextFrom(Get) action { implicit request =>
     val rebased = rebase(studentAttribute -> Seq(student))
@@ -66,7 +65,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val rebased = rebase(studentAttribute -> Seq(student))
 
     filter(rebased)(Set.empty)
-      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .flatMap(set => retrieveLots[SesameReportCardEntryAtom](set map SesameReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -88,7 +87,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val rebased = rebase(courseAttribute -> Seq(course))
 
     filter(rebased)(Set.empty)
-      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .flatMap(set => retrieveLots[SesameReportCardEntryAtom](set map SesameReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
@@ -100,11 +99,11 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def updateAtomic(course: String, entry: String) = restrictedContext(course)(Update) contentTypedAction { request =>
     updateEntry(request, entry)
-      .flatMap(entry => retrieve[ReportCardEntryAtom](ReportCardEntry.generateUri(entry)))
+      .flatMap(entry => retrieve[SesameReportCardEntryAtom](SesameReportCardEntry.generateUri(entry)))
       .mapResult(entry => Ok(Json.toJson(entry)).as(mimeType))
   }
 
-  def updateEntry(request: Request[JsValue], entry: String): Attempt[ReportCardEntry] = {
+  def updateEntry(request: Request[JsValue], entry: String): Attempt[SesameReportCardEntry] = {
     validateInput(request)
       .when(_.id == UUID.fromString(entry), overwrite0)(
         BadRequest(Json.obj(
@@ -123,7 +122,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
-  def fromScheduleEntry(entry: String): Attempt[Set[ReportCardEntry]] = {
+  def fromScheduleEntry(entry: String): Attempt[Set[SesameReportCardEntry]] = {
     import store.sparql.select
     import store.sparql.select._
     import utils.Ops.MonadInstances._
@@ -138,11 +137,11 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         select(_.get("entries")).
         transform(_.fold(List.empty[Value])(identity)).
         map(_.stringValue()).
-        requestAll(repository.getMany[ReportCardEntry](_)).
+        requestAll(repository.getMany[SesameReportCardEntry](_)).
         run
     }
 
-    val scheduleEntryUri = ScheduleEntry.generateUri(UUID.fromString(entry))(namespace)
+    val scheduleEntryUri = SesameScheduleEntry.generateUri(UUID.fromString(entry))(namespace)
 
     val entryQuery = select distinct("entries", "rescheduled") where {
       **(s(scheduleEntryUri), p(lwm.labwork), v("labwork")).
@@ -184,13 +183,13 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
   def allAtomicFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) action { request =>
     fromScheduleEntry(scheduleEntry)
-      .flatMap(set => retrieveLots[ReportCardEntryAtom](set map ReportCardEntry.generateUri))
+      .flatMap(set => retrieveLots[SesameReportCardEntryAtom](set map SesameReportCardEntry.generateUri))
       .map(set => chunk(set))
       .mapResult(enum => Ok.stream(enum).as(mimeType))
   }
 
   def create(course: String, schedule: String) = restrictedContext(course)(Create) contentTypedAction { request =>
-    import controllers.ScheduleController._
+    /*import controllers.ScheduleController._
     import defaultBindings.{ScheduleDescriptor, AssignmentPlanDescriptor}
     import store.sparql.select
     import store.sparql.select._
@@ -203,7 +202,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     val lwm = LWMPrefix[repository.Rdf]
     val rdf = RDFPrefix[repository.Rdf]
     val scheduleId = UUID.fromString(schedule)
-    val scheduleUri = Schedule.generateUri(scheduleId)
+    val scheduleUri = SesameSchedule.generateUri(scheduleId)
 
     val query = select("plan") where {
       **(v("plan"), p(rdf.`type`), s(lwm.AssignmentPlan)).
@@ -219,9 +218,9 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
 
     (for {
       optPlan <- attemptPlan.run
-      optSchedule <- repository.get[Schedule](scheduleUri)
+      optSchedule <- repository.get[SesameSchedule](scheduleUri)
       optScheduleG = optSchedule flatMap (toScheduleG(_, repository))
-      reportCards = (optScheduleG |@| optPlan) (reportCardService.reportCards) getOrElse Set.empty[ReportCardEntry]
+      reportCards = (optScheduleG |@| optPlan) (reportCardService.reportCards) getOrElse Set.empty[SesameReportCardEntry]
       _ <- repository addMany reportCards
     } yield reportCards) match {
       case Success(_) =>
@@ -234,7 +233,9 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
           "status" -> "KO",
           "errors" -> e.getMessage
         ))
-    }
+    }*/
+
+    ???
   }
 
   def copy(course: String) = restrictedContext(course)(Update) contentTypedAction { implicit request =>
@@ -248,7 +249,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
         )))
       rebased = rebase(courseAttribute -> Seq(course), labworkAttribute -> Seq(body.srcLabwork.toString), studentAttribute -> Seq(body.srcStudent.toString))
       reportCardEntries <- filter(rebased)(Set.empty)
-      copied = reportCardEntries.map(e => ReportCardEntry(body.destStudent, body.destLabwork, e.label, e.date, e.start, e.end, e.room, e.entryTypes.map(t => ReportCardEntryType(t.entryType))))
+      copied = reportCardEntries.map(e => SesameReportCardEntry(body.destStudent, body.destLabwork, e.label, e.date, e.start, e.end, e.room, e.entryTypes.map(t => SesameReportCardEntryType(t.entryType))))
       added <- addLots(copied)
     } yield chunk(added.toSet)
 
@@ -263,7 +264,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     case _ => PartialSecureBlock(god)
   }
 
-  override protected def coAtomic(atom: ReportCardEntryAtom): ReportCardEntry = ReportCardEntry(
+  override protected def coAtomic(atom: SesameReportCardEntryAtom): SesameReportCardEntry = SesameReportCardEntry(
     atom.student.id,
     atom.labwork.id,
     atom.label,
@@ -272,16 +273,16 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
     atom.end,
     atom.room.id,
     atom.entryTypes,
-    atom.rescheduled.map(a => Rescheduled(a.date, a.start, a.end, a.room.id)),
+    atom.rescheduled.map(a => SesameRescheduled(a.date, a.start, a.end, a.room.id)),
     atom.invalidated,
     atom.id
   )
 
-  override protected def compareModel(input: ReportCardEntry, output: ReportCardEntry): Boolean = input == output
+  override protected def compareModel(input: SesameReportCardEntry, output: SesameReportCardEntry): Boolean = input == output
 
-  override protected def fromInput(input: ReportCardEntry, existing: Option[ReportCardEntry]): ReportCardEntry = input
+  override protected def fromInput(input: SesameReportCardEntry, existing: Option[SesameReportCardEntry]): SesameReportCardEntry = input
 
-  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[ReportCardEntry]): Try[Set[ReportCardEntry]] = {
+  override protected def getWithFilter(queryString: Map[String, Seq[String]])(all: Set[SesameReportCardEntry]): Try[Set[SesameReportCardEntry]] = {
     import controllers.ReportCardEntryController._
     import store.sparql.select
     import store.sparql.select._
@@ -341,7 +342,7 @@ class ReportCardEntryController(val repository: SesameRepository, val sessionSer
           select(_.get("entries")).
           transform(_.fold(List.empty[Value])(identity)).
           map(_.stringValue).
-          requestAll(repository.getMany[ReportCardEntry](_)).
+          requestAll(repository.getMany[SesameReportCardEntry](_)).
           run
     }
   }

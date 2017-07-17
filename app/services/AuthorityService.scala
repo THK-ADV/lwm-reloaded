@@ -7,11 +7,11 @@ import org.joda.time.DateTime
 import models.LwmDateTime.DateTimeConverter
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 import store._
 
 import scala.concurrent.Future
-import slick.driver.PostgresDriver.api._
-import slick.lifted.Rep
 
 case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.user === UUID.fromString(value)
@@ -26,10 +26,11 @@ case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable
 }
 
 trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
-
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
+
+  protected def roleService: RoleService2
 
   // TODO maybe we can do this with Expander
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
@@ -39,14 +40,13 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
         val authority = AuthorityDb(dbUser.id, role.id)
         create(authority)
       }
-    } yield PostgresAuthorityAtom(dbUser.toUser, role.map(Role.toRole).get, None, created.id)
+    } yield PostgresAuthorityAtom(dbUser.toLwmModel, role.map(Role.toRole).get, None, created.id)
   }
 
   final def updateWithCourse(course: CourseDb): DBIOAction[Int, NoStream, Write] = {
     val result = for {
       cm <- DBIO.from(db.run(roleService.tableQuery.filter(_.label === Roles.CourseManagerLabel).map(_.id).result.headOption)) if cm.isDefined
       authoritiesWithCourse <- DBIO.from(db.run(tableQuery.filter(auth => auth.course === course.id && auth.role === cm.get).result))
-      _ = println(s"authoritiesWithCourse $authoritiesWithCourse")
       rows <- {
         if (!authoritiesWithCourse.exists(_.user == course.lecturer))
           for {
@@ -58,7 +58,6 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
             // create new cm auth and rm if needed
             newAuths <- createWithCourse(course) if newAuths.nonEmpty
-            _ = println(s"newAuths $newAuths")
           } yield newAuths.size + deletedCM + deletedRM
         else
           DBIO.successful(0)
@@ -119,21 +118,6 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     DBIO.from(db.run(result))
   }
 
-  protected def roleService: RoleService2
-
-  override protected def setInvalidated(entity: AuthorityDb): AuthorityDb = {
-    val now = DateTime.now.timestamp
-
-    AuthorityDb(
-      entity.user,
-      entity.role,
-      entity.course,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = false
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
@@ -151,18 +135,18 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
 
     db.run(joinedQuery.result.map(_.foldLeft(List.empty[PostgresAuthorityAtom]) {
       case (list, (a, u, r, Some(c), Some(l))) =>
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toUser, c.semesterIndex, c.id)
-        val atom = PostgresAuthorityAtom(u.toUser, r.toRole, Some(courseAtom), a.id)
+        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toLwmModel, c.semesterIndex, c.id)
+        val atom = PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, Some(courseAtom), a.id)
 
         list.+:(atom)
       case (list, (a, u, r, None, None)) =>
-        list.+:(PostgresAuthorityAtom(u.toUser, r.toRole, None, a.id))
+        list.+:(PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, None, a.id))
       case (list, _) => list // this should never happen
     }))
   }
 
   override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
-    db.run(query.result.map(_.map(_.toAuthority)))
+    db.run(query.result.map(_.map(_.toLwmModel)))
   }
 }
 

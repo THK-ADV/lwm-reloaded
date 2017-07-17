@@ -11,8 +11,7 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
 
-
-object CourseControllerPostgres{
+object CourseControllerPostgres {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
   lazy val lecturerAttribute = "lecturer"
@@ -20,7 +19,7 @@ object CourseControllerPostgres{
 }
 
 final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val courseService: CourseService)
-  extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course]{
+  extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course] {
 
   override protected implicit val writes: Writes[Course] = Course.writes
 
@@ -28,20 +27,18 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected val abstractDao: AbstractDao[CourseTable, CourseDb, Course] = courseService
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
+  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
     import controllers.CourseControllerPostgres._
 
     (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label.head)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation.head)))
-      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex.head)))
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
+      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
   override protected def toDbModel(protocol: PostgresCourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: CourseDb): PostgresCourse = dbModel.toCourse
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
@@ -50,5 +47,4 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     case GetAll => PartialSecureBlock(course.getAll)
     case _ => PartialSecureBlock(prime)
   }
-
 }

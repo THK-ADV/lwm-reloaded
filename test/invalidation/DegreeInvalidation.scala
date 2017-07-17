@@ -28,24 +28,24 @@ class DegreeInvalidation extends SesameDbSpec {
       else SesameAssignmentPlan(SesameLabwork.randomUUID, 1, 2, Set())
     }
 
-    def grps(labwork: UUID): Stream[Group] = Stream.continually {
-      if (nextBoolean()) Group("Label", labwork, Set())
-      else Group("Label", SesameLabwork.randomUUID, Set())
+    def grps(labwork: UUID): Stream[SesameGroup] = Stream.continually {
+      if (nextBoolean()) SesameGroup("Label", labwork, Set())
+      else SesameGroup("Label", SesameLabwork.randomUUID, Set())
     }
 
-    def scheds(labwork: UUID): Stream[Schedule] = Stream.continually {
-      if (nextBoolean()) Schedule(labwork, Set())
-      else Schedule(SesameLabwork.randomUUID, Set())
+    def scheds(labwork: UUID): Stream[SesameSchedule] = Stream.continually {
+      if (nextBoolean()) SesameSchedule(labwork, Set())
+      else SesameSchedule(SesameLabwork.randomUUID, Set())
     }
 
-    def rce(labwork: UUID): Stream[ReportCardEntry] = Stream.continually {
-      if (nextBoolean()) ReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
-      else ReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+    def rce(labwork: UUID): Stream[SesameReportCardEntry] = Stream.continually {
+      if (nextBoolean()) SesameReportCardEntry(User.randomUUID, labwork, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
+      else SesameReportCardEntry(User.randomUUID, SesameLabwork.randomUUID, "Label", LocalDate.now, LocalTime.now, LocalTime.now plusHours 2, SesameRoom.randomUUID, Set())
     }
 
-    def rceval(labwork: UUID): Stream[ReportCardEvaluation] = Stream.continually {
-      if (nextBoolean()) ReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
-      else ReportCardEvaluation(User.randomUUID, SesameLabwork.randomUUID, "Label", bool = true, 0)
+    def rceval(labwork: UUID): Stream[SesameReportCardEvaluation] = Stream.continually {
+      if (nextBoolean()) SesameReportCardEvaluation(User.randomUUID, labwork, "Label", bool = true, 0)
+      else SesameReportCardEvaluation(User.randomUUID, SesameLabwork.randomUUID, "Label", bool = true, 0)
     }
 
     def labapp(labwork: UUID): Stream[SesameLabworkApplication] = Stream.continually {
@@ -54,8 +54,8 @@ class DegreeInvalidation extends SesameDbSpec {
     }
 
     def annot(labwork: UUID): Stream[Annotation] = Stream.continually {
-      if (nextBoolean()) Annotation(User.randomUUID, labwork, ReportCardEntry.randomUUID, "Message")
-      else Annotation(User.randomUUID, SesameLabwork.randomUUID, ReportCardEntry.randomUUID, "Message")
+      if (nextBoolean()) Annotation(User.randomUUID, labwork, SesameReportCardEntry.randomUUID, "Message")
+      else Annotation(User.randomUUID, SesameLabwork.randomUUID, SesameReportCardEntry.randomUUID, "Message")
     }
 
     "invalidate the degree and subsequent timetable entries and labworks" in {
@@ -90,10 +90,10 @@ class DegreeInvalidation extends SesameDbSpec {
       repo.add[SesameDegree](degree)
       repo.addMany[SesameLabwork](labworks)
       repo.addMany[SesameAssignmentPlan](assPlans)
-      repo.addMany[Group](groups)
-      repo.addMany[Schedule](schedules)
-      repo.addMany[ReportCardEntry](reportCardEntries)
-      repo.addMany[ReportCardEvaluation](reportCardEvaluations)
+      repo.addMany[SesameGroup](groups)
+      repo.addMany[SesameSchedule](schedules)
+      repo.addMany[SesameReportCardEntry](reportCardEntries)
+      repo.addMany[SesameReportCardEvaluation](reportCardEvaluations)
       repo.addMany[SesameTimetable](timetables)
       repo.addMany[SesameLabworkApplication](applications)
       repo.addMany[Annotation](annotations)
@@ -103,9 +103,9 @@ class DegreeInvalidation extends SesameDbSpec {
       repo.get[SesameDegree](SesameDegree.generateUri(degree)) shouldBe Success(None)
       repo.getAll[SesameLabwork] shouldBe Success(labworks filter (_.degree != degree.id))
       repo.getAll[SesameAssignmentPlan] shouldBe Success(assPlans filterNot (a => refLabs exists (_.id == a.labwork)))
-      repo.getAll[Group] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
-      repo.getAll[Schedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))
-      repo.getAll[ReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameGroup] shouldBe Success(groups filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameSchedule] shouldBe Success(schedules filterNot (a => refLabs exists (_.id == a.labwork)))
+      repo.getAll[SesameReportCardEntry] shouldBe Success(reportCardEntries filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[SesameTimetable] shouldBe Success(timetables filterNot (a => refLabs exists (_.id == a.labwork)))
       repo.getAll[SesameLabworkApplication] match {
         case Success(set) =>
@@ -121,9 +121,9 @@ class DegreeInvalidation extends SesameDbSpec {
       repo.deepGet[SesameDegree](SesameDegree.generateUri(degree)) map (_ map (_.id)) shouldBe Success(Some(degree.id))
       repo.deepGetAll[SesameLabwork] map (_ map (_.id)) shouldBe Success(labworks map (_.id))
       repo.deepGetAll[SesameAssignmentPlan] map (_ map (_.id)) shouldBe Success(assPlans map (_.id))
-      repo.deepGetAll[Group] map (_ map (_.id)) shouldBe Success(groups map (_.id))
-      repo.deepGetAll[Schedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
-      repo.deepGetAll[ReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
+      repo.deepGetAll[SesameGroup] map (_ map (_.id)) shouldBe Success(groups map (_.id))
+      repo.deepGetAll[SesameSchedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
+      repo.deepGetAll[SesameReportCardEntry] map (_ map (_.id)) shouldBe Success(reportCardEntries map (_.id))
       repo.deepGetAll[SesameTimetable] map (_ map (_.id)) shouldBe Success(timetables map (_.id))
       repo.deepGetAll[SesameLabworkApplication] map (_ map (_.id)) shouldBe Success(applications map (_.id))
       repo.deepGetAll[Annotation] map (_ map (_.id)) shouldBe Success(annotations map (_.id))

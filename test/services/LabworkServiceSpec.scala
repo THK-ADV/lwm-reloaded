@@ -12,12 +12,11 @@ final class LabworkServiceSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, 
   import services.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 
-
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    semesterService.tableQuery.forceInsertAll(semesters),
-    degreeService.tableQuery.forceInsertAll(degrees),
-    userService.tableQuery.forceInsertAll(employees),
-    courseService.tableQuery.forceInsertAll(courses)
+    TableQuery[SemesterTable].forceInsertAll(semesters),
+    TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[UserTable].forceInsertAll(employees),
+    TableQuery[CourseTable].forceInsertAll(courses)
   )
 
   override protected def name: String = "labwork"
@@ -32,73 +31,26 @@ final class LabworkServiceSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, 
 
   override protected val dbEntities: List[LabworkDb] = labworks
 
-  override protected val lwmEntity: Labwork = dbEntity.toLabwork
+  override protected val lwmEntity: Labwork = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresLabworkAtom = {
     val course = courses.find(_.id == dbEntity.course).get
     PostgresLabworkAtom(
       dbEntity.label,
       dbEntity.description,
-      semesters.find(_.id == dbEntity.semester).get.toSemester,
+      semesters.find(_.id == dbEntity.semester).get.toLwmModel,
       PostgresCourseAtom(
         course.label,
         course.description,
         course.abbreviation,
-        employees.find(_.id == course.lecturer).get.toUser,
+        employees.find(_.id == course.lecturer).get.toLwmModel,
         course.semesterIndex,
         course.id
       ),
-      degrees.find(_.id == dbEntity.degree).get.toDegree,
+      degrees.find(_.id == dbEntity.degree).get.toLwmModel,
       dbEntity.subscribable,
       dbEntity.published,
       dbEntity.id
     )
   }
-
-  override protected def courseService: CourseService = {
-    lazy val sharedDb = db
-
-    new CourseService {
-      override protected def authorityService: AuthorityService = new AuthorityService {
-        override protected def roleService: RoleService2 = new RoleService2 {
-          override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-        }
-
-        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-      }
-
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-    }
-  }
-
-  override protected def userService: UserService = {
-    lazy val sharedDb = db
-    new UserService {
-      override protected def authorityService: AuthorityService = authorityService
-
-      override protected def degreeService: DegreeService = new DegreeService {
-        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-      }
-
-      override protected def labworkApplicationService: LabworkApplicationService2 = new LabworkApplicationService2 {
-        override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-      }
-
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-    }
-  }
-  override protected def degreeService: DegreeService = {
-    lazy val sharedDb = db
-    new DegreeService {
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-    }
-  }
-
-  override protected def semesterService: SemesterService = {
-    lazy val sharedDb = db
-    new SemesterService {
-      override protected def db: _root_.slick.driver.PostgresDriver.backend.DatabaseDef = sharedDb
-    }
-  }
-
 }

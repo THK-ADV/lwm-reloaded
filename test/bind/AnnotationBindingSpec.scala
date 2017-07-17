@@ -19,7 +19,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
   val annotationGraph = URI(Annotation.generateUri(annotation)).a(lwm.Annotation)
     .--(lwm.student).->-(annotation.student)(ops, uuidRefBinder(User.splitter))
     .--(lwm.labwork).->-(annotation.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
-    .--(lwm.reportCardEntry).->-(annotation.reportCardEntry)(ops, uuidRefBinder(ReportCardEntry.splitter))
+    .--(lwm.reportCardEntry).->-(annotation.reportCardEntry)(ops, uuidRefBinder(SesameReportCardEntry.splitter))
     .--(lwm.message).->-(annotation.message)
     .--(lwm.timestamp).->-(annotation.timestamp)
     .--(lwm.invalidated).->-(annotation.invalidated)
@@ -49,7 +49,7 @@ class AnnotationBindingSpec extends SesameDbSpec {
 
       val student = SesameStudent("systemid", "lastname", "firstname", "email", "registrationId", UUID.randomUUID())
       val labwork = SesameLabwork("label", "description", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-      val reportCardEntry = ReportCardEntry(student.id, labwork.id, "label", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), Set.empty)
+      val reportCardEntry = SesameReportCardEntry(student.id, labwork.id, "label", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), Set.empty)
       val annot = Annotation(student.id, labwork.id, reportCardEntry.id, "message")
       val annotAtom = AnnotationAtom(student, labwork, reportCardEntry, annot.message, annot.timestamp, annot.invalidated, annot.id)
 

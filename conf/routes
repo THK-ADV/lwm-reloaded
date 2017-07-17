@@ -144,16 +144,16 @@ GET           /api2/labworkApplications/:id                                     
 DELETE        /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.delete(id)
 
 # Schedule
-HEAD          /schedules                                                              controllers.ScheduleController.header
+#HEAD          /schedules                                                              controllers.ScheduleController.header
 
 # Schedule restricted
-POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
-POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
-GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
-GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
-DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
+#POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
+#POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
+#GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
+#GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
+#GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
+#GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
+#DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
 
 # ScheduleEntries
 HEAD          /scheduleEntries                                                        controllers.ScheduleEntryController.header
@@ -169,6 +169,16 @@ GET           /courses/:c/atomic/scheduleEntries/:id                            
 PUT           /courses/:c/scheduleEntries/:id                                         controllers.ScheduleEntryController.update(c, id)
 PUT           /courses/:c/atomic/scheduleEntries/:id                                  controllers.ScheduleEntryController.updateAtomic(c, id)
 
+# Schedule / ScheduleEntries 2.0
+POST          /api2/courses/:c/scheduleEntries                                        controllers.ScheduleEntryControllerPostgres.createFrom(c)
+GET           /api2/courses/:c/labworks/:l/scheduleEntries/preview                    controllers.ScheduleEntryControllerPostgres.preview(c, l)
+
+GET           /api2/courses/:c/scheduleEntries                                        controllers.ScheduleEntryControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/labworks/:l/scheduleEntries                            controllers.ScheduleEntryControllerPostgres.allFromLabwork(c, l)
+GET           /api2/courses/:c/scheduleEntries/:id                                    controllers.ScheduleEntryControllerPostgres.getFrom(c, id)
+PUT           /api2/courses/:c/scheduleEntries/:id                                    controllers.ScheduleEntryControllerPostgres.updateFrom(c, id)
+DELETE        /api2/courses/:c/labworks/:l/scheduleEntries                            controllers.ScheduleEntryControllerPostgres.deleteFrom(c, l)
+
 # Timetable
 HEAD          /timetables                                                             controllers.TimetableCRUDController.header
 
@@ -183,6 +193,14 @@ GET           /courses/:c/timetables/:id                                        
 GET           /courses/:c/atomic/timetables/:id                                       controllers.TimetableCRUDController.getAtomicFrom(c, id)
 DELETE        /courses/:c/timetables/:id                                              controllers.TimetableCRUDController.deleteFrom(c, id)
 
+# Timetable 2.0 restricted
+
+POST          /api2/courses/:c/timetables                                             controllers.TimetableControllerPostgres.createFrom(c)
+PUT           /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.updateFrom(c, id)
+GET           /api2/courses/:c/timetables                                             controllers.TimetableControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.getFrom(c, id)
+DELETE        /api2/courses/:c/timetables/:id                                         controllers.TimetableControllerPostgres.deleteFrom(c, id)
+
 # Blacklist
 POST          /blacklists                                                             controllers.BlacklistCRUDController.create()
 POST          /blacklists/year/:year                                                  controllers.BlacklistCRUDController.createFor(year)
@@ -191,6 +209,14 @@ GET           /blacklists                                                       
 GET           /blacklists/:id                                                         controllers.BlacklistCRUDController.get(id)
 DELETE        /blacklists/:id                                                         controllers.BlacklistCRUDController.delete(id)
 HEAD          /blacklists                                                             controllers.BlacklistCRUDController.header
+
+# Blacklist 2.0
+POST          /api2/blacklists                                                        controllers.BlacklistControllerPostgres.create()
+POST          /api2//blacklists/year/:year                                            controllers.BlacklistControllerPostgres.createFor(year)
+PUT           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.update(id)
+GET           /api2//blacklists                                                       controllers.BlacklistControllerPostgres.all()
+GET           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.get(id)
+DELETE        /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.delete(id)
 
 # ReportCardEntry
 GET           /reportCardEntries/student/:s                                           controllers.ReportCardEntryController.get(s)
@@ -207,6 +233,15 @@ POST          /courses/:c/reportCardEntries/copy                                
 
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                        controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries                 controllers.ReportCardEntryController.allAtomicFromScheduleEntry(c, s)
+
+# ReportCardEntry 2.0
+GET           /api2/reportCardEntries/student/:s                                      controllers.ReportCardEntryControllerPostgres.getForStudent(s)
+
+POST          /api2/courses/:c/labworks/:l/reportCardEntries                          controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
+POST          /api2/courses/:c/reportCardEntries/copy                                 controllers.ReportCardEntryControllerPostgres.createByCopy(c)
+
+GET           /api2/courses/:c/reportCardEntries                                      controllers.ReportCardEntryControllerPostgres.allFrom(c)
+GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries                   controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
 
 # ReportCardEntryType
 PUT           /courses/:c/reportCardEntryTypes/:t                                     controllers.ReportCardEntryTypeController.update(c, t)
@@ -293,6 +328,9 @@ GET           /api/migrate/labworks                                             
 GET           /api/migrate/labworkApplications                                        controllers.ApiDataController.migrateLabworkApplications()
 GET           /api/migrate/rooms                                                      controllers.ApiDataController.migrateRooms()
 GET           /api/migrate/assignmentPlans                                            controllers.ApiDataController.migrateAssignmentPlans()
+GET           /api/migrate/blacklists                                                 controllers.ApiDataController.migrateBlacklists()
+GET           /api/migrate/timetables                                                 controllers.ApiDataController.migrateTimetables()
+GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

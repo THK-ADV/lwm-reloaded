@@ -25,11 +25,11 @@ class ReportCardEntryControllerSecuritySpec extends WordSpec with TestBaseDefini
 
   val id = UUID.randomUUID
   val json = {
-    import models.ReportCardEntry.writes
+    import models.SesameReportCardEntry.writes
 
     Json.toJson(
-      ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[ReportCardEntryType],
-        Some(Rescheduled(LocalDate.now.plusDays(1), LocalTime.now.plusHours(1), LocalTime.now.plusHours(1), UUID.randomUUID)),
+      SesameReportCardEntry(UUID.randomUUID, UUID.randomUUID, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set.empty[SesameReportCardEntryType],
+        Some(SesameRescheduled(LocalDate.now.plusDays(1), LocalTime.now.plusHours(1), LocalTime.now.plusHours(1), UUID.randomUUID)),
         None, id)
     )
   }

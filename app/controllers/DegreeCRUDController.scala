@@ -12,7 +12,6 @@ import store.sparql.Clause
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.collection.Map
 import scala.util.{Success, Try}
 
 class DegreeCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[DegreeProtocol, SesameDegree, SesameDegree]{
