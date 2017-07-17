@@ -340,7 +340,7 @@ object PostgresReportCardRetryAtom {
 object PostgresReportCardEntryAtom {
   implicit def writesAtom: Writes[PostgresReportCardEntryAtom] = (
     (JsPath \ "student").write[User] and
-      (JsPath \ "labwork").write[PostgresLabwork] and
+      (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
       (JsPath \ "label").write[String] and
       (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and

@@ -43,6 +43,15 @@ object SesameCourseAtom {
 
 sealed trait Course extends UniqueEntity
 
+object Course {
+  implicit def writes: Writes[Course] = new Writes[Course] {
+    override def writes(course: Course) = course match {
+      case postgresCourse: PostgresCourse => Json.toJson(postgresCourse)(PostgresCourse.writes)
+      case postgresCourseAtom: PostgresCourseAtom => Json.toJson(postgresCourseAtom)(PostgresCourseAtom.writesAtom)
+    }
+  }
+}
+
 case class PostgresCourse(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, id: UUID = PostgresCourse.randomUUID) extends Course
 
 case class PostgresCourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
@@ -73,4 +82,10 @@ object PostgresCourseAtom {
       (JsPath \ "semesterIndex").write[Int] and
       (JsPath \ "id").write[UUID]
     )(unlift(PostgresCourseAtom.unapply))
+}
+
+object CourseDb{
+  def from(protocol: PostgresCourseProtocol, existingId: Option[UUID]) = {
+    CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 }

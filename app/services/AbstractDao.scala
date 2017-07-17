@@ -128,15 +128,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   private final def delete0(id: UUID) = {
     val now = DateTime.now.timestamp
-    val found = tableQuery.filter(_.id === id)
-    val query = found.result.head.flatMap { existing =>
-      (for {
-        u1 <- found.update(existing)
-        u2 <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
-      } yield u1 + u2).transactionally.map { rowsAffected =>
-        if (rowsAffected >= 2) Some(existing) else None
-      }
-    }
+    val query = deleteQuery(id, now)
 
     databaseExpander.fold(query) { expander =>
       (for {
@@ -144,6 +136,34 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
         e <- expander.expandDeleteOf(q.get)
       } yield e).transactionally
     }.map(_.map(_ => now))
+  }
+
+  final def deleteQuery(id: UUID, now: Timestamp = DateTime.now.timestamp) = {
+    val found = tableQuery.filter(_.id === id)
+
+    found.result.head.flatMap { existing =>
+      (for {
+        u <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
+      } yield u).transactionally.map { rowsAffected =>
+        if (rowsAffected > 0) Some(existing) else None
+      }
+    }
+  }
+
+  final def updateQuery(entity: DbModel) = {
+    val found = tableQuery.filter(_.id === entity.id)
+
+    found.result.head.flatMap { existing =>
+      if (shouldUpdate(existing, entity))
+        (for {
+          u1 <- found.update(entity)
+          u2 <- found.map(_.lastModified).update(DateTime.now.timestamp)
+        } yield u1 + u2).transactionally.map { rowsAffected =>
+          if (rowsAffected >= 2) Some(entity) else None
+        }
+      else
+        DBIO.failed(ModelAlreadyExists(existing))
+    }
   }
 
   final def update(entity: DbModel): Future[Option[DbModel]] = db.run(update0(entity))
@@ -155,18 +175,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
   }
 
   private final def update0(entity: DbModel) = {
-    val found = tableQuery.filter(_.id === entity.id)
-    val query = found.result.head.flatMap { existing =>
-      if (shouldUpdate(existing, entity))
-        (for {
-          u1 <- found.update(entity)
-          u2 <- found.map(_.lastModified).update(DateTime.now.timestamp)
-        } yield u1 + u2).transactionally.map { rowsAffected =>
-          if (rowsAffected >= 2) Some(entity) else None
-        }
-      else
-        DBIO.failed(ModelAlreadyExists(existing))
-    }
+    val query = updateQuery(entity)
 
     databaseExpander.fold(query) { expander =>
       (for {

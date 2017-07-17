@@ -79,7 +79,7 @@ object PostgresAuthorityAtom {
   implicit def writesAtom: Writes[PostgresAuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[PostgresRole](PostgresRole.writes) and
-      (JsPath \ "course").writeNullable[PostgresCourseAtom] and
+      (JsPath \ "course").writeNullable[PostgresCourseAtom](PostgresCourseAtom.writesAtom) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresAuthorityAtom.unapply))
 }

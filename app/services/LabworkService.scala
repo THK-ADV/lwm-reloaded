@@ -5,6 +5,7 @@ import java.util.UUID
 import models._
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 import store.{LabworkTable, TableFilter}
 
 import scala.concurrent.Future
@@ -23,6 +24,10 @@ case class LabworkSemesterFilter(value: String) extends TableFilter[LabworkTable
 
 case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate = _.course === UUID.fromString(value)
+}
+
+case class LabworkLabelFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
 trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {

@@ -210,11 +210,12 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"courses ${courses.size}")
     } yield courses.map(_.toLwmModel)
 
-    result.jsonResult
+    result.jsonResult(PostgresCourse.writes)
   }
 
   def migrateLabworks = Action.async {
     import bindings.LabworkDescriptor
+    import models.PostgresLabwork.writes
 
     val result = for {
       _ <- labworkService.createSchema

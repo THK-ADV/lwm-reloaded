@@ -28,6 +28,13 @@ GET           /atomic/courses/:id                                               
 DELETE        /courses/:id                                                            controllers.CourseCRUDController.delete(id)
 HEAD          /courses                                                                controllers.CourseCRUDController.header
 
+# Course 2.0
+POST          /api2/courses                                                                controllers.CourseControllerPostgres.create()
+PUT           /api2/courses/:id                                                            controllers.CourseControllerPostgres.update(id)
+GET           /api2/courses                                                                controllers.CourseControllerPostgres.all()
+GET           /api2/courses/:id                                                            controllers.CourseControllerPostgres.get(id)
+DELETE        /api2/courses/:id                                                            controllers.CourseControllerPostgres.delete(id)
+
 # Group
 GET           /courses/:c/labworks/:l/groups                                          controllers.GroupCRUDController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.GroupCRUDController.allAtomicFrom(c, l)
@@ -52,6 +59,14 @@ GET           /courses/:course/atomic/labworks                                  
 GET           /courses/:course/labworks/:id                                           controllers.LabworkCRUDController.getFrom(course, id)
 GET           /courses/:course/atomic/labworks/:id                                    controllers.LabworkCRUDController.getAtomicFrom(course, id)
 DELETE        /courses/:course/labworks/:id                                           controllers.LabworkCRUDController.deleteFrom(course, id)
+
+
+# Labwork 2.0
+POST          /api2/labworks                                                          controllers.LabworkControllerPostgres.create()
+PUT           /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.update(id)
+GET           /api2/labworks                                                          controllers.LabworkControllerPostgres.all()
+GET           /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.get(id)
+DELETE        /api2/labworks/:id                                                      controllers.LabworkControllerPostgres.delete(id)
 
 # Labwork Entry Type
 GET           /entryTypes                                                             controllers.EntryTypeController.all()
