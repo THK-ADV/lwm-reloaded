@@ -3,16 +3,16 @@ package services
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime._
 import base.PostgresDbSpec
+import models.LwmDateTime._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
-import store.UniqueTable
 import slick.driver.PostgresDriver.api._
+import store.UniqueTable
 
 object AbstractDaoSpec {
-  import scala.util.Random.{nextInt, nextBoolean, shuffle}
+  import scala.util.Random.{nextBoolean, nextInt, shuffle}
 
   lazy val maxDegrees = 10
   lazy val maxLabworks = 20
@@ -25,6 +25,8 @@ object AbstractDaoSpec {
   lazy val maxTimetables = 10
   lazy val maxStudents = 100
   lazy val maxReportCardEntries = 100
+  lazy val maxPermissions = 10
+  lazy val maxAuthorities = 10
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -34,6 +36,9 @@ object AbstractDaoSpec {
   def randomEmployee = employees(nextInt(maxEmployees))
   def randomBlacklist = blacklists(nextInt(maxBlacklists))
   def randomStudent = students(nextInt(maxStudents))
+  def randomPermission = permissions(nextInt(maxPermissions))
+  def randomRole = roles(nextInt(roles.length))
+  def randomAuthority = authorities(nextInt(maxAuthorities))
 
   final def takeSomeOf[A](traversable: Traversable[A]) = traversable.take(nextInt(traversable.size - 1) + 1)
 
@@ -156,6 +161,14 @@ object AbstractDaoSpec {
 
   lazy val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
 
+  lazy val authorities = (0 until maxAuthorities).map{ i =>
+    val role:RoleDb = roles((i*3)%roles.length)
+    val course:Option[UUID] = if(role.label == Roles.RightsManagerLabel) Some(courses((i*6)%maxCourses).id) else None
+    AuthorityDb(employees(i%maxEmployees).id, role.id, course)
+  }.toList
+
+  lazy val roles = Roles.all.map(l => RoleDb(l, Set.empty))
+
   lazy val labworks = populateLabworks(maxLabworks)
 
   lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
@@ -176,6 +189,11 @@ object AbstractDaoSpec {
   lazy val students = populateStudents(maxStudents)
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
+
+  lazy val permissions = (0 until maxPermissions).map{ i =>
+    PermissionDb(s"label$i", s"description$i")
+  }.toList
+
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]

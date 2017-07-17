@@ -51,21 +51,21 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
   override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     db.run(query.result.map(_.map(_.toLwmModel)))
   }
-
-  override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
-
-    override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-      authorityService.updateWithCourse(entity).map(_ => Some(entity))
-    }
-
-    override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-      authorityService.deleteWithCourse(entity).map(_ => Some(entity))
-    }
-
-    override def expandCreationOf[E <: Effect](entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Effect.Write with E] = {
-      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
-    }
-  })
+//
+//  override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
+//
+//    override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
+//      authorityService.updateWithCourse(entity).map(_ => Some(entity))
+//    }
+//
+//    override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
+//      authorityService.deleteWithCourse(entity).map(_ => Some(entity))
+//    }
+//
+//    override def expandCreationOf[E <: Effect](entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Effect.Write with E] = {
+//      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
+//    }
+//  })
 }
 
 final class CourseServiceImpl(val db: PostgresDriver.backend.Database, val authorityService: AuthorityService) extends CourseService

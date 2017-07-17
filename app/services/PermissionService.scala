@@ -8,8 +8,21 @@ import store.{PermissionTable, TableFilter}
 import scala.concurrent.Future
 
 case class PermissionValueFilter(value: String) extends TableFilter[PermissionTable] {
-  override def predicate = _.value.toLowerCase === value.toLowerCase
+  override def predicate = _.value.toLowerCase like s"%${value.toLowerCase}%"
 }
+
+case class PermissionPrefixFilter(value: String) extends TableFilter[PermissionTable] {
+  override def predicate = _.value.toLowerCase like s"%${value.toLowerCase}%:%"
+}
+
+case class PermissionSuffixFilter(value: String) extends TableFilter[PermissionTable] {
+  override def predicate = _.value.toLowerCase like s"%:%${value.toLowerCase}%"
+}
+
+case class PermissionDescriptionFilter(value: String) extends TableFilter[PermissionTable] {
+  override def predicate = _.description.toLowerCase like s"%${value.toLowerCase}%"
+}
+
 
 trait PermissionService extends AbstractDao[PermissionTable, PermissionDb, PostgresPermission] {
   import scala.concurrent.ExecutionContext.Implicits.global

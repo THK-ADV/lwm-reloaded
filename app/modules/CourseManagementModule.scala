@@ -34,7 +34,7 @@ trait CourseManagementModulePostgres {
 }
 
 trait DefaultCourseManagementModuleImplPostgres extends CourseManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with CourseServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with CourseServiceModule with AuthorityServiceModule =>
 
-  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseService)
+  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseService, authorityService)
 }

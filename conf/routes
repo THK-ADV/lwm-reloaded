@@ -29,11 +29,11 @@ DELETE        /courses/:id                                                      
 HEAD          /courses                                                                controllers.CourseCRUDController.header
 
 # Course 2.0
-POST          /api2/courses                                                                controllers.CourseControllerPostgres.create()
-PUT           /api2/courses/:id                                                            controllers.CourseControllerPostgres.update(id)
-GET           /api2/courses                                                                controllers.CourseControllerPostgres.all()
-GET           /api2/courses/:id                                                            controllers.CourseControllerPostgres.get(id)
-DELETE        /api2/courses/:id                                                            controllers.CourseControllerPostgres.delete(id)
+POST          /api2/courses                                                           controllers.CourseControllerPostgres.create()
+PUT           /api2/courses/:id                                                       controllers.CourseControllerPostgres.update(id)
+GET           /api2/courses                                                           controllers.CourseControllerPostgres.all()
+GET           /api2/courses/:id                                                       controllers.CourseControllerPostgres.get(id)
+DELETE        /api2/courses/:id                                                       controllers.CourseControllerPostgres.delete(id)
 
 # Group
 GET           /courses/:c/labworks/:l/groups                                          controllers.GroupCRUDController.allFrom(c, l)
@@ -109,6 +109,13 @@ GET           /roles/:id                                                        
 GET           /roles                                                                  controllers.RoleController.all()
 DELETE        /roles/:id                                                              controllers.RoleController.delete(id)
 HEAD          /roles                                                                  controllers.RoleController.header
+
+# Role 2.0
+POST          /api2roles                                                              controllers.RoleControllerPostgres.create()
+PUT           /api2roles/:id                                                          controllers.RoleControllerPostgres.update(id)
+GET           /api2roles/:id                                                          controllers.RoleControllerPostgres.get(id)
+GET           /api2roles                                                              controllers.RoleControllerPostgres.all()
+DELETE        /api2roles/:id                                                          controllers.RoleControllerPostgres.delete(id)
 
 # Authority
 POST          /authorities                                                            controllers.AuthorityController.create()
@@ -328,6 +335,7 @@ GET           /api/migrate/labworks                                             
 GET           /api/migrate/labworkApplications                                        controllers.ApiDataController.migrateLabworkApplications()
 GET           /api/migrate/rooms                                                      controllers.ApiDataController.migrateRooms()
 GET           /api/migrate/assignmentPlans                                            controllers.ApiDataController.migrateAssignmentPlans()
+GET           /api/migrate/authorities                                                controllers.ApiDataController.migrateAuthorities()
 GET           /api/migrate/blacklists                                                 controllers.ApiDataController.migrateBlacklists()
 GET           /api/migrate/timetables                                                 controllers.ApiDataController.migrateTimetables()
 GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()

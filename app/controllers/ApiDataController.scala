@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
 import play.api.libs.json.Json
@@ -12,9 +13,6 @@ import store.bind.Bindings
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-import models.LwmDateTime._
-
-import scala.util.{Failure, Success}
 
 final class ApiDataController(private val repository: SesameRepository,
                               val userService: UserService,
@@ -29,14 +27,15 @@ final class ApiDataController(private val repository: SesameRepository,
                               val semesterService: SemesterService,
                               val timetableService2: TimetableService2,
                               val blacklistService2: BlacklistService2,
-                              val reportCardEntryDao: ReportCardEntryDao
+                              val reportCardEntryDao: ReportCardEntryDao,
+                              val authorityService: AuthorityService
                              ) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
 
   def collisionsForCurrentLabworks() = Action {
-    import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
+    import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
 
     val result = for {
       semester <- repository.getAll[SesameSemester]
@@ -56,7 +55,7 @@ final class ApiDataController(private val repository: SesameRepository,
   }
 
   def multipleReportCardEntries(course: String) = Action {
-    import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, AssignmentPlanDescriptor}
+    import bindings.{AssignmentPlanDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
 
     for {
       labworks <- repository.getAll[SesameLabwork].map(_.filter(_.course == UUID.fromString(course)))
@@ -78,7 +77,7 @@ final class ApiDataController(private val repository: SesameRepository,
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def migrateUsers = Action.async {
-    import bindings.{StudentDescriptor, EmployeeDescriptor}
+    import bindings.{EmployeeDescriptor, StudentDescriptor}
     import models.User.writes
 
     val result = for {
@@ -295,7 +294,7 @@ final class ApiDataController(private val repository: SesameRepository,
   }
 
   def migrateBlacklists = Action.async {
-    import bindings.{BlacklistDescriptor, TimetableAtomDescriptor, SemesterDescriptor}
+    import bindings.{BlacklistDescriptor, SemesterDescriptor, TimetableAtomDescriptor}
     import models.PostgresBlacklist.writes
 
     def toBlacklistDb(dates: Set[DateTime], label: String, global: Boolean) = {
@@ -352,7 +351,7 @@ final class ApiDataController(private val repository: SesameRepository,
   }
 
   def migrateReportCardEntries = Action.async {
-    import bindings.{ReportCardEntryDescriptor, LabworkDescriptor}
+    import bindings.{LabworkDescriptor, ReportCardEntryDescriptor}
     import models.ReportCardEntry.writes
 
     val result = for {
@@ -364,7 +363,7 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"sesameReportCardRescheduled ${sesameReportCardEntries.flatMap(_.rescheduled).size}")
       good = sesameReportCardEntries.filter(e => seasmeLabs.exists(_.id == e.labwork))
       _ = println(s"good ${good.size}")
-      reportCardEntryDb = good .map { e =>
+      reportCardEntryDb = good.map { e =>
         val types = e.entryTypes.map { t =>
           ReportCardEntryTypeDb(Some(e.id), None, t.entryType, Some(t.bool), t.int, invalidated = t.invalidated.map(_.timestamp), id = t.id)
         }
@@ -378,6 +377,23 @@ final class ApiDataController(private val repository: SesameRepository,
       _ = println(s"reportCardEntryDbRescheduled ${reportCardEntryDb.flatMap(_.rescheduled).size}")
       reportCardEntries <- reportCardEntryDao.createMany(reportCardEntryDb.toList)
     } yield reportCardEntries.map(_.toLwmModel)
+
+    result.jsonResult
+  }
+
+  def migrateAuthorities = Action.async {
+    import bindings.AuthorityDescriptor
+
+    val result = for {
+      _ <- authorityService.createSchema
+      sesameAuthorities <- Future.fromTry(repository.getAll[SesameAuthority])
+      _ = println(s"sesameAuthorities ${sesameAuthorities.size}")
+      authorityDbs = sesameAuthorities.map { auth =>
+        AuthorityDb(auth.user, auth.role, auth.course, DateTime.now.timestamp, auth.invalidated.map(_.timestamp), auth.id);
+      }
+      _ = println(s"authoritiyDbs ${authorityDbs.size}")
+      authorities <- authorityService.createMany(authorityDbs.toList)
+    } yield authorities.map(_.toLwmModel)
 
     result.jsonResult
   }
