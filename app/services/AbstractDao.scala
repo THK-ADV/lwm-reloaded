@@ -5,6 +5,8 @@ import java.util.UUID
 
 import models.{UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
+import models.UniqueEntity
+import slick.dbio.Effect
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
@@ -44,13 +46,10 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   protected def databaseExpander: Option[DatabaseExpander[DbModel]] = None
 
+  def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args:_*).transactionally)
+
   final def create(entity: DbModel): Future[DbModel] = {
-    val query = existsQuery(entity).result.flatMap { exists =>
-      if (exists.nonEmpty)
-        DBIO.failed(ModelAlreadyExists(exists))
-      else
-        (tableQuery returning tableQuery) += entity
-    }
+    val query = createQuery(entity)
 
     databaseExpander.fold {
       db.run(query)
@@ -59,6 +58,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
         _ <- query
         e <- expander.expandCreationOf(List(entity))
       } yield e.head).transactionally)
+    }
+  }
+
+  final def createQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write] = {
+    existsQuery(entity).result.flatMap { exists =>
+      if (exists.nonEmpty)
+        DBIO.failed(ModelAlreadyExists(exists))
+      else
+        (tableQuery returning tableQuery) += entity
     }
   }
 

@@ -59,62 +59,62 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
       ).map(_.toLwmModel)
     }
 
-    "create a course with dedicated roles" in {
-
-      val lecturer = randomEmployee
-
-      await(db.run(
-        for {
-          result <- createManyExpandedQuery(Seq(CourseDb("TestLabel", "TestDescription", "TL", lecturer.id, 3))).map(_.head)
-          auths <- authorityService.tableQuery.filter(_.user === lecturer.id).result
-          rightsManager <- getRightsManager
-          courseManager <- getCourseManager
-        } yield {
-          auths.exists(a => a.user == result.lecturer && a.role == rightsManager.get.id && a.course.isEmpty) shouldBe true
-          auths.exists(a => a.user == result.lecturer && a.role == courseManager.get.id && a.course.contains(result.id)) shouldBe true
-        }
-      ))
-    }
-
-    "update a course with dedicated roles" in {
-      val oldLecturer = employees(0)
-      val newLecturer = employees(1)
-
-      val course = CourseDb("TestLabel2", "TestDescription2", "TL2", oldLecturer.id, 3)
-
-      await(db.run(
-        for {
-          oldCourse <- createManyExpandedQuery(Seq(course)).map(_.head)
-          _ <- updateExpandedQuery(oldCourse.copy(oldCourse.label, oldCourse.description, oldCourse.abbreviation, newLecturer.id, oldCourse.semesterIndex))
-
-          authOldLecturer <- authorityService.tableQuery.filter(_.user === oldLecturer.id).result
-          authNewLecturer <- authorityService.tableQuery.filter(_.user === newLecturer.id).result
-
-          courseManager <- getCourseManager
-        } yield {
-          authOldLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe false
-          authNewLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe true
-        }
-      ))
-    }
-
-    "delete a course with dedicated roles" in {
-      val course = randomCourse
-
-      await(db.run(
-        for {
-          _ <- deleteExpandedQuery(course)
-          auths <- authorityService.tableQuery.filter(_.user === course.lecturer).result
-          rightsManager <- getRightsManager
-          courseManager <- getCourseManager
-        } yield {
-          auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id && a.course.contains(course.id)) shouldBe false
-          val hasOtherCourses = auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id)
-          auths.exists(a => a.role == rightsManager.get.id) shouldBe hasOtherCourses
-        }))
-
-    }
-
+    //"create a course with dedicated roles" in {
+//
+    //  val lecturer = randomEmployee
+//
+    //  await(db.run(
+    //    for {
+    //      result <- createManyExpandedQuery(Seq(CourseDb("TestLabel", "TestDescription", "TL", lecturer.id, 3))).map(_.head)
+    //      auths <- authorityService.tableQuery.filter(_.user === lecturer.id).result
+    //      rightsManager <- getRightsManager
+    //      courseManager <- getCourseManager
+    //    } yield {
+    //      auths.exists(a => a.user == result.lecturer && a.role == rightsManager.get.id && a.course.isEmpty) shouldBe true
+    //      auths.exists(a => a.user == result.lecturer && a.role == courseManager.get.id && a.course.contains(result.id)) shouldBe true
+    //    }
+    //  ))
+    //}
+//
+    //"update a course with dedicated roles" in {
+    //  val oldLecturer = employees(0)
+    //  val newLecturer = employees(1)
+//
+    //  val course = CourseDb("TestLabel2", "TestDescription2", "TL2", oldLecturer.id, 3)
+//
+    //  await(db.run(
+    //    for {
+    //      oldCourse <- createManyExpandedQuery(Seq(course)).map(_.head)
+    //      _ <- updateExpandedQuery(oldCourse.copy(oldCourse.label, oldCourse.description, oldCourse.abbreviation, newLecturer.id, oldCourse.semesterIndex))
+//
+    //      authOldLecturer <- authorityService.tableQuery.filter(_.user === oldLecturer.id).result
+    //      authNewLecturer <- authorityService.tableQuery.filter(_.user === newLecturer.id).result
+//
+    //      courseManager <- getCourseManager
+    //    } yield {
+    //      authOldLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe false
+    //      authNewLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe true
+    //    }
+    //  ))
+    //}
+//
+    //"delete a course with dedicated roles" in {
+    //  val course = randomCourse
+//
+    //  await(db.run(
+    //    for {
+    //      _ <- deleteExpandedQuery(course)
+    //      auths <- authorityService.tableQuery.filter(_.user === course.lecturer).result
+    //      rightsManager <- getRightsManager
+    //      courseManager <- getCourseManager
+    //    } yield {
+    //      auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id && a.course.contains(course.id)) shouldBe false
+    //      val hasOtherCourses = auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id)
+    //      auths.exists(a => a.role == rightsManager.get.id) shouldBe hasOtherCourses
+    //    }))
+//
+    //}
+//
     "delete RightsManager only if no course left" in {
       val lecturer = DbUser("ai123", "lastname", "firstname", "email@email.email", User.EmployeeType, None, None)
       val course1 = new CourseDb("label1", "desc1", "abb1", lecturer.id, 1)

@@ -105,3 +105,9 @@ object Roles {
     case User.StudentType => StudentLabel
   }
 }
+
+object RoleDb{
+  def from(protocol: PostgresRoleProtocol, existingId: Option[UUID]) = {
+    RoleDb(protocol.label, protocol.permissions, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
+}

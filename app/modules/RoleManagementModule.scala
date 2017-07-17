@@ -1,6 +1,6 @@
 package modules
 
-import controllers.RoleController
+import controllers.{RoleController, RoleControllerPostgres}
 import services.{RoleService2, RoleServiceImpl}
 
 trait RoleManagementModule {
@@ -23,4 +23,16 @@ trait RoleServiceModule { self: DatabaseModule =>
 
 trait DefaultRoleServiceModule extends RoleServiceModule { self: DatabaseModule =>
   override lazy val roleService2 = new RoleServiceImpl(db)
+}
+
+trait RoleManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule =>
+
+  def roleManagementControllerPostgres: RoleControllerPostgres
+}
+
+trait DefaultRoleManagementModulePostgres extends RoleManagementModulePostgres {
+  self: SecurityManagementModule with SessionRepositoryModule with RoleServiceModule=>
+
+  override lazy val roleManagementControllerPostgres: RoleControllerPostgres = new RoleControllerPostgres(sessionService, roleService2, roleService)
 }
