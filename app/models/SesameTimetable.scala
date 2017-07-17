@@ -99,17 +99,6 @@ object SesameTimetableEntryAtom {
     ) (unlift(SesameTimetableEntryAtom.unapply))
 }
 
-object TimetableDateEntry {
-
-  def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
-    entry.date.toLocalDateTime(entry.start)
-  }
-
-  /*def toLocalDateTime(entry: ScheduleEntryG): LocalDateTime = {
-    entry.date.toLocalDateTime(entry.start)
-  }*/
-}
-
 // POSTGRES
 
 sealed trait Timetable extends UniqueEntity

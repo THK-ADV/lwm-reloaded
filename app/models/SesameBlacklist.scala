@@ -5,7 +5,7 @@ import java.util.UUID
 
 import controllers.JsonSerialisation
 import models.LwmDateTime.dateTimeOrd
-import org.joda.time.{DateTime, LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
@@ -65,6 +65,22 @@ object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, Po
 
   val startOfDay: LocalTime = LocalTime.MIDNIGHT
   val endOfDay: LocalTime = startOfDay.minusSeconds(1)
+
+  def entireDay(label: String, date: LocalDate, global: Boolean): PostgresBlacklist = {
+    PostgresBlacklist(label, date, startOfDay, endOfDay, global)
+  }
+
+  def entireDay(label: String, dates: Vector[LocalDate], global: Boolean): Vector[PostgresBlacklist] = {
+    dates.map(d => entireDay(label, d, global))
+  }
+
+  def partialDay(label: String, localDateTime: LocalDateTime, hourPadding: Int, global: Boolean): PostgresBlacklist = {
+    val date = localDateTime.toLocalDate
+    val start = localDateTime.toLocalTime
+    val end = start.plusHours(hourPadding)
+
+    PostgresBlacklist(label, date, start, end, global)
+  }
 
   override implicit def reads = Json.reads[PostgresBlacklistProtocol]
 

@@ -4,10 +4,11 @@ import java.util.UUID
 
 import models.Permissions.{schedule, scheduleEntry}
 import models._
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
+import play.api.mvc.{AnyContent, Request}
 import services._
 import store.{ScheduleEntryTable, TableFilter}
-import utils.LwmMimeType
+import utils.{Gen, LwmMimeType}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -73,6 +74,21 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
 
   override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = ???
 
+  implicit val scheduleEntryGenWrties = Json.writes[ScheduleEntryGen]
+
+  implicit val scheduleGenWrties = Json.writes[ScheduleGen]
+
+  implicit val conflictWrites = Json.writes[Conflict]
+
+  implicit val genWrites = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
+    override def writes(gen: (Gen[ScheduleGen, Conflict, Int], Int)) = Json.obj(
+      "schedule" -> Json.toJson(gen._1.elem),
+      "conflicts" -> Json.toJson(gen._1.evaluate.err),
+      "conflict value" -> gen._1.evaluate.value,
+      "fitness" -> gen._2
+    )
+  }
+
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = ???
 
   override protected def toDbModel(protocol: PostgresScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
@@ -87,32 +103,41 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
     case Update => SecureBlock(restrictionId, scheduleEntry.update)
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
     ???
   }
 
-  def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
-    for {
-      timetables <- timetableService.get(List(TimetableLabworkFilter(labwork))) if timetables.nonEmpty
-      timetable = timetables.head.asInstanceOf[PostgresTimetableAtom]
-      applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
-      apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toList
-      groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
-      groups = GroupService.groupApplicantsBy(UUID.fromString(labwork), apps, groupingStrategy).toVector
-      assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
-      ap = assignmentPlans.head.asInstanceOf[PostgresAssignmentPlan]
-      lab <- labworkService.getById(labwork) if lab.isDefined
-      semester = lab.get.asInstanceOf[PostgresLabworkAtom].semester
-      i = intOf(request.queryString) _
-      pop = i(popAttribute)
-      gen = i(genAttribute)
-      elite = i(eliteAttribute)
-    } yield ??? /*scheduleGenesisService.generate(
-      timetable, groups, ap, semester, ???, pop, gen, elite
-    )*/
-
-    ???
+  def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
+    generate(labwork).jsonResult
   }
+
+  private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {
+    timetables <- timetableService.withBlacklists(List(TimetableLabworkFilter(labwork))) if timetables.nonEmpty
+    (timetable, blacklists) = {
+      val h = timetables.head
+      (h._1, h._2.toVector)
+    }
+
+    applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
+    apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
+
+    groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
+    groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
+
+    assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
+    ap = assignmentPlans.head.asInstanceOf[PostgresAssignmentPlan]
+
+    lab <- labworkService.getById(labwork) if lab.isDefined
+    labAtom = lab.get.asInstanceOf[PostgresLabworkAtom]
+    semester = labAtom.semester
+
+    comps <- abstractDao.competitive(labAtom)
+
+    i = intOf(request.queryString) _
+    pop = i(popAttribute)
+    gen = i(genAttribute)
+    elite = i(eliteAttribute)
+  } yield scheduleGenesisService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))

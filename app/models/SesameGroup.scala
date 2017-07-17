@@ -52,6 +52,14 @@ case class PostgresGroupAtom(label: String, labwork: PostgresLabwork, members: S
 
 case class PostgresGroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
+object PostgresGroup extends JsonSerialisation[PostgresGroupProtocol, PostgresGroup, PostgresGroupAtom] {
+  override implicit def reads = Json.reads[PostgresGroupProtocol]
+
+  override implicit def writes = Json.writes[PostgresGroup]
+
+  override implicit def writesAtom = Json.writes[PostgresGroupAtom]
+}
+
 // DB
 
 case class GroupDb(label: String, labwork: UUID, members: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {

@@ -36,16 +36,23 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
   }
 
   override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
-    case (timetable, labwork, blacklists, entries) =>
-      val timetableEntries = entries.map {
-        case ((e, _), s) => PostgresTimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
-      }
-
-      PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
+    case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  private final def collectDependencies(query: Query[TimetableTable, TimetableDb, Seq])
-                                       (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) => Timetable) = {
+  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
+    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toLwmModel))
+  }
+
+  private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) = {
+    val timetableEntries = entries.map {
+      case ((e, _), s) => PostgresTimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
+    }
+
+    PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
+  }
+
+  private final def collectDependencies[A](query: Query[TimetableTable, TimetableDb, Seq])
+                                          (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) => A) = {
     val mandatory = for {
       q <- query
       l <- q.joinLabwork

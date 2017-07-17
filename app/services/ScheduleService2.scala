@@ -8,14 +8,13 @@ import org.joda.time._
 import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
-import models.TimetableDateEntry._
 import services.ScheduleService2.{Crossover, Evaluator, Mutator}
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 import utils.{Gen, Genesis2}
 import utils.TypeClasses.{Cross, Eval, Mutate}
-
+import models.LwmDateTime._
 case class Conflict(entry: ScheduleEntryGen, members: Vector[UUID], group: PostgresGroup)
 case class ScheduleGen(labwork: UUID, entries: Vector[ScheduleEntryGen])
 case class ScheduleEntryGen(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: PostgresGroup)
@@ -34,7 +33,8 @@ trait ScheduleServiceLike2 {
 }
 
 trait ScheduleGenesisServiceLike2 {
-  def generate(timetable: PostgresTimetableAtom,
+  def generate(timetable: PostgresTimetable,
+               blacklists: Vector[PostgresBlacklist],
                groups: Vector[PostgresGroup],
                assignmentPlan: PostgresAssignmentPlan,
                semester: PostgresSemester,
@@ -42,8 +42,6 @@ trait ScheduleGenesisServiceLike2 {
                p: Option[Int] = None,
                g: Option[Int] = None,
                e: Option[Int] = None): (Gen[ScheduleGen, Conflict, Int], Int)
-  
-  //def competitive(labwork: Option[PostgresLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleProtocol]
 }
 
 object ScheduleService2 {
@@ -102,7 +100,8 @@ object ScheduleService2 {
 final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) extends ScheduleServiceLike2 with ScheduleGenesisServiceLike2 {
   import services.ScheduleService2._
 
-  override def generate(timetable: PostgresTimetableAtom,
+  override def generate(timetable: PostgresTimetable,
+                        blacklists: Vector[PostgresBlacklist],
                         groups: Vector[PostgresGroup],
                         assignmentPlan: PostgresAssignmentPlan,
                         semester: PostgresSemester,
@@ -110,8 +109,11 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
                         p: Option[Int],
                         g: Option[Int],
                         e: Option[Int]) = {
-    val entries = TimetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups.size)
-    val pop = population(p getOrElse pops, timetable.labwork.id, entries, groups)
+    val entries = TimetableService.extrapolateTimetableByWeeks(
+      timetable, Weeks.weeksBetween(semester.start, semester.examStart), blacklists, assignmentPlan, groups.size
+    )
+
+    val pop = population(p getOrElse pops, timetable.labwork, entries, groups)
 
     implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
     implicit val mutateF = (mutate, mutateDestructive)
@@ -128,8 +130,6 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
   }
 
   private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): ScheduleGen = {
-    import models.LwmDateTime.localDateTimeOrd
-
     val shuffled = shuffle(groups)
     val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
       case (t, group) => ScheduleEntryGen(t.start, t.end, t.date, t.room, t.supervisor, group)
@@ -206,18 +206,4 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
       case (eval, _) => eval
     } map (_ * conflicts.count(_.isDefined))
   }
-
-  /*override def competitive(labwork: Option[SesameLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleProtocol] = {
-    labwork.fold(Set.empty[ScheduleProtocol]) { item =>
-      val filtered = all
-        .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
-        .filter(_.labwork.semester.id == item.semester.id)
-        .filter(_.labwork.degree.id == item.degree.id)
-        .filterNot(_.labwork.id == item.id)
-
-      filtered map { atom =>
-        ScheduleProtocol(atom.labwork.id, atom.entries.map(e => ScheduleEntryGen(e.start, e.end, e.date, e.room.id, e.supervisor map (_.id), e.group)).toVector, atom.id)
-      }
-    }
-  }*/
 }

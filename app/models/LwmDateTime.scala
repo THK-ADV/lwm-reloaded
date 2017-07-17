@@ -57,6 +57,14 @@ object LwmDateTime {
 
   def toDateTime(string: String) = DateTime.parse(string, formatter)
 
+  def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
+    entry.date.toLocalDateTime(entry.start)
+  }
+
+  def toLocalDateTime(bl: PostgresBlacklist): LocalDateTime = {
+    bl.date.toLocalDateTime(bl.start)
+  }
+
   def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
     inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(formatter)))).isEmpty
   }
