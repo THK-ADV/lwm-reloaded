@@ -34,6 +34,13 @@ trait TimetableIdTable { self: Table[_] =>
   def timetableFk = foreignKey("TIMETABLES_fkey", timetable, TableQuery[TimetableTable])(_.id)
 }
 
+trait ReportCardEntryIdTable { self: Table[_] =>
+  def reportCardEntry = column[UUID]("REPORT_CARD_ENTRY")
+
+  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id)
+  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
+}
+
 trait LabelTable { self: Table[_] =>
   def label = column[String]("LABEL")
 }
@@ -44,6 +51,25 @@ trait DescriptionTable { self: Table[_] =>
 
 trait AbbreviationTable { self: Table[_] =>
   def abbreviation = column[String]("ABBREVIATION")
+}
+
+trait DateStartEndTable { self: Table[_] =>
+  def date = column[Date]("DATE")
+  def start = column[Time]("START")
+  def end = column[Time]("END")
+}
+
+trait GroupIdTable { self: Table[_] =>
+  def group = column[UUID]("GROUP")
+
+  def groupFk = foreignKey("GROUP_fkey", group, TableQuery[GroupTable])(_.id)
+  def joinGroup = TableQuery[GroupTable].filter(_.id === group)
+}
+
+trait StudentIdTable { self: Table[_] =>
+  def student = column[UUID]("STUDENT")
+
+  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
 }
 
 trait TableFilter[T <: Table[_]] {
@@ -197,7 +223,7 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
   def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
   def permissionFk = foreignKey("PERMISSIONS_fkey", permission, TableQuery[PermissionTable])(_.id)
 
-  override def * = (role, permission,lastModified, invalidated, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+  override def * = (role, permission, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
 }
 
 class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable with LabelTable with DescriptionTable {
@@ -250,10 +276,7 @@ class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](ta
   override def * = (assignmentEntry, entryType, bool, int, id) <> ((AssignmentEntryTypeDb.apply _).tupled, AssignmentEntryTypeDb.unapply)
 }
 
-class BlacklistTable(tag: Tag) extends Table[BlacklistDb](tag, "BLACKLIST") with UniqueTable with LabelTable {
-  def date = column[Date]("DATE")
-  def start = column[Time]("START")
-  def end = column[Time]("END")
+class BlacklistTable(tag: Tag) extends Table[BlacklistDb](tag, "BLACKLIST") with UniqueTable with LabelTable with DateStartEndTable {
   def global = column[Boolean]("GLOBAL")
 
   override def * = (label, date, start, end, global, lastModified, invalidated, id) <> ((BlacklistDb.apply _).tupled, BlacklistDb.unapply)
@@ -282,10 +305,8 @@ class TimetableBlacklistTable(tag: Tag) extends Table[TimetableBlacklist](tag, "
   override def * = (timetable, blacklist, id) <> ((TimetableBlacklist.apply _).tupled, TimetableBlacklist.unapply)
 }
 
-class TimetableEntryTable(tag: Tag) extends Table[TimetableEntryDb](tag, "TIMETABLE_ENTRY") with UniqueTable with TimetableIdTable with RoomIdTable {
+class TimetableEntryTable(tag: Tag) extends Table[TimetableEntryDb](tag, "TIMETABLE_ENTRY") with UniqueTable with TimetableIdTable with RoomIdTable with DateStartEndTable {
   def dayIndex = column[Int]("DAY_INDEX")
-  def start = column[Time]("START")
-  def end = column[Time]("END")
 
   override def * = (timetable, room, dayIndex, start, end, id) <> (mapRow, unmapRow)
 
@@ -307,4 +328,99 @@ class TimetableEntrySupervisorTable(tag: Tag) extends Table[TimetableEntrySuperv
   def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
 
   override def * = (timetableEntry, supervisor, id) <> ((TimetableEntrySupervisor.apply _).tupled, TimetableEntrySupervisor.unapply)
+}
+
+class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable with StudentIdTable {
+
+  override def * = (student, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
+    case (student, labwork, label, date, start, end, room, lastModified, invalidated, id) =>
+      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, None, None, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ReportCardEntryDb) => Option[(UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ReportCardRetryTable(tag: Tag) extends Table[ReportCardRetryDb](tag, "REPORT_CARD_RETRY") with UniqueTable with DateStartEndTable with RoomIdTable with ReportCardEntryIdTable {
+  def reason = column[Option[String]]("REASON")
+
+  override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Date, Time, Time, UUID, Option[String], Timestamp, Option[Timestamp], UUID)) => ReportCardRetryDb = {
+    case (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) =>
+      ReportCardRetryDb(reportCardEntry, date, start, end, room, Set.empty, reason, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ReportCardRetryDb) => Option[(UUID, Date, Time, Time, UUID, Option[String], Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.reportCardEntry, entry.date, entry.start, entry.end, entry.room, entry.reason, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ReportCardRescheduledTable(tag: Tag) extends Table[ReportCardRescheduledDb](tag, "REPORT_CARD_RESCHEDULED") with UniqueTable with DateStartEndTable with RoomIdTable with ReportCardEntryIdTable {
+  def reason = column[Option[String]]("REASON")
+
+  override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> ((ReportCardRescheduledDb.apply _).tupled, ReportCardRescheduledDb.unapply)
+}
+
+class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](tag, "REPORT_CARD_ENTRY_TYPE") with UniqueTable {
+  def entryType = column[String]("ENTRY_TYPE")
+  def bool = column[Option[Boolean]]("BOOL")
+  def int = column[Int]("INT")
+
+  // reportCardEntries types can either be created from reportCardEntry or reportCardRetry. thus both ids are optional
+  def reportCardEntry = column[Option[UUID]]("REPORT_CARD_ENTRY")
+  def reportCardRetry = column[Option[UUID]]("REPORT_CARD_RETRY")
+
+  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
+  def joinReportCardRetry = TableQuery[ReportCardRetryTable].filter(_.id === reportCardRetry)
+  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id.?)
+  def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
+
+  override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
+}
+
+class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE_ENTRY") with UniqueTable with LabworkIdTable with RoomIdTable with GroupIdTable with DateStartEndTable {
+
+  override def * = (labwork, start, end, date, room, group, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, Time, Time, Date, UUID, UUID, Timestamp, Option[Timestamp], UUID)) => ScheduleEntryDb = {
+    case (labwork, start, end, date, room, group, lastModified, invalidated, id) =>
+      ScheduleEntryDb(labwork, start, end, date, room, Set.empty, group, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (ScheduleEntryDb) => Option[(UUID, Time, Time, Date, UUID, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.labwork, entry.start, entry.end, entry.date, entry.room, entry.group, entry.lastModified, entry.invalidated, entry.id))
+  }
+}
+
+class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervisor](tag, "SCHEDULE_ENTRY_SUPERVISOR") with UniqueTable {
+  def scheduleEntry = column[UUID]("SCHEDULE_ENTRY")
+  def supervisor = column[UUID]("SUPERVISOR")
+
+  def scheduleEntryFk = foreignKey("SCHEDULE_ENTRIES_fkey", scheduleEntry, TableQuery[ScheduleEntryTable])(_.id)
+  def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
+
+  def joinSupervisor = TableQuery[UserTable].filter(_.id === supervisor)
+
+  override def * = (scheduleEntry, supervisor, id) <> ((ScheduleEntrySupervisor.apply _).tupled, ScheduleEntrySupervisor.unapply)
+}
+
+class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable with LabworkIdTable with LabelTable {
+
+  override def * = (label, labwork, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((String, UUID, Timestamp, Option[Timestamp], UUID)) => GroupDb = {
+    case (label, labwork, lastModified, invalidated, id) => GroupDb(label, labwork, Set.empty, lastModified, invalidated, id)
+  }
+
+  def unmapRow: (GroupDb) => Option[(String, UUID, Timestamp, Option[Timestamp], UUID)] = { group =>
+    Option((group.label, group.labwork, group.lastModified, group.invalidated, group.id))
+  }
+}
+
+class GroupMembershipTable(tag: Tag) extends Table[GroupMembership](tag, "GROUP_MEMBERSHIP") with UniqueTable with GroupIdTable with StudentIdTable {
+  override def * = (group, student, id) <> ((GroupMembership.apply _).tupled, GroupMembership.unapply)
 }

@@ -23,7 +23,7 @@ final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresR
 
   override protected val dbEntities: List[RoomDb] = rooms
 
-  override protected val lwmEntity: PostgresRoom = dbEntity.toRoom
+  override protected val lwmEntity: PostgresRoom = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresRoom = lwmEntity
 }

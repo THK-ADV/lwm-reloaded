@@ -1,6 +1,6 @@
 package utils
 
-import TypeClasses._
+/*import TypeClasses._
 import Gen._
 import scalaz.Monoid
 import scala.util.Random._
@@ -150,4 +150,4 @@ object TypeClasses {
       override def apply(a: A): Boolean = f(a)
     }
   }
-}
+}*/

@@ -14,12 +14,12 @@ class ScheduleInvalidation extends SesameDbSpec {
 
   "A Schedule invalidation" should {
 
-    def schedEnts(labwork: UUID): Stream[ScheduleEntry] = Stream.continually(
-      ScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, SesameRoom.randomUUID, Set(User.randomUUID), Group.randomUUID))
+    def schedEnts(labwork: UUID): Stream[SesameScheduleEntry] = Stream.continually(
+      SesameScheduleEntry(labwork, LocalTime.now, LocalTime.now plusHours 2, LocalDate.now, SesameRoom.randomUUID, Set(User.randomUUID), SesameGroup.randomUUID))
 
-    def scheds: Stream[Schedule] = Stream.continually {
+    def scheds: Stream[SesameSchedule] = Stream.continually {
       val labwork = SesameLabwork.randomUUID
-      Schedule(labwork, (schedEnts(labwork) take 20).toSet)
+      SesameSchedule(labwork, (schedEnts(labwork) take 20).toSet)
     }
 
     "invalidate the schedule and subsequent schedule entries" in {
@@ -28,15 +28,15 @@ class ScheduleInvalidation extends SesameDbSpec {
       val schedules = (scheds take 100).toSet
       val toInvalidate = shuffle(schedules) take 30
 
-      repo.addMany[Schedule](schedules)
+      repo.addMany[SesameSchedule](schedules)
 
-      toInvalidate foreach (a => repo.invalidate[Schedule](Schedule.generateUri(a)))
+      toInvalidate foreach (a => repo.invalidate[SesameSchedule](SesameSchedule.generateUri(a)))
 
-      repo.getAll[Schedule] shouldBe Success(schedules diff toInvalidate)
-      repo.getAll[ScheduleEntry] shouldBe Success((schedules flatMap (_.entries)) diff (toInvalidate flatMap (_.entries)))
+      repo.getAll[SesameSchedule] shouldBe Success(schedules diff toInvalidate)
+      repo.getAll[SesameScheduleEntry] shouldBe Success((schedules flatMap (_.entries)) diff (toInvalidate flatMap (_.entries)))
 
-      repo.deepGetAll[Schedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
-      repo.deepGetAll[ScheduleEntry] map (_ map (_.id)) shouldBe Success(schedules flatMap (_.entries) map (_.id))
+      repo.deepGetAll[SesameSchedule] map (_ map (_.id)) shouldBe Success(schedules map (_.id))
+      repo.deepGetAll[SesameScheduleEntry] map (_ map (_.id)) shouldBe Success(schedules flatMap (_.entries) map (_.id))
     }
   }
 }

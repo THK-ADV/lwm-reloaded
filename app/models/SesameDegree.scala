@@ -25,8 +25,8 @@ object SesameDegree extends UriGenerator[SesameDegree] with JsonSerialisation[De
 
 case class PostgresDegree(label: String, abbreviation: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class DegreeDb(label: String, abbreviation: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toDegree = PostgresDegree(label, abbreviation, id)
+case class DegreeDb(label: String, abbreviation: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresDegree(label, abbreviation, id)
 }
 
 object DegreeDb {

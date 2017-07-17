@@ -18,16 +18,16 @@ class ReportCardBindingSpec extends SesameDbSpec {
   implicit val reportCardEntryTypeBinder = ReportCardEntryTypeDescriptor.binder
 
   val entries = (0 until 5).map { n =>
-    ReportCardEntry(UUID.randomUUID, UUID.randomUUID, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), ReportCardEntryType.all)
+    SesameReportCardEntry(UUID.randomUUID, UUID.randomUUID, n.toString, LocalDate.now.plusWeeks(n), LocalTime.now.plusHours(n), LocalTime.now.plusHours(n + 1), UUID.randomUUID(), SesameReportCardEntryType.all)
   }.toSet
   val reportCardEntry = {
     val first = entries.head
-    val rescheduled = Rescheduled(LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID)
-    ReportCardEntry(first.student, first.labwork, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.invalidated, first.id)
+    val rescheduled = SesameRescheduled(LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID)
+    SesameReportCardEntry(first.student, first.labwork, first.label, first.date, first.start, first.end, first.room, first.entryTypes, Some(rescheduled), first.invalidated, first.id)
   }
-  val entryType = ReportCardEntryType.Attendance
+  val entryType = SesameReportCardEntryType.Attendance
 
-  val entryGraph = URI(ReportCardEntry.generateUri(reportCardEntry)).a(lwm.ReportCardEntry)
+  val entryGraph = URI(SesameReportCardEntry.generateUri(reportCardEntry)).a(lwm.ReportCardEntry)
     .--(lwm.student).->-(reportCardEntry.student)(ops, uuidRefBinder(User.splitter))
     .--(lwm.labwork).->-(reportCardEntry.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.label).->-(reportCardEntry.label)
@@ -40,7 +40,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
     .--(lwm.invalidated).->-(reportCardEntry.invalidated)
     .--(lwm.id).->-(reportCardEntry.id).graph
 
-  val typeGraph = (URI(ReportCardEntryType.generateUri(entryType)).a(lwm.ReportCardEntryType)
+  val typeGraph = (URI(SesameReportCardEntryType.generateUri(entryType)).a(lwm.ReportCardEntryType)
     -- lwm.entryType ->- entryType.entryType
     -- lwm.bool ->- entryType.bool
     -- lwm.int ->- entryType.int
@@ -63,7 +63,7 @@ class ReportCardBindingSpec extends SesameDbSpec {
     }
 
     "return a report card entry type based on a RDF graph representation" in {
-      val expectedType = PointedGraph[Rdf](URI(ReportCardEntryType.generateUri(entryType)), typeGraph).as[ReportCardEntryType]
+      val expectedType = PointedGraph[Rdf](URI(SesameReportCardEntryType.generateUri(entryType)), typeGraph).as[SesameReportCardEntryType]
 
       expectedType match {
         case Success(s) =>

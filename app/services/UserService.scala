@@ -2,15 +2,15 @@ package services
 
 import java.util.UUID
 
+import models.LwmDateTime.DateTimeConverter
 import models._
 import org.joda.time.DateTime
+import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 import store.{TableFilter, UserTable}
 
 import scala.concurrent.Future
-import slick.driver.PostgresDriver.api._
-import slick.lifted.Rep
-import models.LwmDateTime.DateTimeConverter
-import slick.driver.PostgresDriver
 
 sealed trait BuddyResult
 
@@ -60,7 +60,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
       dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, DateTime.now.timestamp, None, existing.headOption.fold(ldapUser.id)(_.id))
       updated <- createOrUpdate(dbUser)
       maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).map(Some(_)))
-    } yield (dbUser.toUser, maybeAuth)
+    } yield (dbUser.toLwmModel, maybeAuth)
   }
 
   final def buddyResult(studentId: String, buddySystemId: String, labwork: String): Future[BuddyResult] = {
@@ -100,23 +100,6 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
 
   protected def labworkApplicationService: LabworkApplicationService2
 
-  override protected def setInvalidated(entity: DbUser): DbUser = {
-    val now = DateTime.now.timestamp
-
-    DbUser(
-      entity.systemId,
-      entity.lastname,
-      entity.firstname,
-      entity.email,
-      entity.status,
-      entity.registrationId,
-      entity.enrollment,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
   override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||
       existing.lastname != toUpdate.lastname ||
@@ -130,13 +113,13 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
   }
 
   override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.result.map(_.map(_.toUser)))
+    db.run(query.result.map(_.map(_.toLwmModel)))
   }
 
   override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
     db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
-      case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toDegree, s.id)
-      case ((dbUser, None)) => dbUser.toUser
+      case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toLwmModel, s.id)
+      case ((dbUser, None)) => dbUser.toLwmModel
     }))
   }
 }

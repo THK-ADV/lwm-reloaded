@@ -22,7 +22,7 @@ final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Pos
 
   override protected val dbEntities: List[DegreeDb] = degrees
 
-  override protected val lwmEntity: PostgresDegree = dbEntity.toDegree
+  override protected val lwmEntity: PostgresDegree = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresDegree = lwmEntity
 }

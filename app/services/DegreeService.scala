@@ -3,12 +3,10 @@ package services
 import java.util.UUID
 
 import models.{DegreeDb, PostgresDegree}
-import org.joda.time.DateTime
+import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import store.{DegreeTable, TableFilter}
-import slick.driver.PostgresDriver.api._
-import models.LwmDateTime.DateTimeConverter
-import slick.driver.PostgresDriver
 
 import scala.concurrent.Future
 
@@ -35,21 +33,9 @@ trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def setInvalidated(entity: DegreeDb): DegreeDb = {
-    val now = DateTime.now.timestamp
-
-    DegreeDb(
-      entity.label,
-      entity.abbreviation,
-      now,
-      Some(now),
-      entity.id
-    )
-  }
-
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toDegree)))
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toLwmModel)))
 }
 
 

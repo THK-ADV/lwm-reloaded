@@ -15,7 +15,6 @@ import store.{Namespace, SesameRepository}
 import utils.{Continue, LwmMimeType, Return}
 import controllers.CourseCRUDController.lecturerAttribute
 
-import scala.collection.Map
 import scala.util.{Failure, Success, Try}
 import models.Permissions.{course, god, prime}
 import models.Roles.CourseManagerLabel

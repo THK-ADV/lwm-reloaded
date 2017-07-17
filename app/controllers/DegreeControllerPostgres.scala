@@ -16,7 +16,7 @@ object DegreeControllerPostgres {
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val degreeService: DegreeService)
+final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: DegreeService)
   extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
@@ -32,22 +32,15 @@ final class DegreeControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected implicit val reads: Reads[DegreeProtocol] = PostgresDegree.reads
 
-  override protected val abstractDao: AbstractDao[DegreeTable, DegreeDb, PostgresDegree] = degreeService
-
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
     import controllers.DegreeControllerPostgres._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label.head)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation.head)))
+    (appendTo, (attribute, value)) match {
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
   override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = DegreeDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: DegreeDb): PostgresDegree = dbModel.toDegree
-
-
-
 }

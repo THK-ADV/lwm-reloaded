@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.util.Timeout
 import base.TestBaseDefinition
-import models.{TimetableDateEntry, User, Weekday}
+import models.{PostgresBlacklist, TimetableDateEntry, User, Weekday}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
@@ -12,9 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
-
-  import models.TimetableDateEntry._
-  import models.LwmDateTime.localDateTimeOrd
+  import models.LwmDateTime._
   import scala.util.Random.nextInt
 
   val blacklistService = new BlacklistService
@@ -104,16 +102,27 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "fetch blacklists from an external api" in {
+      import models.LwmDateTime._
+
       val timeout = Timeout(5 seconds)
       val year = DateTime.now.getYear.toString
 
-      val future = blacklistService.fetchByYear(year)
-      val result = Await.result(future, timeout.duration)
+      val result = Await.result(blacklistService.fetchByYear(year), timeout.duration)
+      val result2 = Await.result(blacklistService.fetchByYear2(year), timeout.duration)
 
-      result.label shouldBe BlacklistService.legalHolidayLabel(year)
+      result.label shouldBe BlacklistService.fullLegalHolidayLabel(year)
       result.dates should not be empty
       result.dates.forall(_.getYear == year.toInt) shouldBe true
       result.dates should contain(DateTime.now.withDayOfYear(1).withTimeAtStartOfDay)
+
+      result2 should not be empty
+      result2.foreach { bl =>
+        bl.date.localDate.getYear shouldBe year.toInt
+        bl.start.localTime shouldBe PostgresBlacklist.startOfDay
+        bl.end.localTime shouldBe PostgresBlacklist.endOfDay
+        bl.global shouldBe true
+      }
+      result2.map(_.date.localDate) should contain(LocalDate.now.withDayOfYear(1))
     }
   }
 }

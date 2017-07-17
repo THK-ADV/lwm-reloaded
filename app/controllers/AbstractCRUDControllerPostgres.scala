@@ -3,7 +3,7 @@ package controllers
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.UniqueEntity
+import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json.{JsError, JsValue, Reads, Writes}
 import play.api.mvc.{Action, AnyContent, Controller, Request}
 import services.AbstractDao
@@ -59,7 +59,7 @@ trait AttributeFilter {
   }
 }
 
-trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueEntity, LwmModel <: UniqueEntity]
+trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends Controller
     with Secured
     with SessionChecking
@@ -76,10 +76,10 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected implicit def reads: Reads[Protocol]
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
-  protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
+  protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
-  protected def toLwmModel(dbModel: DbModel): LwmModel
+  private def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toLwmModel.asInstanceOf[LwmModel]
 
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
@@ -107,16 +107,17 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
+    import models.LwmDateTime.{SqlTimestampConverter, writes}
     val uuid = UUID.fromString(id)
 
-    abstractDao.delete(uuid).map(_.map(toLwmModel)).jsonResult(uuid)
+    abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)): Action[AnyContent] = secureContext asyncAction { request =>
     val (queryString, defaults) = extractAttributes(request.queryString)
 
     val filter = queryString.foldLeft(Try(List.empty[TableFilter[T]])) {
-      case (list, (attribute, values)) => tableFilter(attribute, values)(list)
+      case (list, (attribute, values)) => tableFilter(attribute, values.head)(list)
     }
 
     (for{

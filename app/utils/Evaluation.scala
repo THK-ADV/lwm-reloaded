@@ -12,7 +12,7 @@ object Evaluation {
 }
 
 sealed case class Evaluation[+E, +V](err: List[E], value: V) {
-  import Evaluation._
+  import _root_.utils.Evaluation._
 
   def add[E2 >: E](e: E2): Evaluation[E2, V] = mapErrWhole(_.+:(e))
   def map[B](f: V => B): Evaluation[E, B] = lift2(f(value), err)

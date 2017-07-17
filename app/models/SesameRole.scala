@@ -29,15 +29,15 @@ sealed trait Role extends UniqueEntity
 
 case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
 
-case class RoleDb(label: String, permissions: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toRole = PostgresRole(label, permissions, id)
+case class RoleDb(label: String, permissions: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  def toLwmModel = PostgresRole(label, permissions, id)
 }
 
 case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
 
 case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
 
-case class RolePermission(role: UUID, permission: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class RolePermission(role: UUID, permission: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 object Role {
 

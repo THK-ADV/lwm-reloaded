@@ -1,14 +1,12 @@
 package services
 
 import models._
-import org.joda.time.DateTime
-import store.{RolePermissionTable, RoleTable, TableFilter}
-import slick.driver.PostgresDriver.api._
-
-import scala.concurrent.Future
-import models.LwmDateTime.DateTimeConverter
 import slick.dbio.Effect
 import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
+import store.{RolePermissionTable, RoleTable, TableFilter}
+
+import scala.concurrent.Future
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
@@ -22,12 +20,6 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
 
   protected val rolePermissionQuery: TableQuery[RolePermissionTable] = TableQuery[RolePermissionTable]
 
-  override protected def setInvalidated(entity: RoleDb): RoleDb = {
-    val now = DateTime.now.timestamp
-
-    entity.copy(entity.label, entity.permissions, now, Some(now))
-  }
-
   override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = {
     existing.permissions != toUpdate.permissions && existing.label == toUpdate.label
   }
@@ -37,21 +29,27 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 
   override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
-    case (role, rolePerms) =>
-      val permissions = rolePerms.map {
-        case (_, perm) => PostgresPermission(perm.value, perm.description, perm.id)
-      }
-
-      PostgresRoleAtom(role.label, permissions.toSet, role.id)
+    case (role, perms) => PostgresRoleAtom(role.label, perms.map(_.toLwmModel).toSet, role.id)
   }
 
-  private def joinPermissions(query: Query[RoleTable, RoleDb, Seq])(buildRole: (RoleDb, Seq[(RoleDb, PermissionDb)]) => Role): Future[Seq[Role]] = {
-    val rolesWithPermissions = for {
-      q <- query
-      p <- q.permissions
-    } yield (q, p)
+  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
+    case (role, perms) => PostgresRole(role.label, perms.map(_.id).toSet, role.id)
+  }
 
-    db.run(rolesWithPermissions.result.map(_.groupBy(_._1).map(r => buildRole(r._1, r._2)).toSeq))
+  private def joinPermissions(query: Query[RoleTable, RoleDb, Seq])(build: (RoleDb, Seq[PermissionDb]) => Role): Future[Seq[Role]] = {
+    val rolePerms = for {
+      rp <- rolePermissionQuery
+      p <- rp.permissionFk
+    } yield (rp, p)
+
+    val result = query.joinLeft(rolePerms).on(_.id === _._1.role).result.map(_.groupBy(_._1).map {
+      case (role, dependencies) =>
+        val perms = dependencies.flatMap(_._2.map(_._2))
+
+        build(role, perms)
+    }.toSeq)
+
+    db.run(result)
   }
 
   def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
@@ -64,10 +62,6 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
     tableQuery.filter(_.isLabel(label)).result.headOption
-  }
-
-  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = joinPermissions(query) {
-    case (role, rolePerms) => PostgresRole(role.label, rolePerms.map(_._2.id).toSet, role.id)
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[RoleDb]] = Some(new DatabaseExpander[RoleDb] {

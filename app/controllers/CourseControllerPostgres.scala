@@ -5,7 +5,7 @@ import java.util.UUID
 import models.Permissions.{course, prime}
 import models.{Course, CourseDb, PostgresCourse, PostgresCourseProtocol}
 import play.api.libs.json.{JsValue, Reads, Writes}
-import play.api.mvc.{Action, AnyContent}
+import play.api.mvc.Action
 import services._
 import store.{CourseTable, TableFilter}
 import utils.LwmMimeType
@@ -13,40 +13,36 @@ import utils.LwmMimeType
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
-
-object CourseControllerPostgres{
+object CourseControllerPostgres {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
   lazy val lecturerAttribute = "lecturer"
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
-final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val courseService: CourseService, val authorityService: AuthorityService)
-  extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course]{
+final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: CourseService, val authorityService: AuthorityService)
+  extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+
   override protected implicit val writes: Writes[Course] = Course.writes
 
   override protected implicit val reads: Reads[PostgresCourseProtocol] = PostgresCourse.reads
 
-  override protected val abstractDao: AbstractDao[CourseTable, CourseDb, Course] = courseService
+  override protected def toDbModel(protocol: PostgresCourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
 
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
+  override implicit val mimeType: LwmMimeType = LwmMimeType.courseV1Json
+
+  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
     import controllers.CourseControllerPostgres._
 
     (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label.head)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation.head)))
-      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex.head)))
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
+      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
-
-  override protected def toDbModel(protocol: PostgresCourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: CourseDb): PostgresCourse = dbModel.toCourse
-
-  override implicit val mimeType: LwmMimeType = LwmMimeType.courseV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(course.get)
@@ -58,8 +54,8 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
       dbModel = toDbModel(protocol, None)
-      _ <- courseService.transaction(courseService.createQuery(dbModel), authorityService.createByCourse(dbModel))
-    } yield toLwmModel(dbModel)).jsonResult
+      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityService.createByCourse(dbModel))
+    } yield dbModel.toLwmModel).jsonResult
   }
 
   /*override def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
@@ -68,8 +64,9 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
       dbModel = toDbModel(protocol, Some(uuid))
+      // TODO get old course by id
       updatedCourse <- courseService.update(dbModel)
-      _ <- authorityService.updateWithCourse(dbModel)
+      _ <- authorityService.updateWithCourse(dbModel) // TODO pass old course right here
     } yield updatedCourse.map(toLwmModel)).jsonResult(uuid)
   }
 

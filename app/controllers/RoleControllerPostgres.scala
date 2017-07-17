@@ -11,31 +11,26 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
 
-
 object RoleControllerPostgres{
   lazy val labelAttribute = "label"
 }
 
-final class RoleControllerPostgres(val sessionService: SessionHandlingService, val roleService2: RoleService2, val roleService: RoleServiceLike)
+final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleService2, val roleService: RoleServiceLike)
   extends AbstractCRUDControllerPostgres[PostgresRoleProtocol, RoleTable, RoleDb, Role]{
   override protected implicit val writes: Writes[Role] = Role.writes
 
   override protected implicit val reads: Reads[PostgresRoleProtocol] = PostgresRole.reads
 
-  override protected val abstractDao: AbstractDao[RoleTable, RoleDb, Role] = roleService2
-
-  override protected def tableFilter(attribute: String, values: Seq[String])(appendTo: Try[List[TableFilter[RoleTable]]]): Try[List[TableFilter[RoleTable]]] = {
+  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[RoleTable]]]): Try[List[TableFilter[RoleTable]]] = {
     import controllers.RoleControllerPostgres._
 
     (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoleLabelFilter(label.head)))
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoleLabelFilter(label)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
   override protected def toDbModel(protocol: PostgresRoleProtocol, existingId: Option[UUID]): RoleDb = RoleDb.from(protocol, existingId)
-
-  override protected def toLwmModel(dbModel: RoleDb): PostgresRole = dbModel.toRole
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 

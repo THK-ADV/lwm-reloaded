@@ -74,8 +74,8 @@ sealed trait AssignmentPlan extends UniqueEntity
 
 case class PostgresAssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlan
 
-case class AssignmentPlanDb(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueEntity {
-  def toAssignmentPlan: PostgresAssignmentPlan = PostgresAssignmentPlan(labwork, attendance, mandatory, entries, id)
+case class AssignmentPlanDb(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresAssignmentPlan(labwork, attendance, mandatory, entries, id)
 }
 
 case class PostgresAssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry])

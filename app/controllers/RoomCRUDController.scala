@@ -13,7 +13,6 @@ import store.sparql.{Clause, select}
 import store.{Namespace, SesameRepository}
 import utils.LwmMimeType
 
-import scala.collection.Map
 import scala.util.{Success, Try}
 
 class RoomCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameRoomProtocol, SesameRoom, SesameRoom] {

@@ -15,7 +15,7 @@ class PermissionServiceSpec extends AbstractDaoSpec[PermissionTable, PermissionD
       val toCheck = (Permissions.labwork.all ++ Permissions.labworkApplication.all).map(_.value)
 
       addAllAndThen{
-        filterBy(List(PermissionPrefixFilter("abw"))).result.map{ perms =>
+        filterBy(List(PermissionPrefixFilter("abw"))).result.map { perms =>
           perms.forall(p => toCheck.contains(p.value)) shouldBe true
         }
       }
@@ -55,7 +55,7 @@ class PermissionServiceSpec extends AbstractDaoSpec[PermissionTable, PermissionD
 
   override protected val dbEntities: List[PermissionDb] = permissions
 
-  override protected val lwmEntity: PostgresPermission = dbEntity.toPermission
+  override protected val lwmEntity: PostgresPermission = dbEntity.toLwmModel
 
-  override protected val lwmAtom: PostgresPermission = dbEntity.toPermission
+  override protected val lwmAtom: PostgresPermission = dbEntity.toLwmModel
 }

@@ -2,13 +2,21 @@ package services
 
 import java.util.UUID
 
+import models.LwmDateTime._
 import models._
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
-import store.{TimetableBlacklistTable, TimetableEntrySupervisorTable, TimetableEntryTable, TimetableTable}
-import models.LwmDateTime._
+import store._
 
 import scala.concurrent.Future
+
+case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTable] {
+  override def predicate = _.labwork === UUID.fromString(value)
+}
+
+case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
+  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+}
 
 trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,15 +26,65 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
   protected val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
   protected val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
 
-  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = ???
+  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+    case (timetable, labwork, blacklists, entries) =>
+      val timetableEntries = entries.map {
+        case ((e, r), s) => PostgresTimetableEntryAtom(s.map(_.toLwmModel).toSet, r.toLwmModel, e.dayIndex, e.start.localTime, e.end.localTime)
+      }
 
-  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = ???
+      PostgresTimetableAtom(labwork.toLwmModel, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toLwmModel).toSet, timetable.id)
+  }
 
-  override protected def setInvalidated(entity: TimetableDb): TimetableDb = ???
+  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+    case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
+  }
 
-  override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = ???
+  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
+    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toLwmModel))
+  }
 
-  override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = ???
+  private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) = {
+    val timetableEntries = entries.map {
+      case ((e, _), s) => PostgresTimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
+    }
+
+    PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
+  }
+
+  private final def collectDependencies[A](query: Query[TimetableTable, TimetableDb, Seq])
+                                          (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) => A) = {
+    val mandatory = for {
+      q <- query
+      l <- q.joinLabwork
+    } yield (q, l)
+
+    val innerBlacklist = timetableBlacklistQuery.join(TableQuery[BlacklistTable]).on(_.blacklist === _.id)
+    val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.supervisor === _.id)
+    val innerTimetableEntry = timetableEntryQuery.join(TableQuery[RoomTable]).on(_.room === _.id).joinLeft(innerSupervisor).on(_._1.id === _._1.timetableEntry)
+
+    val action = mandatory.joinLeft(innerBlacklist).on(_._1.id === _._1.timetable).joinLeft(innerTimetableEntry).on(_._1._1.id === _._1._1.timetable).map {
+      case ((t, bl), x) => (t, bl.map(_._2), x.map(y => (y._1, y._2.map(_._2))))
+    }.result.map(_.groupBy(_._1).map {
+      case ((timetable, labwork), dependencies) =>
+        val blacklists = dependencies.flatMap(_._2)
+        val entries = dependencies.flatMap(_._3).groupBy(_._1).mapValues(_.flatMap(_._2))
+
+        build(timetable, labwork, blacklists, entries)
+    }.toSeq)
+
+    db.run(action)
+  }
+
+  override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = {
+    filterBy(List(TimetableLabworkFilter(entity.labwork.toString)))
+  }
+
+  override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
+    (!existing.start.equals(toUpdate.start) ||
+      existing.entries != toUpdate.entries ||
+      existing.localBlacklist != toUpdate.localBlacklist) &&
+      existing.labwork == toUpdate.labwork
+  }
 
   override protected def databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {
     override def expandCreationOf[X <: Effect](entities: Seq[TimetableDb]) = {
@@ -36,32 +94,33 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
         }
       }
 
-      val supervisors = timetableEntries.flatMap { entry =>
-        entry.supervisor.map(supervisor => TimetableEntrySupervisor(entry.id, supervisor))
-      }
-
-      val blacklists = entities.flatMap(t => t.localBlacklist.map(bl => TimetableBlacklist(t.id, bl)))
-
       for {
-        _ <- timetableBlacklistQuery ++= blacklists
         _ <- timetableEntryQuery ++= timetableEntries
-        _ <- timetableEntrySupervisorQuery ++= supervisors
+        _ <- timetableEntrySupervisorQuery ++= timetableEntries.flatMap { entry =>
+          entry.supervisor.map(supervisor => TimetableEntrySupervisor(entry.id, supervisor))
+        }
+        _ <- timetableBlacklistQuery ++= entities.flatMap(t => t.localBlacklist.map(bl => TimetableBlacklist(t.id, bl)))
       } yield entities
     }
 
     override def expandDeleteOf(entity: TimetableDb) = {
-      val supervisors = entity.entries.flatMap(_.supervisor)
+      val timetableEntries = timetableEntryQuery.filter(_.timetable === entity.id).map(_.id)
 
-      /*val x = timetableEntrySupervisorQuery.filter { entrySupervisor =>
-        entrySupervisor.timetableEntryFk.map(e => (e.timetable, e.id)).filter {
-          case (timetableId, entryId) => timetableId === entity.id && entryId === entrySupervisor.timetableEntry && entrySupervisor.supervisor.inSet(supervisors)
-        }
-      }*/
+      val deleted = for {
+        d1 <- timetableEntrySupervisorQuery.filter(_.timetableEntry in timetableEntries).delete
+        d2 <- timetableEntryQuery.filter(_.id in timetableEntries).delete
+        d3 <- timetableBlacklistQuery.filter(_.timetable === entity.id).delete
+      } yield d1 + d2 + d3
 
-      ???
+      deleted.map(_ => Some(entity))
     }
 
-    override def expandUpdateOf(entity: TimetableDb) = ???
+    override def expandUpdateOf(entity: TimetableDb) = {
+      for {
+        d <- expandDeleteOf(entity) if d.isDefined
+        c <- expandCreationOf(Seq(entity))
+      } yield c.headOption
+    }
   })
 
   private lazy val schemas = List(

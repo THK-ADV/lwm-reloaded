@@ -236,7 +236,7 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
     TableQuery[CourseTable].forceInsertAll(courses ++ privateCourses ++ privateCoursesWithSameLecturer ++ privateCoursesWithSameLecturer2 ++ privateCoursesWithSameLecturer3)
   )
 
-  override protected val lwmEntity: Authority = dbEntity.toAuthority
+  override protected val lwmEntity: Authority = dbEntity.toLwmModel
 
   override protected val lwmAtom: PostgresAuthorityAtom = {
 
@@ -244,11 +244,11 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
       courseId <- dbEntity.course
       courseDb <- courses.find(_.id == courseId)
       employee <- employees.find( _.id == courseDb.lecturer)
-    } yield PostgresCourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toUser, courseDb.semesterIndex, courseDb.id)
+    } yield PostgresCourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toLwmModel, courseDb.semesterIndex, courseDb.id)
 
     PostgresAuthorityAtom(
-      employees.find(_.id == dbEntity.user).get.toUser,
-      roles.find(_.id == dbEntity.role).get.toRole,
+      employees.find(_.id == dbEntity.user).get.toLwmModel,
+      roles.find(_.id == dbEntity.role).get.toLwmModel,
       course,
       dbEntity.id
     )

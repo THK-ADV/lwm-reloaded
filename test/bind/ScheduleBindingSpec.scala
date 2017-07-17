@@ -18,23 +18,23 @@ class ScheduleBindingSpec extends SesameDbSpec {
   implicit val scheduleEntryBinder = ScheduleEntryDescriptor.binder
 
   val labwork = UUID.randomUUID()
-  val scheduleEntry = ScheduleEntry(labwork, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), Set.empty[UUID], UUID.randomUUID())
-  val schedule = Schedule(labwork, Set(scheduleEntry))
+  val scheduleEntry = SesameScheduleEntry(labwork, LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID(), Set.empty[UUID], UUID.randomUUID())
+  val schedule = SesameSchedule(labwork, Set(scheduleEntry))
 
-  val scheduleGraph = URI(Schedule.generateUri(schedule)).a(lwm.Schedule)
+  val scheduleGraph = URI(SesameSchedule.generateUri(schedule)).a(lwm.Schedule)
     .--(lwm.labwork).->-(schedule.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.entries).->-(schedule.entries)
     .--(lwm.invalidated).->-(schedule.invalidated)
     .--(lwm.id).->-(schedule.id).graph
 
-  val scheduleEntryGraph = URI(ScheduleEntry.generateUri(scheduleEntry)).a(lwm.ScheduleEntry)
+  val scheduleEntryGraph = URI(SesameScheduleEntry.generateUri(scheduleEntry)).a(lwm.ScheduleEntry)
     .--(lwm.labwork).->-(scheduleEntry.labwork)(ops, uuidRefBinder(SesameLabwork.splitter))
     .--(lwm.start).->-(scheduleEntry.start)
     .--(lwm.end).->-(scheduleEntry.end)
     .--(lwm.date).->-(scheduleEntry.date)
     .--(lwm.room).->-(scheduleEntry.room)(ops, uuidRefBinder(SesameRoom.splitter))
     .--(lwm.supervisor).->-(scheduleEntry.supervisor)(ops, uuidRefBinder(User.splitter))
-    .--(lwm.group).->-(scheduleEntry.group)(ops, uuidRefBinder(Group.splitter))
+    .--(lwm.group).->-(scheduleEntry.group)(ops, uuidRefBinder(SesameGroup.splitter))
     .--(lwm.invalidated).->-(scheduleEntry.invalidated)
     .--(lwm.id).->-(scheduleEntry.id).graph
 
@@ -53,7 +53,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
     }
 
     "return a schedule based on a RDF graph representation" in {
-      val expectedSchedule = PointedGraph[Rdf](URI(Schedule.generateUri(schedule)), scheduleGraph).as[Schedule]
+      val expectedSchedule = PointedGraph[Rdf](URI(SesameSchedule.generateUri(schedule)), scheduleGraph).as[SesameSchedule]
 
       expectedSchedule match {
         case Success(s) =>
@@ -64,7 +64,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
     }
 
     "return a schedule entry based on a RDF graph representation" in {
-      val expectedScheduleEntry = PointedGraph[Rdf](URI(ScheduleEntry.generateUri(scheduleEntry)), scheduleEntryGraph).as[ScheduleEntry]
+      val expectedScheduleEntry = PointedGraph[Rdf](URI(SesameScheduleEntry.generateUri(scheduleEntry)), scheduleEntryGraph).as[SesameScheduleEntry]
 
       expectedScheduleEntry match {
         case Success(s) =>
@@ -90,15 +90,15 @@ class ScheduleBindingSpec extends SesameDbSpec {
       val room2 = SesameRoom("room2", "description2")
       val supervisor1 = SesameEmployee("systemid1", "lastname1", "firstname1", "email1", "status1")
       val supervisor2 = SesameEmployee("systemid2", "lastname2", "firstname2", "email2", "status2")
-      val group1 = Group("group1", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
-      val group2 = Group("group2", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
-      val scheduleEntry1 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room1.id, Set(supervisor1.id), group1.id)
-      val scheduleEntry2 = ScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room2.id, Set(supervisor2.id), group2.id)
-      val schedule = Schedule(labwork.id, Set(scheduleEntry1, scheduleEntry2))
+      val group1 = SesameGroup("group1", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
+      val group2 = SesameGroup("group2", labwork.id, Set(UUID.randomUUID(), UUID.randomUUID()))
+      val scheduleEntry1 = SesameScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room1.id, Set(supervisor1.id), group1.id)
+      val scheduleEntry2 = SesameScheduleEntry(labwork.id, LocalTime.now, LocalTime.now, LocalDate.now, room2.id, Set(supervisor2.id), group2.id)
+      val schedule = SesameSchedule(labwork.id, Set(scheduleEntry1, scheduleEntry2))
 
-      val scheduleAtom = ScheduleAtom(labworkAtom, Set(
-        ScheduleEntryAtom(labworkAtom, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, Set(supervisor1), group1, scheduleEntry1.invalidated, scheduleEntry1.id),
-        ScheduleEntryAtom(labworkAtom, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, Set(supervisor2), group2, scheduleEntry2.invalidated, scheduleEntry2.id)
+      val scheduleAtom = SesameScheduleAtom(labworkAtom, Set(
+        SesameScheduleEntryAtom(labworkAtom, scheduleEntry1.start, scheduleEntry1.end, scheduleEntry1.date, room1, Set(supervisor1), group1, scheduleEntry1.invalidated, scheduleEntry1.id),
+        SesameScheduleEntryAtom(labworkAtom, scheduleEntry2.start, scheduleEntry2.end, scheduleEntry2.date, room2, Set(supervisor2), group2, scheduleEntry2.invalidated, scheduleEntry2.id)
       ), schedule.invalidated, schedule.id)
 
 
@@ -113,7 +113,7 @@ class ScheduleBindingSpec extends SesameDbSpec {
       repo addMany List(scheduleEntry1, scheduleEntry2)
       repo add schedule
 
-      repo.get[ScheduleAtom](Schedule.generateUri(schedule)) match {
+      repo.get[SesameScheduleAtom](SesameSchedule.generateUri(schedule)) match {
         case Success(Some(atom)) =>
           atom shouldEqual scheduleAtom
         case Success(None) =>

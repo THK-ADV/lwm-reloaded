@@ -1,6 +1,7 @@
 package models
 
 import java.sql.{Date, Time, Timestamp}
+import java.util.{Calendar, Locale}
 
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
@@ -8,12 +9,29 @@ import play.api.libs.json.{JsString, Writes}
 
 object LwmDateTime {
 
+  def sqlDateNow: Date = new Date(Calendar.getInstance.getTimeInMillis)
+  def sqlTimeNow: Time = new Time(sqlDateNow.getTime)
+
   implicit class LocalDateConverter(val date: LocalDate) {
-    def sqlDate: Date = Date.valueOf(date.toString)
+    def string: String = date.toDateTimeAtStartOfDay.getMillis.toString
+    def sqlDate: Date = date.string.sqlDate
+  }
+
+  implicit class StringDateConverter(val string: String) {
+    def sqlDate: Date = new Date(string.toLong)
+    def sqlTime: Time = new Time(string.toLong)
+
+    def localDate: LocalDate = LocalDate.parse(string, DateTimeFormat.forPattern(datePattern))
   }
 
   implicit class LocalTimeConverter(val time: LocalTime) {
-    def sqlTime: Time = Time.valueOf(time.toString)
+    def string: String = time.toDateTimeToday.getMillis.toString
+    def sqlTime: Time = time.string.sqlTime
+  }
+
+  implicit class TimeConverter(val time: Time) {
+    def string: String = time.localTime.string
+    def localTime: LocalTime = new LocalTime(time.getTime)
   }
 
   implicit class DateTimeConverter(val date: DateTime) {
@@ -21,6 +39,7 @@ object LwmDateTime {
   }
 
   implicit class SqlDateConverter(val date: Date) {
+    def string: String = date.localDate.string
     def localDate: LocalDate = new LocalDate(date.getTime)
   }
 
@@ -29,6 +48,7 @@ object LwmDateTime {
   }
 
   lazy val pattern = "yyyy-MM-dd'T'HH:mm"
+  lazy val datePattern = "yyyy-MM-dd"
   lazy val formatter = DateTimeFormat.forPattern(pattern)
 
   implicit def writes: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
@@ -36,6 +56,14 @@ object LwmDateTime {
   def toLocalTime(date: Date): LocalTime = new LocalTime(date.getTime)
 
   def toDateTime(string: String) = DateTime.parse(string, formatter)
+
+  def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
+    entry.date.toLocalDateTime(entry.start)
+  }
+
+  def toLocalDateTime(bl: PostgresBlacklist): LocalDateTime = {
+    bl.date.toLocalDateTime(bl.start)
+  }
 
   def isEqual(inputDates: Set[String], outputDates: Set[DateTime]) = {
     inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(formatter)))).isEmpty
