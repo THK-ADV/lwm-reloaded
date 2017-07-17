@@ -57,7 +57,16 @@ object PostgresGroup extends JsonSerialisation[PostgresGroupProtocol, PostgresGr
 
   override implicit def writes = Json.writes[PostgresGroup]
 
-  override implicit def writesAtom = Json.writes[PostgresGroupAtom]
+  override implicit def writesAtom = PostgresGroupAtom.writesAtom
+}
+
+object PostgresGroupAtom {
+  implicit def writesAtom: Writes[PostgresGroupAtom] = (
+    (JsPath \ "label").write[String] and
+      (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
+      (JsPath \ "members").writeSet[User](User.writes) and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresGroupAtom.unapply))
 }
 
 // DB

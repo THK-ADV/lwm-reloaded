@@ -1,6 +1,6 @@
 package services
 
-import java.sql.{Date, Timestamp}
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.LwmDateTime._
@@ -55,7 +55,6 @@ object AbstractDaoSpec {
     }
 
     BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, global)
-
   }.toList
 
   final def populateLabworks(amount: Int) = (0 until amount).map { i =>
@@ -152,7 +151,7 @@ object AbstractDaoSpec {
   lazy val employees = populateEmployees(maxEmployees)
 
   lazy val courses = (0 until maxCourses).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, 1)
+    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, i % 6)
   }.toList
 
   lazy val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList

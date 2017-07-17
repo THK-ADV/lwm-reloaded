@@ -43,10 +43,12 @@ with DegreeManagementModule
 with DegreeManagementModulePostgres
 with DegreeServiceModule
 with CourseManagementModule
+with CourseManagementModulePostgres
 with CourseServiceModule
 with GroupServiceManagementModule
 with GroupManagementModule
 with LabworkManagementModule
+with LabworkManagementModulePostgres
 with LabworkServiceModule
 with RoomManagementModule
 with RoomManagementModulePostgres
@@ -108,8 +110,10 @@ with LdapSyncModule {
     degreeManagementController,
     degreeManagementControllerPostgres,
     courseManagementController,
+    courseManagementControllerPostgres,
     groupManagementController,
     labworkManagementController,
+    labworControllerPostgres,
     entryTypeController,
     roomManagementController,
     roomManagementControllerPostgres,
@@ -151,10 +155,12 @@ with DefaultDegreeManagementModuleImpl
 with DefaultDegreeManagementModuleImplPostgres
 with DefaultDegreeServiceModule
 with DefaultCourseManagementModuleImpl
+with DefaultCourseManagementModuleImplPostgres
 with DefaultCourseServiceModule
 with DefaultGroupServiceManagementModule
 with DefaultGroupManagementModuleImpl
 with DefaultLabworkManagementModuleImpl
+with DefaultLabworkManagementModulePostgres
 with DefaultLabworkServiceModule
 with DefaultRoomManagementModuleImpl
 with DefaultRoomManagementModuleImplPostgres
