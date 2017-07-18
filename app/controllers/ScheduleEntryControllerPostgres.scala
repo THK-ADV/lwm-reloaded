@@ -70,13 +70,13 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
   import controllers.ScheduleEntryControllerPostgres._
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected implicit val writes: Writes[ScheduleEntry] = ???
+  override protected implicit val writes: Writes[ScheduleEntry] = ScheduleEntry.writes
 
-  override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = ???
+  override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = PostgresScheduleEntry.reads
 
-  implicit val scheduleEntryGenWrties = Json.writes[ScheduleEntryGen]
+  implicit val scheduleEntryGenWrites = Json.writes[ScheduleEntryGen]
 
-  implicit val scheduleGenWrties = Json.writes[ScheduleGen]
+  implicit val scheduleGenWrites = Json.writes[ScheduleGen]
 
   implicit val conflictWrites = Json.writes[Conflict]
 

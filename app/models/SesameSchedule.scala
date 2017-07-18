@@ -101,7 +101,38 @@ case class PostgresScheduleEntry(labwork: UUID, start: LocalTime, end: LocalTime
 
 case class PostgresScheduleEntryAtom(labwork: PostgresLabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: PostgresRoom, supervisor: Set[User], group: PostgresGroup, id: UUID) extends ScheduleEntry
 
-case class PostgresScheduleEntryProtocol(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: PostgresGroupProtocol)
+case class PostgresScheduleEntryProtocol(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: UUID)
+
+object PostgresScheduleEntry extends JsonSerialisation[PostgresScheduleEntryProtocol, PostgresScheduleEntry, PostgresScheduleEntryAtom] {
+  override implicit def reads = Json.reads[PostgresScheduleEntryProtocol]
+
+  override implicit def writes = Json.writes[PostgresScheduleEntry]
+
+  override implicit def writesAtom = PostgresScheduleEntryAtom.writesAtom
+}
+
+object PostgresScheduleEntryAtom {
+
+  implicit def writesAtom: Writes[PostgresScheduleEntryAtom] = (
+    (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writesAtom) and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
+      (JsPath \ "supervisor").writeSet[User] and
+      (JsPath \ "group").write[PostgresGroup] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresScheduleEntryAtom.unapply))
+}
+
+object ScheduleEntry {
+  implicit def writes: Writes[ScheduleEntry] = new Writes[ScheduleEntry] {
+    override def writes(s: ScheduleEntry) = s match {
+      case scheduleEntry: PostgresScheduleEntry => Json.toJson(scheduleEntry)(PostgresScheduleEntry.writes)
+      case scheduleEntryAtom: PostgresScheduleEntryAtom => Json.toJson(scheduleEntryAtom)(PostgresScheduleEntryAtom.writesAtom)
+    }
+  }
+}
 
 // DB
 

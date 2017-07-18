@@ -27,6 +27,8 @@ object AbstractDaoSpec {
   lazy val maxReportCardEntries = 100
   lazy val maxPermissions = 10
   lazy val maxAuthorities = 10
+  lazy val maxScheduleEntries = 100
+  lazy val maxGroups = 20
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -39,6 +41,7 @@ object AbstractDaoSpec {
   def randomPermission = permissions(nextInt(maxPermissions))
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
+  def randomGroup = groups(nextInt(maxGroups))
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
@@ -93,6 +96,18 @@ object AbstractDaoSpec {
     }
 
     AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
+  }.toList
+
+  def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[DbUser], groups: List[GroupDb]) = {
+    val labwork = takeOneOf(labworks).id
+
+    (0 until amount).map { i =>
+      val date = LocalDate.now.plusDays(i)
+      val start = LocalTime.now.plusHours(i)
+      val end = start.plusHours(1)
+
+      ScheduleEntryDb(labwork, start.sqlTime, end.sqlTime, date.sqlDate, takeOneOf(rooms).id, takeSomeOf(employees).map(_.id).toSet, takeOneOf(groups).id)
+    }
   }.toList
 
   def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).flatMap { _ =>
@@ -196,10 +211,13 @@ object AbstractDaoSpec {
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 
-  lazy val permissions = (0 until maxPermissions).map{ i =>
+  lazy val permissions = (0 until maxPermissions).map { i =>
     PermissionDb(s"label$i", s"description$i")
   }.toList
 
+  lazy val groups = populateGroups(maxGroups)(labworks, students)
+
+  lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
