@@ -5,10 +5,11 @@ import java.util.UUID
 import models.Permissions.{course, prime}
 import models.{Course, CourseDb, PostgresCourse, PostgresCourseProtocol}
 import play.api.libs.json.{JsValue, Reads, Writes}
-import play.api.mvc.Action
+import play.api.mvc.{Action, AnyContent}
 import services._
 import store.{CourseTable, TableFilter}
 import utils.LwmMimeType
+import models.LwmDateTime._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -54,28 +55,31 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
       dbModel = toDbModel(protocol, None)
-      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityService.createByCourse(dbModel))
+      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityService.createByCourseQuery(dbModel))
     } yield dbModel.toLwmModel).jsonResult
   }
 
-  /*override def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
+  override def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
 
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
       dbModel = toDbModel(protocol, Some(uuid))
-      // TODO get old course by id
-      updatedCourse <- courseService.update(dbModel)
-      _ <- authorityService.updateWithCourse(dbModel) // TODO pass old course right here
-    } yield updatedCourse.map(toLwmModel)).jsonResult(uuid)
+      oldCourse <- abstractDao.getById(id, atomic = false) if oldCourse.isDefined
+      oc = oldCourse.get.asInstanceOf[PostgresCourse]
+      updatedCourse <- abstractDao.update(dbModel)
+      _ <- authorityService.updateByCourse(CourseDb(oc.label, oc.description, oc.abbreviation, oc.lecturer, oc.semesterIndex), dbModel)
+    } yield updatedCourse.map(_.toLwmModel)).jsonResult(uuid)
   }
 
-  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
+  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction   { request =>
     val uuid = UUID.fromString(id)
 
     (for {
-      deletedCourse <- courseService.delete(uuid) if deletedCourse.isDefined
-      _ <- authorityService.deleteByCourse(deletedCourse.get)
-    } yield deletedCourse.map(toLwmModel)).jsonResult(uuid)
-  }*/
+      courseBeforeDelete <- abstractDao.getById(id) if courseBeforeDelete.isDefined
+      c = courseBeforeDelete.get.asInstanceOf[PostgresCourse]
+      deletedCourse <- abstractDao.delete(uuid) if deletedCourse.isDefined
+      _ <- authorityService.deleteByCourse(CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex))
+    } yield deletedCourse.map(_.dateTime)).jsonResult(uuid)
+  }
 }
