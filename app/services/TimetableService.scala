@@ -52,10 +52,6 @@ object TimetableService {
 
   def withoutBlacklists(entries: Vector[TimetableDateEntry], blacklists: Vector[PostgresBlacklist]): Vector[TimetableDateEntry] = {
     entries.filterNot { e =>
-      /*blacklists.exists { b =>
-        e.date.isEqual(b.date) && e.start.isAfter(b.start) && e.end.isBefore(b.end)
-      }*/
-
       val entry = new Interval(e.date.toDateTime(e.start), e.date.toDateTime(e.end))
 
       blacklists.exists { b =>

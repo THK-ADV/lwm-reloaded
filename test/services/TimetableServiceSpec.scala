@@ -3,15 +3,13 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
+import models.LwmDateTime._
 import models._
 import org.joda.time._
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import models.LwmDateTime._
+
 import scala.util.Random.nextInt
-import scala.util.Success
 
 class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
@@ -311,32 +309,42 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
       val DAY_ONE = 1
       val DAY_TWO = 2
       val DAY_OTHER = 3
+      val DAY_YET_ANOTHER = 4
 
       val entries = Vector(
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(9, 0, 0, 0), // 1. 9 - 10 +
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(10, 0, 0, 0), // 1. 10 - 11 +
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(9, 0, 0, 0), // 1. 9 - 10 -
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(10, 0, 0, 0), // 1. 10 - 11 -
         LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(11, 0, 0, 0), // 1. 11 - 12 -
         LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(12, 0, 0, 0), // 1. 12 - 13 +
-        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(9, 0, 0, 0) // 2. 9 - 11 +
+        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(9, 0, 0, 0), // 2. 9 - 11 -
+        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(12, 0, 0, 0), // 2. 12 - 14 +
+        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(13, 0, 0, 0), // 2. 13 - 15 +
+        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(18, 0, 0, 0), // 2. 18 - 20 +
+        LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(9, 0, 0, 0), // 3. 9 - 11 -
+        LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(14, 0, 0, 0), // 3. 14 - 16 -
+        LocalDateTime.now.withDayOfMonth(DAY_YET_ANOTHER).withTime(14, 0, 0, 0) // 4. 14 - 16 -
       ) map { date =>
         TimetableDateEntry(Weekday.toDay(date.toLocalDate), date.toLocalDate, date.toLocalTime, date.toLocalTime.plusHours(if (date.getDayOfMonth == DAY_ONE) DAY_ONE else DAY_TWO), UUID.randomUUID, Set(UUID.randomUUID))
       }
 
       val blacklists = Vector(
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(8, 0, 0, 0), // 1. 8 - 9 +
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(11, 0, 0, 0), // 1. 11 - 12 -
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(15, 0, 0, 0), // 1. 15 - 16 +
-        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(9, 30, 0, 0), // 1. 9:30 - 10:30 -
-        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(10, 0, 0, 0), // 2. 10 - 11 -
-        LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(9, 0, 0, 0), // 3. 9 - 10 +
-        LocalDateTime.now.withDayOfMonth(DAY_OTHER + 1).withTime(16, 0, 0, 0) // 4. 16 - 17 +
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(8, 0, 0, 0), // 1. 8 - 9
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(11, 0, 0, 0), // 1. 11 - 12
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(15, 0, 0, 0), // 1. 15 - 16
+        LocalDateTime.now.withDayOfMonth(DAY_ONE).withTime(9, 30, 0, 0), // 1. 9:30 - 10:30
+        LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(10, 0, 0, 0), // 2. 10 - 11
+        LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(9, 0, 0, 0), // 3. 9 - 10
+        LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(16, 0, 0, 0) // 3. 16 - 17
       ).map(PostgresBlacklist.partialDay("", _, 1, global = true))
 
-      val result = TimetableService.withoutBlacklists(entries, blacklists)
+      val blacklists2 = Vector(
+        LocalDate.now.withDayOfMonth(DAY_OTHER),
+        LocalDate.now.withDayOfMonth(DAY_YET_ANOTHER)
+      ).map(PostgresBlacklist.entireDay("", _, global = true))
 
-      // TODO blacklists are broken somehow... rethink
+      val result = TimetableService.withoutBlacklists(entries, blacklists ++ blacklists2)
 
-      assertEverything(entries, blacklists, result)(_ shouldBe 3)(_ shouldBe entries.size - 3)
+      assertEverything(entries, blacklists, result)(_ shouldBe 4)(_ shouldBe 4)
     }
   }
 }
