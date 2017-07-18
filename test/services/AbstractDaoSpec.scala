@@ -40,7 +40,7 @@ object AbstractDaoSpec {
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
 
-  final def takeSomeOf[A](traversable: Traversable[A]) = traversable.take(nextInt(traversable.size - 1) + 1)
+  final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
   final def takeOneOf[A](traversable: Traversable[A]) = shuffle(traversable).head
 
@@ -80,6 +80,19 @@ object AbstractDaoSpec {
     }
 
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
+  }.toList
+
+  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).map { i =>
+    GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
+  }.toList
+
+  final def populateAssignmentPlans(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb])(duration: (Int) => Int) = (0 until amount).map { i =>
+    val entries = (0 until numberOfEntries).map { j =>
+      val allTypes = PostgresAssignmentEntryType.all
+      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet, duration(j))
+    }
+
+    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
   }.toList
 
   def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).flatMap { _ =>
@@ -173,14 +186,7 @@ object AbstractDaoSpec {
 
   lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 
-  lazy val assignmentPlans = (0 until maxAssignmentPlans).map { i =>
-    val entries = (0 until 10).map { j =>
-      val allTypes = PostgresAssignmentEntryType.all
-      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet)
-    }
-
-    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
-  }.toList
+  lazy val assignmentPlans = populateAssignmentPlans(maxAssignmentPlans, 10)(labworks)(_ => 1)
 
   lazy val blacklists = populateBlacklists(maxBlacklists)
 
