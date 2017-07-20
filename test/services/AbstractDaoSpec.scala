@@ -65,8 +65,8 @@ object AbstractDaoSpec {
     BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, global)
   }.toList
 
-  final def populateLabworks(amount: Int) = (0 until amount).map { i =>
-    LabworkDb(i.toString, i.toString, randomSemester.id, randomCourse.id, randomDegree.id)
+  final def populateLabworks(amount: Int)(semesters: List[SemesterDb], courses: List[CourseDb], degrees: List[DegreeDb]) = (0 until amount).map { i =>
+    LabworkDb(i.toString, i.toString, takeOneOf(semesters).id, takeOneOf(courses).id, takeOneOf(degrees).id)
   }.toList
 
   final def populateEmployees(amount: Int) = (0 until amount).map { i =>
@@ -88,6 +88,26 @@ object AbstractDaoSpec {
   final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).map { i =>
     GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
   }.toList
+
+  final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
+
+  final def populateCourses(amount: Int)(semesterIndex: (Int) => Int) = (0 until amount).map { i =>
+    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, semesterIndex(i))
+  }.toList
+
+  final def populateSemester(amount: Int) = {
+    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
+
+    (0 until amount).foldLeft((List.empty[SemesterDb], template)) {
+      case ((list, t), i) =>
+        val start = t.plusDays(1)
+        val end = start.plusMonths(6)
+        val exam = end.minusMonths(1)
+
+        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
+        (list.:+(current), end)
+    }._1
+  }
 
   final def populateAssignmentPlans(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb])(duration: (Int) => Int) = (0 until amount).map { i =>
     val entries = (0 until numberOfEntries).map { j =>
@@ -167,27 +187,13 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  lazy val semesters = {
-    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
-
-    (0 until maxSemesters).foldLeft((List.empty[SemesterDb], template)) {
-      case ((list, t), i) =>
-        val start = t.plusDays(1)
-        val end = start.plusMonths(6)
-        val exam = end.minusMonths(1)
-
-        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
-        (list.:+(current), end)
-    }._1
-  }
+  lazy val semesters = populateSemester(maxSemesters)
 
   lazy val employees = populateEmployees(maxEmployees)
 
-  lazy val courses = (0 until maxCourses).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, i % 6)
-  }.toList
+  lazy val courses = populateCourses(maxCourses)(_ % 6)
 
-  lazy val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
+  lazy val degrees = populateDegrees(maxDegrees)
 
   lazy val authorities = (0 until maxAuthorities).map{ i =>
     val role:RoleDb = roles((i*3)%roles.length)
@@ -197,7 +203,7 @@ object AbstractDaoSpec {
 
   lazy val roles = Roles.all.map(l => RoleDb(l, Set.empty))
 
-  lazy val labworks = populateLabworks(maxLabworks)
+  lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 
   lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 
@@ -215,7 +221,9 @@ object AbstractDaoSpec {
     PermissionDb(s"label$i", s"description$i")
   }.toList
 
-  lazy val groups = populateGroups(maxGroups)(labworks, students)
+  lazy val groups = populateGroups(maxGroups)(labworks, students) // remember to add groupMemberships also
+
+  lazy val groupMemberships = groups.flatMap(g => g.members.map(m => GroupMembership(g.id, m)))
 
   lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
 }

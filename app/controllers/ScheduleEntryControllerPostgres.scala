@@ -11,17 +11,18 @@ import store.{ScheduleEntryTable, TableFilter}
 import utils.{Gen, LwmMimeType}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 object ScheduleEntryControllerPostgres {
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
-  /*val groupAttribute = "group"
-  val supervisorAttribute = "supervisor"
-  val dateAttribute = "date"
-  val startAttribute = "start"
-  val endAttribute = "end"
-  val dateRangeAttribute = "dateRange"*/
+  lazy val groupAttribute = "group"
+
+  lazy val dateAttribute = "date"
+  lazy val startAttribute = "start"
+  lazy val endAttribute = "end"
+  lazy val sinceAttribute = "since"
+  lazy val untilAttribute = "until"
 
   lazy val countAttribute = "count"
   lazy val minAttribute = "min"
@@ -68,6 +69,7 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
                                             val labworkApplicationService2: LabworkApplicationService2
                                            ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
   import controllers.ScheduleEntryControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ScheduleEntry] = ScheduleEntry.writes
@@ -89,7 +91,19 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
     )
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = ???
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
+    (appendTo, (attribute, value)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
+      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
+      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
+      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
+      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
+      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
+      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: PostgresScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
 
@@ -104,7 +118,24 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    ???
+    implicit val readsGroup = Json.reads[PostgresGroup]
+    implicit val readsScheduleEntry = Json.reads[ScheduleEntryGen]
+    implicit val readsSchedule = Json.reads[ScheduleGen]
+    import models.LwmDateTime._
+
+    (for {
+      s <- Future.fromTry(parse[ScheduleGen](request))
+      labwork = s.labwork
+      (se, gs) = s.entries.foldLeft((List.empty[ScheduleEntryDb], Set.empty[GroupDb])) {
+        case ((entries, groups), e) =>
+          val scheduleEntry = ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)
+          val group = GroupDb(e.group.label, e.group.labwork, e.group.members)
+
+          (entries.+:(scheduleEntry), groups + group)
+      }
+      //_ <- groupDao.createMany(gs.toList) // TODO
+      _ <- abstractDao.createMany(se)
+    } yield se.map(_.toLwmModel)).jsonResult
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>

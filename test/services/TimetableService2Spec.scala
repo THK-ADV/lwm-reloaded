@@ -11,7 +11,7 @@ final class TimetableService2Spec extends AbstractExpandableDaoSpec[TimetableTab
   import slick.driver.PostgresDriver.api._
   import models.LwmDateTime._
 
-  private lazy val privateLabs = populateLabworks(10)
+  private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
   private lazy val privateBlacklists = populateBlacklists(50)
   private lazy val privateEmployees = populateEmployees(30)
 

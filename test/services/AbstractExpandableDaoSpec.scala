@@ -19,10 +19,25 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
     val nonAtomic = dbModel.map(_.toLwmModel)
     val atomic = dbModel.map(atom)
 
-    zipAndCompare(await(getMany(ids, atomic = false)), nonAtomic) shouldBe isDefined
-    zipAndCompare(await(getMany(ids)), atomic) shouldBe isDefined
+    val start1 = System.currentTimeMillis()
+    val a = await(getMany(ids, atomic = false))
+    println(s"await(getMany(ids, atomic = false)) ${System.currentTimeMillis() - start1}")
 
+    val start2 = System.currentTimeMillis()
+    val b = await(getMany(ids))
+    println(s"await(getMany(ids)) ${System.currentTimeMillis() - start2}")
+
+    val start3 = System.currentTimeMillis()
+    zipAndCompare(a, nonAtomic) shouldBe isDefined
+    println(s"zipAndCompare(a, nonAtomic) shouldBe isDefined ${System.currentTimeMillis() - start3}")
+
+    val start4 = System.currentTimeMillis()
+    zipAndCompare(b, atomic) shouldBe isDefined
+    println(s"zipAndCompare(b, atomic) shouldBe isDefined ${System.currentTimeMillis() - start4}")
+
+    val start5 = System.currentTimeMillis()
     dbModel foreach (c => run(expanderSpecs(c, isDefined)))
+    println(s"dbModel foreach (c => run(expanderSpecs(c, isDefined))) ${System.currentTimeMillis() - start5}")
   }
 
   protected def toAdd: List[DbModel]
@@ -36,25 +51,42 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
   s"A AbstractExpandableDaoSpec with $name " should {
 
     s"create $name's by expanding" in {
+      val start1 = System.currentTimeMillis()
       await(createMany(toAdd)) shouldBe toAdd
+      println(s"await(createMany(toAdd)) ${System.currentTimeMillis() - start1}")
+
+      val start2 = System.currentTimeMillis()
       assertEverythingOf(toAdd, isDefined =  true)
+      println(s"assertEverythingOf(toAdd, isDefined =  true) ${System.currentTimeMillis() - start2}")
     }
 
     s"update few $name's by expanding" in {
       val updated = update(toAdd.take(numberOfUpdates))
 
+      val start1 = System.currentTimeMillis()
       await(updateMany(updated)) shouldBe updated.map(Some(_))
+      println(s"await(updateMany(updated)) shouldBe updated.map(Some(_)) ${System.currentTimeMillis() - start1}")
+
+      val start2 = System.currentTimeMillis()
       assertEverythingOf(updated, isDefined =  true)
+      println(s"assertEverythingOf(updated, isDefined =  true) ${System.currentTimeMillis() - start2}")
     }
 
     s"delete few $name's by expanding" in {
       val toDelete = toAdd.slice(numberOfUpdates, numberOfUpdates + numberOfDeletions)
       val remainingAfterDelete = toAdd.drop(numberOfUpdates + numberOfDeletions)
 
+      val start1 = System.currentTimeMillis()
       await(deleteManyEntities(toDelete)).flatten.size shouldBe toDelete.size
+      println(s"await(deleteManyEntities(toDelete)).flatten.size ${System.currentTimeMillis() - start1}")
 
+      val start2 = System.currentTimeMillis()
       assertEverythingOf(toDelete, isDefined =  false)
+      println(s"assertEverythingOf(toDelete, isDefined =  false) ${System.currentTimeMillis() - start2}")
+
+      val start3 = System.currentTimeMillis()
       assertEverythingOf(remainingAfterDelete, isDefined =  true)
+      println(s"assertEverythingOf(remainingAfterDelete, isDefined =  true) ${System.currentTimeMillis() - start3}")
     }
   }
 }

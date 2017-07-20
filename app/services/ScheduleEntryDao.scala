@@ -14,8 +14,32 @@ case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[Schedul
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
+case class ScheduleEntryCourseFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+}
+
 case class ScheduleEntryGroupFilter(value: String) extends TableFilter[ScheduleEntryTable] {
   override def predicate = _.group === UUID.fromString(value)
+}
+
+case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.date === value.sqlDate
+}
+
+case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.start === value.sqlTime
+}
+
+case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.end === value.sqlTime
+}
+
+case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.date >= value.sqlDate
+}
+
+case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = _.date <= value.sqlDate
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
@@ -48,11 +72,11 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
-    existing.supervisor != toUpdate.supervisor ||
+    (existing.supervisor != toUpdate.supervisor ||
     !existing.date.equals(toUpdate.date) ||
     !existing.start.equals(toUpdate.start) ||
     !existing.end.equals(toUpdate.end) ||
-    existing.room != toUpdate.room &&
+    existing.room != toUpdate.room) &&
       (existing.labwork == toUpdate.labwork && existing.group == toUpdate.group)
   }
 
@@ -115,6 +139,29 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     db.run(action map transform)
   }
 
+  override protected def databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
+    override def expandCreationOf[E <: Effect](entities: Seq[ScheduleEntryDb]) = {
+      for {
+        _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
+          e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
+        }
+      } yield entities
+    }
+
+    override def expandDeleteOf(entity: ScheduleEntryDb) = {
+      (for {
+        d <- scheduleEntrySupervisorQuery.filter(_.scheduleEntry === entity.id).delete
+      } yield d).map(_ => Some(entity))
+    }
+
+    override def expandUpdateOf(entity: ScheduleEntryDb) = {
+      for {
+        d <- expandDeleteOf(entity) if d.isDefined
+        c <- expandCreationOf(Seq(entity))
+      } yield c.headOption
+    }
+  })
+
   /*
   val comps = all
         .filter(_.labwork.course.semesterIndex == labwork.course.semesterIndex)
@@ -146,6 +193,19 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         case (id, e) => ScheduleGen(id, e.map(_._1).toVector)
       }.toVector
     }
+  }
+
+  private lazy val schemas = List(
+    tableQuery.schema,
+    scheduleEntrySupervisorQuery.schema
+  )
+
+  override def createSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
+  }
+
+  override def dropSchema: Future[Unit] = {
+    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
   }
 }
 

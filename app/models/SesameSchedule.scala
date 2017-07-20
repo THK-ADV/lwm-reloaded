@@ -138,6 +138,19 @@ object ScheduleEntry {
 
 case class ScheduleEntryDb(labwork: UUID, start: Time, end: Time, date: Date, room: UUID, supervisor: Set[UUID], group: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   override def toLwmModel = PostgresScheduleEntry(labwork, start.localTime, end.localTime, date.localDate, room, supervisor, group, id)
+
+  override def equals(that: scala.Any) = that match {
+    case ScheduleEntryDb(l, s, e, d, r, sup, g, _, _, i) =>
+      l == labwork &&
+      s.localTime.isEqual(start.localTime) &&
+      e.localTime.isEqual(end.localTime) &&
+      d.localDate.isEqual(date.localDate) &&
+      r == room &&
+      sup == supervisor &&
+      g == group &&
+      i == id
+    case _ => false
+  }
 }
 
 case class ScheduleEntrySupervisor(scheduleEntry: UUID, supervisor: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity

@@ -339,6 +339,8 @@ GET           /api/migrate/authorities                                          
 GET           /api/migrate/blacklists                                                 controllers.ApiDataController.migrateBlacklists()
 GET           /api/migrate/timetables                                                 controllers.ApiDataController.migrateTimetables()
 GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()
+GET           /api/migrate/groups                                                     controllers.ApiDataController.migrateGroups()
+GET           /api/migrate/schedules                                                  controllers.ApiDataController.migrateSchedules()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

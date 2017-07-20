@@ -12,7 +12,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
   import services.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 
-  private lazy val privateLabs = populateLabworks(20)
+  private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
   private lazy val privateStudents = populateStudents(100)
 
   def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[DbUser], rooms: List[RoomDb]) = PostgresReportCardEntryAtom(
