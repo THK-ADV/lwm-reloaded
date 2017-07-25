@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import models.Permissions.{god, reportCardEntry}
-import models.{PostgresReportCardEntry, PostgresReportCardEntryProtocol, ReportCardEntry, ReportCardEntryDb}
+import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{ReportCardEntryTable, TableFilter}
@@ -25,10 +25,14 @@ object ReportCardEntryControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: ReportCardEntryDao, val reportCardService: ReportCardServiceLike)
-  extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
-
+final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlingService,
+                                              val roleService: RoleServiceLike,
+                                              val abstractDao: ReportCardEntryDao,
+                                              val scheduleEntryDao: ScheduleEntryDao,
+                                              val assignmentPlanService: AssignmentPlanService
+                                             ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
   import controllers.ReportCardEntryControllerPostgres._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes
 
@@ -36,8 +40,11 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
     (appendTo, (attribute, value)) match { // TODO CONTINUE
+      case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
       case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
       case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
+      case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
+      case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -71,7 +78,13 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    ???
+    (for {
+      schedules <- scheduleEntryDao.scheduleGenBy(labwork) if schedules.size == 1
+      plans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if plans.size == 1
+      plan = plans.head.asInstanceOf[PostgresAssignmentPlan]
+      reportCardEntries = ReportCardService.reportCards(schedules.head, plan)
+      _ <- abstractDao.createMany(reportCardEntries.toList)
+    } yield reportCardEntries.map(_.toLwmModel)).jsonResult
   }
 
   def createByCopy(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>

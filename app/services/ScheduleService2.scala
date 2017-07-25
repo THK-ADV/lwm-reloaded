@@ -15,6 +15,7 @@ import utils.Evaluation._
 import utils.{Gen, Genesis2}
 import utils.TypeClasses.{Cross, Eval, Mutate}
 import models.LwmDateTime._
+
 case class Conflict(entry: ScheduleEntryGen, members: Vector[UUID], group: PostgresGroup)
 case class ScheduleGen(labwork: UUID, entries: Vector[ScheduleEntryGen])
 case class ScheduleEntryGen(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: PostgresGroup)
@@ -67,7 +68,7 @@ object ScheduleService2 {
   @annotation.tailrec
   def randomAvoiding(avoiding: PostgresGroup)(implicit groups: Vector[PostgresGroup]): PostgresGroup = {
     val grp = randomGroup
-    
+
     if(grp.id == avoiding.id) randomAvoiding(avoiding) else grp
   }
 

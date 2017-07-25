@@ -33,8 +33,9 @@ trait ScheduleEntryManagementModule2 { self: LwmApplication
 
 trait DefaultScheduleEntryManagementModule2 extends ScheduleEntryManagementModule2 { self: LwmApplication
   with ScheduleEntryDaoModule with SecurityManagementModule with SessionRepositoryModule with ScheduleServiceManagementModule
-  with AssignmentPlanServiceModule with LabworkServiceModule with TimetableService2ManagementModule with LabworkApplication2ServiceModule =>
+  with AssignmentPlanServiceModule with LabworkServiceModule with TimetableService2ManagementModule with LabworkApplication2ServiceModule
+  with GroupDaoManagementModule =>
 
   override lazy val scheduleEntryControllerPostgres = new ScheduleEntryControllerPostgres(roleService, sessionService, scheduleEntryDao, scheduleService,
-    assignmentPlanService, labworkService, timetableService2, labworkApplicationService2)
+    assignmentPlanService, labworkService, timetableService2, labworkApplicationService2, groupDao)
 }

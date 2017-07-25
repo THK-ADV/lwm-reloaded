@@ -6,6 +6,7 @@ import java.util.{Calendar, Locale}
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.{JsString, Writes}
+import services.ScheduleEntryGen
 
 object LwmDateTime {
 
@@ -58,6 +59,10 @@ object LwmDateTime {
   def toDateTime(string: String) = DateTime.parse(string, formatter)
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
+    entry.date.toLocalDateTime(entry.start)
+  }
+
+  def toLocalDateTime(entry: ScheduleEntryGen): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
   }
 

@@ -27,6 +27,8 @@ object AbstractDaoSpec {
   lazy val maxReportCardEntries = 100
   lazy val maxPermissions = 10
   lazy val maxAuthorities = 10
+  lazy val maxScheduleEntries = 100
+  lazy val maxGroups = 20
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -39,8 +41,9 @@ object AbstractDaoSpec {
   def randomPermission = permissions(nextInt(maxPermissions))
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
+  def randomGroup = groups(nextInt(maxGroups))
 
-  final def takeSomeOf[A](traversable: Traversable[A]) = traversable.take(nextInt(traversable.size - 1) + 1)
+  final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
   final def takeOneOf[A](traversable: Traversable[A]) = shuffle(traversable).head
 
@@ -62,8 +65,8 @@ object AbstractDaoSpec {
     BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, global)
   }.toList
 
-  final def populateLabworks(amount: Int) = (0 until amount).map { i =>
-    LabworkDb(i.toString, i.toString, randomSemester.id, randomCourse.id, randomDegree.id)
+  final def populateLabworks(amount: Int)(semesters: List[SemesterDb], courses: List[CourseDb], degrees: List[DegreeDb]) = (0 until amount).map { i =>
+    LabworkDb(i.toString, i.toString, takeOneOf(semesters).id, takeOneOf(courses).id, takeOneOf(degrees).id)
   }.toList
 
   final def populateEmployees(amount: Int) = (0 until amount).map { i =>
@@ -80,6 +83,51 @@ object AbstractDaoSpec {
     }
 
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
+  }.toList
+
+  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).map { i =>
+    GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
+  }.toList
+
+  final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
+
+  final def populateCourses(amount: Int)(semesterIndex: (Int) => Int) = (0 until amount).map { i =>
+    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, semesterIndex(i))
+  }.toList
+
+  final def populateSemester(amount: Int) = {
+    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
+
+    (0 until amount).foldLeft((List.empty[SemesterDb], template)) {
+      case ((list, t), i) =>
+        val start = t.plusDays(1)
+        val end = start.plusMonths(6)
+        val exam = end.minusMonths(1)
+
+        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
+        (list.:+(current), end)
+    }._1
+  }
+
+  final def populateAssignmentPlans(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb])(duration: (Int) => Int) = (0 until amount).map { i =>
+    val entries = (0 until numberOfEntries).map { j =>
+      val allTypes = PostgresAssignmentEntryType.all
+      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet, duration(j))
+    }
+
+    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
+  }.toList
+
+  def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[DbUser], groups: List[GroupDb]) = {
+    val labwork = takeOneOf(labworks).id
+
+    (0 until amount).map { i =>
+      val date = LocalDate.now.plusDays(i)
+      val start = LocalTime.now.plusHours(i)
+      val end = start.plusHours(1)
+
+      ScheduleEntryDb(labwork, start.sqlTime, end.sqlTime, date.sqlDate, takeOneOf(rooms).id, takeSomeOf(employees).map(_.id).toSet, takeOneOf(groups).id)
+    }
   }.toList
 
   def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).flatMap { _ =>
@@ -139,27 +187,13 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  lazy val semesters = {
-    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
-
-    (0 until maxSemesters).foldLeft((List.empty[SemesterDb], template)) {
-      case ((list, t), i) =>
-        val start = t.plusDays(1)
-        val end = start.plusMonths(6)
-        val exam = end.minusMonths(1)
-
-        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
-        (list.:+(current), end)
-    }._1
-  }
+  lazy val semesters = populateSemester(maxSemesters)
 
   lazy val employees = populateEmployees(maxEmployees)
 
-  lazy val courses = (0 until maxCourses).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, i % 6)
-  }.toList
+  lazy val courses = populateCourses(maxCourses)(_ % 6)
 
-  lazy val degrees = (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
+  lazy val degrees = populateDegrees(maxDegrees)
 
   lazy val authorities = (0 until maxAuthorities).map{ i =>
     val role:RoleDb = roles((i*3)%roles.length)
@@ -169,18 +203,11 @@ object AbstractDaoSpec {
 
   lazy val roles = Roles.all.map(l => RoleDb(l, Set.empty))
 
-  lazy val labworks = populateLabworks(maxLabworks)
+  lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 
   lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString)).toList
 
-  lazy val assignmentPlans = (0 until maxAssignmentPlans).map { i =>
-    val entries = (0 until 10).map { j =>
-      val allTypes = PostgresAssignmentEntryType.all
-      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet)
-    }
-
-    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
-  }.toList
+  lazy val assignmentPlans = populateAssignmentPlans(maxAssignmentPlans, 10)(labworks)(_ => 1)
 
   lazy val blacklists = populateBlacklists(maxBlacklists)
 
@@ -190,10 +217,15 @@ object AbstractDaoSpec {
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 
-  lazy val permissions = (0 until maxPermissions).map{ i =>
+  lazy val permissions = (0 until maxPermissions).map { i =>
     PermissionDb(s"label$i", s"description$i")
   }.toList
 
+  lazy val groups = populateGroups(maxGroups)(labworks, students) // remember to add groupMemberships also
+
+  lazy val groupMemberships = groups.flatMap(g => g.members.map(m => GroupMembership(g.id, m)))
+
+  lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]

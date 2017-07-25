@@ -23,6 +23,19 @@ case class ReportCardEntryCourseFilter(value: String) extends TableFilter[Report
   override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
 }
 
+case class ReportCardEntryRoomFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.room === UUID.fromString(value)
+}
+
+case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = r => TableQuery[ScheduleEntryTable].filter { s =>
+    s.id === UUID.fromString(value) &&
+      ((s.labwork === r.labwork && s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date) ||
+        TableQuery[ReportCardRescheduledTable].filter(rs => rs.reportCardEntry === r.id && rs.room === r.room && rs.start === r.start && rs.end === r.end && rs.date === r.date).exists ||
+        TableQuery[ReportCardRetryTable].filter(rt => rt.reportCardEntry === r.id && rt.room === r.room && rt.start === r.start && rt.end === r.end && rt.date === r.date).exists)
+  }.exists
+}
+
 trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
