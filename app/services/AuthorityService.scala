@@ -41,7 +41,7 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     } yield PostgresAuthorityAtom(dbUser.toLwmModel, role.map(Role.toRole).get, None, created.id)
   }
 
-  def createByCourse(course: CourseDb) = {
+  def createByCourseQuery(course: CourseDb) = {
     (for {
       cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel)
       rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel)
@@ -56,92 +56,33 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
     } yield c).transactionally
   }
 
-  def updateByCourse(oldCourse: CourseDb, course: CourseDb) = {
-    DBIO.seq(
-      deleteByCourse(oldCourse),
-      createByCourse(course)
-    )
+  def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = {
+    val x = DBIO.seq(
+      deleteByCourseQuery(oldCourse),
+      createByCourseQuery(newCourse)
+    ).transactionally
+
+    x
   }
 
-  /*final def updateWithCourse(course: CourseDb): DBIOAction[Int, NoStream, Write] = {
-    val result = for {
-      cm <- DBIO.from(db.run(roleService.tableQuery.filter(_.label === Roles.CourseManagerLabel).map(_.id).result.headOption)) if cm.isDefined
-      authoritiesWithCourse <- DBIO.from(db.run(tableQuery.filter(auth => auth.course === course.id && auth.role === cm.get).result))
-      _ = println(s"authoritiesWithCourse $authoritiesWithCourse")
-      rows <- {
-        if (!authoritiesWithCourse.exists(_.user == course.lecturer))
-          for {
-          // delete auth of old cm
-            deletedCM <- tableQuery.filter(_.id.inSet(authoritiesWithCourse.map(_.id))).delete
-
-            // delete rm auth if needed
-            deletedRM <- deleteSingleRightsManager(course.lecturer)
-
-            // create new cm auth and rm if needed
-            newAuths <- createWithCourse(course) if newAuths.nonEmpty
-            _ = println(s"newAuths $newAuths")
-          } yield newAuths.size + deletedCM + deletedRM
-        else
-          DBIO.successful(0)
-      }
-    } yield rows
-
-    DBIO.from(db.run(result))
+  def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = {
+    db.run(updateByCourseQuery(oldCourse, newCourse))
   }
 
-  final def createWithCourse(course: CourseDb) = {
-    val result = for { // TODO replace roleService.tableQuery with roleService.get when tests are established
-      rm <- DBIO.from(db.run(roleService.byRoleLabelQuery(Roles.RightsManagerLabel))) if rm.isDefined
-      cm <- DBIO.from(db.run(roleService.byRoleLabelQuery(Roles.CourseManagerLabel))) if cm.isDefined
-
-      rma = AuthorityDb(course.lecturer, rm.head.id)
-      cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
-
-      hasRM <- DBIO.from(db.run(filterBy(List(AuthorityUserFilter(course.lecturer.toString), AuthorityRoleFilter(rm.head.id.toString))).exists.result))
-      authoritiesToCreate = {
-        if (hasRM) {
-          Seq(cma)
-        } else {
-          Seq(cma, rma)
-        }
-      }
-
-      authorities <- createManyQuery(authoritiesToCreate)
-
-    } yield authorities
-    result
-  }
-
-
-  final def deleteWithCourse(course: CourseDb): DBIOAction[Int, NoStream, Write] = {
-    //TODO Delete RightsManager if no courses left
-    val result = for {
+  final def deleteByCourseQuery(course: CourseDb) = {
+    for {
       deleted <- filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
-
-      deletedAuthority <- deleteSingleRightsManager(course.lecturer)
-
+      deletedAuthority <- deleteSingleRightsManagerQuery(course.lecturer)
     } yield deletedAuthority + deleted
-
-    DBIO.from(db.run(result))
   }
-  */
 
-
-  final def deleteByCourse(course: CourseDb): DBIOAction[Int, NoStream, Write] = {
-    //TODO Delete RightsManager if no courses left
-    val result = for {
-      deleted <- filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
-
-      deletedAuthority <- deleteSingleRightsManager(course.lecturer)
-
-    } yield deletedAuthority + deleted
-
-    DBIO.from(db.run(result))
+  final def deleteByCourse(course: CourseDb): Future[Int] = {
+    db.run(deleteByCourseQuery(course))
   }
 
 
-  def deleteSingleRightsManager(lecturer: UUID): DBIOAction[Int, NoStream, Write] = {
-    val a = for {
+  def deleteSingleRightsManagerQuery(lecturer: UUID)= {
+    for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
       rm <- roleService.tableQuery.filter(_.label === Roles.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
       deletedRM <- {
@@ -152,8 +93,6 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
         }
       }
     } yield deletedRM
-
-    DBIO.from(db.run(a))
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {

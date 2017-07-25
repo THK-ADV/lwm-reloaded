@@ -42,7 +42,7 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course)
+          _ <- createByCourseQuery(course)
           rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
           cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
           authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
@@ -60,10 +60,10 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course)
+          _ <- createByCourseQuery(course)
           rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
           cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
-          _ <- deleteByCourse(course)
+          _ <- deleteByCourseQuery(course)
           authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
 
         } yield {
@@ -84,10 +84,10 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course)
+          _ <- createByCourseQuery(course)
           authoritiesOfOldLecturerBeforeUpdate <- tableQuery.filter(_.user === course.lecturer).result
           authoritiesOfNewLecturerBeforeUpdate <- tableQuery.filter(_.user === sameCourseWithNewLecturer.lecturer).result
-          _ <- updateByCourse(course, sameCourseWithNewLecturer)
+          _ <- updateByCourseQuery(course, sameCourseWithNewLecturer)
           authoritiesOfOldLecturerAfterUpdate <- tableQuery.filter(_.user === course.lecturer).result
           authoritiesOfNewLecturerAfterUpdate <- tableQuery.filter(_.user === sameCourseWithNewLecturer.lecturer).result
 
@@ -114,8 +114,8 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course1)
-          _ <- createByCourse(course2)
+          _ <- createByCourseQuery(course1)
+          _ <- createByCourseQuery(course2)
           rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
           authoritiesOfLecturer <- tableQuery.filter(_.user === course1.lecturer).result
         } yield{
@@ -130,11 +130,11 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course1)
-          _ <- createByCourse(course2)
-          _ <- deleteByCourse(course1)
+          _ <- createByCourseQuery(course1)
+          _ <- createByCourseQuery(course2)
+          _ <- deleteByCourseQuery(course1)
           authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
-          _ <- deleteByCourse(course2)
+          _ <- deleteByCourseQuery(course2)
           authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
           rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
         } yield{
@@ -150,11 +150,11 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
       await(db.run{
         for{
-          _ <- createByCourse(course1)
-          _ <- createByCourse(course2)
-          _ <- deleteByCourse(course1)
+          _ <- createByCourseQuery(course1)
+          _ <- createByCourseQuery(course2)
+          _ <- deleteByCourseQuery(course1)
           authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
-          _ <- deleteByCourse(course2)
+          _ <- deleteByCourseQuery(course2)
           authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
           rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
         } yield{
@@ -163,65 +163,6 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
         }
       })
     }
-
-
-
-    //"create a course with dedicated roles" in {
-//
-    //  val lecturer = randomEmployee
-//
-    //  await(db.run(
-    //    for {
-    //      result <- createManyExpandedQuery(Seq(CourseDb("TestLabel", "TestDescription", "TL", lecturer.id, 3))).map(_.head)
-    //      auths <- authorityService.tableQuery.filter(_.user === lecturer.id).result
-    //      rightsManager <- getRightsManager
-    //      courseManager <- getCourseManager
-    //    } yield {
-    //      auths.exists(a => a.user == result.lecturer && a.role == rightsManager.get.id && a.course.isEmpty) shouldBe true
-    //      auths.exists(a => a.user == result.lecturer && a.role == courseManager.get.id && a.course.contains(result.id)) shouldBe true
-    //    }
-    //  ))
-    //}
-//
-    //"update a course with dedicated roles" in {
-    //  val oldLecturer = employees(0)
-    //  val newLecturer = employees(1)
-//
-    //  val course = CourseDb("TestLabel2", "TestDescription2", "TL2", oldLecturer.id, 3)
-//
-    //  await(db.run(
-    //    for {
-    //      oldCourse <- createManyExpandedQuery(Seq(course)).map(_.head)
-    //      _ <- updateExpandedQuery(oldCourse.copy(oldCourse.label, oldCourse.description, oldCourse.abbreviation, newLecturer.id, oldCourse.semesterIndex))
-//
-    //      authOldLecturer <- authorityService.tableQuery.filter(_.user === oldLecturer.id).result
-    //      authNewLecturer <- authorityService.tableQuery.filter(_.user === newLecturer.id).result
-//
-    //      courseManager <- getCourseManager
-    //    } yield {
-    //      authOldLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe false
-    //      authNewLecturer.exists(a => a.role == courseManager.get.id && a.course.contains(oldCourse.id)) shouldBe true
-    //    }
-    //  ))
-    //}
-//
-    //"delete a course with dedicated roles" in {
-    //  val course = randomCourse
-//
-    //  await(db.run(
-    //    for {
-    //      _ <- deleteExpandedQuery(course)
-    //      auths <- authorityService.tableQuery.filter(_.user === course.lecturer).result
-    //      rightsManager <- getRightsManager
-    //      courseManager <- getCourseManager
-    //    } yield {
-    //      auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id && a.course.contains(course.id)) shouldBe false
-    //      val hasOtherCourses = auths.exists(a => a.user == course.lecturer && a.role == courseManager.get.id)
-    //      auths.exists(a => a.role == rightsManager.get.id) shouldBe hasOtherCourses
-    //    }))
-//
-    //}
-//
   }
 
 
