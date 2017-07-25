@@ -42,6 +42,10 @@ GET           /courses/:c/labworks/:l/groups/preview                            
 GET           /courses/:c/labworks/:l/atomic/groups/preview                           controllers.GroupCRUDController.previewAtomic(c, l)
 HEAD          /groups                                                                 controllers.GroupCRUDController.header
 
+# Group 2
+GET           /api2//courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
+GET           /api2//courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
+
 # Labwork
 GET           /labworks/degrees/:degree                                               controllers.LabworkCRUDController.allWithDegree(degree)
 GET           /atomic/labworks/degrees/:degree                                        controllers.LabworkCRUDController.allAtomicWithDegree(degree)
@@ -339,6 +343,8 @@ GET           /api/migrate/authorities                                          
 GET           /api/migrate/blacklists                                                 controllers.ApiDataController.migrateBlacklists()
 GET           /api/migrate/timetables                                                 controllers.ApiDataController.migrateTimetables()
 GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()
+GET           /api/migrate/groups                                                     controllers.ApiDataController.migrateGroups()
+GET           /api/migrate/schedules                                                  controllers.ApiDataController.migrateSchedules()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)

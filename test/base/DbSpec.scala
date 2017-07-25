@@ -1,8 +1,7 @@
 package base
 
-import models.{RoleDb, Roles}
 import org.scalatest._
-import org.scalatest.concurrent.{Futures, ScalaFutures}
+import org.scalatest.concurrent.ScalaFutures
 import org.w3.banana.sesame.{Sesame, SesameModule}
 import org.w3.banana.{RDF, RDFModule}
 import store.Prefixes.LWMPrefix
@@ -47,7 +46,11 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition {
     TableQuery[ReportCardEntryTable].schema,
     TableQuery[ReportCardRescheduledTable].schema,
     TableQuery[ReportCardRetryTable].schema,
-    TableQuery[ReportCardEntryTypeTable].schema
+    TableQuery[ReportCardEntryTypeTable].schema,
+    TableQuery[GroupTable].schema,
+    TableQuery[GroupMembershipTable].schema,
+    TableQuery[ScheduleEntryTable].schema,
+    TableQuery[ScheduleEntrySupervisorTable].schema
   )
 
   override protected def beforeAll(): Unit = {

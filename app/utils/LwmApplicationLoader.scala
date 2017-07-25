@@ -46,7 +46,9 @@ with CourseManagementModule
 with CourseManagementModulePostgres
 with CourseServiceModule
 with GroupServiceManagementModule
+with GroupDaoManagementModule
 with GroupManagementModule
+with GroupManagementModule2
 with LabworkManagementModule
 with LabworkManagementModulePostgres
 with LabworkServiceModule
@@ -113,6 +115,7 @@ with LdapSyncModule {
     courseManagementController,
     courseManagementControllerPostgres,
     groupManagementController,
+    groupManagementControllerPostgres,
     labworkManagementController,
     labworControllerPostgres,
     entryTypeController,
@@ -160,7 +163,9 @@ with DefaultCourseManagementModuleImpl
 with DefaultCourseManagementModuleImplPostgres
 with DefaultCourseServiceModule
 with DefaultGroupServiceManagementModule
+with DefaultGroupDaoManagementModule
 with DefaultGroupManagementModuleImpl
+with DefaultGroupManagementModule2
 with DefaultLabworkManagementModuleImpl
 with DefaultLabworkManagementModulePostgres
 with DefaultLabworkServiceModule

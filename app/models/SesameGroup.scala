@@ -52,6 +52,15 @@ case class PostgresGroupAtom(label: String, labwork: PostgresLabwork, members: S
 
 case class PostgresGroupProtocol(label: String, labwork: UUID, members: Set[UUID])
 
+object Group {
+  implicit def writes: Writes[Group] = new Writes[Group] {
+    override def writes(g: Group) = g match {
+      case postgresGroup: PostgresGroup => Json.toJson(postgresGroup)(PostgresGroup.writes)
+      case postgresGroupAtom: PostgresGroupAtom => Json.toJson(postgresGroupAtom)(PostgresGroup.writesAtom)
+    }
+  }
+}
+
 object PostgresGroup extends JsonSerialisation[PostgresGroupProtocol, PostgresGroup, PostgresGroupAtom] {
   override implicit def reads = Json.reads[PostgresGroupProtocol]
 
