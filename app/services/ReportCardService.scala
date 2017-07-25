@@ -4,13 +4,6 @@ import java.util.UUID
 
 import models._
 
-object ReportCardService {
-
-  private def toReportCardEntryType(types: Set[SesameAssignmentEntryType]): Set[SesameReportCardEntryType] = {
-    types.map(t => SesameReportCardEntryType(t.entryType))
-  }
-}
-
 trait ReportCardServiceLike {
 
   //def reportCards(schedule: ScheduleG, assignmentPlan: SesameAssignmentPlan): Set[SesameReportCardEntry]
@@ -73,5 +66,27 @@ class ReportCardService extends ReportCardServiceLike {
 
   def evaluateExplicit(student: UUID, labwork: UUID): Set[SesameReportCardEvaluation] = {
     SesameReportCardEntryType.all.map(entryType => SesameReportCardEvaluation(student, labwork, entryType.entryType, bool = true, 0))
+  }
+}
+
+object ReportCardService {
+
+  def reportCards(schedule: ScheduleGen, assignmentPlan: PostgresAssignmentPlan): Vector[ReportCardEntryDb] = {
+    import models.LwmDateTime._
+
+    val students = schedule.entries.flatMap(_.group.members).toSet
+    val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
+
+    students.foldLeft(Vector.empty[ReportCardEntryDb]) { (vec, student) =>
+      val appointments = schedule.entries.filter(_.group.members.contains(student)).sortBy(toLocalDateTime)
+
+      appointments.zip(assignments).map {
+        case (se, ap) =>
+          val entryId = UUID.randomUUID
+          val types = ap.types.map(t => ReportCardEntryTypeDb(Some(entryId), None, t.entryType))
+
+          ReportCardEntryDb(student, assignmentPlan.labwork, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
+      } ++ vec
+    }
   }
 }

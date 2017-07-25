@@ -22,6 +22,10 @@ case class ScheduleEntryGroupFilter(value: String) extends TableFilter[ScheduleE
   override def predicate = _.group === UUID.fromString(value)
 }
 
+case class ScheduleEntrySupervisorFilter(value: String) extends TableFilter[ScheduleEntryTable] {
+  override def predicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.supervisor === UUID.fromString(value)).exists
+}
+
 case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
   override def predicate = _.date === value.sqlDate
 }
@@ -179,21 +183,34 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
       d <- l.degreeFk if d.id === labwork.degree.id
     } yield t
 
-    collectDependenciesMin(comps) {
+    scheduleGen(comps)
+  }
+
+  def scheduleGenBy(labworkId: String) = {
+    val query = for {
+      t <- tableQuery if t.labwork === UUID.fromString(labworkId)
+    } yield t
+
+    scheduleGen(query)
+  }
+
+  private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
+    collectDependenciesMin(query) {
       case (se, g, sups) => (ScheduleEntryGen(
-          se.start.localTime,
-          se.end.localTime,
-          se.date.localDate,
-          se.room,
-          sups.map(_._1.supervisor).toSet,
-          g.toLwmModel
-        ), se.labwork)
+        se.start.localTime,
+        se.end.localTime,
+        se.date.localDate,
+        se.room,
+        sups.map(_._1.supervisor).toSet,
+        g.toLwmModel
+      ), se.labwork)
     } { entries =>
       entries.groupBy(_._2).map {
         case (id, e) => ScheduleGen(id, e.map(_._1).toVector)
       }.toVector
     }
   }
+
 
   private lazy val schemas = List(
     tableQuery.schema,

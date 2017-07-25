@@ -1,7 +1,5 @@
 package dao
 
-import java.util.UUID
-
 import models._
 import services.{AbstractExpandableDaoSpec, ScheduleEntryDao}
 import slick.driver.PostgresDriver.api._
@@ -15,7 +13,6 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
   private lazy val privateSupervisors = populateEmployees(50)
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
 
-  // TODO equals for scheduleEntry
   "A ScheduleEntryDaoSpec also" should {
     "return competitive schedules based on given labwork" in {
       val degrees = populateDegrees(4)

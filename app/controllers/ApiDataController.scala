@@ -29,7 +29,8 @@ final class ApiDataController(private val repository: SesameRepository,
                               val blacklistService2: BlacklistService2,
                               val reportCardEntryDao: ReportCardEntryDao,
                               val authorityService: AuthorityService,
-                              val scheduleEntryDao: ScheduleEntryDao
+                              val scheduleEntryDao: ScheduleEntryDao,
+                              val groupDao: GroupDao
                              ) extends Controller with PostgresResult {
 
   implicit val ns = repository.namespace
@@ -399,7 +400,22 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateGroups = ???
+  def migrateGroups = Action.async {
+    import bindings.GroupDescriptor
+
+    val result = for {
+      _ <- groupDao.createSchema
+      sesameGroups <- Future.fromTry(repository.getAll[SesameGroup])
+      _ = println(s"sesameGroups ${sesameGroups.size}")
+      groupDb = sesameGroups.map { g =>
+        GroupDb(g.label, g.labwork, g.members, invalidated = g.invalidated.map(_.timestamp), id = g.id)
+      }
+      _ = println(s"groupDb ${groupDb.size}")
+      groups <- groupDao.createMany(groupDb.toList)
+    } yield groups.map(_.toLwmModel)
+
+    result.jsonResult
+  }
 
   def migrateSchedules = Action.async {
     import bindings.ScheduleEntryDescriptor

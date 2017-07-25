@@ -17,6 +17,7 @@ object ScheduleEntryControllerPostgres {
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
   lazy val groupAttribute = "group"
+  lazy val supervisorAttribute = "supervisor"
 
   lazy val dateAttribute = "date"
   lazy val startAttribute = "start"
@@ -66,7 +67,8 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
                                             val assignmentPlanService: AssignmentPlanService,
                                             val labworkService: LabworkService,
                                             val timetableService: TimetableService2,
-                                            val labworkApplicationService2: LabworkApplicationService2
+                                            val labworkApplicationService2: LabworkApplicationService2,
+                                            val groupDao: GroupDao
                                            ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
   import controllers.ScheduleEntryControllerPostgres._
 
@@ -96,6 +98,7 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
       case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
       case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
       case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
+      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
       case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
       case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
       case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
@@ -133,7 +136,7 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
 
           (entries.+:(scheduleEntry), groups + group)
       }
-      //_ <- groupDao.createMany(gs.toList) // TODO
+      _ <- groupDao.createMany(gs.toList)
       _ <- abstractDao.createMany(se)
     } yield se.map(_.toLwmModel)).jsonResult
   }

@@ -3,7 +3,7 @@ package dao
 import java.util.UUID
 
 import models._
-import services.{AbstractExpandableDaoSpec, ReportCardEntryDao}
+import services._
 import slick.dbio.Effect.Write
 import store._
 
@@ -14,6 +14,42 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
   private lazy val privateStudents = populateStudents(100)
+
+  "A ReportCardEntryDaoSpec also" should {
+    "filter by scheduleEntry while considering rescheduled and retry entries" in { // TODO this makes no sense
+      /*val semester = populateSemester(1).head
+      val degree = populateDegrees(1).head
+      val course = populateCourses(1)(n => n).head
+      val labworks = List(
+        LabworkDb("A", "A", semester.id, course.id, degree.id)
+        //LabworkDb("B", "B", semester.id, course.id, degree.id),
+      )
+      val rooms = List(RoomDb("A", "A"), RoomDb("B", "B"))
+
+      val groups = List(
+        GroupDb("A", labworks(0).id, privateStudents.take(20).map(_.id).toSet),
+        GroupDb("B", labworks(0).id, privateStudents.slice(20, 40).map(_.id).toSet)
+      )
+
+      val scheduleEntries = List(
+        ScheduleEntryDb(labworks(0).id, LocalTime.now.sqlTime, LocalTime.now.plusHours(1).sqlTime, LocalDate.now.sqlDate, rooms(0).id, Set.empty, groups(0).id),
+        ScheduleEntryDb(labworks(0).id, LocalTime.now.sqlTime, LocalTime.now.plusHours(1).sqlTime, LocalDate.now.sqlDate, rooms(1).id, Set.empty, groups(1).id)
+      )
+      val schedule = ScheduleGen(labworks(0).id, scheduleEntries.map(e => ScheduleEntryGen(e.start.localTime, e.end.localTime, e.date.localDate, e.room, e.supervisor, groups.find(_.id == e.group).get.toLwmModel))
+
+      services.ReportCardService.reportCards(schedule, )
+
+      run(DBIO.seq(
+        TableQuery[SemesterTable].forceInsert(semester),
+        TableQuery[DegreeTable].forceInsert(degree),
+        TableQuery[CourseTable].forceInsert(course),
+        TableQuery[LabworkTable].forceInsertAll(labworks),
+        TableQuery[RoomTable].forceInsertAll(rooms)
+      ))
+
+      await(get(List(ReportCardEntryScheduleEntryFilter("")), atomic = false))*/
+    }
+  }
 
   def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[DbUser], rooms: List[RoomDb]) = PostgresReportCardEntryAtom(
     students.find(_.id == entry.student).get.toLwmModel,
