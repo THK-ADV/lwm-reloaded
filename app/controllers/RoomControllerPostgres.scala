@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao.{RoomLabelFilter, RoomService}
 import models.Permissions.{prime, room}
 import models.{PostgresRoom, PostgresRoomProtocol, RoomDb}
 import play.api.libs.json.{Reads, Writes}

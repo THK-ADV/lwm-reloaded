@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao._
 import models.Permissions.{course, prime}
 import models.{Course, CourseDb, PostgresCourse, PostgresCourseProtocol}
 import play.api.libs.json.{JsValue, Reads, Writes}

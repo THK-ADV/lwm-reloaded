@@ -227,8 +227,9 @@ class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PER
 }
 
 class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable with LabelTable with DescriptionTable {
+  def capacity = column[Int]("CAPACITY")
 
-  override def * = (label, description, lastModified, invalidated, id) <> ((RoomDb.apply _).tupled, RoomDb.unapply)
+  override def * = (label, description, capacity, lastModified, invalidated, id) <> ((RoomDb.apply _).tupled, RoomDb.unapply)
 }
 
 class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGNMENT_PLAN") with UniqueTable with LabworkIdTable {

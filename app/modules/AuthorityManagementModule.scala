@@ -1,7 +1,7 @@
 package modules
 
 import controllers.AuthorityController
-import services.{AuthorityService, AuthorityServiceImpl}
+import dao.{AuthorityService, AuthorityServiceImpl}
 
 trait AuthorityManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

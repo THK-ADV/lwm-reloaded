@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao._
 import models.Permissions.{blacklist, prime}
 import models.{BlacklistDb, PostgresBlacklist, PostgresBlacklistProtocol}
 import play.api.libs.json.{Reads, Writes}

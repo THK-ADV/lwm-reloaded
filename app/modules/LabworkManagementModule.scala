@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{LabworkCRUDController, LabworkControllerPostgres}
-import services.{LabworkService, LabworkServiceImpl}
+import dao.{LabworkService, LabworkServiceImpl}
 
 trait LabworkManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

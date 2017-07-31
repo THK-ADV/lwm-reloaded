@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao.{DegreeAbbreviationFilter, DegreeLabelFilter, DegreeService}
 import models.{DegreeDb, DegreeProtocol, PostgresDegree}
 import models.Permissions.{degree, god, prime}
 import play.api.libs.json.{Reads, Writes}

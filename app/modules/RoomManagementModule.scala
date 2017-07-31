@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{RoomCRUDController, RoomControllerPostgres}
-import services.{RoomService, RoomServiceImpl}
+import dao.{RoomService, RoomServiceImpl}
 
 trait RoomManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

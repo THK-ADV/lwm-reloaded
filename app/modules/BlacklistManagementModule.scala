@@ -1,7 +1,8 @@
 package modules
 
 import controllers.{BlacklistCRUDController, BlacklistControllerPostgres}
-import services.{BlacklistService, BlacklistService2, BlacklistServiceImpl, BlacklistServiceLike}
+import dao.{BlacklistService2, BlacklistServiceImpl}
+import services.{BlacklistService, BlacklistServiceLike}
 import utils.LwmApplication
 
 trait BlacklistServiceManagementModule {

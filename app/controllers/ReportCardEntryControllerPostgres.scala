@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao._
 import models.Permissions.{god, reportCardEntry}
 import models._
 import play.api.libs.json.{Reads, Writes}

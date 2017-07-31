@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao.{RoleLabelFilter, RoleService2}
 import models.Permissions.{god, prime, role}
 import models._
 import play.api.libs.json.{Reads, Writes}

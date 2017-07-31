@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{RoleController, RoleControllerPostgres}
-import services.{RoleService2, RoleServiceImpl}
+import dao.{RoleService2, RoleServiceImpl}
 
 trait RoleManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

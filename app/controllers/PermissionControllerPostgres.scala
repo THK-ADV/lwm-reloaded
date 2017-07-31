@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao._
 import models.{PermissionDb, PostgresPermission, PostgresPermissionProtocol}
 import play.api.libs.json.{Reads, Writes}
 import services._

@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{AssignmentPlanCRUDController, AssignmentPlanControllerPostgres}
-import services.{AssignmentPlanService, AssignmentPlanServiceImpl}
+import dao.{AssignmentPlanService, AssignmentPlanServiceImpl}
 
 trait AssignmentPlanManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

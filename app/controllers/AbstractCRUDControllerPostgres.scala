@@ -3,10 +3,10 @@ package controllers
 import java.sql.Timestamp
 import java.util.UUID
 
+import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json.{JsError, JsValue, Reads, Writes}
 import play.api.mvc.{Action, AnyContent, Controller, Request}
-import services.AbstractDao
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
 

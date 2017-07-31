@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{ScheduleEntryController, ScheduleEntryControllerPostgres}
-import services.{ScheduleEntryDao, ScheduleEntryDaoImpl}
+import dao.{ScheduleEntryDao, ScheduleEntryDaoImpl}
 import utils.LwmApplication
 
 trait ScheduleEntryManagementModule { self: LwmApplication =>

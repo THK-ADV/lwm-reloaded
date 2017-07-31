@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao.{TimetableCourseFilter, TimetableLabworkFilter, TimetableService2}
 import models.Permissions.timetable
 import models.{PostgresTimetable, PostgresTimetableProtocol, Timetable, TimetableDb}
 import play.api.libs.json.{Reads, Writes}

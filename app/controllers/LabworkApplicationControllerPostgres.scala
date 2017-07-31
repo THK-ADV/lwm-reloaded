@@ -2,10 +2,11 @@ package controllers
 
 import java.util.UUID
 
+import dao.{LabworkApplicationLabworkFilter, LabworkApplicationService2}
 import models.Permissions.labworkApplication
 import models._
 import play.api.libs.json.{Reads, Writes}
-import services.{LabworkApplicationLabworkFilter, LabworkApplicationService2, RoleServiceLike, SessionHandlingService}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.{LabworkApplicationTable, TableFilter}
 import utils.LwmMimeType
 

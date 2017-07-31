@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import dao._
 import models.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
@@ -242,7 +243,7 @@ final class ApiDataController(private val repository: SesameRepository,
       sesameRooms <- Future.fromTry(repository.getAll[SesameRoom])
       _ = println(s"sesameRooms ${sesameRooms.size}")
 
-      roomDbs = sesameRooms.map(r => RoomDb(r.label, r.description, DateTime.now.timestamp, None, r.id))
+      roomDbs = sesameRooms.map(r => RoomDb(r.label, r.description, 0, DateTime.now.timestamp, None, r.id))
       _ = println(s"roomDbs ${roomDbs.size}")
 
       rooms <- roomService.createMany(roomDbs.toList)

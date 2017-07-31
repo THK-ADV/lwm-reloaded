@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{UserController, UserControllerPostgres}
-import services.{UserService, UserServiceImpl}
+import dao.{UserService, UserServiceImpl}
 
 trait UserManagementModule {
 

@@ -1,7 +1,8 @@
 package modules
 
 import controllers.{GroupCRUDController, GroupControllerPostgres}
-import services.{GroupDao, GroupDaoImpl, GroupService, GroupServiceLike}
+import dao.{GroupDao, GroupDaoImpl}
+import services.{GroupService, GroupServiceLike}
 import utils.LwmApplication
 
 trait GroupServiceManagementModule {

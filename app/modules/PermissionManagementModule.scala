@@ -1,7 +1,7 @@
 package modules
 
 import controllers.PermissionController
-import services.{PermissionService, PermissionServiceImpl}
+import dao.{PermissionService, PermissionServiceImpl}
 
 trait PermissionManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

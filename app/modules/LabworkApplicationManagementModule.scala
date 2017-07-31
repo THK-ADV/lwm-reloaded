@@ -1,7 +1,8 @@
 package modules
 
 import controllers.{LabworkApplicationCRUDController, LabworkApplicationControllerPostgres}
-import services.{LabworkApplicationService, LabworkApplicationService2, LabworkApplicationServiceImpl, LabworkApplicationServiceLike}
+import dao.{LabworkApplicationService2, LabworkApplicationServiceImpl}
+import services.{LabworkApplicationService, LabworkApplicationServiceLike}
 import utils.LwmApplication
 
 trait LabworkApplicationServiceModule {

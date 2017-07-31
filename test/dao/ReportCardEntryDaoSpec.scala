@@ -9,7 +9,7 @@ import store._
 
 final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] with ReportCardEntryDao {
   import models.LwmDateTime._
-  import services.AbstractDaoSpec._
+  import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)

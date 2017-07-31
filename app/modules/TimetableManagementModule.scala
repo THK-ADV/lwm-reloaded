@@ -1,7 +1,8 @@
 package modules
 
 import controllers.{TimetableCRUDController, TimetableControllerPostgres}
-import services.{TimetableService, TimetableService2, TimetableService2Impl, TimetableServiceLike}
+import dao.{TimetableService2, TimetableService2Impl}
+import services.{TimetableService, TimetableServiceLike}
 import utils.LwmApplication
 
 trait TimetableServiceManagementModule {

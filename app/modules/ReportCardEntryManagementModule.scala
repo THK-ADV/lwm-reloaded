@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{ReportCardEntryController, ReportCardEntryControllerPostgres}
-import services.{ReportCardEntryDao, ReportCardEntryDaoImpl}
+import dao.{ReportCardEntryDao, ReportCardEntryDaoImpl}
 
 trait ReportCardEntryManagementModule {
 

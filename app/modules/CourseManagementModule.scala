@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{CourseCRUDController, CourseControllerPostgres}
-import services.{CourseService, CourseServiceImpl}
+import dao.{CourseService, CourseServiceImpl}
 
 trait CourseManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>

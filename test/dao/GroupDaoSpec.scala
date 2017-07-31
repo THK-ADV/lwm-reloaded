@@ -1,14 +1,13 @@
 package dao
 
 import models._
-import services.{AbstractExpandableDaoSpec, GroupDao, GroupStudentTableFilter}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 import store._
 import slick.driver.PostgresDriver.api._
 import services.GroupService._
 
 final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, Group] with GroupDao {
-  import services.AbstractDaoSpec._
+  import dao.AbstractDaoSpec._
   import scala.util.Random.{shuffle, nextBoolean, nextInt}
 
   private lazy val privateStudents = populateStudents(20*8*2)

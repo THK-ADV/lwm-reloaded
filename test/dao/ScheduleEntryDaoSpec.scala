@@ -1,14 +1,13 @@
 package dao
 
 import models._
-import services.{AbstractExpandableDaoSpec, ScheduleEntryDao}
 import slick.driver.PostgresDriver.api._
 import slick.lifted.TableQuery
 import store._
 import models.LwmDateTime._
 
 final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] with ScheduleEntryDao {
-  import services.AbstractDaoSpec._
+  import dao.AbstractDaoSpec._
 
   private lazy val privateSupervisors = populateEmployees(50)
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)

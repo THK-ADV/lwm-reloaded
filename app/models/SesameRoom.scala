@@ -25,17 +25,17 @@ object SesameRoom extends UriGenerator[SesameRoom] with JsonSerialisation[Sesame
   override def base: String = "rooms"
 }
 
-case class PostgresRoom(label: String, description: String, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity
+case class PostgresRoom(label: String, description: String, capacity: Int, id: UUID = PostgresRoom.randomUUID) extends UniqueEntity
 
-case class RoomDb(label: String, description: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueDbEntity {
-  override def toLwmModel = PostgresRoom(label, description, id)
+case class RoomDb(label: String, description: String, capacity: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = PostgresRoom.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresRoom(label, description, capacity, id)
 }
 
-case class PostgresRoomProtocol(label: String, description: String)
+case class PostgresRoomProtocol(label: String, description: String, capacity: Int)
 
 object PostgresRoom extends UriGenerator[PostgresRoom] with JsonSerialisation[PostgresRoomProtocol, PostgresRoom, PostgresRoom] {
 
-  lazy val default = PostgresRoom("tbd", "tbd")
+  lazy val default = PostgresRoom("tbd", "tbd", 0)
 
   override implicit def reads: Reads[PostgresRoomProtocol] = Json.reads[PostgresRoomProtocol]
 
@@ -48,6 +48,6 @@ object PostgresRoom extends UriGenerator[PostgresRoom] with JsonSerialisation[Po
 
 object RoomDb{
   def from(protocol: PostgresRoomProtocol, existingId: Option[UUID]) : RoomDb = {
-    RoomDb(protocol.label, protocol.description, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+    RoomDb(protocol.label, protocol.description, protocol.capacity, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 }

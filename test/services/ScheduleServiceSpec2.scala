@@ -14,7 +14,7 @@ import scala.util.Random._
 import utils.Ops.MonoidInstances._
 
 final class ScheduleServiceSpec2 extends WordSpec with TestBaseDefinition {
-  import services.AbstractDaoSpec._
+  import dao.AbstractDaoSpec._
 
   def emptyEval: Evaluation[Conflict, Int] = Evaluation.empty[Conflict, Int]
   def eval(l: List[Conflict]): Evaluation[Conflict, Int] = Evaluation.withError[Conflict, Int](l)
