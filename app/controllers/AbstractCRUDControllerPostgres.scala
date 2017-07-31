@@ -79,7 +79,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
-  private def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toLwmModel.asInstanceOf[LwmModel]
 
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
@@ -89,21 +88,32 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
+    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+
     (for {
       protocol <- Future.fromTry(parse[Protocol](request))
       dbModel = toDbModel(protocol, None)
       created <- abstractDao.create(dbModel)
-    } yield toLwmModel(created)).jsonResult
+      lwmModel <- if (atomic)
+        abstractDao.getById(created.id.toString, atomic)
+      else
+        Future.successful(Some(created.toLwmModel.asInstanceOf[LwmModel]))
+    } yield lwmModel.get).jsonResult
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
+    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
       protocol <- Future.fromTry(parse[Protocol](request))
       dbModel = toDbModel(protocol, Some(uuid))
       updated <- abstractDao.update(dbModel)
-    } yield updated.map(toLwmModel)).jsonResult(uuid)
+      lwmModel <- if (atomic)
+        abstractDao.getById(uuid.toString, atomic)
+      else
+        Future.successful(updated.map(_.toLwmModel.asInstanceOf[LwmModel]))
+    } yield lwmModel).jsonResult(uuid)
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>

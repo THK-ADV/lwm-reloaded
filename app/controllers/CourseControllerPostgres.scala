@@ -53,15 +53,22 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
   }
 
   override def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
+    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
       dbModel = toDbModel(protocol, None)
       _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityService.createByCourseQuery(dbModel))
-    } yield dbModel.toLwmModel).jsonResult
+      lwmModel <- if (atomic)
+        abstractDao.getById(dbModel.id.toString, atomic)
+      else
+        Future.successful(Some(dbModel.toLwmModel))
+    } yield lwmModel.get).jsonResult
   }
 
   override def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
+    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
       protocol <- Future.fromTry(parse[PostgresCourseProtocol](request))
@@ -70,7 +77,11 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
       oc = oldCourse.get.asInstanceOf[PostgresCourse]
       updatedCourse <- abstractDao.update(dbModel)
       _ <- authorityService.updateByCourse(CourseDb(oc.label, oc.description, oc.abbreviation, oc.lecturer, oc.semesterIndex), dbModel)
-    } yield updatedCourse.map(_.toLwmModel)).jsonResult(uuid)
+      lwmModel <- if (atomic)
+        abstractDao.getById(uuid.toString, atomic)
+      else
+        Future.successful(updatedCourse.map(_.toLwmModel))
+    } yield lwmModel).jsonResult(uuid)
   }
 
   override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction   { request =>
