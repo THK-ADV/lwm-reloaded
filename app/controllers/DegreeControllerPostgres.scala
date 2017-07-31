@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{DegreeAbbreviationFilter, DegreeLabelFilter, DegreeService}
+import dao.{DegreeAbbreviationFilter, DegreeLabelFilter, DegreeDao}
 import models.{DegreeDb, DegreeProtocol, PostgresDegree}
 import models.Permissions.{degree, god, prime}
 import play.api.libs.json.{Reads, Writes}
@@ -17,7 +17,7 @@ object DegreeControllerPostgres {
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: DegreeService)
+final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: DegreeDao)
   extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{AssignmentPlanCourseFilter, AssignmentPlanLabworkFilter, AssignmentPlanService}
+import dao.{AssignmentPlanCourseFilter, AssignmentPlanLabworkFilter, AssignmentPlanDao}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -16,7 +16,7 @@ object AssignmentPlanControllerPostgres {
   lazy val courseAttribute = "course"
 }
 
-final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: AssignmentPlanService)
+final class AssignmentPlanControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: AssignmentPlanDao)
   extends AbstractCRUDControllerPostgres[PostgresAssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
 
   override protected implicit val writes: Writes[AssignmentPlan] = AssignmentPlan.writes

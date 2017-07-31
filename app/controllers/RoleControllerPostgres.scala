@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{RoleLabelFilter, RoleService2}
+import dao.{RoleLabelFilter, RoleDao}
 import models.Permissions.{god, prime, role}
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -16,7 +16,7 @@ object RoleControllerPostgres{
   lazy val labelAttribute = "label"
 }
 
-final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleService2, val roleService: RoleServiceLike)
+final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleDao, val roleService: RoleServiceLike)
   extends AbstractCRUDControllerPostgres[PostgresRoleProtocol, RoleTable, RoleDb, Role]{
   override protected implicit val writes: Writes[Role] = Role.writes
 

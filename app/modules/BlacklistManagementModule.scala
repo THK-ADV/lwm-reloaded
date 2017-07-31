@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{BlacklistCRUDController, BlacklistControllerPostgres}
-import dao.{BlacklistService2, BlacklistServiceImpl}
+import dao.{BlacklistDao, BlacklistDaoImpl}
 import services.{BlacklistService, BlacklistServiceLike}
 import utils.LwmApplication
 
@@ -31,26 +31,22 @@ trait DefaultBlacklistManagementModuleImpl extends BlacklistManagementModule {
 
 // POSTGRES
 
-trait BlacklistService2ManagementModule {
-  self: DatabaseModule =>
-
-  def blacklistService2: BlacklistService2
+trait BlacklistDaoManagementModule { self: DatabaseModule =>
+  def blacklistDao: BlacklistDao
 }
 
-trait DefaultBlacklistService2ManagementModule extends BlacklistService2ManagementModule {
-  self: DatabaseModule =>
-
-  override lazy val blacklistService2 = new BlacklistServiceImpl(db)
+trait DefaultBlacklistDaoManagementModule extends BlacklistDaoManagementModule { self: DatabaseModule =>
+  override lazy val blacklistDao = new BlacklistDaoImpl(db)
 }
 
 trait Blacklist2ManagementModule {
-  self: SecurityManagementModule with SessionRepositoryModule with BlacklistService2ManagementModule with BlacklistServiceManagementModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
 
   def blacklistControllerPostgres: BlacklistControllerPostgres
 }
 
 trait DefaultBlacklist2ManagementModule extends Blacklist2ManagementModule {
-  self: SecurityManagementModule with SessionRepositoryModule with BlacklistService2ManagementModule with BlacklistServiceManagementModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
 
-  override lazy val blacklistControllerPostgres = new BlacklistControllerPostgres(roleService, sessionService, blacklistService2, blacklistService)
+  override lazy val blacklistControllerPostgres = new BlacklistControllerPostgres(roleService, sessionService, blacklistDao, blacklistService)
 }

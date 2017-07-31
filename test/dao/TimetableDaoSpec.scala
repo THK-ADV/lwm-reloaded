@@ -7,7 +7,7 @@ import models._
 import org.joda.time.{LocalDate, LocalTime}
 import store._
 
-final class TimetableService2Spec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, Timetable] with TimetableService2 {
+final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, Timetable] with TimetableDao {
   import models.LwmDateTime._
   import slick.driver.PostgresDriver.api._
 

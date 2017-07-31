@@ -4,7 +4,7 @@ import models._
 import slick.dbio.Effect.Write
 import store._
 
-final class LabworkServiceSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labwork] with LabworkService {
+final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labwork] with LabworkDao {
 
   import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._

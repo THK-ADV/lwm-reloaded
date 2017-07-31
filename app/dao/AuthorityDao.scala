@@ -22,12 +22,12 @@ case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
 }
 
-trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
+trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  protected def roleService: RoleService2
+  protected def roleService: RoleDao
 
   // TODO maybe we can do this with Expander
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
@@ -131,4 +131,4 @@ trait AuthorityService extends AbstractDao[AuthorityTable, AuthorityDb, Authorit
   }
 }
 
-final class AuthorityServiceImpl(val db: PostgresDriver.backend.Database, val roleService: RoleService2) extends AuthorityService
+final class AuthorityDaoImpl(val db: PostgresDriver.backend.Database, val roleService: RoleDao) extends AuthorityDao

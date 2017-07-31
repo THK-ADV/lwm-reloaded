@@ -18,7 +18,7 @@ case class AssignmentPlanCourseFilter(value: String) extends TableFilter[Assignm
   override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
 }
 
-trait AssignmentPlanService
+trait AssignmentPlanDao
   extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -130,4 +130,4 @@ trait AssignmentPlanService
   }
 }
 
-final class AssignmentPlanServiceImpl(val db: PostgresDriver.backend.Database) extends AssignmentPlanService
+final class AssignmentPlanDaoImpl(val db: PostgresDriver.backend.Database) extends AssignmentPlanDao

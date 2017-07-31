@@ -42,7 +42,7 @@ case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
-trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] {
+trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
@@ -68,4 +68,4 @@ trait SemesterService extends AbstractDao[SemesterTable, SemesterDb, PostgresSem
   }
 }
 
-final class SemesterServiceImpl(val db: PostgresDriver.backend.Database) extends SemesterService
+final class SemesterDaoImpl(val db: PostgresDriver.backend.Database) extends SemesterDao

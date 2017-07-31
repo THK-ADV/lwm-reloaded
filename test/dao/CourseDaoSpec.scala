@@ -9,7 +9,7 @@ import slick.driver
 import slick.driver.PostgresDriver
 import store.{CourseTable, RoleTable, UserTable}
 
-class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseService {
+class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseDao {
 
   import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
@@ -67,11 +67,11 @@ class CourseServiceSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] w
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees)
   )
-  override protected val authorityService: AuthorityService = {
+  override protected val authorityService: AuthorityDao = {
     lazy val sharedDb = db
 
-    new AuthorityService {
-      override protected def roleService: RoleService2 = new RoleService2 {
+    new AuthorityDao {
+      override protected def roleService: RoleDao = new RoleDao {
         override protected def db: driver.PostgresDriver.backend.Database = sharedDb
       }
 

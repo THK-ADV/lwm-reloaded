@@ -6,7 +6,7 @@ import slick.dbio.Effect.Write
 import slick.driver
 import store.{AuthorityTable, CourseTable, RoleTable, UserTable}
 
-class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Authority] with AuthorityService {
+class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Authority] with AuthorityDao {
 
   import dao.AbstractDaoSpec._
   import models.LwmDateTime.DateTimeConverter
@@ -194,9 +194,9 @@ class AuthorityServiceSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, 
 
   override protected def name: String = "authority"
 
-  override protected def roleService: RoleService2 = {
+  override protected def roleService: RoleDao = {
     val sharedDb = db
-    new RoleService2 {
+    new RoleDao {
       override protected def db: driver.PostgresDriver.backend.Database = sharedDb
     }
   }

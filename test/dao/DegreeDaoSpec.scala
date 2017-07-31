@@ -5,7 +5,7 @@ import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
 import store.DegreeTable
 
-final class DegreeServiceSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeService {
+final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeDao {
   import dao.AbstractDaoSpec._
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()

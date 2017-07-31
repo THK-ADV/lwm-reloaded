@@ -19,12 +19,12 @@ case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTab
   override def predicate: (CourseTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
 }
 
-trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
+trait CourseDao extends AbstractDao[CourseTable, CourseDb, Course] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
-  protected def authorityService: AuthorityService
+  protected def authorityService: AuthorityDao
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
     filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
@@ -51,22 +51,7 @@ trait CourseService extends AbstractDao[CourseTable, CourseDb, Course] {
   override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
     db.run(query.result.map(_.map(_.toLwmModel)))
   }
-//
-//  override protected def databaseExpander: Option[DatabaseExpander[CourseDb]] = Some(new DatabaseExpander[CourseDb] {
-//
-//    override def expandUpdateOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-//      authorityService.updateWithCourse(entity).map(_ => Some(entity))
-//    }
-//
-//    override def expandDeleteOf(entity: CourseDb): DBIOAction[Option[CourseDb], NoStream, Effect.Write] = {
-//      authorityService.deleteWithCourse(entity).map(_ => Some(entity))
-//    }
-//
-//    override def expandCreationOf[E <: Effect](entities: Seq[CourseDb]): DBIOAction[Seq[CourseDb], NoStream, Effect.Write with E] = {
-//      DBIO.sequence(entities.map(authorityService.createWithCourse)).map(_ => entities)
-//    }
-//  })
 }
 
-final class CourseServiceImpl(val db: PostgresDriver.backend.Database, val authorityService: AuthorityService) extends CourseService
+final class CourseDaoImpl(val db: PostgresDriver.backend.Database, val authorityService: AuthorityDao) extends CourseDao
 

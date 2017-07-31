@@ -1,7 +1,7 @@
 package modules
 
 import controllers.AuthorityController
-import dao.{AuthorityService, AuthorityServiceImpl}
+import dao.{AuthorityDao, AuthorityDaoImpl}
 
 trait AuthorityManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,14 +17,14 @@ trait DefaultAuthorityManagementModuleImpl extends AuthorityManagementModule {
 
 // POSTGRES
 
-trait AuthorityServiceModule {
-  self: DatabaseModule with RoleServiceModule =>
+trait AuthorityDaoModule {
+  self: DatabaseModule with RoleDaoModule =>
 
-  def authorityService: AuthorityService
+  def authorityDao: AuthorityDao
 }
 
-trait DefaultAuthorityServiceModule extends AuthorityServiceModule {
-  self: DatabaseModule with RoleServiceModule =>
+trait DefaultAuthorityDaoModule extends AuthorityDaoModule {
+  self: DatabaseModule with RoleDaoModule =>
 
-  override lazy val authorityService = new AuthorityServiceImpl(db, roleService2)
+  override lazy val authorityDao = new AuthorityDaoImpl(db, roleDao)
 }

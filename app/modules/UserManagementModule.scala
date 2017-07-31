@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{UserController, UserControllerPostgres}
-import dao.{UserService, UserServiceImpl}
+import dao.{UserDao, UserDaoImpl}
 
 trait UserManagementModule {
 
@@ -16,16 +16,16 @@ trait DefaultUserManagementModule extends UserManagementModule {
 
 // POSTGRES
 
-trait UserServiceModule {
-  self: DatabaseModule with AuthorityServiceModule with DegreeServiceModule with LabworkApplication2ServiceModule =>
+trait UserDaoModule {
+  self: DatabaseModule with AuthorityDaoModule with DegreeDaoModule with LabworkApplicationDaoModule =>
 
-  def userService: UserService
+  def userDao: UserDao
 }
 
-trait DefaultUserServiceModule extends UserServiceModule {
-  self: DatabaseModule with AuthorityServiceModule with DegreeServiceModule with LabworkApplication2ServiceModule =>
+trait DefaultUserDaoModule extends UserDaoModule {
+  self: DatabaseModule with AuthorityDaoModule with DegreeDaoModule with LabworkApplicationDaoModule =>
 
-  override lazy val userService = new UserServiceImpl(db, authorityService, degreeService, labworkApplicationService2)
+  override lazy val userDao = new UserDaoImpl(db, authorityDao, degreeDao, labworkApplicationDao)
 }
 
 trait UserManagementModulePostgres {
@@ -34,7 +34,7 @@ trait UserManagementModulePostgres {
 }
 
 trait DefaultUserManagementModulePostgres extends UserManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LdapModule with UserServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LdapModule with UserDaoModule =>
 
-  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(roleService, sessionService, ldapService, userService)
+  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(roleService, sessionService, ldapService, userDao)
 }

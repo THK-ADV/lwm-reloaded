@@ -6,7 +6,7 @@ import services._
 import slick.dbio.Effect.Write
 import store.SemesterTable
 
-final class SemesterServiceSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterService {
+final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterDao {
   import dao.AbstractDaoSpec._
   import models.LwmDateTime._
   import slick.driver.PostgresDriver.api._

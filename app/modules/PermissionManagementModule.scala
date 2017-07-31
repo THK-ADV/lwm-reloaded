@@ -1,7 +1,8 @@
 package modules
 
-import controllers.PermissionController
-import dao.{PermissionService, PermissionServiceImpl}
+import controllers.{PermissionController, PermissionControllerPostgres}
+import dao.{PermissionDao, PermissionDaoImpl}
+import utils.LwmApplication
 
 trait PermissionManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,10 +18,21 @@ trait DefaultPermissionManagementModule extends PermissionManagementModule {
 
 // POSTGRES
 
-trait PermissionServiceModule { self: DatabaseModule =>
-  def permissionService: PermissionService
+trait PermissionDaoModule { self: DatabaseModule =>
+  def permissionDao: PermissionDao
 }
 
-trait DefaultPermissionServiceModule extends PermissionServiceModule { self: DatabaseModule =>
-  override lazy val permissionService = new PermissionServiceImpl(db)
+trait DefaultPermissionDaoModule extends PermissionDaoModule { self: DatabaseModule =>
+  override lazy val permissionDao = new PermissionDaoImpl(db)
+}
+
+trait PermissionManagementModule2 {
+  self: SecurityManagementModule with SessionRepositoryModule with PermissionDaoModule =>
+  def permissionControllerPostgres: PermissionControllerPostgres
+}
+
+trait DefaultPermissionManagementModule2 extends PermissionManagementModule2 {
+  self: SecurityManagementModule with SessionRepositoryModule with PermissionDaoModule =>
+
+  override lazy val permissionControllerPostgres = new PermissionControllerPostgres(roleService, sessionService, permissionDao)
 }

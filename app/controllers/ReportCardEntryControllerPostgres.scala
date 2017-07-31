@@ -30,7 +30,7 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
                                               val roleService: RoleServiceLike,
                                               val abstractDao: ReportCardEntryDao,
                                               val scheduleEntryDao: ScheduleEntryDao,
-                                              val assignmentPlanService: AssignmentPlanService
+                                              val assignmentPlanService: AssignmentPlanDao
                                              ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
   import controllers.ReportCardEntryControllerPostgres._
   import scala.concurrent.ExecutionContext.Implicits.global

@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{AssignmentPlanCRUDController, AssignmentPlanControllerPostgres}
-import dao.{AssignmentPlanService, AssignmentPlanServiceImpl}
+import dao.{AssignmentPlanDao, AssignmentPlanDaoImpl}
 
 trait AssignmentPlanManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,22 +17,22 @@ trait DefaultAssignmentPlanManagementModuleImpl extends AssignmentPlanManagement
 
 // POSTGRES
 
-trait AssignmentPlanServiceModule { self: DatabaseModule =>
-  def assignmentPlanService: AssignmentPlanService
+trait AssignmentPlanDaoModule { self: DatabaseModule =>
+  def assignmentPlanDao: AssignmentPlanDao
 }
 
-trait DefaultAssignmentPlanServiceModule extends AssignmentPlanServiceModule{ self: DatabaseModule =>
-  override lazy val assignmentPlanService = new AssignmentPlanServiceImpl(db)
+trait DefaultAssignmentPlanDaoModule extends AssignmentPlanDaoModule { self: DatabaseModule =>
+  override lazy val assignmentPlanDao = new AssignmentPlanDaoImpl(db)
 }
 
 trait AssignmentPlanManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanServiceModule=>
+  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
 
   def assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres
 }
 
 trait DefaultAssignmentPlanManagementModuleImplPostgres extends AssignmentPlanManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
 
-  lazy val assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres = new AssignmentPlanControllerPostgres(sessionService, roleService, assignmentPlanService)
+  lazy val assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres = new AssignmentPlanControllerPostgres(sessionService, roleService, assignmentPlanDao)
 }

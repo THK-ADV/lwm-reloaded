@@ -36,7 +36,7 @@ case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTabl
   override def predicate = _.date <= value.sqlDate
 }
 
-trait BlacklistService2 extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {
+trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[BlacklistTable]
@@ -65,4 +65,4 @@ trait BlacklistService2 extends AbstractDao[BlacklistTable, BlacklistDb, Postgre
   }
 }
 
-final class BlacklistServiceImpl(val db: PostgresDriver.backend.Database) extends BlacklistService2
+final class BlacklistDaoImpl(val db: PostgresDriver.backend.Database) extends BlacklistDao

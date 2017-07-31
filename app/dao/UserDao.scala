@@ -47,7 +47,7 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait UserService extends AbstractDao[UserTable, DbUser, User] {
+trait UserDao extends AbstractDao[UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -95,11 +95,11 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
     })
   }
 
-  protected def degreeService: DegreeService
+  protected def degreeService: DegreeDao
 
-  protected def authorityService: AuthorityService
+  protected def authorityService: AuthorityDao
 
-  protected def labworkApplicationService: LabworkApplicationService2
+  protected def labworkApplicationService: LabworkApplicationDao
 
   override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||
@@ -125,8 +125,7 @@ trait UserService extends AbstractDao[UserTable, DbUser, User] {
   }
 }
 
-final class UserServiceImpl(val db: PostgresDriver.backend.Database,
-                            val authorityService: AuthorityService,
-                            val degreeService: DegreeService,
-                            val labworkApplicationService: LabworkApplicationService2
-                           ) extends UserService
+final class UserDaoImpl(val db: PostgresDriver.backend.Database,
+                        val authorityService: AuthorityDao,
+                        val degreeService: DegreeDao,
+                        val labworkApplicationService: LabworkApplicationDao) extends UserDao

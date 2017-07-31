@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{LabworkApplicationCRUDController, LabworkApplicationControllerPostgres}
-import dao.{LabworkApplicationService2, LabworkApplicationServiceImpl}
+import dao.{LabworkApplicationDao, LabworkApplicationDaoImpl}
 import services.{LabworkApplicationService, LabworkApplicationServiceLike}
 import utils.LwmApplication
 
@@ -31,22 +31,22 @@ trait DefaultLabworkApplicationManagementModule extends LabworkApplicationManage
 
 // POSTGRES
 
-trait LabworkApplication2ServiceModule { self: DatabaseModule =>
-  def labworkApplicationService2: LabworkApplicationService2
+trait LabworkApplicationDaoModule { self: DatabaseModule =>
+  def labworkApplicationDao: LabworkApplicationDao
 }
 
-trait DefaultLabworkApplication2ServiceModule extends LabworkApplication2ServiceModule { self: DatabaseModule =>
-  override lazy val labworkApplicationService2 = new LabworkApplicationServiceImpl(db)
+trait DefaultLabworkApplicationDaoModule extends LabworkApplicationDaoModule { self: DatabaseModule =>
+  override lazy val labworkApplicationDao = new LabworkApplicationDaoImpl(db)
 }
 
 trait LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplication2ServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
 
   def labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres
 }
 
 trait DefaultLabworkApplicationManagementModulePostgres extends LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplication2ServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
 
-  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, labworkApplicationService2)
+  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, labworkApplicationDao)
 }

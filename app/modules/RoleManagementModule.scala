@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{RoleController, RoleControllerPostgres}
-import dao.{RoleService2, RoleServiceImpl}
+import dao.{RoleDao, RoleDaoImpl}
 
 trait RoleManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,12 +17,12 @@ trait DefaultRoleManagementModule extends RoleManagementModule {
 
 // POSTGRES
 
-trait RoleServiceModule { self: DatabaseModule =>
-  def roleService2: RoleService2
+trait RoleDaoModule { self: DatabaseModule =>
+  def roleDao: RoleDao
 }
 
-trait DefaultRoleServiceModule extends RoleServiceModule { self: DatabaseModule =>
-  override lazy val roleService2 = new RoleServiceImpl(db)
+trait DefaultRoleDaoModule extends RoleDaoModule { self: DatabaseModule =>
+  override lazy val roleDao = new RoleDaoImpl(db)
 }
 
 trait RoleManagementModulePostgres {
@@ -32,7 +32,7 @@ trait RoleManagementModulePostgres {
 }
 
 trait DefaultRoleManagementModulePostgres extends RoleManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoleServiceModule=>
+  self: SecurityManagementModule with SessionRepositoryModule with RoleDaoModule=>
 
-  override lazy val roleManagementControllerPostgres: RoleControllerPostgres = new RoleControllerPostgres(sessionService, roleService2, roleService)
+  override lazy val roleManagementControllerPostgres: RoleControllerPostgres = new RoleControllerPostgres(sessionService, roleDao, roleService)
 }

@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{SemesterCRUDController, SemesterControllerPostgres}
-import dao.{SemesterService, SemesterServiceImpl}
+import dao.{SemesterDao, SemesterDaoImpl}
 
 trait SemesterManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,22 +17,22 @@ trait DefaultSemesterManagementModuleImpl extends SemesterManagementModule {
 
 // POSTGRES
 
-trait SemesterServiceModule { self: DatabaseModule =>
-  def semesterService: SemesterService
+trait SemesterDaoModule { self: DatabaseModule =>
+  def semesterDao: SemesterDao
 }
 
-trait DefaultSemesterServiceModule extends SemesterServiceModule { self: DatabaseModule =>
-  override lazy val semesterService = new SemesterServiceImpl(db)
+trait DefaultSemesterDaoModule extends SemesterDaoModule { self: DatabaseModule =>
+  override lazy val semesterDao = new SemesterDaoImpl(db)
 }
 
 trait SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with SemesterServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with SemesterDaoModule =>
 
   def semesterManagementControllerPostgres: SemesterControllerPostgres
 }
 
 trait DefaultSemesterManagementModuleImplPostgres extends SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with SemesterServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with SemesterDaoModule =>
 
-  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, roleService, semesterService)
+  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, roleService, semesterDao)
 }

@@ -22,7 +22,7 @@ object CourseControllerPostgres {
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
-final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: CourseService, val authorityService: AuthorityService)
+final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: CourseDao, val authorityService: AuthorityDao)
   extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course] {
 
   import scala.concurrent.ExecutionContext.Implicits.global

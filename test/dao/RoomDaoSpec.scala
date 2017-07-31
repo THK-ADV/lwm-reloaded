@@ -5,7 +5,7 @@ import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
 import store.RoomTable
 
-final class RoomServiceSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomService {
+final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomDao {
 
   import dao.AbstractDaoSpec._
 

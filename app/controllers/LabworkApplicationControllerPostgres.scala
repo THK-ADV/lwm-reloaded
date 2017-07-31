@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{LabworkApplicationLabworkFilter, LabworkApplicationService2}
+import dao.{LabworkApplicationLabworkFilter, LabworkApplicationDao}
 import models.Permissions.labworkApplication
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -21,7 +21,7 @@ object LabworkApplicationControllerPostgres {
   lazy val maxTimeAttribute = "maxTime"
 }
 
-final class LabworkApplicationControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: LabworkApplicationService2)
+final class LabworkApplicationControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: LabworkApplicationDao)
   extends AbstractCRUDControllerPostgres[PostgresLabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
 
   override protected implicit val writes: Writes[LabworkApplication] = LabworkApplication.writes

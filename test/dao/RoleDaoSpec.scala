@@ -4,7 +4,7 @@ import models._
 import slick.dbio.Effect.Write
 import store.RoleTable
 
-class RoleService2Spec extends AbstractDaoSpec[RoleTable, RoleDb, Role] with RoleService2 { // TODO change to AbstractExpandableDaoSpec
+class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, Role] with RoleDao { // TODO change to AbstractExpandableDaoSpec
 
   import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._

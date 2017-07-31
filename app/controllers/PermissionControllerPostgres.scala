@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.{PermissionDb, PostgresPermission, PostgresPermissionProtocol}
+import models.{PermissionDb, Permissions, PostgresPermission, PostgresPermissionProtocol}
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{PermissionTable, TableFilter}
@@ -11,9 +11,6 @@ import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
 
-/**
-  * Created by florian on 5/29/17.
-  */
 object PermissionControllerPostgres {
   lazy val prefixAttribute = "prefix"
   lazy val suffixAttribute = "suffix"
@@ -21,8 +18,10 @@ object PermissionControllerPostgres {
   lazy val valueAttribute = "value"
 }
 
-final class PermissionControllerPostgres(val roleService: RoleService, val sessionService: SessionHandlingService, val abstractDao: PermissionService)
-  extends AbstractCRUDControllerPostgres[PostgresPermissionProtocol, PermissionTable, PermissionDb, PostgresPermission]{
+final class PermissionControllerPostgres(val roleService: RoleServiceLike,
+                                         val sessionService: SessionHandlingService,
+                                         val abstractDao: PermissionDao)
+  extends AbstractCRUDControllerPostgres[PostgresPermissionProtocol, PermissionTable, PermissionDb, PostgresPermission] {
 
   override protected implicit val writes: Writes[PostgresPermission] = PostgresPermission.writes
 
@@ -43,4 +42,9 @@ final class PermissionControllerPostgres(val roleService: RoleService, val sessi
   override protected def toDbModel(protocol: PostgresPermissionProtocol, existingId: Option[UUID]): PermissionDb = PermissionDb.from(protocol, existingId)
 
   override implicit def mimeType: LwmMimeType = LwmMimeType.permissionV1Json
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case GetAll => PartialSecureBlock(Permissions.prime)
+    case _ => PartialSecureBlock(Permissions.god)
+  }
 }

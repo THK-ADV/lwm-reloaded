@@ -18,7 +18,7 @@ case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[La
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
-trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
+trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -115,4 +115,4 @@ trait LabworkApplicationService2 extends AbstractDao[LabworkApplicationTable, La
   }
 }
 
-final class LabworkApplicationServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkApplicationService2
+final class LabworkApplicationDaoImpl(val db: PostgresDriver.backend.Database) extends LabworkApplicationDao

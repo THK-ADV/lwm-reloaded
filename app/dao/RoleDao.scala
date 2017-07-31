@@ -12,7 +12,7 @@ case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
-trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
+trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -97,4 +97,4 @@ trait RoleService2 extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 }
 
-final class RoleServiceImpl(val db: PostgresDriver.backend.Database) extends RoleService2
+final class RoleDaoImpl(val db: PostgresDriver.backend.Database) extends RoleDao

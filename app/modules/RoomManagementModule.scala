@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{RoomCRUDController, RoomControllerPostgres}
-import dao.{RoomService, RoomServiceImpl}
+import dao.{RoomDao, RoomDaoImpl}
 
 trait RoomManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,22 +17,22 @@ trait DefaultRoomManagementModuleImpl extends RoomManagementModule {
 
 // POSTGRES
 
-trait RoomServiceModule { self: DatabaseModule =>
-  def roomService: RoomService
+trait RoomDaoModule { self: DatabaseModule =>
+  def roomDao: RoomDao
 }
 
-trait DefaultRoomServiceModule extends RoomServiceModule { self: DatabaseModule =>
-  override lazy val roomService = new RoomServiceImpl(db)
+trait DefaultRoomDaoModule extends RoomDaoModule { self: DatabaseModule =>
+  override lazy val roomDao = new RoomDaoImpl(db)
 }
 
 trait RoomManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoomServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with RoomDaoModule =>
 
   def roomManagementControllerPostgres: RoomControllerPostgres
 }
 
 trait DefaultRoomManagementModuleImplPostgres extends RoomManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoomServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with RoomDaoModule =>
 
-  lazy val roomManagementControllerPostgres: RoomControllerPostgres = new RoomControllerPostgres(sessionService, roleService, roomService)
+  lazy val roomManagementControllerPostgres: RoomControllerPostgres = new RoomControllerPostgres(sessionService, roleService, roomDao)
 }

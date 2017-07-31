@@ -22,7 +22,7 @@ object GroupControllerPostgres {
 final class GroupControllerPostgres(val roleService: RoleServiceLike,
                                     val sessionService: SessionHandlingService,
                                     val abstractDao: GroupDao,
-                                    val labworkApplicationService2: LabworkApplicationService2
+                                    val labworkApplicationService2: LabworkApplicationDao
                                    ) extends AbstractCRUDControllerPostgres[PostgresGroupProtocol, GroupTable, GroupDb, Group] {
 
   import controllers.GroupControllerPostgres._

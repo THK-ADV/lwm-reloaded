@@ -30,7 +30,7 @@ case class LabworkLabelFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate: (LabworkTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
-trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
+trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
@@ -55,10 +55,10 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
     val joinedQuery = for {
       q <- query
-      c <- q.joinCourse
-      s <- q.joinSemester
-      d <- q.joinDegree
-      l <- c.joinLecturer
+      c <- q.courseFk
+      s <- q.semesterFk
+      d <- q.degreeFk
+      l <- c.lecturerFk
     } yield (q, c, s, d, l)
 
     db.run(joinedQuery.result.map(_.map{
@@ -73,4 +73,4 @@ trait LabworkService extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
   }
 }
 
-final class LabworkServiceImpl(val db: PostgresDriver.backend.Database) extends LabworkService
+final class LabworkDaoImpl(val db: PostgresDriver.backend.Database) extends LabworkDao

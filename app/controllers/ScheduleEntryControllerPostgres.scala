@@ -65,10 +65,10 @@ final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
                                             val sessionService: SessionHandlingService,
                                             val abstractDao: ScheduleEntryDao,
                                             val scheduleGenesisService: ScheduleGenesisServiceLike2,
-                                            val assignmentPlanService: AssignmentPlanService,
-                                            val labworkService: LabworkService,
-                                            val timetableService: TimetableService2,
-                                            val labworkApplicationService2: LabworkApplicationService2,
+                                            val assignmentPlanService: AssignmentPlanDao,
+                                            val labworkService: LabworkDao,
+                                            val timetableService: TimetableDao,
+                                            val labworkApplicationService2: LabworkApplicationDao,
                                             val groupDao: GroupDao
                                            ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
   import controllers.ScheduleEntryControllerPostgres._

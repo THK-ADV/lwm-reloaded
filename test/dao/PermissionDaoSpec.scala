@@ -3,7 +3,7 @@ package dao
 import models.{PermissionDb, Permissions, PostgresPermission}
 import store.PermissionTable
 
-class PermissionServiceSpec extends AbstractDaoSpec[PermissionTable, PermissionDb, PostgresPermission] with PermissionService{
+class PermissionDaoSpec extends AbstractDaoSpec[PermissionTable, PermissionDb, PostgresPermission] with PermissionDao{
   import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 

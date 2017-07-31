@@ -26,16 +26,16 @@ trait DefaultScheduleEntryDaoModule extends ScheduleEntryDaoModule { self: Datab
 
 trait ScheduleEntryManagementModule2 { self: LwmApplication
   with ScheduleEntryDaoModule with SecurityManagementModule with SessionRepositoryModule with ScheduleServiceManagementModule
-  with AssignmentPlanServiceModule with LabworkServiceModule with TimetableService2ManagementModule with LabworkApplication2ServiceModule =>
+  with AssignmentPlanDaoModule with LabworkDaoModule with TimetableDaoManagementModule with LabworkApplicationDaoModule =>
 
   def scheduleEntryControllerPostgres: ScheduleEntryControllerPostgres
 }
 
 trait DefaultScheduleEntryManagementModule2 extends ScheduleEntryManagementModule2 { self: LwmApplication
   with ScheduleEntryDaoModule with SecurityManagementModule with SessionRepositoryModule with ScheduleServiceManagementModule
-  with AssignmentPlanServiceModule with LabworkServiceModule with TimetableService2ManagementModule with LabworkApplication2ServiceModule
+  with AssignmentPlanDaoModule with LabworkDaoModule with TimetableDaoManagementModule with LabworkApplicationDaoModule
   with GroupDaoManagementModule =>
 
   override lazy val scheduleEntryControllerPostgres = new ScheduleEntryControllerPostgres(roleService, sessionService, scheduleEntryDao, scheduleService,
-    assignmentPlanService, labworkService, timetableService2, labworkApplicationService2, groupDao)
+    assignmentPlanDao, labworkDao, timetableDao, labworkApplicationDao, groupDao)
 }

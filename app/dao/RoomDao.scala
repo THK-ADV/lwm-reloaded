@@ -16,7 +16,7 @@ case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
-trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
+trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
@@ -38,4 +38,4 @@ trait RoomService extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
   }
 }
 
-final class RoomServiceImpl(val db: PostgresDriver.backend.Database) extends RoomService
+final class RoomDaoImpl(val db: PostgresDriver.backend.Database) extends RoomDao

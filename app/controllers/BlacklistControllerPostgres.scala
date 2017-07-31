@@ -22,7 +22,7 @@ object BlacklistControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: BlacklistService2, val blacklistService: BlacklistServiceLike)
+final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao, val blacklistService: BlacklistServiceLike)
   extends AbstractCRUDControllerPostgres[PostgresBlacklistProtocol, BlacklistTable, BlacklistDb, PostgresBlacklist] {
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes

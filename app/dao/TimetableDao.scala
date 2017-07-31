@@ -18,7 +18,7 @@ case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTab
   override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
 }
 
-trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
+trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[TimetableTable]
@@ -139,4 +139,4 @@ trait TimetableService2 extends AbstractDao[TimetableTable, TimetableDb, Timetab
   }
 }
 
-final class TimetableService2Impl(val db: PostgresDriver.backend.Database) extends TimetableService2
+final class TimetableDaoImpl(val db: PostgresDriver.backend.Database) extends TimetableDao

@@ -9,7 +9,7 @@ import slick.driver
 import slick.driver.PostgresDriver
 import store.{RoleTable, UserTable}
 
-final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserService {
+final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserDao {
   import slick.driver.PostgresDriver.api._
   import dao.AbstractDaoSpec._
   import scala.util.Random.nextInt
@@ -182,14 +182,14 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
     TableQuery[RoleTable].forceInsertAll(roles)
   )
 
-  override protected val degreeService: DegreeService = new DegreeServiceSpec()
+  override protected val degreeService: DegreeDao = new DegreeDaoSpec()
 
-  override protected val authorityService: AuthorityService = {
+  override protected val authorityService: AuthorityDao = {
     lazy val sharedDb = db
 
-    new AuthorityService {
+    new AuthorityDao {
 
-      override protected def roleService: RoleService2 = new RoleService2 {
+      override protected def roleService: RoleDao = new RoleDao {
 
         override protected def db: driver.PostgresDriver.backend.Database = sharedDb
       }
@@ -198,10 +198,10 @@ final class UserServiceSpec extends AbstractDaoSpec[UserTable, DbUser, User] wit
     }
   }
 
-  override protected val labworkApplicationService: LabworkApplicationService2 = {
+  override protected val labworkApplicationService: LabworkApplicationDao = {
     lazy val sharedDb = db
 
-    new LabworkApplicationService2Spec {
+    new LabworkApplicationDaoSpec {
       override lazy val db = sharedDb // TODO STILL NEEDED?
     }
   }

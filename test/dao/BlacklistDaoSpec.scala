@@ -6,7 +6,7 @@ import services._
 import slick.driver.PostgresDriver.api._
 import store.BlacklistTable
 
-final class BlacklistService2Spec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, PostgresBlacklist] with BlacklistService2 {
+final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, PostgresBlacklist] with BlacklistDao {
   import dao.AbstractDaoSpec._
   import models.LwmDateTime._
   import models.PostgresBlacklist._

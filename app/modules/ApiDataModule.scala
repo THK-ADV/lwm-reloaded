@@ -9,10 +9,10 @@ trait ApiDataModule {
 }
 
 trait DefaultApiDataModule extends ApiDataModule {
-  self: SemanticRepositoryModule with UserServiceModule with AssignmentPlanServiceModule with CourseServiceModule with DegreeServiceModule with LabworkApplication2ServiceModule
-    with LabworkServiceModule with PermissionServiceModule with RoleServiceModule with RoomServiceModule with SemesterServiceModule with TimetableService2ManagementModule
-    with BlacklistService2ManagementModule with ReportCardEntryDaoModule with AuthorityServiceModule with ScheduleEntryDaoModule with GroupDaoManagementModule =>
+  self: SemanticRepositoryModule with UserDaoModule with AssignmentPlanDaoModule with CourseDaoModule with DegreeDaoModule with LabworkApplicationDaoModule
+    with LabworkDaoModule with PermissionDaoModule with RoleDaoModule with RoomDaoModule with SemesterDaoModule with TimetableDaoManagementModule
+    with BlacklistDaoManagementModule with ReportCardEntryDaoModule with AuthorityDaoModule with ScheduleEntryDaoModule with GroupDaoManagementModule =>
 
-  override lazy val apiDataController: ApiDataController = new ApiDataController(repository, userService, assignmentPlanService, courseService, degreeService, labworkApplicationService2,
-    labworkService, permissionService, roleService2, roomService, semesterService, timetableService2, blacklistService2, reportCardEntryDao, authorityService, scheduleEntryDao, groupDao)
+  override lazy val apiDataController: ApiDataController = new ApiDataController(repository, userDao, assignmentPlanDao, courseDao, degreeDao, labworkApplicationDao,
+    labworkDao, permissionDao, roleDao, roomDao, semesterDao, timetableDao, blacklistDao, reportCardEntryDao, authorityDao, scheduleEntryDao, groupDao)
 }

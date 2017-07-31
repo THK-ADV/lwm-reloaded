@@ -20,7 +20,7 @@ case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
   override def predicate: (DegreeTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
+trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
@@ -38,4 +38,4 @@ trait DegreeService extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
   override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toLwmModel)))
 }
 
-final class DegreeServiceImpl(val db: PostgresDriver.backend.Database) extends DegreeService
+final class DegreeDaoImpl(val db: PostgresDriver.backend.Database) extends DegreeDao

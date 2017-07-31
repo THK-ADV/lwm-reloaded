@@ -135,6 +135,9 @@ HEAD          /authorities                                                      
 GET           /permissions                                                            controllers.PermissionController.all()
 HEAD          /permissions                                                            controllers.PermissionController.header
 
+# Permission 2.0
+GET           /ap2/permissions                                                        controllers.PermissionControllerPostgres.all()
+
 # LabworkApplications
 POST          /labworkApplications                                                    controllers.LabworkApplicationCRUDController.create()
 POST          /atomic/labworkApplications                                             controllers.LabworkApplicationCRUDController.createAtomic()

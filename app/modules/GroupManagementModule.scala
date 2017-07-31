@@ -44,13 +44,13 @@ trait DefaultGroupDaoManagementModule extends GroupDaoManagementModule {
 }
 
 trait GroupManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with GroupDaoManagementModule with LabworkApplication2ServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with GroupDaoManagementModule with LabworkApplicationDaoModule =>
 
   def groupManagementControllerPostgres: GroupControllerPostgres
 }
 
 trait DefaultGroupManagementModule2 extends GroupManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with GroupDaoManagementModule with LabworkApplication2ServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with GroupDaoManagementModule with LabworkApplicationDaoModule =>
 
-  override lazy val groupManagementControllerPostgres = new GroupControllerPostgres(roleService, sessionService, groupDao, labworkApplicationService2)
+  override lazy val groupManagementControllerPostgres = new GroupControllerPostgres(roleService, sessionService, groupDao, labworkApplicationDao)
 }

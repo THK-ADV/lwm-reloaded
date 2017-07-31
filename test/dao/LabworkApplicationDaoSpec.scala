@@ -8,7 +8,7 @@ import slick.driver.PostgresDriver.api._
 import store._
 
 // TODO migrate to abstractExpanderDaoSpec
-class LabworkApplicationService2Spec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationService2 {
+class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationDao {
 
   import dao.AbstractDaoSpec._
   import models.LwmDateTime.SqlTimestampConverter

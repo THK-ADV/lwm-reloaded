@@ -107,7 +107,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
-    import models.LwmDateTime.{SqlTimestampConverter, writes}
+    import models.LwmDateTime.SqlTimestampConverter
     val uuid = UUID.fromString(id)
 
     abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)

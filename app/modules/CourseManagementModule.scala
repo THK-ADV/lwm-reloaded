@@ -1,7 +1,7 @@
 package modules
 
 import controllers.{CourseCRUDController, CourseControllerPostgres}
-import dao.{CourseService, CourseServiceImpl}
+import dao.{CourseDao, CourseDaoImpl}
 
 trait CourseManagementModule {
   self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
@@ -17,14 +17,14 @@ trait DefaultCourseManagementModuleImpl extends CourseManagementModule {
 
 // POSTGRES
 
-trait CourseServiceModule { self: DatabaseModule =>
-  def courseService: CourseService
+trait CourseDaoModule { self: DatabaseModule =>
+  def courseDao: CourseDao
 }
 
-trait DefaultCourseServiceModule extends CourseServiceModule {
-  self: DatabaseModule with AuthorityServiceModule =>
+trait DefaultCourseDaoModule extends CourseDaoModule {
+  self: DatabaseModule with AuthorityDaoModule =>
 
-  override lazy val courseService = new CourseServiceImpl(db, authorityService)
+  override lazy val courseDao = new CourseDaoImpl(db, authorityDao)
 }
 
 trait CourseManagementModulePostgres {
@@ -34,7 +34,7 @@ trait CourseManagementModulePostgres {
 }
 
 trait DefaultCourseManagementModuleImplPostgres extends CourseManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with CourseServiceModule with AuthorityServiceModule =>
+  self: SecurityManagementModule with SessionRepositoryModule with CourseDaoModule with AuthorityDaoModule =>
 
-  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseService, authorityService)
+  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseDao, authorityDao)
 }

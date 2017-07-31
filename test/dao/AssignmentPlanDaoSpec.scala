@@ -6,7 +6,7 @@ import store._
 
 import scala.util.Random.nextInt
 
-final class AssignmentPlanServiceSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanService {
+final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanDao {
   import dao.AbstractDaoSpec._
 
   def assignmentPlan(labwork: LabworkDb, number: Int) = {
