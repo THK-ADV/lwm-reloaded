@@ -80,6 +80,7 @@ with LabworkApplicationManagementModule
 with LabworkApplicationManagementModulePostgres
 with LabworkApplicationServiceModule
 with LabworkApplicationDaoModule
+with ScheduleManagementModule
 with ScheduleEntryDaoModule
 with ScheduleEntryManagementModule
 with ScheduleEntryManagementModule2
@@ -131,6 +132,7 @@ with LdapSyncModule {
     permissionControllerPostgres,
     labworkApplicationController,
     labworkApplicationControllerPostgres,
+    scheduleManagementController,
     scheduleEntryController,
     scheduleEntryControllerPostgres,
     timetableManagementController,
@@ -198,6 +200,7 @@ with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationManagementModulePostgres
 with DefaultLabworkApplicationServiceModule
 with DefaultLabworkApplicationDaoModule
+with DefaultScheduleManagementModuleImpl
 with DefaultScheduleEntryDaoModule
 with DefaultScheduleEntryManagementModule
 with DefaultScheduleEntryManagementModule2

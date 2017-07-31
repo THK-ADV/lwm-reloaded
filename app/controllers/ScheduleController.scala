@@ -1,6 +1,6 @@
 package controllers
 
-/*import java.util.UUID
+import java.util.UUID
 
 import models.Permissions.{schedule, god}
 import models._
@@ -49,7 +49,7 @@ object ScheduleController {
 }
 
 // TODO ScheduleProtocol, ScheduleG -> ScheduleAtom, PUT for Schedules
-class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, val scheduleGenesisService: ScheduleGenesisServiceLike, val groupService: GroupServiceLike)
+class ScheduleController(val repository: SesameRepository, val sessionService: SessionHandlingService, implicit val namespace: Namespace, val roleService: RoleServiceLike, /*val scheduleGenesisService: ScheduleGenesisServiceLike, */val groupService: GroupServiceLike)
   extends AbstractCRUDController[SesameSchedule, SesameSchedule, SesameScheduleAtom] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleV1Json
@@ -93,7 +93,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     delete(schedule, NonSecureBlock)(rebase(schedule))
   }
 
-  def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
+  /*def preview(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
     import controllers.GroupCRUDController.strategyFrom
 
     optional2(strategyFrom(request.queryString))
@@ -122,13 +122,13 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
           "number of conflicts" -> gen.evaluate.err.size // TODO serialize conflicts
         ))
       }
-  }
+  }*/
 
   override def header = Action { implicit request =>
     NoContent.as(mimeType)
   }
 
-  private def generate[R](labwork: String, groupStrategy: Strategy)(implicit request: Request[R]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
+  /*private def generate[R](labwork: String, groupStrategy: Strategy)(implicit request: Request[R]): Attempt[Gen[ScheduleG, Conflict, Int]] = {
     import defaultBindings.{AssignmentPlanDescriptor, LabworkAtomDescriptor, TimetableDescriptor}
 
     def extract(query: Map[String, Seq[String]])(key: String) = query.get(key).flatMap(_.headOption).map(_.toInt)
@@ -163,7 +163,7 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     }
 
     optional(genesis)
-  }
+  }*/
 
   def printGroup(g1: Set[SesameGroup], g2: Vector[SesameGroup]): Unit = {
     g1.toVector.sortBy(_.label).zip(g2.distinct.sortBy(_.label)).foreach {
@@ -209,4 +209,4 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
   override protected def compareModel(input: SesameSchedule, output: SesameSchedule): Boolean = false
 
   override protected def fromInput(input: SesameSchedule, existing: Option[SesameSchedule]): SesameSchedule = SesameSchedule(input.labwork, input.entries, input.invalidated, existing.fold(UUID.randomUUID)(_.id))
-}*/
+}

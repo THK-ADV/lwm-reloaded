@@ -161,13 +161,13 @@ DELETE        /api2/labworkApplications/:id                                     
 #HEAD          /schedules                                                              controllers.ScheduleController.header
 
 # Schedule restricted
-#POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
-#POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
-#GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
-#GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
+POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
+POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
+GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
 #GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
 #GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
-#DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
+DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
 
 # ScheduleEntries
 HEAD          /scheduleEntries                                                        controllers.ScheduleEntryController.header

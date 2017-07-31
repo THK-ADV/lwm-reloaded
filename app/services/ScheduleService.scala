@@ -1,5 +1,13 @@
 package services
 
+import java.util.UUID
+
+import models.SesameGroup
+import org.joda.time.{LocalDate, LocalTime}
+
+case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
+case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: SesameGroup)
+
 /*import java.util.UUID
 
 import models._

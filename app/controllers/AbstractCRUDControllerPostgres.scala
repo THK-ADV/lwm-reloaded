@@ -23,7 +23,7 @@ trait AttributeFilter {
 
   private type QueryString = Map[String, Seq[String]]
 
-  final protected def extractAttributes(queryString: QueryString): (QueryString, DefaultAttributes) = {
+  final protected def extractAttributes(queryString: QueryString, defaultAtomic: Boolean = true): (QueryString, DefaultAttributes) = {
     def extractBool(seq: Seq[String], fallback: Boolean): Boolean = {
       seq.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(fallback)(_ == true)
     }
@@ -32,7 +32,7 @@ trait AttributeFilter {
       seq.headOption.flatMap(s => Try(s.toLong).flatMap(l => Try(new Timestamp(l))).toOption).map(_.getTime.toString)
     }
 
-    var atomic = true
+    var atomic = defaultAtomic
     var valid = true
     var lastModified: Option[String] = None
 
