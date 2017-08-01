@@ -27,10 +27,14 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   protected val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
-    for {
-      buddy <- tableQuery.filter(lapp => lapp.applicant === applicant && lapp.labwork === labwork)
+    /* buddy <- tableQuery.filter(lapp => lapp.applicant === applicant && lapp.labwork === labwork)
       friends <- lappFriendQuery.filter(_.labworkApplication === buddy.id).flatMap(_.friendFk)
-    } yield friends
+    } yield friends */
+    for {
+      buddy <- tableQuery if buddy.applicant === applicant && buddy.labwork === labwork
+      friends <- lappFriendQuery if friends.labworkApplication === buddy.id
+      friend <- friends.friendFk
+    } yield friend
   }
 
   override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = {

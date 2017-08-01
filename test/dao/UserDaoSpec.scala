@@ -7,14 +7,14 @@ import services._
 import slick.dbio.Effect.Write
 import slick.driver
 import slick.driver.PostgresDriver
-import store.{RoleTable, UserTable}
+import store._
 
 final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserDao {
   import slick.driver.PostgresDriver.api._
   import dao.AbstractDaoSpec._
   import scala.util.Random.nextInt
 
-  val maxUser = 150
+  val maxUser = 200
   val maxDegrees = 3
 
   val degrees: List[DegreeDb] = {
@@ -37,6 +37,13 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       DbUser(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
     }.toList
   }
+
+  val chosenDegree = degrees.last
+  val semester = populateSemester(1).head
+  val employee = DbUser("", "", "", "", User.EmployeeType, None, None)
+  val course = CourseDb("", "", "", employee.id, 1)
+  val labwork = LabworkDb("label", "desc", semester.id, course.id, chosenDegree.id)
+  val otherLabwork = labwork.copy(id = UUID.randomUUID)
 
   "A UserServiceSpec " should {
     "return a user by id (either atomic or non atomic)" in {
@@ -97,7 +104,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
 
       toDbUser(user) shouldBe dbVariation
       toDbUser(user2) shouldBe dbVariation2
-      allUser.size shouldBe dbUser.size + 2
+      allUser.size shouldBe dbUser.size + 2 + 1
       maybeAuths.forall(_.isDefined) shouldBe true
       maybeAuths.map(_.get).forall(a => allAuths.contains(a)) shouldBe true
     }
@@ -121,8 +128,6 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
     }
 
     "deny buddy requests properly" in {
-      val chosenDegree = degrees.last
-      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
       val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
       val buddy = dbUser.find(u => u.status == User.StudentType && !u.enrollment.contains(chosenDegree.id)).get
 
@@ -131,8 +136,6 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
     }
 
     "allow a buddy request" in {
-      val chosenDegree = degrees.last
-      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
       val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
       val buddy = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
       val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
@@ -146,12 +149,10 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
 
       await(labworkApplicationService.createMany(lapps)) should not be empty
       await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Allowed
+      await(labworkApplicationService.deleteMany(lapps.map(_.id))).count(_.isDefined) shouldBe lapps.size
     }
 
     "almost allow a buddy request" in {
-      val chosenDegree = degrees.last
-      val labwork = LabworkDb("label", "desc", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
-      val otherLabwork = LabworkDb("label2", "desc2", UUID.randomUUID, UUID.randomUUID, chosenDegree.id)
       val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
       val buddy = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
       val someoneElse = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
@@ -178,7 +179,11 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
   }
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    TableQuery[SemesterTable].forceInsert(semester),
+    TableQuery[UserTable].forceInsert(employee),
+    TableQuery[CourseTable].forceInsert(course),
     degreeService.tableQuery.forceInsertAll(degrees),
+    TableQuery[LabworkTable].forceInsertAll(List(labwork, otherLabwork)),
     TableQuery[RoleTable].forceInsertAll(roles)
   )
 

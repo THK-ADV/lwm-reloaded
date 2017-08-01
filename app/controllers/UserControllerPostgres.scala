@@ -53,7 +53,7 @@ final class UserControllerPostgres(val roleService: RoleServiceLike, val session
   def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
     val requesterId = request.session(SessionController.userId)
 
-    abstractDao.buddyResult(requesterId, systemId, labwork).jsonResult { buddyResult =>
+    abstractDao.buddyResult(requesterId, systemId, labwork) jsonResult { buddyResult =>
       buddyResult match {
         case Allowed => Ok(Json.obj(
           "status" -> "OK",
