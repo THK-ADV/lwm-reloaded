@@ -65,7 +65,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     with SessionChecking
     with SecureControllerContext
     with ContentTyped
-    with Chunked
     with PostgresResult
     with AttributeFilter
     with RequestRebasePostgres {
