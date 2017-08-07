@@ -7,15 +7,16 @@ import models.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.Controller
 import services._
 import store.SesameRepository
 import store.bind.Bindings
+import utils.LwmMimeType
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-final class ApiDataController(private val repository: SesameRepository,
+final class ApiDataController(val repository: SesameRepository,
                               val userService: UserDao,
                               val assignmentPlanService: AssignmentPlanDao,
                               val courseService: CourseDao,
@@ -23,7 +24,7 @@ final class ApiDataController(private val repository: SesameRepository,
                               val labworkApplicationService: LabworkApplicationDao,
                               val labworkService: LabworkDao,
                               val permissionService: PermissionDao,
-                              val roleService: RoleDao,
+                              val roleDao: RoleDao,
                               val roomService: RoomDao,
                               val semesterService: SemesterDao,
                               val timetableService2: TimetableDao,
@@ -31,13 +32,21 @@ final class ApiDataController(private val repository: SesameRepository,
                               val reportCardEntryDao: ReportCardEntryDao,
                               val authorityService: AuthorityDao,
                               val scheduleEntryDao: ScheduleEntryDao,
-                              val groupDao: GroupDao
-                             ) extends Controller with PostgresResult {
+                              val groupDao: GroupDao,
+                              val sessionService: SessionHandlingService,
+                              val roleService: RoleServiceLike
+                             ) extends Controller with PostgresResult with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
 
-  def collisionsForCurrentLabworks() = Action {
+  override implicit def mimeType = LwmMimeType.apiDataV1Json
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+
+  def collisionsForCurrentLabworks() = contextFrom(Get) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
 
     val result = for {
@@ -57,7 +66,7 @@ final class ApiDataController(private val repository: SesameRepository,
     Ok
   }
 
-  def multipleReportCardEntries(course: String) = Action {
+  def multipleReportCardEntries(course: String) = contextFrom(Get) action { implicit request =>
     import bindings.{AssignmentPlanDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
 
     for {
@@ -79,7 +88,7 @@ final class ApiDataController(private val repository: SesameRepository,
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def migrateUsers = Action.async {
+  def migrateUsers = contextFrom(Create) asyncAction { implicit request =>
     import bindings.{EmployeeDescriptor, StudentDescriptor}
     import models.User.writes
 
@@ -114,7 +123,7 @@ final class ApiDataController(private val repository: SesameRepository,
     }
   }
 
-  def migrateDegrees = Action.async {
+  def migrateDegrees = contextFrom(Create) asyncAction { implicit request =>
     import bindings.DegreeDescriptor
     import models.PostgresDegree.writes
 
@@ -135,7 +144,7 @@ final class ApiDataController(private val repository: SesameRepository,
     }
   }
 
-  def migratePermissions = Action.async {
+  def migratePermissions = contextFrom(Create) asyncAction { implicit request =>
     import bindings.RoleDescriptor
     import models.PostgresPermission.writes
 
@@ -155,12 +164,12 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateRoles = Action.async {
+  def migrateRoles = contextFrom(Create) asyncAction { implicit request =>
     import bindings.RoleDescriptor
     import models.Role.writes
 
     val result = for {
-      _ <- roleService.createSchema
+      _ <- roleDao.createSchema
       sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
       _ = println(s"sesameRoles ${sesameRoles.size}")
       _ = println(s"sesamePermissions ${sesameRoles.flatMap(_.permissions).size}")
@@ -170,7 +179,7 @@ final class ApiDataController(private val repository: SesameRepository,
         val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
         RoleDb(r.label, perms.toSet, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
       }
-      roles <- roleService.createMany(postgresRoles.toList)
+      roles <- roleDao.createMany(postgresRoles.toList)
       _ = println(s"roles ${roles.size}")
       _ = println(s"permissions ${roles.flatMap(_.permissions).size}")
     } yield roles.map(_.toLwmModel)
@@ -178,7 +187,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateSemesters = Action.async {
+  def migrateSemesters = contextFrom(Create) asyncAction { implicit request =>
     import bindings.SemesterDescriptor
     import models.LwmDateTime._
 
@@ -197,7 +206,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult(PostgresSemester.writes)
   }
 
-  def migrateCourses = Action.async {
+  def migrateCourses = contextFrom(Create) asyncAction { implicit request =>
     import bindings.CourseDescriptor
 
     val result = for {
@@ -215,7 +224,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult(PostgresCourse.writes)
   }
 
-  def migrateLabworks = Action.async {
+  def migrateLabworks = contextFrom(Create) asyncAction { implicit request =>
     import bindings.LabworkDescriptor
     import models.PostgresLabwork.writes
 
@@ -234,7 +243,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateRooms = Action.async {
+  def migrateRooms = contextFrom(Create) asyncAction { implicit request =>
     import bindings.RoomDescriptor
     import models.PostgresRoom.writes
 
@@ -252,7 +261,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateLabworkApplications = Action.async {
+  def migrateLabworkApplications = contextFrom(Create) asyncAction { implicit request =>
     import bindings.LabworkApplicationDescriptor
     import models.LabworkApplication.writes
 
@@ -270,7 +279,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateAssignmentPlans = Action.async {
+  def migrateAssignmentPlans = contextFrom(Create) asyncAction { implicit request =>
     import bindings.AssignmentPlanDescriptor
     import models.AssignmentPlan.writes
 
@@ -296,7 +305,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateBlacklists = Action.async {
+  def migrateBlacklists = contextFrom(Create) asyncAction { implicit request =>
     import bindings.{BlacklistDescriptor, SemesterDescriptor, TimetableAtomDescriptor}
     import models.PostgresBlacklist.writes
 
@@ -329,7 +338,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateTimetables = Action.async {
+  def migrateTimetables = contextFrom(Create) asyncAction { implicit request =>
     import bindings.TimetableDescriptor
     import models.PostgresTimetable.writes
 
@@ -353,7 +362,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateReportCardEntries = Action.async {
+  def migrateReportCardEntries = contextFrom(Create) asyncAction { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor}
     import models.ReportCardEntry.writes
 
@@ -384,7 +393,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateAuthorities = Action.async {
+  def migrateAuthorities = contextFrom(Create) asyncAction { implicit request =>
     import bindings.AuthorityDescriptor
 
     val result = for {
@@ -401,7 +410,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateGroups = Action.async {
+  def migrateGroups = contextFrom(Create) asyncAction { implicit request =>
     import bindings.GroupDescriptor
 
     val result = for {
@@ -418,7 +427,7 @@ final class ApiDataController(private val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateSchedules = Action.async {
+  def migrateSchedules = contextFrom(Create) asyncAction { implicit request =>
     import bindings.ScheduleEntryDescriptor
 
     val result = for {
