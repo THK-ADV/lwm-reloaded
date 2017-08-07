@@ -1,0 +1,15 @@
+language: scala
+scala:
+   - 2.11.7
+script:
+  - sbt compile
+  - sbt test
+branches:
+  only:
+    - master
+    - LWM-Postgres
+services:
+  - postgresql
+before_script:
+  - psql -c 'create database lwm;' -U postgres
+  - psql -c "CREATE USER lwm WITH PASSWORD 'lwm';" -U postgres

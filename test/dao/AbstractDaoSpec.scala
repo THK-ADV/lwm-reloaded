@@ -6,6 +6,7 @@ import java.util.UUID
 import base.PostgresDbSpec
 import models.LwmDateTime._
 import models._
+import modules.DatabaseModule
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
