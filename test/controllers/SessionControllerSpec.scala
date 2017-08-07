@@ -22,7 +22,7 @@ import scala.concurrent.Future
 
 class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
 
-  val loginToPass = Login("student1", "abcde123")
+  /*val loginToPass = Login("student1", "abcde123")
   val loginToFail = Login("student1", "blabla")
   val mimeType = LwmMimeType.loginV1Json
 
@@ -187,5 +187,5 @@ class SessionControllerSpec extends WordSpec with TestBaseDefinition  {
       contentType(result) shouldBe Some[String](LwmMimeType.loginV1Json)
       contentAsString(result) shouldBe empty
     }
-  }
+  }*/
 }
