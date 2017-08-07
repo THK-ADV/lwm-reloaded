@@ -6,13 +6,13 @@ import models._
 import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
 import play.api.libs.json._
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.Controller
 import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class ApiDataController(val repository: SesameRepository,
                         val sessionService: SessionHandlingService,
@@ -21,7 +21,18 @@ class ApiDataController(val repository: SesameRepository,
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
 
-  def collisionsForCurrentLabworks() = Action { request =>
+  override implicit def mimeType = LwmMimeType.apiDataV1Json
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, Permissions.reportCardEvaluation.create)
+    case _ => PartialSecureBlock(Permissions.god)
+  }
+
+  def collisionsForCurrentLabworks() = contextFrom(Get) action { implicit request =>
     import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
 
     val result = for {
@@ -41,7 +52,7 @@ class ApiDataController(val repository: SesameRepository,
     Ok
   }
 
-  def multipleReportCardEntries(course: String) = Action { request =>
+  def multipleReportCardEntries(course: String) = contextFrom(Get) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, AssignmentPlanDescriptor}
 
     for {
@@ -64,7 +75,7 @@ class ApiDataController(val repository: SesameRepository,
   case class ReportCardEntryProtocol(label: String, date: String, start: String, end: String, room: UUID, entryTypes: Set[ReportCardEntryTypeProtocol])
   case class ReportCardEntryTypeProtocol(entryType: String, bool: Boolean, int: Int)
 
-  def appendReportCardEntries(labwork: String, preview: String) = Action(parse.json) { request =>
+  def appendReportCardEntries(labwork: String, preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
     import models.LwmDateTime._
     import bindings.{ReportCardEntryDescriptor, LabworkDescriptor}
     import models.ReportCardEntry._
@@ -112,7 +123,7 @@ class ApiDataController(val repository: SesameRepository,
 
   val fakeSuccessGraph = Success(ValueFactoryImpl.getInstance().createLiteral(""))
 
-  def appendSupervisorToScheduleEntries(supervisor: String, labwork: String, preview: String) = Action { request =>
+  def appendSupervisorToScheduleEntries(supervisor: String, labwork: String, preview: String) = contextFrom(Update) action { implicit request =>
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
     import bindings.{TimetableDescriptor, ScheduleEntryDescriptor}
@@ -146,7 +157,7 @@ class ApiDataController(val repository: SesameRepository,
   // TODO expand group swap request and refactor to groupService at some time
   case class GroupSwapRequest(srcLabwork: UUID, srcStudent: String, destGroup: String)
 
-  def swapGroup(preview: String) = Action(parse.json) { request =>
+  def swapGroup(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
     import bindings.{GroupDescriptor, ReportCardEntryDescriptor, StudentDescriptor}
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
@@ -205,7 +216,7 @@ class ApiDataController(val repository: SesameRepository,
 
   case class ScheduleSupervisorSwapRequest(srcSupervisor: UUID, destSupervisor: UUID, groupLabel: String)
   // this implementation assumes that one supervisor consists on his groups
-  def swapSupervisor(scheduleId: String, preview: String) = Action(parse.json) { request =>
+  def swapSupervisor(scheduleId: String, preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
     import bindings.{ScheduleDescriptor, GroupDescriptor, ScheduleEntryDescriptor}
@@ -241,7 +252,7 @@ class ApiDataController(val repository: SesameRepository,
 
   case class SwapReportCardAssignmentRequest(labwork: String, firstIndex: Int, secondIndex: Int, appointments: Int, firstLabelAssumption: String, secondLabelAssumption: String)
   // this implementation assumes that reportCardEntries are sorted by date and start in order to be accessible by an index
-  def swapReportCardAssignments(preview: String) = Action(parse.json) { request =>
+  def swapReportCardAssignments(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
     import bindings.ReportCardEntryDescriptor
     import models.LwmDateTime._
     import models.ReportCardEntry._
@@ -331,7 +342,7 @@ class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  def bumpBonus(course: String, preview: String) = Action { request =>
+  def bumpBonus(course: String, preview: String) = contextFrom(Update) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, ReportCardEntryTypeDescriptor, SemesterDescriptor}
     import utils.Ops._
     import utils.Ops.MonadInstances.tryM
@@ -363,7 +374,7 @@ class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  def assignmentStatistic(course: String) = Action { request =>
+  def assignmentStatistic(course: String) = contextFrom(Get) action { implicit request =>
     import bindings.{LabworkAtomDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
 
     def percentage(of: Int, total: Int) = (100 * of) / total
@@ -414,7 +425,7 @@ class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  def bonicheck(course: String) = Action { request =>
+  def bonicheck(course: String) = contextFrom(Get) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
     import models.Student.writes
 
@@ -446,14 +457,7 @@ class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  override implicit def mimeType = LwmMimeType.reportCardEvaluationV1Json
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, Permissions.reportCardEvaluation.create)
-    case _ => PartialSecureBlock(Permissions.god)
-  }
-
-  def assignmentEvaluation(course: String) = restrictedContext(course)(Create) action { request =>
+  def assignmentEvaluation(course: String) = restrictedContext(course)(Create) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
     import models.LwmDateTime._
 
