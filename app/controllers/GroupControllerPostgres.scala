@@ -3,11 +3,11 @@ package controllers
 import java.util.UUID
 
 import dao._
+import models.Permissions._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{GroupTable, TableFilter}
-import models.Permissions._
 import utils.LwmMimeType
 
 import scala.concurrent.Future
@@ -19,13 +19,14 @@ object GroupControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class GroupControllerPostgres(val roleService: RoleServiceLike,
+final class GroupControllerPostgres(val authorityDao: AuthorityDao,
                                     val sessionService: SessionHandlingService,
                                     val abstractDao: GroupDao,
                                     val labworkApplicationService2: LabworkApplicationDao
                                    ) extends AbstractCRUDControllerPostgres[PostgresGroupProtocol, GroupTable, GroupDb, Group] {
 
   import controllers.GroupControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[Group] = Group.writes

@@ -26,13 +26,13 @@ trait DefaultAssignmentPlanDaoModule extends AssignmentPlanDaoModule { self: Dat
 }
 
 trait AssignmentPlanManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
 
   def assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres
 }
 
 trait DefaultAssignmentPlanManagementModuleImplPostgres extends AssignmentPlanManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with AssignmentPlanDaoModule =>
 
-  lazy val assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres = new AssignmentPlanControllerPostgres(sessionService, roleService, assignmentPlanDao)
+  lazy val assignmentPlanManagementControllerPostgres: AssignmentPlanControllerPostgres = new AssignmentPlanControllerPostgres(sessionService, authorityDao, assignmentPlanDao)
 }

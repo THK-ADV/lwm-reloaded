@@ -216,7 +216,6 @@ trait SecureControllerContext {
   case object Update extends Rule
 
   case object NonSecureBlock extends SecureContext
-
 }
 
 trait PostgresResult { self: Controller =>

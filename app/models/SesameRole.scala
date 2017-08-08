@@ -47,8 +47,6 @@ object Role {
       case postgresRoleAtom: PostgresRoleAtom => Json.toJson(postgresRoleAtom)(PostgresRoleAtom.writesAtom)
     }
   }
-
-  def toRole(roleDb: RoleDb): PostgresRole = PostgresRole(roleDb.label, roleDb.permissions, roleDb.id)
 }
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {

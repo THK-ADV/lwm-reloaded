@@ -25,13 +25,13 @@ trait DefaultReportCardEntryDaoModule extends ReportCardEntryDaoModule { self: D
 }
 
 trait ReportCardEntryManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with ReportCardEntryDaoModule with ScheduleEntryDaoModule with AssignmentPlanDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEntryDaoModule with ScheduleEntryDaoModule with AssignmentPlanDaoModule =>
 
   def reportCardEntryControllerPostgres: ReportCardEntryControllerPostgres
 }
 
 trait DefaultReportCardEntryManagementModule2 extends ReportCardEntryManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with ReportCardEntryDaoModule with ScheduleEntryDaoModule with AssignmentPlanDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEntryDaoModule with ScheduleEntryDaoModule with AssignmentPlanDaoModule =>
 
-  override lazy val reportCardEntryControllerPostgres = new ReportCardEntryControllerPostgres(sessionService, roleService, reportCardEntryDao, scheduleEntryDao, assignmentPlanDao)
+  override lazy val reportCardEntryControllerPostgres = new ReportCardEntryControllerPostgres(sessionService, authorityDao, reportCardEntryDao, scheduleEntryDao, assignmentPlanDao)
 }

@@ -26,13 +26,13 @@ trait DefaultSemesterDaoModule extends SemesterDaoModule { self: DatabaseModule 
 }
 
 trait SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with SemesterDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with SemesterDaoModule =>
 
   def semesterManagementControllerPostgres: SemesterControllerPostgres
 }
 
 trait DefaultSemesterManagementModuleImplPostgres extends SemesterManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with SemesterDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with SemesterDaoModule =>
 
-  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, roleService, semesterDao)
+  lazy val semesterManagementControllerPostgres: SemesterControllerPostgres = new SemesterControllerPostgres(sessionService, authorityDao, semesterDao)
 }

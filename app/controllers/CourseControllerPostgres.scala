@@ -22,7 +22,7 @@ object CourseControllerPostgres {
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
-final class CourseControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: CourseDao, val authorityService: AuthorityDao)
+final class CourseControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: CourseDao, val authorityService: AuthorityDao)
   extends AbstractCRUDControllerPostgres[PostgresCourseProtocol, CourseTable, CourseDb, Course] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -94,4 +94,6 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
       _ <- authorityService.deleteByCourse(CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex))
     } yield deletedCourse.map(_.dateTime)).jsonResult(uuid)
   }
+
+  override implicit def authorityDao = authorityService
 }

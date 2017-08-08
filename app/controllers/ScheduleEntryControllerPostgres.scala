@@ -61,7 +61,7 @@ object ScheduleEntryControllerPostgres {
   }
 }
 
-final class ScheduleEntryControllerPostgres(val roleService: RoleServiceLike,
+final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
                                             val sessionService: SessionHandlingService,
                                             val abstractDao: ScheduleEntryDao,
                                             val scheduleGenesisService: ScheduleGenesisServiceLike2,

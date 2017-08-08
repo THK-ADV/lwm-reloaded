@@ -27,12 +27,13 @@ trait DefaultPermissionDaoModule extends PermissionDaoModule { self: DatabaseMod
 }
 
 trait PermissionManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with PermissionDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with PermissionDaoModule =>
+
   def permissionControllerPostgres: PermissionControllerPostgres
 }
 
 trait DefaultPermissionManagementModule2 extends PermissionManagementModule2 {
-  self: SecurityManagementModule with SessionRepositoryModule with PermissionDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with PermissionDaoModule =>
 
-  override lazy val permissionControllerPostgres = new PermissionControllerPostgres(roleService, sessionService, permissionDao)
+  override lazy val permissionControllerPostgres = new PermissionControllerPostgres(authorityDao, sessionService, permissionDao)
 }

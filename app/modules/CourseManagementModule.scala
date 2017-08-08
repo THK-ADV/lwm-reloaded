@@ -28,13 +28,13 @@ trait DefaultCourseDaoModule extends CourseDaoModule {
 }
 
 trait CourseManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule  =>
+  self: AuthorityDaoModule with SessionRepositoryModule with CourseDaoModule =>
 
   def courseManagementControllerPostgres: CourseControllerPostgres
 }
 
 trait DefaultCourseManagementModuleImplPostgres extends CourseManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with CourseDaoModule with AuthorityDaoModule =>
+  self: SessionRepositoryModule with CourseDaoModule with AuthorityDaoModule =>
 
-  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, roleService, courseDao, authorityDao)
+  lazy val courseManagementControllerPostgres: CourseControllerPostgres = new CourseControllerPostgres(sessionService, courseDao, authorityDao)
 }

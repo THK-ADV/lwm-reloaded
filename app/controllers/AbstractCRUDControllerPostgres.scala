@@ -1,8 +1,8 @@
 package controllers
 
-import java.sql.Timestamp
 import java.util.UUID
 
+import controllers.helper.{AttributeFilter, SecureControllerContext2, Secured2}
 import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json.{JsError, JsValue, Reads, Writes}
@@ -10,60 +10,14 @@ import play.api.mvc.{Action, AnyContent, Controller, Request}
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
 
-import scala.collection.Map
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-trait AttributeFilter {
-  protected lazy val atomicAttribute = "atomic"
-  protected lazy val validAttribute = "valid"
-  protected lazy val lastModifiedAttribute = "lastModified"
-
-  protected case class DefaultAttributes(atomic: Boolean = true, valid: Boolean = true, lastModified: Option[String] = None)
-
-  private type QueryString = Map[String, Seq[String]]
-
-  final protected def extractAttributes(queryString: QueryString, defaultAtomic: Boolean = true): (QueryString, DefaultAttributes) = {
-    def extractBool(seq: Seq[String], fallback: Boolean): Boolean = {
-      seq.headOption.flatMap(s => Try(s.toBoolean).toOption).fold(fallback)(_ == true)
-    }
-
-    def extractTimestamp(seq: Seq[String]): Option[String] = {
-      seq.headOption.flatMap(s => Try(s.toLong).flatMap(l => Try(new Timestamp(l))).toOption).map(_.getTime.toString)
-    }
-
-    var atomic = defaultAtomic
-    var valid = true
-    var lastModified: Option[String] = None
-
-    val remaining = List(atomicAttribute, validAttribute, lastModifiedAttribute).foldLeft(queryString) {
-      case (q, at) if at == atomicAttribute =>
-        q.find(_._1 == at).fold(q) { seq =>
-          atomic = extractBool(seq._2, fallback = false)
-          q - at
-        }
-      case (q, inv) if inv == validAttribute =>
-        q.find(_._1 == inv).fold(q) { seq =>
-          valid = extractBool(seq._2, fallback = true)
-          q - inv
-        }
-      case (q, mod) if mod == lastModifiedAttribute =>
-        q.find(_._1 == mod).fold(q) { seq =>
-          lastModified = extractTimestamp(seq._2)
-          q - mod
-        }
-      case (q, _) => q
-    }
-
-    (remaining, DefaultAttributes(atomic, valid, lastModified))
-  }
-}
-
 trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends Controller
-    with Secured
+    with Secured2
     with SessionChecking
-    with SecureControllerContext
+    with SecureControllerContext2
     with ContentTyped
     with PostgresResult
     with AttributeFilter

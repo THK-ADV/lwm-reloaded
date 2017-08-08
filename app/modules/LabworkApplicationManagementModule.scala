@@ -40,13 +40,13 @@ trait DefaultLabworkApplicationDaoModule extends LabworkApplicationDaoModule { s
 }
 
 trait LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
 
   def labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres
 }
 
 trait DefaultLabworkApplicationManagementModulePostgres extends LabworkApplicationManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with LabworkApplicationDaoModule =>
 
-  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, roleService, labworkApplicationDao)
+  override lazy val labworkApplicationControllerPostgres: LabworkApplicationControllerPostgres = new LabworkApplicationControllerPostgres(sessionService, authorityDao, labworkApplicationDao)
 }

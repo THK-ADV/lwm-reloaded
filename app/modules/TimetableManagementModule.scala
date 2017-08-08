@@ -40,13 +40,13 @@ trait DefaultTimetableDaoModule extends TimetableDaoManagementModule { self: Dat
 }
 
 trait TimetableManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with TimetableDaoManagementModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with TimetableDaoManagementModule =>
 
   def timetableControllerPostgres: TimetableControllerPostgres
 }
 
 trait DefaultTimetableManagementModulePostgres extends TimetableManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with TimetableDaoManagementModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with TimetableDaoManagementModule =>
 
-  override lazy val timetableControllerPostgres = new TimetableControllerPostgres(roleService, sessionService, timetableDao)
+  override lazy val timetableControllerPostgres = new TimetableControllerPostgres(authorityDao, sessionService, timetableDao)
 }

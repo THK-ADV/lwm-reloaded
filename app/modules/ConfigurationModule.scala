@@ -7,11 +7,6 @@ trait ConfigurationModule {
   def lwmConfig: Configuration
 }
 
-
 trait ConfigurationModuleImpl extends ConfigurationModule {
-  override def lwmConfig: Configuration = {
-    val config = ConfigFactory.defaultApplication()
-
-    Configuration(config.resolve())
-  }
+  override def lwmConfig: Configuration = Configuration(ConfigFactory.defaultApplication().resolve())
 }

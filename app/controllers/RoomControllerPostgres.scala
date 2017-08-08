@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{RoomLabelFilter, RoomDao}
+import dao.{AuthorityDao, RoomDao, RoomLabelFilter}
 import models.Permissions.{prime, room}
 import models.{PostgresRoom, PostgresRoomProtocol, RoomDb}
 import play.api.libs.json.{Reads, Writes}
@@ -16,7 +16,7 @@ object RoomControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class RoomControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: RoomDao) extends
+final class RoomControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: RoomDao) extends
   AbstractCRUDControllerPostgres[PostgresRoomProtocol, RoomTable, RoomDb, PostgresRoom] {
 
   override implicit val mimeType = LwmMimeType.roomV1Json

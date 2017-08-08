@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{TimetableCourseFilter, TimetableLabworkFilter, TimetableDao}
+import dao._
 import models.Permissions.timetable
 import models.{PostgresTimetable, PostgresTimetableProtocol, Timetable, TimetableDb}
 import play.api.libs.json.{Reads, Writes}
@@ -17,7 +17,7 @@ object TimetableControllerPostgres {
   lazy val labworkAttribute = "labwork"
 }
 
-final class TimetableControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: TimetableDao)
+final class TimetableControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: TimetableDao)
   extends AbstractCRUDControllerPostgres[PostgresTimetableProtocol, TimetableTable, TimetableDb, Timetable] {
 
   override protected implicit val writes: Writes[Timetable] = Timetable.writes

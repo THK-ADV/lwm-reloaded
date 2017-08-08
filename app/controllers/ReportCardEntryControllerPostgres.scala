@@ -27,12 +27,13 @@ object ReportCardEntryControllerPostgres {
 }
 
 final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlingService,
-                                              val roleService: RoleServiceLike,
+                                              val authorityDao: AuthorityDao,
                                               val abstractDao: ReportCardEntryDao,
                                               val scheduleEntryDao: ScheduleEntryDao,
                                               val assignmentPlanService: AssignmentPlanDao
                                              ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
   import controllers.ReportCardEntryControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes

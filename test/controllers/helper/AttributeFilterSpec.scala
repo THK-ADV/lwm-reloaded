@@ -1,7 +1,6 @@
 package controllers.helper
 
 import base.TestBaseDefinition
-import controllers.AttributeFilter
 import models.LwmDateTime.DateTimeConverter
 import org.joda.time.DateTime
 import org.scalatest.WordSpec

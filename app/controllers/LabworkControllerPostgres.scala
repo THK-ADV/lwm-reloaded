@@ -19,7 +19,7 @@ object LabworkControllerPostgres {
   lazy val courseAttribute = "course"
 }
 
-final class LabworkControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: LabworkDao) extends
+final class LabworkControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: LabworkDao) extends
   AbstractCRUDControllerPostgres[PostgresLabworkProtocol, LabworkTable, LabworkDb, Labwork] {
 
   override implicit def mimeType = LwmMimeType.labworkV1Json

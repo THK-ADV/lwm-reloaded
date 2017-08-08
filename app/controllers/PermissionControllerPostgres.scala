@@ -18,7 +18,7 @@ object PermissionControllerPostgres {
   lazy val valueAttribute = "value"
 }
 
-final class PermissionControllerPostgres(val roleService: RoleServiceLike,
+final class PermissionControllerPostgres(val authorityDao: AuthorityDao,
                                          val sessionService: SessionHandlingService,
                                          val abstractDao: PermissionDao)
   extends AbstractCRUDControllerPostgres[PostgresPermissionProtocol, PermissionTable, PermissionDb, PostgresPermission] {

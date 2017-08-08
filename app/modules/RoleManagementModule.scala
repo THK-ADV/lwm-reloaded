@@ -26,13 +26,13 @@ trait DefaultRoleDaoModule extends RoleDaoModule { self: DatabaseModule =>
 }
 
 trait RoleManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule =>
+  self: AuthorityDaoModule with RoleDaoModule with SessionRepositoryModule =>
 
   def roleManagementControllerPostgres: RoleControllerPostgres
 }
 
 trait DefaultRoleManagementModulePostgres extends RoleManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoleDaoModule=>
+  self: AuthorityDaoModule with SessionRepositoryModule with RoleDaoModule =>
 
-  override lazy val roleManagementControllerPostgres: RoleControllerPostgres = new RoleControllerPostgres(sessionService, roleDao, roleService)
+  override lazy val roleManagementControllerPostgres: RoleControllerPostgres = new RoleControllerPostgres(sessionService, roleDao, authorityDao)
 }
