@@ -103,23 +103,20 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
     db.run(authorities.result.map(_.map(_.toLwmModel)))
   }
 
-  def checkAuthority(check: (Option[UUID], SesamePermission))(authorities: Seq[PostgresAuthority]): Future[Boolean] = check match {
-    case (_, permission) if permission == Permissions.god => Future.successful(false)
-    case (optCourse, permission) =>
-
-      def isAdmin(roles: Seq[PostgresRoleAtom]) = roles
-        .find(_.label == Roles.AdminLabel)
+  def checkAuthority(check: (Option[UUID], List[Role]))(authorities: Seq[PostgresAuthority]): Future[Boolean] = check match {
+    case (_, roles) if roles contains Role.God => Future.successful(false)
+    case (optCourse, minRoles) =>
+      def isAdmin(implicit roles: Seq[PostgresRole]) = roles
+        .find(_.label == Role.Admin.label)
         .exists(admin => authorities.exists(_.roles == admin.id))
 
-      def hasPermission(roles: Seq[PostgresRoleAtom]) = authorities
+      def hasPermission(implicit roles: Seq[PostgresRole]) = authorities
         .filter(_.course == optCourse)
         .flatMap(authority => roles.filter(_.id == authority.roles))
-        .exists(r => r.permissions.exists(_.value == permission.value))
+        .exists(r => minRoles.exists(_.label == r.label))
 
-      roleService.get().map { roles =>
-        val atoms = roles.map(_.asInstanceOf[PostgresRoleAtom])
-
-        isAdmin(atoms) || hasPermission(atoms)
+      roleService.get().map { implicit roles =>
+        isAdmin || hasPermission
       }
   }
 

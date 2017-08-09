@@ -37,16 +37,14 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override implicit val mimeType = LwmMimeType.assignmentPlanV1Json
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Permissions.god)
-  }
+  import models.Role._
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, Permissions.assignmentPlan.create)
-    case Update => SecureBlock(restrictionId, Permissions.assignmentPlan.update)
-    case Delete => SecureBlock(restrictionId, Permissions.assignmentPlan.delete)
-    case Get => SecureBlock(restrictionId, Permissions.assignmentPlan.get)
-    case GetAll => SecureBlock(restrictionId, Permissions.assignmentPlan.getAll)
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case Delete => SecureBlock(restrictionId, List(CourseManager))
+    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>

@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, RoleDao, RoleLabelFilter}
-import models.Permissions.{god, prime, role}
+import models.Role.{Admin, God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -17,9 +17,9 @@ object RoleControllerPostgres {
 }
 
 final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleDao, val authorityDao: AuthorityDao)
-  extends AbstractCRUDControllerPostgres[PostgresRoleProtocol, RoleTable, RoleDb, Role] {
+  extends AbstractCRUDControllerPostgres[PostgresRoleProtocol, RoleTable, RoleDb, PostgresRole] {
 
-  override protected implicit val writes: Writes[Role] = Role.writes
+  override protected implicit val writes: Writes[PostgresRole] = PostgresRole.writes
 
   override protected implicit val reads: Reads[PostgresRoleProtocol] = PostgresRole.reads
 
@@ -37,9 +37,9 @@ final class RoleControllerPostgres(val sessionService: SessionHandlingService, v
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(role.get)
-    case GetAll => PartialSecureBlock(role.getAll)
-    case Update => PartialSecureBlock(prime)
-    case _ => PartialSecureBlock(god)
+    case Get => PartialSecureBlock(List(RightsManager))
+    case GetAll => PartialSecureBlock(List(RightsManager))
+    case Update => PartialSecureBlock(List(Admin))
+    case _ => PartialSecureBlock(List(God))
   }
 }

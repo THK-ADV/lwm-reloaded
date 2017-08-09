@@ -166,24 +166,19 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "check authorities properly" in {
-      val sufficientPermissions = List(PermissionDb("room:view", ""), PermissionDb("room:create", ""), PermissionDb("room:delete", ""))
-      val insufficientPermissions = List(PermissionDb("course:view", ""), PermissionDb("course:delete", ""))
-      val prime = PermissionDb(Permissions.prime.value, "")
-
       val modules = populateCourses(2)(i => i)
       val module1 = modules.head.id
       val module2 = modules.last.id
 
-      val role1 = RoleDb("testRole1", sufficientPermissions.map(_.id).toSet)
-      val role2 = RoleDb("testRole2", insufficientPermissions.map(_.id).toSet)
-      val role3 = RoleDb(Roles.AdminLabel, Set(prime.id))
+      val role1 = RoleDb(Role.CourseEmployee.label) // suff
+      val role2 = RoleDb(Role.CourseAssistant.label) // insuff
+      val role3 = RoleDb(Role.Admin.label) // admin
 
       val roles = List(role1, role2, role3)
 
       val students = populateStudents(6)
 
       val noneModule1Role1 = AuthorityDb(students(0).id, role1.id)
-      //val noneModule1Role2 = AuthorityDb(students(1).id, role2.id)
 
       val module1UserRole1 = AuthorityDb(students(2).id, role1.id, Some(module1))
       val module1UserRole2 = AuthorityDb(students(3).id, role2.id, Some(module1))
@@ -191,37 +186,35 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val adminRefRole = AuthorityDb(students(5).id, role3.id)
 
       run(DBIO.seq(
-        TableQuery[PermissionTable].delete,
-        TableQuery[RolePermissionTable].delete,
         TableQuery[AuthorityTable].delete,
         TableQuery[RoleTable].delete,
         TableQuery[DegreeTable].delete,
         TableQuery[CourseTable].delete,
         TableQuery[DegreeTable].forceInsertAll(degrees),
-        TableQuery[PermissionTable].forceInsertAll(sufficientPermissions ++ insufficientPermissions),
-        TableQuery[PermissionTable].forceInsert(prime),
         TableQuery[CourseTable].forceInsertAll(modules),
         TableQuery[UserTable].forceInsertAll(students)
       ))
 
       await(roleService.createMany(roles))
 
-      val perm1 = sufficientPermissions.toVector.map(p => SesamePermission(p.value))
-      val perm2 = insufficientPermissions.toVector.map(p => SesamePermission(p.value))
-
-      val result1 = checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(Seq(module1UserRole2.toLwmModel))
-      val result2 = checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(Seq(module1UserRole1, module2UserRole2).map(_.toLwmModel))
-      val result3 = checkAuthority((None, perm1(nextInt(perm1.size))))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
-      val result4 = checkAuthority((Some(module1), perm1(nextInt(perm1.size))))(Seq(adminRefRole.toLwmModel))
-      val result5 = checkAuthority((Some(module2), perm2(nextInt(perm2.size))))(Seq(module1UserRole1.toLwmModel))
-      val result6 = checkAuthority((Some(UUID.randomUUID()), perm1(nextInt(perm1.size))))(Seq(adminRefRole.toLwmModel))
+      val result1 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole2.toLwmModel))
+      val result2 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole1, module2UserRole2).map(_.toLwmModel))
+      val result3 = checkAuthority((None, List(Role.CourseEmployee)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
+      val result4 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
+      val result5 = checkAuthority((Some(module2), List(Role.CourseAssistant)))(Seq(module1UserRole1.toLwmModel))
+      val result6 = checkAuthority((Some(UUID.randomUUID()), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
+      val result7 = checkAuthority((Some(module1), List(Role.CourseAssistant, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
+      val result8 = checkAuthority((Some(module1), List(Role.Employee, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
+      val result9 = checkAuthority((Some(module1), List(Role.God)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
 
       await(result1) shouldBe false
       await(result2) shouldBe true
       await(result3) shouldBe true
       await(result4) shouldBe true
       await(result5) shouldBe false
-      await(result6) shouldBe true
+      await(result7) shouldBe true
+      await(result8) shouldBe false
+      await(result9) shouldBe false
     }
   }
 
@@ -256,7 +249,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   override protected def name: String = "authority"
 
-  override protected def roleService: RoleDao = {
+  override protected val roleService: RoleDao = {
     val sharedDb = db
     new RoleDao {
       override protected def db: driver.PostgresDriver.backend.Database = sharedDb

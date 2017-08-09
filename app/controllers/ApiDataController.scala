@@ -7,7 +7,7 @@ import models.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
 import play.api.libs.json.Json
-import play.api.mvc.Controller
+import play.api.mvc.{Controller, Action}
 import services._
 import store.SesameRepository
 import store.bind.Bindings
@@ -23,7 +23,6 @@ final class ApiDataController(val repository: SesameRepository,
                               val degreeService: DegreeDao,
                               val labworkApplicationService: LabworkApplicationDao,
                               val labworkService: LabworkDao,
-                              val permissionService: PermissionDao,
                               val roleDao: RoleDao,
                               val roomService: RoomDao,
                               val semesterService: SemesterDao,
@@ -42,9 +41,7 @@ final class ApiDataController(val repository: SesameRepository,
 
   override implicit def mimeType = LwmMimeType.apiDataV1Json
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Permissions.prime)
-  }
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def collisionsForCurrentLabworks() = contextFrom(Get) action { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor, SemesterDescriptor}
@@ -86,11 +83,8 @@ final class ApiDataController(val repository: SesameRepository,
     Ok
   }
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  def migrateUsers = contextFrom(Create) asyncAction { implicit request =>
+  def migrateUsers = Action.async { implicit request =>
     import bindings.{EmployeeDescriptor, StudentDescriptor}
-    import models.User.writes
 
     val result = for {
       _ <- userService.createSchema
@@ -123,7 +117,9 @@ final class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  def migrateDegrees = contextFrom(Create) asyncAction { implicit request =>
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  def migrateDegrees = Action.async { implicit request =>
     import bindings.DegreeDescriptor
     import models.PostgresDegree.writes
 
@@ -144,50 +140,25 @@ final class ApiDataController(val repository: SesameRepository,
     }
   }
 
-  def migratePermissions = contextFrom(Create) asyncAction { implicit request =>
+  def migrateRoles = Action.async { implicit request =>
     import bindings.RoleDescriptor
-    import models.PostgresPermission.writes
-
-    val result = for {
-      _ <- permissionService.createSchema
-      sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
-      permissions = Permissions.all + Permissions.prime + Permissions.god
-      _ = println(s"permissions ${permissions.size}")
-      sesamePermissions = sesameRoles.flatMap(_.permissions)
-      _ = println(s"sesamePermissions ${sesamePermissions.filterNot(s => permissions.exists(_.value == s.value))}")
-      postgresPermissions = permissions.map(p => PermissionDb(p.value, ""))
-      _ = println(s"postgresPermissions ${postgresPermissions.size}")
-      ps <- permissionService.createMany(postgresPermissions.toList)
-      _ = println(s"ps ${ps.size}")
-    } yield ps.map(_.toLwmModel)
-
-    result.jsonResult
-  }
-
-  def migrateRoles = contextFrom(Create) asyncAction { implicit request =>
-    import bindings.RoleDescriptor
-    import models.Role.writes
+    import models.PostgresRole.writes
 
     val result = for {
       _ <- roleDao.createSchema
       sesameRoles <- Future.fromTry(repository.getAll[SesameRole])
       _ = println(s"sesameRoles ${sesameRoles.size}")
-      _ = println(s"sesamePermissions ${sesameRoles.flatMap(_.permissions).size}")
-      postgresPermissions <- permissionService.get()
-      _ = println(s"postgresPermissions ${postgresPermissions.size}")
       postgresRoles = sesameRoles.map { r =>
-        val perms = postgresPermissions.filter(p => r.permissions.exists(_.value == p.value)).map(_.id)
-        RoleDb(r.label, perms.toSet, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
+        RoleDb(r.label, DateTime.now.timestamp, r.invalidated.map(_.timestamp), r.id)
       }
       roles <- roleDao.createMany(postgresRoles.toList)
       _ = println(s"roles ${roles.size}")
-      _ = println(s"permissions ${roles.flatMap(_.permissions).size}")
     } yield roles.map(_.toLwmModel)
 
     result.jsonResult
   }
 
-  def migrateSemesters = contextFrom(Create) asyncAction { implicit request =>
+  def migrateSemesters = Action.async { implicit request =>
     import bindings.SemesterDescriptor
     import models.LwmDateTime._
 
@@ -206,7 +177,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult(PostgresSemester.writes)
   }
 
-  def migrateCourses = contextFrom(Create) asyncAction { implicit request =>
+  def migrateCourses = Action.async { implicit request =>
     import bindings.CourseDescriptor
 
     val result = for {
@@ -224,7 +195,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult(PostgresCourse.writes)
   }
 
-  def migrateLabworks = contextFrom(Create) asyncAction { implicit request =>
+  def migrateLabworks = Action.async { implicit request =>
     import bindings.LabworkDescriptor
     import models.PostgresLabwork.writes
 
@@ -243,7 +214,11 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateRooms = contextFrom(Create) asyncAction { implicit request =>
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(Permissions.prime)
+  }
+
+  def migrateRooms = Action.async { implicit request =>
     import bindings.RoomDescriptor
     import models.PostgresRoom.writes
 
@@ -261,7 +236,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateLabworkApplications = contextFrom(Create) asyncAction { implicit request =>
+  def migrateLabworkApplications = Action.async { implicit request =>
     import bindings.LabworkApplicationDescriptor
     import models.LabworkApplication.writes
 
@@ -279,7 +254,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateAssignmentPlans = contextFrom(Create) asyncAction { implicit request =>
+  def migrateAssignmentPlans = Action.async { implicit request =>
     import bindings.AssignmentPlanDescriptor
     import models.AssignmentPlan.writes
 
@@ -305,7 +280,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateBlacklists = contextFrom(Create) asyncAction { implicit request =>
+  def migrateBlacklists = Action.async { implicit request =>
     import bindings.{BlacklistDescriptor, SemesterDescriptor, TimetableAtomDescriptor}
     import models.PostgresBlacklist.writes
 
@@ -338,7 +313,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateTimetables = contextFrom(Create) asyncAction { implicit request =>
+  def migrateTimetables = Action.async { implicit request =>
     import bindings.TimetableDescriptor
     import models.PostgresTimetable.writes
 
@@ -362,7 +337,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateReportCardEntries = contextFrom(Create) asyncAction { implicit request =>
+  def migrateReportCardEntries = Action.async { implicit request =>
     import bindings.{LabworkDescriptor, ReportCardEntryDescriptor}
     import models.ReportCardEntry.writes
 
@@ -393,7 +368,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateAuthorities = contextFrom(Create) asyncAction { implicit request =>
+  def migrateAuthorities = Action.async { implicit request =>
     import bindings.AuthorityDescriptor
 
     val result = for {
@@ -410,7 +385,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateGroups = contextFrom(Create) asyncAction { implicit request =>
+  def migrateGroups = Action.async { implicit request =>
     import bindings.GroupDescriptor
 
     val result = for {
@@ -427,7 +402,7 @@ final class ApiDataController(val repository: SesameRepository,
     result.jsonResult
   }
 
-  def migrateSchedules = contextFrom(Create) asyncAction { implicit request =>
+  def migrateSchedules = Action.async { implicit request =>
     import bindings.ScheduleEntryDescriptor
 
     val result = for {

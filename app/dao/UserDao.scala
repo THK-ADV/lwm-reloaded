@@ -54,6 +54,10 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
+  final def userId(systemId: String): Future[Option[UUID]] = db.run {
+    (for (q <- tableQuery if q.systemId === systemId) yield q.id).result.headOption
+  }
+
   final def createOrUpdate(ldapUser: LdapUser): Future[(User, Option[PostgresAuthorityAtom])] = {
     for {
       degrees <- degreeService.get()

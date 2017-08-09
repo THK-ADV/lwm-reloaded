@@ -11,6 +11,7 @@ import services._
 import store.{CourseTable, TableFilter}
 import utils.LwmMimeType
 import models.LwmDateTime._
+import models.Role.{Admin, Employee, Student}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -47,9 +48,9 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(course.get)
-    case GetAll => PartialSecureBlock(course.getAll)
-    case _ => PartialSecureBlock(prime)
+    case Get => PartialSecureBlock(List(Employee, Student))
+    case GetAll => PartialSecureBlock(List(Employee))
+    case _ => PartialSecureBlock(List(Admin))
   }
 
   override def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>

@@ -195,35 +195,7 @@ class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFr
 }
 
 class RoleTable(tag: Tag) extends Table[RoleDb](tag, "ROLES") with UniqueTable with LabelTable {
-  override def * = (label, lastModified, invalidated, id) <> (mapRow, unmapRow)
-
-  def mapRow: ((String, Timestamp, Option[Timestamp], UUID)) => RoleDb = {
-    case (label, lastModified, invalidated, id) => RoleDb(label, Set.empty, lastModified, invalidated, id)
-  }
-
-  def unmapRow: (RoleDb) => Option[(String, Timestamp, Option[Timestamp], UUID)] = { role =>
-    Option((role.label, role.lastModified, role.invalidated, role.id))
-  }
-
-  def isLabel(label: String): Rep[Boolean] = this.label === label
-
-  def permissions = TableQuery[RolePermissionTable].filter(_.role === id).flatMap(_.permissionFk)
-}
-
-class PermissionTable(tag: Tag) extends Table[PermissionDb](tag, "PERMISSIONS") with UniqueTable with DescriptionTable {
-  def value = column[String]("VALUE")
-
-  override def * = (value, description, lastModified, invalidated, id) <> ((PermissionDb.apply _).tupled, PermissionDb.unapply)
-}
-
-class RolePermissionTable(tag: Tag) extends Table[RolePermission](tag, "ROLE_PERMISSION") with UniqueTable {
-  def role = column[UUID]("ROLE")
-  def permission = column[UUID]("PERMISSION")
-
-  def roleFk = foreignKey("ROLES_fkey", role, TableQuery[RoleTable])(_.id)
-  def permissionFk = foreignKey("PERMISSIONS_fkey", permission, TableQuery[PermissionTable])(_.id)
-
-  override def * = (role, permission, id) <> ((RolePermission.apply _).tupled, RolePermission.unapply)
+  override def * = (label, lastModified, invalidated, id) <> ((RoleDb.apply _).tupled, RoleDb.unapply)
 }
 
 class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable with LabelTable with DescriptionTable {

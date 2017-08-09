@@ -135,9 +135,6 @@ HEAD          /authorities                                                      
 GET           /permissions                                                            controllers.PermissionController.all()
 HEAD          /permissions                                                            controllers.PermissionController.header
 
-# Permission 2.0
-GET           /ap2/permissions                                                        controllers.PermissionControllerPostgres.all()
-
 # LabworkApplications
 POST          /labworkApplications                                                    controllers.LabworkApplicationCRUDController.create()
 POST          /atomic/labworkApplications                                             controllers.LabworkApplicationCRUDController.createAtomic()
@@ -334,7 +331,6 @@ GET           /api/multipleReportCardEntries/:c                                 
 
 GET           /api/migrate/degrees                                                    controllers.ApiDataController.migrateDegrees()
 GET           /api/migrate/users                                                      controllers.ApiDataController.migrateUsers()
-GET           /api/migrate/permissions                                                controllers.ApiDataController.migratePermissions()
 GET           /api/migrate/roles                                                      controllers.ApiDataController.migrateRoles()
 GET           /api/migrate/semesters                                                  controllers.ApiDataController.migrateSemesters()
 GET           /api/migrate/courses                                                    controllers.ApiDataController.migrateCourses()

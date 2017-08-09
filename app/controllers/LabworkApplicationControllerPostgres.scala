@@ -4,6 +4,7 @@ import java.util.UUID
 
 import dao.{AuthorityDao, LabworkApplicationDao, LabworkApplicationLabworkFilter}
 import models.Permissions.labworkApplication
+import models.Role.{Employee, Student}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services.SessionHandlingService
@@ -41,10 +42,10 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
   override implicit val mimeType = LwmMimeType.labworkApplicationV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Create => PartialSecureBlock(labworkApplication.create)
-    case Update => PartialSecureBlock(labworkApplication.update)
-    case Delete => PartialSecureBlock(labworkApplication.delete)
-    case Get => PartialSecureBlock(labworkApplication.get)
-    case GetAll => PartialSecureBlock(labworkApplication.getAll)
+    case Create => PartialSecureBlock(List(Student))
+    case Update => PartialSecureBlock(List(Student))
+    case Delete => PartialSecureBlock(List(Student))
+    case Get => PartialSecureBlock(List(Student))
+    case GetAll => PartialSecureBlock(List(Student, Employee))
   }
 }

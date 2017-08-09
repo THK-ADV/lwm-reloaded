@@ -20,7 +20,7 @@ trait SessionRepositoryModule {
 }
 
 trait DefaultSessionRepositoryModuleImpl extends SessionRepositoryModule {
-  self: AkkaActorSystemModule with LdapModule with SemanticRepositoryModule with ResolversModule =>
+  self: AkkaActorSystemModule with LdapModule with SemanticRepositoryModule with UserDaoModule =>
 
-  override lazy val sessionService: SessionHandlingService = new ActorBasedSessionService(system, ldapService, resolvers)
+  override lazy val sessionService: SessionHandlingService = new ActorBasedSessionService(system, ldapService, userDao)
 }

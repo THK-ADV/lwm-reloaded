@@ -3,6 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
+import models.Role._
 import models.User.UserProtocol
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
@@ -80,10 +81,10 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(Permissions.user.get)
-    case GetAll => PartialSecureBlock(Permissions.user.getAll)
-    case Create => PartialSecureBlock(Permissions.prime)
-    case _ => PartialSecureBlock(Permissions.god)
+    case Get => PartialSecureBlock(List(Student, Employee, CourseAssistant))
+    case GetAll => PartialSecureBlock(List(Student, Employee, CourseAssistant))
+    case Create => PartialSecureBlock(List(Admin))
+    case _ => PartialSecureBlock(List(God))
   }
 
   override protected implicit val writes: Writes[User] = User.writes

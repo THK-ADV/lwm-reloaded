@@ -5,6 +5,7 @@ import java.util.UUID
 import dao._
 import models.LwmDateTime._
 import models.Permissions.{prime, semester}
+import models.Role.{Admin, Employee, Student}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}
 import org.joda.time.LocalDate
 import play.api.libs.json.{Reads, Writes}
@@ -31,9 +32,9 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
   override implicit val mimeType = LwmMimeType.semesterV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(semester.get)
-    case GetAll => PartialSecureBlock(semester.getAll)
-    case _ => PartialSecureBlock(prime)
+    case Get => PartialSecureBlock(List(Student, Employee))
+    case GetAll => PartialSecureBlock(List(Student, Employee))
+    case _ => PartialSecureBlock(List(Admin))
   }
 
   override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes

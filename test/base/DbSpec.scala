@@ -31,9 +31,7 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
   private val schema = List(
-    TableQuery[PermissionTable].schema,
     TableQuery[RoleTable].schema,
-    TableQuery[RolePermissionTable].schema,
     TableQuery[DegreeTable].schema,
     TableQuery[UserTable].schema,
     TableQuery[SemesterTable].schema,

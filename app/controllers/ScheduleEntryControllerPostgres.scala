@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.{schedule, scheduleEntry}
+import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, Request}
@@ -34,12 +34,12 @@ object ScheduleEntryControllerPostgres {
   lazy val genAttribute = "gens"
   lazy val eliteAttribute = "elites"
 
-  def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
-    queryString.get(attribute).flatMap(_.headOption)
-  }
-
   def intOf(queryString: Map[String, Seq[String]])(attribute: String): Option[Int] = {
     valueOf(queryString)(attribute).flatMap(s => Try(s.toInt).toOption)
+  }
+
+  def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
+    queryString.get(attribute).flatMap(_.headOption)
   }
 
   def strategyFrom(queryString: Map[String, Seq[String]]): Try[GroupingStrategy] = {
@@ -71,6 +71,7 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
                                             val labworkApplicationService2: LabworkApplicationDao,
                                             val groupDao: GroupDao
                                            ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
+
   import controllers.ScheduleEntryControllerPostgres._
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -92,33 +93,6 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
       "conflict value" -> gen._1.evaluate.value,
       "fitness" -> gen._2
     )
-  }
-
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
-      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
-      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
-      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
-      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
-      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
-      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
-      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
-  override protected def toDbModel(protocol: PostgresScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
-
-  override implicit val mimeType = LwmMimeType.scheduleEntryV1Json
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, schedule.create) // TODO UNIFY
-    case Delete => SecureBlock(restrictionId, schedule.delete)
-    case GetAll => SecureBlock(restrictionId, scheduleEntry.getAll)
-    case Get => SecureBlock(restrictionId, scheduleEntry.get)
-    case Update => SecureBlock(restrictionId, scheduleEntry.update)
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
@@ -144,6 +118,16 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
     generate(labwork).jsonResult
+  }
+
+  override implicit val mimeType = LwmMimeType.scheduleEntryV1Json
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Delete => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
   }
 
   private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {
@@ -186,11 +170,28 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     get(id, NonSecureBlock)(request)
   }
 
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction  { request =>
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
     update(id, NonSecureBlock)(request)
   }
 
   def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
     ???
   }
+
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
+    (appendTo, (attribute, value)) match {
+      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
+      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
+      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
+      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
+      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
+      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
+      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
+      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def toDbModel(protocol: PostgresScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
 }

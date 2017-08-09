@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions._
+import models.Role.{CourseEmployee, CourseManager, God, Student}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -25,9 +25,9 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
   override implicit def mimeType = LwmMimeType.labworkV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(labwork.get)
-    case GetAll => PartialSecureBlock(labwork.getAll)
-    case _ => PartialSecureBlock(god)
+    case Get => PartialSecureBlock(List(Student, CourseManager, CourseEmployee))
+    case GetAll => PartialSecureBlock(List(Student, CourseManager, CourseEmployee))
+    case _ => PartialSecureBlock(List(God))
   }
 
   override protected implicit def writes: Writes[Labwork] = Labwork.writes

@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 
 import controllers.SessionController
 import dao.AuthorityDao
-import models.{PostgresAuthority, SesamePermission}
+import models.{PostgresAuthority, Role}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.{InternalServerError, Unauthorized}
 import play.api.mvc._
@@ -114,23 +114,24 @@ object LwmActions2 {
 
   object SecureAction {
 
-    def apply(ps: (Option[UUID], SesamePermission))(block: Request[AnyContent] => Result)(implicit authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
+    def apply(ps: (Option[UUID], List[Role]))(block: Request[AnyContent] => Result)(implicit authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
       securedAction(authorities => authorityDao.checkAuthority(ps)(authorities))(authorityDao, sessionService)(block)
     }
 
-    def async(ps: (Option[UUID], SesamePermission))(block: Request[AnyContent] => Future[Result])(implicit authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
+    def async(ps: (Option[UUID], List[Role]))(block: Request[AnyContent] => Future[Result])(implicit authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
       securedAction(authorities => authorityDao.checkAuthority(ps)(authorities)).async(block)
     }
   }
 
   object SecureContentTypedAction {
 
-    def apply(ps: (Option[UUID], SesamePermission))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
+    def apply(ps: (Option[UUID], List[Role]))(block: Request[JsValue] => Result)(implicit mimeType: LwmMimeType, authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
       securedAction(authorities => authorityDao.checkAuthority(ps)(authorities))(authorityDao, sessionService)(LwmBodyParser.parseWith(mimeType))(block)
     }
 
-    def async(ps: (Option[UUID], SesamePermission))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
+    def async(ps: (Option[UUID], List[Role]))(block: Request[JsValue] => Future[Result])(implicit mimeType: LwmMimeType, authorityDao: AuthorityDao, sessionService: SessionHandlingService) = {
       securedAction(authorities => authorityDao.checkAuthority(ps)(authorities)).async(LwmBodyParser.parseWith(mimeType))(block)
     }
   }
+
 }

@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, RoomDao, RoomLabelFilter}
-import models.Permissions.{prime, room}
+import models.Role.{Admin, Employee, Student}
 import models.{PostgresRoom, PostgresRoomProtocol, RoomDb}
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -22,9 +22,9 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
   override implicit val mimeType = LwmMimeType.roomV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(room.get)
-    case GetAll => PartialSecureBlock(room.getAll)
-    case _ => PartialSecureBlock(prime)
+    case Get => PartialSecureBlock(List(Student, Employee))
+    case GetAll => PartialSecureBlock(List(Employee))
+    case _ => PartialSecureBlock(List(Admin))
   }
 
   override protected implicit val writes: Writes[PostgresRoom] = PostgresRoom.writes
