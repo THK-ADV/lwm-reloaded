@@ -258,6 +258,9 @@ GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries             
 PUT           /courses/:c/reportCardEntryTypes/:t                                     controllers.ReportCardEntryTypeController.update(c, t)
 HEAD          /reportCardEntryTypes                                                   controllers.ReportCardEntryTypeController.header()
 
+# ReportCardEntryType 2.0
+PUT           /api2/courses/:c/reportCardEntryTypes/:id                               controllers.ReportCardEntryTypeControllerPostgres.updateFrom(c, id)
+
 # ReportCardEvaluation
 GET           /reportCardEvaluations/student/:s                                       controllers.ReportCardEvaluationController.get(s)
 GET           /atomic/reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationController.getAtomic(s)
