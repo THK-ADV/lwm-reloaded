@@ -25,31 +25,13 @@ case class SesameRoleProtocol(label: String, permissions: Set[SesamePermission])
 
 // Postgres
 
-sealed trait Role extends UniqueEntity
+case class PostgresRole(label: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class PostgresRole(label: String, permissions: Set[UUID], id: UUID = UUID.randomUUID) extends Role
-
-case class RoleDb(label: String, permissions: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  def toLwmModel = PostgresRole(label, permissions, id)
+case class RoleDb(label: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  def toLwmModel = PostgresRole(label, id)
 }
 
-case class PostgresRoleProtocol(label: String, permissions: Set[UUID])
-
-case class PostgresRoleAtom(label: String, permissions: Set[PostgresPermission], id: UUID) extends Role
-
-case class RolePermission(role: UUID, permission: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
-
-object Role {
-
-  implicit def writes: Writes[Role] = new Writes[Role] {
-    override def writes(o: Role) = o match {
-      case postgresRole: PostgresRole => Json.toJson(postgresRole)(PostgresRole.writes)
-      case postgresRoleAtom: PostgresRoleAtom => Json.toJson(postgresRoleAtom)(PostgresRoleAtom.writesAtom)
-    }
-  }
-
-  def toRole(roleDb: RoleDb): PostgresRole = PostgresRole(roleDb.label, roleDb.permissions, roleDb.id)
-}
+case class PostgresRoleProtocol(label: String)
 
 object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
 
@@ -62,22 +44,63 @@ object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[Sesame
   override def base: String = "roles"
 }
 
-object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole, PostgresRoleAtom] {
+object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole, PostgresRole] {
 
   override implicit def reads: Reads[PostgresRoleProtocol] = Json.reads[PostgresRoleProtocol]
 
   override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
 
-  override implicit def writesAtom: Writes[PostgresRoleAtom] = PostgresRoleAtom.writesAtom
+  override implicit def writesAtom: Writes[PostgresRole] = writes
 }
 
-object PostgresRoleAtom {
+sealed trait Role {
+  def label: String
+}
 
-  implicit def writesAtom: Writes[PostgresRoleAtom] = (
-    (JsPath \ "label").write[String] and
-      (JsPath \ "permissions").writeSet[PostgresPermission](PostgresPermission.writes) and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(PostgresRoleAtom.unapply))
+object Role {
+  case object God extends Role {
+    override val label = "God"
+  }
+
+  case object Admin extends Role {
+    override val label = Roles.AdminLabel
+  }
+
+  case object Employee extends Role {
+    override val label = Roles.EmployeeLabel
+  }
+
+  case object Student extends Role {
+    override val label = Roles.StudentLabel
+  }
+
+  case object CourseEmployee extends Role {
+    override val label = Roles.CourseEmployeeLabel
+  }
+
+  case object CourseAssistant extends Role {
+    override val label = Roles.CourseAssistantLabel
+  }
+
+  case object CourseManager extends Role {
+    override val label = Roles.CourseManagerLabel
+  }
+
+  case object RightsManager extends Role {
+    override val label = Roles.RightsManagerLabel
+  }
+
+  def lift(label: String): Option[Role] = Option(label match {
+    case God.label => God
+    case Admin.label => Admin
+    case Employee.label => Employee
+    case Student.label => Student
+    case CourseEmployee.label => CourseEmployee
+    case CourseAssistant.label => CourseAssistant
+    case CourseManager.label => CourseManager
+    case RightsManager.label => RightsManager
+    case _ => null
+  })
 }
 
 object Roles {
@@ -106,8 +129,8 @@ object Roles {
   }
 }
 
-object RoleDb{
+object RoleDb {
   def from(protocol: PostgresRoleProtocol, existingId: Option[UUID]) = {
-    RoleDb(protocol.label, protocol.permissions, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+    RoleDb(protocol.label, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 }

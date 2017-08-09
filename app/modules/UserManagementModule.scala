@@ -34,7 +34,7 @@ trait UserManagementModulePostgres {
 }
 
 trait DefaultUserManagementModulePostgres extends UserManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LdapModule with UserDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with LdapModule with UserDaoModule =>
 
-  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(roleService, sessionService, ldapService, userDao)
+  override lazy val userControllerPostgres: UserControllerPostgres = new UserControllerPostgres(authorityDao, sessionService, ldapService, userDao)
 }

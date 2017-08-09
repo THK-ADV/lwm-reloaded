@@ -25,12 +25,13 @@ trait DefaultDegreeDaoModule extends DegreeDaoModule { self: DatabaseModule =>
 }
 
 trait DegreeManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with DegreeDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with DegreeDaoModule =>
+
   def degreeManagementControllerPostgres: DegreeControllerPostgres
 }
 
 trait DefaultDegreeManagementModuleImplPostgres extends DegreeManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with DegreeDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with DegreeDaoModule =>
 
-  lazy val degreeManagementControllerPostgres: DegreeControllerPostgres = new DegreeControllerPostgres(sessionService, roleService, degreeDao)
+  lazy val degreeManagementControllerPostgres: DegreeControllerPostgres = new DegreeControllerPostgres(sessionService, authorityDao, degreeDao)
 }

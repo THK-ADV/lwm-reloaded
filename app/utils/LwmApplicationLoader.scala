@@ -66,8 +66,6 @@ with RoleDaoModule
 with AuthorityManagementModule
 with AuthorityDaoModule
 with PermissionManagementModule
-with PermissionManagementModule2
-with PermissionDaoModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with LdapModule
@@ -129,7 +127,6 @@ with LdapSyncModule {
     roleManagementControllerPostgres,
     authorityManagementController,
     permissionManagementController,
-    permissionControllerPostgres,
     labworkApplicationController,
     labworkApplicationControllerPostgres,
     scheduleManagementController,
@@ -188,8 +185,6 @@ with DefaultRoleDaoModule
 with DefaultAuthorityManagementModuleImpl
 with DefaultAuthorityDaoModule
 with DefaultPermissionManagementModule
-with DefaultPermissionManagementModule2
-with DefaultPermissionDaoModule
 with DefaultSessionControllerModuleImpl
 with DefaultSecurityManagementModule
 with DefaultEntryTypeManagementModule

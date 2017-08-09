@@ -2,11 +2,12 @@ package controllers
 
 import java.util.UUID
 
-import dao.{LabworkApplicationLabworkFilter, LabworkApplicationDao}
+import dao.{AuthorityDao, LabworkApplicationDao, LabworkApplicationLabworkFilter}
 import models.Permissions.labworkApplication
+import models.Role.{Employee, Student}
 import models._
 import play.api.libs.json.{Reads, Writes}
-import services.{RoleServiceLike, SessionHandlingService}
+import services.SessionHandlingService
 import store.{LabworkApplicationTable, TableFilter}
 import utils.LwmMimeType
 
@@ -21,7 +22,7 @@ object LabworkApplicationControllerPostgres {
   lazy val maxTimeAttribute = "maxTime"
 }
 
-final class LabworkApplicationControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: LabworkApplicationDao)
+final class LabworkApplicationControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: LabworkApplicationDao)
   extends AbstractCRUDControllerPostgres[PostgresLabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
 
   override protected implicit val writes: Writes[LabworkApplication] = LabworkApplication.writes
@@ -41,10 +42,10 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
   override implicit val mimeType = LwmMimeType.labworkApplicationV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Create => PartialSecureBlock(labworkApplication.create)
-    case Update => PartialSecureBlock(labworkApplication.update)
-    case Delete => PartialSecureBlock(labworkApplication.delete)
-    case Get => PartialSecureBlock(labworkApplication.get)
-    case GetAll => PartialSecureBlock(labworkApplication.getAll)
+    case Create => PartialSecureBlock(List(Student))
+    case Update => PartialSecureBlock(List(Student))
+    case Delete => PartialSecureBlock(List(Student))
+    case Get => PartialSecureBlock(List(Student))
+    case GetAll => PartialSecureBlock(List(Student, Employee))
   }
 }

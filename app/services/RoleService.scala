@@ -96,5 +96,4 @@ class RoleService(private val repository: SesameRepository) extends RoleServiceL
         isAdmin(roles) || (rolesByCourse _ andThen hasPermission) (roles)
       }
   }
-
 }

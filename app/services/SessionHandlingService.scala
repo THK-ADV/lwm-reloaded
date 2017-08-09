@@ -4,8 +4,9 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import models.{InvalidSession, Session, ValidSession}
-import store.Resolvers
 import akka.pattern.pipe
+import dao.UserDao
+
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
@@ -18,16 +19,16 @@ trait SessionHandlingService {
   def deleteSession(id: UUID): Future[Boolean]
 }
 
-class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, resolvers: Resolvers) extends SessionHandlingService {
+class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, userDao: UserDao) extends SessionHandlingService {
 
-  import SessionServiceActor._
+  import services.SessionServiceActor._
   import akka.pattern.ask
   import akka.util.Timeout
   import system.dispatcher
 
   import scala.concurrent.duration._
 
-  private val ref = system.actorOf(SessionServiceActor.props(authenticator, resolvers))
+  private val ref = system.actorOf(SessionServiceActor.props(authenticator, userDao))
   private implicit val timeout = Timeout(5.seconds)
 
   override def newSession(user: String, password: String): Future[Session] = {
@@ -47,7 +48,7 @@ class ActorBasedSessionService(system: ActorSystem, authenticator: LdapService, 
 
 object SessionServiceActor {
 
-  def props(ldap: LdapService, resolvers: Resolvers): Props = Props(new SessionServiceActor(ldap)(resolvers))
+  def props(ldap: LdapService, userDao: UserDao): Props = Props(new SessionServiceActor(ldap, userDao))
 
   case class SessionRequest(user: String, password: String)
 
@@ -69,10 +70,9 @@ object SessionServiceActor {
 
 }
 
-class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor with ActorLogging {
+class SessionServiceActor(ldap: LdapService, userDao: UserDao) extends Actor with ActorLogging {
 
-  import SessionServiceActor._
-  import resolvers._
+  import services.SessionServiceActor._
 
   import scala.concurrent.duration._
 
@@ -107,9 +107,9 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
     case SessionRemovalRequest(id) =>
       val requester = sender()
       val (ns, response) =
-        sessions.find(_._2.id == id)
-          .map(t => (sessions - t._1, true))
-          .getOrElse((sessions, false))
+        sessions
+          .find(_._2.id == id)
+          .fold((sessions, false))(t => (sessions - t._1, true))
 
       requester ! response
       context become sessionHandling(ns)
@@ -121,16 +121,16 @@ class SessionServiceActor(ldap: LdapService)(resolvers: Resolvers) extends Actor
   def resolve(systemId: String, isAuthorized: Boolean): Future[Session] = {
     if (isAuthorized) {
       for {
-        someUser <- Future.fromTry(userId(systemId))
+        someUser <- userDao.userId(systemId)
         session <- someUser.fold {
-          ldap.user(systemId)(degree)
-            .flatMap(user => Future.fromTry(missingUserData(user)))
-            .flatMap(_ => resolve(systemId, isAuthorized))
-        } { uid =>
-          Future.successful(ValidSession(systemId, uid))
+          ldap.user2(systemId)
+            .flatMap(user => userDao.createOrUpdate(user))
+            .map(user => ValidSession(systemId, user._1.id))
+        } { uuid =>
+          Future.successful(ValidSession(systemId, uuid))
         }
       } yield session
-    } else Future.successful(InvalidSession("Invalid credentials"))
+    } else
+      Future.successful(InvalidSession("Invalid credentials"))
   }
-
 }

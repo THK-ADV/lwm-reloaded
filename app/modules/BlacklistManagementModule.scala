@@ -40,13 +40,13 @@ trait DefaultBlacklistDaoManagementModule extends BlacklistDaoManagementModule {
 }
 
 trait Blacklist2ManagementModule {
-  self: SecurityManagementModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
 
   def blacklistControllerPostgres: BlacklistControllerPostgres
 }
 
 trait DefaultBlacklist2ManagementModule extends Blacklist2ManagementModule {
-  self: SecurityManagementModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with BlacklistDaoManagementModule with BlacklistServiceManagementModule =>
 
-  override lazy val blacklistControllerPostgres = new BlacklistControllerPostgres(roleService, sessionService, blacklistDao, blacklistService)
+  override lazy val blacklistControllerPostgres = new BlacklistControllerPostgres(authorityDao, sessionService, blacklistDao, blacklistService)
 }

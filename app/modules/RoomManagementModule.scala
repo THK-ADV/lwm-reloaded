@@ -26,13 +26,13 @@ trait DefaultRoomDaoModule extends RoomDaoModule { self: DatabaseModule =>
 }
 
 trait RoomManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoomDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with RoomDaoModule =>
 
   def roomManagementControllerPostgres: RoomControllerPostgres
 }
 
 trait DefaultRoomManagementModuleImplPostgres extends RoomManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with RoomDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with RoomDaoModule =>
 
-  lazy val roomManagementControllerPostgres: RoomControllerPostgres = new RoomControllerPostgres(sessionService, roleService, roomDao)
+  lazy val roomManagementControllerPostgres: RoomControllerPostgres = new RoomControllerPostgres(sessionService, authorityDao, roomDao)
 }

@@ -37,7 +37,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
         val authority = AuthorityDb(dbUser.id, role.id)
         create(authority)
       }
-    } yield PostgresAuthorityAtom(dbUser.toLwmModel, role.map(Role.toRole).get, None, created.id)
+    } yield PostgresAuthorityAtom(dbUser.toLwmModel, role.map(_.toLwmModel).get, None, created.id)
   }
 
   def createByCourseQuery(course: CourseDb) = {
@@ -56,12 +56,10 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   }
 
   def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = {
-    val x = DBIO.seq(
+    DBIO.seq(
       deleteByCourseQuery(oldCourse),
       createByCourseQuery(newCourse)
     ).transactionally
-
-    x
   }
 
   def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = {
@@ -78,7 +76,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   final def deleteByCourse(course: CourseDb): Future[Int] = {
     db.run(deleteByCourseQuery(course))
   }
-
 
   def deleteSingleRightsManagerQuery(lecturer: UUID)= {
     for {
@@ -98,7 +95,29 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
     (existing.invalidated != toUpdate.invalidated ||
     existing.lastModified != toUpdate.lastModified) &&
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
+  }
 
+  def authoritiesFor(userId: UUID): Future[Seq[PostgresAuthority]] = {
+    val authorities = for (q <- tableQuery if q.user === userId) yield q
+
+    db.run(authorities.result.map(_.map(_.toLwmModel)))
+  }
+
+  def checkAuthority(check: (Option[UUID], List[Role]))(authorities: Seq[PostgresAuthority]): Future[Boolean] = check match {
+    case (_, roles) if roles contains Role.God => Future.successful(false)
+    case (optCourse, minRoles) =>
+      def isAdmin(implicit roles: Seq[PostgresRole]) = roles
+        .find(_.label == Role.Admin.label)
+        .exists(admin => authorities.exists(_.roles == admin.id))
+
+      def hasPermission(implicit roles: Seq[PostgresRole]) = authorities
+        .filter(_.course == optCourse)
+        .flatMap(authority => roles.filter(_.id == authority.roles))
+        .exists(r => minRoles.exists(_.label == r.label))
+
+      roleService.get().map { implicit roles =>
+        isAdmin || hasPermission
+      }
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {

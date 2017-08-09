@@ -2,9 +2,9 @@ package controllers
 
 import java.util.UUID
 
-import dao.{DegreeAbbreviationFilter, DegreeLabelFilter, DegreeDao}
+import dao._
+import models.Role.{Admin, Employee, God, Student}
 import models.{DegreeDb, DegreeProtocol, PostgresDegree}
-import models.Permissions.{degree, god, prime}
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{DegreeTable, TableFilter}
@@ -17,14 +17,14 @@ object DegreeControllerPostgres {
   lazy val abbreviationAttribute = "abbreviation"
 }
 
-final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val roleService: RoleServiceLike, val abstractDao: DegreeDao)
+final class DegreeControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: DegreeDao)
   extends AbstractCRUDControllerPostgres[DegreeProtocol, DegreeTable, DegreeDb, PostgresDegree] {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(degree.get)
-    case GetAll => PartialSecureBlock(degree.getAll)
-    case Update => PartialSecureBlock(prime)
-    case _ => PartialSecureBlock(god)
+    case Get => PartialSecureBlock(List(Employee, Student))
+    case GetAll => PartialSecureBlock(List(Employee))
+    case Update => PartialSecureBlock(List(Admin))
+    case _ => PartialSecureBlock(List(God))
   }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.degreeV1Json

@@ -4,6 +4,7 @@ import java.util.UUID
 
 import dao._
 import models.Permissions.{god, reportCardEntry}
+import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -27,12 +28,13 @@ object ReportCardEntryControllerPostgres {
 }
 
 final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlingService,
-                                              val roleService: RoleServiceLike,
+                                              val authorityDao: AuthorityDao,
                                               val abstractDao: ReportCardEntryDao,
                                               val scheduleEntryDao: ScheduleEntryDao,
                                               val assignmentPlanService: AssignmentPlanDao
                                              ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
   import controllers.ReportCardEntryControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes
@@ -55,15 +57,15 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   override implicit val mimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(reportCardEntry.get)
-    case _ => PartialSecureBlock(god)
+    case Get => PartialSecureBlock(List(Student, CourseAssistant))
+    case _ => PartialSecureBlock(List(God))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, reportCardEntry.create)
-    case Update => SecureBlock(restrictionId, reportCardEntry.update)
-    case GetAll => SecureBlock(restrictionId, reportCardEntry.getAll)
-    case _ => PartialSecureBlock(god)
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case _ => PartialSecureBlock(List(God))
   }
 
   def getForStudent(student: String) = contextFrom(Get) asyncAction { request =>

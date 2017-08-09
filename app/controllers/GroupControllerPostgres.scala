@@ -3,11 +3,11 @@ package controllers
 import java.util.UUID
 
 import dao._
+import models.Role.{CourseEmployee, CourseManager, God}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{GroupTable, TableFilter}
-import models.Permissions._
 import utils.LwmMimeType
 
 import scala.concurrent.Future
@@ -19,31 +19,19 @@ object GroupControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class GroupControllerPostgres(val roleService: RoleServiceLike,
+final class GroupControllerPostgres(val authorityDao: AuthorityDao,
                                     val sessionService: SessionHandlingService,
                                     val abstractDao: GroupDao,
                                     val labworkApplicationService2: LabworkApplicationDao
                                    ) extends AbstractCRUDControllerPostgres[PostgresGroupProtocol, GroupTable, GroupDb, Group] {
 
   import controllers.GroupControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[Group] = Group.writes
 
   override protected implicit val reads: Reads[PostgresGroupProtocol] = PostgresGroup.reads
-
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[GroupTable]]]): Try[List[TableFilter[GroupTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`studentAttribute`, student)) => list.map(_.+:(GroupStudentTableFilter(student)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(GroupLabworkTableFilter(labwork)))
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(GroupLabelTableFilter(label)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
-  override protected def toDbModel(protocol: PostgresGroupProtocol, existingId: Option[UUID]): GroupDb = ???
-
-  override implicit val mimeType = LwmMimeType.groupV1Json
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(labworkAttribute -> Seq(labwork)))
@@ -60,13 +48,26 @@ final class GroupControllerPostgres(val roleService: RoleServiceLike,
     } yield groups).jsonResult
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(god)
-  }
+  override implicit val mimeType = LwmMimeType.groupV1Json
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, group.create)
-    case GetAll => SecureBlock(restrictionId, group.getAll)
-    case _ => PartialSecureBlock(god)
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case _ => PartialSecureBlock(List(God))
+  }
+
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[GroupTable]]]): Try[List[TableFilter[GroupTable]]] = {
+    (appendTo, (attribute, value)) match {
+      case (list, (`studentAttribute`, student)) => list.map(_.+:(GroupStudentTableFilter(student)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(GroupLabworkTableFilter(labwork)))
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(GroupLabelTableFilter(label)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def toDbModel(protocol: PostgresGroupProtocol, existingId: Option[UUID]): GroupDb = ???
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(List(God))
   }
 }

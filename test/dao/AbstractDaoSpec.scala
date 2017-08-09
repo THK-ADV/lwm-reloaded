@@ -6,7 +6,6 @@ import java.util.UUID
 import base.PostgresDbSpec
 import models.LwmDateTime._
 import models._
-import modules.DatabaseModule
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver.api._
@@ -202,7 +201,7 @@ object AbstractDaoSpec {
     AuthorityDb(employees( i % maxEmployees).id, role.id, course)
   }.toList
 
-  lazy val roles = Roles.all.map(l => RoleDb(l, Set.empty))
+  lazy val roles = Roles.all.map(RoleDb(_))
 
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 

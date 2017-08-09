@@ -18,11 +18,13 @@ trait DefaultLabworkManagementModuleImpl extends LabworkManagementModule {
 
 // POSTGRES
 
-trait LabworkDaoModule { self: DatabaseModule =>
+trait LabworkDaoModule {
+  self: DatabaseModule =>
   def labworkDao: LabworkDao
 }
 
-trait DefaultLabworkDaoModule extends LabworkDaoModule { self: DatabaseModule =>
+trait DefaultLabworkDaoModule extends LabworkDaoModule {
+  self: DatabaseModule =>
   override lazy val labworkDao = new LabworkDaoImpl(db)
 }
 
@@ -31,7 +33,7 @@ trait LabworkManagementModulePostgres {
 }
 
 trait DefaultLabworkManagementModulePostgres extends LabworkManagementModulePostgres {
-  self: SecurityManagementModule with SessionRepositoryModule with LabworkDaoModule with RoleDaoModule=>
+  self: AuthorityDaoModule with SessionRepositoryModule with LabworkDaoModule =>
 
-  override lazy val labworControllerPostgres: LabworkControllerPostgres = new LabworkControllerPostgres(sessionService, roleService, labworkDao)
+  override lazy val labworControllerPostgres: LabworkControllerPostgres = new LabworkControllerPostgres(sessionService, authorityDao, labworkDao)
 }

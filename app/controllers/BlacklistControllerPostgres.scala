@@ -4,6 +4,7 @@ import java.util.UUID
 
 import dao._
 import models.Permissions.{blacklist, prime}
+import models.Role.{Admin, Employee}
 import models.{BlacklistDb, PostgresBlacklist, PostgresBlacklistProtocol}
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -22,7 +23,7 @@ object BlacklistControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao, val blacklistService: BlacklistServiceLike)
+final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao, val blacklistService: BlacklistServiceLike)
   extends AbstractCRUDControllerPostgres[PostgresBlacklistProtocol, BlacklistTable, BlacklistDb, PostgresBlacklist] {
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes
@@ -58,7 +59,7 @@ final class BlacklistControllerPostgres(val roleService: RoleServiceLike, val se
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(blacklist.get)
-    case _ => PartialSecureBlock(prime)
+    case Get => PartialSecureBlock(List(Employee))
+    case _ => PartialSecureBlock(List(Admin))
   }
 }

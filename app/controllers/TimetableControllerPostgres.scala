@@ -2,8 +2,9 @@ package controllers
 
 import java.util.UUID
 
-import dao.{TimetableCourseFilter, TimetableLabworkFilter, TimetableDao}
+import dao._
 import models.Permissions.timetable
+import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models.{PostgresTimetable, PostgresTimetableProtocol, Timetable, TimetableDb}
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -17,7 +18,7 @@ object TimetableControllerPostgres {
   lazy val labworkAttribute = "labwork"
 }
 
-final class TimetableControllerPostgres(val roleService: RoleServiceLike, val sessionService: SessionHandlingService, val abstractDao: TimetableDao)
+final class TimetableControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: TimetableDao)
   extends AbstractCRUDControllerPostgres[PostgresTimetableProtocol, TimetableTable, TimetableDb, Timetable] {
 
   override protected implicit val writes: Writes[Timetable] = Timetable.writes
@@ -35,11 +36,11 @@ final class TimetableControllerPostgres(val roleService: RoleServiceLike, val se
   override implicit val mimeType = LwmMimeType.timetableV1Json
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, timetable.create)
-    case Get => SecureBlock(restrictionId, timetable.get)
-    case GetAll => SecureBlock(restrictionId, timetable.getAll)
-    case Update => SecureBlock(restrictionId, timetable.update)
-    case Delete => SecureBlock(restrictionId, timetable.delete)
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case Delete => SecureBlock(restrictionId, List(CourseManager))
   }
 
   def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
