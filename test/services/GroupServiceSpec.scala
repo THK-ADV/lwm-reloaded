@@ -22,9 +22,9 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
   val apps = users.map(id => SesameLabworkApplication(labwork, id, Set.empty)).toSet
   val apps2 = users.map(id => PostgresLabworkApplication(labwork, id, Set.empty))
 
-  "A group service" should {
+  /*"A group service" should {
 
-    "generate an alphabetical sequence of letters" in {
+   "generate an alphabetical sequence of letters" in {
       val checkAgainst = 'A' to 'Z'
       val alphabetically = groupService.alphabeticalOrdering(26)
 
@@ -105,7 +105,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       }
     }
 
-  }
+  }*/
 
   "A better group service" should {
     "generate an alphabetical sequence of letters" in {

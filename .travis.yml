@@ -1,0 +1,24 @@
+language: scala
+scala: 2.11.7
+jdk: oraclejdk8
+sudo: true
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+    - $HOME/.sbt/launchers
+before_cache:
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+branches:
+  only:
+    - master
+    - LWM-Postgres
+    - Travis
+services:
+  - postgresql
+before_script:
+  - psql -c 'create database lwm;' -U postgres
+  - psql -c "CREATE USER lwm WITH PASSWORD 'lwm';" -U postgres
+script:
+- sbt test
