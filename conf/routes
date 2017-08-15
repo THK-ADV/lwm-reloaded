@@ -43,8 +43,8 @@ GET           /courses/:c/labworks/:l/atomic/groups/preview                     
 HEAD          /groups                                                                 controllers.GroupCRUDController.header
 
 # Group 2
-GET           /api2//courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
-GET           /api2//courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
+GET           /api2/courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
+GET           /api2/courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
 
 # Labwork
 GET           /labworks/degrees/:degree                                               controllers.LabworkCRUDController.allWithDegree(degree)
@@ -115,11 +115,8 @@ DELETE        /roles/:id                                                        
 HEAD          /roles                                                                  controllers.RoleController.header
 
 # Role 2.0
-POST          /api2roles                                                              controllers.RoleControllerPostgres.create()
-PUT           /api2roles/:id                                                          controllers.RoleControllerPostgres.update(id)
 GET           /api2roles/:id                                                          controllers.RoleControllerPostgres.get(id)
 GET           /api2roles                                                              controllers.RoleControllerPostgres.all()
-DELETE        /api2roles/:id                                                          controllers.RoleControllerPostgres.delete(id)
 
 # Authority
 POST          /authorities                                                            controllers.AuthorityController.create()
@@ -223,11 +220,11 @@ HEAD          /blacklists                                                       
 
 # Blacklist 2.0
 POST          /api2/blacklists                                                        controllers.BlacklistControllerPostgres.create()
-POST          /api2//blacklists/year/:year                                            controllers.BlacklistControllerPostgres.createFor(year)
-PUT           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.update(id)
-GET           /api2//blacklists                                                       controllers.BlacklistControllerPostgres.all()
-GET           /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.get(id)
-DELETE        /api2//blacklists/:id                                                   controllers.BlacklistControllerPostgres.delete(id)
+POST          /api2/blacklists/year/:year                                             controllers.BlacklistControllerPostgres.createFor(year)
+PUT           /api2/blacklists/:id                                                    controllers.BlacklistControllerPostgres.update(id)
+GET           /api2/blacklists                                                        controllers.BlacklistControllerPostgres.all()
+GET           /api2/blacklists/:id                                                    controllers.BlacklistControllerPostgres.get(id)
+DELETE        /api2/blacklists/:id                                                    controllers.BlacklistControllerPostgres.delete(id)
 
 # ReportCardEntry
 GET           /reportCardEntries/student/:s                                           controllers.ReportCardEntryController.get(s)

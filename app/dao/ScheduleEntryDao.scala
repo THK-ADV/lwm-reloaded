@@ -28,23 +28,23 @@ case class ScheduleEntrySupervisorFilter(value: String) extends TableFilter[Sche
 }
 
 case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date === value.sqlDate
+  override def predicate = _.date === value.sqlDateFromMillis
 }
 
 case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.start === value.sqlTime
+  override def predicate = _.start === value.sqlTimeFromMillis
 }
 
 case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.end === value.sqlTime
+  override def predicate = _.end === value.sqlTimeFromMillis
 }
 
 case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date >= value.sqlDate
+  override def predicate = _.date >= value.sqlDateFromMillis
 }
 
 case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date <= value.sqlDate
+  override def predicate = _.date <= value.sqlDateFromMillis
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {

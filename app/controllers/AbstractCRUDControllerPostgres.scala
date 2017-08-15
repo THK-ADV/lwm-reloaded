@@ -28,6 +28,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected implicit def writes: Writes[LwmModel]
   protected implicit def reads: Reads[Protocol]
 
+  implicit def listReads[R](implicit r: Reads[R]): Reads[List[R]] = Reads.list[R]
+
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
   protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
@@ -35,7 +37,14 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
 
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
-      errors => Failure(new Throwable(JsError.toJson(errors).toString())),
+      errors => Failure(new Throwable(JsError.toJson(errors).toString)),
+      success => Success(success)
+    )
+  }
+
+  final protected def parseArray[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[List[A]] = {
+    request.body.validate[List[A]].fold(
+      errors => Failure(new Throwable(JsError.toJson(errors).toString)),
       success => Success(success)
     )
   }
@@ -44,14 +53,14 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
-      protocol <- Future.fromTry(parse[Protocol](request))
-      dbModel = toDbModel(protocol, None)
-      created <- abstractDao.create(dbModel)
+      protocols <- Future.fromTry(parseArray[Protocol](request))
+      dbModels = protocols.map(p => toDbModel(p, None))
+      created <- abstractDao.createMany(dbModels)
       lwmModel <- if (atomic)
-        abstractDao.getById(created.id.toString, atomic)
+        abstractDao.getMany(created.map(_.id).toList, atomic)
       else
-        Future.successful(Some(created.toLwmModel.asInstanceOf[LwmModel]))
-    } yield lwmModel.get).jsonResult
+        Future.successful(created.map(_.toLwmModel.asInstanceOf[LwmModel]))
+    } yield lwmModel).jsonResult
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>

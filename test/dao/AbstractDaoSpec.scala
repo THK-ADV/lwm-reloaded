@@ -21,7 +21,7 @@ object AbstractDaoSpec {
   lazy val maxRooms = 10
   lazy val maxEmployees = 10
   lazy val maxAssignmentPlans = 10
-  lazy val maxBlacklists = 30
+  lazy val maxBlacklists = 100
   lazy val maxTimetables = 10
   lazy val maxStudents = 100
   lazy val maxReportCardEntries = 100

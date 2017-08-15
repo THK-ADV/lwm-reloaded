@@ -17,23 +17,23 @@ case class BlacklistLabelFilter(value: String) extends TableFilter[BlacklistTabl
 }
 
 case class BlacklistDateFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date === value.sqlDate
+  override def predicate = _.date === value.sqlDateFromMillis
 }
 
 case class BlacklistStartFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.start === value.sqlTime
+  override def predicate = _.start === value.sqlTimeFromMillis
 }
 
 case class BlacklistEndFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.end === value.sqlTime
+  override def predicate = _.end === value.sqlTimeFromMillis
 }
 
 case class BlacklistSinceFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date >= value.sqlDate
+  override def predicate = _.date >= value.sqlDateFromMillis
 }
 
 case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date <= value.sqlDate
+  override def predicate = _.date <= value.sqlDateFromMillis
 }
 
 trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {
@@ -49,9 +49,9 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlac
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {
     filterBy(List(
-      BlacklistDateFilter(entity.date.string),
-      BlacklistStartFilter(entity.start.string),
-      BlacklistEndFilter(entity.end.string),
+      BlacklistDateFilter(entity.date.stringMillis),
+      BlacklistStartFilter(entity.start.stringMillis),
+      BlacklistEndFilter(entity.end.stringMillis),
       BlacklistGlobalFilter(entity.global.toString)
     ))
   }

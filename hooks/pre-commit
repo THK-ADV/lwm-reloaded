@@ -1,0 +1,9 @@
+#!/bin/sh
+
+SRC_PATTERN="conf/application.conf"
+
+if git diff --cached --name-only | grep --quiet "$SRC_PATTERN"
+then
+  echo "$SRC_PATTERN can not be changed! remove this file from the staging area with \n git reset head $SRC_PATTERN; git checkout -- $SRC_PATTERN"
+  exit 1
+fi

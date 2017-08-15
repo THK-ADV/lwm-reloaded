@@ -39,7 +39,6 @@ final class RoleControllerPostgres(val sessionService: SessionHandlingService, v
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(RightsManager))
     case GetAll => PartialSecureBlock(List(RightsManager))
-    case Update => PartialSecureBlock(List(Admin))
     case _ => PartialSecureBlock(List(God))
   }
 }

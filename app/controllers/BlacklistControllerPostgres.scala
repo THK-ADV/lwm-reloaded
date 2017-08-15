@@ -3,10 +3,10 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.{blacklist, prime}
 import models.Role.{Admin, Employee}
 import models.{BlacklistDb, PostgresBlacklist, PostgresBlacklistProtocol}
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{JsValue, Reads, Writes}
+import play.api.mvc.Action
 import services._
 import store.{BlacklistTable, TableFilter}
 import utils.LwmMimeType
@@ -47,9 +47,9 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
 
   override protected def toDbModel(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
 
-  override implicit val mimeType = LwmMimeType.blacklistV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
-  def createFor(year: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
+  def createFor(year: String): Action[JsValue] = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global
 
     (for {

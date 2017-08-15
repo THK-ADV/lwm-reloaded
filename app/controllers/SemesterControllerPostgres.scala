@@ -51,7 +51,7 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
       case (list, (`endAttribute`, start)) => list.map(_.+:(SemesterEndFilter(start)))
       case (list, (`sinceAttribute`, since)) => list.map(_.+:(SemesterSinceFilter(since)))
       case (list, (`untilAttribute`, until)) => list.map(_.+:(SemesterUntilFilter(until)))
-      case (list, (`selectAttribute`, current)) if current == currentValue => list.map(_.+:(SemesterCurrentFilter(LocalDate.now.string)))
+      case (list, (`selectAttribute`, current)) if current == currentValue => list.map(_.+:(SemesterCurrentFilter(LocalDate.now.stringMillis)))
       case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was $other"))
       case _ => Failure(new Throwable("Unknown attribute"))
     }

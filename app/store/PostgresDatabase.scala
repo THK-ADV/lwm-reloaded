@@ -172,8 +172,10 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
     Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
-  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
+  def applicantFk = foreignKey("STUDENTS_fkey", applicant, TableQuery[UserTable])(_.id)
   def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
+
+  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
 
   def fullJoin = {
     for {
