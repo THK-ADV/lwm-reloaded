@@ -43,8 +43,8 @@ GET           /courses/:c/labworks/:l/atomic/groups/preview                     
 HEAD          /groups                                                                 controllers.GroupCRUDController.header
 
 # Group 2
-GET           /api2//courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
-GET           /api2//courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
+GET           /api2/courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
+GET           /api2/courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
 
 # Labwork
 GET           /labworks/degrees/:degree                                               controllers.LabworkCRUDController.allWithDegree(degree)
