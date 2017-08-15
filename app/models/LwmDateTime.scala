@@ -44,7 +44,7 @@ object LwmDateTime {
   }
 
   implicit class SqlDateConverter(val date: Date) {
-    def string: String = date.localDate.stringMillis
+    def stringMillis: String = date.localDate.stringMillis
 
     def localDate: LocalDate = new LocalDate(date.getTime)
   }

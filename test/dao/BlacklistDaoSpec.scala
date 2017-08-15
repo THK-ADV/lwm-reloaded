@@ -27,7 +27,7 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
           blacklists shouldBe dbEntities.filter(_.global)
           blacklists.forall(b => b.start.localTime.isEqual(startOfDay) && b.end.localTime.isEqual(endOfDay)) shouldBe true
         },
-        filterBy(List(BlacklistDateFilter(randomBlacklist.date.string))).result.map { blacklists =>
+        filterBy(List(BlacklistDateFilter(randomBlacklist.date.stringMillis))).result.map { blacklists =>
           blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
         },
         filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result.map { blacklists =>
@@ -36,7 +36,7 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
         filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result.map { blacklists =>
           blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
         },
-        filterBy(List(BlacklistSinceFilter(since.string), BlacklistUntilFilter(until.string))).result.map { blacklists =>
+        filterBy(List(BlacklistSinceFilter(since.stringMillis), BlacklistUntilFilter(until.stringMillis))).result.map { blacklists =>
           blacklists.forall { b =>
             val date = b.date.localDate
             val lower = since.localDate

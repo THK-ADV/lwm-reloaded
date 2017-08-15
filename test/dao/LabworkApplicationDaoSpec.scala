@@ -15,9 +15,9 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
 
   import scala.util.Random.{nextBoolean, nextInt}
 
-  val maxApplicants = 300
+  val maxApplicants = 600
   val reservedApplicants = 5
-  val maxApplications = 100
+  val maxApplications = 200
 
   val applicants = (0 until maxApplicants).map(applicant).toList
 

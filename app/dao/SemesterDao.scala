@@ -56,8 +56,8 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
   override protected def existsQuery(entity: SemesterDb): Query[SemesterTable, SemesterDb, Seq] = {
     filterBy(List(
       SemesterLabelFilter(entity.label),
-      SemesterStartFilter(entity.start.string),
-      SemesterEndFilter(entity.end.string)
+      SemesterStartFilter(entity.start.stringMillis),
+      SemesterEndFilter(entity.end.stringMillis)
     ))
   }
 

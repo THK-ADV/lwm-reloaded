@@ -28,23 +28,23 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
 
     "filter properly" in {
       run(DBIO.seq(
-        filterBy(List(SemesterStartFilter(randomSemester.start.string))).result.map { semester =>
+        filterBy(List(SemesterStartFilter(randomSemester.start.stringMillis))).result.map { semester =>
           semester.size shouldBe 1
         }
       ).andThen(
-        filterBy(List(SemesterEndFilter(randomSemester.end.string))).result.map { semester =>
+        filterBy(List(SemesterEndFilter(randomSemester.end.stringMillis))).result.map { semester =>
           semester.size shouldBe 1
         }
       ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities.head.start.string))).result.map { semester =>
+        filterBy(List(SemesterSinceFilter(dbEntities.head.start.stringMillis))).result.map { semester =>
           semester.size shouldBe dbEntities.size
         }
       ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities(maxSemesters/2).start.string))).result.map { semester =>
+        filterBy(List(SemesterSinceFilter(dbEntities(maxSemesters/2).start.stringMillis))).result.map { semester =>
           semester.size shouldBe dbEntities.size - maxSemesters/2
         }
       ).andThen(
-        filterBy(List(SemesterUntilFilter(dbEntities(maxSemesters/2).end.string))).result.map { semester =>
+        filterBy(List(SemesterUntilFilter(dbEntities(maxSemesters/2).end.stringMillis))).result.map { semester =>
           semester.size shouldBe dbEntities.size - maxSemesters/2 + 1
         }
       ))

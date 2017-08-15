@@ -49,7 +49,7 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlac
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {
     filterBy(List(
-      BlacklistDateFilter(entity.date.string),
+      BlacklistDateFilter(entity.date.stringMillis),
       BlacklistStartFilter(entity.start.stringMillis),
       BlacklistEndFilter(entity.end.stringMillis),
       BlacklistGlobalFilter(entity.global.toString)

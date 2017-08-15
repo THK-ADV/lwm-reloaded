@@ -35,12 +35,12 @@ final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
       sqlDate.localDate shouldBe localDate
 
       sqlTime.stringMillis shouldBe localTime.stringMillis
-      sqlDate.string shouldBe localDate.stringMillis
+      sqlDate.stringMillis shouldBe localDate.stringMillis
 
       localTime.stringMillis.sqlTimeFromMillis shouldBe sqlTime
       localDate.stringMillis.sqlDateFromMillis shouldBe sqlDate
 
-      sqlDate.string.sqlDateFromMillis shouldBe sqlDate
+      sqlDate.stringMillis.sqlDateFromMillis shouldBe sqlDate
       sqlTime.stringMillis.sqlTimeFromMillis shouldBe sqlTime
 
       timestamp shouldBe new Timestamp(dateTime.getMillis)
