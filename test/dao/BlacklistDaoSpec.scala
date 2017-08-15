@@ -30,10 +30,10 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
         filterBy(List(BlacklistDateFilter(randomBlacklist.date.string))).result.map { blacklists =>
           blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
         },
-        filterBy(List(BlacklistStartFilter(randomBlacklist.start.string))).result.map { blacklists =>
+        filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result.map { blacklists =>
           blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.start.localTime.isEqual(b.start.localTime)))
         },
-        filterBy(List(BlacklistEndFilter(randomBlacklist.end.string))).result.map { blacklists =>
+        filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result.map { blacklists =>
           blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
         },
         filterBy(List(BlacklistSinceFilter(since.string), BlacklistUntilFilter(until.string))).result.map { blacklists =>

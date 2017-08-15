@@ -19,23 +19,23 @@ case class SemesterAbbreviationFilter(value: String) extends TableFilter[Semeste
 }
 
 case class SemesterStartFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.start === value.sqlDate
+  override def predicate = _.start === value.sqlDateFromMillis
 }
 
 case class SemesterSinceFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.start >= value.sqlDate
+  override def predicate = _.start >= value.sqlDateFromMillis
 }
 
 case class SemesterUntilFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.end <= value.sqlDate
+  override def predicate = _.end <= value.sqlDateFromMillis
 }
 
 case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = _.end === value.sqlDate
+  override def predicate = _.end === value.sqlDateFromMillis
 }
 
 case class SemesterCurrentFilter(value: String) extends TableFilter[SemesterTable] {
-  override def predicate = t => t.start <= value.sqlDate && t.end >= value.sqlDate
+  override def predicate = t => t.start <= value.sqlDateFromMillis && t.end >= value.sqlDateFromMillis
 }
 
 case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {

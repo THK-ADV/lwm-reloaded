@@ -93,7 +93,7 @@ object BlacklistDb {
   import models.PostgresBlacklist.{endOfDay, startOfDay}
 
   def from(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
-    BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+    BlacklistDb(protocol.label, protocol.date.sqlDateFromPattern, protocol.start.sqlTimeFromPattern, protocol.end.sqlTimeFromPattern, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
   }
 
   def entireDay(label: String, date: LocalDate, global: Boolean): BlacklistDb = entireDay(label, date.sqlDate, global)

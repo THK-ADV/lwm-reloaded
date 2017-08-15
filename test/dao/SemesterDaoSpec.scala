@@ -20,7 +20,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
     "return current semester" in {
       val current = dbEntities.map(_.toLwmModel).filter(PostgresSemester.isCurrent)
 
-      val result = await(get(List(SemesterCurrentFilter(LocalDate.now.string))))
+      val result = await(get(List(SemesterCurrentFilter(LocalDate.now.stringMillis))))
 
       result.size shouldBe 1
       result shouldBe current
