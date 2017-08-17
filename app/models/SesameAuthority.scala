@@ -31,13 +31,13 @@ case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[Sesa
 
 sealed trait Authority extends UniqueEntity
 
-case class PostgresAuthority(user: UUID, roles: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends Authority
+case class PostgresAuthority(user: UUID, role: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends Authority
 
 case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   override def toLwmModel = PostgresAuthority(user, role, course, id)
 }
 
-case class PostgresAuthorityProtocol(user: UUID, roleLabel: String, course: Option[UUID] = None)
+case class PostgresAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
 
 case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[PostgresCourseAtom], id: UUID) extends Authority
 
@@ -67,11 +67,11 @@ object SesameAuthorityAtom {
 
 object PostgresAuthority extends JsonSerialisation[PostgresAuthorityProtocol, PostgresAuthority, PostgresAuthorityAtom] {
 
-  override implicit def reads = Json.reads[PostgresAuthorityProtocol]
+  override implicit def reads: Reads[PostgresAuthorityProtocol] = Json.reads[PostgresAuthorityProtocol]
 
-  override implicit def writes = Json.writes[PostgresAuthority]
+  override implicit def writes: Writes[PostgresAuthority] = Json.writes[PostgresAuthority]
 
-  override implicit def writesAtom = PostgresAuthorityAtom.writesAtom
+  override implicit def writesAtom: Writes[PostgresAuthorityAtom] = PostgresAuthorityAtom.writesAtom
 }
 
 object PostgresAuthorityAtom {
@@ -82,4 +82,13 @@ object PostgresAuthorityAtom {
       (JsPath \ "course").writeNullable[PostgresCourseAtom](PostgresCourseAtom.writesAtom) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresAuthorityAtom.unapply))
+}
+
+object Authority {
+  def writes: Writes[Authority] = new Writes[Authority] {
+    override def writes(a: Authority): JsValue = a match {
+      case authority: PostgresAuthority => Json.toJson(authority)(PostgresAuthority.writes)
+      case authorityAtom: PostgresAuthorityAtom => Json.toJson(authorityAtom)(PostgresAuthorityAtom.writesAtom)
+    }
+  }
 }

@@ -64,6 +64,7 @@ with RoleManagementModule
 with RoleManagementModulePostgres
 with RoleDaoModule
 with AuthorityManagementModule
+with AuthorityManagementModule2
 with AuthorityDaoModule
 with PermissionManagementModule
 with SessionControllerModule
@@ -128,6 +129,7 @@ with LdapSyncModule {
     roleManagementController,
     roleManagementControllerPostgres,
     authorityManagementController,
+    authorityControllerPostgres,
     permissionManagementController,
     labworkApplicationController,
     labworkApplicationControllerPostgres,
@@ -186,6 +188,7 @@ with DefaultRoleManagementModule
 with DefaultRoleManagementModulePostgres
 with DefaultRoleDaoModule
 with DefaultAuthorityManagementModuleImpl
+with DefaultAuthorityManagementModule2
 with DefaultAuthorityDaoModule
 with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl

@@ -21,6 +21,9 @@ case class AuthorityCourseFilter(value: String) extends TableFilter[AuthorityTab
 case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable] {
   override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
 }
+case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: (AuthorityTable) => Rep[Boolean] = _.roleFk.map(_.label).filter(_ === value).exists
+}
 
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -108,11 +111,11 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
     case (optCourse, minRoles) =>
       def isAdmin(implicit roles: Seq[PostgresRole]) = roles
         .find(_.label == Role.Admin.label)
-        .exists(admin => authorities.exists(_.roles == admin.id))
+        .exists(admin => authorities.exists(_.role == admin.id))
 
       def hasPermission(implicit roles: Seq[PostgresRole]) = authorities
         .filter(_.course == optCourse)
-        .flatMap(authority => roles.filter(_.id == authority.roles))
+        .flatMap(authority => roles.filter(_.id == authority.role))
         .exists(r => minRoles.exists(_.label == r.label))
 
       roleService.get().map { implicit roles =>
