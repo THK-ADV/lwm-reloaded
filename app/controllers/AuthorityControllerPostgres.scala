@@ -3,13 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import models.Role._
 import models._
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
+import play.api.mvc.{Action, AnyContent}
 import services.SessionHandlingService
 import store.{AuthorityTable, TableFilter}
 import utils.LwmMimeType
-import models.Role._
-import play.api.mvc.{Action, AnyContent}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -18,7 +18,7 @@ object AuthorityControllerPostgres {
   lazy val userAttribute = "user"
   lazy val courseAttribute = "course"
   lazy val roleAttribute = "role"
-  lazy val roleLabelAttribute = "role"
+  lazy val roleLabelAttribute = "roleLabel"
 }
 
 final class AuthorityControllerPostgres(val abstractDao: AuthorityDao, val sessionService: SessionHandlingService) extends AbstractCRUDControllerPostgres[PostgresAuthorityProtocol, AuthorityTable, AuthorityDb, Authority] {
@@ -29,7 +29,7 @@ final class AuthorityControllerPostgres(val abstractDao: AuthorityDao, val sessi
 
   override protected implicit val reads: Reads[PostgresAuthorityProtocol] = PostgresAuthority.reads
 
-  override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { request =>
+  override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
     val uuid = UUID.fromString(id)
 
     for {

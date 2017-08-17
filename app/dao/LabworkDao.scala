@@ -11,23 +11,31 @@ import store.{LabworkTable, TableFilter}
 import scala.concurrent.Future
 
 case class LabworkIdFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.id === UUID.fromString(value)
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
 case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.degree === UUID.fromString(value)
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.degree === UUID.fromString(value)
 }
 
 case class LabworkSemesterFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.semester === UUID.fromString(value)
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.semester === UUID.fromString(value)
 }
 
 case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.course === UUID.fromString(value)
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.course === UUID.fromString(value)
 }
 
 case class LabworkLabelFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate: (LabworkTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
+}
+
+case class LabworkSubscribableFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.subscribable === value.toBoolean
+}
+
+case class LabworkPublishedFilter(value: String) extends TableFilter[LabworkTable] {
+  override def predicate: (LabworkTable) => Rep[Boolean] = _.published === value.toBoolean
 }
 
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
