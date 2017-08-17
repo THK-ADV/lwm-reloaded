@@ -43,8 +43,8 @@ GET           /courses/:c/labworks/:l/atomic/groups/preview                     
 HEAD          /groups                                                                 controllers.GroupCRUDController.header
 
 # Group 2
-GET           /api2/courses/:c/labworks/:l/groups                                    controllers.GroupControllerPostgres.allFrom(c, l)
-GET           /api2/courses/:c/labworks/:l/groups/preview                            controllers.GroupControllerPostgres.preview(c, l)
+GET           /api2/courses/:c/labworks/:l/groups                                     controllers.GroupControllerPostgres.allFrom(c, l)
+GET           /api2/courses/:c/labworks/:l/groups/preview                             controllers.GroupControllerPostgres.preview(c, l)
 
 # Labwork
 GET           /labworks/degrees/:degree                                               controllers.LabworkCRUDController.allWithDegree(degree)
@@ -115,8 +115,8 @@ DELETE        /roles/:id                                                        
 HEAD          /roles                                                                  controllers.RoleController.header
 
 # Role 2.0
-GET           /api2/roles/:id                                                          controllers.RoleControllerPostgres.get(id)
-GET           /api2/roles                                                              controllers.RoleControllerPostgres.all()
+GET           /api2/roles/:id                                                         controllers.RoleControllerPostgres.get(id)
+GET           /api2/roles                                                             controllers.RoleControllerPostgres.all()
 
 # Authority
 POST          /authorities                                                            controllers.AuthorityController.create()
@@ -127,6 +127,12 @@ GET           /authorities/:id                                                  
 GET           /atomic/authorities/:id                                                 controllers.AuthorityController.getAtomic(id)
 DELETE        /authorities/:id                                                        controllers.AuthorityController.delete(id)
 HEAD          /authorities                                                            controllers.AuthorityController.header
+
+# Authority 2.0
+POST          /api2/authorities                                                       controllers.AuthorityControllerPostgres.create()
+GET           /api2/authorities                                                       controllers.AuthorityControllerPostgres.all()
+GET           /api2/authorities/:id                                                   controllers.AuthorityControllerPostgres.get(id)
+DELETE        /api2/authorities/:id                                                   controllers.AuthorityControllerPostgres.delete(id)
 
 # Permission
 GET           /permissions                                                            controllers.PermissionController.all()

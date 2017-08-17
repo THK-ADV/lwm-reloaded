@@ -2,11 +2,11 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.{AttributeFilter, SecureControllerContext2, Secured2}
+import controllers.helper.{AttributeFilter, PostgresResult, SecureControllerContext2, Secured2}
 import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json.{JsError, JsValue, Reads, Writes}
-import play.api.mvc.{Action, AnyContent, Controller, Request}
+import play.api.mvc._
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
 
@@ -79,8 +79,11 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
+    delete0(UUID.fromString(id))
+  }
+
+  protected def delete0(uuid: UUID): Future[Result] = {
     import models.LwmDateTime.SqlTimestampConverter
-    val uuid = UUID.fromString(id)
 
     abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
   }
