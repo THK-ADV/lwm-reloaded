@@ -3,6 +3,7 @@ package services
 import java.util.UUID
 
 import models._
+import play.api.libs.json.{JsPath, Reads}
 
 trait ReportCardServiceLike {
 
@@ -70,6 +71,61 @@ class ReportCardService extends ReportCardServiceLike {
 }
 
 object ReportCardService {
+
+  sealed trait EvaluationProperty
+
+  case object BoolBased extends EvaluationProperty
+
+  case object IntBased extends EvaluationProperty
+
+  case class ReportCardEvaluationPattern(entryType: String, min: Int, property: EvaluationProperty)
+  import play.api.libs.functional.syntax._
+
+  implicit def reads: Reads[ReportCardEvaluationPattern] = (
+    (JsPath \ "entryType").read[String] and
+      (JsPath \ "min").read[Int] and
+      (JsPath \ "property").read[String].map(p => if (p == "bool") BoolBased else IntBased)
+    )(ReportCardEvaluationPattern.apply _)
+
+  def evaluate(student: UUID, cards: List[PostgresReportCardEntry], patterns: List[ReportCardEvaluationPattern], labwork: UUID): List[ReportCardEvaluationDb] = {
+    def prepareEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb = {
+      ReportCardEvaluationDb(student, labwork, entryType, boolean, int)
+    }
+
+    val partialEval = prepareEval(student, labwork) _
+
+    patterns.map { pattern =>
+      val counts = pattern.property match {
+        case BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
+        case IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
+      }
+
+      partialEval(pattern.entryType, counts >= pattern.min, counts)
+    }
+  }
+
+  def deltas(oldEvals: List[PostgresReportCardEvaluation], newEvals: List[ReportCardEvaluationDb]): List[ReportCardEvaluationDb] = {
+    newEvals.foldLeft(List.empty[ReportCardEvaluationDb]) {
+      case (list, n) => oldEvals.find(_.label == n.label).fold(list.:+(n)) {
+        case o if o.bool != n.bool || o.int != n.int => list.:+(n.copy(id = o.id))
+        case _ => list
+      }
+    }
+  }
+
+  def evaluateDeltas(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], existing: List[PostgresReportCardEvaluation]): List[ReportCardEvaluationDb] = {
+    reportCardEntries.map(_.asInstanceOf[PostgresReportCardEntry]).groupBy(_.student).flatMap {
+      case (student, cards) =>
+        val newEvals = evaluate(student, cards, patterns, cards.head.labwork)
+        val oldEvals = existing.filter(_.student == student)
+
+        if (oldEvals.isEmpty) newEvals else deltas(oldEvals, newEvals)
+    }.toList
+  }
+
+  def evaluate(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern]): List[ReportCardEvaluationDb] = {
+    evaluateDeltas(reportCardEntries, patterns, List.empty)
+  }
 
   def reportCards(schedule: ScheduleGen, assignmentPlan: PostgresAssignmentPlan): Vector[ReportCardEntryDb] = {
     import models.LwmDateTime._
