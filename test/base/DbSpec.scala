@@ -53,6 +53,7 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
     TableQuery[ReportCardRescheduledTable].schema,
     TableQuery[ReportCardRetryTable].schema,
     TableQuery[ReportCardEntryTypeTable].schema,
+    TableQuery[ReportCardEvaluationTable].schema,
     TableQuery[GroupTable].schema,
     TableQuery[GroupMembershipTable].schema,
     TableQuery[ScheduleEntryTable].schema,

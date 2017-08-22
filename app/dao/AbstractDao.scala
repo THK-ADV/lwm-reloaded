@@ -83,7 +83,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
 
-  protected final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run((tableQuery returning tableQuery).insertOrUpdate(entity))
+  private def createOrUpdate0(entity: DbModel) = (tableQuery returning tableQuery).insertOrUpdate(entity)
+
+  final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run(createOrUpdate0(entity))
+
+  final def createOrUpdateMany(entities: Seq[DbModel]): Future[Seq[DbModel]] = {
+    val action = DBIO.seq(entities.map(createOrUpdate0):_*)
+
+    db.run(action.transactionally).map(_ => entities)
+  }
 
   protected final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {

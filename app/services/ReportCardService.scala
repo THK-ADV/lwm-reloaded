@@ -3,7 +3,6 @@ package services
 import java.util.UUID
 
 import models._
-import play.api.libs.json.{JsPath, Reads}
 
 trait ReportCardServiceLike {
 
@@ -79,20 +78,15 @@ object ReportCardService {
   case object IntBased extends EvaluationProperty
 
   case class ReportCardEvaluationPattern(entryType: String, min: Int, property: EvaluationProperty)
-  import play.api.libs.functional.syntax._
 
-  implicit def reads: Reads[ReportCardEvaluationPattern] = (
-    (JsPath \ "entryType").read[String] and
-      (JsPath \ "min").read[Int] and
-      (JsPath \ "property").read[String].map(p => if (p == "bool") BoolBased else IntBased)
-    )(ReportCardEvaluationPattern.apply _)
+  lazy val EvaluatedExplicit: Int = 3201 // this value indicates explicit evaluations
+
+  def partialEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb = {
+    ReportCardEvaluationDb(student, labwork, entryType, boolean, int)
+  }
 
   def evaluate(student: UUID, cards: List[PostgresReportCardEntry], patterns: List[ReportCardEvaluationPattern], labwork: UUID): List[ReportCardEvaluationDb] = {
-    def prepareEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb = {
-      ReportCardEvaluationDb(student, labwork, entryType, boolean, int)
-    }
-
-    val partialEval = prepareEval(student, labwork) _
+    val eval = partialEval(student, labwork) _
 
     patterns.map { pattern =>
       val counts = pattern.property match {
@@ -100,24 +94,25 @@ object ReportCardService {
         case IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
       }
 
-      partialEval(pattern.entryType, counts >= pattern.min, counts)
+      eval(pattern.entryType, counts >= pattern.min, counts)
     }
   }
 
   def deltas(oldEvals: List[PostgresReportCardEvaluation], newEvals: List[ReportCardEvaluationDb]): List[ReportCardEvaluationDb] = {
     newEvals.foldLeft(List.empty[ReportCardEvaluationDb]) {
-      case (list, n) => oldEvals.find(_.label == n.label).fold(list.:+(n)) {
-        case o if o.bool != n.bool || o.int != n.int => list.:+(n.copy(id = o.id))
+      case (list, newEval) => oldEvals.find(_.label == newEval.label).fold(list.:+(newEval)) {
+        case abort if abort.int == EvaluatedExplicit => list // abort when student was evaluated explicit
+        case oldEval if oldEval.bool != newEval.bool || oldEval.int != newEval.int => list.:+(newEval.copy(id = oldEval.id))
         case _ => list
       }
     }
   }
 
-  def evaluateDeltas(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], existing: List[PostgresReportCardEvaluation]): List[ReportCardEvaluationDb] = {
+  def evaluateDeltas(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], existing: List[ReportCardEvaluation]): List[ReportCardEvaluationDb] = {
     reportCardEntries.map(_.asInstanceOf[PostgresReportCardEntry]).groupBy(_.student).flatMap {
       case (student, cards) =>
         val newEvals = evaluate(student, cards, patterns, cards.head.labwork)
-        val oldEvals = existing.filter(_.student == student)
+        val oldEvals = existing.map(_.asInstanceOf[PostgresReportCardEvaluation]).filter(_.student == student)
 
         if (oldEvals.isEmpty) newEvals else deltas(oldEvals, newEvals)
     }.toList
@@ -125,6 +120,10 @@ object ReportCardService {
 
   def evaluate(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern]): List[ReportCardEvaluationDb] = {
     evaluateDeltas(reportCardEntries, patterns, List.empty)
+  }
+
+  def evaluateExplicit(student: UUID, labwork: UUID): List[ReportCardEvaluationDb] = { // TODO replace with dynamic PostgresReportCardEntryType.all when needed
+    PostgresReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
   }
 
   def reportCards(schedule: ScheduleGen, assignmentPlan: PostgresAssignmentPlan): Vector[ReportCardEntryDb] = {

@@ -283,6 +283,16 @@ GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations              
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview                   controllers.ReportCardEvaluationController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations/preview            controllers.ReportCardEvaluationController.previewAtomic(c, l)
 
+# ReportCardEvaluation 2.0
+GET           /api2/reportCardEvaluations/student/:s                                  controllers.ReportCardEvaluationControllerPostgres.get(s)
+
+# ReportCardEvaluation restricted
+POST          /api2/courses/:c/labworks/:l/reportCardEvaluations                      controllers.ReportCardEvaluationControllerPostgres.createFrom(c, l)
+POST          /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations          controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
+GET           /api2/courses/:c/labworks/:l/reportCardEvaluations                      controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
+GET           /api2/courses/:c/labworks/:l/reportCardEvaluations/preview              controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
+DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations          controllers.ReportCardEvaluationControllerPostgres.delete(c, l, s)
+
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                                        controllers.AssignmentPlanCRUDController.createFrom(course)
 PUT           /courses/:course/assignmentPlans/:id                                    controllers.AssignmentPlanCRUDController.updateFrom(course, id)
@@ -355,6 +365,7 @@ GET           /api/migrate/timetables                                           
 GET           /api/migrate/reportCardEntries                                          controllers.ApiDataController.migrateReportCardEntries()
 GET           /api/migrate/groups                                                     controllers.ApiDataController.migrateGroups()
 GET           /api/migrate/schedules                                                  controllers.ApiDataController.migrateSchedules()
+GET           /api/migrate/reportCardEvaluations                                      controllers.ApiDataController.migrateReportCardEvaluations()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
