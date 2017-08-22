@@ -57,7 +57,7 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labelAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncContentTypedAction { implicit request =>
