@@ -107,6 +107,8 @@ with UserManagementModulePostgres
 with UserDaoModule
 with AnnotationManagementModule
 with ReportCardEvaluationManagementModule
+with ReportCardEvaluationDaoModule
+with ReportCardEvaluationManagementModule2
 with LdapSyncModule {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -145,6 +147,7 @@ with LdapSyncModule {
     reportCardEntryTypeManagementController,
     reportCardEntryTypeController,
     reportCardEvaluationManagementController,
+    reportCardEvaluationManagementController2,
     assignmentPlanManagementController,
     assignmentPlanManagementControllerPostgres,
     annotationManagementController,
@@ -229,6 +232,8 @@ with DefaultUserManagementModulePostgres
 with DefaultUserDaoModule
 with DefaultAnnotationManagementModuleImpl
 with DefaultReportCardEvaluationManagementModuleImpl
+with DefaultReportCardEvaluationDaoModule
+with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl
 with DefaultDbBackupModuleImpl
 with DefaultLdapSyncService

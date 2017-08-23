@@ -33,6 +33,7 @@ final class ApiDataController(val repository: SesameRepository,
                               val authorityService: AuthorityDao,
                               val scheduleEntryDao: ScheduleEntryDao,
                               val groupDao: GroupDao,
+                              val reportCardEvaluationDao: ReportCardEvaluationDao,
                               val sessionService: SessionHandlingService,
                               val roleService: RoleServiceLike
                              ) extends Controller with PostgresResult with Secured with SessionChecking with SecureControllerContext with ContentTyped {
@@ -416,6 +417,23 @@ final class ApiDataController(val repository: SesameRepository,
       _ = println(s"scheduleEntryDb ${scheduleEntryDb.size}")
       scheduleEntries <- scheduleEntryDao.createMany(scheduleEntryDb.toList)
     } yield scheduleEntries.map(_.toLwmModel)
+
+    result.jsonResult
+  }
+
+  def migrateReportCardEvaluations = Action.async { implicit request =>
+    import bindings.ReportCardEvaluationDescriptor
+
+    val result = for {
+      _ <- reportCardEvaluationDao.createSchema
+      sesameEvals <- Future.fromTry(repository.getAll[SesameReportCardEvaluation])
+      _ = println(s"sesameEvals ${sesameEvals.size}")
+      dbEntries = sesameEvals.map { e =>
+        ReportCardEvaluationDb(e.student, e.labwork, e.label, e.bool, e.int, invalidated = e.invalidated.map(_.timestamp), id = e.id)
+      }
+      _ = println(s"dbEntries ${dbEntries.size}")
+      evals <- reportCardEvaluationDao.createMany(dbEntries.toList)
+    } yield evals.map(_.toLwmModel)
 
     result.jsonResult
   }

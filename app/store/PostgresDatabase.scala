@@ -357,6 +357,13 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
   override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }
 
+class ReportCardEvaluationTable(tag: Tag) extends Table[ReportCardEvaluationDb](tag, "REPORT_CARD_EVALUATION") with UniqueTable with StudentIdTable with LabworkIdTable with LabelTable {
+  def bool = column[Boolean]("BOOL")
+  def int = column[Int]("INT")
+
+  override def * = (student, labwork, label, bool, int, lastModified, invalidated, id) <> ((ReportCardEvaluationDb.apply _).tupled, ReportCardEvaluationDb.unapply)
+}
+
 class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE_ENTRY") with UniqueTable with LabworkIdTable with RoomIdTable with GroupIdTable with DateStartEndTable {
 
   override def * = (labwork, start, end, date, room, group, lastModified, invalidated, id) <> (mapRow, unmapRow)
