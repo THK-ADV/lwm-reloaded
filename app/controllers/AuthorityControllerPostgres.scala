@@ -47,7 +47,7 @@ final class AuthorityControllerPostgres(val abstractDao: AuthorityDao, val sessi
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(List(RightsManager))
     case Delete => PartialSecureBlock(List(RightsManager))
-    case GetAll => PartialSecureBlock(List(RightsManager))
+    case GetAll => PartialSecureBlock(List(RightsManager, Student, Employee))
     case Get => PartialSecureBlock(List(RightsManager))
     case _ => PartialSecureBlock(List(God))
   }
