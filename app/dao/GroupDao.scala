@@ -27,6 +27,20 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, Group] {
   override val tableQuery = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
+  def add(student: UUID, group: UUID) = {
+    (groupMembershipQuery returning groupMembershipQuery) += GroupMembership(group, student)
+  }
+
+  def remove(student: UUID, group: UUID) = {
+    groupMembershipQuery.filter(g => g.group === group && g.student === student).delete
+  }
+
+  def randomStudentIn(group: UUID) = {
+    groupMembershipQuery.filter(_.group === group).map(_.student).result.flatMap { students =>
+      if (students.nonEmpty) DBIO.successful(students.head) else DBIO.failed(new Throwable(s"no student found in group $group"))
+    }
+  }
+
   override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[Group]] = collectDependencies(query) {
     case (g, l, m) => PostgresGroupAtom(g.label, l.toLwmModel, m.map(_.toLwmModel).toSet, g.id)
   }

@@ -79,7 +79,7 @@ object LwmActions2 {
         case NonFatal(e) =>
           InternalServerError(Json.obj(
             "status" -> "KO",
-            "message" -> s"${e.getMessage}"
+            "message" -> s"${e.getLocalizedMessage}"
           ))
       }
     }
@@ -99,7 +99,7 @@ object LwmActions2 {
       case NonFatal(e) =>
         Some(InternalServerError(Json.obj(
           "status" -> "KO",
-          "message" -> e.getMessage
+          "message" -> e.getLocalizedMessage
         )))
     }
   }

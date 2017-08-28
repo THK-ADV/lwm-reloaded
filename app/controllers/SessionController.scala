@@ -48,7 +48,7 @@ class SessionController(val sessionService: SessionHandlingService) extends Cont
           case NonFatal(e) =>
             InternalServerError(Json.obj(
               "status" -> "KO",
-              "errors" -> e.getMessage
+              "errors" -> e.getLocalizedMessage
             ))
         }
       }

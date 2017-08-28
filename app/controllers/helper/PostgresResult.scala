@@ -13,7 +13,7 @@ trait PostgresResult { self: Controller =>
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def preconditionFailed(message: String): Result = PreconditionFailed(Json.obj("status" -> "KO", "message" -> message))
-  protected def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getMessage)
+  protected def internalServerError(throwable: Throwable): Result = internalServerError(throwable.getLocalizedMessage)
   protected def internalServerError(message: String): Result = InternalServerError(Json.obj("status" -> "KO", "message" -> message))
   protected def ok[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.toJson(entity))
   protected def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))

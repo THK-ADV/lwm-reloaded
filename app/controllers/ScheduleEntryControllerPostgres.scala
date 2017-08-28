@@ -117,7 +117,35 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    generate(labwork).jsonResult
+    val result = for {
+      timetables <- timetableService.withBlacklists(List(TimetableLabworkFilter(labwork))) if timetables.nonEmpty
+      (timetable, blacklists) = {
+        val h = timetables.head
+        (h._1, h._2.toVector)
+      }
+
+      applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
+      apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
+
+      groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
+      groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
+
+      assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
+      ap = assignmentPlans.head.asInstanceOf[PostgresAssignmentPlan]
+
+      lab <- labworkService.getById(labwork) if lab.isDefined
+      labAtom = lab.get.asInstanceOf[PostgresLabworkAtom]
+      semester = labAtom.semester
+
+      comps <- abstractDao.competitive(labAtom)
+
+      i = intOf(request.queryString) _
+      pop = i(popAttribute)
+      gen = i(genAttribute)
+      elite = i(eliteAttribute)
+    } yield scheduleGenesisService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
+
+    result.jsonResult
   }
 
   override implicit val mimeType = LwmMimeType.scheduleEntryV1Json
@@ -129,34 +157,6 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case Update => SecureBlock(restrictionId, List(CourseManager))
   }
-
-  private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {
-    timetables <- timetableService.withBlacklists(List(TimetableLabworkFilter(labwork))) if timetables.nonEmpty
-    (timetable, blacklists) = {
-      val h = timetables.head
-      (h._1, h._2.toVector)
-    }
-
-    applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
-    apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
-
-    groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
-    groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
-
-    assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
-    ap = assignmentPlans.head.asInstanceOf[PostgresAssignmentPlan]
-
-    lab <- labworkService.getById(labwork) if lab.isDefined
-    labAtom = lab.get.asInstanceOf[PostgresLabworkAtom]
-    semester = labAtom.semester
-
-    comps <- abstractDao.competitive(labAtom)
-
-    i = intOf(request.queryString) _
-    pop = i(popAttribute)
-    gen = i(genAttribute)
-    elite = i(eliteAttribute)
-  } yield scheduleGenesisService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))

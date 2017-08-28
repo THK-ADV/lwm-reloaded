@@ -89,17 +89,4 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toLwmModel)).jsonResult
   }
-
-  def createByCopy(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    ???
-  }
 }
-
-/** TODO
-  * controller mit expander funktionen, beispielsweise
-  * removeStudentFromLabwork -> delete group membership, lapp and reportCardEntries
-  * insert student into group -> create lapp if needed, group membership with reportCardEntries
-  * swapGroup
-  * patch assignmentplan/timetable/group -> expand dependencies (reportcardEntries...)
-  *
-  */

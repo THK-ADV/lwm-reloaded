@@ -37,76 +37,25 @@ case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter
 }
 
 trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  private lazy val schemas = List(
+    tableQuery.schema,
+    rescheduledQuery.schema,
+    retryQuery.schema,
+    entryTypeQuery.schema
+  )
   override val tableQuery = TableQuery[ReportCardEntryTable]
-
   protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
   protected val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
   protected val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
-  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => PostgresReportCardEntryAtom(
-      student.toLwmModel,
-      labwork.toLwmModel,
-      entry.label,
-      entry.date.localDate,
-      entry.start.localTime,
-      entry.end.localTime,
-      room.toLwmModel,
-      entryTypes.map(_.toLwmModel).toSet,
-      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toLwmModel, rs.reason, rs.id) },
-      optRt.map { case (rt, r) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toLwmModel, rt.entryTypes.map(_.toLwmModel), rt.reason, rt.id) },
-      entry.id
-    )
+  def reportCardsFrom(srcStudent: UUID, labwork: UUID) = collectDependencies(tableQuery.filter(r => r.labwork === labwork && r.student === srcStudent)) {
+    case ((entry, _, _, _), _, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet)
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toLwmModel
-  }
-
-  private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-                                 (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntry) = {
-    val mandatory = for {
-      q <- query
-      l <- q.labworkFk
-      s <- q.studentFk
-      r <- q.roomFk
-    } yield (q, l, s, r)
-
-    val retries = for {
-      rt <- retryQuery.joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry)
-      r <- rt._1.roomFk
-    } yield (rt, r)
-
-    val rescheduled = for {
-      rs <- rescheduledQuery
-      r <- rs.roomFk
-    } yield (rs, r)
-
-    val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
-      case (id, dependencies) =>
-        val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
-        val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
-        val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
-
-        build(entry, rescheduled, retryWithEntryTypes, entryTypes)
-    }.toSeq)
-
-    db.run(action)
-  }
-
-  override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(
-      ReportCardEntryLabworkFilter(entity.labwork.toString),
-      ReportCardEntryStudentFilter(entity.student.toString)
-    ))
-  }
-
-  override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    existing.labwork == toUpdate.labwork && existing.student == toUpdate.student
-  }
+  def createManyExpanded(copied: Seq[ReportCardEntryDb]) = createManyQuery(copied).flatMap(_ => databaseExpander.get.expandCreationOf(copied))
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
     override def expandCreationOf[E <: Effect](entities: Seq[ReportCardEntryDb]) = { // entry -> types, rescheduled, (retry -> types)
@@ -137,19 +86,73 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(Some(entity)) // entry only
   })
 
-  private lazy val schemas = List(
-    tableQuery.schema,
-    rescheduledQuery.schema,
-    retryQuery.schema,
-    entryTypeQuery.schema
-  )
-
   override def createSchema: Future[Unit] = {
     db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
   }
 
   override def dropSchema: Future[Unit] = {
     db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
+  }
+
+  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = db.run(collectDependencies(query) {
+    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => PostgresReportCardEntryAtom(
+      student.toLwmModel,
+      labwork.toLwmModel,
+      entry.label,
+      entry.date.localDate,
+      entry.start.localTime,
+      entry.end.localTime,
+      room.toLwmModel,
+      entryTypes.map(_.toLwmModel).toSet,
+      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toLwmModel, rs.reason, rs.id) },
+      optRt.map { case (rt, r) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toLwmModel, rt.entryTypes.map(_.toLwmModel), rt.reason, rt.id) },
+      entry.id
+    )
+  })
+
+  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = db.run(collectDependencies(query) {
+    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toLwmModel
+  })
+
+  private def collectDependencies[A](query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
+                                    (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => A) = {
+    val mandatory = for {
+      q <- query
+      l <- q.labworkFk
+      s <- q.studentFk
+      r <- q.roomFk
+    } yield (q, l, s, r)
+
+    val retries = for {
+      rt <- retryQuery.joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry)
+      r <- rt._1.roomFk
+    } yield (rt, r)
+
+    val rescheduled = for {
+      rs <- rescheduledQuery
+      r <- rs.roomFk
+    } yield (rs, r)
+
+    mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
+      case (id, dependencies) =>
+        val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
+      val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
+      val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
+      val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
+
+        build(entry, rescheduled, retryWithEntryTypes, entryTypes)
+    }.toSeq)
+  }
+
+  override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
+    filterBy(List(
+      ReportCardEntryLabworkFilter(entity.labwork.toString),
+      ReportCardEntryStudentFilter(entity.student.toString)
+    ))
+  }
+
+  override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
+    existing.labwork == toUpdate.labwork && existing.student == toUpdate.student
   }
 }
 

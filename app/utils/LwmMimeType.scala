@@ -34,6 +34,7 @@ object LwmMimeType {
   val reportCardEvaluationV1Json = LwmMimeType("application/vnd.fhk.reportCardEvaluation.V1+json")
 
   val apiDataV1Json = LwmMimeType("application/vnd.fhk.apiData.V1+json")
+  val lwmServiceV1Json = LwmMimeType("application/vnd.fhk.lwmService.V1+json")
 
   implicit def unboxMimeType(mime: LwmMimeType): String = mime.value
 }

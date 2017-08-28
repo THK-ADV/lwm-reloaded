@@ -257,7 +257,6 @@ GET           /courses/:c/scheduleEntries/:s/atomic/reportCardEntries           
 GET           /api2/reportCardEntries/student/:s                                      controllers.ReportCardEntryControllerPostgres.getForStudent(s)
 
 POST          /api2/courses/:c/labworks/:l/reportCardEntries                          controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
-POST          /api2/courses/:c/reportCardEntries/copy                                 controllers.ReportCardEntryControllerPostgres.createByCopy(c)
 
 GET           /api2/courses/:c/reportCardEntries                                      controllers.ReportCardEntryControllerPostgres.allFrom(c)
 GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries                   controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
