@@ -10,14 +10,14 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
   import dao.AbstractDaoSpec._
   import scala.util.Random.{shuffle, nextBoolean, nextInt}
 
-  private lazy val privateStudents = populateStudents(20*8*2)
+  private lazy val privateStudents = populateStudents(20*8*2)(degrees)
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
 
   private def takeSomeStudents(amount: Int) = shuffle(privateStudents) take (if (nextBoolean) amount + nextInt(3) else amount - nextInt(3))
 
   "A GroupDaoSpec also" should {
     "filter by students properly" in {
-      val superPrivateStudents = populateStudents(3)
+      val superPrivateStudents = populateStudents(3)(degrees)
       val superPrivateStudent1 = superPrivateStudents(0)
       val superPrivateStudent2 = superPrivateStudents(1)
       val superPrivateStudent3 = superPrivateStudents(2)

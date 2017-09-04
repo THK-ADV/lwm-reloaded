@@ -55,7 +55,10 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     case ((entry, _, _, _), _, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet)
   }
 
-  def createManyExpanded(copied: Seq[ReportCardEntryDb]) = createManyQuery(copied).flatMap(_ => databaseExpander.get.expandCreationOf(copied))
+  def createManyExpanded(copied: Seq[ReportCardEntryDb]) = for {
+    _ <- createManyQuery(copied)
+    e <- databaseExpander.get.expandCreationOf(copied)
+  } yield e
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
     override def expandCreationOf[E <: Effect](entities: Seq[ReportCardEntryDb]) = { // entry -> types, rescheduled, (retry -> types)

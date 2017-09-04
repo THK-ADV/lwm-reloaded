@@ -26,8 +26,8 @@ trait LwmServiceDao {
 
         ReportCardEntryDb(student, labwork, e.label, e.date, e.start, e.end, e.room, types, id = id)
       }
-      created <- reportCardEntryDao.createManyExpanded(copied)
-    } yield (lapp, membership, created)
+      _ <- reportCardEntryDao.createManyExpanded(copied)
+    } yield (lapp, membership, copied)
 
     db.run(action.transactionally)
   }

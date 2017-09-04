@@ -15,7 +15,7 @@ object AbstractDaoSpec {
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
 
   lazy val maxDegrees = 10
-  lazy val maxLabworks = 20
+  lazy val maxLabworks = 40
   lazy val maxSemesters = 10
   lazy val maxCourses = 10
   lazy val maxRooms = 10
@@ -74,8 +74,8 @@ object AbstractDaoSpec {
     DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
   }.toList
 
-  final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    DbUser(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
+  final def populateStudents(amount: Int)(degrees: List[DegreeDb]) = (0 until amount).map { i =>
+    DbUser(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(takeOneOf(degrees).id))
   }.toList
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[DbUser], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
@@ -220,7 +220,7 @@ object AbstractDaoSpec {
 
   lazy val timetables = populateTimetables(maxTimetables, 6)(employees, labworks.drop(1), blacklists)
 
-  lazy val students = populateStudents(maxStudents)
+  lazy val students = populateStudents(maxStudents)(degrees)
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 

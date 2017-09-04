@@ -13,7 +13,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
   import slick.driver.PostgresDriver.api._
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
-  private lazy val privateStudents = populateStudents(100)
+  private lazy val privateStudents = populateStudents(100)(degrees)
 
   "A ReportCardEntryDaoSpec also" should {
     "filter by scheduleEntry while considering rescheduled and retry entries" in { // TODO this makes no sense

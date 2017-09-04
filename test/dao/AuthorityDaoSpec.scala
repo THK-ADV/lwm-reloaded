@@ -176,7 +176,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
       val roles = List(role1, role2, role3)
 
-      val students = populateStudents(6)
+      val students = populateStudents(6)(degrees)
 
       val noneModule1Role1 = AuthorityDb(students(0).id, role1.id)
 
