@@ -24,10 +24,10 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
     filterBy(List(RoleLabelFilter(entity.label)))
   }
 
-  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): DBIOAction[Seq[PostgresRole], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): DBIOAction[Seq[PostgresRole], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 
   def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead

@@ -41,10 +41,10 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlac
 
   override val tableQuery = TableQuery[BlacklistTable]
 
-  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): DBIOAction[Seq[PostgresBlacklist], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): DBIOAction[Seq[PostgresBlacklist], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {

@@ -33,9 +33,11 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): DBIOAction[Seq[PostgresDegree], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): DBIOAction[Seq[PostgresDegree], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
+  }
 }
 
 final class DegreeDaoImpl(val db: PostgresDriver.backend.Database) extends DegreeDao

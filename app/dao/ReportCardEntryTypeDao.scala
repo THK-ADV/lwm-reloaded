@@ -22,10 +22,10 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 
-  override protected def toAtomic(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[PostgresReportCardEntryType]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): DBIOAction[Seq[PostgresReportCardEntryType], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[PostgresReportCardEntryType]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): DBIOAction[Seq[PostgresReportCardEntryType], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 
   override protected def existsQuery(entity: ReportCardEntryTypeDb): Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq] = {

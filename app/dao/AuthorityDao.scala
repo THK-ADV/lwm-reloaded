@@ -32,7 +32,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
 
   protected def roleService: RoleDao
 
-  // TODO maybe we can do this with Expander
   def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
     for {
       role <- roleService.byUserStatus(dbUser.status)
@@ -127,8 +126,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
     filterBy(List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))).filter(_.course === entity.course)
   }
 
-  // TODO refactor based on AssignmentPlanService.toAtomic
-  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
+  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): DBIOAction[Seq[PostgresAuthorityAtom], NoStream, Effect.Read] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
         joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
@@ -136,20 +134,17 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
       r <- a.roleFk
     } yield (a, u, r, c, l)
 
-    db.run(joinedQuery.result.map(_.foldLeft(List.empty[PostgresAuthorityAtom]) {
-      case (list, (a, u, r, Some(c), Some(l))) =>
+    joinedQuery.result.map(_.map {
+      case (a, u, r, Some(c), Some(l)) =>
         val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toLwmModel, c.semesterIndex, c.id)
-        val atom = PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, Some(courseAtom), a.id)
-
-        list.+:(atom)
-      case (list, (a, u, r, None, None)) =>
-        list.+:(PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, None, a.id))
-      case (list, _) => list // this should never happen
-    }))
+        PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, Some(courseAtom), a.id)
+      case (a, u, r, _, _) =>
+        PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, None, a.id)
+    })
   }
 
-  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): DBIOAction[Seq[PostgresAuthority], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 }
 

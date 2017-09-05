@@ -42,6 +42,32 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
       res2 shouldBe List(groups(3).toLwmModel)
       res3 shouldBe List(groups.last.toLwmModel)
     }
+
+    "swap a certain student in another group" in {
+      val (privateCourses, privateDegrees, privateStudents, privateLabs, privateGroups) = groupStack(100, 10)
+
+      run(DBIO.seq(
+        TableQuery[DegreeTable].forceInsertAll(privateDegrees),
+        TableQuery[UserTable].forceInsertAll(privateStudents),
+        TableQuery[CourseTable].forceInsertAll(privateCourses),
+        TableQuery[LabworkTable].forceInsertAll(privateLabs)
+      ))
+
+      val chosenOne = privateStudents.head
+      val srcGroup = privateGroups.find(_.members.contains(chosenOne.id)).get
+      val labwork = srcGroup.labwork
+      val destGroup = privateGroups.find(g => !g.members.contains(chosenOne.id) && g.labwork == labwork).get
+
+      srcGroup.id should not be destGroup.id
+      await(createMany(privateGroups)) should not be empty
+      run(groupOf(chosenOne.id, labwork)) shouldBe srcGroup.id
+
+      val result = run(swap(chosenOne.id, srcGroup.id, destGroup.id))
+      result.student shouldBe chosenOne.id
+      result.group shouldBe destGroup.id
+
+      run(groupOf(chosenOne.id, labwork)) shouldBe destGroup.id
+    }
   }
 
   override protected val toAdd: List[GroupDb] = populateGroups(20)(privateLabs, privateStudents)
@@ -73,9 +99,9 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
 
   override protected val dbEntities: List[GroupDb] = groups
 
-  override protected def lwmEntity: Group = dbEntity.toLwmModel
+  override protected val lwmEntity: Group = dbEntity.toLwmModel
 
-  override protected def lwmAtom: Group = atom(dbEntity)
+  override protected val lwmAtom: Group = atom(dbEntity)
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),

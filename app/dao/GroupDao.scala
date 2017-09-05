@@ -41,31 +41,46 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, Group] {
     }
   }
 
-  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[Group]] = collectDependencies(query) {
+  def swap(student: UUID, srcGroup: UUID, destGroup: UUID) = for {
+    d <- remove(student, srcGroup) if d > 0
+    m <- add(student, destGroup)
+  } yield m
+
+  def groupOf(student: UUID, labwork: UUID) = {
+    filterBy(List(GroupLabworkTableFilter(labwork.toString), GroupStudentTableFilter(student.toString))).result.flatMap { groups =>
+      groups.size match {
+        case 1 => DBIO.successful(groups.head.id)
+        case 0 => DBIO.failed(new Throwable(s"student $student is not a member of any group in labwork $labwork"))
+        case _ => DBIO.failed(new Throwable(s"student $student is a member in more than one group in labwork $labwork"))
+      }
+    }
+  }
+
+  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): DBIOAction[Seq[Group], NoStream, Effect.Read] = collectDependencies(query) {
     case (g, l, m) => PostgresGroupAtom(g.label, l.toLwmModel, m.map(_.toLwmModel).toSet, g.id)
   }
 
-  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[Group]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): DBIOAction[Seq[Group], NoStream, Effect.Read] = collectDependencies(query) {
     case (g, _, m) => PostgresGroup(g.label, g.labwork, m.map(_.id).toSet, g.id)
   }
 
   private def collectDependencies(query: Query[GroupTable, GroupDb, Seq])
-                                 (build: (GroupDb, LabworkDb, Seq[DbUser]) => Group): Future[Seq[Group]] = {
+                                 (build: (GroupDb, LabworkDb, Seq[DbUser]) => Group) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
     } yield (q, l)
 
-    db.run(mandatory
+    mandatory
       .joinLeft(groupMembershipQuery).on(_._1.id === _.group)
       .joinLeft(TableQuery[UserTable]).on((l ,r) => l._2.map(_.student === r.id).getOrElse(false))
       .result.map(_.groupBy(_._1._1._1).map {
-      case (group, dependencies) =>
-        val members = dependencies.flatMap(_._2)
-        val labwork = dependencies.find(_._1._1._1.labwork == group.labwork).head._1._1._2
+        case (group, dependencies) =>
+          val members = dependencies.flatMap(_._2)
+          val labwork = dependencies.find(_._1._1._1.labwork == group.labwork).head._1._1._2
 
-        build(group, labwork, members)
-    }.toSeq))
+          build(group, labwork, members)
+    }.toSeq)
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {

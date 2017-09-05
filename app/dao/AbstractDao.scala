@@ -36,9 +36,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   def tableQuery: TableQuery[T]
 
-  protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
+  protected def toAtomic(query: Query[T, DbModel, Seq]): DBIOAction[Seq[LwmModel], NoStream, Effect.Read]
 
-  protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
+  protected def toUniqueEntity(query: Query[T, DbModel, Seq]): DBIOAction[Seq[LwmModel], NoStream, Effect.Read]
 
   protected def existsQuery(entity: DbModel): Query[T, DbModel, Seq]
 
@@ -113,16 +113,18 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
     val query = filterBy(tableFilter, validOnly, sinceLastModified)
+    val action = if (atomic) toAtomic(query) else toUniqueEntity(query)
 
-    if (atomic) toAtomic(query) else toUniqueEntity(query)
+    db.run(action)
   }
 
   // TODO refactor get functions... they are pretty messy right now
 
   final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
     val query = filterBy(validOnly, sinceLastModified, tableQuery.filter(_.id.inSet(ids)))
+    val action = if (atomic) toAtomic(query) else toUniqueEntity(query)
 
-    if (atomic) toAtomic(query) else toUniqueEntity(query)
+    db.run(action)
   }
 
   // TODO use this function instead of get(tableFilter) for a single entity
@@ -184,11 +186,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def update(entity: DbModel): Future[Option[DbModel]] = db.run(update0(entity))
 
-  final def updateMany(entities: List[DbModel]): Future[List[Option[DbModel]]] = {
-    val query = entities.map(update0)
+  final def updateMany(entities: List[DbModel]): Future[List[Option[DbModel]]] = db.run(updateManyQuery(entities))
 
-    db.run(DBIO.sequence(query))
-  }
+  final def updateManyQuery(entities: List[DbModel]) = DBIO.sequence(entities.map(update0))
 
   private final def update0(entity: DbModel) = {
     val query = updateQuery(entity)

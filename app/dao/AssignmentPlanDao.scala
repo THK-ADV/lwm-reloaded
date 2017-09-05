@@ -28,8 +28,12 @@ trait AssignmentPlanDao
   protected val assignmentEntryQuery: TableQuery[AssignmentEntryTable] = TableQuery[AssignmentEntryTable]
   protected val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
 
-  override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlan]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): DBIOAction[Seq[AssignmentPlan], NoStream, Effect.Read] = collectDependencies(query) {
     case (plan, labwork, entries) => PostgresAssignmentPlanAtom(labwork.toLwmModel, plan.attendance, plan.mandatory, entries, plan.id)
+  }
+
+  override protected def toUniqueEntity(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): DBIOAction[Seq[AssignmentPlan], NoStream, Effect.Read] = collectDependencies(query) {
+    case (plan, labwork, entries) => PostgresAssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
   // TODO this is a better implementation than LabworkApplicationService.joinDependencies. test first and adjust when they succeed
@@ -55,19 +59,13 @@ trait AssignmentPlanDao
     val innerJoin = assignmentEntryQuery.joinLeft(assignmentEntryTypeQuery).on(_.id === _.assignmentEntry)
     val outerJoin = mandatory.joinLeft(innerJoin).on(_._1.id === _._1.assignmentPlan)
 
-    val action = outerJoin.result.map(_.groupBy(_._1._1).map {
+    outerJoin.result.map(_.groupBy(_._1._1).map {
       case (assignmentPlan, dependencies) =>
         val ((plan, labwork), _) = dependencies.find(_._1._1.id == assignmentPlan.id).get
         val entries = assignmentEntries(dependencies.map(_._2))
 
         build(plan, labwork, entries)
     }.toSeq)
-
-    db.run(action)
-  }
-
-  override protected def toUniqueEntity(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlan]] = collectDependencies(query) {
-    case (plan, labwork, entries) => PostgresAssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {

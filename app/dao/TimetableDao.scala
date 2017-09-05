@@ -26,7 +26,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   protected val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
   protected val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
 
-  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): DBIOAction[Seq[PostgresTimetableAtom], NoStream, Effect.Read] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) =>
       val timetableEntries = entries.map {
         case ((e, r), s) => PostgresTimetableEntryAtom(s.map(_.toLwmModel).toSet, r.toLwmModel, e.dayIndex, e.start.localTime, e.end.localTime)
@@ -35,13 +35,13 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
       PostgresTimetableAtom(labwork.toLwmModel, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toLwmModel).toSet, timetable.id)
   }
 
-  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): DBIOAction[Seq[PostgresTimetable], NoStream, Effect.Read] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
+  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = db.run(collectDependencies(filterBy(tableFilter)) {
     case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toLwmModel))
-  }
+  })
 
   private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) = {
     val timetableEntries = entries.map {
@@ -62,17 +62,17 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
     val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.supervisor === _.id)
     val innerTimetableEntry = timetableEntryQuery.join(TableQuery[RoomTable]).on(_.room === _.id).joinLeft(innerSupervisor).on(_._1.id === _._1.timetableEntry)
 
-    val action = mandatory.joinLeft(innerBlacklist).on(_._1.id === _._1.timetable).joinLeft(innerTimetableEntry).on(_._1._1.id === _._1._1.timetable).map {
-      case ((t, bl), x) => (t, bl.map(_._2), x.map(y => (y._1, y._2.map(_._2))))
-    }.result.map(_.groupBy(_._1).map {
-      case ((timetable, labwork), dependencies) =>
-        val blacklists = dependencies.flatMap(_._2)
-        val entries = dependencies.flatMap(_._3).groupBy(_._1).mapValues(_.flatMap(_._2))
+    mandatory.
+      joinLeft(innerBlacklist).on(_._1.id === _._1.timetable).
+      joinLeft(innerTimetableEntry).on(_._1._1.id === _._1._1.timetable).map {
+        case ((t, bl), x) => (t, bl.map(_._2), x.map(y => (y._1, y._2.map(_._2))))
+      }.result.map(_.groupBy(_._1).map {
+        case ((timetable, labwork), dependencies) =>
+          val blacklists = dependencies.flatMap(_._2)
+          val entries = dependencies.flatMap(_._3).groupBy(_._1).mapValues(_.flatMap(_._2))
 
-        build(timetable, labwork, blacklists, entries)
+          build(timetable, labwork, blacklists, entries)
     }.toSeq)
-
-    db.run(action)
   }
 
   override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = {

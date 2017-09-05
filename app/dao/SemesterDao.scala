@@ -61,10 +61,10 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
     ))
   }
 
-  override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): DBIOAction[Seq[PostgresSemester], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[SemesterTable, SemesterDb, Seq]): DBIOAction[Seq[PostgresSemester], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 }
 

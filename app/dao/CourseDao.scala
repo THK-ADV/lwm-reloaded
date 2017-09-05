@@ -1,11 +1,9 @@
 package dao
 
-import models.{Course, CourseDb, PostgresCourseAtom}
+import models.{Course, CourseDb, PostgresCourse, PostgresCourseAtom}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store.{CourseTable, TableFilter}
-
-import scala.concurrent.Future
 
 case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -37,19 +35,19 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, Course] {
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
+  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): DBIOAction[Seq[PostgresCourseAtom], NoStream, Effect.Read] = {
     val joinedQuery = for {
       q <- query
       l <- q.joinLecturer
     } yield (q, l)
 
-    db.run(joinedQuery.result.map(_.map {
+    joinedQuery.result.map(_.map {
       case (c, l) => PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toLwmModel, c.semesterIndex, c.id)
-    }.toSeq))
+    }.toSeq)
   }
 
-  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): DBIOAction[Seq[PostgresCourse], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 }
 

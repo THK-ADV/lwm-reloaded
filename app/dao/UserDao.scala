@@ -117,15 +117,15 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
     filterBy(List(UserSystemIdFilter(entity.systemId)))
   }
 
-  override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): DBIOAction[Seq[User], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 
-  override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
+  override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): DBIOAction[Seq[User], NoStream, Effect.Read] = {
+    query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
       case ((s, Some(d))) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toLwmModel, s.id)
       case ((dbUser, None)) => dbUser.toLwmModel
-    }))
+    })
   }
 }
 

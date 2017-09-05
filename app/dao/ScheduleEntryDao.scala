@@ -55,7 +55,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   protected val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): DBIOAction[Seq[ScheduleEntry], NoStream, Effect.Read] = collectDependencies(query) {
     case ((e, r, lab, c, d, s, lec), g, subs) =>
       val labwork = {
         val course = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
@@ -65,7 +65,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
       PostgresScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toLwmModel, subs.map(_._2.toLwmModel).toSet, g.toLwmModel, e.id)
   }
 
-  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): DBIOAction[Seq[ScheduleEntry], NoStream, Effect.Read] = collectDependencies(query) {
     case ((e, _, _, _, _, _, _), _, subs) => PostgresScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
   }
 
@@ -105,7 +105,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
 
     val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)
 
-    val action = mandatory.joinLeft(supervisors).on(_._1.id === _._1.scheduleEntry).joinLeft(group).on(_._1._1.group === _._1.id).result.map(_.groupBy(_._1._1._1.id).map {
+    mandatory.joinLeft(supervisors).on(_._1.id === _._1.scheduleEntry).joinLeft(group).on(_._1._1.group === _._1.id).result.map(_.groupBy(_._1._1._1.id).map {
       case (id, dependencies) =>
         val (((se, r, g, l, c, d, s, lec), _), _) = dependencies.find(_._1._1._1.id == id).get
         val sups = dependencies.flatMap(_._1._2)
@@ -113,8 +113,6 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
 
         build((se, r, l, c, d, s, lec), g.copy(members = gm.map(_.student).toSet), sups)
     }.toSeq)
-
-    db.run(action)
   }
 
   private def collectDependenciesMin[A, B](query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])

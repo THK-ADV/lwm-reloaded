@@ -48,6 +48,23 @@ object AbstractDaoSpec {
 
   final def takeOneOf[A](traversable: Traversable[A]) = shuffle(traversable).head
 
+  final def groupStack(students: Int, groupedSize: Int) = {
+    val privateCourses = populateCourses(4)(_ % 6)
+    val privateDegrees = populateDegrees(4)
+
+    val privateLabs = privateCourses.flatMap { c =>
+      privateDegrees.flatMap(d => populateLabworks(2)(semesters, List(c), List(d)))
+    }
+    val privateStudents = populateStudents(students)(privateDegrees)
+    //val privateLabs = populateLabworks(4)(semesters, privateCourses, privateDegrees)
+    val privateGroups = privateLabs.flatMap { l =>
+      privateStudents.grouped(groupedSize).map(s => GroupDb("", l.id, s.map(_.id).toSet)).toList
+    }
+    //val privateGroups = privateStudents.grouped(groupedSize).map(s => GroupDb("", takeOneOf(privateLabs).id, s.map(_.id).toSet)).toList
+
+    (privateCourses, privateDegrees, privateStudents, privateLabs, privateGroups)
+  }
+
   final def populateBlacklists(amount: Int) = (0 until amount).map { i =>
     val global = nextBoolean
 

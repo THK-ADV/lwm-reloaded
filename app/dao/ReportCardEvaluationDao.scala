@@ -48,25 +48,20 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, l, u)) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.id)
-  }
-
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, _, _)) => PostgresReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.id)
-  }
-
-  private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])
-                                 (build: (ReportCardEvaluationDb, LabworkDb, DbUser) => ReportCardEvaluation) = {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): DBIOAction[Seq[PostgresReportCardEvaluationAtom], NoStream, Effect.Read] = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
       s <- q.studentFk
     } yield (q, l, s)
 
-    db.run(mandatory.result.map(_.map {
-      case (e, l, u) => build(e, l, u)
-    }.toSeq))
+    mandatory.result.map(_.map {
+      case (e, l, u) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.id)
+    })
+  }
+
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): DBIOAction[Seq[PostgresReportCardEvaluation], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationDb): Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq] = {

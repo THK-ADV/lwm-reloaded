@@ -25,6 +25,10 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.lwmServiceV1Json
 
+  private def toJson(membership: GroupMembership) = Json.obj("student" -> membership.student, "group" -> membership.group)
+
+  private def toJson(cards: Seq[ReportCardEntryDb]) = Json.toJson(cards.map(_.toLwmModel))
+
   def removeStudentFromLabwork(course: String, labwork: String, student: String) = ??? // TODO remove lapp, group membership and reportCards
 
   def addStudentToLabwork(course: String, labwork: String, student: String, group: String) = restrictedContext(course)(Create) asyncContentTypedAction { _ =>
@@ -34,8 +38,8 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
       Created(Json.obj(
         "status" -> "OK",
         "labworkApplication" -> Json.toJson(lapp.toLwmModel)(PostgresLabworkApplication.writes),
-        "groupMembership" -> Json.obj("student" -> membership.student, "group" -> membership.group),
-        "reportCardEntries" -> Json.toJson(cards.map(_.toLwmModel))
+        "group membership" -> toJson(membership),
+        "reportCardEntries" -> toJson(cards)
       ))
     }
   }
@@ -44,9 +48,20 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
 
   def removeReportCardEntries(course: String, labwork: String, preview: String) = ???
 
-  def swapStudentsInGroup(course: String, labwork: String) = ???
+  def swapStudentsInGroup(course: String, labwork: String, student: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { _ =>
+    lwmServiceDao.swapStudentsInGroup(UUID.fromString(student), UUID.fromString(labwork), UUID.fromString(group)).jsonResult { res =>
+      val (membership, oldCards, updatedCards) = res
 
-  def swapSupervisors(course: String, labwork: String, preview: String) = ???
+      Ok(Json.obj(
+        "status" -> "OK",
+        "group membership" -> toJson(membership),
+        "old cards" -> toJson(oldCards),
+        "new cards" -> toJson(updatedCards.flatten)
+      ))
+    }
+  }
+
+  def swapSupervisors(course: String, labwork: String, preview: String) = ??? // TODO strategy: entries since x
 
   def swapReportCardAssignments(course: String, labwork: String, preview: String) = ???
 
@@ -58,6 +73,7 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = { // TODO TDB roles
     case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
     case _ => PartialSecureBlock(List(Admin))
   }
 

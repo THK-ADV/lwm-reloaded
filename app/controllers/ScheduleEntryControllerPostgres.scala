@@ -6,7 +6,6 @@ import dao._
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
-import play.api.mvc.{AnyContent, Request}
 import services._
 import store.{ScheduleEntryTable, TableFilter}
 import utils.{Gen, LwmMimeType}

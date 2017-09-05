@@ -60,7 +60,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
+  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): DBIOAction[Seq[PostgresLabworkAtom], NoStream, Effect.Read] = {
     val joinedQuery = for {
       q <- query
       c <- q.courseFk
@@ -69,15 +69,15 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
       l <- c.lecturerFk
     } yield (q, c, s, d, l)
 
-    db.run(joinedQuery.result.map(_.map{
+    joinedQuery.result.map(_.map{
       case (l, c, s, d, u) =>
         val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, u.toLwmModel, c.semesterIndex, c.id)
         PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
-    }))
+    })
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): DBIOAction[Seq[PostgresLabwork], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 }
 

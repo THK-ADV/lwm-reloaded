@@ -30,53 +30,49 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
-  private val schema = List(
-    TableQuery[RoleTable].schema,
-    TableQuery[DegreeTable].schema,
-    TableQuery[UserTable].schema,
-    TableQuery[SemesterTable].schema,
-    TableQuery[CourseTable].schema,
-    TableQuery[AuthorityTable].schema,
-    TableQuery[LabworkTable].schema,
-    TableQuery[LabworkApplicationTable].schema,
-    TableQuery[LabworkApplicationFriendTable].schema,
-    TableQuery[RoomTable].schema,
-    TableQuery[AssignmentPlanTable].schema,
-    TableQuery[AssignmentEntryTable].schema,
-    TableQuery[AssignmentEntryTypeTable].schema,
-    TableQuery[BlacklistTable].schema,
-    TableQuery[TimetableTable].schema,
-    TableQuery[TimetableBlacklistTable].schema,
-    TableQuery[TimetableEntryTable].schema,
-    TableQuery[TimetableEntrySupervisorTable].schema,
-    TableQuery[ReportCardEntryTable].schema,
-    TableQuery[ReportCardRescheduledTable].schema,
-    TableQuery[ReportCardRetryTable].schema,
-    TableQuery[ReportCardEntryTypeTable].schema,
-    TableQuery[ReportCardEvaluationTable].schema,
-    TableQuery[GroupTable].schema,
-    TableQuery[GroupMembershipTable].schema,
-    TableQuery[ScheduleEntryTable].schema,
-    TableQuery[ScheduleEntrySupervisorTable].schema
+  private val tableQueries = List(
+    TableQuery[RoleTable],
+    TableQuery[DegreeTable],
+    TableQuery[UserTable],
+    TableQuery[SemesterTable],
+    TableQuery[CourseTable],
+    TableQuery[AuthorityTable],
+    TableQuery[LabworkTable],
+    TableQuery[LabworkApplicationTable],
+    TableQuery[LabworkApplicationFriendTable],
+    TableQuery[RoomTable],
+    TableQuery[AssignmentPlanTable],
+    TableQuery[AssignmentEntryTable],
+    TableQuery[AssignmentEntryTypeTable],
+    TableQuery[BlacklistTable],
+    TableQuery[TimetableTable],
+    TableQuery[TimetableBlacklistTable],
+    TableQuery[TimetableEntryTable],
+    TableQuery[TimetableEntrySupervisorTable],
+    TableQuery[ReportCardEntryTable],
+    TableQuery[ReportCardRescheduledTable],
+    TableQuery[ReportCardRetryTable],
+    TableQuery[ReportCardEntryTypeTable],
+    TableQuery[ReportCardEvaluationTable],
+    TableQuery[GroupTable],
+    TableQuery[GroupMembershipTable],
+    TableQuery[ScheduleEntryTable],
+    TableQuery[ScheduleEntrySupervisorTable]
   )
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    await(db.run(DBIO.seq(
-      schema.map(_.create): _*
-    ).andThen(dependencies).
-      transactionally)
-    )
+    await(db.run(DBIO.seq(tableQueries.map(_.schema.create): _*).andThen(dependencies).transactionally))
   }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
 
-    await(db.run(DBIO.seq(
-      schema.reverseMap(_.drop): _*
-    ).transactionally))
+    await(db.run(DBIO.seq(tableQueries.reverseMap(_.schema.drop): _*).transactionally))
   }
+
+  protected def clear(): Unit = await(db.run(DBIO.seq(tableQueries.reverseMap(_.delete): _*)))
 }
 
 abstract class SesameDbSpec extends DbSpec[Sesame] with SesameModule {

@@ -31,10 +31,10 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
     existing.label == toUpdate.label
   }
 
-  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): DBIOAction[Seq[PostgresRoom], NoStream, Effect.Read] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): DBIOAction[Seq[PostgresRoom], NoStream, Effect.Read] = {
+    query.result.map(_.map(_.toLwmModel))
   }
 }
 
