@@ -69,11 +69,26 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
 
   def multipleReportCardEntries(course: String) = ???
 
-  def multipleLabworkApplications(course: String) = ???
+  def multipleLabworkApplications(course: String) = restrictedContext(course)(GetAll) asyncAction { _ =>
+    import models.LabworkApplication.writes
+
+    lwmServiceDao.multipleLabworkApplications(course).jsonResult { res =>
+      Ok(Json.obj(
+        "status" -> "OK",
+        "multiple labwork applications" -> res.map {
+          case (student, lapps) => Json.obj(
+            "student" -> student,
+            "labwork applications" -> Json.toJson(lapps.map(_.toLwmModel))
+          )
+        }
+      ))
+    }
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = { // TODO TDB roles
     case Create => SecureBlock(restrictionId, List(CourseManager))
     case Update => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager))
     case _ => PartialSecureBlock(List(Admin))
   }
 

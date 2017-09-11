@@ -5,6 +5,7 @@ import java.util.UUID
 import models.{LabworkApplicationDb, ReportCardEntryDb, ReportCardEntryTypeDb}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
+import store.UserTable
 
 trait LwmServiceDao {
   protected def db: PostgresDriver.backend.Database
@@ -49,7 +50,20 @@ trait LwmServiceDao {
     db.run(action.transactionally)
   }
 
-  protected def sorted(entries: Seq[ReportCardEntryDb]) = {
+  final def multipleLabworkApplications(course: String) = {
+    val action = labworkApplicationDao.tableQuery
+      .filter(_.isCurrentSemester)
+      .filter(_.hasCourse(course))
+      .join(TableQuery[UserTable]).on(_.applicant === _.id)
+      .result.map(_.groupBy(_._2.systemId).filter {
+        case (_, apps) => apps.groupBy(_._1.labwork).exists(_._2.size > 1)
+      }
+      .mapValues(_.map(_._1)))
+
+    db.run(action)
+  }
+
+  protected def sorted(entries: Seq[ReportCardEntryDb]): Seq[ReportCardEntryDb] = {
     import models.LwmDateTime._
 
     entries.sortBy(e => e.date.localDate.toLocalDateTime(e.start.localTime))

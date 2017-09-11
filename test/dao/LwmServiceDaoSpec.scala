@@ -104,6 +104,43 @@ final class LwmServiceDaoSpec extends PostgresDbSpec with LwmServiceDao {
             n.end.localTime.withMillisOfSecond(0).isEqual(o.end.localTime.withMillisOfSecond(0))) shouldBe false
       }
     }
+
+    "detect multiple labwork applications" in {
+      val currentSemester = run(TableQuery[SemesterTable].filter(_.current).result).head.toLwmModel
+      val labworks = privateLabs.filter(_.semester == currentSemester.id).groupBy(_.course).take(2).mapValues(_.take(2))
+      val (c1, lab1) = labworks.head
+      val (c2, lab2) = labworks.last
+
+      val app1 = privateStudents.take(10).map(s => LabworkApplicationDb(lab1.head.id, s.id, Set.empty))
+      val app2 = privateStudents.slice(10, 20).map(s => LabworkApplicationDb(lab1.last.id, s.id, Set.empty))
+      val app3 = privateStudents.slice(20, 30).map(s => LabworkApplicationDb(lab2.head.id, s.id, Set.empty))
+      val app4 = privateStudents.slice(30, 40).map(s => LabworkApplicationDb(lab2.last.id, s.id, Set.empty))
+      val appAll = app1 ++ app2 ++ app3 ++ app4
+
+      run(labworkApplicationDao.tableQuery.delete)
+      await(labworkApplicationDao.createMany(appAll)).size shouldBe appAll.size
+
+      val result = await(multipleLabworkApplications(c1.toString))
+      val result1 = await(multipleLabworkApplications(c2.toString))
+
+      result shouldBe empty
+      result1 shouldBe empty
+
+      val dup = privateStudents.find(_.id == app1.head.applicant).get.copy(id = UUID.randomUUID)
+      val dupApp = LabworkApplicationDb(lab1.head.id, dup.id, Set.empty)
+
+      run(DBIO.seq(
+        TableQuery[UserTable].forceInsert(dup),
+        TableQuery[LabworkApplicationTable].forceInsert(dupApp)
+      ))
+
+      val result2 = await(multipleLabworkApplications(c1.toString))
+
+      result2.size shouldBe 1
+      result2.head._1 shouldBe dup.systemId
+      result2.head._2.size shouldBe 2
+      result2.head._2.forall(l => l.labwork == c1 && l.applicant == dup.id)
+    }
   }
 
   override protected def beforeAll(): Unit = {

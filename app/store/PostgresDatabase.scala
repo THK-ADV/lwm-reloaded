@@ -7,6 +7,8 @@ import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Time, Timestamp}
 
+import org.joda.time.LocalDate
+
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
   def invalidated = column[Option[Timestamp]]("INVALIDATED")
@@ -22,6 +24,10 @@ trait LabworkIdTable { self: Table[_] =>
 
   def labworkFk = foreignKey("LABWORKS_fkey", labwork, TableQuery[LabworkTable])(_.id)
   def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
+
+  def hasCourse(course: String) = labworkFk.map(_.course).filter(_ === UUID.fromString(course)).exists
+
+  def isCurrentSemester = labworkFk.flatMap(_.semesterFk).filter(_.current).exists
 }
 
 trait RoomIdTable { self: Table[_] =>
@@ -116,6 +122,13 @@ class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with U
   def start = column[Date]("START")
   def end = column[Date]("END")
   def examStart = column[Date]("EXAM_START")
+
+  def current: Rep[Boolean] = {
+    import models.LwmDateTime.LocalDateConverter
+    val now = LocalDate.now.sqlDate
+
+    start <= now && end >= now
+  }
 
   override def * = (label, abbreviation, start, end, examStart, lastModified, invalidated, id) <> ((SemesterDb.apply _).tupled, SemesterDb.unapply)
 }
