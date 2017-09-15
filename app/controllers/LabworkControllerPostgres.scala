@@ -60,7 +60,7 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
   }
 
   def allFrom(course: String): Action[AnyContent] = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request)
+    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String): Action[AnyContent] = restrictedContext(course)(Get) asyncAction { request =>
