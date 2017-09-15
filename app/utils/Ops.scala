@@ -5,9 +5,11 @@ import play.api.libs.json.{JsPath, OWrites, Writes}
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 import scala.language.{higherKinds, implicitConversions}
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 import scalaz._
 import play.api.libs.json._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object Ops { self =>
 
@@ -155,6 +157,13 @@ object Ops { self =>
 
   implicit class JsPathX(p: JsPath) {
     def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] = Writes.at[Set[A]](p)(Writes.set(w))
+  }
+
+  implicit class FutureOps[T](val futures: List[Future[T]])(implicit executionContext: ExecutionContext) {
+
+    private def futureToFutureTry(f: Future[T]): Future[Try[T]] = f.map(s => Success(s)).recover { case t => Failure(t) }
+
+    def asTrys: Future[List[Try[T]]] = Future.sequence(futures.map(futureToFutureTry))
   }
 }
 

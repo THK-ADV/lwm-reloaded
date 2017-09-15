@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.helper.{AttributeFilter, PostgresResult, SecureControllerContext2, Secured2}
 import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
-import play.api.libs.json.{JsError, JsValue, Reads, Writes}
+import play.api.libs.json._
 import play.api.mvc._
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
@@ -35,6 +35,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
+  protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Seq[LwmModel] = dbModels.map(_.toLwmModel.asInstanceOf[LwmModel]).toSeq
+
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
       errors => Failure(new Throwable(JsError.toJson(errors).toString)),
@@ -49,18 +51,26 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     )
   }
 
+  protected def unwrapTrys(partialCreated: List[Try[DbModel]]): (List[DbModel], List[Throwable]) = {
+    val succeeded = partialCreated.collect { case Success(s) => s }
+    val failed = partialCreated.collect { case Failure(e) => e }
+
+    (succeeded, failed)
+  }
+
   def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
       protocols <- Future.fromTry(parseArray[Protocol](request))
       dbModels = protocols.map(p => toDbModel(p, None))
-      created <- abstractDao.createMany(dbModels)
+      partialCreated <- abstractDao.createManyPartial(dbModels)
+      (succeeded, failed) = unwrapTrys(partialCreated)
       lwmModel <- if (atomic)
-        abstractDao.getMany(created.map(_.id).toList, atomic)
+        abstractDao.getMany(succeeded.map(_.id), atomic)
       else
-        Future.successful(created.map(_.toLwmModel.asInstanceOf[LwmModel]))
-    } yield lwmModel).jsonResult
+        Future.successful(toLwmModel(succeeded))
+    } yield (toLwmModel(dbModels), lwmModel, failed)).jsonResult
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>

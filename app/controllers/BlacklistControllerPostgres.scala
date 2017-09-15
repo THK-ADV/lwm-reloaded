@@ -54,8 +54,9 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
 
     (for {
       blacklists <- blacklistService.fetchByYear2(year)
-      created <- abstractDao.createMany(blacklists)
-    } yield created.map(_.toLwmModel)).jsonResult
+      partialCreated <- abstractDao.createManyPartial(blacklists)
+      (succeeded, failed) = unwrapTrys(partialCreated)
+    } yield (blacklists.map(_.toLwmModel), succeeded.map(_.toLwmModel), failed)).jsonResult
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

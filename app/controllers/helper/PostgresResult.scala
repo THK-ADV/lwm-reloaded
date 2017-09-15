@@ -47,4 +47,20 @@ trait PostgresResult { self: Controller =>
       case NonFatal(e) => internalServerError(e)
     }
   }
+
+  implicit class PartialResult[A](val future: Future[(Seq[A], Seq[A], List[Throwable])]) {
+    def jsonResult(implicit writes: Writes[A]): Future[Result] = future.map { res =>
+      val (attempted, created, throwable) = res
+      val status = if (created.isEmpty) "KO" else if (throwable.isEmpty) "OK" else "Partial OK"
+
+      Ok(Json.obj(
+        "status" -> status,
+        "attempted" -> Json.toJson(attempted),
+        "created" -> Json.toJson(created),
+        "failed" -> Json.toJson(throwable.map(_.getLocalizedMessage))
+      ))
+    }.recover {
+      case NonFatal(e) => internalServerError(e)
+    }
+  }
 }
