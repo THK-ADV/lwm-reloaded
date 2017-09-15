@@ -124,7 +124,10 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
-    filterBy(List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))).filter(_.course === entity.course)
+    filterBy(List(
+      AuthorityUserFilter(entity.user.toString),
+      AuthorityRoleFilter(entity.role.toString))
+    ).filter(_.course === entity.course)
   }
 
   // TODO refactor based on AssignmentPlanService.toAtomic
