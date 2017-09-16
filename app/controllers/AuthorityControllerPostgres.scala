@@ -36,8 +36,8 @@ final class AuthorityControllerPostgres(val abstractDao: AuthorityDao, val sessi
       auth <- abstractDao.getById(id)
       student = Role.Student.label
       employee = Role.Employee.label
-      hasBasicRole = auth.map(_.asInstanceOf[PostgresAuthorityAtom]).exists(a => a.role.label == student || a.role.label == employee)
-      result <- if (hasBasicRole)
+      isBasicRole = auth.map(_.asInstanceOf[PostgresAuthorityAtom]).exists(a => a.role.label == student || a.role.label == employee)
+      result <- if (!isBasicRole)
         delete0(uuid)
       else
         Future.successful(preconditionFailed(s"The user associated with $id have to remain with at least one basic role, namely $student or $employee"))
