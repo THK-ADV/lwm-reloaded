@@ -7,7 +7,7 @@ import slick.driver.PostgresDriver
 import slick.lifted.TableQuery
 import store.{ReportCardEvaluationTable, TableFilter}
 import slick.driver.PostgresDriver.api._
-
+import models.LwmDateTime.SqlTimestampConverter
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -49,11 +49,11 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
   override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, l, u)) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.id)
+    case ((e, l, u)) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, _, _)) => PostgresReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.id)
+    case ((e, _, _)) => PostgresReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
   }
 
   private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models._
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
 import services.ReportCardService.{BoolBased, IntBased, ReportCardEvaluationPattern}
 
@@ -263,6 +263,43 @@ final class ReportCardService2Spec extends WordSpec with TestBaseDefinition {
       assert(result, futurePattern, attBool = false, 2, certBool = false, 2, bonBool = false, 0, suppBool = true, 0)
     }
 
+    "return only those evaluation which matches given pattern" in {
+      val cards = List(
+        template(Set(
+          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
+          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+        )),
+        template(Set(
+          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
+          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+        )),
+        template(Set(
+          PostgresReportCardEntryType(Attendance.entryType),
+          PostgresReportCardEntryType(Certificate.entryType)
+        )),
+        template(Set(
+          PostgresReportCardEntryType(Attendance.entryType),
+          PostgresReportCardEntryType(Certificate.entryType)
+        )),
+        template(Set(
+          PostgresReportCardEntryType(Attendance.entryType),
+          PostgresReportCardEntryType(Certificate.entryType),
+          PostgresReportCardEntryType(Bonus.entryType)
+        ))
+      )
+
+      val futurePattern = List(
+        ReportCardEvaluationPattern(Attendance.entryType, 2, BoolBased)
+      )
+
+      val result = ReportCardService.evaluate(cards, futurePattern)
+
+      result.size shouldBe 1
+      result.head.label shouldBe Attendance.entryType
+      result.head.bool shouldBe true
+      result.head.int shouldBe 2
+    }
+
     "evaluate deltas of given student" in {
       val partialEval = partialReportCardEvaluation(UUID.randomUUID, UUID.randomUUID) _
       val partialEvalDb = partialReportCardEvaluationDb(UUID.randomUUID, UUID.randomUUID) _
@@ -450,7 +487,7 @@ final class ReportCardService2Spec extends WordSpec with TestBaseDefinition {
   }
 
   private def partialReportCardEvaluation(student: UUID, labwork: UUID)(label: String, bool: Boolean, int: Int) = {
-    PostgresReportCardEvaluation(student, labwork, label, bool, int)
+    PostgresReportCardEvaluation(student, labwork, label, bool, int, DateTime.now)
   }
 
   private def partialReportCardEvaluationDb(student: UUID, labwork: UUID)(label: String, bool: Boolean, int: Int) = {
