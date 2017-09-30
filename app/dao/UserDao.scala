@@ -68,15 +68,15 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
     } yield (dbUser.toLwmModel, maybeAuth)
   }
 
-  final def buddyResult(studentId: String, buddySystemId: String, labwork: String): Future[BuddyResult] = {
-    val buddySystemIdFilter = UserSystemIdFilter(buddySystemId)
-    val requesterIdFilter = UserIdFilter(studentId)
+  final def buddyResult(requesterId: String, requesteeSystemId: String, labwork: String): Future[BuddyResult] = {
+    val requesteeSystemIdFilter = UserSystemIdFilter(requesteeSystemId)
+    val requesterIdFilter = UserIdFilter(requesterId)
 
     val buddy = for {
-      buddy <- tableQuery.filter(buddySystemIdFilter.predicate)
+      requestee <- tableQuery.filter(requesteeSystemIdFilter.predicate)
       requester <- tableQuery.filter(requesterIdFilter.predicate)
-      sameDegree = buddy.enrollment === requester.enrollment
-    } yield (buddy, sameDegree.getOrElse(false))
+      sameDegree = requestee.enrollment === requester.enrollment
+    } yield (requestee, sameDegree.getOrElse(false))
 
     val friends = for {
       b <- buddy
@@ -88,7 +88,7 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
       f <- friends.result
     } yield {
       val sameDegree = b.map(_._2).reduceOption(_ && _)
-      val friends = f.exists(_.id == UUID.fromString(studentId))
+      val friends = f.exists(_.id == UUID.fromString(requesterId))
 
       sameDegree.fold[BuddyResult](NotExisting) { sameDegree =>
         if (sameDegree)

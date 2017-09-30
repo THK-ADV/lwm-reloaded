@@ -49,9 +49,9 @@ case class PostgresReportCardEntryProtocol(student: UUID, labwork: UUID, label: 
 
 case class PostgresReportCardEntryType(entryType: String, bool: Option[Boolean] = None, int: Int = 0, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
-case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabwork, label: String, bool: Boolean, int: Int, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabwork, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
 case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
@@ -113,7 +113,7 @@ case class ReportCardEntryTypeDb(reportCardEntry: Option[UUID], reportCardRetry:
 }
 
 case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, id)
+  override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, lastModified.dateTime, id)
 }
 
 case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
@@ -333,6 +333,7 @@ object PostgresReportCardEvaluationAtom {
     (JsPath \ "label").write[String] and
     (JsPath \ "bool").write[Boolean] and
     (JsPath \ "int").write[Int] and
+    (JsPath \ "lastModified").write[DateTime] and
     (JsPath \ "id").write[UUID]
   ) (unlift(PostgresReportCardEvaluationAtom.unapply))
 }

@@ -29,6 +29,7 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
     lwmEntity.label,
     lwmEntity.bool,
     lwmEntity.int,
+    lwmEntity.lastModified,
     lwmEntity.id
   )
 

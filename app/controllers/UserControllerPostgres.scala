@@ -51,10 +51,17 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
     }
   }
 
-  def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
-    val requesterId = request.session(SessionController.userId)
+  case class BuddyRequest(requesterId: String, requesteeSystemId: String, labwork: String)
 
-    abstractDao.buddyResult(requesterId, systemId, labwork) jsonResult { buddyResult =>
+  def buddy = contextFrom(Get) asyncContentTypedAction { request =>
+    val buddyReads = Json.reads[BuddyRequest]
+
+    (for {
+      buddyRequest <- Future.fromTry(parse(request)(buddyReads))
+      buddyResult <- abstractDao.buddyResult(buddyRequest.requesterId, buddyRequest.requesteeSystemId, buddyRequest.labwork)
+    } yield (buddyResult, buddyRequest.requesteeSystemId)) jsonResult { r =>
+      val (buddyResult, systemId) = r
+
       buddyResult match {
         case Allowed => Ok(Json.obj(
           "status" -> "OK",
