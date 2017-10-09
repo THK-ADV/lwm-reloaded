@@ -2,8 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import dao.{AuthorityDao, LabworkApplicationDao, LabworkApplicationLabworkFilter}
-import models.Permissions.labworkApplication
+import dao.{AuthorityDao, LabworkApplicationApplicantFilter, LabworkApplicationDao, LabworkApplicationLabworkFilter}
 import models.Role.{Employee, Student}
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -11,7 +10,7 @@ import services.SessionHandlingService
 import store.{LabworkApplicationTable, TableFilter}
 import utils.LwmMimeType
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object LabworkApplicationControllerPostgres {
   lazy val labworkAttribute = "labwork"
@@ -33,7 +32,9 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
     import controllers.LabworkApplicationControllerPostgres._
 
     (appendTo, (attribute, value)) match { // TODO expand attributes
-      case (list, (`labworkAttribute`, labworks)) => list.map(_.+:(LabworkApplicationLabworkFilter(labworks)))
+      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(LabworkApplicationLabworkFilter(labwork)))
+      case (list, (`applicantAttribute`, applicant)) => list.map(_.+:(LabworkApplicationApplicantFilter(applicant)))
+      case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
