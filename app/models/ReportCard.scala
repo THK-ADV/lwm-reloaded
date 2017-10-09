@@ -51,7 +51,7 @@ case class PostgresReportCardEntryType(entryType: String, bool: Option[Boolean] 
 
 case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
-case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabwork, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
 case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
@@ -329,7 +329,7 @@ object PostgresReportCardEvaluation extends JsonSerialisation[PostgresReportCard
 object PostgresReportCardEvaluationAtom {
   implicit def writesAtom: Writes[PostgresReportCardEvaluationAtom] = (
     (JsPath \ "student").write[User](User.writes) and
-    (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
+    (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writesAtom) and
     (JsPath \ "label").write[String] and
     (JsPath \ "bool").write[Boolean] and
     (JsPath \ "int").write[Int] and

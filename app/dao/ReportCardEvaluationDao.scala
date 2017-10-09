@@ -49,7 +49,13 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
   override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, l, u)) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
+    case ((e, (l, c, d, s, lec), u)) =>
+      val labworkAtom = {
+        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
+        PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
+      }
+
+      PostgresReportCardEvaluationAtom(u.toLwmModel, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
@@ -57,15 +63,17 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 
   private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])
-                                 (build: (ReportCardEvaluationDb, LabworkDb, DbUser) => ReportCardEvaluation) = {
+                                 (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, DbUser), DbUser) => ReportCardEvaluation) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
       s <- q.studentFk
-    } yield (q, l, s)
+      (cou, deg, sem) <- l.fullJoin
+      lec <- cou.joinLecturer
+    } yield (q, l, s, cou, deg, sem, lec)
 
     db.run(mandatory.result.map(_.map {
-      case (e, l, u) => build(e, l, u)
+      case (e, l, u, cou, deg, sem, lec) => build(e, (l, cou, deg, sem, lec), u)
     }.toSeq))
   }
 
