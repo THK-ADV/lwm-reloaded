@@ -21,6 +21,9 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
 
   val applicants = (0 until maxApplicants).map(applicant).toList
 
+  val student = populateStudents(1).head
+  val lapp = labworkApplication(Some(student.id), withFriends = true)
+
   @scala.annotation.tailrec
   final def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
     val applicant = applicants(nextInt(maxApplicants - reservedApplicants))
@@ -41,10 +44,10 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
   }
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[UserTable].forceInsertAll(employees),
+    TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[UserTable].forceInsertAll(employees ++ List(student)),
     TableQuery[SemesterTable].forceInsertAll(semesters),
     TableQuery[CourseTable].forceInsertAll(courses),
-    TableQuery[DegreeTable].forceInsertAll(degrees),
     TableQuery[LabworkTable].forceInsertAll(labworks),
     TableQuery[UserTable].forceInsertAll(applicants)
   )
@@ -98,8 +101,6 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
   }
 
   "A LabworkApplicationService2Spec " should {
-
-    val lapp = labworkApplication(Some(dbEntity.applicant), withFriends = true)
 
     "create a labworkApplication with friends" in {
       val result = await(create(lapp))
