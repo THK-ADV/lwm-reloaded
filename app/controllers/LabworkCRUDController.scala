@@ -55,7 +55,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
   )
 
   override protected def compareModel(input: LabworkProtocol, output: Labwork): Boolean = {
-    input.label == output.label && input.description == output.description && input.subscribable == output.subscribable && input.published == output.published
+    input.description == output.description && input.subscribable == output.subscribable && input.published == output.published
   }
 
   override protected def fromInput(input: LabworkProtocol, existing: Option[Labwork]): Labwork = existing match {
@@ -85,6 +85,7 @@ class LabworkCRUDController(val repository: SesameRepository, val sessionService
 
     select("s") where {
       **(v("s"), p(rdf.`type`), s(lwm.Labwork)).
+        **(v("s"), p(lwm.label), o(input.label)).
         **(v("s"), p(lwm.semester), s(Semester.generateUri(input.semester)(namespace))).
         **(v("s"), p(lwm.course), s(Course.generateUri(input.course)(namespace))).
         **(v("s"), p(lwm.degree), s(Degree.generateUri(input.degree)(namespace)))

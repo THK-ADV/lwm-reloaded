@@ -524,7 +524,7 @@ class LabworkCRUDControllerSpec extends AbstractCRUDControllerSpec[LabworkProtoc
 
       val request = FakeRequest(
         GET,
-        s"/${entityTypeName.toLowerCase}/degrees/${degree.id}"
+        s"/${entityTypeName.toLowerCase}/degrees/${degree.id}?${LabworkCRUDController.subscribableAttribute}=true"
       )
 
       val result = controller.allWithDegree(degree.id.toString)(request)
