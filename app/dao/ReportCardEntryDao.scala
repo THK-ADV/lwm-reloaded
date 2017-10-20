@@ -20,19 +20,41 @@ case class ReportCardEntryLabworkFilter(value: String) extends TableFilter[Repor
 }
 
 case class ReportCardEntryCourseFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 case class ReportCardEntryRoomFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = _.room === UUID.fromString(value)
 }
 
+case class ReportCardEntryDateFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.onDate(value)
+}
+
+case class ReportCardEntryStartFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.onStart(value)
+}
+
+case class ReportCardEntryEndFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.onEnd(value)
+}
+
+case class ReportCardEntrySinceFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.since(value)
+}
+
+case class ReportCardEntryUntilFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.until(value)
+}
+
 case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = r => TableQuery[ScheduleEntryTable].filter { s =>
-    s.id === UUID.fromString(value) &&
-      ((s.labwork === r.labwork && s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date) ||
-        TableQuery[ReportCardRescheduledTable].filter(rs => rs.reportCardEntry === r.id && rs.room === r.room && rs.start === r.start && rs.end === r.end && rs.date === r.date).exists ||
-        TableQuery[ReportCardRetryTable].filter(rt => rt.reportCardEntry === r.id && rt.room === r.room && rt.start === r.start && rt.end === r.end && rt.date === r.date).exists)
+    val schedule = s.id === UUID.fromString(value)
+    val ordinary = s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
+    val rescheduled = TableQuery[ReportCardRescheduledTable].filter(rs => rs.reportCardEntry === r.id && rs.room === s.room && rs.start === s.start && rs.end === s.end && rs.date === s.date).exists
+    val retry = TableQuery[ReportCardRetryTable].filter(rt => rt.reportCardEntry === r.id && rt.room === s.room && rt.start === s.start && rt.end === s.end && rt.date === s.date).exists
+
+    schedule && (ordinary || rescheduled || retry)
   }.exists
 }
 

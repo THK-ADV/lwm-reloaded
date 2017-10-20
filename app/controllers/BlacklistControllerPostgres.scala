@@ -16,6 +16,7 @@ import scala.util.{Failure, Try}
 object BlacklistControllerPostgres {
   lazy val globalAttribute = "global"
   lazy val labelAttribute = "label"
+
   lazy val dateAttribute = "date"
   lazy val startAttribute = "start"
   lazy val endAttribute = "end"

@@ -15,6 +15,7 @@ import scala.util.{Failure, Try}
 object LabworkApplicationControllerPostgres {
   lazy val labworkAttribute = "labwork"
   lazy val applicantAttribute = "applicant"
+
   lazy val sinceAttribute = "since"
   lazy val untilAttribute = "until"
 }

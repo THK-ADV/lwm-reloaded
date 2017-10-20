@@ -6,6 +6,7 @@ import models._
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Time, Timestamp}
+import models.LwmDateTime._
 
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
@@ -22,6 +23,8 @@ trait LabworkIdTable { self: Table[_] =>
 
   def labworkFk = foreignKey("LABWORKS_fkey", labwork, TableQuery[LabworkTable])(_.id)
   def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
+
+  def memberOfCourse(course: String) = labworkFk.map(_.course).filter(_ === UUID.fromString(course)).exists
 }
 
 trait RoomIdTable { self: Table[_] =>
@@ -57,6 +60,12 @@ trait DateStartEndTable { self: Table[_] =>
   def date = column[Date]("DATE")
   def start = column[Time]("START")
   def end = column[Time]("END")
+
+  def onDate(millis: String) = date === millis.sqlDateFromMillis
+  def onStart(millis: String) = start === millis.sqlTimeFromMillis
+  def onEnd(millis: String) = end === millis.sqlTimeFromMillis
+  def since(millis: String) = date >= millis.sqlDateFromMillis
+  def until(millis: String) = date <= millis.sqlDateFromMillis
 }
 
 trait GroupIdTable { self: Table[_] =>
