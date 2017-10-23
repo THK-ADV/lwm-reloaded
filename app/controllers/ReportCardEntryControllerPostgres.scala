@@ -42,12 +42,17 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   override protected implicit val reads: Reads[PostgresReportCardEntryProtocol] = PostgresReportCardEntry.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
-    (appendTo, (attribute, value)) match { // TODO CONTINUE
+    (appendTo, (attribute, value)) match {
       case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
       case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
       case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
       case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
       case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
+      case (list, (`dateAttribute`, date)) => list.map(_.+:(ReportCardEntryDateFilter(date)))
+      case (list, (`startAttribute`, start)) => list.map(_.+:(ReportCardEntryStartFilter(start)))
+      case (list, (`endAttribute`, end)) => list.map(_.+:(ReportCardEntryEndFilter(end)))
+      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ReportCardEntrySinceFilter(since)))
+      case (list, (`untilAttribute`, until)) => list.map(_.+:(ReportCardEntryUntilFilter(until)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
@@ -73,7 +78,7 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   }
 
   def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(scheduleEntryAttribute -> Seq(course))) // TODO don't know if we can make something like this
+    all(NonSecureBlock)(request.append(scheduleEntryAttribute -> Seq(scheduleEntry)))
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>

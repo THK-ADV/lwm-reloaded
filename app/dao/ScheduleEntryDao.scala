@@ -16,7 +16,7 @@ case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[Schedul
 }
 
 case class ScheduleEntryCourseFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 case class ScheduleEntryGroupFilter(value: String) extends TableFilter[ScheduleEntryTable] {
@@ -28,23 +28,23 @@ case class ScheduleEntrySupervisorFilter(value: String) extends TableFilter[Sche
 }
 
 case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date === value.sqlDateFromMillis
+  override def predicate = _.onDate(value)
 }
 
 case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.start === value.sqlTimeFromMillis
+  override def predicate = _.onStart(value)
 }
 
 case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.end === value.sqlTimeFromMillis
+  override def predicate = _.onEnd(value)
 }
 
 case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date >= value.sqlDateFromMillis
+  override def predicate = _.since(value)
 }
 
 case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date <= value.sqlDateFromMillis
+  override def predicate = _.until(value)
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {

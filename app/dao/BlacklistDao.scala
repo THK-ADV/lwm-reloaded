@@ -17,23 +17,23 @@ case class BlacklistLabelFilter(value: String) extends TableFilter[BlacklistTabl
 }
 
 case class BlacklistDateFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date === value.sqlDateFromMillis
+  override def predicate = _.onDate(value)
 }
 
 case class BlacklistStartFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.start === value.sqlTimeFromMillis
+  override def predicate = _.onStart(value)
 }
 
 case class BlacklistEndFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.end === value.sqlTimeFromMillis
+  override def predicate = _.onEnd(value)
 }
 
 case class BlacklistSinceFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date >= value.sqlDateFromMillis
+  override def predicate = _.since(value)
 }
 
 case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.date <= value.sqlDateFromMillis
+  override def predicate = _.until(value)
 }
 
 trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {

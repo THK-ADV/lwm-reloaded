@@ -1,5 +1,6 @@
 package dao
 
+import java.sql.Timestamp
 import java.util.UUID
 
 import models.LwmDateTime._
@@ -16,6 +17,14 @@ case class LabworkApplicationApplicantFilter(value: String) extends TableFilter[
 
 case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[LabworkApplicationTable] {
   override def predicate = _.labwork === UUID.fromString(value)
+}
+
+case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+  override def predicate = _.timestamp >= new Timestamp(value.toLong)
+}
+
+case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+  override def predicate = _.timestamp <= new Timestamp(value.toLong)
 }
 
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
