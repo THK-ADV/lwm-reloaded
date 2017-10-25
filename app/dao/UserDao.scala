@@ -13,15 +13,17 @@ import store.{TableFilter, UserTable}
 
 import scala.concurrent.Future
 
-sealed trait BuddyResult
+sealed trait BuddyResult {
+  override def toString: String = getClass.getSimpleName
+}
 
-case object Allowed extends BuddyResult
+case class Allowed(buddy: User) extends BuddyResult
 
-case object Almost extends BuddyResult
+case class Almost(buddy: User) extends BuddyResult
 
-case object Denied extends BuddyResult
+case class Denied(buddy: User) extends BuddyResult
 
-case object NotExisting extends BuddyResult
+case class NotExisting(buddy: String) extends BuddyResult
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
@@ -83,20 +85,25 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
       friends <- labworkApplicationService.friendsOf(b._1.id, UUID.fromString(labwork))
     } yield friends
 
-    db.run(for {
+    val action = for {
       b <- buddy.result
       f <- friends.result
     } yield {
-      val sameDegree = b.map(_._2).reduceOption(_ && _)
+      val optRequestee = b.headOption.map(_._1.toLwmModel)
+      val optSameDegree = b.map(_._2).reduceOption(_ && _)
       val friends = f.exists(_.id == UUID.fromString(requesterId))
 
-      sameDegree.fold[BuddyResult](NotExisting) { sameDegree =>
-        if (sameDegree)
-          if (friends) Allowed else Almost
-        else
-          Denied
+      (optRequestee, optSameDegree) match {
+        case (Some(requestee), Some(sameDegree)) =>
+          if (sameDegree)
+            if (friends) Allowed(requestee) else Almost(requestee)
+          else
+            Denied(requestee)
+        case _ => NotExisting(requesteeSystemId)
       }
-    })
+    }
+
+    db.run(action)
   }
 
   protected def degreeService: DegreeDao
