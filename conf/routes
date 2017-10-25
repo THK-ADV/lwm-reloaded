@@ -337,7 +337,7 @@ GET           /students/buddies/:systemId                                       
 # Users 2.0
 POST          /api2/users                                                             controllers.UserControllerPostgres.create()
 GET           /api2/users                                                             controllers.UserControllerPostgres.all()
-GET           /api2/users/buddies                                                     controllers.UserControllerPostgres.buddy()
+GET           /api2/labworks/:labwork/users/:user/buddies/:buddy                      controllers.UserControllerPostgres.buddy(labwork, user, buddy)
 GET           /api2/users/:id                                                         controllers.UserControllerPostgres.get(id)
 
 # Sessions

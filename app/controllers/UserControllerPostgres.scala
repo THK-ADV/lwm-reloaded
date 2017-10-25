@@ -51,37 +51,31 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
     }
   }
 
-  case class BuddyRequest(requesterId: String, requesteeSystemId: String, labwork: String)
-
-  def buddy = contextFrom(Get) asyncContentTypedAction { request =>
-    val buddyReads = Json.reads[BuddyRequest]
-
-    (for {
-      buddyRequest <- Future.fromTry(parse(request)(buddyReads))
-      buddyResult <- abstractDao.buddyResult(buddyRequest.requesterId, buddyRequest.requesteeSystemId, buddyRequest.labwork)
-    } yield (buddyResult, buddyRequest.requesteeSystemId)) jsonResult { r =>
-      val (buddyResult, systemId) = r
-
+  def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
+    abstractDao.buddyResult(student, buddy, labwork).jsonResult { buddyResult =>
       buddyResult match {
-        case Allowed => Ok(Json.obj(
+        case Allowed(b) => Ok(Json.obj(
           "status" -> "OK",
           "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId hat Dich ebenfalls referenziert."
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
         ))
-        case Almost => Ok(Json.obj(
+        case Almost(b) => Ok(Json.obj(
           "status" -> "OK",
           "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
         ))
-        case Denied => BadRequest(Json.obj(
+        case Denied(b) => BadRequest(Json.obj(
           "status" -> "KO",
           "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId und Du sind nicht im selben Studiengang."
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
         ))
-        case NotExisting => BadRequest(Json.obj(
+        case NotExisting(b) => BadRequest(Json.obj(
           "status" -> "KO",
           "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId hat sich noch nicht im Praktikumstool angemeldet."
+          "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
         ))
       }
     }
