@@ -6,7 +6,7 @@ import dao._
 import models.Role._
 import models.User.UserProtocol
 import models._
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import services._
 import store.{TableFilter, UserTable}
 import utils.LwmMimeType
@@ -75,6 +75,7 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
         case NotExisting(b) => BadRequest(Json.obj(
           "status" -> "KO",
           "type" -> buddyResult.toString,
+          "buddy" -> None,
           "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
         ))
       }

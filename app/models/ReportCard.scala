@@ -53,8 +53,6 @@ case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: Str
 
 case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
-case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
-
 case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 // DB
@@ -116,21 +114,6 @@ case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, b
   override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, lastModified.dateTime, id)
 }
 
-case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toLwmModel = PostgresReportCardRescheduled(date.localDate, start.localTime, end.localTime, room, reason, id)
-
-  override def equals(that: scala.Any) = that match {
-    case ReportCardRescheduledDb(rc, dt, st, et, r, rs, _, _, i) =>
-      rc == reportCardEntry &&
-        dt.localDate.isEqual(date.localDate) &&
-        st.localTime.isEqual(start.localTime) &&
-        et.localTime.isEqual(end.localTime) &&
-        r == room &&
-        rs == reason &&
-        i == id
-  }
-}
-
 case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   //def toReportCardRetry(types: Seq[ReportCardEntryTypeDb]) = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, types.map(_.toLwmModel).toSet, reason, id)
 
@@ -162,8 +145,6 @@ case class SesameReportCardEvaluationAtom(student: SesameStudent, labwork: Sesam
 // POSTGRES
 
 case class PostgresReportCardEntryAtom(student: User, labwork: PostgresLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, entryTypes: Set[PostgresReportCardEntryType], rescheduled: Option[PostgresReportCardRescheduledAtom], retry: Option[PostgresReportCardRetryAtom], id: UUID) extends ReportCardEntry
-
-case class PostgresReportCardRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, reason: Option[String], id: UUID) extends UniqueEntity
 
 case class PostgresReportCardRetryAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String], id: UUID) extends UniqueEntity
 
@@ -295,19 +276,12 @@ object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardE
 }
 
 object PostgresReportCardEntry extends JsonSerialisation[PostgresReportCardEntryProtocol, PostgresReportCardEntry, PostgresReportCardEntryAtom] {
+
   override implicit def reads = Json.reads[PostgresReportCardEntryProtocol]
 
   override implicit def writes = Json.writes[PostgresReportCardEntry]
 
   override implicit def writesAtom = PostgresReportCardEntryAtom.writesAtom
-}
-
-object PostgresReportCardRescheduled extends JsonSerialisation[PostgresReportCardRescheduled, PostgresReportCardRescheduled, PostgresReportCardRescheduledAtom] {
-  override implicit def reads = Json.reads[PostgresReportCardRescheduled]
-
-  override implicit def writes = Json.writes[PostgresReportCardRescheduled]
-
-  override implicit def writesAtom = PostgresReportCardRescheduledAtom.writesAtom
 }
 
 object PostgresReportCardRetry extends JsonSerialisation[PostgresReportCardRetry, PostgresReportCardRetry, PostgresReportCardRetryAtom] {
@@ -338,17 +312,6 @@ object PostgresReportCardEvaluationAtom {
   ) (unlift(PostgresReportCardEvaluationAtom.unapply))
 }
 
-object PostgresReportCardRescheduledAtom {
-  implicit def writesAtom: Writes[PostgresReportCardRescheduledAtom] = (
-    (JsPath \ "date").write[LocalDate] and
-      (JsPath \ "start").write[LocalTime] and
-      (JsPath \ "end").write[LocalTime] and
-      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
-      (JsPath \ "reason").writeNullable[String] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(PostgresReportCardRescheduledAtom.unapply))
-}
-
 object PostgresReportCardRetryAtom {
   implicit def writesAtom: Writes[PostgresReportCardRetryAtom] = (
     (JsPath \ "date").write[LocalDate] and
@@ -371,7 +334,7 @@ object PostgresReportCardEntryAtom {
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
       (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
-      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduledAtom] and
+      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduledAtom](PostgresReportCardRescheduledAtom.writesAtom) and
       (JsPath \ "retry").writeNullable[PostgresReportCardRetryAtom] and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresReportCardEntryAtom.unapply))

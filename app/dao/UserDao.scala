@@ -13,7 +13,9 @@ import store.{TableFilter, UserTable}
 
 import scala.concurrent.Future
 
-sealed trait BuddyResult
+sealed trait BuddyResult {
+  override def toString: String = getClass.getSimpleName
+}
 
 case class Allowed(buddy: User) extends BuddyResult
 
