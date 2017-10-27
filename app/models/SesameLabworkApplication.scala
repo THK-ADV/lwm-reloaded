@@ -80,7 +80,7 @@ object PostgresLabworkApplication extends JsonSerialisation[PostgresLabworkAppli
 
 object LabworkApplicationDb {
   def from(protocol: PostgresLabworkApplicationProtocol, existingId: Option[UUID]) = {
-    LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends)
+    LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends, id = existingId getOrElse UUID.randomUUID)
   }
 }
 
