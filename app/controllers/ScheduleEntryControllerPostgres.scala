@@ -106,8 +106,9 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
       labwork = s.labwork
       (se, gs) = s.entries.foldLeft((List.empty[ScheduleEntryDb], Set.empty[GroupDb])) {
         case ((entries, groups), e) =>
-          val scheduleEntry = ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)
-          val group = GroupDb(e.group.label, e.group.labwork, e.group.members)
+          val groupId = e.group.id
+          val scheduleEntry = ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, groupId)
+          val group = GroupDb(e.group.label, e.group.labwork, e.group.members, id = groupId)
 
           (entries.+:(scheduleEntry), groups + group)
       }
