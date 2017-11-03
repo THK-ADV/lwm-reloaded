@@ -11,19 +11,23 @@ import scalaz.StreamT._
 sealed trait GroupingStrategy {
 
   @scala.annotation.tailrec
-  private def go(min: Int, max: Int, p: Vector[UUID]): List[Vector[UUID]] = {
+  private def go(min: Int, max: Int, limit: Option[Int], p: Vector[UUID]): List[Vector[UUID]] = {
     (p.size % min, p.size / min) match {
       case (m, d) if m == d =>
         p.grouped(min + 1).toList
       case (m, d) if m < d =>
         val g = p.grouped(min).toList
 
-        g.take(g.size - 1).zipAll(g.last.map(Option.apply), Vector.empty, None).map {
-          case (list, Some(toAdd)) => list.+:(toAdd)
-          case (list, None) => list
+        if (limit.contains(g.size)) {
+          g
+        } else {
+          g.take(g.size - 1).zipAll(g.last.map(Option.apply), Vector.empty, None).map {
+            case (list, Some(toAdd)) => list.+:(toAdd)
+            case (list, None) => list
+          }
         }
       case (m, d) if m > d =>
-        go(min + 1, max, p)
+        go(min + 1, max, limit, p)
       case _ =>
         List.empty
     }
@@ -35,9 +39,9 @@ sealed trait GroupingStrategy {
       val min = people.size / count
       val max = min + 1
 
-      go(min, max, people)
+      go(min, max, Some(count), people)
 
-    case RangeGrouping(min, max) => go(min.toInt, max.toInt, people)
+    case RangeGrouping(min, max) => go(min.toInt, max.toInt, None, people)
   }
 }
 
