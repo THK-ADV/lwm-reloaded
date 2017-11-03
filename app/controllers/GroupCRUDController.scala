@@ -67,6 +67,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
     case Create => SecureBlock(restrictionId, group.create)
     case GetAll => SecureBlock(restrictionId, group.getAll)
     case Update => SecureBlock(restrictionId, prime)
+    case Delete => SecureBlock(restrictionId, prime)
     case _ => PartialSecureBlock(god)
   }
 
@@ -98,6 +99,10 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
 
   def updateFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
     update(labwork, NonSecureBlock)(rebase(group))
+  }
+
+  def deleteFrom(course: String, labwork: String, id: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
+    delete(id, NonSecureBlock)(rebase(id))
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
