@@ -12,7 +12,7 @@ import utils.{Attempt, Continue, LwmMimeType, Return}
 import controllers.GroupCRUDController._
 import scala.collection.Map
 import scala.util.{Failure, Success, Try}
-import models.Permissions.{group, god}
+import models.Permissions.{group, god, prime}
 
 object GroupCRUDController {
   val labworkAttribute = "labwork"
@@ -66,6 +66,7 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, group.create)
     case GetAll => SecureBlock(restrictionId, group.getAll)
+    case Update => SecureBlock(restrictionId, prime)
     case _ => PartialSecureBlock(god)
   }
 
@@ -93,6 +94,10 @@ class GroupCRUDController(val repository: SesameRepository, val sessionService: 
       .flatMap(strategy => attempt(groupService.groupBy(UUID.fromString(labwork), strategy)))
       .flatMap(atomic)
       .mapResult(set => Ok(Json.toJson(set)).as(mimeType))
+  }
+
+  def updateFrom(course: String, labwork: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { implicit request =>
+    update(labwork, NonSecureBlock)(rebase(group))
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>

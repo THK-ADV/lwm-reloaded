@@ -28,6 +28,7 @@ GET           /courses/:c/labworks/:l/groups                                    
 GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.GroupCRUDController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/groups/preview                                  controllers.GroupCRUDController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/groups/preview                           controllers.GroupCRUDController.previewAtomic(c, l)
+PUT           /courses/:c/labworks/:l/groups/:id                                      controllers.GroupCRUDController.updateFrom(c, l, id)
 HEAD          /groups                                                                 controllers.GroupCRUDController.header
 
 # Labwork
