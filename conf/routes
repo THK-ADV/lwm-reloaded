@@ -228,7 +228,7 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                               controllers.SessionController.header
 
 # APIData
-GET           /api/collisions                                                         controllers.ApiDataController.collisionsForCurrentLabworks()
+GET           /api/collisions/:semesterIndex                                          controllers.ApiDataController.collisionsForCurrentLabworks(semesterIndex)
 GET           /api/multipleReportCardEntries/:c                                       controllers.ApiDataController.multipleReportCardEntries(c)
 PUT           /api/appendReportCardEntries/labworks/:l/preview/:p                     controllers.ApiDataController.appendReportCardEntries(l, p)
 GET           /api/appendSupervisor/:s/labworks/:l/preview/:p                         controllers.ApiDataController.appendSupervisorToScheduleEntries(s, l, p)

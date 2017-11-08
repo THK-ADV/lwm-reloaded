@@ -32,14 +32,16 @@ class ApiDataController(val repository: SesameRepository,
     case _ => PartialSecureBlock(Permissions.god)
   }
 
-  def collisionsForCurrentLabworks() = contextFrom(Get) action { implicit request =>
-    import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
+  def collisionsForCurrentLabworks(semesterIndex: String) = contextFrom(Get) action { implicit request =>
+    import bindings.{SemesterDescriptor, LabworkAtomDescriptor, ReportCardEntryDescriptor}
     import models.ReportCardEntry.writes
 
     val result = for {
       semester <- repository.getAll[Semester]
       currentSemester = semester.find(Semester.isCurrent).get
-      labworks <- repository.getAll[Labwork].map(_.filter(_.semester == currentSemester.id))
+      index = semesterIndex.toInt
+      labworks <- repository.getAll[LabworkAtom].map(_.filter(l => l.semester.id == currentSemester.id && (if (index == -1) true else l.course.semesterIndex == index)))
+      _ = println(labworks.map(_.label))
       cards <- repository.getAll[ReportCardEntry].map(_.filter(c => labworks.exists(_.id == c.labwork)))
       byStudents = cards.groupBy(_.student)
     } yield byStudents
@@ -47,16 +49,23 @@ class ApiDataController(val repository: SesameRepository,
     result match {
       case Success(s) =>
           val entries = s.mapValues { reportCards =>
-            val (collision, _, cards) = reportCards.drop(1).foldLeft((true, reportCards.head, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // false means collision
-              case ((bool, prev, set), next) =>
-                val prevInterval = new Interval(prev.date.toDateTime(prev.start), prev.date.toDateTime(prev.end))
-                val nextInterval = new Interval(next.date.toDateTime(next.start), next.date.toDateTime(next.end))
+            val (collision, cards) = reportCards.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // by this way, Pair(A, B) and Pair(B, A) are both in set
+              case ((outerCollision, outerCards), r) =>
+                val sameDateAs = reportCards.filter(r2 => r2.date.isEqual(r.date) && r2.id != r.id)
 
-                val overlaps = prevInterval overlaps nextInterval
-                val acc = bool && !overlaps
-                val appended = if (overlaps) set.+((prev, next)) else set
+                val (innerCollision, cards) = sameDateAs.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // false means collision
+                  case ((bool, set), next) =>
+                    val baseInterval = new Interval(r.date.toDateTime(r.start), r.date.toDateTime(r.end))
+                    val nextInterval = new Interval(next.date.toDateTime(next.start), next.date.toDateTime(next.end))
 
-                (acc, next, appended)
+                    val overlaps = baseInterval overlaps nextInterval
+                    val acc = bool && !overlaps
+                    val appended = if (overlaps) set.+((r, next)) else set
+
+                    (acc, appended)
+                }
+
+                (innerCollision && outerCollision, outerCards ++ cards)
             }
 
             (!collision, cards)
