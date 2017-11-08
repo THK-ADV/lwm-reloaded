@@ -34,6 +34,7 @@ class ApiDataController(val repository: SesameRepository,
 
   def collisionsForCurrentLabworks() = contextFrom(Get) action { implicit request =>
     import bindings.{SemesterDescriptor, LabworkDescriptor, ReportCardEntryDescriptor}
+    import models.ReportCardEntry.writes
 
     val result = for {
       semester <- repository.getAll[Semester]
@@ -41,15 +42,62 @@ class ApiDataController(val repository: SesameRepository,
       labworks <- repository.getAll[Labwork].map(_.filter(_.semester == currentSemester.id))
       cards <- repository.getAll[ReportCardEntry].map(_.filter(c => labworks.exists(_.id == c.labwork)))
       byStudents = cards.groupBy(_.student)
-    } yield byStudents.mapValues(e => e.map(ee => new Interval(ee.date.toDateTime(ee.start), ee.date.toDateTime(ee.end))))
+    } yield byStudents
 
-    result.get.reduce { (left, right) =>
-      val overlaps = left._2.forall(i => right._2.forall(ii => i.overlaps(ii)))
-      if (overlaps) println("bad")
-      left
+    result match {
+      case Success(s) =>
+          val entries = s.mapValues { reportCards =>
+            val (collision, _, cards) = reportCards.drop(1).foldLeft((true, reportCards.head, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // false means collision
+              case ((bool, prev, set), next) =>
+                val prevInterval = new Interval(prev.date.toDateTime(prev.start), prev.date.toDateTime(prev.end))
+                val nextInterval = new Interval(next.date.toDateTime(next.start), next.date.toDateTime(next.end))
+
+                val overlaps = prevInterval overlaps nextInterval
+                val acc = bool && !overlaps
+                val appended = if (overlaps) set.+((prev, next)) else set
+
+                (acc, next, appended)
+            }
+
+            (!collision, cards)
+          }
+
+          val collisions = entries.filter(_._2._1)
+
+        Ok(Json.obj(
+          "status" -> "OK",
+          "collision count" -> collisions.size,
+          "collisions" -> collisions.map {
+            case (student, (bool, reportCards)) => Json.obj(
+              "student" -> student,
+              "collision" -> bool,
+              "colliding reportCards" -> reportCards.map {
+                case (l, r) => Json.obj(
+                  "first" -> Json.toJson(l),
+                  "second" -> Json.toJson(r)
+                )
+              }
+            )
+          },
+          "no collisions" -> entries.map {
+            case (student, (bool, reportCards)) => Json.obj(
+              "student" -> student,
+              "collision" -> bool,
+              "colliding reportCards" -> reportCards.map {
+                case (l, r) => Json.obj(
+                  "first" -> Json.toJson(l),
+                  "second" -> Json.toJson(r)
+                )
+              }
+            )
+          }
+        ))
+      case Failure(e) =>
+        InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
     }
-
-    Ok
   }
 
   def multipleReportCardEntries(course: String) = contextFrom(Get) action { implicit request =>
