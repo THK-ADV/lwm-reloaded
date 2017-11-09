@@ -248,7 +248,7 @@ class ApiDataController(val repository: SesameRepository,
       studentEntries = reportCardEntries.filter(_.student == srcStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
       templateEntries = reportCardEntries.filter(_.student == destinationStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
       updatedStudentEntries = for {
-        (origin, template) <- studentEntries.zip(templateEntries) if origin.date.getWeekOfWeekyear == template.date.getWeekOfWeekyear && origin.label == template.label
+        (origin, template) <- studentEntries.zip(templateEntries) if /*origin.date.getWeekOfWeekyear == template.date.getWeekOfWeekyear &&*/ origin.label == template.label
       } yield origin.copy(origin.student, origin.labwork, origin.label, template.date, template.start, template.end, template.room)
       _ <- if (preview.toBoolean)
         fakeSuccessGraph
