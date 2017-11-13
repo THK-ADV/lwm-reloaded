@@ -35,7 +35,7 @@ trait ScheduleServiceLike {
 
 trait ScheduleGenesisServiceLike {
   def generate(timetable: Timetable, groups: Set[Group], assignmentPlan: AssignmentPlan, semester: Semester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
-  def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG]
+  def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom], concernIndex: Boolean): Set[ScheduleG]
 }
 
 object ScheduleService {
@@ -193,10 +193,9 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
     } map (_ * conflicts.count(_.isDefined))
   }
 
-  override def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom]): Set[ScheduleG] = {
+  override def competitive(labwork: Option[LabworkAtom], all: Set[ScheduleAtom], concernIndex: Boolean): Set[ScheduleG] = {
     labwork.fold(Set.empty[ScheduleG]) { item =>
-      val filtered = all
-        .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
+      val filtered = (if (concernIndex) all.filter(_.labwork.course.semesterIndex == item.course.semesterIndex) else all)
         .filter(_.labwork.semester.id == item.semester.id)
         .filter(_.labwork.degree.id == item.degree.id)
         .filterNot(_.labwork.id == item.id)

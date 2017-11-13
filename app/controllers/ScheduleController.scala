@@ -48,6 +48,8 @@ object ScheduleController {
   val popAttribute = "pops"
   val genAttribute = "gens"
   val eliteAttribute = "elites"
+
+  val indexAttribute = "index" // 1 | 0
 }
 
 // TODO ScheduleProtocol, ScheduleG -> ScheduleAtom, PUT for Schedules
@@ -138,14 +140,25 @@ class ScheduleController(val repository: SesameRepository, val sessionService: S
     val labId = UUID.fromString(labwork)
 
     val genesis = for {
+      existing <- repository.getAll[Schedule].map(_.exists(_.labwork == labId))
+      deletedGroups <- if (!existing) for {
+        groups <- repository.getAll[Group].map(_.filter(_.labwork == labId))
+        ids = groups.map(g => Group.generateUri(g.id))
+        delete <- repository.deleteMany[Group](ids)
+      } yield delete.size else Try(-1)
+      _ = println(s"deleted $deletedGroups groups")
       lab <- repository.get[LabworkAtom](Labwork.generateUri(labId))
       semester = lab map (_.semester)
+      valueOf = extract(request.queryString) _
+
       groups <- groupService.groupBy(labId, groupStrategy)
       timetable <- repository.getAll[Timetable].map(_.find(_.labwork == labId))
       plans <- repository.getAll[AssignmentPlan].map(_.find(_.labwork == labId))
       all <- repository.getAll[ScheduleAtom]
-      comp = scheduleGenesisService.competitive(lab, all)
-      valueOf = extract(request.queryString) _
+
+      index = valueOf(indexAttribute).fold(true)(_ == 1) // 1 means "concern index, false otherwise"
+      comp = scheduleGenesisService.competitive(lab, all, index)
+
       pop = valueOf(popAttribute)
       gen = valueOf(genAttribute)
       elite = valueOf(eliteAttribute)
