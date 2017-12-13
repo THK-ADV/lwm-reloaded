@@ -67,9 +67,12 @@ object ScheduleService2 {
 
   @annotation.tailrec
   def randomAvoiding(avoiding: PostgresGroup)(implicit groups: Vector[PostgresGroup]): PostgresGroup = {
-    val grp = randomGroup
-
-    if(grp.id == avoiding.id) randomAvoiding(avoiding) else grp
+    if (groups.forall(_.id == avoiding.id)) // can't be another group than avoiding. just return it then
+      avoiding
+    else { // try to get another group than avoiding
+      val grp = randomGroup
+      if (grp.id == avoiding.id) randomAvoiding(avoiding) else grp
+    }
   }
 
   def randomGroup(implicit groups: Vector[PostgresGroup]): PostgresGroup = groups(nextInt(groups.size))
@@ -140,19 +143,23 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
   }
 
   override def mutate: Mutator = mutation { (s, _) =>
-    implicit val groups = s.entries.map(_.group)
+    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+
     val group1 = randomGroup
     val group2 = randomAvoiding(group1)
+
     replaceWithin(s)(group1, group2)
   }
 
   override def mutateDestructive: Mutator = mutation { (s, e) =>
-    implicit val groups = s.entries.map(_.group)
+    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+
     e.mapErrWhole(shuffle(_)).fold {
-      case ((h :: t, _)) =>
+      case ((h :: _, _)) =>
         val group = randomAvoiding(h.group)
         val chosenOne = randomOne(h.members)
         val swappedOne = randomOne(group.members.toVector)
+
         exchange(chosenOne, swappedOne, s)
       case ((Nil, _)) => s
     }
@@ -164,6 +171,7 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
         case (h1 :: _, h2 :: _) =>
           lazy val rl = replaceWithin(s1)(h1.group, randomAvoiding(h1.group)(s1.entries.map (_.group)))
           lazy val rr = replaceWithin(s2)(h2.group, randomAvoiding(h2.group)(s2.entries.map (_.group)))
+
           (rl, rr)
         case _ => (s1, s2)
       }
@@ -172,8 +180,9 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
   override def crossoverDestructive: Crossover = cross {
     case ((s1, e1), (s2, e2)) =>
       def newOne(ev: Evaluation, left: ScheduleGen, right: ScheduleGen): ScheduleGen = ev.mapErrWhole(shuffle(_)).fold {
-        case ((c :: t), _) =>
+        case ((c :: _), _) =>
           val one = randomOne(c.members)
+
           right.entries.find(e => !e.group.members.contains(one)) match {
             case Some(e) => exchange(one, e.group.members.head, left)
             case None =>

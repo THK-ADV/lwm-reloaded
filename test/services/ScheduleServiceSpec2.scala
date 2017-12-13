@@ -357,7 +357,7 @@ final class ScheduleServiceSpec2 extends WordSpec with TestBaseDefinition {
     }
   }
 
-  "A ScheduleGenesisService" should {
+ "A ScheduleGenesisService" should {
 
     "generate an initial collision free schedule instantly" in {
       val ap1Entries = Set(
@@ -462,6 +462,34 @@ final class ScheduleServiceSpec2 extends WordSpec with TestBaseDefinition {
       result._1.elem.entries.groupBy(_.group) forall {
         case (_, ss) => ss.size == ma1Plan.entries.size
       } shouldBe true
+    }
+
+    "handle deadlocks properly" in {
+      val ap1Plan = plan
+      val ma1Plan = populateAssignmentPlans(1, 8)(labwork)(_ => 2).head.toLwmModel
+
+      val ap1Entries = Set(
+        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00"))
+      )
+      val ma1Entries = Set(
+        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00"))
+      )
+
+      val students = (0 until 200).map(_ => User.randomUUID).toVector
+      val deadlock = students.take(10).toSet
+      val ap1G = Vector(PostgresGroup("", ap1Prak.id, deadlock ++ shuffle(students).take(10).toSet))
+      val ma1G = Vector(PostgresGroup("", ma1Prak.id, deadlock ++ shuffle(students).take(10).toSet))
+
+      val ap1T = PostgresTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+      val ma1T = PostgresTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+
+      val gens = scheduleService.gens
+      val comp = scheduleService.generate(ap1T, Vector.empty, ap1G, ap1Plan, semester, Vector.empty)._1.elem
+      val result = scheduleService.generate(ma1T, Vector.empty, ma1G, ma1Plan, semester, Vector(comp))
+
+      result._2 shouldBe gens
+      result._1.evaluate.value should be > gens
+      result._1.evaluate.err should not be empty
     }
   }
 }
