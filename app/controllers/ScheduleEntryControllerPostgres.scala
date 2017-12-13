@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models._
@@ -26,39 +27,11 @@ object ScheduleEntryControllerPostgres {
   lazy val sinceAttribute = "since"
   lazy val untilAttribute = "until"
 
-  lazy val countAttribute = "count"
-  lazy val minAttribute = "min"
-  lazy val maxAttribute = "max"
-
   lazy val popAttribute = "pops"
   lazy val genAttribute = "gens"
   lazy val eliteAttribute = "elites"
 
-  def intOf(queryString: Map[String, Seq[String]])(attribute: String): Option[Int] = {
-    valueOf(queryString)(attribute).flatMap(s => Try(s.toInt).toOption)
-  }
-
-  def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
-    queryString.get(attribute).flatMap(_.headOption)
-  }
-
-  def strategyFrom(queryString: Map[String, Seq[String]]): Try[GroupingStrategy] = {
-    val v = valueOf(queryString) _
-
-    (v(countAttribute), v(minAttribute), v(maxAttribute)) match {
-      case (Some(count), None, None) =>
-        for {
-          c <- Try(count.toInt) if c > 0
-        } yield CountGrouping(count)
-      case (None, Some(min), Some(max)) =>
-        for {
-          a <- Try(min.toInt)
-          b <- Try(max.toInt) if a < b
-        } yield RangeGrouping(min, max)
-      case _ =>
-        Failure(new Exception(s"grouping strategy should be either $countAttribute or $minAttribute and $maxAttribute"))
-    }
-  }
+  lazy val semesterIndexConsiderationAttribute = "considerSemesterIndex"
 }
 
 final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
@@ -69,8 +42,9 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
                                             val labworkService: LabworkDao,
                                             val timetableService: TimetableDao,
                                             val labworkApplicationService2: LabworkApplicationDao,
-                                            val groupDao: GroupDao
-                                           ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
+                                            val groupDao: GroupDao)
+  extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry]
+    with GroupingStrategyAttributeFilter {
 
   import controllers.ScheduleEntryControllerPostgres._
 
@@ -80,13 +54,13 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
 
   override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = PostgresScheduleEntry.reads
 
-  implicit val scheduleEntryGenWrites = Json.writes[ScheduleEntryGen]
+  implicit val scheduleEntryGenWrites: Writes[ScheduleEntryGen] = Json.writes[ScheduleEntryGen]
 
-  implicit val scheduleGenWrites = Json.writes[ScheduleGen]
+  implicit val scheduleGenWrites: Writes[ScheduleGen] = Json.writes[ScheduleGen]
 
-  implicit val conflictWrites = Json.writes[Conflict]
+  implicit val conflictWrites: Writes[Conflict] = Json.writes[Conflict]
 
-  implicit val genWrites = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
+  implicit val genWrites: Writes[(Gen[ScheduleGen, Conflict, Int], Int)] = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
     override def writes(gen: (Gen[ScheduleGen, Conflict, Int], Int)) = Json.obj(
       "schedule" -> Json.toJson(gen._1.elem),
       "conflicts" -> Json.toJson(gen._1.evaluate.err),
@@ -96,9 +70,9 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    implicit val readsGroup = Json.reads[PostgresGroup]
-    implicit val readsScheduleEntry = Json.reads[ScheduleEntryGen]
-    implicit val readsSchedule = Json.reads[ScheduleGen]
+    implicit val readsGroup: Reads[PostgresGroup] = Json.reads[PostgresGroup]
+    implicit val readsScheduleEntry: Reads[ScheduleEntryGen] = Json.reads[ScheduleEntryGen]
+    implicit val readsSchedule: Reads[ScheduleGen] = Json.reads[ScheduleGen]
     import models.LwmDateTime._
 
     (for {
@@ -135,7 +109,7 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
     apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
 
-    groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
+    groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
     groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
 
     assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
@@ -145,7 +119,8 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     labAtom = lab.get.asInstanceOf[PostgresLabworkAtom]
     semester = labAtom.semester
 
-    comps <- abstractDao.competitive(labAtom)
+    c = boolOf(request.queryString)(semesterIndexConsiderationAttribute).getOrElse(true)
+    comps <- abstractDao.competitive(labAtom, c)
 
     i = intOf(request.queryString) _
     pop = i(popAttribute)

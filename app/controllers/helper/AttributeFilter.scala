@@ -6,6 +6,7 @@ import scala.collection.Map
 import scala.util.Try
 
 trait AttributeFilter {
+
   protected lazy val atomicAttribute = "atomic"
   protected lazy val validAttribute = "valid"
   protected lazy val lastModifiedAttribute = "lastModified"
@@ -47,5 +48,17 @@ trait AttributeFilter {
     }
 
     (remaining, DefaultAttributes(atomic, valid, lastModified))
+  }
+
+  protected final def intOf(queryString: Map[String, Seq[String]])(attribute: String): Option[Int] = {
+    valueOf(queryString)(attribute).flatMap(s => Try(s.toInt).toOption)
+  }
+
+  protected final def boolOf(queryString: Map[String, Seq[String]])(attribute: String): Option[Boolean] = {
+    valueOf(queryString)(attribute).flatMap(s => Try(s.toBoolean).toOption)
+  }
+
+  protected final def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
+    queryString.get(attribute).flatMap(_.headOption)
   }
 }
