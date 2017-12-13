@@ -6,7 +6,7 @@ import dao._
 import models.Role._
 import models.User.UserProtocol
 import models._
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import services._
 import store.{TableFilter, UserTable}
 import utils.LwmMimeType
@@ -66,13 +66,13 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
           "buddy" -> Json.toJson(b),
           "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
         ))
-        case Denied(b) => BadRequest(Json.obj(
+        case Denied(b) => Ok(Json.obj(
           "status" -> "KO",
           "type" -> buddyResult.toString,
           "buddy" -> Json.toJson(b),
           "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
         ))
-        case NotExisting(b) => BadRequest(Json.obj(
+        case NotExisting(b) => Ok(Json.obj(
           "status" -> "KO",
           "type" -> buddyResult.toString,
           "buddy" -> None,
