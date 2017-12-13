@@ -13,7 +13,7 @@ case class BlacklistGlobalFilter(value: String) extends TableFilter[BlacklistTab
 }
 
 case class BlacklistLabelFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
+  override def predicate = _.label === value
 }
 
 case class BlacklistDateFilter(value: String) extends TableFilter[BlacklistTable] {
@@ -49,6 +49,7 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlac
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {
     filterBy(List(
+      BlacklistLabelFilter(entity.label),
       BlacklistDateFilter(entity.date.stringMillis),
       BlacklistStartFilter(entity.start.stringMillis),
       BlacklistEndFilter(entity.end.stringMillis),
