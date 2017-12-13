@@ -268,11 +268,21 @@ object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardE
 
   def Supplement = PostgresReportCardEntryType(PostgresAssignmentEntryType.Supplement.entryType)
 
-  override implicit def reads: Reads[PostgresReportCardEntryType] = Json.reads[PostgresReportCardEntryType]
+  override implicit def reads: Reads[PostgresReportCardEntryType] = (
+    (JsPath \ "entryType").read[String] and
+      (JsPath \ "bool").readNullable[Boolean] and
+      (JsPath \ "int").read[Int] and
+      (JsPath \ "id").read[UUID]
+    ) (PostgresReportCardEntryType.apply _)
 
   override def writesAtom: Writes[PostgresReportCardEntryType] = writes
 
-  override implicit def writes: Writes[PostgresReportCardEntryType] = Json.writes[PostgresReportCardEntryType]
+  override implicit def writes: Writes[PostgresReportCardEntryType] = (
+    (JsPath \ "entryType").write[String] and
+      (JsPath \ "bool").write[Option[Boolean]] and
+      (JsPath \ "int").write[Int] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresReportCardEntryType.unapply))
 }
 
 object PostgresReportCardEntry extends JsonSerialisation[PostgresReportCardEntryProtocol, PostgresReportCardEntry, PostgresReportCardEntryAtom] {
