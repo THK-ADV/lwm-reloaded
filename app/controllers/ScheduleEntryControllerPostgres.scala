@@ -104,16 +104,10 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     (for {
       s <- Future.fromTry(parse[ScheduleGen](request))
       labwork = s.labwork
-      (se, gs) = s.entries.foldLeft((List.empty[ScheduleEntryDb], Set.empty[GroupDb])) {
-        case ((entries, groups), e) =>
-          val groupId = e.group.id
-          val scheduleEntry = ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, groupId)
-          val group = GroupDb(e.group.label, e.group.labwork, e.group.members, id = groupId)
-
-          (entries.+:(scheduleEntry), groups + group)
-      }
-      _ <- groupDao.createMany(gs.toList)
-      _ <- abstractDao.createMany(se)
+      groups = s.entries.map(_.group).distinct.map(e => GroupDb(e.label, e.labwork, e.members, id = e.id))
+      se = s.entries.map(e => ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id))
+      _ <- groupDao.createMany(groups.toList)
+      _ <- abstractDao.createMany(se.toList)
     } yield se.map(_.toLwmModel)).jsonResult
   }
 
