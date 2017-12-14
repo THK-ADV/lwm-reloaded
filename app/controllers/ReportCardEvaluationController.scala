@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.Permissions.{god, reportCardEvaluation}
+import models.Permissions.{god, prime, reportCardEvaluation}
 import models._
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
@@ -47,6 +47,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
     case Get => SecureBlock(restrictionId, reportCardEvaluation.get)
     case GetAll => SecureBlock(restrictionId, reportCardEvaluation.getAll)
+    case Delete => SecureBlock(restrictionId, prime)
     case _ => PartialSecureBlock(god)
   }
 
@@ -111,6 +112,12 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     } yield chunk(atoms)
 
     result.mapResult(enum => Created.stream(enum).as(mimeType))
+  }
+
+  def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) action { implicit request =>
+    filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty).
+      flatMap(evals => removeLots[ReportCardEvaluation](evals map ReportCardEvaluation.generateUri)).
+      mapResult(d => Ok(Json.obj("status" -> "OK", "deleted" -> d.size)))
   }
 
   def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>

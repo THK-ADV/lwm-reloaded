@@ -186,6 +186,7 @@ GET           /courses/:c/labworks/:l/reportCardEvaluations                     
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                    controllers.ReportCardEvaluationController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview                   controllers.ReportCardEvaluationController.preview(c, l)
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations/preview            controllers.ReportCardEvaluationController.previewAtomic(c, l)
+DELETE        /courses/:c/labworks/:l/reportCardEvaluations                           controllers.ReportCardEvaluationController.deleteFrom(c, l)
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                                        controllers.AssignmentPlanCRUDController.createFrom(course)
