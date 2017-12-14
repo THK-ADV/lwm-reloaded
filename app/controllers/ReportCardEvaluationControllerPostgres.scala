@@ -56,19 +56,27 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
     } yield result
   }
 
-  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
-  }
-
   def preview(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncContentTypedAction { implicit request =>
     evaluate(labwork, persistence = false)
   }
 
-  def delete(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+  def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+  }
+
+  def deleteFromStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+    delete(List(LabworkFilter(labwork), StudentFilter(student)))
+  }
+
+  def deleteFromLabwork(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+    delete(List(LabworkFilter(labwork)))
+  }
+
+  private def delete(list: List[TableFilter[ReportCardEvaluationTable]]) = {
     import models.LwmDateTime._
 
     (for {
-      existing <- abstractDao.get(List(LabworkFilter(labwork), StudentFilter(student)), atomic = false)
+      existing <- abstractDao.get(list, atomic = false)
       deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
     } yield deleted.map(_.map(_.dateTime))).jsonResult
   }
@@ -107,7 +115,7 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
       case (list, (`minIntAttribute`, minInt)) => list.map(_.+:(MinIntFilter(minInt)))
       case (list, (`maxIntAttribute`, maxInt)) => list.map(_.+:(MaxIntFilter(maxInt)))
       case (list, (`explicitAttribute`, explicit)) if explicit == true.toString => list.map(_.+:(IntFilter(ReportCardService.EvaluatedExplicit.toString)))
-      case (_, (`explicitAttribute`, other)) => Failure(new Throwable(s"Value of $explicitAttribute should be either true or false, but was $other"))
+      case (_, (`explicitAttribute`, other)) => Failure(new Throwable(s"Value of $explicitAttribute can only be true, but was $other"))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }

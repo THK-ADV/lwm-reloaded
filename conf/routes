@@ -298,7 +298,8 @@ POST          /api2/courses/:c/labworks/:l/reportCardEvaluations                
 POST          /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations          controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
 GET           /api2/courses/:c/labworks/:l/reportCardEvaluations                      controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
 GET           /api2/courses/:c/labworks/:l/reportCardEvaluations/preview              controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
-DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations          controllers.ReportCardEvaluationControllerPostgres.delete(c, l, s)
+DELETE        /api2/courses/:c/labworks/:l/reportCardEvaluations                      controllers.ReportCardEvaluationControllerPostgres.deleteFromLabwork(c, l)
+DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations          controllers.ReportCardEvaluationControllerPostgres.deleteFromStudent(c, l, s)
 
 # AssignmentPlan
 POST          /courses/:course/assignmentPlans                                        controllers.AssignmentPlanCRUDController.createFrom(course)
