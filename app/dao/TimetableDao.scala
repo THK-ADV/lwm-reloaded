@@ -90,7 +90,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
     override def expandCreationOf[X <: Effect](entities: Seq[TimetableDb]) = {
       val timetableEntries = entities.flatMap { timetable =>
         timetable.entries.map { entry =>
-          TimetableEntryDb(timetable.id, entry.room, entry.supervisor, entry.dayIndex, entry.start.sqlTime, entry.end.sqlTime, UUID.randomUUID)
+          TimetableEntryDb(timetable.id, entry.room, entry.supervisor, entry.dayIndex, entry.start.sqlTime, entry.end.sqlTime)
         }
       }
 
