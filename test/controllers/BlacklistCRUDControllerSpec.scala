@@ -13,7 +13,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest}
 import services.BlacklistService
-import utils.LwmMimeType
+import utils.{LwmDateTime, LwmMimeType}
 
 import scala.concurrent.Future
 import scala.util.Success

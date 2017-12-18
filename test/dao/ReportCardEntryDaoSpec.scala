@@ -8,7 +8,7 @@ import slick.dbio.Effect.Write
 import store._
 
 final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] with ReportCardEntryDao {
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import dao.AbstractDaoSpec._
   import slick.driver.PostgresDriver.api._
 

@@ -8,7 +8,7 @@ import play.api.libs.json.{Json, Reads, Writes}
 import services.{BlacklistServiceLike, RoleService, RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{LwmDateTime, LwmMimeType}
 import controllers.BlacklistCRUDController._
 
 import scala.concurrent.Future

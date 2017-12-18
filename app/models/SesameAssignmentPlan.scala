@@ -8,7 +8,7 @@ import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameAssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry], invalidated: Option[DateTime] = None, id: UUID = SesameAssignmentPlan.randomUUID) extends UniqueEntity
 

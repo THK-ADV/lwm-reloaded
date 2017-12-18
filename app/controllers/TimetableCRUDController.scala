@@ -12,7 +12,7 @@ import services.{RoleServiceLike, SessionHandlingService}
 import store.Prefixes.LWMPrefix
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
-import utils.LwmMimeType
+import utils.{LwmDateTime, LwmMimeType}
 import controllers.TimetableCRUDController._
 
 import scala.util.{Failure, Try}

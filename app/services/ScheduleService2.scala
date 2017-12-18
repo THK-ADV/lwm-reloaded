@@ -14,7 +14,7 @@ import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
 import utils.{Gen, Genesis2}
 import utils.TypeClasses.{Cross, Eval, Mutate}
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class Conflict(entry: ScheduleEntryGen, members: Vector[UUID], group: PostgresGroup)
 case class ScheduleGen(labwork: UUID, entries: Vector[ScheduleEntryGen])

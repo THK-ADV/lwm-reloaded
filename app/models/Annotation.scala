@@ -6,6 +6,7 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime
 
 case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = Annotation.randomUUID) extends UniqueEntity {
 

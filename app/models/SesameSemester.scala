@@ -6,7 +6,7 @@ import java.util.UUID
 import controllers.JsonSerialisation
 import org.joda.time.{DateTime, Interval, LocalDate}
 import play.api.libs.json.{Json, Reads, Writes}
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameSemester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, invalidated: Option[DateTime] = None, id: UUID = SesameSemester.randomUUID) extends UniqueEntity {
 
@@ -44,7 +44,7 @@ object SesameSemester extends UriGenerator[SesameSemester] with JsonSerialisatio
 case class PostgresSemester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID = SesameSemester.randomUUID) extends UniqueEntity
 
 case class SemesterDb(label: String, abbreviation: String, start: Date, end: Date, examStart: Date, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = SesameSemester.randomUUID) extends UniqueDbEntity {
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
 
   override def toLwmModel = PostgresSemester(label, abbreviation, start.localDate, end.localDate, examStart.localDate, id)
 }

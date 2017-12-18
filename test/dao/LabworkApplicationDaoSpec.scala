@@ -11,7 +11,7 @@ import store._
 class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationDao {
 
   import dao.AbstractDaoSpec._
-  import models.LwmDateTime.SqlTimestampConverter
+  import utils.LwmDateTime.SqlTimestampConverter
 
   import scala.util.Random.{nextBoolean, nextInt}
 
@@ -66,13 +66,13 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
     val newApplicant = randomApplicant(Some(dbEntity.applicant)).id
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.timestamp, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val validUpdateOnDbEntity: LabworkApplicationDb = {
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.timestamp, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val dbEntities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
@@ -95,7 +95,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
       labworkAtom,
       applicants.find(_.id == dbEntity.applicant).get.toLwmModel,
       Set.empty,
-      dbEntity.timestamp.dateTime,
+      dbEntity.lastModified.dateTime,
       dbEntity.id
     )
   }
@@ -149,7 +149,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
           PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
         }
 
-        PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.map(_.toLwmModel).toSet, lapp.timestamp.dateTime, lapp.id)
+        PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.map(_.toLwmModel).toSet, lapp.lastModified.dateTime, lapp.id)
       }
 
       val lapps = applicants.drop(maxApplicants - reservedApplicants).

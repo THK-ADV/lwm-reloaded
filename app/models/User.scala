@@ -3,7 +3,7 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 import org.joda.time.DateTime
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 

@@ -8,8 +8,31 @@ import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.functional.syntax.unlift
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax._
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
+case class SesameRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
+case class SesameRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom)
+
+object SesameRescheduled extends JsonSerialisation[SesameRescheduled, SesameRescheduled, SesameRescheduledAtom] {
+
+  override implicit def reads: Reads[SesameRescheduled] = Json.reads[SesameRescheduled]
+
+  override implicit def writes: Writes[SesameRescheduled] = Json.writes[SesameRescheduled]
+
+  override implicit def writesAtom: Writes[SesameRescheduledAtom] = SesameRescheduledAtom.writesAtom
+}
+
+object SesameRescheduledAtom {
+
+  implicit def writesAtom: Writes[SesameRescheduledAtom] = (
+    (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[SesameRoom](SesameRoom.writes)
+    ) (unlift(SesameRescheduledAtom.unapply))
+}
+
+// POSTGRES
 trait ReportCardRescheduled extends UniqueEntity
 
 case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRescheduled

@@ -7,7 +7,7 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 
 /**
   * Structure linking a user to his/her respective authority in the system.

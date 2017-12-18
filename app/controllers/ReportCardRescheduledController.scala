@@ -8,7 +8,7 @@ import play.api.libs.json.{Reads, Writes}
 import services.SessionHandlingService
 import store.{ReportCardRescheduledTable, TableFilter}
 import utils.LwmMimeType
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.Role.{CourseEmployee, CourseManager, God}
 
 import scala.util.{Failure, Try}

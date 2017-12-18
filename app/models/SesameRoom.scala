@@ -6,7 +6,7 @@ import java.util.UUID
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameRoom(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = SesameRoom.randomUUID) extends UniqueEntity
 

@@ -7,7 +7,7 @@ import org.joda.time._
 import org.scalatest.WordSpec
 
 final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
-  import models.LwmDateTime._
+  import LwmDateTime._
 
   "A LwmDateTimeSpecs" should {
     "convert from joda LocalDate, -Time and -DateTime, to String and SqlDate, -Time and Timestamp back and forth" in {

@@ -7,7 +7,7 @@ import slick.driver.PostgresDriver
 import slick.lifted.TableQuery
 import store.{ReportCardEvaluationTable, TableFilter}
 import slick.driver.PostgresDriver.api._
-import models.LwmDateTime.SqlTimestampConverter
+import utils.LwmDateTime.SqlTimestampConverter
 import scala.concurrent.Future
 import scala.util.Try
 

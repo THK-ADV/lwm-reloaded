@@ -73,7 +73,7 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
   }
 
   private def delete(list: List[TableFilter[ReportCardEvaluationTable]]) = {
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     (for {
       existing <- abstractDao.get(list, atomic = false)

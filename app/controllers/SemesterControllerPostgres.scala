@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.Permissions.{prime, semester}
 import models.Role.{Admin, Employee, Student}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}

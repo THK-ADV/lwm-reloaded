@@ -7,7 +7,7 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 
 case class SesameLabwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, invalidated: Option[DateTime] = None, id: UUID = SesameLabwork.randomUUID) extends UniqueEntity
 

@@ -7,12 +7,13 @@ import controllers.JsonSerialisation
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime
 import utils.Ops.JsPathX
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameTimetable(labwork: UUID, entries: Set[SesameTimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameTimetable.randomUUID) extends UniqueEntity {
 
-  import models.LwmDateTime.dateTimeOrd
+  import utils.LwmDateTime.dateTimeOrd
 
   override def equals(that: scala.Any): Boolean = that match {
     case SesameTimetable(l2, e2, s2, bl2, _, id2) =>

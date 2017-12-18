@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent}
 import services._
 import store.{CourseTable, TableFilter}
 import utils.LwmMimeType
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.Role.{Admin, Employee, Student}
 
 import scala.concurrent.Future

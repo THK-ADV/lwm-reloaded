@@ -12,7 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import scala.util.Random.nextInt
 
   val blacklistService = new BlacklistService
@@ -102,7 +102,7 @@ class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
     }
 
     "fetch blacklists from an external api" in {
-      import models.LwmDateTime._
+      import utils.LwmDateTime._
 
       val timeout = Timeout(5 seconds)
       val year = DateTime.now.getYear.toString

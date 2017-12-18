@@ -21,7 +21,7 @@ case class ReportCardRescheduledCourseFilter(value: String) extends TableFilter[
 
 trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] {
   import scala.concurrent.ExecutionContext.Implicits.global
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 

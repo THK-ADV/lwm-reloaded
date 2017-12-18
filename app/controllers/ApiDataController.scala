@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.helper.PostgresResult
 import dao._
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
 import play.api.mvc.{Action, Controller}
@@ -154,7 +154,7 @@ final class ApiDataController(val repository: SesameRepository,
 
   def migrateSemesters = Action.async { implicit request =>
     import bindings.SemesterDescriptor
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
     import models.PostgresSemester.writes
 
     val result = for {

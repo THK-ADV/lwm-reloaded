@@ -73,7 +73,7 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     implicit val readsGroup: Reads[PostgresGroup] = Json.reads[PostgresGroup]
     implicit val readsScheduleEntry: Reads[ScheduleEntryGen] = Json.reads[ScheduleEntryGen]
     implicit val readsSchedule: Reads[ScheduleGen] = Json.reads[ScheduleGen]
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     (for {
       s <- Future.fromTry(parse[ScheduleGen](request))

@@ -3,7 +3,7 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.{UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.dbio.Effect

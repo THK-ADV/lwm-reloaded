@@ -1,11 +1,12 @@
-package models
+package utils
 
 import java.sql.{Date, Time, Timestamp}
 import java.util.Calendar
 
-import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
+import models.{PostgresBlacklist, TimetableDateEntry}
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
-import play.api.libs.json.{JsString, Writes}
+import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
+import play.api.libs.json.{JsString, Reads, Writes}
 import services.ScheduleEntryGen
 
 object LwmDateTime {

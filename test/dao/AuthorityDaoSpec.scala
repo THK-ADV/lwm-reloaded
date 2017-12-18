@@ -13,7 +13,7 @@ import scala.util.Random.nextInt
 class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Authority] with AuthorityDao {
 
   import dao.AbstractDaoSpec._
-  import models.LwmDateTime.DateTimeConverter
+  import utils.LwmDateTime.DateTimeConverter
   import slick.driver.PostgresDriver.api._
 
   private lazy val privateLecturers = (0 until 7).map { i =>

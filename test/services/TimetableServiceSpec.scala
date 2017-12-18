@@ -3,7 +3,7 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models._
 import org.joda.time._
 import org.joda.time.format.DateTimeFormat
@@ -58,7 +58,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
   "A TimetableService" should {
     def checkAssertion(timetable: SesameTimetable, plan: SesameAssignmentPlan, groups: Set[SesameGroup], expectedStart: Vector[DateTime], result: Vector[TimetableDateEntry]) {
-      import models.LwmDateTime.localDateTimeOrd
+      import utils.LwmDateTime.localDateTimeOrd
 
       val sortedResult = result.map(toLocalDateTime).sorted
 
@@ -154,7 +154,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
   "A better TimetableService" should {
     def checkAssertion2(timetable: PostgresTimetable, plan: PostgresAssignmentPlan, groupSize: Int, expectedStart: Vector[LocalDateTime], result: Vector[TimetableDateEntry]) {
-      import models.LwmDateTime.localDateTimeOrd
+      import utils.LwmDateTime.localDateTimeOrd
 
       val sortedResult = result.map(toLocalDateTime).sorted
 

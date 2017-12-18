@@ -5,7 +5,7 @@ import java.util.UUID
 
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 import play.api.libs.json.{Json, Reads, Writes}
 
 case class SesameDegree(label: String, abbreviation: String, invalidated: Option[DateTime] = None, id: UUID = SesameDegree.randomUUID) extends UniqueEntity

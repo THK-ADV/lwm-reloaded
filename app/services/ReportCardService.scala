@@ -127,7 +127,7 @@ object ReportCardService {
   }
 
   def reportCards(schedule: ScheduleGen, assignmentPlan: PostgresAssignmentPlan): Vector[ReportCardEntryDb] = {
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)

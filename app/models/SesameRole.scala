@@ -8,7 +8,7 @@ import org.joda.time.DateTime
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax._
 import utils.Ops.JsPathX
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 
 /**
   * Structure abstracting over a set of unary `Permission`s.

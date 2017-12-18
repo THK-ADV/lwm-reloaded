@@ -7,8 +7,9 @@ import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime
 import utils.Ops.JsPathX
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = SesameLabworkApplication.randomUUID) extends UniqueEntity {
 
@@ -54,16 +55,18 @@ object SesameLabworkApplicationAtom {
 
 // Postgres
 
-sealed trait LabworkApplication extends UniqueEntity
+sealed trait LabworkApplication extends UniqueEntity {
+  def lastModified: DateTime
+}
 
-case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, id: UUID = UUID.randomUUID) extends LabworkApplication
+case class PostgresLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: DateTime, id: UUID = UUID.randomUUID) extends LabworkApplication
 
 case class PostgresLabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
 
-case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], timestamp: DateTime, id: UUID) extends LabworkApplication
+case class PostgresLabworkApplicationAtom(labwork: PostgresLabworkAtom, applicant: User, friends: Set[User], lastModified: DateTime, id: UUID) extends LabworkApplication
 
-case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: Timestamp = DateTime.now.timestamp, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toLwmModel = PostgresLabworkApplication(labwork, applicant, friends, timestamp.dateTime, id)
+case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toLwmModel = PostgresLabworkApplication(labwork, applicant, friends, lastModified.dateTime, id)
 }
 
 case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
@@ -100,7 +103,7 @@ object PostgresLabworkApplicationAtom {
     (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writesAtom) and
       (JsPath \ "applicant").write[User] and
       (JsPath \ "friends").writeSet[User] and
-      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
+      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresLabworkApplicationAtom.unapply))
 }

@@ -7,7 +7,7 @@ import store.BlacklistTable
 
 final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, PostgresBlacklist] with BlacklistDao {
   import dao.AbstractDaoSpec._
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import models.PostgresBlacklist._
 
   "A BlacklistService2Spec also" should {

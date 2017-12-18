@@ -1,6 +1,6 @@
 package dao
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.{BlacklistDb, PostgresBlacklist}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._

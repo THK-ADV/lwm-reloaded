@@ -25,7 +25,7 @@ final class ScheduleServiceSpec2 extends WordSpec with TestBaseDefinition {
   }
 
   implicit class ScheduleGenUtils(s: ScheduleGen) {
-    import models.LwmDateTime.localDateTimeOrd
+    import utils.LwmDateTime.localDateTimeOrd
 
     def sorted = s.entries.sortBy(e => e.date.toLocalDateTime(e.start))
   }

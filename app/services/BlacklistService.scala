@@ -65,7 +65,7 @@ class BlacklistService extends BlacklistServiceLike {
     import services.BlacklistService._
     import play.api.libs.ws.ning._
     import scala.concurrent.ExecutionContext.Implicits.global
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     for {
       sslClient <- Future.successful(NingWSClient())

@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 import models._
 import org.joda.time.DateTime
 import services._

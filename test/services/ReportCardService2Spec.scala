@@ -10,7 +10,7 @@ import services.ReportCardService.{BoolBased, IntBased, ReportCardEvaluationPatt
 
 final class ReportCardService2Spec extends WordSpec with TestBaseDefinition {
 
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import models.PostgresReportCardEntryType._
 
   "A ReportCardService2Spec" should {

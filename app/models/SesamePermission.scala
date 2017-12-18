@@ -6,7 +6,7 @@ import java.util.UUID
 import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 
 /**
   * A unary permission.

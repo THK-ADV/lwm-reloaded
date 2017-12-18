@@ -93,7 +93,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   protected def delete0(uuid: UUID): Future[Result] = {
-    import models.LwmDateTime.SqlTimestampConverter
+    import utils.LwmDateTime.SqlTimestampConverter
 
     abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
   }

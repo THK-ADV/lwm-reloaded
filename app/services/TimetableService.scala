@@ -2,7 +2,7 @@ package services
 
 import models._
 import org.joda.time.{Interval, LocalDate, Weeks}
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 trait TimetableServiceLike {
   def extrapolateTimetableByWeeks(timetable: SesameTimetable, weeks: Weeks, assignmentPlan: SesameAssignmentPlan, groups: Set[SesameGroup]): Vector[TimetableDateEntry]

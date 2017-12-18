@@ -4,12 +4,13 @@ import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
 import controllers.JsonSerialisation
-import models.LwmDateTime.dateTimeOrd
+import utils.LwmDateTime.dateTimeOrd
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime
 import utils.Ops.JsPathX
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 case class SesameBlacklist(label: String, dates: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameBlacklist.randomUUID) extends UniqueEntity {
   override def equals(that: scala.Any): Boolean = that match {

@@ -4,6 +4,7 @@ import java.util.UUID
 
 import base.TestBaseDefinition
 import models.{PostgresLabworkApplication, SesameLabworkApplication, User}
+import org.joda.time.DateTime
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar._
@@ -20,7 +21,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
   val labwork = UUID.randomUUID
   val users = ((0 until 100) map (_ => UUID.randomUUID)).toVector
   val apps = users.map(id => SesameLabworkApplication(labwork, id, Set.empty)).toSet
-  val apps2 = users.map(id => PostgresLabworkApplication(labwork, id, Set.empty))
+  val apps2 = users.map(id => PostgresLabworkApplication(labwork, id, Set.empty, DateTime.now))
 
   /*"A group service" should {
 
@@ -127,13 +128,13 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val applications = Vector(
-        PostgresLabworkApplication(labwork, users(0), Set(users(1))),
-        PostgresLabworkApplication(labwork, users(1), Set(users(0), users(3))),
-        PostgresLabworkApplication(labwork, users(2), Set(users(3))),
-        PostgresLabworkApplication(labwork, users(3), Set(users(2), users(1))),
-        PostgresLabworkApplication(labwork, users(4), Set(users(5))),
-        PostgresLabworkApplication(labwork, users(5), Set(users(4))),
-        PostgresLabworkApplication(labwork, users(6), Set.empty)
+        PostgresLabworkApplication(labwork, users(0), Set(users(1)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(1), Set(users(0), users(3)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(2), Set(users(3)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(3), Set(users(2), users(1)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(4), Set(users(5)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(5), Set(users(4)), DateTime.now),
+        PostgresLabworkApplication(labwork, users(6), Set.empty, DateTime.now)
       )
 
       val sorted = GroupService.sort(applications)
