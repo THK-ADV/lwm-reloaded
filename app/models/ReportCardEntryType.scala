@@ -15,6 +15,8 @@ case class SesameReportCardEntryType(entryType: String, bool: Boolean = false, i
 
 case class PostgresReportCardEntryType(entryType: String, bool: Option[Boolean] = None, int: Int = 0, id: UUID = UUID.randomUUID) extends UniqueEntity
 
+case class PostgresReportCardEntryTypeProtocol(entryType: String, bool: Option[Boolean], int: Int)
+
 // DB
 
 case class ReportCardEntryTypeDb(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID], entryType: String, bool: Option[Boolean] = None, int: Int = 0, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
@@ -44,7 +46,7 @@ object SesameReportCardEntryType extends UriGenerator[SesameReportCardEntryType]
   override implicit def writes: Writes[SesameReportCardEntryType] = Json.writes[SesameReportCardEntryType]
 }
 
-object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardEntryType, PostgresReportCardEntryType, PostgresReportCardEntryType] {
+object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardEntryTypeProtocol, PostgresReportCardEntryType, PostgresReportCardEntryType] {
 
   def all = Set(Attendance, Certificate, Bonus, Supplement)
 
@@ -56,12 +58,11 @@ object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardE
 
   def Supplement = PostgresReportCardEntryType(PostgresAssignmentEntryType.Supplement.entryType)
 
-  override implicit def reads: Reads[PostgresReportCardEntryType] = (
+  override implicit def reads: Reads[PostgresReportCardEntryTypeProtocol] = (
     (JsPath \ "entryType").read[String] and
       (JsPath \ "bool").readNullable[Boolean] and
-      (JsPath \ "int").read[Int] and
-      (JsPath \ "id").read[UUID]
-    ) (PostgresReportCardEntryType.apply _)
+      (JsPath \ "int").read[Int]
+    ) (PostgresReportCardEntryTypeProtocol.apply _)
 
   override def writesAtom: Writes[PostgresReportCardEntryType] = writes
 
@@ -71,4 +72,11 @@ object PostgresReportCardEntryType extends JsonSerialisation[PostgresReportCardE
       (JsPath \ "int").write[Int] and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresReportCardEntryType.unapply))
+}
+
+object PostgresReportCardEntryTypeProtocol {
+
+  implicit def writes: Writes[PostgresReportCardEntryTypeProtocol] = Json.writes[PostgresReportCardEntryTypeProtocol]
+
+  implicit def reads: Reads[PostgresReportCardEntryTypeProtocol] = PostgresReportCardEntryType.reads
 }

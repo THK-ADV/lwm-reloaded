@@ -11,6 +11,7 @@ import play.api.libs.functional.syntax._
 import utils.LwmDateTime._
 
 case class SesameRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
+
 case class SesameRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom)
 
 object SesameRescheduled extends JsonSerialisation[SesameRescheduled, SesameRescheduled, SesameRescheduledAtom] {
@@ -33,6 +34,7 @@ object SesameRescheduledAtom {
 }
 
 // POSTGRES
+
 trait ReportCardRescheduled extends UniqueEntity
 
 case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRescheduled
@@ -57,6 +59,7 @@ case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Tim
 }
 
 object ReportCardRescheduled {
+
   def writes: Writes[ReportCardRescheduled] = new Writes[ReportCardRescheduled] {
     override def writes(r: ReportCardRescheduled) = r match {
       case rescheduled: PostgresReportCardRescheduled => Json.toJson(rescheduled)(PostgresReportCardRescheduled.writes)
@@ -66,6 +69,7 @@ object ReportCardRescheduled {
 }
 
 object PostgresReportCardRescheduled extends JsonSerialisation[PostgresReportCardRescheduledProtocol, PostgresReportCardRescheduled, PostgresReportCardRescheduledAtom] {
+
   override implicit def reads: Reads[PostgresReportCardRescheduledProtocol] = Json.reads[PostgresReportCardRescheduledProtocol]
 
   override implicit def writes: Writes[PostgresReportCardRescheduled] = Json.writes[PostgresReportCardRescheduled]
@@ -74,6 +78,7 @@ object PostgresReportCardRescheduled extends JsonSerialisation[PostgresReportCar
 }
 
 object PostgresReportCardRescheduledAtom {
+
   implicit def writesAtom: Writes[PostgresReportCardRescheduledAtom] = (
     (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and

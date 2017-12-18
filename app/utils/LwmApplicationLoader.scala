@@ -101,6 +101,8 @@ with ReportCardEntryTypeDaoModule
 with ReportCardEntryTypeManagementModule2
 with ReportCardRescheduledDaoModule
 with ReportCardRescheduledManagementModule
+with ReportCardRetryDaoModule
+with ReportCardRetryManagementModule
 with AssignmentPlanManagementModule
 with AssignmentPlanManagementModulePostgres
 with AssignmentPlanDaoModule
@@ -149,6 +151,7 @@ with LdapSyncModule {
     reportCardEntryTypeManagementController,
     reportCardEntryTypeController,
     reportCardRescheduledController,
+    reportCardRetryController,
     reportCardEvaluationManagementController,
     reportCardEvaluationManagementController2,
     assignmentPlanManagementController,
@@ -229,6 +232,8 @@ with DefaultReportCardEntryTypeDaoModule
 with DefaultReportCardEntryTypeManagementModule2
 with DefaultReportCardRescheduledDaoModule
 with DefaultReportCardRescheduledManagementModule
+with DefaultReportCardRetryDaoModule
+with DefaultReportCardRetryManagementModule
 with DefaultAssignmentPlanManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImplPostgres
 with DefaultAssignmentPlanDaoModule

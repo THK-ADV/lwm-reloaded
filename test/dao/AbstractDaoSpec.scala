@@ -43,6 +43,10 @@ object AbstractDaoSpec {
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
   def randomGroup = groups(nextInt(maxGroups))
+  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
+    ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
+  }.toSet
+
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
@@ -146,9 +150,7 @@ object AbstractDaoSpec {
       val rEnd = e.end.localTime.plusHours(1)
 
       val id = UUID.randomUUID
-      val entryTypes = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
-        ReportCardEntryTypeDb(None, Some(id), entryType.entryType)
-      }.toSet
+      val entryTypes = randomReportCardEntryTypes(None, Some(id))
 
       ReportCardRetryDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, entryTypes, Some("some reason"), id = id)
     }
@@ -163,9 +165,7 @@ object AbstractDaoSpec {
       val end = start.plusHours(1)
 
       val id = UUID.randomUUID
-      val types = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
-        ReportCardEntryTypeDb(Some(id), None, entryType.entryType)
-      }.toSet
+      val types = randomReportCardEntryTypes(Some(id), None)
 
       ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, id = id)
     }

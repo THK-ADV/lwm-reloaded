@@ -9,8 +9,13 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
 
-case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
-case class PostgresReportCardRetryAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String], id: UUID) extends UniqueEntity
+sealed trait ReportCardRetry extends UniqueEntity
+
+case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRetry
+
+case class PostgresReportCardRetryProtocol(reportCardEntry: UUID, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryTypeProtocol], reason: Option[String])
+
+case class PostgresReportCardRetryAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String], id: UUID) extends ReportCardRetry
 
 case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
 
@@ -29,12 +34,12 @@ case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end
   override def toLwmModel = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, entryTypes.map(_.toLwmModel), reason, id)
 }
 
-object PostgresReportCardRetry extends JsonSerialisation[PostgresReportCardRetry, PostgresReportCardRetry, PostgresReportCardRetryAtom] {
-  override implicit def reads = Json.reads[PostgresReportCardRetry]
+object PostgresReportCardRetry extends JsonSerialisation[PostgresReportCardRetryProtocol, PostgresReportCardRetry, PostgresReportCardRetryAtom] {
+  override implicit def reads: Reads[PostgresReportCardRetryProtocol] = Json.reads[PostgresReportCardRetryProtocol]
 
-  override implicit def writes = Json.writes[PostgresReportCardRetry]
+  override implicit def writes: Writes[PostgresReportCardRetry] = Json.writes[PostgresReportCardRetry]
 
-  override implicit def writesAtom = PostgresReportCardRetryAtom.writesAtom
+  override implicit def writesAtom: Writes[PostgresReportCardRetryAtom] = PostgresReportCardRetryAtom.writesAtom
 }
 
 object PostgresReportCardRetryAtom {
@@ -47,4 +52,14 @@ object PostgresReportCardRetryAtom {
       (JsPath \ "reason").writeNullable[String] and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresReportCardRetryAtom.unapply))
+}
+
+object ReportCardRetry {
+
+  implicit def writes[ReportCardRetry]: Writes[ReportCardRetry] = new Writes[ReportCardRetry] {
+    override def writes(r: ReportCardRetry) = r match {
+      case normal: PostgresReportCardRetry => Json.toJson(normal)(PostgresReportCardRetry.writes)
+      case atom: PostgresReportCardRetryAtom => Json.toJson(atom)(PostgresReportCardRetryAtom.writesAtom)
+    }
+  }
 }

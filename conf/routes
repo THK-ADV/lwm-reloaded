@@ -270,11 +270,18 @@ HEAD          /reportCardEntryTypes                                             
 PUT           /api2/courses/:c/reportCardEntryTypes/:id                               controllers.ReportCardEntryTypeControllerPostgres.updateFrom(c, id)
 
 # ReportCardRescheduled 2.0
-POST          /api2/courses/:c/reportCardRescheduled                                  controllers.ReportCardRescheduledController.createFrom(c)
-GET           /api2/courses/:c/reportCardRescheduled                                  controllers.ReportCardRescheduledController.allFrom(c)
-GET           /api2/courses/:c/reportCardRescheduled/:id                              controllers.ReportCardRescheduledController.getFrom(c, id)
-PUT           /api2/courses/:c/reportCardRescheduled/:id                              controllers.ReportCardRescheduledController.updateFrom(c, id)
-DELETE        /api2/courses/:c/reportCardRescheduled/:id                              controllers.ReportCardRescheduledController.deleteFrom(c, id)
+POST          /api2/courses/:c/reportCardReschedules                                  controllers.ReportCardRescheduledController.createFrom(c)
+GET           /api2/courses/:c/reportCardReschedules                                  controllers.ReportCardRescheduledController.allFrom(c)
+GET           /api2/courses/:c/reportCardReschedules/:id                              controllers.ReportCardRescheduledController.getFrom(c, id)
+PUT           /api2/courses/:c/reportCardReschedules/:id                              controllers.ReportCardRescheduledController.updateFrom(c, id)
+DELETE        /api2/courses/:c/reportCardReschedules/:id                              controllers.ReportCardRescheduledController.deleteFrom(c, id)
+
+# ReportCardRetry 2.0
+POST          /api2/courses/:c/reportCardRetries                                      controllers.ReportCardRetryController.createFrom(c)
+GET           /api2/courses/:c/reportCardRetries                                      controllers.ReportCardRetryController.allFrom(c)
+GET           /api2/courses/:c/reportCardRetries/:id                                  controllers.ReportCardRetryController.getFrom(c, id)
+PUT           /api2/courses/:c/reportCardRetries/:id                                  controllers.ReportCardRetryController.updateFrom(c, id)
+DELETE        /api2/courses/:c/reportCardRetries/:id                                  controllers.ReportCardRetryController.deleteFrom(c, id)
 
 # ReportCardEvaluation
 GET           /reportCardEvaluations/student/:s                                       controllers.ReportCardEvaluationController.get(s)
