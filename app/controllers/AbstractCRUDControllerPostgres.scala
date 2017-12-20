@@ -24,6 +24,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     with RequestRebasePostgres {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.Ops.unwrapTrys
 
   protected implicit def writes: Writes[LwmModel]
   protected implicit def reads: Reads[Protocol]
@@ -49,13 +50,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
       errors => Failure(new Throwable(JsError.toJson(errors).toString)),
       success => Success(success)
     )
-  }
-
-  protected def unwrapTrys(partialCreated: List[Try[DbModel]]): (List[DbModel], List[Throwable]) = {
-    val succeeded = partialCreated.collect { case Success(s) => s }
-    val failed = partialCreated.collect { case Failure(e) => e }
-
-    (succeeded, failed)
   }
 
   def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>

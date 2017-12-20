@@ -8,12 +8,12 @@ trait LdapSyncModule {
 }
 
 trait DefaultLdapSyncService extends LdapSyncModule {
-  self: AkkaActorSystemModule with ConfigurationModule with SemanticRepositoryModule with LdapModule with ResolversModule =>
+  self: AkkaActorSystemModule with ConfigurationModule with LdapModule with UserDaoModule =>
 
-  val syncCron = lwmConfig.getString("lwm.ldap.cron") match {
+  lazy val syncCron = lwmConfig.getString("lwm.ldap.cron") match {
     case Some(cron) if cron.nonEmpty => cron
     case _ => "0 0 4 1/1 * ? *" // every day at 04:00 am
   }
 
-  override val ldapSyncService: LdapSyncService = new ActorBasedLdapSyncService(system, syncCron, repository, ldapService, resolvers)
+  override val ldapSyncService: LdapSyncService = new ActorBasedLdapSyncService(system, syncCron, ldapService, userDao)
 }

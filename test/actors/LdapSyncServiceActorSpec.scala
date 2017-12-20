@@ -19,7 +19,7 @@ import scala.util.{Failure, Success}
 
 class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with WordSpecLike with TestBaseDefinition {
 
-  val namespace = Namespace("http://lwm.gm.fh-koeln.de/")
+  /*val namespace = Namespace("http://lwm.gm.fh-koeln.de/")
   val repository = SesameRepository(namespace)
   val bindings = Bindings[repository.Rdf](namespace)
   val ldapService = mock[LdapService]
@@ -171,5 +171,5 @@ class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system")) with 
     repository.connect { conn =>
       repository.rdfStore.removeGraph(conn, repository.ns)
     }
-  }
+  }*/
 }

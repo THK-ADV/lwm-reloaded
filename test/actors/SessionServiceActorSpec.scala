@@ -27,7 +27,8 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
   val ldap = mock[LdapService]
   val userDao = mock[UserDao]
 
-  val user = LdapUser("mi1111", "Last", "First", "Email", User.EmployeeType, None, None, UUID.randomUUID())
+  val id = UUID.randomUUID()
+  val user = LdapUser("mi1111", "Last", "First", "Email", User.EmployeeType, None, None)
   val actorRef = system.actorOf(SessionServiceActor.props(ldap, userDao))
 
   "A SessionServiceActor" should {
@@ -63,7 +64,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     }
 
     "create a user with role and session" in {
-      val dbUser = DbUser(user.systemId, user.lastname, user.firstname, user.email, user.status, None, None, id = user.id)
+      val dbUser = DbUser(user.systemId, user.lastname, user.firstname, user.email, user.status, None, None, id = id)
       val auth = PostgresAuthorityAtom(dbUser.toLwmModel, PostgresRole(Role.Employee.label), None, UUID.randomUUID())
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
@@ -85,14 +86,14 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     "authorize a user when he exists" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
       when(ldap.user2(anyString())).thenReturn(Future.successful(user))
-      when(userDao.userId(anyObject())).thenReturn(Future.successful(Some(user.id)))
+      when(userDao.userId(anyObject())).thenReturn(Future.successful(Some(id)))
 
       val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]
       val result = Await.result(future, timeout.duration)
 
       result match {
         case Authenticated(session) =>
-          session.userId shouldBe user.id
+          session.userId shouldBe id
           session.username shouldBe user.systemId
         case _ => fail("Should not return a failure")
       }

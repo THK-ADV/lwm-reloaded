@@ -165,5 +165,12 @@ object Ops { self =>
 
     def asTrys: Future[List[Try[T]]] = Future.sequence(futures.map(futureToFutureTry))
   }
+
+  def unwrapTrys[T](partialCreated: List[Try[T]]): (List[T], List[Throwable]) = {
+    val succeeded = partialCreated.collect { case Success(s) => s }
+    val failed = partialCreated.collect { case Failure(e) => e }
+
+    (succeeded, failed)
+  }
 }
 

@@ -8,5 +8,5 @@ trait ConfigurationModule {
 }
 
 trait ConfigurationModuleImpl extends ConfigurationModule {
-  override def lwmConfig: Configuration = Configuration(ConfigFactory.defaultApplication().resolve())
+  override lazy val lwmConfig: Configuration = Configuration(ConfigFactory.defaultApplication().resolve())
 }

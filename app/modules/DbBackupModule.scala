@@ -28,5 +28,5 @@ trait DefaultDbBackupModuleImpl extends DbBackupModule {
     case _ => None
   }
 
-  override val backupService: DbBackupService = new ActorBasedBackupService(system, folder, backupFolder, dbCron)
+  override lazy val backupService: DbBackupService = new ActorBasedBackupService(system, folder, backupFolder, dbCron)
 }

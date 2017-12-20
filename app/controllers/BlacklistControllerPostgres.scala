@@ -52,6 +52,7 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
 
   def createFor(year: String): Action[JsValue] = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global
+    import utils.Ops.unwrapTrys
 
     (for {
       blacklists <- blacklistService.fetchByYear2(year)

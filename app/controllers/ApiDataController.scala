@@ -99,9 +99,11 @@ final class ApiDataController(val repository: SesameRepository,
       })
       _ = println(s"sesameEmployees ${sesameEmployees.size}")
 
-      postgresStudents = sesameStudents.map(s =>
+      postgresStudents = sesameStudents.map { s =>
+        if (s.systemId == "naujoks") println(s)
+
         DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), id = s.id)
-      )
+      }
       postgresEmployees = sesameEmployees.map(e =>
         DbUser(e.systemId, e.lastname, e.firstname, e.email, e.status, None, None, id = e.id)
       )

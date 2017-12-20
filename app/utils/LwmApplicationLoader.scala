@@ -5,7 +5,7 @@ import modules._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router
-import play.api.{Application, ApplicationLoader, BuiltInComponentsFromContext}
+import play.api.{Application, Logger, ApplicationLoader, BuiltInComponentsFromContext}
 import router.Routes
 
 class LwmApplicationLoader extends ApplicationLoader {
@@ -114,6 +114,10 @@ with ReportCardEvaluationManagementModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
 with LdapSyncModule {
+
+  //The workaround, this should happen automatically when I use the BuiltInComponents
+  Logger.configure(environment)
+
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
   lazy val router: Router = new Routes(
