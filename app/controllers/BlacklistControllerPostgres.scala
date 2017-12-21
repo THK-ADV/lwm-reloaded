@@ -24,7 +24,7 @@ object BlacklistControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao, val blacklistService: BlacklistServiceLike)
+final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao)
   extends AbstractCRUDControllerPostgres[PostgresBlacklistProtocol, BlacklistTable, BlacklistDb, PostgresBlacklist] {
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes
@@ -55,7 +55,7 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
     import utils.Ops.unwrapTrys
 
     (for {
-      blacklists <- blacklistService.fetchByYear2(year)
+      blacklists <- BlacklistService.fetchLegalHolidays(year)
       partialCreated <- abstractDao.createManyPartial(blacklists)
       (succeeded, failed) = unwrapTrys(partialCreated)
     } yield (blacklists.map(_.toLwmModel), succeeded.map(_.toLwmModel), failed)).jsonResult

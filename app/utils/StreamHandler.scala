@@ -1,9 +1,10 @@
-package base
+package utils
 
 import akka.util.Timeout
 import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc.Result
 import play.api.test.Helpers
+
 import scala.concurrent.Future
 
 object StreamHandler {

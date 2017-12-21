@@ -12,7 +12,7 @@ import services.ScheduleService2.{Crossover, Evaluator, Mutator}
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
-import utils.{Gen, Genesis2}
+import utils.{Gen, Genesis}
 import utils.TypeClasses.{Cross, Eval, Mutate}
 import utils.LwmDateTime._
 
@@ -124,7 +124,7 @@ final class ScheduleService2(val pops: Int, val gens: Int, val elite: Int) exten
     implicit val crossF = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
 
-    Genesis2.byVariation[ScheduleGen, Conflict, Int](pop, g getOrElse gens, e getOrElse elite) { elite =>
+    Genesis.byVariation[ScheduleGen, Conflict, Int](pop, g getOrElse gens, e getOrElse elite) { elite =>
       if (elite.size % 2 == 0) elite.take(2).distinct.size == 1 else false
     }
   }

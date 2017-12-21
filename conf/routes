@@ -35,13 +35,6 @@ GET           /api2/courses                                                     
 GET           /api2/courses/:id                                                       controllers.CourseControllerPostgres.get(id)
 DELETE        /api2/courses/:id                                                       controllers.CourseControllerPostgres.delete(id)
 
-# Group
-GET           /courses/:c/labworks/:l/groups                                          controllers.GroupCRUDController.allFrom(c, l)
-GET           /courses/:c/labworks/:l/atomic/groups                                   controllers.GroupCRUDController.allAtomicFrom(c, l)
-GET           /courses/:c/labworks/:l/groups/preview                                  controllers.GroupCRUDController.preview(c, l)
-GET           /courses/:c/labworks/:l/atomic/groups/preview                           controllers.GroupCRUDController.previewAtomic(c, l)
-HEAD          /groups                                                                 controllers.GroupCRUDController.header
-
 # Group 2
 GET           /api2/courses/:c/labworks/:l/groups                                     controllers.GroupControllerPostgres.allFrom(c, l)
 GET           /api2/courses/:c/labworks/:l/groups/preview                             controllers.GroupControllerPostgres.preview(c, l)
@@ -162,18 +155,6 @@ GET           /api2/labworkApplications                                         
 GET           /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.get(id)
 DELETE        /api2/labworkApplications/:id                                           controllers.LabworkApplicationControllerPostgres.delete(id)
 
-# Schedule
-#HEAD          /schedules                                                              controllers.ScheduleController.header
-
-# Schedule restricted
-POST          /courses/:c/schedules                                                   controllers.ScheduleController.createFrom(c)
-POST          /courses/:c/atomic/schedules                                            controllers.ScheduleController.createAtomicFrom(c)
-GET           /courses/:c/labworks/:l/schedules                                       controllers.ScheduleController.allFrom(c, l)
-GET           /courses/:c/labworks/:l/atomic/schedules                                controllers.ScheduleController.allAtomicFrom(c, l)
-#GET           /courses/:c/labworks/:l/schedules/preview                               controllers.ScheduleController.preview(c, l)
-#GET           /courses/:c/labworks/:l/atomic/schedules/preview                        controllers.ScheduleController.previewAtomic(c, l)
-DELETE        /courses/:c/schedules/:id                                               controllers.ScheduleController.deleteFrom(c,id)
-
 # ScheduleEntries
 HEAD          /scheduleEntries                                                        controllers.ScheduleEntryController.header
 
@@ -222,7 +203,6 @@ DELETE        /api2/courses/:c/timetables/:id                                   
 
 # Blacklist
 POST          /blacklists                                                             controllers.BlacklistCRUDController.create()
-POST          /blacklists/year/:year                                                  controllers.BlacklistCRUDController.createFor(year)
 PUT           /blacklists/:id                                                         controllers.BlacklistCRUDController.update(id)
 GET           /blacklists                                                             controllers.BlacklistCRUDController.all()
 GET           /blacklists/:id                                                         controllers.BlacklistCRUDController.get(id)

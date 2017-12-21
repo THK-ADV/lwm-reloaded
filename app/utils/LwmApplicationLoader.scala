@@ -29,9 +29,7 @@ with DegreeDaoModule
 with CourseManagementModule
 with CourseManagementModulePostgres
 with CourseDaoModule
-with GroupServiceManagementModule
 with GroupDaoManagementModule
-with GroupManagementModule
 with GroupManagementModule2
 with LabworkManagementModule
 with LabworkManagementModulePostgres
@@ -63,18 +61,15 @@ with LabworkApplicationManagementModule
 with LabworkApplicationManagementModulePostgres
 with LabworkApplicationServiceModule
 with LabworkApplicationDaoModule
-with ScheduleManagementModule
 with ScheduleEntryDaoModule
 with ScheduleEntryManagementModule
 with ScheduleEntryManagementModule2
 with TimetableManagementModule
 with TimetableManagementModulePostgres
-with TimetableServiceManagementModule
 with TimetableDaoManagementModule
 with ScheduleServiceManagementModule
 with BlacklistManagementModule
 with Blacklist2ManagementModule
-with BlacklistServiceManagementModule
 with BlacklistDaoManagementModule
 with ReportCardServiceManagementModule
 with ReportCardEntryDaoModule
@@ -108,7 +103,6 @@ with LdapSyncModule {
     degreeManagementControllerPostgres,
     courseManagementController,
     courseManagementControllerPostgres,
-    groupManagementController,
     groupManagementControllerPostgres,
     labworkManagementController,
     labworControllerPostgres,
@@ -124,7 +118,6 @@ with LdapSyncModule {
     permissionManagementController,
     labworkApplicationController,
     labworkApplicationControllerPostgres,
-    scheduleManagementController,
     scheduleEntryController,
     scheduleEntryControllerPostgres,
     timetableManagementController,
@@ -162,9 +155,7 @@ with DefaultDegreeDaoModule
 with DefaultCourseManagementModuleImpl
 with DefaultCourseManagementModuleImplPostgres
 with DefaultCourseDaoModule
-with DefaultGroupServiceManagementModule
 with DefaultGroupDaoManagementModule
-with DefaultGroupManagementModuleImpl
 with DefaultGroupManagementModule2
 with DefaultLabworkManagementModuleImpl
 with DefaultLabworkManagementModulePostgres
@@ -195,18 +186,15 @@ with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationManagementModulePostgres
 with DefaultLabworkApplicationServiceModule
 with DefaultLabworkApplicationDaoModule
-with DefaultScheduleManagementModuleImpl
 with DefaultScheduleEntryDaoModule
 with DefaultScheduleEntryManagementModule
 with DefaultScheduleEntryManagementModule2
 with DefaultTimetableManagementModuleImpl
 with DefaultTimetableManagementModulePostgres
-with DefaultTimetableServiceManagementModule
 with DefaultTimetableDaoModule
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklist2ManagementModule
-with DefaultBlacklistServiceManagementModule
 with DefaultBlacklistDaoManagementModule
 with DefaultReportCardServiceManagementModule
 with DefaultReportCardEntryDaoModule

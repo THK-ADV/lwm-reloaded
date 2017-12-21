@@ -2,10 +2,9 @@ package services
 
 import java.util.UUID
 
-import models.{PostgresGroup, PostgresLabworkApplication, SesameGroup}
+import models.{PostgresGroup, PostgresLabworkApplication}
 import utils.PreferenceSort
 
-import scala.util.{Failure, Try}
 import scalaz.StreamT._
 
 sealed trait GroupingStrategy {
@@ -47,40 +46,6 @@ sealed trait GroupingStrategy {
 
 case class CountGrouping(value: String) extends GroupingStrategy
 case class RangeGrouping(min: String, max: String) extends GroupingStrategy
-
-trait GroupServiceLike {
-
-  def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
-
-  def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
-
-  // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
-  def sortApplicantsFor(labwork: UUID): Try[Vector[UUID]]
-
-  def groupBy(labwork: UUID, strategy: GroupingStrategy): Try[Set[SesameGroup]]
-}
-
-class GroupService(private val applicationService: LabworkApplicationServiceLike) extends GroupServiceLike {
-
-  override def sortApplicantsFor(labwork: UUID): Try[Vector[UUID]] = {
-    applicationService.applicationsFor(labwork) map { v =>
-      val nodes = v map (app => (app.applicant, app.friends))
-      PreferenceSort.sort(nodes)
-    }
-  }
-
-  override def groupBy(labwork: UUID, strategy: GroupingStrategy): Try[Set[SesameGroup]] = {
-    /*for {
-      people <- sortApplicantsFor(labwork) if people.nonEmpty
-      groupSize <- strategy.apply(people)
-      grouped = people.grouped(groupSize).toList
-      zipped = alphabeticalOrdering(grouped.size) zip grouped
-      mapped = zipped map (t => SesameGroup(t._1, labwork, t._2.toSet))
-    } yield mapped.toSet*/
-
-    Failure(new Exception("not implemented"))
-  }
-}
 
 object GroupService {
 

@@ -1,6 +1,5 @@
 package modules
 
-import controllers.ScheduleController
 import services._
 import utils.LwmApplication
 
@@ -11,18 +10,7 @@ trait ScheduleServiceManagementModule {
 }
 
 trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
-  self: LwmApplication with TimetableServiceManagementModule =>
+  self: LwmApplication =>
 
   lazy val scheduleService: ScheduleGenesisServiceLike2 = new ScheduleService2(20, 100, 10)
-}
-
-trait ScheduleManagementModule {
-
-  def scheduleManagementController: ScheduleController
-}
-
-trait DefaultScheduleManagementModuleImpl extends ScheduleManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule with GroupServiceManagementModule =>
-
-  lazy val scheduleManagementController: ScheduleController = new ScheduleController(repository, sessionService, namespace, roleService, groupService)
 }

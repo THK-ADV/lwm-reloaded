@@ -1,18 +1,16 @@
 package controllers
 
+import controllers.BlacklistCRUDController._
 import models.Permissions.{blacklist, prime}
 import models._
 import org.joda.time.Interval
 import org.w3.banana.sesame.Sesame
-import play.api.libs.json.{Json, Reads, Writes}
-import services.{BlacklistServiceLike, RoleService, RoleServiceLike, SessionHandlingService}
+import play.api.libs.json.{Reads, Writes}
+import services.{RoleServiceLike, SessionHandlingService}
 import store.bind.Descriptor.Descriptor
 import store.{Namespace, SesameRepository}
 import utils.{LwmDateTime, LwmMimeType}
-import controllers.BlacklistCRUDController._
 
-import scala.concurrent.Future
-import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
 object BlacklistCRUDController {
@@ -20,7 +18,7 @@ object BlacklistCRUDController {
   val currentValue = "current"
 }
 
-class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike, val blacklistService: BlacklistServiceLike) extends AbstractCRUDController[SesameBlacklistProtocol, SesameBlacklist, SesameBlacklist] {
+class BlacklistCRUDController(val repository: SesameRepository, val sessionService: SessionHandlingService, val namespace: Namespace, val roleService: RoleServiceLike) extends AbstractCRUDController[SesameBlacklistProtocol, SesameBlacklist, SesameBlacklist] {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
@@ -69,20 +67,6 @@ class BlacklistCRUDController(val repository: SesameRepository, val sessionServi
         }
       case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was ${other.head}"))
       case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
-  def createFor(year: String) = contextFrom(Create) asyncContentTypedAction { implicit request =>
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    (for { // TODO refactor to attempt
-      blacklist <- blacklistService.fetchByYear(year)
-      _ <- Future.fromTry(repository.add[SesameBlacklist](blacklist))
-    } yield Created(Json.toJson(blacklist)(writes)).as(mimeType)) recover {
-      case NonFatal(t) => InternalServerError(Json.obj(
-        "status" -> "KO",
-        "message" -> t.getMessage
-      ))
     }
   }
 }
