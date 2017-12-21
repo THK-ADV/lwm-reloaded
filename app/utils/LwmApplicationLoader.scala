@@ -10,6 +10,9 @@ import router.Routes
 
 class LwmApplicationLoader extends ApplicationLoader {
   def load(context: Context): Application = {
+    //The workaround, this should happen automatically when I use the BuiltInComponents
+    Logger.configure(context.environment)
+
     new DefaultLwmApplication(context).application
   }
 }
@@ -114,9 +117,6 @@ with ReportCardEvaluationManagementModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
 with LdapSyncModule {
-
-  //The workaround, this should happen automatically when I use the BuiltInComponents
-  Logger.configure(environment)
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
