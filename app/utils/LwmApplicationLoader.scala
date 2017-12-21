@@ -1,6 +1,5 @@
 package utils
 
-import controllers._
 import modules._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
@@ -15,24 +14,6 @@ class LwmApplicationLoader extends ApplicationLoader {
 
     new DefaultLwmApplication(context).application
   }
-}
-
-trait DefaultHomepageModuleImpl extends HomepageModule {
-  lazy val homepageController = new HomepageController
-}
-
-trait HomepageModule {
-  def homepageController: HomepageController
-}
-
-trait AssetsModule {
-  self: LwmApplication =>
-  def assetsController: Assets
-}
-
-trait DefaultAssetsModuleImpl extends AssetsModule {
-  self: LwmApplication =>
-  lazy val assetsController = new Assets(httpErrorHandler)
 }
 
 abstract class LwmApplication(context: Context) extends BuiltInComponentsFromContext(context)
@@ -249,5 +230,4 @@ with DefaultReportCardEvaluationManagementModuleImpl
 with DefaultReportCardEvaluationDaoModule
 with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl
-with DefaultDbBackupModuleImpl
 with DefaultLdapSyncService

@@ -21,8 +21,8 @@ import scala.language.postfixOps
 
 class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
-  implicit val timeout = Timeout(5 seconds)
-  implicit val system = ActorSystem("TestSystem")
+  implicit val timeout: Timeout = Timeout(5 seconds)
+  implicit val system: ActorSystem = ActorSystem("TestSystem")
 
   val ldap = mock[LdapService]
   val userDao = mock[UserDao]
