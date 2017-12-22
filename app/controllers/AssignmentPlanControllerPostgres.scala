@@ -21,7 +21,7 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override protected implicit val writes: Writes[AssignmentPlan] = AssignmentPlan.writes
 
-  override protected implicit val reads: Reads[PostgresAssignmentPlanProtocol] = PostgresAssignmentPlan.reads
+  override protected implicit val reads: Reads[PostgresAssignmentPlanProtocol] = PostgresAssignmentPlanProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
     import controllers.AssignmentPlanControllerPostgres._
@@ -35,7 +35,7 @@ final class AssignmentPlanControllerPostgres(val sessionService: SessionHandling
 
   override protected def toDbModel(protocol: PostgresAssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
 
-  override implicit val mimeType = LwmMimeType.assignmentPlanV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.assignmentPlanV1Json
 
   import models.Role._
 

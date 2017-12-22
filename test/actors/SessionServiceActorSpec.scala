@@ -49,7 +49,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
       val errMsg = "No appropriate Role found while resolving user"
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.user2(anyString())).thenReturn(Future.successful(user))
+      when(ldap.user(anyString())).thenReturn(Future.successful(user))
       when(userDao.userId(anyObject())).thenReturn(Future.successful(None))
       when(userDao.createOrUpdate(anyObject())).thenReturn(Future.failed(new Throwable(errMsg)))
 
@@ -68,7 +68,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
       val auth = PostgresAuthorityAtom(dbUser.toLwmModel, PostgresRole(Role.Employee.label), None, UUID.randomUUID())
 
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.user2(anyString())).thenReturn(Future.successful(user))
+      when(ldap.user(anyString())).thenReturn(Future.successful(user))
       when(userDao.userId(anyObject())).thenReturn(Future.successful(None))
       when(userDao.createOrUpdate(anyObject())).thenReturn(Future.successful((dbUser.toLwmModel, Some(auth))))
 
@@ -85,7 +85,7 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
 
     "authorize a user when he exists" in {
       when(ldap.authenticate(anyString(), anyString())).thenReturn(Future.successful(true))
-      when(ldap.user2(anyString())).thenReturn(Future.successful(user))
+      when(ldap.user(anyString())).thenReturn(Future.successful(user))
       when(userDao.userId(anyObject())).thenReturn(Future.successful(Some(id)))
 
       val future = (actorRef ? SessionServiceActor.SessionRequest(user.systemId, "")).mapTo[Authentication]

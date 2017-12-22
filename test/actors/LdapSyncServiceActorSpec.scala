@@ -52,7 +52,7 @@ final class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system"))
       }.toSeq
 
       when(userDao.get(atomic = false)).thenReturn(Future.successful(all))
-      when(ldapService.users2(anyObject())).thenReturn(Future.successful(ladpUsers))
+      when(ldapService.users(anyObject())).thenReturn(Future.successful(ladpUsers))
       when(userDao.createOrUpdate(anyObject())).thenReturn(updated.head, updated.tail:_*)
 
       actorRef ! SyncRequest

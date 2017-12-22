@@ -7,6 +7,27 @@ import utils.PreferenceSort
 
 import scalaz.StreamT._
 
+object GroupService {
+
+  def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
+
+  def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
+
+  // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
+  def sort(applicants: Vector[PostgresLabworkApplication]): Vector[UUID] = {
+    val nodes = applicants map (app => (app.applicant, app.friends))
+    PreferenceSort.sort(nodes)
+  }
+
+  def groupApplicantsBy(strategy: GroupingStrategy, applicants: Vector[PostgresLabworkApplication], labwork: UUID): Vector[PostgresGroup] = {
+    val people = sort(applicants)
+    val grouped = strategy.apply(people)
+    val zipped = alphabeticalOrdering(grouped.size) zip grouped
+
+    zipped.map(t => PostgresGroup(t._1, labwork, t._2.toSet)).toVector
+  }
+}
+
 sealed trait GroupingStrategy {
 
   @scala.annotation.tailrec
@@ -46,24 +67,3 @@ sealed trait GroupingStrategy {
 
 case class CountGrouping(value: String) extends GroupingStrategy
 case class RangeGrouping(min: String, max: String) extends GroupingStrategy
-
-object GroupService {
-
-  def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
-
-  def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
-
-  // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
-  def sort(applicants: Vector[PostgresLabworkApplication]): Vector[UUID] = {
-    val nodes = applicants map (app => (app.applicant, app.friends))
-    PreferenceSort.sort(nodes)
-  }
-
-  def groupApplicantsBy(strategy: GroupingStrategy, applicants: Vector[PostgresLabworkApplication], labwork: UUID): Vector[PostgresGroup] = {
-    val people = sort(applicants)
-    val grouped = strategy.apply(people)
-    val zipped = alphabeticalOrdering(grouped.size) zip grouped
-
-    zipped.map(t => PostgresGroup(t._1, labwork, t._2.toSet)).toVector
-  }
-}

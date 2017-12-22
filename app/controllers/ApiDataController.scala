@@ -2,14 +2,15 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.PostgresResult
+import controllers.helper._
 import dao._
+import models.Role.Admin
 import utils.LwmDateTime._
 import models._
 import org.joda.time.{DateTime, Interval}
 import play.api.mvc.{Action, Controller}
 import services._
-import store.SesameRepository
+import store.{Namespace, SesameRepository}
 import store.bind.Bindings
 import utils.LwmMimeType
 
@@ -28,18 +29,17 @@ final class ApiDataController(val repository: SesameRepository,
                               val timetableService2: TimetableDao,
                               val blacklistService2: BlacklistDao,
                               val reportCardEntryDao: ReportCardEntryDao,
-                              val authorityService: AuthorityDao,
+                              val authorityDao: AuthorityDao,
                               val scheduleEntryDao: ScheduleEntryDao,
                               val groupDao: GroupDao,
                               val reportCardEvaluationDao: ReportCardEvaluationDao,
-                              val sessionService: SessionHandlingService,
-                              val roleService: RoleServiceLike
-                             ) extends Controller with PostgresResult with Secured with SessionChecking with SecureControllerContext with ContentTyped {
+                              val sessionService: SessionHandlingService)
+  extends Controller with PostgresResult with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
-  implicit val ns = repository.namespace
+  implicit val ns: Namespace = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
 
-  override implicit def mimeType = LwmMimeType.apiDataV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.apiDataV1Json
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -380,9 +380,10 @@ final class ApiDataController(val repository: SesameRepository,
 
   def migrateAuthorities = Action.async { implicit request =>
     import bindings.AuthorityDescriptor
+    import models.Authority.writes
 
     val result = for {
-      _ <- authorityService.createSchema
+      _ <- authorityDao.createSchema
       sesameAuthorities <- Future.fromTry(repository.getAll[SesameAuthority]).map(_.filter(_.invalidated.isEmpty))
       _ = println(s"sesameAuthorities ${sesameAuthorities.size}")
 
@@ -391,7 +392,7 @@ final class ApiDataController(val repository: SesameRepository,
       }
       _ = println(s"authoritiyDbs ${authorityDbs.size}")
 
-      authorities <- authorityService.createMany(authorityDbs.toList)
+      authorities <- authorityDao.createMany(authorityDbs.toList)
     } yield authorities.map(_.toLwmModel)
 
     result.jsonResult
@@ -399,6 +400,7 @@ final class ApiDataController(val repository: SesameRepository,
 
   def migrateGroups = Action.async { implicit request =>
     import bindings.GroupDescriptor
+    import models.Group.writes
 
     val result = for {
       _ <- groupDao.createSchema
@@ -418,6 +420,7 @@ final class ApiDataController(val repository: SesameRepository,
 
   def migrateSchedules = Action.async { implicit request =>
     import bindings.ScheduleEntryDescriptor
+    import models.ScheduleEntry.writes
 
     val result = for {
       _ <- scheduleEntryDao.createSchema
@@ -437,6 +440,7 @@ final class ApiDataController(val repository: SesameRepository,
 
   def migrateReportCardEvaluations = Action.async { implicit request =>
     import bindings.ReportCardEvaluationDescriptor
+    import models.ReportCardEvaluation.writes
 
     val result = for {
       _ <- reportCardEvaluationDao.createSchema
@@ -455,6 +459,6 @@ final class ApiDataController(val repository: SesameRepository,
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(Permissions.prime)
+    case _ => PartialSecureBlock(List(Admin))
   }
 }

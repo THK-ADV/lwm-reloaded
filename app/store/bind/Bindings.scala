@@ -321,7 +321,6 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointedAt(ReportCardEvaluationDescriptor.branching)
         .pointedAt(TimetableDescriptor.branching)
         .pointedAt(LabworkApplicationDescriptor.branching)
-        .pointedAt(AnnotationDescriptor.branching)
 
     private val label = property[String](lwm.label)
     private val description = property[String](lwm.description)
@@ -652,7 +651,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
         .pointsAt(ReportCardEntryTypeDescriptor.references)
         .pointsAt(RescheduledDescriptor.references)
 
-    override val branching: Ref[Rdf#URI] = references pointedAt AnnotationDescriptor.branching
+    override val branching: Ref[Rdf#URI] = references
 
     private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
     private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(SesameLabwork.splitter))
@@ -742,46 +741,7 @@ class Bindings[Rdf <: RDF](implicit baseNs: Namespace, ops: RDFOps[Rdf], recordB
       pgbWithId[SesameRescheduledAtom](
         _ => innerUri)(date, start, end, room)(SesameRescheduledAtom.apply, SesameRescheduledAtom.unapply) withClasses classUris
   }
-  implicit lazy val AnnotationDescriptor: Descriptor[Rdf, Annotation] = new Descriptor[Rdf, Annotation] {
-    override val clazz: Rdf#URI = lwm.Annotation
 
-    override val classUris: ClassUrisFor[Rdf, Annotation] = classUrisFor[Annotation](clazz)
-
-    override val references: Ref[Rdf#URI] = Ref(clazz)
-
-    private val student = property[UUID](lwm.student)(uuidRefBinder(User.splitter))
-    private val labwork = property[UUID](lwm.labwork)(uuidRefBinder(SesameLabwork.splitter))
-    private val reportCardEntry = property[UUID](lwm.reportCardEntry)(uuidRefBinder(SesameReportCardEntry.splitter))
-    private val message = property[String](lwm.message)
-    private val timestamp = property[DateTime](lwm.timestamp)
-
-    override val binder: PGBinder[Rdf, Annotation] =
-      pgbWithId[Annotation](annotation =>
-        makeUri(Annotation.generateUri(annotation)))(student, labwork, reportCardEntry, message, timestamp, invalidated, id)(Annotation.apply, Annotation.unapply) withClasses classUris
-
-  }
-  implicit lazy val AnnotationAtomDescriptor: Descriptor[Rdf, AnnotationAtom] = new Descriptor[Rdf, AnnotationAtom] {
-    override val clazz: Rdf#URI = lwm.Annotation
-
-    override val classUris: ClassUrisFor[Rdf, AnnotationAtom] = classUrisFor[AnnotationAtom](clazz)
-
-    override val references: Ref[Rdf#URI] =
-      Ref(clazz)
-        .pointsAt(StudentDescriptor.references)
-        .pointsAt(LabworkDescriptor.references)
-        .pointsAt(ReportCardEntryDescriptor.references)
-
-    private val student = property[SesameStudent](lwm.student)(StudentDescriptor.binder)
-    private val labwork = property[SesameLabwork](lwm.labwork)(LabworkDescriptor.binder)
-    private val reportCardEntry = property[SesameReportCardEntry](lwm.reportCardEntry)(ReportCardEntryDescriptor.binder)
-    private val message = property[String](lwm.message)
-    private val timestamp = property[DateTime](lwm.timestamp)
-
-    override val binder: PGBinder[Rdf, AnnotationAtom] =
-      pgbWithId[AnnotationAtom](annotation =>
-        makeUri(Annotation.generateUri(annotation.id)))(student, labwork, reportCardEntry, message, timestamp, invalidated, id)(AnnotationAtom.apply, AnnotationAtom.unapply) withClasses classUris
-
-  }
   implicit lazy val ReportCardEvaluationDescriptor: Descriptor[Rdf, SesameReportCardEvaluation] = new Descriptor[Rdf, SesameReportCardEvaluation] {
     override val clazz: Rdf#URI = lwm.ReportCardEvaluation
 

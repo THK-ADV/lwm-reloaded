@@ -472,7 +472,7 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
   def population(n: Int): Vector[UUID] = (Stream.continually(UUID.randomUUID()) take n).toVector
 
-  val scheduleService = new ScheduleService2(20, 100, 10)
+  val scheduleService = new ScheduleService(20, 100, 10)
 
   val semester = PostgresSemester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
   val weeks = Weeks.weeksBetween(semester.start, semester.examStart)

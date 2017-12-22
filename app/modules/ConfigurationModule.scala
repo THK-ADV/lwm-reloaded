@@ -1,7 +1,7 @@
 package modules
 
-import com.typesafe.config.{ConfigFactory, Config}
-import play.api.{Play, Configuration}
+import com.typesafe.config.ConfigFactory
+import play.api.Configuration
 
 trait ConfigurationModule {
   def lwmConfig: Configuration

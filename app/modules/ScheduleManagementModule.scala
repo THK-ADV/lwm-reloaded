@@ -1,16 +1,17 @@
 package modules
 
 import services._
-import utils.LwmApplication
 
 trait ScheduleServiceManagementModule {
-  self: LwmApplication =>
-
-  def scheduleService: ScheduleGenesisServiceLike2
+  def scheduleService: ScheduleGenesisServiceLike
 }
 
 trait DefaultScheduleServiceManagementModule extends ScheduleServiceManagementModule {
-  self: LwmApplication =>
+  self: ConfigurationModule =>
 
-  lazy val scheduleService: ScheduleGenesisServiceLike2 = new ScheduleService2(20, 100, 10)
+  val populations = lwmConfig.getInt("lwm.schedule.populations").getOrElse(20)
+  val generations = lwmConfig.getInt("lwm.schedule.generations").getOrElse(100)
+  val elites = lwmConfig.getInt("lwm.schedule.elites").getOrElse(10)
+
+  lazy val scheduleService: ScheduleGenesisServiceLike = new ScheduleService(populations, generations, elites)
 }

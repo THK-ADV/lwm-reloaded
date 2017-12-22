@@ -11,18 +11,20 @@ import store.{ReportCardEntryTypeTable, TableFilter}
 import utils.LwmMimeType
 
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class ReportCardEntryTypeControllerPostgres(val authorityDao: AuthorityDao,
                                             val sessionService: SessionHandlingService,
-                                            val abstractDao: ReportCardEntryTypeDao
-                                           ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, PostgresReportCardEntryType] {
+                                            val abstractDao: ReportCardEntryTypeDao)
+  extends AbstractCRUDControllerPostgres[PostgresReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, PostgresReportCardEntryType] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[PostgresReportCardEntryType] = PostgresReportCardEntryType.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardEntryTypeProtocol] = PostgresReportCardEntryType.reads
+  override protected implicit val reads: Reads[PostgresReportCardEntryTypeProtocol] = PostgresReportCardEntryTypeProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryTypeV1Json
 
   def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
     val uuid = UUID.fromString(id)
@@ -38,9 +40,7 @@ class ReportCardEntryTypeControllerPostgres(val authorityDao: AuthorityDao,
     case _ => PartialSecureBlock(List(God))
   }
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryTypeV1Json
-
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTypeTable]]]): Try[List[TableFilter[ReportCardEntryTypeTable]]] = ???
+  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTypeTable]]]): Try[List[TableFilter[ReportCardEntryTypeTable]]] = Success(List.empty)
 
   override protected def toDbModel(protocol: PostgresReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
 

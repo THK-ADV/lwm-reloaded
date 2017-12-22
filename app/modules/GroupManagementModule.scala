@@ -2,16 +2,15 @@ package modules
 
 import controllers.GroupControllerPostgres
 import dao.{GroupDao, GroupDaoImpl}
-import utils.LwmApplication
 
 trait GroupDaoManagementModule {
-  self: LwmApplication with DatabaseModule =>
+  self: DatabaseModule =>
 
   def groupDao: GroupDao
 }
 
 trait DefaultGroupDaoManagementModule extends GroupDaoManagementModule {
-  self: LwmApplication with DatabaseModule =>
+  self: DatabaseModule =>
 
   override lazy val groupDao = new GroupDaoImpl(db)
 }

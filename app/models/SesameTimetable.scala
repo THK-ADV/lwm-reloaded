@@ -3,13 +3,11 @@ package models
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import controllers.JsonSerialisation
-import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.LwmDateTime
-import utils.Ops.JsPathX
 import utils.LwmDateTime._
+import utils.Ops.JsPathX
 
 case class SesameTimetable(labwork: UUID, entries: Set[SesameTimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameTimetable.randomUUID) extends UniqueEntity {
 
@@ -47,57 +45,8 @@ case class SesameTimetableEntryAtom(supervisor: Set[User], room: SesameRoom, day
 
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: Set[UUID])
 
-object SesameTimetable extends UriGenerator[SesameTimetable] with JsonSerialisation[SesameTimetableProtocol, SesameTimetable, SesameTimetableAtom] {
-
+object SesameTimetable extends UriGenerator[SesameTimetable] {
   override def base: String = "timetables"
-
-  override implicit def reads: Reads[SesameTimetableProtocol] = Json.reads[SesameTimetableProtocol]
-
-  override implicit def writes: Writes[SesameTimetable] = (
-    (JsPath \ "labwork").write[UUID] and
-      (JsPath \ "entries").writeSet[SesameTimetableEntry] and
-      (JsPath \ "start").write[LocalDate] and
-      (JsPath \ "localBlacklist").writeSet[DateTime](LwmDateTime.writes) and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameTimetable.unapply))
-
-  override implicit def writesAtom: Writes[SesameTimetableAtom] = SesameTimetableAtom.writesAtom
-}
-
-object SesameTimetableAtom {
-
-  implicit def writesAtom: Writes[SesameTimetableAtom] = (
-    (JsPath \ "labwork").write[SesameLabwork] and
-      (JsPath \ "entries").writeSet[SesameTimetableEntryAtom] and
-      (JsPath \ "start").write[LocalDate] and
-      (JsPath \ "localBlacklist").writeSet[DateTime](LwmDateTime.writes) and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameTimetableAtom.unapply))
-}
-
-object SesameTimetableEntry extends JsonSerialisation[SesameTimetableEntry, SesameTimetableEntry, SesameTimetableEntryAtom] {
-
-  implicit val dateOrd = LwmDateTime.localDateOrd
-
-  implicit val timeOrd = LwmDateTime.localTimeOrd
-
-  override implicit def reads: Reads[SesameTimetableEntry] = Json.reads[SesameTimetableEntry]
-
-  override implicit def writes: Writes[SesameTimetableEntry] = Json.writes[SesameTimetableEntry]
-
-  override implicit def writesAtom: Writes[SesameTimetableEntryAtom] = SesameTimetableEntryAtom.writesAtom
-}
-
-object SesameTimetableEntryAtom {
-  implicit def writesAtom: Writes[SesameTimetableEntryAtom] = (
-    (JsPath \ "supervisor").writeSet[User] and
-      (JsPath \ "room").write[SesameRoom](SesameRoom.writes) and
-      (JsPath \ "dayIndex").write[Int] and
-      (JsPath \ "start").write[LocalTime] and
-      (JsPath \ "end").write[LocalTime]
-    ) (unlift(SesameTimetableEntryAtom.unapply))
 }
 
 // POSTGRES
@@ -108,10 +57,10 @@ case class PostgresTimetable(labwork: UUID, entries: Set[PostgresTimetableEntry]
   override def equals(that: scala.Any) = that match {
     case PostgresTimetable(l, e, s, lb, i) =>
       l == labwork &&
-      e == entries &&
-      s.isEqual(start) &&
-      lb == localBlacklist &&
-      i == id
+        e == entries &&
+        s.isEqual(start) &&
+        lb == localBlacklist &&
+        i == id
     case _ => false
   }
 }
@@ -120,10 +69,10 @@ case class PostgresTimetableEntry(supervisor: Set[UUID], room: UUID, dayIndex: I
   override def equals(that: scala.Any) = that match {
     case PostgresTimetableEntry(s, r, d, st, et) =>
       s == supervisor &&
-      r == room &&
-      d == dayIndex &&
-      st.isEqual(start) &&
-      et.isEqual(end)
+        r == room &&
+        d == dayIndex &&
+        st.isEqual(start) &&
+        et.isEqual(end)
     case _ => false
   }
 }
@@ -152,27 +101,23 @@ object TimetableDb {
   }
 }
 
-object PostgresTimetable extends JsonSerialisation[PostgresTimetableProtocol, PostgresTimetable, PostgresTimetableAtom] {
-
-  override implicit def reads: Reads[PostgresTimetableProtocol] = Json.reads[PostgresTimetableProtocol]
-
-  override implicit def writes: Writes[PostgresTimetable] = Json.writes[PostgresTimetable]
-
-  override implicit def writesAtom: Writes[PostgresTimetableAtom] = PostgresTimetableAtom.writesAtom
+object PostgresTimetable {
+  implicit val writes: Writes[PostgresTimetable] = Json.writes[PostgresTimetable]
 }
 
-object PostgresTimetableEntry extends JsonSerialisation[PostgresTimetableEntry, PostgresTimetableEntry, PostgresTimetableEntryAtom] {
+object PostgresTimetableProtocol {
+  implicit val reads: Reads[PostgresTimetableProtocol] = Json.reads[PostgresTimetableProtocol]
+}
 
-  override implicit def reads: Reads[PostgresTimetableEntry] = Json.reads[PostgresTimetableEntry]
+object PostgresTimetableEntry {
+  implicit val reads: Reads[PostgresTimetableEntry] = Json.reads[PostgresTimetableEntry]
 
-  override implicit def writes: Writes[PostgresTimetableEntry] = Json.writes[PostgresTimetableEntry]
-
-  override implicit def writesAtom: Writes[PostgresTimetableEntryAtom] = PostgresTimetableEntryAtom.writesAtom
+  implicit val writes: Writes[PostgresTimetableEntry] = Json.writes[PostgresTimetableEntry]
 }
 
 object PostgresTimetableEntryAtom {
 
-  implicit def writesAtom: Writes[PostgresTimetableEntryAtom] = (
+  implicit val writes: Writes[PostgresTimetableEntryAtom] = (
     (JsPath \ "supervisor").writeSet[User] and
       (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
       (JsPath \ "dayIndex").write[Int] and
@@ -183,7 +128,7 @@ object PostgresTimetableEntryAtom {
 
 object PostgresTimetableAtom {
 
-  implicit def writesAtom: Writes[PostgresTimetableAtom] = (
+  implicit val writes: Writes[PostgresTimetableAtom] = (
     (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
       (JsPath \ "entries").writeSet[PostgresTimetableEntryAtom] and
       (JsPath \ "start").write[LocalDate] and
@@ -197,7 +142,7 @@ object Timetable {
   implicit val writes: Writes[Timetable] = new Writes[Timetable] {
     override def writes(t: Timetable) = t match {
       case timetable: PostgresTimetable => Json.toJson(timetable)(PostgresTimetable.writes)
-      case atom: PostgresTimetableAtom => Json.toJson(atom)(PostgresTimetableAtom.writesAtom)
+      case atom: PostgresTimetableAtom => Json.toJson(atom)(PostgresTimetableAtom.writes)
     }
   }
 }

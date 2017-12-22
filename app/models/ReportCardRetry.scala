@@ -2,11 +2,11 @@ package models
 
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
-import utils.LwmDateTime._
-import controllers.JsonSerialisation
+
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
 sealed trait ReportCardRetry extends UniqueEntity
@@ -34,16 +34,17 @@ case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end
   override def toLwmModel = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, entryTypes.map(_.toLwmModel), reason, id)
 }
 
-object PostgresReportCardRetry extends JsonSerialisation[PostgresReportCardRetryProtocol, PostgresReportCardRetry, PostgresReportCardRetryAtom] {
-  override implicit def reads: Reads[PostgresReportCardRetryProtocol] = Json.reads[PostgresReportCardRetryProtocol]
+object PostgresReportCardRetry {
+  implicit val writes: Writes[PostgresReportCardRetry] = Json.writes[PostgresReportCardRetry]
+}
 
-  override implicit def writes: Writes[PostgresReportCardRetry] = Json.writes[PostgresReportCardRetry]
-
-  override implicit def writesAtom: Writes[PostgresReportCardRetryAtom] = PostgresReportCardRetryAtom.writesAtom
+object PostgresReportCardRetryProtocol {
+  implicit val reads: Reads[PostgresReportCardRetryProtocol] = Json.reads[PostgresReportCardRetryProtocol]
 }
 
 object PostgresReportCardRetryAtom {
-  implicit def writesAtom: Writes[PostgresReportCardRetryAtom] = (
+
+  implicit val writes: Writes[PostgresReportCardRetryAtom] = (
     (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
@@ -56,10 +57,10 @@ object PostgresReportCardRetryAtom {
 
 object ReportCardRetry {
 
-  implicit def writes[ReportCardRetry]: Writes[ReportCardRetry] = new Writes[ReportCardRetry] {
+  implicit val writes: Writes[ReportCardRetry] = new Writes[ReportCardRetry] {
     override def writes(r: ReportCardRetry) = r match {
       case normal: PostgresReportCardRetry => Json.toJson(normal)(PostgresReportCardRetry.writes)
-      case atom: PostgresReportCardRetryAtom => Json.toJson(atom)(PostgresReportCardRetryAtom.writesAtom)
+      case atom: PostgresReportCardRetryAtom => Json.toJson(atom)(PostgresReportCardRetryAtom.writes)
     }
   }
 }

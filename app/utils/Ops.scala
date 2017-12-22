@@ -157,6 +157,7 @@ object Ops { self =>
 
   implicit class JsPathX(p: JsPath) {
     def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] = Writes.at[Set[A]](p)(Writes.set(w))
+    def writeSeq[A](implicit w: Writes[A]): OWrites[Vector[A]] = Writes.at[Seq[A]](p)(Writes.seq(w))
   }
 
   implicit class FutureOps[T](val futures: List[Future[T]])(implicit executionContext: ExecutionContext) {

@@ -45,7 +45,7 @@ final class LdapSyncServiceActor(val ldapService: LdapService, val userDao: User
 
       val result = for {
         lwmUsers <- userDao.get(atomic = false)
-        ldapUsers <- ldapService.users2(lwmUsers.map(_.systemId.toLowerCase).toSet)
+        ldapUsers <- ldapService.users(lwmUsers.map(_.systemId.toLowerCase).toSet)
         partialUpdated <- ldapUsers.map(userDao.createOrUpdate).toList.asTrys // TODO createOrUpdate could be optimized for syncing purpose since delta updates are not considered, authorities can't be created, users are already in scope, etc...
         (succeeded, failed) = unwrapTrys(partialUpdated)
       } yield (succeeded, failed)

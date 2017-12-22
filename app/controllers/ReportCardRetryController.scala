@@ -39,7 +39,7 @@ final class ReportCardRetryController(val sessionService: SessionHandlingService
 
   override protected implicit val writes: Writes[ReportCardRetry] = ReportCardRetry.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardRetryProtocol] = PostgresReportCardRetry.reads
+  override protected implicit val reads: Reads[PostgresReportCardRetryProtocol] = PostgresReportCardRetryProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes

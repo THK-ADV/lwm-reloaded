@@ -3,7 +3,6 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.{god, reportCardEntry}
 import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -31,15 +30,17 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
                                               val authorityDao: AuthorityDao,
                                               val abstractDao: ReportCardEntryDao,
                                               val scheduleEntryDao: ScheduleEntryDao,
-                                              val assignmentPlanService: AssignmentPlanDao
-                                             ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
-  import controllers.ReportCardEntryControllerPostgres._
+                                              val assignmentPlanService: AssignmentPlanDao)
+  extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
 
+  import controllers.ReportCardEntryControllerPostgres._
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardEntryProtocol] = PostgresReportCardEntry.reads
+  override protected implicit val reads: Reads[PostgresReportCardEntryProtocol] = PostgresReportCardEntryProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
     (appendTo, (attribute, value)) match {
@@ -58,8 +59,6 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   }
 
   override protected def toDbModel(protocol: PostgresReportCardEntryProtocol, existingId: Option[UUID]): ReportCardEntryDb = ???
-
-  override implicit val mimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student, CourseAssistant))

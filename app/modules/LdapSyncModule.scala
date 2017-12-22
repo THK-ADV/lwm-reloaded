@@ -3,6 +3,7 @@ package modules
 import services.{ActorBasedLdapSyncService, LdapSyncService}
 
 trait LdapSyncModule {
+  self: ConfigurationModule with LdapModule with UserDaoModule =>
 
   def ldapSyncService: LdapSyncService
 }

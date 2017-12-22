@@ -31,7 +31,7 @@ final class DegreeControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected implicit val writes: Writes[PostgresDegree] = PostgresDegree.writes
 
-  override protected implicit val reads: Reads[DegreeProtocol] = PostgresDegree.reads
+  override protected implicit val reads: Reads[DegreeProtocol] = DegreeProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
     import controllers.DegreeControllerPostgres._

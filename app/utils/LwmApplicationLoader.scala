@@ -23,73 +23,50 @@ with HomepageModule
 with SemanticRepositoryModule
 with DatabaseModule
 with DbFolder
-with DegreeManagementModule
 with DegreeManagementModulePostgres
 with DegreeDaoModule
-with CourseManagementModule
 with CourseManagementModulePostgres
 with CourseDaoModule
 with GroupDaoManagementModule
 with GroupManagementModule2
-with LabworkManagementModule
 with LabworkManagementModulePostgres
 with LabworkDaoModule
-with RoomManagementModule
 with RoomManagementModulePostgres
 with RoomDaoModule
-with SemesterManagementModule
 with SemesterManagementModulePostgres
 with SemesterDaoModule
 with SessionRepositoryModule
-with SecurityManagementModule
-with RoleManagementModule
 with RoleManagementModulePostgres
 with RoleDaoModule
-with AuthorityManagementModule
 with AuthorityManagementModule2
 with AuthorityDaoModule
-with PermissionManagementModule
 with SessionControllerModule
 with AkkaActorSystemModule
 with LdapModule
 with AssetsModule
-with EntryTypeManagementModule
-with ResolversModule
 with CORSFilterModule
 with ApiDataModule
-with LabworkApplicationManagementModule
 with LabworkApplicationManagementModulePostgres
-with LabworkApplicationServiceModule
 with LabworkApplicationDaoModule
 with ScheduleEntryDaoModule
-with ScheduleEntryManagementModule
 with ScheduleEntryManagementModule2
-with TimetableManagementModule
 with TimetableManagementModulePostgres
 with TimetableDaoManagementModule
 with ScheduleServiceManagementModule
-with BlacklistManagementModule
 with Blacklist2ManagementModule
 with BlacklistDaoManagementModule
-with ReportCardServiceManagementModule
 with ReportCardEntryDaoModule
-with ReportCardEntryManagementModule
 with ReportCardEntryManagementModule2
-with ReportCardEntryTypeManagementModule
 with ReportCardEntryTypeDaoModule
 with ReportCardEntryTypeManagementModule2
 with ReportCardRescheduledDaoModule
 with ReportCardRescheduledManagementModule
 with ReportCardRetryDaoModule
 with ReportCardRetryManagementModule
-with AssignmentPlanManagementModule
 with AssignmentPlanManagementModulePostgres
 with AssignmentPlanDaoModule
-with UserManagementModule
 with UserManagementModulePostgres
 with UserDaoModule
-with AnnotationManagementModule
-with ReportCardEvaluationManagementModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
 with LdapSyncModule {
@@ -99,43 +76,24 @@ with LdapSyncModule {
   lazy val router: Router = new Routes(
     httpErrorHandler,
     homepageController,
-    degreeManagementController,
     degreeManagementControllerPostgres,
-    courseManagementController,
     courseManagementControllerPostgres,
     groupManagementControllerPostgres,
-    labworkManagementController,
     labworControllerPostgres,
-    entryTypeController,
-    roomManagementController,
     roomManagementControllerPostgres,
-    semesterManagementController,
     semesterManagementControllerPostgres,
-    roleManagementController,
     roleManagementControllerPostgres,
-    authorityManagementController,
     authorityControllerPostgres,
-    permissionManagementController,
-    labworkApplicationController,
     labworkApplicationControllerPostgres,
-    scheduleEntryController,
     scheduleEntryControllerPostgres,
-    timetableManagementController,
     timetableControllerPostgres,
-    blacklistManagementController,
     blacklistControllerPostgres,
-    reportCardEntryManagementController,
     reportCardEntryControllerPostgres,
-    reportCardEntryTypeManagementController,
     reportCardEntryTypeController,
     reportCardRescheduledController,
     reportCardRetryController,
-    reportCardEvaluationManagementController,
     reportCardEvaluationManagementController2,
-    assignmentPlanManagementController,
     assignmentPlanManagementControllerPostgres,
-    annotationManagementController,
-    userController,
     userControllerPostgres,
     sessionController,
     apiDataController,
@@ -149,72 +107,49 @@ with ConfigurableBaseNamespace
 with DefaultSemanticRepositoryModuleImpl
 with DefaultDatabaseModule
 with DefaultHomepageModuleImpl
-with DefaultDegreeManagementModuleImpl
 with DefaultDegreeManagementModuleImplPostgres
 with DefaultDegreeDaoModule
-with DefaultCourseManagementModuleImpl
 with DefaultCourseManagementModuleImplPostgres
 with DefaultCourseDaoModule
 with DefaultGroupDaoManagementModule
 with DefaultGroupManagementModule2
-with DefaultLabworkManagementModuleImpl
 with DefaultLabworkManagementModulePostgres
 with DefaultLabworkDaoModule
-with DefaultRoomManagementModuleImpl
 with DefaultRoomManagementModuleImplPostgres
 with DefaultRoomDaoModule
-with DefaultSemesterManagementModuleImpl
 with DefaultSemesterManagementModuleImplPostgres
 with DefaultSemesterDaoModule
 with LdapModuleImpl
 with DefaultSessionRepositoryModuleImpl
 with DefaultAssetsModuleImpl
-with DefaultRoleManagementModule
 with DefaultRoleManagementModulePostgres
 with DefaultRoleDaoModule
-with DefaultAuthorityManagementModuleImpl
 with DefaultAuthorityManagementModule2
 with DefaultAuthorityDaoModule
-with DefaultPermissionManagementModule
 with DefaultSessionControllerModuleImpl
-with DefaultSecurityManagementModule
-with DefaultEntryTypeManagementModule
-with DefaultResolversModule
 with DefaultCORSFilterModule
 with DefaultApiDataModule
-with DefaultLabworkApplicationManagementModule
 with DefaultLabworkApplicationManagementModulePostgres
-with DefaultLabworkApplicationServiceModule
 with DefaultLabworkApplicationDaoModule
 with DefaultScheduleEntryDaoModule
-with DefaultScheduleEntryManagementModule
 with DefaultScheduleEntryManagementModule2
-with DefaultTimetableManagementModuleImpl
 with DefaultTimetableManagementModulePostgres
 with DefaultTimetableDaoModule
 with DefaultScheduleServiceManagementModule
-with DefaultBlacklistManagementModuleImpl
 with DefaultBlacklist2ManagementModule
 with DefaultBlacklistDaoManagementModule
-with DefaultReportCardServiceManagementModule
 with DefaultReportCardEntryDaoModule
-with DefaultReportCardEntryManagementModuleImpl
 with DefaultReportCardEntryManagementModule2
-with DefaultReportCardEntryTypeManagementModuleImpl
 with DefaultReportCardEntryTypeDaoModule
 with DefaultReportCardEntryTypeManagementModule2
 with DefaultReportCardRescheduledDaoModule
 with DefaultReportCardRescheduledManagementModule
 with DefaultReportCardRetryDaoModule
 with DefaultReportCardRetryManagementModule
-with DefaultAssignmentPlanManagementModuleImpl
 with DefaultAssignmentPlanManagementModuleImplPostgres
 with DefaultAssignmentPlanDaoModule
-with DefaultUserManagementModule
 with DefaultUserManagementModulePostgres
 with DefaultUserDaoModule
-with DefaultAnnotationManagementModuleImpl
-with DefaultReportCardEvaluationManagementModuleImpl
 with DefaultReportCardEvaluationDaoModule
 with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl

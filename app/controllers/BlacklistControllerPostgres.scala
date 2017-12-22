@@ -29,7 +29,9 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes
 
-  override protected implicit val reads: Reads[PostgresBlacklistProtocol] = PostgresBlacklist.reads
+  override protected implicit val reads: Reads[PostgresBlacklistProtocol] = PostgresBlacklistProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[BlacklistTable]]]): Try[List[TableFilter[BlacklistTable]]] = {
     import controllers.BlacklistControllerPostgres._
@@ -47,8 +49,6 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
   }
 
   override protected def toDbModel(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
-
-  override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
   def createFor(year: String): Action[JsValue] = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global

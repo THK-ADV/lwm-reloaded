@@ -2,12 +2,11 @@ package dao
 
 import java.util.UUID
 
-import utils.LwmDateTime._
 import models._
-import services.{ScheduleEntryGen, ScheduleGen}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store._
+import utils.LwmDateTime._
 
 import scala.concurrent.Future
 

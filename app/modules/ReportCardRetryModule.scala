@@ -3,11 +3,15 @@ package modules
 import controllers.ReportCardRetryController
 import dao.{ReportCardRetryDao, ReportCardRetryDaoImpl}
 
-trait ReportCardRetryDaoModule { self: DatabaseModule =>
+trait ReportCardRetryDaoModule {
+  self: DatabaseModule =>
+
   def reportCardRetryDao: ReportCardRetryDao
 }
 
-trait DefaultReportCardRetryDaoModule extends ReportCardRetryDaoModule { self: DatabaseModule =>
+trait DefaultReportCardRetryDaoModule extends ReportCardRetryDaoModule {
+  self: DatabaseModule =>
+
   override lazy val reportCardRetryDao = new ReportCardRetryDaoImpl(db)
 }
 

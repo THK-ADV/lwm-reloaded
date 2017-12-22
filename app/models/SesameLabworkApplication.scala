@@ -3,13 +3,12 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.LwmDateTime
-import utils.Ops.JsPathX
 import utils.LwmDateTime._
+import utils.Ops.JsPathX
 
 case class SesameLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = SesameLabworkApplication.randomUUID) extends UniqueEntity {
 
@@ -23,34 +22,8 @@ case class SesameLabworkApplicationProtocol(labwork: UUID, applicant: UUID, frie
 
 case class SesameLabworkApplicationAtom(labwork: SesameLabworkAtom, applicant: SesameStudent, friends: Set[SesameStudent], timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-object SesameLabworkApplication extends UriGenerator[SesameLabworkApplication] with JsonSerialisation[SesameLabworkApplicationProtocol, SesameLabworkApplication, SesameLabworkApplicationAtom] {
-
+object SesameLabworkApplication extends UriGenerator[SesameLabworkApplication] {
   override def base: String = "labworkApplications"
-
-  override implicit def reads: Reads[SesameLabworkApplicationProtocol] = Json.reads[SesameLabworkApplicationProtocol]
-
-  override implicit def writes: Writes[SesameLabworkApplication] = (
-    (JsPath \ "labwork").write[UUID] and
-      (JsPath \ "applicant").write[UUID] and
-      (JsPath \ "friends").writeSet[UUID] and
-      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameLabworkApplication.unapply))
-
-  override implicit def writesAtom: Writes[SesameLabworkApplicationAtom] = SesameLabworkApplicationAtom.writesAtom
-}
-
-object SesameLabworkApplicationAtom {
-
-  implicit def writesAtom: Writes[SesameLabworkApplicationAtom] = (
-    (JsPath \ "labwork").write[SesameLabworkAtom] and
-      (JsPath \ "applicant").write[SesameStudent](SesameStudent.writes) and
-      (JsPath \ "friends").writeSet[SesameStudent](SesameStudent.writes) and
-      (JsPath \ "timestamp").write[DateTime](LwmDateTime.writes) and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameLabworkApplicationAtom.unapply))
 }
 
 // Postgres
@@ -73,12 +46,12 @@ case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, last
   override def toLwmModel = this
 }
 
-object PostgresLabworkApplication extends JsonSerialisation[PostgresLabworkApplicationProtocol, PostgresLabworkApplication, PostgresLabworkApplicationAtom] {
-  override implicit def reads: Reads[PostgresLabworkApplicationProtocol] = Json.reads[PostgresLabworkApplicationProtocol]
+object PostgresLabworkApplication {
+  implicit val writes: Writes[PostgresLabworkApplication] = Json.writes[PostgresLabworkApplication]
+}
 
-  override implicit def writes: Writes[PostgresLabworkApplication] = Json.writes[PostgresLabworkApplication]
-
-  override implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = PostgresLabworkApplicationAtom.writesAtom
+object PostgresLabworkApplicationProtocol {
+  implicit val reads: Reads[PostgresLabworkApplicationProtocol] = Json.reads[PostgresLabworkApplicationProtocol]
 }
 
 object LabworkApplicationDb {
@@ -89,18 +62,18 @@ object LabworkApplicationDb {
 
 object LabworkApplication {
 
-  implicit def writes: Writes[LabworkApplication] = new Writes[LabworkApplication] {
+  implicit val writes: Writes[LabworkApplication] = new Writes[LabworkApplication] {
     override def writes(labworkApplication: LabworkApplication) = labworkApplication match {
-      case postgresLabworkApplication: PostgresLabworkApplication => Json.toJson(postgresLabworkApplication)(PostgresLabworkApplication.writes)
-      case postgresLabworkApplicationAtom: PostgresLabworkApplicationAtom => Json.toJson(postgresLabworkApplicationAtom)(PostgresLabworkApplication.writesAtom)
+      case normal: PostgresLabworkApplication => Json.toJson(normal)(PostgresLabworkApplication.writes)
+      case atom: PostgresLabworkApplicationAtom => Json.toJson(atom)(PostgresLabworkApplicationAtom.writes)
     }
   }
 }
 
 object PostgresLabworkApplicationAtom {
 
-  implicit def writesAtom: Writes[PostgresLabworkApplicationAtom] = (
-    (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writesAtom) and
+  implicit val writes: Writes[PostgresLabworkApplicationAtom] = (
+    (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writes) and
       (JsPath \ "applicant").write[User] and
       (JsPath \ "friends").writeSet[User] and
       (JsPath \ "lastModified").write[DateTime](LwmDateTime.writes) and

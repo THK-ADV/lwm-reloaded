@@ -32,8 +32,8 @@ object ReportCardEvaluationControllerPostgres {
 final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDao,
                                                    val sessionService: SessionHandlingService,
                                                    val abstractDao: ReportCardEvaluationDao,
-                                                   val reportCardEntryDao: ReportCardEntryDao
-                                                  ) extends AbstractCRUDControllerPostgres[ReportCardEvaluationPattern, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
+                                                   val reportCardEntryDao: ReportCardEntryDao)
+  extends AbstractCRUDControllerPostgres[ReportCardEvaluationPattern, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
 
   import controllers.ReportCardEvaluationControllerPostgres._
   import scala.concurrent.ExecutionContext.Implicits.global

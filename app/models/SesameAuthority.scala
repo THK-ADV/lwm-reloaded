@@ -3,7 +3,6 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -41,54 +40,34 @@ case class PostgresAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID
 
 case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[PostgresCourseAtom], id: UUID) extends Authority
 
-object SesameAuthority extends UriGenerator[SesameAuthority] with JsonSerialisation[SesameAuthorityProtocol, SesameAuthority, SesameAuthorityAtom] {
-
-  lazy val empty = SesameAuthority(UUID.randomUUID, UUID.randomUUID)
-
+object SesameAuthority extends UriGenerator[SesameAuthority] {
   override def base: String = "authorities"
-
-  override implicit def reads: Reads[SesameAuthorityProtocol] = Json.reads[SesameAuthorityProtocol]
-
-  override implicit def writes: Writes[SesameAuthority] = Json.writes[SesameAuthority]
-
-  override implicit def writesAtom: Writes[SesameAuthorityAtom] = SesameAuthorityAtom.writesAtom
 }
 
-object SesameAuthorityAtom {
-
-  implicit def writesAtom: Writes[SesameAuthorityAtom] = (
-    (JsPath \ "user").write[User] and
-      (JsPath \ "role").write[SesameRole] and
-      (JsPath \ "course").writeNullable[SesameCourseAtom] and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameAuthorityAtom.unapply))
+object PostgresAuthority {
+  implicit val writes: Writes[PostgresAuthority] = Json.writes[PostgresAuthority]
 }
 
-object PostgresAuthority extends JsonSerialisation[PostgresAuthorityProtocol, PostgresAuthority, PostgresAuthorityAtom] {
-
-  override implicit def reads: Reads[PostgresAuthorityProtocol] = Json.reads[PostgresAuthorityProtocol]
-
-  override implicit def writes: Writes[PostgresAuthority] = Json.writes[PostgresAuthority]
-
-  override implicit def writesAtom: Writes[PostgresAuthorityAtom] = PostgresAuthorityAtom.writesAtom
+object PostgresAuthorityProtocol {
+  implicit val reads: Reads[PostgresAuthorityProtocol] = Json.reads[PostgresAuthorityProtocol]
 }
 
 object PostgresAuthorityAtom {
 
-  implicit def writesAtom: Writes[PostgresAuthorityAtom] = (
+  implicit val writes: Writes[PostgresAuthorityAtom] = (
     (JsPath \ "user").write[User] and
       (JsPath \ "role").write[PostgresRole](PostgresRole.writes) and
-      (JsPath \ "course").writeNullable[PostgresCourseAtom](PostgresCourseAtom.writesAtom) and
+      (JsPath \ "course").writeNullable[PostgresCourseAtom](PostgresCourseAtom.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresAuthorityAtom.unapply))
 }
 
 object Authority {
-  def writes: Writes[Authority] = new Writes[Authority] {
+
+  implicit val writes: Writes[Authority] = new Writes[Authority] {
     override def writes(a: Authority): JsValue = a match {
-      case authority: PostgresAuthority => Json.toJson(authority)(PostgresAuthority.writes)
-      case authorityAtom: PostgresAuthorityAtom => Json.toJson(authorityAtom)(PostgresAuthorityAtom.writesAtom)
+      case normal: PostgresAuthority => Json.toJson(normal)(PostgresAuthority.writes)
+      case atom: PostgresAuthorityAtom => Json.toJson(atom)(PostgresAuthorityAtom.writes)
     }
   }
 }

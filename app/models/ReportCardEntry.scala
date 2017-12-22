@@ -3,11 +3,10 @@ package models
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import controllers.JsonSerialisation
-import utils.LwmDateTime._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
 case class SesameReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[SesameReportCardEntryType], rescheduled: Option[SesameRescheduled] = None, invalidated: Option[DateTime] = None, id: UUID = SesameReportCardEntry.randomUUID) extends UniqueEntity {
@@ -30,32 +29,9 @@ case class SesameReportCardEntry(student: UUID, labwork: UUID, label: String, da
 
 case class SesameReportCardEntryAtom(student: SesameStudent, labwork: SesameLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom, entryTypes: Set[SesameReportCardEntryType], rescheduled: Option[SesameRescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-object SesameReportCardEntry extends UriGenerator[SesameReportCardEntry] with JsonSerialisation[SesameReportCardEntry, SesameReportCardEntry, SesameReportCardEntryAtom] {
+object SesameReportCardEntry extends UriGenerator[SesameReportCardEntry] {
 
   override def base: String = "reportCardEntries"
-
-  override implicit def reads: Reads[SesameReportCardEntry] = Json.reads[SesameReportCardEntry]
-
-  override implicit def writes: Writes[SesameReportCardEntry] = Json.writes[SesameReportCardEntry]
-
-  override implicit def writesAtom: Writes[SesameReportCardEntryAtom] = SesameReportCardEntryAtom.writesAtom
-}
-
-object SesameReportCardEntryAtom {
-
-  implicit def writesAtom: Writes[SesameReportCardEntryAtom] = (
-    (JsPath \ "student").write[SesameStudent](SesameStudent.writes) and
-      (JsPath \ "labwork").write[SesameLabwork] and
-      (JsPath \ "label").write[String] and
-      (JsPath \ "date").write[LocalDate] and
-      (JsPath \ "start").write[LocalTime] and
-      (JsPath \ "end").write[LocalTime] and
-      (JsPath \ "room").write[SesameRoom](SesameRoom.writes) and
-      (JsPath \ "entryTypes").writeSet[SesameReportCardEntryType] and
-      (JsPath \ "rescheduled").writeNullable[SesameRescheduledAtom] and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameReportCardEntryAtom.unapply))
 }
 
 // POSTGRES
@@ -105,17 +81,30 @@ case class ReportCardEntryDb(student: UUID, labwork: UUID, label: String, date: 
 
 // COMPS
 
-object PostgresReportCardEntry extends JsonSerialisation[PostgresReportCardEntryProtocol, PostgresReportCardEntry, PostgresReportCardEntryAtom] {
+object PostgresReportCardEntry {
 
-  override implicit def reads = Json.reads[PostgresReportCardEntryProtocol]
+  implicit val writes: Writes[PostgresReportCardEntry] = (
+    (JsPath \ "student").write[UUID] and
+      (JsPath \ "labwork").write[UUID] and
+      (JsPath \ "label").write[String] and
+      (JsPath \ "date").write[LocalDate] and
+      (JsPath \ "start").write[LocalTime] and
+      (JsPath \ "end").write[LocalTime] and
+      (JsPath \ "room").write[UUID] and
+      (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
+      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduled](PostgresReportCardRescheduled.writes) and
+      (JsPath \ "retry").writeNullable[PostgresReportCardRetry](PostgresReportCardRetry.writes) and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(PostgresReportCardEntry.unapply))
+}
 
-  override implicit def writes = Json.writes[PostgresReportCardEntry]
-
-  override implicit def writesAtom = PostgresReportCardEntryAtom.writesAtom
+object PostgresReportCardEntryProtocol {
+  implicit val reads: Reads[PostgresReportCardEntryProtocol] = Json.reads[PostgresReportCardEntryProtocol]
 }
 
 object PostgresReportCardEntryAtom {
-  implicit def writesAtom: Writes[PostgresReportCardEntryAtom] = (
+
+  implicit val writes: Writes[PostgresReportCardEntryAtom] = (
     (JsPath \ "student").write[User] and
       (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
       (JsPath \ "label").write[String] and
@@ -124,18 +113,18 @@ object PostgresReportCardEntryAtom {
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
       (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
-      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduledAtom](PostgresReportCardRescheduledAtom.writesAtom) and
-      (JsPath \ "retry").writeNullable[PostgresReportCardRetryAtom] and
+      (JsPath \ "rescheduled").writeNullable[PostgresReportCardRescheduledAtom](PostgresReportCardRescheduledAtom.writes) and
+      (JsPath \ "retry").writeNullable[PostgresReportCardRetryAtom](PostgresReportCardRetryAtom.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresReportCardEntryAtom.unapply))
 }
 
 object ReportCardEntry {
 
-  implicit def writes[ReportCardEntry]: Writes[ReportCardEntry] = new Writes[ReportCardEntry] {
+  implicit val writes: Writes[ReportCardEntry] = new Writes[ReportCardEntry] {
     override def writes(entry: ReportCardEntry) = entry match {
-      case postgresReportCardEntry: PostgresReportCardEntry => Json.toJson(postgresReportCardEntry)(PostgresReportCardEntry.writes)
-      case postgresReportCardEntryAtom: PostgresReportCardEntryAtom => Json.toJson(postgresReportCardEntryAtom)(PostgresReportCardEntryAtom.writesAtom)
+      case normal: PostgresReportCardEntry => Json.toJson(normal)(PostgresReportCardEntry.writes)
+      case atom: PostgresReportCardEntryAtom => Json.toJson(atom)(PostgresReportCardEntryAtom.writes)
     }
   }
 }

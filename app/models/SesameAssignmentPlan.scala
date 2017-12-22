@@ -3,12 +3,11 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.Ops.JsPathX
 import utils.LwmDateTime._
+import utils.Ops.JsPathX
 
 case class SesameAssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry], invalidated: Option[DateTime] = None, id: UUID = SesameAssignmentPlan.randomUUID) extends UniqueEntity
 
@@ -20,52 +19,8 @@ case class SesameAssignmentEntryType(entryType: String, bool: Boolean = false, i
 
 case class SesameAssignmentPlanAtom(labwork: SesameLabwork, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
-object SesameAssignmentPlan extends UriGenerator[SesameAssignmentPlan] with JsonSerialisation[SesameAssignmentPlanProtocol, SesameAssignmentPlan, SesameAssignmentPlanAtom] {
-
-  lazy val empty = SesameAssignmentPlan(UUID.randomUUID, 0, 0, Set.empty[SesameAssignmentEntry])
-
-  override implicit def reads: Reads[SesameAssignmentPlanProtocol] = Json.reads[SesameAssignmentPlanProtocol]
-
-  override implicit def writes: Writes[SesameAssignmentPlan] = Json.writes[SesameAssignmentPlan]
-
-  override implicit def writesAtom: Writes[SesameAssignmentPlanAtom] = SesameAssignmentPlanAtom.writesAtom
-
+object SesameAssignmentPlan extends UriGenerator[SesameAssignmentPlan] {
   override def base: String = "assignmentPlans"
-}
-
-object SesameAssignmentPlanAtom {
-  implicit def writesAtom: Writes[SesameAssignmentPlanAtom] = (
-    (JsPath \ "labwork").write[SesameLabwork] and
-      (JsPath \ "attendance").write[Int] and
-      (JsPath \ "mandatory").write[Int] and
-      (JsPath \ "entries").writeSet[SesameAssignmentEntry] and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(SesameAssignmentPlanAtom.unapply))
-}
-
-object SesameAssignmentEntry extends JsonSerialisation[SesameAssignmentEntry, SesameAssignmentEntry, SesameAssignmentEntry] {
-
-  override implicit def reads: Reads[SesameAssignmentEntry] = Json.reads[SesameAssignmentEntry]
-
-  override def writesAtom: Writes[SesameAssignmentEntry] = writes
-
-  override implicit def writes: Writes[SesameAssignmentEntry] = Json.writes[SesameAssignmentEntry]
-}
-
-object SesameAssignmentEntryType extends JsonSerialisation[SesameAssignmentEntryType, SesameAssignmentEntryType, SesameAssignmentEntryType] {
-
-  lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
-  val Attendance = SesameAssignmentEntryType("Anwesenheitspflichtig")
-  val Certificate = SesameAssignmentEntryType("Testat")
-  val Bonus = SesameAssignmentEntryType("Bonus")
-  val Supplement = SesameAssignmentEntryType("Zusatzleistung")
-
-  override implicit def reads: Reads[SesameAssignmentEntryType] = Json.reads[SesameAssignmentEntryType]
-
-  override def writesAtom: Writes[SesameAssignmentEntryType] = writes
-
-  override implicit def writes: Writes[SesameAssignmentEntryType] = Json.writes[SesameAssignmentEntryType]
 }
 
 // Postgres
@@ -90,13 +45,12 @@ case class AssignmentEntryTypeDb(assignmentEntry: UUID, entryType: String, bool:
 
 case class PostgresAssignmentPlanAtom(labwork: PostgresLabwork, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], id: UUID) extends AssignmentPlan
 
-object PostgresAssignmentPlan extends JsonSerialisation[PostgresAssignmentPlanProtocol, PostgresAssignmentPlan, PostgresAssignmentPlanAtom] {
+object PostgresAssignmentPlan {
+  implicit val writes: Writes[PostgresAssignmentPlan] = Json.writes[PostgresAssignmentPlan]
+}
 
-  override implicit def reads: Reads[PostgresAssignmentPlanProtocol] = Json.reads[PostgresAssignmentPlanProtocol]
-
-  override implicit def writes: Writes[PostgresAssignmentPlan] = Json.writes[PostgresAssignmentPlan]
-
-  override implicit def writesAtom: Writes[PostgresAssignmentPlanAtom] = PostgresAssignmentPlanAtom.writesAtom
+object PostgresAssignmentPlanProtocol {
+  implicit val reads: Reads[PostgresAssignmentPlanProtocol] = Json.reads[PostgresAssignmentPlanProtocol]
 }
 
 object AssignmentPlanDb {
@@ -107,17 +61,17 @@ object AssignmentPlanDb {
 
 object AssignmentPlan {
 
-  implicit def writes: Writes[AssignmentPlan] = new Writes[AssignmentPlan] {
+  implicit val writes: Writes[AssignmentPlan] = new Writes[AssignmentPlan] {
     override def writes(ap: AssignmentPlan) = ap match {
-      case ap: PostgresAssignmentPlan => Json.toJson(ap)(PostgresAssignmentPlan.writes)
-      case apAtom: PostgresAssignmentPlanAtom => Json.toJson(apAtom)(PostgresAssignmentPlan.writesAtom)
+      case normal: PostgresAssignmentPlan => Json.toJson(normal)(PostgresAssignmentPlan.writes)
+      case atom: PostgresAssignmentPlanAtom => Json.toJson(atom)(PostgresAssignmentPlanAtom.writes)
     }
   }
 }
 
 object PostgresAssignmentPlanAtom {
 
-  implicit def writesAtom: Writes[PostgresAssignmentPlanAtom] = (
+  implicit val writes: Writes[PostgresAssignmentPlanAtom] = (
     (JsPath \ "labwork").write[PostgresLabwork](PostgresLabwork.writes) and
       (JsPath \ "attendance").write[Int] and
       (JsPath \ "mandatory").write[Int] and
@@ -126,26 +80,22 @@ object PostgresAssignmentPlanAtom {
     ) (unlift(PostgresAssignmentPlanAtom.unapply))
 }
 
-object PostgresAssignmentEntry extends JsonSerialisation[PostgresAssignmentEntry, PostgresAssignmentEntry, PostgresAssignmentEntry] {
+object PostgresAssignmentEntry {
 
-  override implicit def reads: Reads[PostgresAssignmentEntry] = Json.reads[PostgresAssignmentEntry]
+  implicit val reads: Reads[PostgresAssignmentEntry] = Json.reads[PostgresAssignmentEntry]
 
-  override implicit def writes: Writes[PostgresAssignmentEntry] = Json.writes[PostgresAssignmentEntry]
-
-  override def writesAtom: Writes[PostgresAssignmentEntry] = writes
+  implicit val writes: Writes[PostgresAssignmentEntry] = Json.writes[PostgresAssignmentEntry]
 }
 
-object PostgresAssignmentEntryType extends JsonSerialisation[PostgresAssignmentEntryType, PostgresAssignmentEntryType, PostgresAssignmentEntryType] {
+object PostgresAssignmentEntryType {
 
   lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
-  val Attendance = PostgresAssignmentEntryType("Anwesenheitspflichtig")
-  val Certificate = PostgresAssignmentEntryType("Testat")
-  val Bonus = PostgresAssignmentEntryType("Bonus")
-  val Supplement = PostgresAssignmentEntryType("Zusatzleistung")
+  lazy val Attendance = PostgresAssignmentEntryType("Anwesenheitspflichtig")
+  lazy val Certificate = PostgresAssignmentEntryType("Testat")
+  lazy val Bonus = PostgresAssignmentEntryType("Bonus")
+  lazy val Supplement = PostgresAssignmentEntryType("Zusatzleistung")
 
-  override implicit def reads: Reads[PostgresAssignmentEntryType] = Json.reads[PostgresAssignmentEntryType]
+  implicit val reads: Reads[PostgresAssignmentEntryType] = Json.reads[PostgresAssignmentEntryType]
 
-  override implicit def writes: Writes[PostgresAssignmentEntryType] = Json.writes[PostgresAssignmentEntryType]
-
-  override def writesAtom: Writes[PostgresAssignmentEntryType] = writes
+  implicit val writes: Writes[PostgresAssignmentEntryType] = Json.writes[PostgresAssignmentEntryType]
 }

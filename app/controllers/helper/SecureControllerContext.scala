@@ -2,12 +2,10 @@ package controllers.helper
 
 import java.util.UUID
 
-import controllers.{ContentTyped, SessionChecking}
-import dao.AuthorityDao
 import models.Role
 import play.api.libs.json.JsValue
 import play.api.mvc.{Action, AnyContent, Request, Result}
-import utils.LwmActions2.{ContentTypedAction, SecureAction, SecureContentTypedAction}
+import utils.LwmActions.{ContentTypedAction, SecureAction, SecureContentTypedAction}
 
 import scala.concurrent.Future
 
@@ -20,8 +18,8 @@ import scala.concurrent.Future
   * the generalised specification of these restrictions.
   *
   */
-trait SecureControllerContext2 {
-  self: Secured2 with SessionChecking with ContentTyped =>
+trait SecureControllerContext {
+  self: Secured with SessionChecking with ContentTyped =>
 
   import models.Role._
 
@@ -35,8 +33,6 @@ trait SecureControllerContext2 {
     case _ => PartialSecureBlock(List(Admin))
   }
 
-  sealed trait Rule
-
   trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
@@ -49,12 +45,6 @@ trait SecureControllerContext2 {
       simple = ContentTypedAction(block)
     )
 
-    def apply[A](restricted: (Option[UUID], List[Role]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, role) => restricted(Some(UUID.fromString(id)), role)
-      case PartialSecureBlock(role) => restricted(None, role)
-      case NonSecureBlock => simple()
-    }
-
     def asyncAction(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = apply[AnyContent](
       restricted = (opt, role) => SecureAction.async((opt, role))(block),
       simple = Action.async(block)
@@ -64,11 +54,19 @@ trait SecureControllerContext2 {
       restricted = (opt, role) => SecureContentTypedAction.async((opt, role))(block),
       simple = ContentTypedAction.async(block)
     )
+
+    def apply[A](restricted: (Option[UUID], List[Role]) => Action[A], simple: => Action[A]) = this match {
+      case SecureBlock(id, role) => restricted(Some(UUID.fromString(id)), role)
+      case PartialSecureBlock(role) => restricted(None, role)
+      case NonSecureBlock => simple()
+    }
   }
 
   case class SecureBlock(restrictionRef: String, roles: List[Role]) extends SecureContext
 
   case class PartialSecureBlock(roles: List[Role]) extends SecureContext
+
+  sealed trait Rule
 
   case object Create extends Rule
 
@@ -82,8 +80,4 @@ trait SecureControllerContext2 {
 
   case object NonSecureBlock extends SecureContext
 
-}
-
-trait Secured2 {
-  implicit def authorityDao: AuthorityDao
 }

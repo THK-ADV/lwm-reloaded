@@ -3,11 +3,15 @@ package modules
 import controllers.ReportCardRescheduledController
 import dao.{ReportCardRescheduledDao, ReportCardRescheduledImpl}
 
-trait ReportCardRescheduledDaoModule { self: DatabaseModule =>
+trait ReportCardRescheduledDaoModule {
+  self: DatabaseModule =>
+
   def reportCardRescheduledDao: ReportCardRescheduledDao
 }
 
-trait DefaultReportCardRescheduledDaoModule extends ReportCardRescheduledDaoModule { self: DatabaseModule =>
+trait DefaultReportCardRescheduledDaoModule extends ReportCardRescheduledDaoModule {
+  self: DatabaseModule =>
+
   override lazy val reportCardRescheduledDao = new ReportCardRescheduledImpl(db)
 }
 

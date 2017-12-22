@@ -123,7 +123,7 @@ class SessionServiceActor(ldap: LdapService, userDao: UserDao) extends Actor wit
       for {
         someUser <- userDao.userId(systemId)
         session <- someUser.fold {
-          ldap.user2(systemId)
+          ldap.user(systemId)
             .flatMap(user => userDao.createOrUpdate(user))
             .map(user => ValidSession(systemId, user._1.id))
         } { uuid =>
