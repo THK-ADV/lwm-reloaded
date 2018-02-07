@@ -30,6 +30,10 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.labworkV1Json
 
+  override protected implicit val writes: Writes[Labwork] = Labwork.writes
+
+  override protected implicit val reads: Reads[PostgresLabworkProtocol] = PostgresLabworkProtocol.reads
+
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student))
     case GetAll => PartialSecureBlock(List(Student))
@@ -43,9 +47,6 @@ final class LabworkControllerPostgres(val sessionService: SessionHandlingService
     case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case Delete => PartialSecureBlock(List(God))
   }
-  override protected implicit val writes: Writes[Labwork] = Labwork.writes
-
-  override protected implicit val reads: Reads[PostgresLabworkProtocol] = Labwork.reads
 
   def allWithDegree(degree: String): Action[AnyContent] = contextFrom(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(degreeAttribute -> Seq(degree)))

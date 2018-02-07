@@ -3,12 +3,9 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.DateTime
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
-import play.api.libs.functional.syntax._
-import utils.Ops.JsPathX
-import models.LwmDateTime.DateTimeConverter
+import play.api.libs.json.{Json, Reads, Writes}
+import utils.LwmDateTime.DateTimeConverter
 
 /**
   * Structure abstracting over a set of unary `Permission`s.
@@ -31,26 +28,13 @@ case class RoleDb(label: String, lastModified: Timestamp = DateTime.now.timestam
   def toLwmModel = PostgresRole(label, id)
 }
 
-case class PostgresRoleProtocol(label: String)
-
-object SesameRole extends UriGenerator[SesameRole] with JsonSerialisation[SesameRoleProtocol, SesameRole, SesameRole] {
-
-  override implicit def reads: Reads[SesameRoleProtocol] = Json.reads[SesameRoleProtocol]
-
-  override def writesAtom: Writes[SesameRole] = writes
-
-  override implicit def writes: Writes[SesameRole] = Json.writes[SesameRole]
-
+object SesameRole extends UriGenerator[SesameRole] {
   override def base: String = "roles"
 }
 
-object PostgresRole extends JsonSerialisation[PostgresRoleProtocol, PostgresRole, PostgresRole] {
-
-  override implicit def reads: Reads[PostgresRoleProtocol] = Json.reads[PostgresRoleProtocol]
-
-  override implicit def writes: Writes[PostgresRole] = Json.writes[PostgresRole]
-
-  override implicit def writesAtom: Writes[PostgresRole] = writes
+object PostgresRole {
+  implicit val writes: Writes[PostgresRole] = Json.writes[PostgresRole]
+  implicit val reads: Reads[PostgresRole] = Json.reads[PostgresRole]
 }
 
 sealed trait Role {
@@ -58,6 +42,19 @@ sealed trait Role {
 }
 
 object Role {
+
+  def lift(label: String): Option[Role] = Option(label match {
+    case God.label => God
+    case Admin.label => Admin
+    case Employee.label => Employee
+    case Student.label => Student
+    case CourseEmployee.label => CourseEmployee
+    case CourseAssistant.label => CourseAssistant
+    case CourseManager.label => CourseManager
+    case RightsManager.label => RightsManager
+    case _ => null
+  })
+
   case object God extends Role {
     override val label = "God"
   }
@@ -89,18 +86,6 @@ object Role {
   case object RightsManager extends Role {
     override val label = Roles.RightsManagerLabel
   }
-
-  def lift(label: String): Option[Role] = Option(label match {
-    case God.label => God
-    case Admin.label => Admin
-    case Employee.label => Employee
-    case Student.label => Student
-    case CourseEmployee.label => CourseEmployee
-    case CourseAssistant.label => CourseAssistant
-    case CourseManager.label => CourseManager
-    case RightsManager.label => RightsManager
-    case _ => null
-  })
 }
 
 object Roles {
@@ -126,11 +111,5 @@ object Roles {
     case User.EmployeeType => EmployeeLabel
     case User.LecturerType => EmployeeLabel
     case User.StudentType => StudentLabel
-  }
-}
-
-object RoleDb {
-  def from(protocol: PostgresRoleProtocol, existingId: Option[UUID]) = {
-    RoleDb(protocol.label, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 }

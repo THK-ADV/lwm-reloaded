@@ -2,13 +2,12 @@ package dao
 
 import models.{BlacklistDb, PostgresBlacklist}
 import org.joda.time.LocalDate
-import services._
 import slick.driver.PostgresDriver.api._
 import store.BlacklistTable
 
 final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, PostgresBlacklist] with BlacklistDao {
   import dao.AbstractDaoSpec._
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import models.PostgresBlacklist._
 
   "A BlacklistService2Spec also" should {
@@ -17,9 +16,12 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
     "filter properly" in {
       val (since, until) = {
-        val chosen = takeSomeOf(dbEntities.filter(b => !b.start.localTime.isEqual(startOfDay))).toList.sortWith((a, b) => a.date.localDate.isBefore(b.date.localDate))
+        val chosen = takeSomeOf(dbEntities.
+          filter(b => !b.start.localTime.isEqual(startOfDay))).
+          toList.
+          sortWith((a, b) => a.date.localDate.isBefore(b.date.localDate))
 
-        (chosen.head.date, chosen(chosen.size - 3).date)
+        (chosen.head.date, takeOneOf(chosen.tail).date)
       }
 
       run(DBIO.seq(
@@ -53,7 +55,7 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
   override protected val dbEntity: BlacklistDb = BlacklistDb.entireDay("label", LocalDate.now.sqlDate, global = true)
 
-  override protected val invalidDuplicateOfDbEntity: BlacklistDb = dbEntity.copy("label 2")
+  override protected val invalidDuplicateOfDbEntity: BlacklistDb = dbEntity
 
   override protected val invalidUpdateOfDbEntity: BlacklistDb = dbEntity.copy("label 2", global = !dbEntity.global)
 

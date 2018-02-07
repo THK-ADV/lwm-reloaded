@@ -1,27 +1,17 @@
 package modules
 
-import controllers.{SemesterCRUDController, SemesterControllerPostgres}
+import controllers.SemesterControllerPostgres
 import dao.{SemesterDao, SemesterDaoImpl}
 
-trait SemesterManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
+trait SemesterDaoModule {
+  self: DatabaseModule =>
 
-  def semesterManagementController: SemesterCRUDController
-}
-
-trait DefaultSemesterManagementModuleImpl extends SemesterManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
-
-  lazy val semesterManagementController: SemesterCRUDController = new SemesterCRUDController(repository, sessionService, namespace, roleService)
-}
-
-// POSTGRES
-
-trait SemesterDaoModule { self: DatabaseModule =>
   def semesterDao: SemesterDao
 }
 
-trait DefaultSemesterDaoModule extends SemesterDaoModule { self: DatabaseModule =>
+trait DefaultSemesterDaoModule extends SemesterDaoModule {
+  self: DatabaseModule =>
+
   override lazy val semesterDao = new SemesterDaoImpl(db)
 }
 

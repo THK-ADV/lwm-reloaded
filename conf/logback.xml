@@ -1,17 +1,45 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <target>System.out</target>
+    <appender name="FILE_DEBUG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${application.home}/logs/debug.log</file>
         <encoder>
-            <pattern>%date{MM/dd HH:mm:ss} %-5level[%.15thread] %logger{1} - %msg%n</pattern>
+            <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${application.home}/logs/debug.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
     </appender>
 
+    <appender name="FILE_WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${application.home}/logs/warn.log</file>
+        <encoder>
+            <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${application.home}/logs/warn.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="play" level="INFO"/>
     <logger name="application" level="DEBUG"/>
-    <logger name="com.zaxxer.hikari" level="INFO"/>
+
     <logger name="slick" level="INFO"/>
 
-    <root level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
+    <!-- uncomment for logging each sql statement -->
+    <!--<logger name="slick.jdbc" level="DEBUG"/>-->
+
+    <logger name="akka" level="INFO"/>
+    <logger name="services.LdapSyncServiceActor" level="INFO"/>
+
+    <root level="WARN">
+        <appender-ref ref="FILE_DEBUG"/>
+        <appender-ref ref="FILE_WARN"/>
     </root>
 </configuration>

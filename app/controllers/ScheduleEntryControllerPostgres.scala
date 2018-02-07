@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models._
@@ -26,51 +27,24 @@ object ScheduleEntryControllerPostgres {
   lazy val sinceAttribute = "since"
   lazy val untilAttribute = "until"
 
-  lazy val countAttribute = "count"
-  lazy val minAttribute = "min"
-  lazy val maxAttribute = "max"
-
   lazy val popAttribute = "pops"
   lazy val genAttribute = "gens"
   lazy val eliteAttribute = "elites"
 
-  def intOf(queryString: Map[String, Seq[String]])(attribute: String): Option[Int] = {
-    valueOf(queryString)(attribute).flatMap(s => Try(s.toInt).toOption)
-  }
-
-  def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
-    queryString.get(attribute).flatMap(_.headOption)
-  }
-
-  def strategyFrom(queryString: Map[String, Seq[String]]): Try[GroupingStrategy] = {
-    val v = valueOf(queryString) _
-
-    (v(countAttribute), v(minAttribute), v(maxAttribute)) match {
-      case (Some(count), None, None) =>
-        for {
-          c <- Try(count.toInt) if c > 0
-        } yield CountGrouping(count)
-      case (None, Some(min), Some(max)) =>
-        for {
-          a <- Try(min.toInt)
-          b <- Try(max.toInt) if a < b
-        } yield RangeGrouping(min, max)
-      case _ =>
-        Failure(new Exception(s"grouping strategy should be either $countAttribute or $minAttribute and $maxAttribute"))
-    }
-  }
+  lazy val semesterIndexConsiderationAttribute = "considerSemesterIndex"
 }
 
 final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
                                             val sessionService: SessionHandlingService,
                                             val abstractDao: ScheduleEntryDao,
-                                            val scheduleGenesisService: ScheduleGenesisServiceLike2,
+                                            val scheduleGenesisService: ScheduleGenesisServiceLike,
                                             val assignmentPlanService: AssignmentPlanDao,
                                             val labworkService: LabworkDao,
                                             val timetableService: TimetableDao,
                                             val labworkApplicationService2: LabworkApplicationDao,
-                                            val groupDao: GroupDao
-                                           ) extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
+                                            val groupDao: GroupDao)
+  extends AbstractCRUDControllerPostgres[PostgresScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry]
+    with GroupingStrategyAttributeFilter {
 
   import controllers.ScheduleEntryControllerPostgres._
 
@@ -78,15 +52,9 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
 
   override protected implicit val writes: Writes[ScheduleEntry] = ScheduleEntry.writes
 
-  override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = PostgresScheduleEntry.reads
+  override protected implicit val reads: Reads[PostgresScheduleEntryProtocol] = PostgresScheduleEntryProtocol.reads
 
-  implicit val scheduleEntryGenWrites = Json.writes[ScheduleEntryGen]
-
-  implicit val scheduleGenWrites = Json.writes[ScheduleGen]
-
-  implicit val conflictWrites = Json.writes[Conflict]
-
-  implicit val genWrites = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
+  implicit val genWrites: Writes[(Gen[ScheduleGen, Conflict, Int], Int)] = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
     override def writes(gen: (Gen[ScheduleGen, Conflict, Int], Int)) = Json.obj(
       "schedule" -> Json.toJson(gen._1.elem),
       "conflicts" -> Json.toJson(gen._1.evaluate.err),
@@ -95,39 +63,30 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     )
   }
 
+  override implicit val mimeType: LwmMimeType = LwmMimeType.scheduleEntryV1Json
+
   def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { implicit request =>
-    implicit val readsGroup = Json.reads[PostgresGroup]
-    implicit val readsScheduleEntry = Json.reads[ScheduleEntryGen]
-    implicit val readsSchedule = Json.reads[ScheduleGen]
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     (for {
       s <- Future.fromTry(parse[ScheduleGen](request))
       labwork = s.labwork
-      (se, gs) = s.entries.foldLeft((List.empty[ScheduleEntryDb], Set.empty[GroupDb])) {
-        case ((entries, groups), e) =>
-          val scheduleEntry = ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)
-          val group = GroupDb(e.group.label, e.group.labwork, e.group.members)
-
-          (entries.+:(scheduleEntry), groups + group)
-      }
-      _ <- groupDao.createMany(gs.toList)
+      groups = s.entries.map(_.group).distinct.map(e => GroupDb(e.label, e.labwork, e.members, id = e.id)).toList
+      se = s.entries.map(e => ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)).toList
+      _ <- groupDao.createMany(groups)
       _ <- abstractDao.createMany(se)
-    } yield se.map(_.toLwmModel)).jsonResult
+
+      atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+      scheduleEntries <- if (atomic)
+        abstractDao.getMany(se.map(_.id), atomic)
+      else
+        Future.successful(se.map(_.toLwmModel))
+
+    } yield scheduleEntries).jsonResult
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
     generate(labwork).jsonResult
-  }
-
-  override implicit val mimeType = LwmMimeType.scheduleEntryV1Json
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
   }
 
   private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {
@@ -140,7 +99,7 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
     apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
 
-    groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
+    groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
     groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
 
     assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
@@ -150,7 +109,8 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
     labAtom = lab.get.asInstanceOf[PostgresLabworkAtom]
     semester = labAtom.semester
 
-    comps <- abstractDao.competitive(labAtom)
+    c = boolOf(request.queryString)(semesterIndexConsiderationAttribute).getOrElse(true)
+    comps <- abstractDao.competitive(labAtom, c)
 
     i = intOf(request.queryString) _
     pop = i(popAttribute)
@@ -160,6 +120,14 @@ final class ScheduleEntryControllerPostgres(val authorityDao: AuthorityDao,
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Delete => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>

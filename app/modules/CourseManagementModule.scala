@@ -1,23 +1,11 @@
 package modules
 
-import controllers.{CourseCRUDController, CourseControllerPostgres}
+import controllers.CourseControllerPostgres
 import dao.{CourseDao, CourseDaoImpl}
 
-trait CourseManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
+trait CourseDaoModule {
+  self: DatabaseModule =>
 
-  def courseManagementController: CourseCRUDController
-}
-
-trait DefaultCourseManagementModuleImpl extends CourseManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
-
-  lazy val courseManagementController: CourseCRUDController = new CourseCRUDController(repository, sessionService, namespace, roleService)
-}
-
-// POSTGRES
-
-trait CourseDaoModule { self: DatabaseModule =>
   def courseDao: CourseDao
 }
 

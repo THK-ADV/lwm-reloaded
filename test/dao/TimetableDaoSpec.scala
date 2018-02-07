@@ -8,7 +8,7 @@ import org.joda.time.{LocalDate, LocalTime}
 import store._
 
 final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, Timetable] with TimetableDao {
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
   import slick.driver.PostgresDriver.api._
 
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)

@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.{AttributeFilter, PostgresResult, SecureControllerContext2, Secured2}
+import controllers.helper._
 import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
@@ -15,15 +15,16 @@ import scala.util.{Failure, Success, Try}
 
 trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends Controller
-    with Secured2
+    with Secured
     with SessionChecking
-    with SecureControllerContext2
+    with SecureControllerContext
     with ContentTyped
     with PostgresResult
     with AttributeFilter
-    with RequestRebasePostgres {
+    with RequestRebase {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.Ops.unwrapTrys
 
   protected implicit def writes: Writes[LwmModel]
   protected implicit def reads: Reads[Protocol]
@@ -49,13 +50,6 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
       errors => Failure(new Throwable(JsError.toJson(errors).toString)),
       success => Success(success)
     )
-  }
-
-  protected def unwrapTrys(partialCreated: List[Try[DbModel]]): (List[DbModel], List[Throwable]) = {
-    val succeeded = partialCreated.collect { case Success(s) => s }
-    val failed = partialCreated.collect { case Failure(e) => e }
-
-    (succeeded, failed)
   }
 
   def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
@@ -93,7 +87,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   protected def delete0(uuid: UUID): Future[Result] = {
-    import models.LwmDateTime.SqlTimestampConverter
+    import utils.LwmDateTime.SqlTimestampConverter
 
     abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
   }

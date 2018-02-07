@@ -7,9 +7,7 @@ import utils.PreferenceSort._
 import scala.util.Random
 
 class PreferenceSortSpec extends WordSpec with TestBaseDefinition {
-  
-  def prefs[A](a: A, prfs: A*) = (a, prfs.toSet)
-  
+
   val l = Vector(
     prefs(1, 4),
     prefs(2, 4, 5),
@@ -33,15 +31,17 @@ class PreferenceSortSpec extends WordSpec with TestBaseDefinition {
     prefs(20, 19, 18)
   )
 
+  def prefs[A](a: A, prfs: A*) = (a, prfs.toSet)
+
   def against[A](people: Vector[Pair[A]], groups: Vector[Vector[A]]): Double = {
     val filtered = people filter (_._2.nonEmpty)
     val sat = filtered.foldLeft(0) { (ls, n) =>
       n match {
         case ((v, set)) => groups find (_ contains v) match {
           case Some(g) =>
-            if(set.isEmpty) ls
+            if (set.isEmpty) ls
             else set.foldLeft(ls) { (ns, f) =>
-              if(g contains f) ns + 1
+              if (g contains f) ns + 1
               else ns
             }
           case None => ls

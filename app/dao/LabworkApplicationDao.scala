@@ -3,7 +3,7 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models._
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
@@ -20,11 +20,11 @@ case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[La
 }
 
 case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.timestamp >= new Timestamp(value.toLong)
+  override def predicate = _.lastModified >= new Timestamp(value.toLong)
 }
 
 case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.timestamp <= new Timestamp(value.toLong)
+  override def predicate = _.lastModified <= new Timestamp(value.toLong)
 }
 
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
@@ -67,13 +67,13 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
         PostgresLabworkAtom(lab.label, lab.description, semester.toLwmModel, courseAtom, degree.toLwmModel, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.timestamp.dateTime, lapp.id)
+      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
     case (lapp, dependencies) =>
       val friends = dependencies.flatMap(_._2.map(_.id))
-      PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.timestamp.dateTime, lapp.id)
+      PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])

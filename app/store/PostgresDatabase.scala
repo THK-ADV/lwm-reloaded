@@ -6,7 +6,7 @@ import models._
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Time, Timestamp}
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 trait UniqueTable { self: Table[_] =>
   def id = column[UUID]("ID", O.PrimaryKey)
@@ -168,17 +168,16 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
 
 class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable {
   def applicant = column[UUID]("APPLICANT")
-  def timestamp = column[Timestamp]("TIMESTAMP")
 
-  override def * = (labwork, applicant, timestamp, lastModified, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (labwork, applicant, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
-    case (labwork, applicant, timestamp, lastModified, invalidated, id) =>
-      LabworkApplicationDb(labwork, applicant, Set.empty, timestamp, lastModified, invalidated, id)
+  def mapRow: ((UUID, UUID, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
+    case (labwork, applicant, lastModified, invalidated, id) =>
+      LabworkApplicationDb(labwork, applicant, Set.empty, lastModified, invalidated, id)
   }
 
-  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)] = { lapp =>
-    Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.lastModified, lapp.invalidated, lapp.id))
+  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Option[Timestamp], UUID)] = { lapp =>
+    Option((lapp.labwork, lapp.applicant, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
   def applicantFk = foreignKey("STUDENTS_fkey", applicant, TableQuery[UserTable])(_.id)

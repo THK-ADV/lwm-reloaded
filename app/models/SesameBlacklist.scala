@@ -3,13 +3,10 @@ package models
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import controllers.JsonSerialisation
-import models.LwmDateTime.dateTimeOrd
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
-import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.Ops.JsPathX
-import models.LwmDateTime._
+import utils.LwmDateTime
+import utils.LwmDateTime.{dateTimeOrd, _}
 
 case class SesameBlacklist(label: String, dates: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameBlacklist.randomUUID) extends UniqueEntity {
   override def equals(that: scala.Any): Boolean = that match {
@@ -27,22 +24,9 @@ case class SesameBlacklistProtocol(label: String, dates: Set[String]) {
   }
 }
 
-object SesameBlacklist extends UriGenerator[SesameBlacklist] with JsonSerialisation[SesameBlacklistProtocol, SesameBlacklist, SesameBlacklist] {
-
-  lazy val empty = SesameBlacklist("empty", Set.empty[DateTime])
+object SesameBlacklist extends UriGenerator[SesameBlacklist] {
 
   override def base: String = "blacklists"
-
-  override implicit def reads: Reads[SesameBlacklistProtocol] = Json.reads[SesameBlacklistProtocol]
-
-  override implicit def writes: Writes[SesameBlacklist] = (
-    (JsPath \ "label").write[String] and
-      (JsPath \ "dates").writeSet[DateTime](LwmDateTime.writes) and
-      (JsPath \ "invalidated").writeNullable[DateTime] and
-      (JsPath \ "id").write[UUID]
-    )(unlift(SesameBlacklist.unapply))
-
-  override implicit def writesAtom: Writes[SesameBlacklist] = writes
 }
 
 // POSTGRES
@@ -61,17 +45,17 @@ case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global
   }
 }
 
-object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, PostgresBlacklist, PostgresBlacklist] {
+object PostgresBlacklist {
 
   val startOfDay: LocalTime = LocalTime.MIDNIGHT
   val endOfDay: LocalTime = startOfDay.minusSeconds(1)
 
-  def entireDay(label: String, date: LocalDate, global: Boolean): PostgresBlacklist = {
-    PostgresBlacklist(label, date, startOfDay, endOfDay, global)
-  }
-
   def entireDay(label: String, dates: Vector[LocalDate], global: Boolean): Vector[PostgresBlacklist] = {
     dates.map(d => entireDay(label, d, global))
+  }
+
+  def entireDay(label: String, date: LocalDate, global: Boolean): PostgresBlacklist = {
+    PostgresBlacklist(label, date, startOfDay, endOfDay, global)
   }
 
   def partialDay(label: String, localDateTime: LocalDateTime, hourPadding: Int, global: Boolean): PostgresBlacklist = {
@@ -82,14 +66,15 @@ object PostgresBlacklist extends JsonSerialisation[PostgresBlacklistProtocol, Po
     PostgresBlacklist(label, date, start, end, global)
   }
 
-  override implicit def reads = Json.reads[PostgresBlacklistProtocol]
+  implicit val writes: Writes[PostgresBlacklist] = Json.writes[PostgresBlacklist]
+}
 
-  override implicit def writes = Json.writes[PostgresBlacklist]
-
-  override implicit def writesAtom = writes
+object PostgresBlacklistProtocol {
+  implicit val reads: Reads[PostgresBlacklistProtocol] = Json.reads[PostgresBlacklistProtocol]
 }
 
 object BlacklistDb {
+
   import models.PostgresBlacklist.{endOfDay, startOfDay}
 
   def from(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {

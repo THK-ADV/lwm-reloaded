@@ -2,12 +2,11 @@ package dao
 
 import java.util.UUID
 
-import models.LwmDateTime._
 import models._
-import services.{ScheduleEntryGen, ScheduleGen}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store._
+import utils.LwmDateTime._
 
 import scala.concurrent.Future
 
@@ -175,14 +174,13 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         .filterNot(_.labwork.id == labwork.id)
    */
 
-  def competitive(labwork: PostgresLabworkAtom): Future[Vector[ScheduleGen]] = {
-    val comps = for {
-      t <- tableQuery
-      l <- t.labworkFk if l.id =!= labwork.id
-      c <- l.courseFk if c.semesterIndex === labwork.course.semesterIndex
-      s <- l.semesterFk if s.id === labwork.semester.id
-      d <- l.degreeFk if d.id === labwork.degree.id
-    } yield t
+  def competitive(labwork: PostgresLabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
+    val comps = tableQuery
+      .flatMap(t => t.labworkFk.withFilter(l => l.id =!= labwork.id)
+      .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
+      .flatMap(_ => l.semesterFk.withFilter(s => s.id === labwork.semester.id)
+      .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
+      .map(_ => t)))))
 
     scheduleGen(comps)
   }

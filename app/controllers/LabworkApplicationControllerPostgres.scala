@@ -25,7 +25,9 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
 
   override protected implicit val writes: Writes[LabworkApplication] = LabworkApplication.writes
 
-  override protected implicit val reads: Reads[PostgresLabworkApplicationProtocol] = PostgresLabworkApplication.reads
+  override protected implicit val reads: Reads[PostgresLabworkApplicationProtocol] = PostgresLabworkApplicationProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.labworkApplicationV1Json
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[LabworkApplicationTable]]]): Try[List[TableFilter[LabworkApplicationTable]]] = {
     import controllers.LabworkApplicationControllerPostgres._
@@ -40,8 +42,6 @@ final class LabworkApplicationControllerPostgres(val sessionService: SessionHand
   }
 
   override protected def toDbModel(protocol: PostgresLabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = LabworkApplicationDb.from(protocol, existingId)
-
-  override implicit val mimeType = LwmMimeType.labworkApplicationV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(List(Student))

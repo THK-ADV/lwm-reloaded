@@ -18,7 +18,7 @@ case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[Rep
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, PostgresReportCardEntryType] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 

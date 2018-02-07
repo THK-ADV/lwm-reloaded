@@ -3,12 +3,16 @@ package models
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.{DateTime, LocalDate, LocalTime}
-import play.api.libs.functional.syntax.unlift
+import play.api.libs.functional.syntax.{unlift, _}
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
-import play.api.libs.functional.syntax._
-import models.LwmDateTime._
+import utils.LwmDateTime._
+
+case class SesameRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
+
+case class SesameRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom)
+
+// POSTGRES
 
 trait ReportCardRescheduled extends UniqueEntity
 
@@ -34,24 +38,26 @@ case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Tim
 }
 
 object ReportCardRescheduled {
-  def writes: Writes[ReportCardRescheduled] = new Writes[ReportCardRescheduled] {
+
+  implicit val writes: Writes[ReportCardRescheduled] = new Writes[ReportCardRescheduled] {
     override def writes(r: ReportCardRescheduled) = r match {
-      case rescheduled: PostgresReportCardRescheduled => Json.toJson(rescheduled)(PostgresReportCardRescheduled.writes)
-      case rescheduledAtom: PostgresReportCardRescheduledAtom => Json.toJson(rescheduledAtom)(PostgresReportCardRescheduledAtom.writesAtom)
+      case normal: PostgresReportCardRescheduled => Json.toJson(normal)(PostgresReportCardRescheduled.writes)
+      case atom: PostgresReportCardRescheduledAtom => Json.toJson(atom)(PostgresReportCardRescheduledAtom.writes)
     }
   }
 }
 
-object PostgresReportCardRescheduled extends JsonSerialisation[PostgresReportCardRescheduledProtocol, PostgresReportCardRescheduled, PostgresReportCardRescheduledAtom] {
-  override implicit def reads: Reads[PostgresReportCardRescheduledProtocol] = Json.reads[PostgresReportCardRescheduledProtocol]
+object PostgresReportCardRescheduled {
+  implicit val writes: Writes[PostgresReportCardRescheduled] = Json.writes[PostgresReportCardRescheduled]
+}
 
-  override implicit def writes: Writes[PostgresReportCardRescheduled] = Json.writes[PostgresReportCardRescheduled]
-
-  override implicit def writesAtom: Writes[PostgresReportCardRescheduledAtom] = PostgresReportCardRescheduledAtom.writesAtom
+object PostgresReportCardRescheduledProtocol {
+  implicit val reads: Reads[PostgresReportCardRescheduledProtocol] = Json.reads[PostgresReportCardRescheduledProtocol]
 }
 
 object PostgresReportCardRescheduledAtom {
-  implicit def writesAtom: Writes[PostgresReportCardRescheduledAtom] = (
+
+  implicit val writes: Writes[PostgresReportCardRescheduledAtom] = (
     (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and

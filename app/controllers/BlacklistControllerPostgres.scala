@@ -24,12 +24,14 @@ object BlacklistControllerPostgres {
   lazy val untilAttribute = "until"
 }
 
-final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao, val blacklistService: BlacklistServiceLike)
+final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: BlacklistDao)
   extends AbstractCRUDControllerPostgres[PostgresBlacklistProtocol, BlacklistTable, BlacklistDb, PostgresBlacklist] {
 
   override protected implicit val writes: Writes[PostgresBlacklist] = PostgresBlacklist.writes
 
-  override protected implicit val reads: Reads[PostgresBlacklistProtocol] = PostgresBlacklist.reads
+  override protected implicit val reads: Reads[PostgresBlacklistProtocol] = PostgresBlacklistProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[BlacklistTable]]]): Try[List[TableFilter[BlacklistTable]]] = {
     import controllers.BlacklistControllerPostgres._
@@ -48,13 +50,12 @@ final class BlacklistControllerPostgres(val authorityDao: AuthorityDao, val sess
 
   override protected def toDbModel(protocol: PostgresBlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.blacklistV1Json
-
   def createFor(year: String): Action[JsValue] = contextFrom(Create) asyncContentTypedAction { implicit request =>
     import scala.concurrent.ExecutionContext.Implicits.global
+    import utils.Ops.unwrapTrys
 
     (for {
-      blacklists <- blacklistService.fetchByYear2(year)
+      blacklists <- BlacklistService.fetchLegalHolidays(year)
       partialCreated <- abstractDao.createManyPartial(blacklists)
       (succeeded, failed) = unwrapTrys(partialCreated)
     } yield (blacklists.map(_.toLwmModel), succeeded.map(_.toLwmModel), failed)).jsonResult

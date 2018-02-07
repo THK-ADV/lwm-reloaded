@@ -8,7 +8,7 @@ import play.api.libs.json.{Reads, Writes}
 import services.SessionHandlingService
 import store.{ReportCardRescheduledTable, TableFilter}
 import utils.LwmMimeType
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.Role.{CourseEmployee, CourseManager, God}
 
 import scala.util.{Failure, Try}
@@ -30,8 +30,8 @@ object ReportCardRescheduledController {
 
 final class ReportCardRescheduledController(val sessionService: SessionHandlingService,
                                             val authorityDao: AuthorityDao,
-                                            val abstractDao: ReportCardRescheduledDao
-                                           ) extends AbstractCRUDControllerPostgres[PostgresReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] {
+                                            val abstractDao: ReportCardRescheduledDao)
+  extends AbstractCRUDControllerPostgres[PostgresReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] {
 
   import controllers.ReportCardRescheduledController._
 
@@ -39,7 +39,7 @@ final class ReportCardRescheduledController(val sessionService: SessionHandlingS
 
   override protected implicit val writes: Writes[ReportCardRescheduled] = ReportCardRescheduled.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardRescheduledProtocol] = PostgresReportCardRescheduled.reads
+  override protected implicit val reads: Reads[PostgresReportCardRescheduledProtocol] = PostgresReportCardRescheduledProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes

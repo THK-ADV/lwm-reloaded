@@ -1,30 +1,17 @@
 package modules
 
-import controllers.{LabworkCRUDController, LabworkControllerPostgres}
+import controllers.LabworkControllerPostgres
 import dao.{LabworkDao, LabworkDaoImpl}
-
-trait LabworkManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
-
-  def labworkManagementController: LabworkCRUDController
-}
-
-
-trait DefaultLabworkManagementModuleImpl extends LabworkManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
-
-  lazy val labworkManagementController: LabworkCRUDController = new LabworkCRUDController(repository, sessionService, namespace, roleService)
-}
-
-// POSTGRES
 
 trait LabworkDaoModule {
   self: DatabaseModule =>
+
   def labworkDao: LabworkDao
 }
 
 trait DefaultLabworkDaoModule extends LabworkDaoModule {
   self: DatabaseModule =>
+
   override lazy val labworkDao = new LabworkDaoImpl(db)
 }
 

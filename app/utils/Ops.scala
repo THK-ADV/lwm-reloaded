@@ -157,6 +157,7 @@ object Ops { self =>
 
   implicit class JsPathX(p: JsPath) {
     def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] = Writes.at[Set[A]](p)(Writes.set(w))
+    def writeSeq[A](implicit w: Writes[A]): OWrites[Vector[A]] = Writes.at[Seq[A]](p)(Writes.seq(w))
   }
 
   implicit class FutureOps[T](val futures: List[Future[T]])(implicit executionContext: ExecutionContext) {
@@ -164,6 +165,13 @@ object Ops { self =>
     private def futureToFutureTry(f: Future[T]): Future[Try[T]] = f.map(s => Success(s)).recover { case t => Failure(t) }
 
     def asTrys: Future[List[Try[T]]] = Future.sequence(futures.map(futureToFutureTry))
+  }
+
+  def unwrapTrys[T](partialCreated: List[Try[T]]): (List[T], List[Throwable]) = {
+    val succeeded = partialCreated.collect { case Success(s) => s }
+    val failed = partialCreated.collect { case Failure(e) => e }
+
+    (succeeded, failed)
   }
 }
 

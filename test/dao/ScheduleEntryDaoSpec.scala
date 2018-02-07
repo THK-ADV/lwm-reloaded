@@ -4,7 +4,7 @@ import models._
 import slick.driver.PostgresDriver.api._
 import slick.lifted.TableQuery
 import store._
-import models.LwmDateTime._
+import utils.LwmDateTime._
 
 final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] with ScheduleEntryDao {
   import dao.AbstractDaoSpec._

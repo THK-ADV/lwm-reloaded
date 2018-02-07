@@ -7,7 +7,7 @@ import slick.dbio.DBIO
 import slick.lifted.TableQuery
 import store._
 import slick.driver.PostgresDriver.api._
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import org.joda.time.{LocalDate, LocalTime}
 
 final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] with ReportCardRescheduledDao  {

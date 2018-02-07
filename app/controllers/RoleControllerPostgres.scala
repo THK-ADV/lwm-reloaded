@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, RoleDao, RoleLabelFilter}
-import models.Role.{Admin, God, RightsManager}
+import models.Role.{God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import services._
@@ -17,11 +17,11 @@ object RoleControllerPostgres {
 }
 
 final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleDao, val authorityDao: AuthorityDao)
-  extends AbstractCRUDControllerPostgres[PostgresRoleProtocol, RoleTable, RoleDb, PostgresRole] {
+  extends AbstractCRUDControllerPostgres[PostgresRole, RoleTable, RoleDb, PostgresRole] {
 
   override protected implicit val writes: Writes[PostgresRole] = PostgresRole.writes
 
-  override protected implicit val reads: Reads[PostgresRoleProtocol] = PostgresRole.reads
+  override protected implicit val reads: Reads[PostgresRole] = PostgresRole.reads
 
   override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[RoleTable]]]): Try[List[TableFilter[RoleTable]]] = {
     import controllers.RoleControllerPostgres._
@@ -32,7 +32,7 @@ final class RoleControllerPostgres(val sessionService: SessionHandlingService, v
     }
   }
 
-  override protected def toDbModel(protocol: PostgresRoleProtocol, existingId: Option[UUID]): RoleDb = RoleDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: PostgresRole, existingId: Option[UUID]): RoleDb = ???
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
 

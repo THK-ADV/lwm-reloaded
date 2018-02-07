@@ -3,15 +3,14 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.{course, prime}
+import models.Role.{Admin, Employee, Student}
 import models.{Course, CourseDb, PostgresCourse, PostgresCourseProtocol}
 import play.api.libs.json.{JsValue, Reads, Writes}
 import play.api.mvc.{Action, AnyContent}
 import services._
 import store.{CourseTable, TableFilter}
+import utils.LwmDateTime._
 import utils.LwmMimeType
-import models.LwmDateTime._
-import models.Role.{Admin, Employee, Student}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -30,28 +29,9 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
 
   override protected implicit val writes: Writes[Course] = Course.writes
 
-  override protected implicit val reads: Reads[PostgresCourseProtocol] = PostgresCourse.reads
-
-  override protected def toDbModel(protocol: PostgresCourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
+  override protected implicit val reads: Reads[PostgresCourseProtocol] = PostgresCourseProtocol.reads
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.courseV1Json
-
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
-    import controllers.CourseControllerPostgres._
-
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
-      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(Employee, Student))
-    case GetAll => PartialSecureBlock(List(Employee))
-    case _ => PartialSecureBlock(List(Admin))
-  }
 
   override def create(secureContext: SecureContext = contextFrom(Create)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
@@ -85,7 +65,9 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     } yield lwmModel).jsonResult(uuid)
   }
 
-  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction   { request =>
+  override protected def toDbModel(protocol: PostgresCourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
+
+  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { request =>
     val uuid = UUID.fromString(id)
 
     (for {
@@ -96,5 +78,22 @@ final class CourseControllerPostgres(val sessionService: SessionHandlingService,
     } yield deletedCourse.map(_.dateTime)).jsonResult(uuid)
   }
 
-  override implicit def authorityDao = authorityService
+  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
+    import controllers.CourseControllerPostgres._
+
+    (appendTo, (attribute, values)) match {
+      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
+      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
+      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
+      case _ => Failure(new Throwable("Unknown attribute"))
+    }
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(List(Employee, Student))
+    case GetAll => PartialSecureBlock(List(Employee))
+    case _ => PartialSecureBlock(List(Admin))
+  }
+
+  override implicit val authorityDao: AuthorityDao = authorityService
 }

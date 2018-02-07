@@ -3,9 +3,8 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.timetable
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
-import models.{PostgresTimetable, PostgresTimetableProtocol, Timetable, TimetableDb}
+import models.{PostgresTimetableProtocol, Timetable, TimetableDb}
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{TableFilter, TimetableTable}
@@ -18,22 +17,16 @@ object TimetableControllerPostgres {
   lazy val labworkAttribute = "labwork"
 }
 
-final class TimetableControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val abstractDao: TimetableDao)
+final class TimetableControllerPostgres(val authorityDao: AuthorityDao,
+                                        val sessionService: SessionHandlingService,
+                                        val abstractDao: TimetableDao)
   extends AbstractCRUDControllerPostgres[PostgresTimetableProtocol, TimetableTable, TimetableDb, Timetable] {
 
   override protected implicit val writes: Writes[Timetable] = Timetable.writes
 
-  override protected implicit val reads: Reads[PostgresTimetableProtocol] = PostgresTimetable.reads
+  override protected implicit val reads: Reads[PostgresTimetableProtocol] = PostgresTimetableProtocol.reads
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
-    create(NonSecureBlock)(request)
-  }
-
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
-    update(id, NonSecureBlock)(request)
-  }
-
-  override implicit val mimeType = LwmMimeType.timetableV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.timetableV1Json
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, List(CourseManager))
@@ -41,6 +34,14 @@ final class TimetableControllerPostgres(val authorityDao: AuthorityDao, val sess
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case Update => SecureBlock(restrictionId, List(CourseManager))
     case Delete => SecureBlock(restrictionId, List(CourseManager))
+  }
+
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+    create(NonSecureBlock)(request)
+  }
+
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    update(id, NonSecureBlock)(request)
   }
 
   def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>

@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import models.Role.{CourseEmployee, CourseManager, God}
 import models._
@@ -22,33 +23,31 @@ object GroupControllerPostgres {
 final class GroupControllerPostgres(val authorityDao: AuthorityDao,
                                     val sessionService: SessionHandlingService,
                                     val abstractDao: GroupDao,
-                                    val labworkApplicationService2: LabworkApplicationDao
-                                   ) extends AbstractCRUDControllerPostgres[PostgresGroupProtocol, GroupTable, GroupDb, Group] {
+                                    val labworkApplicationService2: LabworkApplicationDao)
+  extends AbstractCRUDControllerPostgres[PostgresGroupProtocol, GroupTable, GroupDb, Group]
+    with GroupingStrategyAttributeFilter {
 
   import controllers.GroupControllerPostgres._
-
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[Group] = Group.writes
 
-  override protected implicit val reads: Reads[PostgresGroupProtocol] = PostgresGroup.reads
+  override protected implicit val reads: Reads[PostgresGroupProtocol] = PostgresGroupProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.groupV1Json
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.append(labworkAttribute -> Seq(labwork)))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
-    import controllers.ScheduleEntryControllerPostgres.strategyFrom
-
     (for {
       applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
       apps = applications.map(_.asInstanceOf[PostgresLabworkApplication]).toVector
-      groupingStrategy <- Future.fromTry(strategyFrom(request.queryString))
+      groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
       groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
     } yield groups).jsonResult
   }
-
-  override implicit val mimeType = LwmMimeType.groupV1Json
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, List(CourseManager))

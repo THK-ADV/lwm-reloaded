@@ -3,14 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.LwmDateTime._
-import models.Permissions.{prime, semester}
 import models.Role.{Admin, Employee, Student}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}
 import org.joda.time.LocalDate
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{SemesterTable, TableFilter}
+import utils.LwmDateTime._
 import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
@@ -29,17 +28,17 @@ object SemesterControllerPostgres {
 final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: SemesterDao)
   extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
 
-  override implicit val mimeType = LwmMimeType.semesterV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
+
+  override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
+
+  override protected implicit val reads: Reads[SemesterProtocol] = SemesterProtocol.reads
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student, Employee))
     case GetAll => PartialSecureBlock(List(Student, Employee))
     case _ => PartialSecureBlock(List(Admin))
   }
-
-  override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
-
-  override protected implicit val reads: Reads[SemesterProtocol] = PostgresSemester.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
     import controllers.SemesterControllerPostgres._

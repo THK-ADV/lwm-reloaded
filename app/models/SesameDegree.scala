@@ -3,23 +3,15 @@ package models
 import java.sql.Timestamp
 import java.util.UUID
 
-import controllers.JsonSerialisation
 import org.joda.time.DateTime
-import models.LwmDateTime.DateTimeConverter
 import play.api.libs.json.{Json, Reads, Writes}
+import utils.LwmDateTime.DateTimeConverter
 
 case class SesameDegree(label: String, abbreviation: String, invalidated: Option[DateTime] = None, id: UUID = SesameDegree.randomUUID) extends UniqueEntity
 
 case class DegreeProtocol(label: String, abbreviation: String)
 
-object SesameDegree extends UriGenerator[SesameDegree] with JsonSerialisation[DegreeProtocol, SesameDegree, SesameDegree] {
-
-  override implicit def reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
-
-  override implicit def writes: Writes[SesameDegree] = Json.writes[SesameDegree]
-
-  override implicit def writesAtom: Writes[SesameDegree] = writes
-
+object SesameDegree extends UriGenerator[SesameDegree] {
   override def base: String = "degrees"
 }
 
@@ -35,11 +27,10 @@ object DegreeDb {
   }
 }
 
-object PostgresDegree extends JsonSerialisation[DegreeProtocol, PostgresDegree, PostgresDegree] {
+object PostgresDegree {
+  implicit val writes: Writes[PostgresDegree] = Json.writes[PostgresDegree]
+}
 
-  override implicit def reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
-
-  override implicit def writes: Writes[PostgresDegree] = Json.writes[PostgresDegree]
-
-  override implicit def writesAtom: Writes[PostgresDegree] = writes
+object DegreeProtocol {
+  implicit val reads: Reads[DegreeProtocol] = Json.reads[DegreeProtocol]
 }
