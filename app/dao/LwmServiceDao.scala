@@ -64,7 +64,7 @@ trait LwmServiceDao {
   }
 
   protected def sorted(entries: Seq[ReportCardEntryDb]): Seq[ReportCardEntryDb] = {
-    import models.LwmDateTime._
+    import utils.LwmDateTime._
 
     entries.sortBy(e => e.date.localDate.toLocalDateTime(e.start.localTime))
   }

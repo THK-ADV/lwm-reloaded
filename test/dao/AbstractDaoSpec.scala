@@ -4,7 +4,7 @@ import java.sql.Timestamp
 import java.util.UUID
 
 import base.PostgresDbSpec
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
@@ -43,6 +43,10 @@ object AbstractDaoSpec {
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
   def randomGroup = groups(nextInt(maxGroups))
+  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
+    ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
+  }.toSet
+
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
@@ -163,9 +167,7 @@ object AbstractDaoSpec {
       val rEnd = e.end.localTime.plusHours(1)
 
       val id = UUID.randomUUID
-      val entryTypes = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
-        ReportCardEntryTypeDb(None, Some(id), entryType.entryType)
-      }.toSet
+      val entryTypes = randomReportCardEntryTypes(None, Some(id))
 
       ReportCardRetryDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, entryTypes, Some("some reason"), id = id)
     }
@@ -180,9 +182,7 @@ object AbstractDaoSpec {
       val end = start.plusHours(1)
 
       val id = UUID.randomUUID
-      val types = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
-        ReportCardEntryTypeDb(Some(id), None, entryType.entryType)
-      }.toSet
+      val types = randomReportCardEntryTypes(Some(id), None)
 
       ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, id = id)
     }
@@ -258,7 +258,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   extends PostgresDbSpec with AbstractDao[T, DbModel, LwmModel] {
 
   protected val lastModified: Timestamp = {
-    import models.LwmDateTime.DateTimeConverter
+    import utils.LwmDateTime.DateTimeConverter
     import org.joda.time.DateTime
 
     DateTime.now.timestamp

@@ -2,39 +2,27 @@ package services
 
 import java.util.UUID
 
-import models.SesameGroup
-import org.joda.time.{LocalDate, LocalTime}
-
-case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: SesameGroup)
-
-/*import java.util.UUID
-
 import models._
 import org.joda.time._
-import utils.{Gen, Genesis}
-import utils.TypeClasses._
 
 import scala.language.higherKinds
 import scala.util.Random._
 import scalaz.Functor
-import services.ScheduleService._
-import models.TimetableDateEntry._
+import services.ScheduleService.{Crossover, Evaluator, Mutator}
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.Evaluation._
-
-case class Conflict(entry: ScheduleEntryG, members: Vector[UUID], group: SesameGroup)
-case class ScheduleG(labwork: UUID, entries: Vector[ScheduleEntryG], id: UUID)
-case class ScheduleEntryG(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: SesameGroup)
+import utils.{Gen, Genesis}
+import utils.TypeClasses.{Cross, Eval, Mutate}
+import utils.LwmDateTime._
 
 trait ScheduleServiceLike {
-  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): Vector[ScheduleG]
+  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): Vector[ScheduleGen]
   def mutate: Mutator
   def mutateDestructive: Mutator
   def crossover: Crossover
   def crossoverDestructive: Crossover
-  def evaluation(all: Vector[ScheduleG], appointments: Int): Evaluator
+  def evaluation(all: Vector[ScheduleGen], appointments: Int): Evaluator
 
   def pops: Int
   def gens: Int
@@ -42,21 +30,28 @@ trait ScheduleServiceLike {
 }
 
 trait ScheduleGenesisServiceLike {
-  def generate(timetable: SesameTimetable, groups: Set[SesameGroup], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleG, Conflict, Int], Int)
-  def competitive(labwork: Option[SesameLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleG]
+  def generate(timetable: PostgresTimetable,
+               blacklists: Vector[PostgresBlacklist],
+               groups: Vector[PostgresGroup],
+               assignmentPlan: PostgresAssignmentPlan,
+               semester: PostgresSemester,
+               competitive: Vector[ScheduleGen],
+               p: Option[Int] = None,
+               g: Option[Int] = None,
+               e: Option[Int] = None): (Gen[ScheduleGen, Conflict, Int], Int)
 }
 
 object ScheduleService {
-  type Mutator = Mutate[ScheduleG, Conflict, Int]
-  type Crossover = Cross[ScheduleG, Conflict, Int]
-  type Evaluator = Eval[ScheduleG, Conflict, Int]
+  type Mutator = Mutate[ScheduleGen, Conflict, Int]
+  type Crossover = Cross[ScheduleGen, Conflict, Int]
+  type Evaluator = Eval[ScheduleGen, Conflict, Int]
   type Evaluation = utils.Evaluation[Conflict, Int]
 
-  def mutation(f: (ScheduleG, Evaluation) => ScheduleG) = Mutate.instance[ScheduleG, Conflict, Int](f)
+  def mutation(f: (ScheduleGen, Evaluation) => ScheduleGen) = Mutate.instance[ScheduleGen, Conflict, Int](f)
 
-  def cross(f: ((ScheduleG, Evaluation), (ScheduleG, Evaluation)) => (ScheduleG, ScheduleG)) = Cross.instance[ScheduleG, Conflict, Int](f)
+  def cross(f: ((ScheduleGen, Evaluation), (ScheduleGen, Evaluation)) => (ScheduleGen, ScheduleGen)) = Cross.instance[ScheduleGen, Conflict, Int](f)
 
-  def eval(f: ScheduleG => Evaluation)= Eval.instance[ScheduleG, Conflict, Int](f)
+  def eval(f: ScheduleGen => Evaluation)= Eval.instance[ScheduleGen, Conflict, Int](f)
 
   def swap[A, F[X]](f: F[A])(left: A, right: A)(implicit F: Functor[F]): F[A] = F.map(f) {
     case x if x == left => right
@@ -67,21 +62,24 @@ object ScheduleService {
   def randomOne[A](v: Vector[A]): A = shuffle(v).head
 
   @annotation.tailrec
-  def randomAvoiding(avoiding: SesameGroup)(implicit groups: Vector[SesameGroup]): SesameGroup = {
-    val grp = randomGroup
-    if(grp.id == avoiding.id) randomAvoiding(avoiding)
-    else grp
+  def randomAvoiding(avoiding: PostgresGroup)(implicit groups: Vector[PostgresGroup]): PostgresGroup = {
+    if (groups.forall(_.id == avoiding.id)) // can't be another group than avoiding. just return it then
+      avoiding
+    else { // try to get another group than avoiding
+      val grp = randomGroup
+      if (grp.id == avoiding.id) randomAvoiding(avoiding) else grp
+    }
   }
 
-  def randomGroup(implicit groups: Vector[SesameGroup]): SesameGroup = groups(nextInt(groups.size))
+  def randomGroup(implicit groups: Vector[PostgresGroup]): PostgresGroup = groups(nextInt(groups.size))
 
-  def replaceGroup(s: SesameGroup)(f: Set[UUID] => Set[UUID]): SesameGroup = SesameGroup(s.label, s.labwork, f(s.members), s.invalidated, s.id)
+  def replaceGroup(s: PostgresGroup)(f: Set[UUID] => Set[UUID]): PostgresGroup = PostgresGroup(s.label, s.labwork, f(s.members), s.id)
 
-  def replaceSchedule(s: ScheduleG)(f: ScheduleEntryG => ScheduleEntryG): ScheduleG = ScheduleG(s.labwork, s.entries map f, s.id)
+  def replaceSchedule(s: ScheduleGen)(f: ScheduleEntryGen => ScheduleEntryGen): ScheduleGen = ScheduleGen(s.labwork, s.entries map f)
 
-  def replaceEntry(e: ScheduleEntryG)(f: SesameGroup => SesameGroup) = ScheduleEntryG(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
+  def replaceEntry(e: ScheduleEntryGen)(f: PostgresGroup => PostgresGroup) = ScheduleEntryGen(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
 
-  def replaceWithin(s: ScheduleG)(left: SesameGroup, right: SesameGroup): ScheduleG = replaceSchedule(s)(
+  def replaceWithin(s: ScheduleGen)(left: PostgresGroup, right: PostgresGroup): ScheduleGen = replaceSchedule(s)(
     replaceEntry(_) {
       case x if x.id == left.id => right
       case y if y.id == right.id => left
@@ -89,63 +87,75 @@ object ScheduleService {
     }
   )
 
-  def collide(left: ScheduleEntryG, right: ScheduleEntryG): Boolean = {
+  def collide(left: ScheduleEntryGen, right: ScheduleEntryGen): Boolean = {
     val leftSlot = new Interval(left.date.toDateTime(left.start), left.date.toDateTime(left.end))
     val rightSlot = new Interval(right.date.toDateTime(right.start), right.date.toDateTime(right.end))
 
     leftSlot overlaps rightSlot
   }
 
-  def exchange(left: UUID, right: UUID, s: ScheduleG) = replaceSchedule(s)(replaceEntry(_)(replaceGroup(_)(swap(_)(left, right))))
+  def exchange(left: UUID, right: UUID, s: ScheduleGen) = replaceSchedule(s)(replaceEntry(_)(replaceGroup(_)(swap(_)(left, right))))
 }
 
-class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val timetableService: TimetableServiceLike) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
+final class ScheduleService(val pops: Int, val gens: Int, val elite: Int) extends ScheduleServiceLike with ScheduleGenesisServiceLike {
+  import services.ScheduleService._
 
-  override def generate(timetable: SesameTimetable, groups: Set[SesameGroup], assignmentPlan: SesameAssignmentPlan, semester: SesameSemester, competitive: Vector[ScheduleG], p: Option[Int], g: Option[Int], e: Option[Int]): (Gen[ScheduleG, Conflict, Int], Int) = {
-    val entries = timetableService.extrapolateTimetableByWeeks(timetable, Weeks.weeksBetween(semester.start, semester.examStart), assignmentPlan, groups)
+  override def generate(timetable: PostgresTimetable,
+                        blacklists: Vector[PostgresBlacklist],
+                        groups: Vector[PostgresGroup],
+                        assignmentPlan: PostgresAssignmentPlan,
+                        semester: PostgresSemester,
+                        competitive: Vector[ScheduleGen],
+                        p: Option[Int],
+                        g: Option[Int],
+                        e: Option[Int]) = {
+    val entries = TimetableService.extrapolateTimetableByWeeks(
+      timetable, Weeks.weeksBetween(semester.start, semester.examStart), blacklists, assignmentPlan, groups.size
+    )
+
     val pop = population(p getOrElse pops, timetable.labwork, entries, groups)
 
-    implicit val evalF = evaluation(competitive, assignmentPlan.entries.size)
-    implicit val mutateF = (mutate, mutateDestructive)
-    implicit val crossF = (crossover, crossoverDestructive)
+    implicit val evalF: Evaluator = evaluation(competitive, assignmentPlan.entries.size)
+    implicit val mutateF: (Mutator, Mutator) = (mutate, mutateDestructive)
+    implicit val crossF: (Crossover, Crossover) = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._
 
-    val gen = Genesis.byVariation[ScheduleG, Conflict, Int](pop, g getOrElse gens, e getOrElse elite) { elite =>
+    Genesis.byVariation[ScheduleGen, Conflict, Int](pop, g getOrElse gens, e getOrElse elite) { elite =>
       if (elite.size % 2 == 0) elite.take(2).distinct.size == 1 else false
     }
-    println(s"genesis :: ${gen._2}")
-    gen
   }
 
-  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): Vector[ScheduleG] = {
+  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): Vector[ScheduleGen] = {
     (0 until times).map(_ => populate(labwork, entries, groups)).toVector
   }
 
-  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Set[SesameGroup]): ScheduleG = {
-    import models.LwmDateTime.localDateTimeOrd
-
-    val shuffled = shuffle(groups.toVector)
+  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): ScheduleGen = {
+    val shuffled = shuffle(groups)
     val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
-      case (t, group) => ScheduleEntryG(t.start, t.end, t.date, t.room, t.supervisor, group)
+      case (t, group) => ScheduleEntryGen(t.start, t.end, t.date, t.room, t.supervisor, group)
     }).toVector
 
-    ScheduleG(labwork, scheduleEntries, SesameSchedule.randomUUID)
+    ScheduleGen(labwork, scheduleEntries)
   }
 
-  override def mutate: Mutator = mutation { (s, e) =>
-    implicit val groups = s.entries.map(_.group)
+  override def mutate: Mutator = mutation { (s, _) =>
+    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+
     val group1 = randomGroup
     val group2 = randomAvoiding(group1)
+
     replaceWithin(s)(group1, group2)
   }
 
   override def mutateDestructive: Mutator = mutation { (s, e) =>
-    implicit val groups = s.entries.map(_.group)
+    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+
     e.mapErrWhole(shuffle(_)).fold {
-      case ((h :: t, _)) =>
+      case ((h :: _, _)) =>
         val group = randomAvoiding(h.group)
         val chosenOne = randomOne(h.members)
         val swappedOne = randomOne(group.members.toVector)
+
         exchange(chosenOne, swappedOne, s)
       case ((Nil, _)) => s
     }
@@ -157,6 +167,7 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
         case (h1 :: _, h2 :: _) =>
           lazy val rl = replaceWithin(s1)(h1.group, randomAvoiding(h1.group)(s1.entries.map (_.group)))
           lazy val rr = replaceWithin(s2)(h2.group, randomAvoiding(h2.group)(s2.entries.map (_.group)))
+
           (rl, rr)
         case _ => (s1, s2)
       }
@@ -164,9 +175,10 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
 
   override def crossoverDestructive: Crossover = cross {
     case ((s1, e1), (s2, e2)) =>
-      def newOne(ev: Evaluation, left: ScheduleG, right: ScheduleG): ScheduleG = ev.mapErrWhole(shuffle(_)).fold {
-        case ((c :: t), _) =>
+      def newOne(ev: Evaluation, left: ScheduleGen, right: ScheduleGen): ScheduleGen = ev.mapErrWhole(shuffle(_)).fold {
+        case ((c :: _), _) =>
           val one = randomOne(c.members)
+
           right.entries.find(e => !e.group.members.contains(one)) match {
             case Some(e) => exchange(one, e.group.members.head, left)
             case None =>
@@ -179,7 +191,7 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
       (newOne(e1, s1, s2), newOne(e2, s2, s1))
   }
 
-  override def evaluation(all: Vector[ScheduleG], appointments: Int): Evaluator = eval { schedule =>
+  override def evaluation(all: Vector[ScheduleGen], appointments: Int): Evaluator = eval { schedule =>
     val factor = {
       val integrity = schedule.entries.groupBy(_.group).forall(t => t._2.size == appointments)
       if (integrity) 0 else 1000
@@ -200,18 +212,4 @@ class ScheduleService(val pops: Int, val gens: Int, val elite: Int, private val 
       case (eval, _) => eval
     } map (_ * conflicts.count(_.isDefined))
   }
-
-  override def competitive(labwork: Option[SesameLabworkAtom], all: Set[SesameScheduleAtom]): Set[ScheduleG] = {
-    labwork.fold(Set.empty[ScheduleG]) { item =>
-      val filtered = all
-        .filter(_.labwork.course.semesterIndex == item.course.semesterIndex)
-        .filter(_.labwork.semester.id == item.semester.id)
-        .filter(_.labwork.degree.id == item.degree.id)
-        .filterNot(_.labwork.id == item.id)
-
-      filtered map { atom =>
-        ScheduleG(atom.labwork.id, atom.entries.map(e => ScheduleEntryG(e.start, e.end, e.date, e.room.id, e.supervisor map (_.id), e.group)).toVector, atom.id)
-      }
-    }
-  }
-}*/
+}

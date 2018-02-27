@@ -10,7 +10,7 @@ import store._
 final class LwmServiceDaoSpec extends PostgresDbSpec with LwmServiceDao {
 
   import dao.AbstractDaoSpec._
-  import models.LwmDateTime._
+  import utils.LwmDateTime._
 
   val (privateCourses, privateDegrees, privateStudents, privateLabs, privateGroups) = groupStack(100, 10)
 

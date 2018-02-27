@@ -1,7 +1,7 @@
 package utils
 
-/*import TypeClasses._
-import Gen._
+import utils.TypeClasses._
+import utils.Gen._
 import scalaz.Monoid
 import scala.util.Random._
 
@@ -41,6 +41,7 @@ object Genesis {
                                   e: Eval[A, E, V],
                                   zero: Zero[V],
                                   ord: Ordering[V]): C = {
+    @scala.annotation.tailrec
     def go(vec: Vector[Gen[A, E, V]], history: List[Evaluation[E, V]], rem: Int): C = {
       val evaluated = evaluate(vec)
       if (rem == 0) f(best(evaluated), times)
@@ -49,6 +50,7 @@ object Genesis {
         case None => go(g((evaluated, history)), accumulate(evaluated, history), rem - 1)
       }
     }
+
     go(ind, List.empty, times)
   }
 
@@ -75,17 +77,20 @@ object Genesis {
   }
 
   def replicate[A, E, V: Monoid](times: Int)(implicit mut: Mutate[A, E, V], cross: Cross[A, E, V]): GenAcc[A, E, V] => Vector[Gen[A, E, V]] = {
-    case (v, l) =>
+    case (v, _) =>
       println(v.map(_.evaluate.value))
+
       (0 until times).foldLeft(v) {
-      case (vec, _) =>
-        val s = vec.size
-        if (nextBoolean()) vec :+ vec(nextInt(s)).fold((a, e) => withValue[A, E, V](mut(a, e)))
-        else {
-          val (l, r) = cross(vec(nextInt(s)).fold((_, _)), vec(nextInt(s)).fold((_, _)))
-          vec :+ withValue(l) :+ withValue(r)
-        }
-    }
+        case (vec, _) =>
+          val s = vec.size
+
+          if (nextBoolean)
+            vec :+ vec(nextInt(s)).fold((a, e) => withValue[A, E, V](mut(a, e)))
+          else {
+            val (l, r) = cross(vec(nextInt(s)).fold((_, _)), vec(nextInt(s)).fold((_, _)))
+            vec :+ withValue(l) :+ withValue(r)
+          }
+      }
   }
 }
 
@@ -150,4 +155,4 @@ object TypeClasses {
       override def apply(a: A): Boolean = f(a)
     }
   }
-}*/
+}

@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import models.LwmDateTime.DateTimeConverter
+import utils.LwmDateTime.DateTimeConverter
 import models._
 import org.joda.time.DateTime
 import services._
@@ -13,15 +13,17 @@ import store.{TableFilter, UserTable}
 
 import scala.concurrent.Future
 
-sealed trait BuddyResult
+sealed trait BuddyResult {
+  override def toString: String = getClass.getSimpleName
+}
 
-case object Allowed extends BuddyResult
+case class Allowed(buddy: User) extends BuddyResult
 
-case object Almost extends BuddyResult
+case class Almost(buddy: User) extends BuddyResult
 
-case object Denied extends BuddyResult
+case class Denied(buddy: User) extends BuddyResult
 
-case object NotExisting extends BuddyResult
+case class NotExisting(buddy: String) extends BuddyResult
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: (UserTable) => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
@@ -62,41 +64,46 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
       degrees <- degreeService.get()
       existing <- get(List(UserSystemIdFilter(ldapUser.systemId)), atomic = false)
       maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
-      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, DateTime.now.timestamp, None, existing.headOption.fold(ldapUser.id)(_.id))
+      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, id = existing.headOption.fold(UUID.randomUUID)(_.id))
       updated <- createOrUpdate(dbUser)
       maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).map(Some(_)))
     } yield (dbUser.toLwmModel, maybeAuth)
   }
 
-  final def buddyResult(studentId: String, buddySystemId: String, labwork: String): Future[BuddyResult] = {
-    val buddySystemIdFilter = UserSystemIdFilter(buddySystemId)
-    val requesterIdFilter = UserIdFilter(studentId)
+  final def buddyResult(requesterId: String, requesteeSystemId: String, labwork: String): Future[BuddyResult] = {
+    val requesteeSystemIdFilter = UserSystemIdFilter(requesteeSystemId)
+    val requesterIdFilter = UserIdFilter(requesterId)
 
     val buddy = for {
-      buddy <- tableQuery.filter(buddySystemIdFilter.predicate)
+      requestee <- tableQuery.filter(requesteeSystemIdFilter.predicate)
       requester <- tableQuery.filter(requesterIdFilter.predicate)
-      sameDegree = buddy.enrollment === requester.enrollment
-    } yield (buddy, sameDegree.getOrElse(false))
+      sameDegree = requestee.enrollment === requester.enrollment
+    } yield (requestee, sameDegree.getOrElse(false))
 
     val friends = for {
       b <- buddy
       friends <- labworkApplicationService.friendsOf(b._1.id, UUID.fromString(labwork))
     } yield friends
 
-    db.run(for {
+    val action = for {
       b <- buddy.result
       f <- friends.result
     } yield {
-      val sameDegree = b.map(_._2).reduceOption(_ && _)
-      val friends = f.exists(_.id == UUID.fromString(studentId))
+      val optRequestee = b.headOption.map(_._1.toLwmModel)
+      val optSameDegree = b.map(_._2).reduceOption(_ && _)
+      val friends = f.exists(_.id == UUID.fromString(requesterId))
 
-      sameDegree.fold[BuddyResult](NotExisting) { sameDegree =>
-        if (sameDegree)
-          if (friends) Allowed else Almost
-        else
-          Denied
+      (optRequestee, optSameDegree) match {
+        case (Some(requestee), Some(sameDegree)) =>
+          if (sameDegree)
+            if (friends) Allowed(requestee) else Almost(requestee)
+          else
+            Denied(requestee)
+        case _ => NotExisting(requesteeSystemId)
       }
-    })
+    }
+
+    db.run(action)
   }
 
   protected def degreeService: DegreeDao

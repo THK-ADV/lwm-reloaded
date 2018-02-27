@@ -1,8 +1,9 @@
 package dao
 
+import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models._
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
@@ -16,6 +17,14 @@ case class LabworkApplicationApplicantFilter(value: String) extends TableFilter[
 
 case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[LabworkApplicationTable] {
   override def predicate = _.labwork === UUID.fromString(value)
+}
+
+case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+  override def predicate = _.lastModified >= new Timestamp(value.toLong)
+}
+
+case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+  override def predicate = _.lastModified <= new Timestamp(value.toLong)
 }
 
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
@@ -54,11 +63,11 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
         PostgresLabworkAtom(lab.label, lab.description, semester.toLwmModel, courseAtom, degree.toLwmModel, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.timestamp.dateTime, lapp.id)
+      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): DBIOAction[Seq[LabworkApplication], NoStream, Effect.Read] = collectDependencies(query) {
-    case (lapp, dependencies) => PostgresLabworkApplication(lapp.labwork, lapp.applicant, dependencies.flatMap(_._2.map(_.id)).toSet, lapp.timestamp.dateTime, lapp.id)
+    case (lapp, dependencies) => PostgresLabworkApplication(lapp.labwork, lapp.applicant, dependencies.flatMap(_._2.map(_.id)).toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   private def collectDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])

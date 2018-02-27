@@ -2,12 +2,11 @@ package dao
 
 import java.util.UUID
 
-import models.LwmDateTime._
 import models._
-import services.{ScheduleEntryGen, ScheduleGen}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store._
+import utils.LwmDateTime._
 
 import scala.concurrent.Future
 
@@ -16,7 +15,7 @@ case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[Schedul
 }
 
 case class ScheduleEntryCourseFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 case class ScheduleEntryGroupFilter(value: String) extends TableFilter[ScheduleEntryTable] {
@@ -28,23 +27,23 @@ case class ScheduleEntrySupervisorFilter(value: String) extends TableFilter[Sche
 }
 
 case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date === value.sqlDateFromMillis
+  override def predicate = _.onDate(value)
 }
 
 case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.start === value.sqlTimeFromMillis
+  override def predicate = _.onStart(value)
 }
 
 case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.end === value.sqlTimeFromMillis
+  override def predicate = _.onEnd(value)
 }
 
 case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date >= value.sqlDateFromMillis
+  override def predicate = _.since(value)
 }
 
 case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.date <= value.sqlDateFromMillis
+  override def predicate = _.until(value)
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
@@ -173,14 +172,13 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         .filterNot(_.labwork.id == labwork.id)
    */
 
-  def competitive(labwork: PostgresLabworkAtom): Future[Vector[ScheduleGen]] = {
-    val comps = for {
-      t <- tableQuery
-      l <- t.labworkFk if l.id =!= labwork.id
-      c <- l.courseFk if c.semesterIndex === labwork.course.semesterIndex
-      s <- l.semesterFk if s.id === labwork.semester.id
-      d <- l.degreeFk if d.id === labwork.degree.id
-    } yield t
+  def competitive(labwork: PostgresLabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
+    val comps = tableQuery
+      .flatMap(t => t.labworkFk.withFilter(l => l.id =!= labwork.id)
+      .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
+      .flatMap(_ => l.semesterFk.withFilter(s => s.id === labwork.semester.id)
+      .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
+      .map(_ => t)))))
 
     scheduleGen(comps)
   }

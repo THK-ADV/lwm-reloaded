@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.{PostgresSemester, SemesterDb}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._

@@ -30,4 +30,3 @@ sealed trait Attempt[+T] {
 
 case class Continue[+T](i: T) extends Attempt[T]
 case class Return(r: Result) extends Attempt[Nothing]
-

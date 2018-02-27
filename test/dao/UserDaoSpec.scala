@@ -93,8 +93,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       val degree = degrees.head
       val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
       val ldapUser2 = LdapUser("systemId2", "firstname2", "lastname2", "email2", User.StudentType, Some("regId"), Some(degree.label))
-      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, lastModified, None, ldapUser.id)
-      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), lastModified, None, ldapUser2.id)
+      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, lastModified, None)
+      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), lastModified, None)
 
       val (user, maybeAuth) = await(createOrUpdate(ldapUser))
       val (user2, maybeAuth2) = await(createOrUpdate(ldapUser2))
@@ -102,8 +102,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       val allAuths = await(authorityService.get())
       val maybeAuths = List(maybeAuth, maybeAuth2)
 
-      toDbUser(user) shouldBe dbVariation
-      toDbUser(user2) shouldBe dbVariation2
+      toDbUser(user) shouldBe dbVariation.copy(id = user.id)
+      toDbUser(user2) shouldBe dbVariation2.copy(id = user2.id)
       allUser.size shouldBe dbUser.size + 2 + 1
       maybeAuths.forall(_.isDefined) shouldBe true
       maybeAuths.map(_.get).forall(a => allAuths.contains(a)) shouldBe true
@@ -130,9 +130,10 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
     "deny buddy requests properly" in {
       val student = dbUser.find(u => u.status == User.StudentType && u.enrollment.contains(chosenDegree.id)).get
       val buddy = dbUser.find(u => u.status == User.StudentType && !u.enrollment.contains(chosenDegree.id)).get
+      val invalidBuddy = "not in system"
 
-      await(buddyResult(student.id.toString, "not in system", labwork.id.toString)) shouldBe NotExisting
-      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Denied
+      await(buddyResult(student.id.toString, invalidBuddy, labwork.id.toString)) shouldBe NotExisting(invalidBuddy)
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)).isInstanceOf[Denied] shouldBe true
     }
 
     "allow a buddy request" in {
@@ -148,7 +149,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       )
 
       await(labworkApplicationService.createMany(lapps)) should not be empty
-      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Allowed
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)).isInstanceOf[Allowed] shouldBe true
       await(labworkApplicationService.deleteMany(lapps.map(_.id))).count(_.isDefined) shouldBe lapps.size
     }
 
@@ -165,7 +166,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       )
 
       await(labworkApplicationService.createMany(lapps)) should not be empty
-      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)) shouldBe Almost
+      await(buddyResult(student.id.toString, buddy.systemId, labwork.id.toString)).isInstanceOf[Almost] shouldBe true
     }
   }
 

@@ -7,8 +7,7 @@ import slick.driver.PostgresDriver
 import slick.lifted.TableQuery
 import store.{ReportCardEvaluationTable, TableFilter}
 import slick.driver.PostgresDriver.api._
-
-import scala.concurrent.Future
+import utils.LwmDateTime.SqlTimestampConverter
 import scala.util.Try
 
 case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
@@ -53,10 +52,18 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
       q <- query
       l <- q.labworkFk
       s <- q.studentFk
-    } yield (q, l, s)
+      (cou, deg, sem) <- l.fullJoin
+      lec <- cou.joinLecturer
+    } yield (q, l, s, cou, deg, sem, lec)
 
     mandatory.result.map(_.map {
-      case (e, l, u) => PostgresReportCardEvaluationAtom(u.toLwmModel, l.toLwmModel, e.label, e.bool, e.int, e.id)
+      case (e, l, u, c, d, s, lec) =>
+        val labworkAtom = {
+          val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
+          PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
+        }
+
+        PostgresReportCardEvaluationAtom(u.toLwmModel, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
     })
   }
 

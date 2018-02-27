@@ -1,4 +1,7 @@
 nohup.out
+logs/
+application.home_IS_UNDEFINED/
+
 *.class
 *.log
 *.bat

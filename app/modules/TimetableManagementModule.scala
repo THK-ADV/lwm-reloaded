@@ -1,41 +1,17 @@
 package modules
 
-import controllers.{TimetableCRUDController, TimetableControllerPostgres}
+import controllers.TimetableControllerPostgres
 import dao.{TimetableDao, TimetableDaoImpl}
-import services.{TimetableService, TimetableServiceLike}
-import utils.LwmApplication
 
-trait TimetableServiceManagementModule {
-  self: LwmApplication with BlacklistServiceManagementModule =>
+trait TimetableDaoManagementModule {
+  self: DatabaseModule =>
 
-  def timetableService: TimetableServiceLike
-}
-
-trait DefaultTimetableServiceManagementModule extends TimetableServiceManagementModule {
-  self: LwmApplication with BlacklistServiceManagementModule =>
-
-  lazy val timetableService: TimetableServiceLike = new TimetableService(blacklistService)
-}
-
-trait TimetableManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
-
-  def timetableManagementController: TimetableCRUDController
-}
-
-trait DefaultTimetableManagementModuleImpl extends TimetableManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
-
-  lazy val timetableManagementController: TimetableCRUDController = new TimetableCRUDController(repository, sessionService, namespace, roleService)
-}
-
-// POSTGRES
-
-trait TimetableDaoManagementModule { self: DatabaseModule =>
   def timetableDao: TimetableDao
 }
 
-trait DefaultTimetableDaoModule extends TimetableDaoManagementModule { self: DatabaseModule =>
+trait DefaultTimetableDaoModule extends TimetableDaoManagementModule {
+  self: DatabaseModule =>
+
   override lazy val timetableDao: TimetableDao = new TimetableDaoImpl(db)
 }
 

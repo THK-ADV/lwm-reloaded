@@ -1,26 +1,17 @@
 package modules
 
-import controllers.{DegreeCRUDController, DegreeControllerPostgres}
+import controllers.DegreeControllerPostgres
 import dao.{DegreeDao, DegreeDaoImpl}
 
-trait DegreeManagementModule {
-  self: SemanticRepositoryModule with SecurityManagementModule with SessionRepositoryModule =>
-  def degreeManagementController: DegreeCRUDController
-}
+trait DegreeDaoModule {
+  self: DatabaseModule =>
 
-trait DefaultDegreeManagementModuleImpl extends DegreeManagementModule {
-  self: SemanticRepositoryModule with BaseNamespace with SecurityManagementModule with SessionRepositoryModule =>
-
-  lazy val degreeManagementController: DegreeCRUDController = new DegreeCRUDController(repository, sessionService, namespace, roleService)
-}
-
-// POSTGRES
-
-trait DegreeDaoModule { self: DatabaseModule =>
   def degreeDao: DegreeDao
 }
 
-trait DefaultDegreeDaoModule extends DegreeDaoModule { self: DatabaseModule =>
+trait DefaultDegreeDaoModule extends DegreeDaoModule {
+  self: DatabaseModule =>
+
   override lazy val degreeDao = new DegreeDaoImpl(db)
 }
 

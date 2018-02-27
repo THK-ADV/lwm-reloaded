@@ -4,7 +4,6 @@ import java.util.UUID
 
 import dao._
 import models.Role._
-import models.User.UserProtocol
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 import services._
@@ -22,63 +21,19 @@ object UserControllerPostgres {
   lazy val lastnameAttribute = "lastname"
 }
 
-final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionService: SessionHandlingService, val ldapService: LdapService, val abstractDao: UserDao)
+final class UserControllerPostgres(val authorityDao: AuthorityDao,
+                                   val sessionService: SessionHandlingService,
+                                   val ldapService: LdapService,
+                                   val abstractDao: UserDao)
   extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override implicit val mimeType = LwmMimeType.userV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.userV1Json
 
-  override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
-    import models.User.writes
+  override protected implicit val writes: Writes[User] = User.writes
 
-    (for {
-      userProtocol <- Future.fromTry(parse[UserProtocol](request))
-      ldapUser <- ldapService.user2(userProtocol.systemId)
-      userWithAuth <- abstractDao.createOrUpdate(ldapUser)
-    } yield userWithAuth).jsonResult { userWithAuth =>
-      val (user, maybeAuth) = userWithAuth
-      val userJson = Json.toJson(user)
-
-      maybeAuth.fold {
-        Ok(userJson)
-      } { auth =>
-        Created(Json.obj(
-          "user" -> userJson,
-          "authority" -> Json.toJson(auth)
-        ))
-      }
-    }
-  }
-
-  def buddy(systemId: String, labwork: String) = contextFrom(Get) asyncAction { request =>
-    val requesterId = request.session(SessionController.userId)
-
-    abstractDao.buddyResult(requesterId, systemId, labwork) jsonResult { buddyResult =>
-      buddyResult match {
-        case Allowed => Ok(Json.obj(
-          "status" -> "OK",
-          "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId hat Dich ebenfalls referenziert."
-        ))
-        case Almost => Ok(Json.obj(
-          "status" -> "OK",
-          "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
-        ))
-        case Denied => BadRequest(Json.obj(
-          "status" -> "KO",
-          "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId und Du sind nicht im selben Studiengang."
-        ))
-        case NotExisting => BadRequest(Json.obj(
-          "status" -> "KO",
-          "type" -> buddyResult.toString,
-          "message" -> s"Dein Partner $systemId hat sich noch nicht im Praktikumstool angemeldet."
-        ))
-      }
-    }
-  }
+  override protected implicit val reads: Reads[UserProtocol] = UserProtocol.reads
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student, Employee, CourseAssistant))
@@ -86,10 +41,6 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
     case Create => PartialSecureBlock(List(Admin))
     case _ => PartialSecureBlock(List(God))
   }
-
-  override protected implicit val writes: Writes[User] = User.writes
-
-  override protected implicit val reads: Reads[UserProtocol] = User.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
     import controllers.UserControllerPostgres._
@@ -105,4 +56,57 @@ final class UserControllerPostgres(val authorityDao: AuthorityDao, val sessionSe
   }
 
   override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): DbUser = ???
+
+  override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
+    import models.User.writes
+
+    (for {
+      userProtocol <- Future.fromTry(parse[UserProtocol](request))
+      ldapUser <- ldapService.user(userProtocol.systemId)
+      userWithAuth <- abstractDao.createOrUpdate(ldapUser)
+    } yield userWithAuth).jsonResult { userWithAuth =>
+      val (user, maybeAuth) = userWithAuth
+      val userJson = Json.toJson(user)
+
+      maybeAuth.fold {
+        Ok(userJson)
+      } { auth =>
+        Created(Json.obj(
+          "user" -> userJson,
+          "authority" -> Json.toJson(auth)(PostgresAuthorityAtom.writes)
+        ))
+      }
+    }
+  }
+
+  def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
+    abstractDao.buddyResult(student, buddy, labwork).jsonResult { buddyResult =>
+      buddyResult match {
+        case Allowed(b) => Ok(Json.obj(
+          "status" -> "OK",
+          "type" -> buddyResult.toString,
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
+        ))
+        case Almost(b) => Ok(Json.obj(
+          "status" -> "OK",
+          "type" -> buddyResult.toString,
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
+        ))
+        case Denied(b) => Ok(Json.obj(
+          "status" -> "KO",
+          "type" -> buddyResult.toString,
+          "buddy" -> Json.toJson(b),
+          "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
+        ))
+        case NotExisting(b) => Ok(Json.obj(
+          "status" -> "KO",
+          "type" -> buddyResult.toString,
+          "buddy" -> None,
+          "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
+        ))
+      }
+    }
+  }
 }

@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.{ContentTyped, SessionChecking}
 import models.{InvalidSession, Login, ValidSession}
 import play.api.libs.json.{JsError, Json}
 import play.api.mvc._
@@ -13,15 +14,15 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 object SessionController {
-  val sessionId = "session-id"
-  val userId = "user-id"
+  lazy val sessionId = "session-id"
+  lazy val userId = "user-id"
 }
 
 class SessionController(val sessionService: SessionHandlingService) extends Controller with SessionChecking with ContentTyped {
 
-  implicit override val mimeType: LwmMimeType = LwmMimeType.loginV1Json
-
   import scala.concurrent.ExecutionContext.Implicits.global
+
+  implicit override val mimeType: LwmMimeType = LwmMimeType.loginV1Json
 
   def login = ContentTypedAction.async { implicit request =>
     request.body.validate[Login].fold(

@@ -3,7 +3,6 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Permissions.{god, reportCardEntry}
 import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -31,30 +30,35 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
                                               val authorityDao: AuthorityDao,
                                               val abstractDao: ReportCardEntryDao,
                                               val scheduleEntryDao: ScheduleEntryDao,
-                                              val assignmentPlanService: AssignmentPlanDao
-                                             ) extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
-  import controllers.ReportCardEntryControllerPostgres._
+                                              val assignmentPlanService: AssignmentPlanDao)
+  extends AbstractCRUDControllerPostgres[PostgresReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
 
+  import controllers.ReportCardEntryControllerPostgres._
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[ReportCardEntry] = ReportCardEntry.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardEntryProtocol] = PostgresReportCardEntry.reads
+  override protected implicit val reads: Reads[PostgresReportCardEntryProtocol] = PostgresReportCardEntryProtocol.reads
+
+  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
-    (appendTo, (attribute, value)) match { // TODO CONTINUE
+    (appendTo, (attribute, value)) match {
       case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
       case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
       case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
       case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
       case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
+      case (list, (`dateAttribute`, date)) => list.map(_.+:(ReportCardEntryDateFilter(date)))
+      case (list, (`startAttribute`, start)) => list.map(_.+:(ReportCardEntryStartFilter(start)))
+      case (list, (`endAttribute`, end)) => list.map(_.+:(ReportCardEntryEndFilter(end)))
+      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ReportCardEntrySinceFilter(since)))
+      case (list, (`untilAttribute`, until)) => list.map(_.+:(ReportCardEntryUntilFilter(until)))
       case _ => Failure(new Throwable("Unknown attribute"))
     }
   }
 
   override protected def toDbModel(protocol: PostgresReportCardEntryProtocol, existingId: Option[UUID]): ReportCardEntryDb = ???
-
-  override implicit val mimeType = LwmMimeType.reportCardEntryV1Json
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student, CourseAssistant))
@@ -73,7 +77,7 @@ final class ReportCardEntryControllerPostgres(val sessionService: SessionHandlin
   }
 
   def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(scheduleEntryAttribute -> Seq(course))) // TODO don't know if we can make something like this
+    all(NonSecureBlock)(request.append(scheduleEntryAttribute -> Seq(scheduleEntry)))
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>

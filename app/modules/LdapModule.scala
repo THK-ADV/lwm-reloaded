@@ -16,5 +16,5 @@ trait LdapModuleImpl extends LdapModule {
   val username = lwmConfig.getString("lwm.ldap.username")
   val password = lwmConfig.getString("lwm.ldap.password")
 
-  override def ldapService = new LdapServiceImpl(bindHost, bindPort, dn, username, password)
+  override lazy val ldapService = new LdapServiceImpl(bindHost, bindPort, dn, username, password)
 }

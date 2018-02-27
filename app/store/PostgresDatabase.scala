@@ -6,6 +6,7 @@ import models._
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep
 import java.sql.{Date, Time, Timestamp}
+import utils.LwmDateTime._
 
 import org.joda.time.LocalDate
 
@@ -28,6 +29,8 @@ trait LabworkIdTable { self: Table[_] =>
   def hasCourse(course: String) = labworkFk.map(_.course).filter(_ === UUID.fromString(course)).exists
 
   def isCurrentSemester = labworkFk.flatMap(_.semesterFk).filter(_.current).exists
+
+  def memberOfCourse(course: String) = labworkFk.map(_.course).filter(_ === UUID.fromString(course)).exists
 }
 
 trait RoomIdTable { self: Table[_] =>
@@ -63,6 +66,12 @@ trait DateStartEndTable { self: Table[_] =>
   def date = column[Date]("DATE")
   def start = column[Time]("START")
   def end = column[Time]("END")
+
+  def onDate(millis: String) = date === millis.sqlDateFromMillis
+  def onStart(millis: String) = start === millis.sqlTimeFromMillis
+  def onEnd(millis: String) = end === millis.sqlTimeFromMillis
+  def since(millis: String) = date >= millis.sqlDateFromMillis
+  def until(millis: String) = date <= millis.sqlDateFromMillis
 }
 
 trait GroupIdTable { self: Table[_] =>
@@ -118,13 +127,14 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
 
   override def * = (user, role, course, lastModified, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)
 }
+
 class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with UniqueTable with LabelTable with AbbreviationTable {
   def start = column[Date]("START")
   def end = column[Date]("END")
   def examStart = column[Date]("EXAM_START")
 
   def current: Rep[Boolean] = {
-    import models.LwmDateTime.LocalDateConverter
+    import utils.LwmDateTime.LocalDateConverter
     val now = LocalDate.now.sqlDate
 
     start <= now && end >= now
@@ -172,17 +182,16 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
 
 class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable {
   def applicant = column[UUID]("APPLICANT")
-  def timestamp = column[Timestamp]("TIMESTAMP")
 
-  override def * = (labwork, applicant, timestamp, lastModified, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (labwork, applicant, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def mapRow: ((UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
-    case (labwork, applicant, timestamp, lastModified, invalidated, id) =>
-      LabworkApplicationDb(labwork, applicant, Set.empty, timestamp, lastModified, invalidated, id)
+  def mapRow: ((UUID, UUID, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
+    case (labwork, applicant, lastModified, invalidated, id) =>
+      LabworkApplicationDb(labwork, applicant, Set.empty, lastModified, invalidated, id)
   }
 
-  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Timestamp, Option[Timestamp], UUID)] = { lapp =>
-    Option((lapp.labwork, lapp.applicant, lapp.timestamp, lapp.lastModified, lapp.invalidated, lapp.id))
+  def unmapRow: (LabworkApplicationDb) => Option[(UUID, UUID, Timestamp, Option[Timestamp], UUID)] = { lapp =>
+    Option((lapp.labwork, lapp.applicant, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
   def applicantFk = foreignKey("STUDENTS_fkey", applicant, TableQuery[UserTable])(_.id)

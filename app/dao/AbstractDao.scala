@@ -3,7 +3,7 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.LwmDateTime._
+import utils.LwmDateTime._
 import models.{UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.dbio.Effect
@@ -14,6 +14,7 @@ import slick.profile.FixedSqlAction
 import store.{TableFilter, UniqueTable}
 
 import scala.concurrent.Future
+import scala.util.Try
 
 trait DatabaseExpander[DbModel <: UniqueDbEntity] {
   def expandCreationOf[E <: Effect](entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write with E]
@@ -79,6 +80,11 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
         e <- expander.expandCreationOf(entities)
       } yield e).transactionally)
     }
+  }
+
+  final def createManyPartial(entities: List[DbModel]): Future[List[Try[DbModel]]] = {
+    import utils.Ops.FutureOps
+    entities.map(create).asTrys
   }
 
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities

@@ -123,7 +123,10 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
-    filterBy(List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))).filter(_.course === entity.course)
+    filterBy(List(
+      AuthorityUserFilter(entity.user.toString),
+      AuthorityRoleFilter(entity.role.toString))
+    ).filter(_.course === entity.course)
   }
 
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): DBIOAction[Seq[PostgresAuthorityAtom], NoStream, Effect.Read] = {

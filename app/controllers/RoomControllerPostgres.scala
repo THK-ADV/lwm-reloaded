@@ -16,10 +16,14 @@ object RoomControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class RoomControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: RoomDao) extends
-  AbstractCRUDControllerPostgres[PostgresRoomProtocol, RoomTable, RoomDb, PostgresRoom] {
+final class RoomControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: RoomDao)
+  extends AbstractCRUDControllerPostgres[PostgresRoomProtocol, RoomTable, RoomDb, PostgresRoom] {
 
-  override implicit val mimeType = LwmMimeType.roomV1Json
+  override implicit val mimeType: LwmMimeType = LwmMimeType.roomV1Json
+
+  override protected implicit val writes: Writes[PostgresRoom] = PostgresRoom.writes
+
+  override protected implicit val reads: Reads[PostgresRoomProtocol] = PostgresRoomProtocol.reads
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(Student, Employee))
@@ -27,9 +31,6 @@ final class RoomControllerPostgres(val sessionService: SessionHandlingService, v
     case _ => PartialSecureBlock(List(Admin))
   }
 
-  override protected implicit val writes: Writes[PostgresRoom] = PostgresRoom.writes
-
-  override protected implicit val reads: Reads[PostgresRoomProtocol] = PostgresRoom.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
     import controllers.RoomControllerPostgres._

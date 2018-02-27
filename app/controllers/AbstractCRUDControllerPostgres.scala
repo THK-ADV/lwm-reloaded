@@ -2,10 +2,10 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.{AttributeFilter, PostgresResult, SecureControllerContext2, Secured2}
+import controllers.helper._
 import dao.AbstractDao
 import models.{UniqueDbEntity, UniqueEntity}
-import play.api.libs.json.{JsError, JsValue, Reads, Writes}
+import play.api.libs.json._
 import play.api.mvc._
 import slick.driver.PostgresDriver.api._
 import store.{TableFilter, UniqueTable}
@@ -15,15 +15,16 @@ import scala.util.{Failure, Success, Try}
 
 trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends Controller
-    with Secured2
+    with Secured
     with SessionChecking
-    with SecureControllerContext2
+    with SecureControllerContext
     with ContentTyped
     with PostgresResult
     with AttributeFilter
-    with RequestRebasePostgres {
+    with RequestRebase {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.Ops.unwrapTrys
 
   protected implicit def writes: Writes[LwmModel]
   protected implicit def reads: Reads[Protocol]
@@ -34,6 +35,8 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
+
+  protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Seq[LwmModel] = dbModels.map(_.toLwmModel.asInstanceOf[LwmModel]).toSeq
 
   final protected def parse[A](request: Request[JsValue])(implicit reads: Reads[A]): Try[A] = {
     request.body.validate[A].fold[Try[A]](
@@ -55,12 +58,13 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
     (for {
       protocols <- Future.fromTry(parseArray[Protocol](request))
       dbModels = protocols.map(p => toDbModel(p, None))
-      created <- abstractDao.createMany(dbModels)
+      partialCreated <- abstractDao.createManyPartial(dbModels)
+      (succeeded, failed) = unwrapTrys(partialCreated)
       lwmModel <- if (atomic)
-        abstractDao.getMany(created.map(_.id).toList, atomic)
+        abstractDao.getMany(succeeded.map(_.id), atomic)
       else
-        Future.successful(created.map(_.toLwmModel.asInstanceOf[LwmModel]))
-    } yield lwmModel).jsonResult
+        Future.successful(toLwmModel(succeeded))
+    } yield (toLwmModel(dbModels), lwmModel, failed)).jsonResult
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)): Action[JsValue] = secureContext asyncContentTypedAction { request =>
@@ -83,7 +87,7 @@ trait AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTa
   }
 
   protected def delete0(uuid: UUID): Future[Result] = {
-    import models.LwmDateTime.SqlTimestampConverter
+    import utils.LwmDateTime.SqlTimestampConverter
 
     abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
   }

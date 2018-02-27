@@ -2,11 +2,11 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.{AttributeFilter, PostgresResult, SecureControllerContext2, Secured2}
+import controllers.helper._
 import dao._
 import models.Role.{Admin, CourseManager}
 import models._
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc.Controller
 import services.SessionHandlingService
 import utils.LwmMimeType
@@ -15,19 +15,23 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
                                  val sessionService: SessionHandlingService,
                                  val lwmServiceDao: LwmServiceDao)
   extends Controller
-    with Secured2
+    with Secured
     with SessionChecking
-    with SecureControllerContext2
+    with SecureControllerContext
     with ContentTyped
     with PostgresResult
     with AttributeFilter
-    with RequestRebasePostgres {
+    with RequestRebase {
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.lwmServiceV1Json
 
   private def toJson(membership: GroupMembership) = Json.obj("student" -> membership.student, "group" -> membership.group)
 
-  private def toJson(cards: Seq[ReportCardEntryDb]) = Json.toJson(cards.map(_.toLwmModel))
+  private def toJson(cards: Seq[ReportCardEntryDb]) = {
+    implicit val seqWrites: Writes[Seq[PostgresReportCardEntry]] = Writes.seq[PostgresReportCardEntry](PostgresReportCardEntry.writes)
+
+    Json.toJson(cards.map(_.toLwmModel))
+  }
 
   def removeStudentFromLabwork(course: String, labwork: String, student: String) = ??? // TODO remove lapp, group membership and reportCards
 
