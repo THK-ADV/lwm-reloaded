@@ -18,7 +18,7 @@ trait LwmServiceDao {
   final def addStudentToLabwork(student: UUID, labwork: UUID, destGroup: UUID) = {
     val action = for {
       lapp <- labworkApplicationDao.createQuery(LabworkApplicationDb(labwork, student, Set.empty))
-      srcStudent <- groupDao.randomStudentIn(destGroup)
+      srcStudent <- groupDao.firstStudentIn(destGroup)
       membership <- groupDao.add(student, destGroup)
       templates <- reportCardEntryDao.reportCardsFrom(srcStudent, labwork)
       copied = templates.map { e =>
@@ -33,9 +33,9 @@ trait LwmServiceDao {
     db.run(action.transactionally)
   }
 
-  final def swapStudentsInGroup(student: UUID, labwork: UUID, destGroup: UUID) = {
+  final def moveStudentToGroup(student: UUID, labwork: UUID, destGroup: UUID) = {
     val action = for {
-      destStudent <- groupDao.randomStudentIn(destGroup)
+      destStudent <- groupDao.firstStudentIn(destGroup)
       srcGroup <- groupDao.groupOf(student, labwork)
       membership <- groupDao.swap(student, srcGroup, destGroup)
 

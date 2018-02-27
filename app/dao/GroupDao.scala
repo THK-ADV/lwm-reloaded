@@ -35,7 +35,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, Group] {
     groupMembershipQuery.filter(g => g.group === group && g.student === student).delete
   }
 
-  def randomStudentIn(group: UUID) = {
+  def firstStudentIn(group: UUID) = {
     groupMembershipQuery.filter(_.group === group).map(_.student).result.flatMap { students =>
       if (students.nonEmpty) DBIO.successful(students.head) else DBIO.failed(new Throwable(s"no student found in group $group"))
     }

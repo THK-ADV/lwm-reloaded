@@ -73,7 +73,7 @@ final class LwmServiceDaoSpec extends PostgresDbSpec with LwmServiceDao {
       val oldCardsDb = reportCardEntriesFromDb(student.id, labwork.id)
       val oldGroupDb = groupFromDb(student.id, labwork.id)
 
-      val (membership, oldCards, newCards) = await(swapStudentsInGroup(student.id, labwork.id, group.id))
+      val (membership, oldCards, newCards) = await(moveStudentToGroup(student.id, labwork.id, group.id))
 
       membership.student shouldBe student.id
       membership.group shouldBe group.id

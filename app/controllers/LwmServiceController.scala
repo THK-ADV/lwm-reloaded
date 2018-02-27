@@ -33,9 +33,10 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
     Json.toJson(cards.map(_.toLwmModel))
   }
 
-  def removeStudentFromLabwork(course: String, labwork: String, student: String) = ??? // TODO remove lapp, group membership and reportCards
+  def removeStudentFromLabwork(course: String, labwork: String, group: String, student: String) = ??? // TODO remove lapp, group membership and reportCards
 
-  def addStudentToLabwork(course: String, labwork: String, student: String, group: String) = restrictedContext(course)(Create) asyncContentTypedAction { _ =>
+  // create lapp, add to group, copy reportCardEntries from first member in group
+  def addStudentToLabwork(course: String, labwork: String, group: String, student: String) = restrictedContext(course)(Create) asyncContentTypedAction { _ =>
     lwmServiceDao.addStudentToLabwork(UUID.fromString(student), UUID.fromString(labwork), UUID.fromString(group)).jsonResult { res =>
       val (lapp, membership, cards) = res
 
@@ -52,8 +53,8 @@ final class LwmServiceController(val authorityDao: AuthorityDao,
 
   def removeReportCardEntries(course: String, labwork: String, preview: String) = ???
 
-  def swapStudentsInGroup(course: String, labwork: String, student: String, group: String) = restrictedContext(course)(Update) asyncContentTypedAction { _ =>
-    lwmServiceDao.swapStudentsInGroup(UUID.fromString(student), UUID.fromString(labwork), UUID.fromString(group)).jsonResult { res =>
+  def moveStudentToGroup(course: String, labwork: String, group: String, student: String) = restrictedContext(course)(Update) asyncContentTypedAction { _ =>
+    lwmServiceDao.moveStudentToGroup(UUID.fromString(student), UUID.fromString(labwork), UUID.fromString(group)).jsonResult { res =>
       val (membership, oldCards, updatedCards) = res
 
       Ok(Json.obj(

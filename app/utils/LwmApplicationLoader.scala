@@ -69,7 +69,9 @@ with UserManagementModulePostgres
 with UserDaoModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
-with LdapSyncModule {
+with LdapSyncModule
+with LwmServiceDaoModule
+with LwmServiceControllerModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -95,6 +97,7 @@ with LdapSyncModule {
     reportCardEvaluationManagementController2,
     assignmentPlanManagementControllerPostgres,
     userControllerPostgres,
+    lwmServiceController,
     sessionController,
     apiDataController,
     assetsController
@@ -154,3 +157,5 @@ with DefaultReportCardEvaluationDaoModule
 with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl
 with DefaultLdapSyncService
+with DefaultLwmServiceDaoModule
+with DefaultLwmServiceControllerModule

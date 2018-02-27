@@ -139,6 +139,11 @@ GET           /api2/users                                                       
 GET           /api2/labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserControllerPostgres.buddy(labwork, user, buddy)
 GET           /api2/users/:id                                                       controllers.UserControllerPostgres.get(id)
 
+# Lwm Service
+POST          /api2/courses/:c/labworks/:l/groups/:g/students/:s                    controllers.LwmServiceController.addStudentToLabwork(c, l, g, s)
+PUT           /api2/courses/:c/labworks/:l/groups/:g/students/:s                    controllers.LwmServiceController.moveStudentToGroup(c, l, g, s)
+GET           /api2/courses/:c/labworkApplications/duplicates                       controllers.LwmServiceController.multipleLabworkApplications(c)
+
 # Sessions
 POST          /sessions                                                             controllers.SessionController.login
 GET           /sessions                                                             controllers.SessionController.valid
