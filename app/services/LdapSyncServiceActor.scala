@@ -1,36 +1,16 @@
 package services
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import dao.UserDao
 import services.LdapSyncServiceActor.SyncRequest
-import us.theatr.akka.quartz.{AddCronSchedule, QuartzActor}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
-trait LdapSyncService {
-
-  def cronExpression: String
-
-  def ldapService: LdapService
-
-  def userDao: UserDao
-}
-
-final class ActorBasedLdapSyncService(val system: ActorSystem, val cronExpression: String, val ldapService: LdapService, val userDao: UserDao) extends LdapSyncService {
-
-  val quartzActor = system.actorOf(Props[QuartzActor])
-  val destinationActorRef = system.actorOf(LdapSyncServiceActor.props(ldapService, userDao))
-
-  quartzActor ! AddCronSchedule(destinationActorRef, cronExpression, SyncRequest)
-}
-
 object LdapSyncServiceActor {
-
   def props(ldapService: LdapService, userDao: UserDao) = Props(new LdapSyncServiceActor(ldapService, userDao))
 
   case object SyncRequest
-
 }
 
 final class LdapSyncServiceActor(val ldapService: LdapService, val userDao: UserDao) extends Actor with ActorLogging {

@@ -69,7 +69,7 @@ with UserManagementModulePostgres
 with UserDaoModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
-with LdapSyncModule {
+with CronServiceModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -153,4 +153,4 @@ with DefaultUserDaoModule
 with DefaultReportCardEvaluationDaoModule
 with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl
-with DefaultLdapSyncService
+with DefaultCronServiceModule
