@@ -14,7 +14,10 @@ trait CronServiceModule {
 }
 
 trait DefaultCronServiceModule extends CronServiceModule {
-  self: AkkaActorSystemModule with ConfigurationModule with LdapModule with UserDaoModule with CourseDaoModule with LabworkDaoModule =>
+  self: AkkaActorSystemModule with ConfigurationModule with LdapModule with UserDaoModule with AssignmentPlanDaoModule with CourseDaoModule
+    with DegreeDaoModule with LabworkApplicationDaoModule with LabworkDaoModule with RoleDaoModule with RoomDaoModule with SemesterDaoModule
+    with TimetableDaoManagementModule with BlacklistDaoManagementModule with ReportCardEntryDaoModule with AuthorityDaoModule with ScheduleEntryDaoModule
+    with GroupDaoManagementModule with SessionRepositoryModule with ReportCardEvaluationDaoModule =>
 
   val cronService = {
     val backupCron = lwmConfig.getString("lwm.backup.path")
@@ -24,7 +27,10 @@ trait DefaultCronServiceModule extends CronServiceModule {
       .map { f =>
         CronJob(
           lwmConfig.getString("lwm.backup.cron").filter(_.nonEmpty) getOrElse "0 0 4 1/1 * ? *", // every day at 04:00 am
-          system.actorOf(BackupServiceActor.props(new PSQLBackupService(courseDao, labworkDao), f)),
+          system.actorOf(BackupServiceActor.props(
+            new PSQLBackupService(userDao, assignmentPlanDao, courseDao, degreeDao, labworkApplicationDao,
+              labworkDao, roleDao, roomDao, semesterDao, timetableDao, blacklistDao, reportCardEntryDao,
+              authorityDao, scheduleEntryDao, groupDao, reportCardEvaluationDao), f)),
           BackupServiceActor.BackupRequestAsync
         )
       }

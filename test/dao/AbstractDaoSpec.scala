@@ -30,6 +30,7 @@ object AbstractDaoSpec {
   lazy val maxScheduleEntries = 100
   lazy val maxGroups = 20
   lazy val maxEvaluations = 100
+  lazy val maxLabworkApplications = 20
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -194,6 +195,23 @@ object AbstractDaoSpec {
     (0 until numberOfEntries).map(i => ReportCardEvaluationDb(takeOneOf(students).id, labwork, i.toString, nextBoolean, nextInt(10)))
   }.toList
 
+  @scala.annotation.tailrec
+  def randomStudent(avoiding: UUID, applicants: List[DbUser]): UUID = {
+    if (applicants.forall(_ == avoiding))
+      avoiding
+    else {
+      val app = takeOneOf(applicants).id
+      if (app == avoiding) randomStudent(avoiding, applicants) else app
+    }
+  }
+
+  // does not care about business rules such as only one applicant per labwork
+  def populateLabworkApplications(amount: Int, withFriends: Boolean)(labworks: List[LabworkDb], applicants: List[DbUser]) = (0 until amount).map { _ =>
+    val applicant = takeOneOf(applicants).id
+    val friends = if (withFriends) Set(randomStudent(applicant, applicants)) else Set.empty[UUID]
+    LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
+  }.toList
+
   lazy val semesters = populateSemester(maxSemesters)
 
   lazy val employees = populateEmployees(maxEmployees)
@@ -235,6 +253,8 @@ object AbstractDaoSpec {
   lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
 
   lazy val reportCardEvaluations = populateReportCardEvaluations(maxEvaluations, 4)(students, labworks)
+
+  lazy val labworkApplications = populateLabworkApplications(maxLabworkApplications, withFriends = true)(labworks, students)
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
