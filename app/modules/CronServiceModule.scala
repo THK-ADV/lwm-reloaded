@@ -5,7 +5,7 @@ import java.io.File
 import akka.actor.ActorRef
 import services._
 import services.backup.{BackupServiceActor, PSQLBackupService}
-import services.blacklist.{BlacklistServiceActor, BlacklistYear}
+import services.blacklist.BlacklistServiceActor
 import services.ldap.LdapSyncServiceActor
 
 import scala.util.Try
@@ -46,14 +46,24 @@ trait DefaultCronServiceModule extends CronServiceModule {
     val blacklistCron = for {
       year <- config("lwm.blacklist.year")
       expression <- config("lwm.blacklist.cron")
-      blacklistYear <- BlacklistYear(year)
+      describableYear <- NaturalDescribableYear(year)
     } yield CronJob(
       expression,
-      system.actorOf(BlacklistServiceActor.props(blacklistService, blacklistDao, blacklistYear)),
+      system.actorOf(BlacklistServiceActor.props(blacklistService, blacklistDao, describableYear)),
       BlacklistServiceActor.BlacklistDownloadRequest
     )
 
-    val cronJobs = List(backupCron, syncCron, blacklistCron).filter(_.isDefined).map(_.get)
+    val semesterCron = for {
+      year <- config("lwm.semester.year")
+      expression <- config("lwm.semester.cron")
+      describableYear <- NaturalDescribableYear(year)
+    } yield CronJob(
+      expression,
+      system.actorOf(SemesterCreationActor.props(semesterDao, describableYear)),
+      SemesterCreationActor.CreationRequest
+    )
+
+    val cronJobs = List(backupCron, syncCron, blacklistCron, semesterCron).filter(_.isDefined).map(_.get)
     new ActorBasedCronService(system, cronJobs)
   }
 

@@ -39,6 +39,7 @@
     <logger name="services.ldap.LdapSyncServiceActor" level="INFO"/>
     <logger name="services.backup.BackupServiceActor" level="INFO"/>
     <logger name="services.blacklist.BlacklistServiceActor" level="INFO"/>
+    <logger name="services.SemesterCreationActor" level="INFO"/>
 
     <root level="WARN">
         <appender-ref ref="FILE_DEBUG"/>
