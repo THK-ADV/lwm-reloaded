@@ -11,7 +11,7 @@ trait CronService {
 
 final class ActorBasedCronService(val system: ActorSystem, val cronJobs: List[CronJob]) extends CronService {
 
-  val quartzActor = system.actorOf(Props[QuartzActor])
+  lazy val quartzActor = system.actorOf(Props[QuartzActor])
 
   cronJobs.foreach { job =>
     quartzActor ! AddCronSchedule(job.actorRef, job.expression, job.message)

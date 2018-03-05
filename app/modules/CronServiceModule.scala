@@ -20,27 +20,34 @@ trait DefaultCronServiceModule extends CronServiceModule {
     with GroupDaoManagementModule with SessionRepositoryModule with ReportCardEvaluationDaoModule =>
 
   val cronService = {
-    val backupCron = lwmConfig.getString("lwm.backup.path")
-      .filter(_.nonEmpty)
-      .flatMap(p => Try(new File(p)).toOption)
-      .map { f => f.mkdirs; f }
-      .map { f =>
-        CronJob(
-          lwmConfig.getString("lwm.backup.cron").filter(_.nonEmpty) getOrElse "0 0 4 1/1 * ? *", // every day at 04:00 am
+    val backupCron = (lwmConfig.getString("lwm.backup.path"), lwmConfig.getString("lwm.backup.cron")) match {
+      case (Some(filePath), Some(cronExpression)) if filePath.nonEmpty && cronExpression.nonEmpty =>
+        val cronJob = for {
+          file <- Try(new File(filePath))
+          created <- Try(file.mkdirs) if created
+        } yield CronJob(
+          cronExpression,
           system.actorOf(BackupServiceActor.props(
             new PSQLBackupService(userDao, assignmentPlanDao, courseDao, degreeDao, labworkApplicationDao,
               labworkDao, roleDao, roomDao, semesterDao, timetableDao, blacklistDao, reportCardEntryDao,
-              authorityDao, scheduleEntryDao, groupDao, reportCardEvaluationDao), f)),
+              authorityDao, scheduleEntryDao, groupDao, reportCardEvaluationDao), file)),
           BackupServiceActor.BackupRequestAsync
         )
-      }
 
-    val syncCron = CronJob(
-      lwmConfig.getString("lwm.ldap.cron").filter(_.nonEmpty) getOrElse "0 0 3 1/1 * ? *", // every day at 03:00 am
-      system.actorOf(LdapSyncServiceActor.props(ldapService, userDao)),
-      LdapSyncServiceActor.SyncRequest
-    )
+        cronJob.toOption
+      case _ => None
+    }
 
-    new ActorBasedCronService(system, backupCron.fold(List(syncCron))(cj => List(syncCron, cj)))
+    val syncCron = lwmConfig.getString("lwm.ldap.cron").filter(_.nonEmpty).map { cronExpression =>
+      CronJob(
+        cronExpression,
+        system.actorOf(LdapSyncServiceActor.props(ldapService, userDao)),
+        LdapSyncServiceActor.SyncRequest
+      )
+    }
+
+    val cronJobs = List(backupCron, syncCron).filter(_.isDefined).map(_.get)
+
+    new ActorBasedCronService(system, cronJobs)
   }
 }
