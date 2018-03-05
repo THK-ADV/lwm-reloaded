@@ -69,7 +69,7 @@ final class BackupServiceActor[T](private val backupService: BackupService[T], p
         log.info(s"successfully backup'ed ${files.size} files")
         success(files)
       case Failure(error) =>
-        log.error(s"failed backup-request with exception: ${error.getLocalizedMessage}")
+        log.error(s"failed backup request with exception: ${error.getLocalizedMessage}")
         failure(error)
     }
   }
