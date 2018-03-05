@@ -4,6 +4,7 @@ import java.io.File
 
 import services._
 import services.backup.{BackupServiceActor, PSQLBackupService}
+import services.ldap.LdapSyncServiceActor
 
 import scala.util.Try
 

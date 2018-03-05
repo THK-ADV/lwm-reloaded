@@ -4,6 +4,7 @@ import java.util.UUID
 
 import models._
 import services._
+import services.ldap.LdapUser
 import slick.dbio.Effect.Write
 import slick.driver
 import slick.driver.PostgresDriver

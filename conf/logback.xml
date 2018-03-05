@@ -36,7 +36,7 @@
     <!--<logger name="slick.jdbc" level="DEBUG"/>-->
 
     <logger name="akka" level="INFO"/>
-    <logger name="services.LdapSyncServiceActor" level="INFO"/>
+    <logger name="services.ldap.LdapSyncServiceActor" level="INFO"/>
     <logger name="services.backup.BackupServiceActor" level="INFO"/>
 
     <root level="WARN">

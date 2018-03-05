@@ -1,6 +1,6 @@
 package modules
 
-import services.{LdapService, LdapServiceImpl}
+import services.ldap.{LdapService, LdapServiceImpl}
 
 trait LdapModule {
 

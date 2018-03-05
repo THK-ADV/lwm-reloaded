@@ -1,6 +1,6 @@
-package services
+package services.ldap
 
-import java.util.concurrent._
+import java.util.concurrent.{SynchronousQueue, ThreadPoolExecutor, TimeUnit}
 import javax.net.ssl.SSLContext
 
 import com.unboundid.ldap.sdk._
@@ -9,16 +9,6 @@ import com.unboundid.util.ssl.{SSLUtil, TrustAllTrustManager}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
-
-final case class LdapUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], degreeAbbrev: Option[String])
-
-trait LdapService {
-  def authenticate(user: String, password: String): Future[Boolean]
-
-  def user(user: String): Future[LdapUser]
-
-  def users(users: Set[String]): Future[Set[LdapUser]]
-}
 
 /**
   * The [[LdapServiceImpl]] object enables the user to communicate with an LDAP service.

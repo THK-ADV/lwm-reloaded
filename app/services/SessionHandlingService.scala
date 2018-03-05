@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import models.{InvalidSession, Session, ValidSession}
 import akka.pattern.pipe
 import dao.UserDao
+import services.ldap.LdapService
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal

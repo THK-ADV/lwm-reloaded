@@ -6,6 +6,7 @@ import utils.LwmDateTime.DateTimeConverter
 import models._
 import org.joda.time.DateTime
 import services._
+import services.ldap.LdapUser
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import slick.lifted.Rep

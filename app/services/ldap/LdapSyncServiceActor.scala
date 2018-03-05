@@ -1,8 +1,8 @@
-package services
+package services.ldap
 
 import akka.actor.{Actor, ActorLogging, Props}
 import dao.UserDao
-import services.LdapSyncServiceActor.SyncRequest
+import services.ldap.LdapSyncServiceActor.SyncRequest
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
