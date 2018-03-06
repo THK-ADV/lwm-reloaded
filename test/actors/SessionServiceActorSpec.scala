@@ -12,8 +12,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.scalatest.WordSpec
 import org.scalatest.mock.MockitoSugar.mock
-import services.{LdapService, LdapUser, SessionServiceActor}
+import services.SessionServiceActor
 import services.SessionServiceActor.{Authenticated, Authentication, AuthenticationError, NotAuthenticated}
+import services.ldap.{LdapService, LdapUser}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._

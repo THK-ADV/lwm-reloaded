@@ -9,8 +9,8 @@ import org.mockito.Matchers.anyObject
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike
 import org.scalatest.mock.MockitoSugar._
-import services.LdapSyncServiceActor.SyncRequest
-import services.{LdapService, LdapSyncServiceActor, LdapUser}
+import services.ldap.LdapSyncServiceActor.SyncRequest
+import services.ldap.{LdapService, LdapSyncServiceActor, LdapUser}
 
 import scala.concurrent.Future
 

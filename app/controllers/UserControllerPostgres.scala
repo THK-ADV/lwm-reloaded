@@ -7,6 +7,7 @@ import models.Role._
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 import services._
+import services.ldap.LdapService
 import store.{TableFilter, UserTable}
 import utils.LwmMimeType
 

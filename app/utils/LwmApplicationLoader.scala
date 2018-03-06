@@ -55,6 +55,7 @@ with TimetableDaoManagementModule
 with ScheduleServiceManagementModule
 with Blacklist2ManagementModule
 with BlacklistDaoManagementModule
+with BlacklistServiceModule
 with ReportCardEntryDaoModule
 with ReportCardEntryManagementModule2
 with ReportCardEntryTypeDaoModule
@@ -69,7 +70,7 @@ with UserManagementModulePostgres
 with UserDaoModule
 with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
-with LdapSyncModule {
+with CronServiceModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -138,6 +139,7 @@ with DefaultTimetableDaoModule
 with DefaultScheduleServiceManagementModule
 with DefaultBlacklist2ManagementModule
 with DefaultBlacklistDaoManagementModule
+with DefaultBlacklistServiceModule
 with DefaultReportCardEntryDaoModule
 with DefaultReportCardEntryManagementModule2
 with DefaultReportCardEntryTypeDaoModule
@@ -153,4 +155,4 @@ with DefaultUserDaoModule
 with DefaultReportCardEvaluationDaoModule
 with DefaultReportCardEvaluationManagementModule2
 with DefaultDbFolderImpl
-with DefaultLdapSyncService
+with DefaultCronServiceModule

@@ -5,21 +5,22 @@ import base.TestBaseDefinition
 import models.PostgresBlacklist
 import org.joda.time.{DateTime, LocalDate}
 import org.scalatest.WordSpec
+import services.blacklist.BlacklistServiceImpl
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
-  import services.BlacklistService._
   import utils.LwmDateTime._
 
   "A BlacklistServiceSpec" should {
 
     "fetch blacklists from an external api" in {
+      val blacklistService = new BlacklistServiceImpl()
       val timeout = Timeout(5.seconds)
-      val year = DateTime.now.getYear.toString
+      val year = DateTime.now.getYear
 
-      val result = Await.result(fetchLegalHolidays(year), timeout.duration)
+      val result = Await.result(blacklistService.fetchLegalHolidays(year), timeout.duration)
 
       result should not be empty
 
