@@ -34,6 +34,7 @@ package object models {
       case s: ScheduleEntry => ScheduleEntry.writes.writes(s)
       case g: Group => Group.writes.writes(g)
       case r: ReportCardEvaluation => ReportCardEvaluation.writes.writes(r)
+      case p: ReportCardEvaluationPattern => ReportCardEvaluationPattern.writes.writes(p)
     }
   }
 

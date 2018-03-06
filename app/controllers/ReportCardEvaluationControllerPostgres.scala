@@ -3,15 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.{ReportCardEvaluation, ReportCardEvaluationDb}
+import models.Role._
+import models.{PostgresReportCardEvaluationProtocol, ReportCardEvaluation, ReportCardEvaluationDb}
 import play.api.libs.json._
-import services.ReportCardService.{BoolBased, IntBased, ReportCardEvaluationPattern}
+import play.api.mvc.Request
 import services.{ReportCardService, SessionHandlingService}
 import store.{ReportCardEvaluationTable, TableFilter}
 import utils.LwmMimeType
-import play.api.libs.functional.syntax._
-import models.Role._
-import play.api.mvc.Request
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -32,10 +30,12 @@ object ReportCardEvaluationControllerPostgres {
 final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDao,
                                                    val sessionService: SessionHandlingService,
                                                    val abstractDao: ReportCardEvaluationDao,
-                                                   val reportCardEntryDao: ReportCardEntryDao)
-  extends AbstractCRUDControllerPostgres[ReportCardEvaluationPattern, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
+                                                   val reportCardEntryDao: ReportCardEntryDao,
+                                                   val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao)
+  extends AbstractCRUDControllerPostgres[PostgresReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
 
   import controllers.ReportCardEvaluationControllerPostgres._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def get(student: String) = contextFrom(Get) asyncAction { request =>
@@ -72,6 +72,10 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
     delete(List(LabworkFilter(labwork)))
   }
 
+  def updateFrom(course: String, labwork: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+    update(id, NonSecureBlock)(request)
+  }
+
   private def delete(list: List[TableFilter[ReportCardEvaluationTable]]) = {
     import utils.LwmDateTime._
 
@@ -83,11 +87,11 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
 
   private def evaluate(labwork: String, persistence: Boolean)(implicit request: Request[JsValue]) = {
     (for {
-      patterns <- Future.fromTry(parseArray[ReportCardEvaluationPattern](request))
+      patterns <- reportCardEvaluationPatternDao.get(List(EvaluationPatternLabworkFilter(labwork)), atomic = false) if patterns.nonEmpty
       cards <- reportCardEntryDao.get(List(ReportCardEntryLabworkFilter(labwork)), atomic = false)
       existing <- abstractDao.get(List(LabworkFilter(labwork)), atomic = false)
 
-      evaluated = ReportCardService.evaluateDeltas(cards.toList, patterns, existing.toList)
+      evaluated = ReportCardService.evaluateDeltas(cards.toList, patterns.toList, existing.toList)
       _ <- if (persistence) abstractDao.createOrUpdateMany(evaluated) else Future.successful(Seq.empty)
 
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
@@ -97,12 +101,7 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
 
   override protected implicit val writes: Writes[ReportCardEvaluation] = ReportCardEvaluation.writes
 
-  override protected implicit val reads: Reads[ReportCardEvaluationPattern] = (
-    (JsPath \ "entryType").read[String] and
-      (JsPath \ "min").read[Int] and
-      (JsPath \ "property").read[String].map(p => if (p == "bool") BoolBased else IntBased)
-    ) (ReportCardEvaluationPattern.apply _)
-
+  override protected implicit val reads: Reads[PostgresReportCardEvaluationProtocol] = PostgresReportCardEvaluationProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEvaluationTable]]]): Try[List[TableFilter[ReportCardEvaluationTable]]] = {
     (appendTo, (attribute, value)) match {
@@ -120,7 +119,9 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
     }
   }
 
-  override protected def toDbModel(protocol: ReportCardEvaluationPattern, existingId: Option[UUID]): ReportCardEvaluationDb = ???
+  override protected def toDbModel(protocol: PostgresReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb = {
+    ReportCardEvaluationDb.from(protocol, existingId)
+  }
 
   override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationV1Json
 
@@ -128,6 +129,7 @@ final class ReportCardEvaluationControllerPostgres(val authorityDao: AuthorityDa
     case Create => SecureBlock(restrictionId, List(CourseManager))
     case Get => SecureBlock(restrictionId, List(CourseManager))
     case Delete => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case _ => PartialSecureBlock(List(God))
   }

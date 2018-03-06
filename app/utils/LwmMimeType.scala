@@ -32,6 +32,7 @@ object LwmMimeType {
   val assignmentPlanV1Json = LwmMimeType("application/vnd.fhk.assignmentPlan.V1+json")
   val annotationV1Json = LwmMimeType("application/vnd.fhk.annotation.V1+json")
   val reportCardEvaluationV1Json = LwmMimeType("application/vnd.fhk.reportCardEvaluation.V1+json")
+  val reportCardEvaluationPatternV1Json = LwmMimeType("application/vnd.fhk.reportCardEvaluationPattern.V1+json")
   val reportCardRescheduledV1Json = LwmMimeType("application/vnd.fhk.reportCardRescheduled.V1+json")
   val reportCardRetryV1Json = LwmMimeType("application/vnd.fhk.reportCardRetry.V1+json")
 
@@ -68,6 +69,7 @@ object LwmContentTypes extends ContentTypes {
   def assignmentPlanV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.assignmentPlanV1Json)
   def annotationV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.annotationV1Json)
   def reportCardEvaluationV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEvaluationV1Json)
+  def reportCardEvaluationPatternV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardEvaluationPatternV1Json)
   def reportCardRescheduledV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardRescheduledV1Json)
   def reportCardRetryV1ContentType(implicit codec: Codec) = withCharset(LwmMimeType.reportCardRetryV1Json)
 }
@@ -97,6 +99,7 @@ object LwmAccepts {
   val AssignmentPlanV1Accept = Accepting(LwmMimeType.assignmentPlanV1Json)
   val AnnotationV1Accept = Accepting(LwmMimeType.annotationV1Json)
   val ReportCardEvaluationV1Accept = Accepting(LwmMimeType.reportCardEvaluationV1Json)
+  val ReportCardEvaluationPatternV1Accept = Accepting(LwmMimeType.reportCardEvaluationPatternV1Json)
   val ReportCardRescheduledV1Accept = Accepting(LwmMimeType.reportCardRescheduledV1Json)
   val ReportCardRetryV1Accept = Accepting(LwmMimeType.reportCardRetryV1Json)
 }

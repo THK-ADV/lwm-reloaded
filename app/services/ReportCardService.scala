@@ -6,14 +6,6 @@ import models._
 
 object ReportCardService {
 
-  sealed trait EvaluationProperty
-
-  case object BoolBased extends EvaluationProperty
-
-  case object IntBased extends EvaluationProperty
-
-  case class ReportCardEvaluationPattern(entryType: String, min: Int, property: EvaluationProperty)
-
   lazy val EvaluatedExplicit: Int = 3201 // this value indicates explicit evaluations
 
   def partialEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb = {

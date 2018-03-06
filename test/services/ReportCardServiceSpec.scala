@@ -6,13 +6,14 @@ import base.TestBaseDefinition
 import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
-import services.ReportCardService.{BoolBased, IntBased, ReportCardEvaluationPattern}
 
 final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
   import utils.LwmDateTime._
   import models.PostgresReportCardEntryType._
 
+  val labworkId = UUID.randomUUID
+  
   "A ReportCardServiceSpec" should {
 
     "successfully return report cards for given schedule" in {
@@ -50,16 +51,16 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
       val pattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, attendance - 1, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, mandatory, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 0, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, attendance - 1, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, mandatory, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 0, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
@@ -78,16 +79,16 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
       val pattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, attendance - 2, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, mandatory - 3, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 0, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, attendance - 2, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, mandatory - 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 0, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
@@ -111,16 +112,16 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
           case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID(), types)
+        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
       val mandatory = types.count(_.entryType == Certificate.entryType)
       val pattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, attendance - 1, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, mandatory, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 0, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, attendance - 1, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, mandatory, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 0, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
@@ -160,24 +161,24 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val passPattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 10, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 10, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val failPattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 4, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 4, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 15, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 4, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 4, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 15, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val zeroPattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 0, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 0, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 0, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 0, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 0, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 0, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cards, passPattern)
@@ -215,10 +216,10 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val futurePattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 10, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 10, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cards, futurePattern)
@@ -252,10 +253,10 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val futurePattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 10, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 10, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cards, futurePattern)
@@ -289,7 +290,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val futurePattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 2, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 2, BoolBased)
       )
 
       val result = ReportCardService.evaluate(cards, futurePattern)
@@ -444,10 +445,10 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val futurePattern = List(
-        ReportCardEvaluationPattern(Attendance.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Certificate.entryType, 3, BoolBased),
-        ReportCardEvaluationPattern(Bonus.entryType, 10, IntBased),
-        ReportCardEvaluationPattern(Supplement.entryType, 0, BoolBased)
+        ReportCardEvaluationPattern(labworkId, Attendance.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Certificate.entryType, 3, BoolBased),
+        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 10, IntBased),
+        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
       )
 
       val explicit = ReportCardService.evaluateExplicit(student, labwork)

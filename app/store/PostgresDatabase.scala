@@ -56,6 +56,15 @@ trait AbbreviationTable { self: Table[_] =>
   def abbreviation = column[String]("ABBREVIATION")
 }
 
+trait EntryTypeTable { self: Table[_] =>
+  def entryType = column[String]("ENTRY_TYPE")
+}
+
+trait EntryTypeLikeTable { self: Table[_] =>
+  def bool = column[Boolean]("BOOL")
+  def int = column[Int]("INT")
+}
+
 trait DateStartEndTable { self: Table[_] =>
   def date = column[Date]("DATE")
   def start = column[Time]("START")
@@ -248,11 +257,8 @@ class AssignmentEntryTable(tag: Tag) extends Table[AssignmentEntryDb](tag, "ASSI
   }
 }
 
-class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](tag, "ASSIGNMENT_ENTRY_TYPE") with UniqueTable {
+class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](tag, "ASSIGNMENT_ENTRY_TYPE") with UniqueTable with EntryTypeTable with EntryTypeLikeTable {
   def assignmentEntry = column[UUID]("ASSIGNMENT_ENTRY")
-  def entryType = column[String]("ENTRY_TYPE")
-  def bool = column[Boolean]("BOOL")
-  def int = column[Int]("INT")
 
   def assignmentEntryFk = foreignKey("ASSIGNMENT_ENTRIES_fkey", assignmentEntry, TableQuery[AssignmentEntryTable])(_.id)
 
@@ -348,8 +354,7 @@ class ReportCardRescheduledTable(tag: Tag) extends Table[ReportCardRescheduledDb
   override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> ((ReportCardRescheduledDb.apply _).tupled, ReportCardRescheduledDb.unapply)
 }
 
-class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](tag, "REPORT_CARD_ENTRY_TYPE") with UniqueTable {
-  def entryType = column[String]("ENTRY_TYPE")
+class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](tag, "REPORT_CARD_ENTRY_TYPE") with UniqueTable with EntryTypeTable {
   def bool = column[Option[Boolean]]("BOOL")
   def int = column[Int]("INT")
 
@@ -365,11 +370,16 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
   override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }
 
-class ReportCardEvaluationTable(tag: Tag) extends Table[ReportCardEvaluationDb](tag, "REPORT_CARD_EVALUATION") with UniqueTable with StudentIdTable with LabworkIdTable with LabelTable {
-  def bool = column[Boolean]("BOOL")
-  def int = column[Int]("INT")
+class ReportCardEvaluationTable(tag: Tag) extends Table[ReportCardEvaluationDb](tag, "REPORT_CARD_EVALUATION") with UniqueTable with StudentIdTable with LabworkIdTable with LabelTable with EntryTypeLikeTable {
 
   override def * = (student, labwork, label, bool, int, lastModified, invalidated, id) <> ((ReportCardEvaluationDb.apply _).tupled, ReportCardEvaluationDb.unapply)
+}
+
+class ReportCardEvaluationPatternTable(tag: Tag) extends Table[ReportCardEvaluationPatternDb](tag, "REPORT_CARD_EVALUATION_PATTERN") with UniqueTable with LabworkIdTable with EntryTypeTable {
+  def min = column[Int]("MIN")
+  def property = column[String]("property")
+
+  override def * = (labwork, entryType, min, property, lastModified, invalidated, id) <> ((ReportCardEvaluationPatternDb.apply _).tupled, ReportCardEvaluationPatternDb.unapply)
 }
 
 class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE_ENTRY") with UniqueTable with LabworkIdTable with RoomIdTable with GroupIdTable with DateStartEndTable {
