@@ -31,6 +31,7 @@ object AbstractDaoSpec {
   lazy val maxGroups = 20
   lazy val maxEvaluations = 100
   lazy val maxLabworkApplications = 20
+  lazy val maxEvaluationPatterns = 4 * 5
 
   def randomSemester = semesters(nextInt(maxSemesters))
   def randomCourse = courses(nextInt(maxCourses))
@@ -212,6 +213,10 @@ object AbstractDaoSpec {
     LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
   }.toList
 
+  def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>
+    ReportCardEvaluationPatternDb(takeOneOf(labworks).id, i.toString, nextInt(10) + 1, (if (nextBoolean) BoolBased else IntBased).toString)
+  }.toList
+
   lazy val semesters = populateSemester(maxSemesters)
 
   lazy val employees = populateEmployees(maxEmployees)
@@ -255,6 +260,8 @@ object AbstractDaoSpec {
   lazy val reportCardEvaluations = populateReportCardEvaluations(maxEvaluations, 4)(students, labworks)
 
   lazy val labworkApplications = populateLabworkApplications(maxLabworkApplications, withFriends = true)(labworks, students)
+
+  lazy val reportCardEvaluationpatterns = populateEvaluationPatterns(maxEvaluationPatterns)(labworks)
 }
 
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]

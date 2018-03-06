@@ -33,6 +33,7 @@ final class ApiDataController(val repository: SesameRepository,
                               val scheduleEntryDao: ScheduleEntryDao,
                               val groupDao: GroupDao,
                               val reportCardEvaluationDao: ReportCardEvaluationDao,
+                              val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
                               val sessionService: SessionHandlingService)
   extends Controller with PostgresResult with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
@@ -456,6 +457,10 @@ final class ApiDataController(val repository: SesameRepository,
     } yield evals.map(_.toLwmModel)
 
     result.jsonResult
+  }
+
+  def createReportCardEvaluationPatterns = Action.async { _ =>
+    reportCardEvaluationPatternDao.createSchema.jsonResult(_ => Ok)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

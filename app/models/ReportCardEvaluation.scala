@@ -5,7 +5,7 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Writes}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.LwmDateTime
 import utils.LwmDateTime._
 
@@ -20,6 +20,8 @@ sealed trait ReportCardEvaluation extends UniqueEntity {
 }
 
 case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+
+case class PostgresReportCardEvaluationProtocol(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
 case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
 
@@ -38,6 +40,10 @@ object SesameReportCardEvaluation extends UriGenerator[SesameReportCardEvaluatio
 
 object PostgresReportCardEvaluation {
   implicit val writes: Writes[PostgresReportCardEvaluation] = Json.writes[PostgresReportCardEvaluation]
+}
+
+object PostgresReportCardEvaluationProtocol {
+  implicit val reads: Reads[PostgresReportCardEvaluationProtocol] = Json.reads[PostgresReportCardEvaluationProtocol]
 }
 
 object PostgresReportCardEvaluationAtom {
@@ -60,5 +66,11 @@ object ReportCardEvaluation {
       case normal: PostgresReportCardEvaluation => Json.toJson(normal)(PostgresReportCardEvaluation.writes)
       case atom: PostgresReportCardEvaluationAtom => Json.toJson(atom)(PostgresReportCardEvaluationAtom.writes)
     }
+  }
+}
+
+object ReportCardEvaluationDb {
+  def from(p: PostgresReportCardEvaluationProtocol, existing: Option[UUID]) = {
+    ReportCardEvaluationDb(p.student, p.labwork, p.label, p.bool, p.int, id = existing getOrElse UUID.randomUUID)
   }
 }

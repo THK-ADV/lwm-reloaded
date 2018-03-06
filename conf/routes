@@ -124,8 +124,16 @@ POST          /api2/courses/:c/labworks/:l/reportCardEvaluations                
 POST          /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
 GET           /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
 GET           /api2/courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
+PUT           /api2/courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationControllerPostgres.updateFrom(c, l, id)
 DELETE        /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.deleteFromLabwork(c, l)
 DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.deleteFromStudent(c, l, s)
+
+# ReportCardEvaluationPattern 2.0
+POST          /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.createFrom(c)
+GET           /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.allFrom(c)
+GET           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.getFrom(c, id)
+PUT           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.updateFrom(c, id)
+DELETE        /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.deleteFrom(c, id)
 
 # AssignmentPlan 2.0
 POST          /api2/courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.createFrom(course)
@@ -166,6 +174,7 @@ GET           /api/migrate/reportCardEntries                                    
 GET           /api/migrate/groups                                                   controllers.ApiDataController.migrateGroups()
 GET           /api/migrate/schedules                                                controllers.ApiDataController.migrateSchedules()
 GET           /api/migrate/reportCardEvaluations                                    controllers.ApiDataController.migrateReportCardEvaluations()
+GET           /api/migrate/reportCardEvaluationPatterns                             controllers.ApiDataController.createReportCardEvaluationPatterns()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                         controllers.Assets.at(path="/public", file)

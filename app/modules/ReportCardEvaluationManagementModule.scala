@@ -16,13 +16,13 @@ trait DefaultReportCardEvaluationDaoModule extends ReportCardEvaluationDaoModule
 }
 
 trait ReportCardEvaluationManagementModule2 {
-  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEvaluationDaoModule with ReportCardEntryDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEvaluationDaoModule with ReportCardEntryDaoModule with ReportCardEvaluationPatternDaoModule =>
 
   def reportCardEvaluationManagementController2: ReportCardEvaluationControllerPostgres
 }
 
 trait DefaultReportCardEvaluationManagementModule2 extends ReportCardEvaluationManagementModule2 {
-  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEvaluationDaoModule with ReportCardEntryDaoModule =>
+  self: AuthorityDaoModule with SessionRepositoryModule with ReportCardEvaluationDaoModule with ReportCardEntryDaoModule with ReportCardEvaluationPatternDaoModule =>
 
-  override lazy val reportCardEvaluationManagementController2 = new ReportCardEvaluationControllerPostgres(authorityDao, sessionService, reportCardEvaluationDao, reportCardEntryDao)
+  override lazy val reportCardEvaluationManagementController2 = new ReportCardEvaluationControllerPostgres(authorityDao, sessionService, reportCardEvaluationDao, reportCardEntryDao, reportCardEvaluationPatternDao)
 }
