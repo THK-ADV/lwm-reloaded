@@ -154,6 +154,9 @@ GET           /sessions                                                         
 DELETE        /sessions                                                             controllers.SessionController.logout
 HEAD          /sessions                                                             controllers.SessionController.header
 
+# Dashboard
+GET           /students/:st/degrees/:d/semesters/:sem/atomic/:a                     controllers.DashboardController.student(st, d, sem, a)
+
 # APIData
 GET           /api/collisions                                                       controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                     controllers.ApiDataController.multipleReportCardEntries(c)

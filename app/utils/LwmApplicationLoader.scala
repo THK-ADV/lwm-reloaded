@@ -72,7 +72,9 @@ with ReportCardEvaluationDaoModule
 with ReportCardEvaluationManagementModule2
 with ReportCardEvaluationPatternDaoModule
 with ReportCardEvaluationPatternModule
-with CronServiceModule {
+with CronServiceModule
+with DashboardModule
+with DashboardManagementModule {
 
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(corsFilter(context.initialConfiguration))
 
@@ -100,6 +102,7 @@ with CronServiceModule {
     assignmentPlanManagementControllerPostgres,
     userControllerPostgres,
     sessionController,
+    dashboardController,
     apiDataController,
     assetsController
   )
@@ -161,3 +164,5 @@ with DefaultReportCardEvaluationPatternDaoModule
 with DefaultReportCardEvaluationPatternModule
 with DefaultDbFolderImpl
 with DefaultCronServiceModule
+with DefaultDashboardModule
+with DefaultDashboardManagementModule
