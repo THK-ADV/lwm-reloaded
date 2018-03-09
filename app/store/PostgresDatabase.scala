@@ -412,6 +412,8 @@ class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable
 
   override def * = (label, labwork, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
+  def contains(student: UUID) = TableQuery[GroupMembershipTable].filter(m => m.group === id && m.student === student).exists
+
   def mapRow: ((String, UUID, Timestamp, Option[Timestamp], UUID)) => GroupDb = {
     case (label, labwork, lastModified, invalidated, id) => GroupDb(label, labwork, Set.empty, lastModified, invalidated, id)
   }

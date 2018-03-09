@@ -10,6 +10,7 @@ import slick.dbio.Effect
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 import slick.profile.FixedSqlAction
 import store.{TableFilter, UniqueTable}
 
@@ -124,6 +125,12 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
   }
 
   // TODO refactor get functions... they are pretty messy right now
+
+  final def filter(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None) = {
+    val query = filterBy(validOnly, sinceLastModified, tableQuery.filter(where))
+
+    if (atomic) toAtomic(query) else toUniqueEntity(query)
+  }
 
   final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] = {
     val query = filterBy(validOnly, sinceLastModified, tableQuery.filter(_.id.inSet(ids)))

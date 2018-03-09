@@ -5,11 +5,9 @@ import java.util.UUID
 import dao._
 import models.Role.{Admin, Employee, Student}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}
-import org.joda.time.LocalDate
 import play.api.libs.json.{Reads, Writes}
 import services._
 import store.{SemesterTable, TableFilter}
-import utils.LwmDateTime._
 import utils.LwmMimeType
 
 import scala.util.{Failure, Try}
@@ -50,7 +48,7 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
       case (list, (`endAttribute`, start)) => list.map(_.+:(SemesterEndFilter(start)))
       case (list, (`sinceAttribute`, since)) => list.map(_.+:(SemesterSinceFilter(since)))
       case (list, (`untilAttribute`, until)) => list.map(_.+:(SemesterUntilFilter(until)))
-      case (list, (`selectAttribute`, current)) if current == currentValue => list.map(_.+:(SemesterCurrentFilter(LocalDate.now.stringMillis)))
+      case (list, (`selectAttribute`, current)) if current == currentValue => list.map(_.+:(SemesterCurrentFilter()))
       case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was $other"))
       case _ => Failure(new Throwable("Unknown attribute"))
     }

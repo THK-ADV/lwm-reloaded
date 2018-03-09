@@ -154,6 +154,10 @@ GET           /sessions                                                         
 DELETE        /sessions                                                             controllers.SessionController.logout
 HEAD          /sessions                                                             controllers.SessionController.header
 
+# Dashboard
+GET           /dashboards                                                           controllers.DashboardController.dashboard()
+GET           /dashboards/:id                                                       controllers.DashboardController.dashboardFor(id)
+
 # APIData
 GET           /api/collisions                                                       controllers.ApiDataController.collisionsForCurrentLabworks()
 GET           /api/multipleReportCardEntries/:c                                     controllers.ApiDataController.multipleReportCardEntries(c)

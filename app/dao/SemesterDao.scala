@@ -4,6 +4,7 @@ import java.util.UUID
 
 import utils.LwmDateTime._
 import models.{PostgresSemester, SemesterDb}
+import org.joda.time.LocalDate
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 import store.{SemesterTable, TableFilter}
@@ -34,7 +35,7 @@ case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.end === value.sqlDateFromMillis
 }
 
-case class SemesterCurrentFilter(value: String) extends TableFilter[SemesterTable] {
+case class SemesterCurrentFilter(value: String = LocalDate.now.stringMillis) extends TableFilter[SemesterTable] {
   override def predicate = t => t.start <= value.sqlDateFromMillis && t.end >= value.sqlDateFromMillis
 }
 
