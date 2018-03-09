@@ -155,7 +155,8 @@ DELETE        /sessions                                                         
 HEAD          /sessions                                                             controllers.SessionController.header
 
 # Dashboard
-GET           /students/:st/degrees/:d/semesters/:sem/atomic/:a                     controllers.DashboardController.student(st, d, sem, a)
+GET           /dashboards                                                           controllers.DashboardController.dashboard()
+GET           /dashboards/:id                                                       controllers.DashboardController.dashboardFor(id)
 
 # APIData
 GET           /api/collisions                                                       controllers.ApiDataController.collisionsForCurrentLabworks()

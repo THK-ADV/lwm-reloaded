@@ -2,7 +2,6 @@ package dao
 
 import models.{PostgresSemester, SemesterDb}
 import org.joda.time.LocalDate
-import services._
 import slick.dbio.Effect.Write
 import store.SemesterTable
 
@@ -20,7 +19,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
     "return current semester" in {
       val current = dbEntities.map(_.toLwmModel).filter(PostgresSemester.isCurrent)
 
-      val result = await(get(List(SemesterCurrentFilter(LocalDate.now.stringMillis))))
+      val result = await(get(List(SemesterCurrentFilter())))
 
       result.size shouldBe 1
       result shouldBe current

@@ -14,7 +14,7 @@ case class GroupLabworkTableFilter(value: String) extends TableFilter[GroupTable
 }
 
 case class GroupStudentTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = g => TableQuery[GroupMembershipTable].filter(m => m.group === g.id && m.student === UUID.fromString(value)).exists
+  override def predicate = _.contains(UUID.fromString(value))
 }
 
 case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] {
