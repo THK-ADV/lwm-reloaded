@@ -238,6 +238,7 @@ PUT           /api/swapReportCardAssignments/preview/:p                         
 GET           /api/bumpBonus/course/:c/preview/:p                                     controllers.ApiDataController.bumpBonus(c, p)
 GET           /api/course/:c/assignmentStats                                          controllers.ApiDataController.assignmentStatistic(c)
 GET           /api/course/:c/assignmentEvals                                          controllers.ApiDataController.assignmentEvaluation(c)
+GET           /api/course/:c/labwork/:l/assignmentEvals                               controllers.ApiDataController.assignmentEvaluationA(c, l)
 GET           /api/course/:c/bonicheck                                                controllers.ApiDataController.bonicheck(c)
 
 # Map static resources from the /public folder to the /assets URL path

@@ -6,17 +6,19 @@ import models._
 import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
 import play.api.libs.json._
-import play.api.mvc.Controller
+import play.api.mvc.{AnyContent, Controller, Request}
 import services.{RoleService, SessionHandlingService}
 import store.SesameRepository
 import store.bind.Bindings
 import utils.LwmMimeType
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-class ApiDataController(val repository: SesameRepository,
-                        val sessionService: SessionHandlingService,
-                        val roleService: RoleService) extends Controller with Secured with SessionChecking with SecureControllerContext with ContentTyped {
+class ApiDataController(
+  val repository: SesameRepository,
+  val sessionService: SessionHandlingService,
+  val roleService: RoleService
+) extends Controller with Secured with SessionChecking with SecureControllerContext with ContentTyped {
 
   implicit val ns = repository.namespace
   private val bindings = Bindings[repository.Rdf](repository.namespace)
@@ -147,15 +149,13 @@ class ApiDataController(val repository: SesameRepository,
         errors => Failure(new Throwable(JsError.toJson(errors).toString)),
         reportCards => Success(reportCards)
       )
-      existingCards <- repository.getAll[ReportCardEntry].map(_.filter(_.labwork == UUID.fromString(labwork)))
+      labworkId = UUID.fromString(labwork)
+      existingCards <- repository.getAll[ReportCardEntry].map(_.filter(_.labwork == labworkId))
       _ = println(s"existingCards count ${existingCards.size}")
-      newReportCardEntries = existingCards.groupBy(_.student).flatMap {
-        case (student, cards) =>
-          val labwork = cards.head.labwork
-
-          newCards.map { c =>
-            ReportCardEntry(student, labwork, c.label, toLocalDate(c.date), toLocalTime(c.start), toLocalTime(c.end), c.room, c.entryTypes.map(t => ReportCardEntryType(t.entryType, t.bool, t.int)))
-          }.toSet
+      newReportCardEntries = existingCards.groupBy(_.student).keys.flatMap { student =>
+        newCards.map { c =>
+          ReportCardEntry(student, labworkId, c.label, toLocalDate(c.date), toLocalTime(c.start), toLocalTime(c.end), c.room, c.entryTypes.map(t => ReportCardEntryType(t.entryType, t.bool, t.int)))
+        }.toSet
       }.toSet
       _ = println(s"newReportCardEntries count ${newReportCardEntries.size}")
       created <- if (preview.toBoolean) Success(newReportCardEntries) else repository.addMany(newReportCardEntries).map(_ => newReportCardEntries)
@@ -515,12 +515,26 @@ class ApiDataController(val repository: SesameRepository,
   }
 
   def assignmentEvaluation(course: String) = restrictedContext(course)(Create) action { implicit request =>
+    val courseId = UUID.fromString(course)
+
+    assignmentEvals(_.course == courseId)
+  }
+
+  def assignmentEvaluationA(course: String, labwork: String) = restrictedContext(course)(Create) action { implicit request =>
+    val courseId = UUID.fromString(course)
+    val labworkId = UUID.fromString(labwork)
+
+    assignmentEvals(l => l.id == labworkId && l.course == courseId)
+  }
+
+  private def assignmentEvals(consider: (Labwork) => Boolean)(implicit request: Request[AnyContent]) = {
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
     import models.LwmDateTime._
 
     val eval = for {
-      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent))
-      labworks <- repository.getAll[Labwork].map(_.filter(l => l.course == UUID.fromString(course) && semesters.exists(_.id == l.semester)))
+      semesters <- repository.getAll[Semester].map(_.find(Semester.isCurrent)) if semesters.size == 1
+      currentSemester = semesters.head.id
+      labworks <- repository.getAll[Labwork].map(_.filter(l => consider(l) && l.semester == currentSemester))
       reportCards <- repository.getAll[ReportCardEntryAtom].map(_.filter(l => labworks.exists(_.id == l.labwork.id)))
       grouping = reportCards.groupBy(_.student)
     } yield grouping
@@ -528,24 +542,51 @@ class ApiDataController(val repository: SesameRepository,
     eval match {
       case Success(s) => Ok(Json.toJson(s.map {
         case (student, cards) =>
-          val points = cards.flatMap(_.entryTypes).foldLeft(0) {
-            case (sum, e) => e.int + sum
-          }
+          val entryTypes = cards.flatMap(_.entryTypes)
+
+          val points = entryTypes.filter(_.entryType == ReportCardEntryType.Bonus.entryType).map(_.int).sum
+          val certificates = entryTypes.filter(_.entryType == ReportCardEntryType.Certificate.entryType).count(_.bool)
+          val attendances = entryTypes.filter(_.entryType == ReportCardEntryType.Attendance.entryType).count(_.bool)
 
           val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).groupBy(_.label).mapValues { entries =>
             entries.flatMap(_.entryTypes).find(t => ReportCardEntryType.Certificate.entryType == t.entryType).map(_.bool)
           }.filter(_._2.isDefined).mapValues(o => Json.toJson(o.get))
 
+          val a = ReportCardEntryType.Attendance.entryType
+          val b = ReportCardEntryType.Bonus.entryType
+          val c = ReportCardEntryType.Certificate.entryType
+
+          val passed = request.queryString.foldLeft(Map.empty[String, JsValue]) {
+            case (map, (key, values)) =>
+              val passed = Try(values.head.toInt).map { int =>
+                val score = key match {
+                  case `a` => attendances
+                  case `b` => points
+                  case `c` => certificates
+                  case _ => 0
+                }
+
+                JsBoolean(score >= int)
+              }
+
+              passed match {
+                case Success(jsValue) => map + ((key, jsValue))
+                case Failure(_) => map
+              }
+          }
+
           Json.obj(
             "Datum" -> LocalDateTime.now.toString,
+            "Praktikum" -> cards.head.labwork.label,
             "Nachname" -> student.lastname,
             "Vorname" -> student.firstname,
             "Email" -> student.email,
             "GMID" -> student.systemId,
             "Matrikelnummer" -> student.registrationId,
             "Punkte" -> points,
-            "Bestanden" -> (points >= 100)
-        ) ++ JsObject(assignments.toSeq)
+            "Anwesenheiten" -> attendances,
+            "Testate" -> certificates
+          ) ++ JsObject(passed) ++ JsObject(assignments)
       }))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
