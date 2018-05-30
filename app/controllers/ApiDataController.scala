@@ -548,18 +548,23 @@ class ApiDataController(
           val certificates = entryTypes.filter(_.entryType == ReportCardEntryType.Certificate.entryType).count(_.bool)
           val attendances = entryTypes.filter(_.entryType == ReportCardEntryType.Attendance.entryType).count(_.bool)
 
-          val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).groupBy(_.label).mapValues { entries =>
-            entries.flatMap(_.entryTypes).find(t => ReportCardEntryType.Certificate.entryType == t.entryType).map(_.bool)
-          }.filter(_._2.isDefined).mapValues(o => Json.toJson(o.get))
+          val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).foldLeft(Seq.empty[(String, JsValue)]) {
+            case (seq, entry) => entry.entryTypes.
+              find(t => ReportCardEntryType.Certificate.entryType == t.entryType).
+              map(_.bool).
+              fold(seq) { bool =>
+                seq.:+(entry.label -> JsBoolean(bool))
+            }
+          }
 
-          val a = ReportCardEntryType.Attendance.entryType
-          val b = ReportCardEntryType.Bonus.entryType
-          val c = ReportCardEntryType.Certificate.entryType
+          val a = ReportCardEntryType.Attendance.entryType.toLowerCase
+          val b = ReportCardEntryType.Bonus.entryType.toLowerCase
+          val c = ReportCardEntryType.Certificate.entryType.toLowerCase
 
           val passed = request.queryString.foldLeft(Map.empty[String, JsValue]) {
             case (map, (key, values)) =>
               val passed = Try(values.head.toInt).map { int =>
-                val score = key match {
+                val score = key.toLowerCase match {
                   case `a` => attendances
                   case `b` => points
                   case `c` => certificates
@@ -570,7 +575,7 @@ class ApiDataController(
               }
 
               passed match {
-                case Success(jsValue) => map + ((key, jsValue))
+                case Success(jsValue) => map + ((s"Bestanden nach $key", jsValue))
                 case Failure(_) => map
               }
           }
@@ -585,8 +590,10 @@ class ApiDataController(
             "Matrikelnummer" -> student.registrationId,
             "Punkte" -> points,
             "Anwesenheiten" -> attendances,
-            "Testate" -> certificates
-          ) ++ JsObject(passed) ++ JsObject(assignments)
+            "Testate" -> certificates,
+            "Auswertung" -> passed,
+            "Aufgaben" -> JsObject(assignments)
+          )
       }))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
