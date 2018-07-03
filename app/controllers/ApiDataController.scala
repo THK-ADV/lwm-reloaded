@@ -544,7 +544,9 @@ class ApiDataController(
         case (student, cards) =>
           val entryTypes = cards.flatMap(_.entryTypes)
 
-          val points = entryTypes.filter(_.entryType == ReportCardEntryType.Bonus.entryType).map(_.int).sum
+          val points = entryTypes.filter(_.entryType == ReportCardEntryType.Bonus.entryType).foldLeft(0) {
+            case (sum, entry) => sum + entry.int
+          }
           val certificates = entryTypes.filter(_.entryType == ReportCardEntryType.Certificate.entryType).count(_.bool)
           val attendances = entryTypes.filter(_.entryType == ReportCardEntryType.Attendance.entryType).count(_.bool)
 
