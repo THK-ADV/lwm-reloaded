@@ -182,6 +182,7 @@ POST          /courses/:c/labworks/:l/reportCardEvaluations                     
 POST          /courses/:c/labworks/:l/atomic/reportCardEvaluations                    controllers.ReportCardEvaluationController.createAtomicFrom(c, l)
 POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations               controllers.ReportCardEvaluationController.createForStudent(c, l, s)
 POST          /courses/:c/labworks/:l/students/:s/atomic/reportCardEvaluations        controllers.ReportCardEvaluationController.createAtomicForStudent(c, l, s)
+PUT           /courses/:c/labworks/:l/reportCardEvaluations                           controllers.ReportCardEvaluationController.overrideFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations                           controllers.ReportCardEvaluationController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/atomic/reportCardEvaluations                    controllers.ReportCardEvaluationController.allAtomicFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview                   controllers.ReportCardEvaluationController.preview(c, l)

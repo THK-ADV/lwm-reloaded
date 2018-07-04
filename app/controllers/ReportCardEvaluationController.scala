@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import models.Permissions.{god, reportCardEvaluation}
+import models.Permissions.{god, prime, reportCardEvaluation}
 import models._
 import org.openrdf.model.Value
 import org.w3.banana.RDFPrefix
@@ -47,6 +47,7 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
     case Create => SecureBlock(restrictionId, reportCardEvaluation.create)
     case Get => SecureBlock(restrictionId, reportCardEvaluation.get)
     case GetAll => SecureBlock(restrictionId, reportCardEvaluation.getAll)
+    case Update => SecureBlock(restrictionId, prime)
     case _ => PartialSecureBlock(god)
   }
 
@@ -84,6 +85,17 @@ class ReportCardEvaluationController(val repository: SesameRepository, val sessi
         .requestAll(repository.getMany[ReportCardEvaluation](_))
         .run
     }
+  }
+
+  def overrideFrom(course: String, labwork: String) = restrictedContext(course)(Update) contentTypedAction { implicit request =>
+    val result = for {
+      existing <- filter(rebase(labworkAttribute -> Seq(labwork)))(Set.empty)
+      newest <- evaluate(labwork)
+      _ <- removeLots[ReportCardEvaluation](existing map ReportCardEvaluation.generateUri)
+      added <- addLots(newest)
+    } yield chunk(added.toSet)
+
+    result.mapResult(enum => Created.stream(enum).as(mimeType))
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) contentTypedAction { implicit request =>
