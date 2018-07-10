@@ -551,22 +551,21 @@ class ApiDataController(
           val certificates = entryTypes.filter(_.entryType == ReportCardEntryType.Certificate.entryType).count(_.bool)
           val attendances = entryTypes.filter(_.entryType == ReportCardEntryType.Attendance.entryType).count(_.bool)
 
-          val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).foldLeft(Seq.empty[(String, JsValue)]) {
+          val assignments = cards.toList.sortBy(e => (e.date.toLocalDateTime(e.start), e.label)).foldLeft(Seq.empty[(String, JsValue)]) {
             case (seq, entry) =>
-              val cert = entry.entryTypes.find(_.entryType == ReportCardEntryType.Certificate.entryType).map(_.bool)
-              val points = entry.entryTypes.find(_.entryType == ReportCardEntryType.Bonus.entryType).map(_.int)
+              val cert = entry.entryTypes.find(_.entryType == ReportCardEntryType.Certificate.entryType).map(e => JsBoolean(e.bool))
+              val points = entry.entryTypes.find(_.entryType == ReportCardEntryType.Bonus.entryType).map(e => JsNumber(e.int))
 
-              val subJson = (cert, points) match {
-                case (Some(crt), Some(pts)) => Some(Json.obj(
-                  "Testat" -> JsBoolean(crt),
-                  "Punkte" -> JsNumber(pts)
-                ))
-                case (Some(crt), None) => Some(Json.obj("Testat" -> JsBoolean(crt)))
-                case (None, Some(pts)) => Some(Json.obj("Punkte" -> JsNumber(pts)))
-                case (None, None) => None
+              (cert, points) match {
+                case (Some(crt), Some(pts)) =>
+                  seq.:+(s"${entry.label} - Testat" -> crt).:+(s"${entry.label} - Punkte" -> pts)
+                case (Some(crt), None) =>
+                  seq.:+(s"${entry.label} - Testat" -> crt)
+                case (None, Some(pts)) =>
+                  seq.:+(s"${entry.label} - Punkte" -> pts)
+                case (None, None) =>
+                  seq
               }
-
-              subJson.fold(seq)(js => seq.:+(entry.label -> js))
           }
 
           val a = ReportCardEntryType.Attendance.entryType.toLowerCase
