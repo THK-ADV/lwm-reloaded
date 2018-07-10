@@ -5,6 +5,7 @@ import java.util.UUID
 import models._
 import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
+import org.specs2.json.JSONObject
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request}
 import services.{RoleService, SessionHandlingService}
@@ -527,7 +528,7 @@ class ApiDataController(
     assignmentEvals(l => l.id == labworkId && l.course == courseId)
   }
 
-  private def assignmentEvals(consider: (Labwork) => Boolean)(implicit request: Request[AnyContent]) = {
+  private def assignmentEvals(consider: Labwork => Boolean)(implicit request: Request[AnyContent]) = {
     import bindings.{LabworkDescriptor, ReportCardEntryAtomDescriptor, SemesterDescriptor}
     import models.LwmDateTime._
 
@@ -551,12 +552,21 @@ class ApiDataController(
           val attendances = entryTypes.filter(_.entryType == ReportCardEntryType.Attendance.entryType).count(_.bool)
 
           val assignments = cards.toList.sortBy(e => e.date.toLocalDateTime(e.start)).foldLeft(Seq.empty[(String, JsValue)]) {
-            case (seq, entry) => entry.entryTypes.
-              find(t => ReportCardEntryType.Certificate.entryType == t.entryType).
-              map(_.bool).
-              fold(seq) { bool =>
-                seq.:+(entry.label -> JsBoolean(bool))
-            }
+            case (seq, entry) =>
+              val cert = entry.entryTypes.find(_.entryType == ReportCardEntryType.Certificate.entryType).map(_.bool)
+              val points = entry.entryTypes.find(_.entryType == ReportCardEntryType.Bonus.entryType).map(_.int)
+
+              val subJson = (cert, points) match {
+                case (Some(crt), Some(pts)) => Some(Json.obj(
+                  "Testat" -> JsBoolean(crt),
+                  "Punkte" -> JsNumber(pts)
+                ))
+                case (Some(crt), None) => Some(Json.obj("Testat" -> JsBoolean(crt)))
+                case (None, Some(pts)) => Some(Json.obj("Punkte" -> JsNumber(pts)))
+                case (None, None) => None
+              }
+
+              subJson.fold(seq)(js => seq.:+(entry.label -> js))
           }
 
           val a = ReportCardEntryType.Attendance.entryType.toLowerCase
