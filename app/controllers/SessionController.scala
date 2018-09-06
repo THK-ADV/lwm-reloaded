@@ -35,11 +35,12 @@ class SessionController(val sessionService: SessionHandlingService) extends Cont
       success => {
         sessionService.newSession(success.username.toLowerCase, success.password).map {
           case ValidSession(username, userId, id, _) =>
-            Ok.withSession(
-              SessionController.sessionId -> id.toString,
+            val session = Map(SessionController.sessionId -> id.toString,
               SessionController.userId -> userId.toString,
               Security.username -> username
-            ).as(mimeType)
+            )
+
+            Ok(Json.toJson(session)).withSession(session.toSeq: _*)
           case InvalidSession(message) =>
             Unauthorized(Json.obj(
               "status" -> "KO",
