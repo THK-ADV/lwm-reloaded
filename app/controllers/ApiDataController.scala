@@ -272,6 +272,58 @@ class ApiDataController(
     }
   }
 
+  case class GroupInsertionRequest(labwork: UUID, studentSystemId: String, groupLabel: String)
+
+  def insertIntoGroup(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
+    import bindings.{GroupDescriptor, ReportCardEntryDescriptor, StudentDescriptor}
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import models.LwmDateTime._
+    import models.Group._
+    import models.ReportCardEntry._
+
+    implicit val reads = Json.reads[GroupInsertionRequest]
+
+    val groupInsertion = for {
+      body <- request.body.validate[GroupInsertionRequest].fold(
+        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
+        swapRequest => Success(swapRequest)
+      )
+      optDestGroup <- repository.getAll[Group].map(_.find(g => g.labwork == body.labwork && g.label == body.groupLabel)) if optDestGroup.isDefined
+      optSrcStudent <- repository.getAll[Student].map(_.find(_.systemId == body.studentSystemId)) if optSrcStudent.isDefined
+      srcStudent = optSrcStudent.get
+      destGroup = optDestGroup.get
+      destStudent = destGroup.members.head
+      updatedDestGroup = destGroup.copy(members = destGroup.members + srcStudent.id)
+      _ <- if (preview.toBoolean)
+        fakeSuccessGraph
+      else
+        repository.update(updatedDestGroup)(GroupDescriptor, Group)
+      destCards <- repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == destGroup.labwork && e.student == destStudent))
+      copiedCards = destCards.map(e =>
+        ReportCardEntry(srcStudent.id, body.labwork, e.label, e.date, e.start, e.end, e.room, e.entryTypes.map(t => ReportCardEntryType(t.entryType)))
+      )
+      _ <- if (preview.toBoolean)
+        fakeSuccessGraph
+      else
+        repository.addMany(copiedCards)
+    } yield (destGroup, updatedDestGroup, destCards, copiedCards)
+
+    groupInsertion match {
+      case Success((destGroup, updatedDestGroup, destCards, copiedCards)) => Ok(Json.obj(
+        "status" -> "OK",
+        "oldGroup" -> Json.toJson(destGroup),
+        "updatedGroup" -> Json.toJson(updatedDestGroup),
+        "templateCards" -> Json.toJson(destCards),
+        "copiedCards" -> Json.toJson(copiedCards)
+      ))
+      case Failure(e) => InternalServerError(Json.obj(
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
+    }
+  }
+
   case class ScheduleSupervisorSwapRequest(srcSupervisor: UUID, destSupervisor: UUID, groupLabel: String)
   // this implementation assumes that one supervisor consists on his groups
   def swapSupervisor(scheduleId: String, preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
