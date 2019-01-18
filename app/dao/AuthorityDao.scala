@@ -2,9 +2,10 @@ package dao
 
 import java.util.UUID
 
+import javax.inject.{Inject, Singleton}
 import models._
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 import store._
 
@@ -100,8 +101,17 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
   }
 
-  def authoritiesFor(userId: UUID): Future[Seq[PostgresAuthority]] = {
+  def authoritiesFor(userId: UUID): Future[Seq[PostgresAuthority]] = { // TODO still needed? replaced with def authoritiesFor(systemId: String): Future[Seq[PostgresAuthority]]
     val authorities = for (q <- tableQuery if q.user === userId) yield q
+
+    db.run(authorities.result.map(_.map(_.toLwmModel)))
+  }
+
+  def authoritiesFor(systemId: String): Future[Seq[PostgresAuthority]] = {
+    val authorities = for {
+      q <- tableQuery
+      u <- q.userFk if u.systemId === systemId
+    } yield q
 
     db.run(authorities.result.map(_.map(_.toLwmModel)))
   }
@@ -156,4 +166,5 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   }
 }
 
-final class AuthorityDaoImpl(val db: PostgresDriver.backend.Database, val roleService: RoleDao) extends AuthorityDao
+@Singleton
+final class AuthorityDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val roleService: RoleDao) extends AuthorityDao

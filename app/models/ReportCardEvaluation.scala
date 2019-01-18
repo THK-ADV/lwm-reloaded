@@ -9,9 +9,6 @@ import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.LwmDateTime
 import utils.LwmDateTime._
 
-case class SesameReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = SesameReportCardEvaluation.randomUUID) extends UniqueEntity
-
-case class SesameReportCardEvaluationAtom(student: SesameStudent, labwork: SesameLabworkAtom, label: String, bool: Boolean, int: Int, timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
 
 // POSTGRES
 
@@ -31,13 +28,6 @@ case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, b
   override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, lastModified.dateTime, id)
 }
 
-// COMPS
-
-object SesameReportCardEvaluation extends UriGenerator[SesameReportCardEvaluation] {
-
-  override def base: String = "reportCardEvaluation"
-}
-
 object PostgresReportCardEvaluation {
   implicit val writes: Writes[PostgresReportCardEvaluation] = Json.writes[PostgresReportCardEvaluation]
 }
@@ -54,7 +44,7 @@ object PostgresReportCardEvaluationAtom {
       (JsPath \ "label").write[String] and
       (JsPath \ "bool").write[Boolean] and
       (JsPath \ "int").write[Int] and
-      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writes) and
+      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writeDateTime) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresReportCardEvaluationAtom.unapply))
 }

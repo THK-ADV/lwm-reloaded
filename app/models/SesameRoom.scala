@@ -7,14 +7,6 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 import utils.LwmDateTime._
 
-case class SesameRoom(label: String, description: String, invalidated: Option[DateTime] = None, id: UUID = SesameRoom.randomUUID) extends UniqueEntity
-
-case class SesameRoomProtocol(label: String, description: String)
-
-object SesameRoom extends UriGenerator[SesameRoom] {
-  override def base: String = "rooms"
-}
-
 case class PostgresRoom(label: String, description: String, capacity: Int, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class RoomDb(label: String, description: String, capacity: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {

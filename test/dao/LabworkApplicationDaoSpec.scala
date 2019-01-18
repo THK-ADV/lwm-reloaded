@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import store._
 
 // TODO migrate to abstractExpanderDaoSpec

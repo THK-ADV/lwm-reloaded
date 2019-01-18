@@ -8,26 +8,6 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.LwmDateTime.DateTimeConverter
 
-/**
-  * Structure linking a user to his/her respective authority in the system.
-  * `Authority` is created in order to separate concerns between user data and
-  * his/her permissions in the underlying system.
-  * It abstracts over the set of all partial permissions a user has in the system.
-  *
-  * @param user   The referenced user
-  * @param course Referenced course/module
-  * @param role   Reference to `Role` Instance of that course/module
-  * @param id     Unique id of the `Authority`
-  */
-
-case class SesameAuthority(user: UUID, role: UUID, course: Option[UUID] = None, invalidated: Option[DateTime] = None, id: UUID = SesameAuthority.randomUUID) extends UniqueEntity
-
-case class SesameAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
-
-case class SesameAuthorityAtom(user: User, role: SesameRole, course: Option[SesameCourseAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-// Postgres
-
 sealed trait Authority extends UniqueEntity
 
 case class PostgresAuthority(user: UUID, role: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends Authority
@@ -39,10 +19,6 @@ case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, last
 case class PostgresAuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
 
 case class PostgresAuthorityAtom(user: User, role: PostgresRole, course: Option[PostgresCourseAtom], id: UUID) extends Authority
-
-object SesameAuthority extends UriGenerator[SesameAuthority] {
-  override def base: String = "authorities"
-}
 
 object PostgresAuthority {
   implicit val writes: Writes[PostgresAuthority] = Json.writes[PostgresAuthority]

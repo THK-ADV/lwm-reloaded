@@ -5,31 +5,7 @@ import java.util.UUID
 
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
-import utils.LwmDateTime
-import utils.LwmDateTime.{dateTimeOrd, _}
-
-case class SesameBlacklist(label: String, dates: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameBlacklist.randomUUID) extends UniqueEntity {
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameBlacklist(l, e, _, i) => l == label && dates.toVector.sorted.zip(e.toVector.sorted).forall(d => d._1.isEqual(d._2)) && id == i
-    case _ => false
-  }
-}
-
-case class SesameBlacklistProtocol(label: String, dates: Set[String]) {
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameBlacklistProtocol(l, e) =>
-      l == label &&
-        dates.map(LwmDateTime.toDateTime).toVector.sorted.zip(e.map(LwmDateTime.toDateTime).toVector.sorted).forall(d => d._1.isEqual(d._2))
-    case _ => false
-  }
-}
-
-object SesameBlacklist extends UriGenerator[SesameBlacklist] {
-
-  override def base: String = "blacklists"
-}
-
-// POSTGRES
+import utils.LwmDateTime._
 
 case class PostgresBlacklist(label: String, date: LocalDate, start: LocalTime, end: LocalTime, global: Boolean, id: UUID = UUID.randomUUID) extends UniqueEntity
 

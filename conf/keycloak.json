@@ -1,0 +1,10 @@
+{
+  "realm": "LWM",
+  "bearer-only": true,
+  "auth-server-url": "https://auth.gm.fh-koeln.de/auth",
+  "ssl-required": "external",
+  "resource": "backend-localhost",
+  "credentials": {
+    "secret": "1beaac08-1ed3-467f-9928-a89c6178a00a"
+  }
+}

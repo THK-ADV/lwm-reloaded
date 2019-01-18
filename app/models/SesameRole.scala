@@ -7,29 +7,10 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 import utils.LwmDateTime.DateTimeConverter
 
-/**
-  * Structure abstracting over a set of unary `Permission`s.
-  * These sets are aggregated to specific `Role`s such that default, reusable `Role`s are possible.
-  * `Role`s are independent. They can only be referenced by other graphs.
-  *
-  * @param label       Name or label of the `Role`
-  * @param permissions The unary permissions of that `Role`
-  */
-
-case class SesameRole(label: String, permissions: Set[SesamePermission], invalidated: Option[DateTime] = None, id: UUID = SesameRole.randomUUID) extends UniqueEntity
-
-case class SesameRoleProtocol(label: String, permissions: Set[SesamePermission])
-
-// Postgres
-
 case class PostgresRole(label: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class RoleDb(label: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   def toLwmModel = PostgresRole(label, id)
-}
-
-object SesameRole extends UriGenerator[SesameRole] {
-  override def base: String = "roles"
 }
 
 object PostgresRole {
@@ -42,18 +23,6 @@ sealed trait Role {
 }
 
 object Role {
-
-  def lift(label: String): Option[Role] = Option(label match {
-    case God.label => God
-    case Admin.label => Admin
-    case Employee.label => Employee
-    case Student.label => Student
-    case CourseEmployee.label => CourseEmployee
-    case CourseAssistant.label => CourseAssistant
-    case CourseManager.label => CourseManager
-    case RightsManager.label => RightsManager
-    case _ => null
-  })
 
   case object God extends Role {
     override val label = "God"
@@ -86,6 +55,7 @@ object Role {
   case object RightsManager extends Role {
     override val label = Roles.RightsManagerLabel
   }
+
 }
 
 object Roles {

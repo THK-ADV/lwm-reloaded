@@ -9,47 +9,7 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameTimetable(labwork: UUID, entries: Set[SesameTimetableEntry], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID = SesameTimetable.randomUUID) extends UniqueEntity {
-
-  import utils.LwmDateTime.dateTimeOrd
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameTimetable(l2, e2, s2, bl2, _, id2) =>
-      l2 == labwork &&
-        e2 == entries &&
-        s2.isEqual(start) &&
-        bl2.toVector.sorted.zip(localBlacklist.toVector.sorted).forall(d => d._1.isEqual(d._2)) &&
-        id2 == id
-    case _ => false
-  }
-}
-
-case class SesameTimetableEntry(supervisor: Set[UUID], room: UUID, dayIndex: Int, start: LocalTime, end: LocalTime) {
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameTimetableEntry(sup2, room2, dayIndex2, start2, end2) =>
-      supervisor == sup2 && room == room2 && dayIndex2 == dayIndex && start2.isEqual(start) && end2.isEqual(end)
-    case _ => false
-  }
-}
-
-case class SesameTimetableProtocol(labwork: UUID, entries: Set[SesameTimetableEntry], start: LocalDate, localBlacklist: Set[String])
-
-case class SesameTimetableAtom(labwork: SesameLabwork, entries: Set[SesameTimetableEntryAtom], start: LocalDate, localBlacklist: Set[DateTime], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-case class SesameTimetableEntryAtom(supervisor: Set[User], room: SesameRoom, dayIndex: Int, start: LocalTime, end: LocalTime)
-
-/**
-  * Helper
-  */
-
 case class TimetableDateEntry(weekday: Weekday, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, supervisor: Set[UUID])
-
-object SesameTimetable extends UriGenerator[SesameTimetable] {
-  override def base: String = "timetables"
-}
-
-// POSTGRES
 
 sealed trait Timetable extends UniqueEntity
 

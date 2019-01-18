@@ -8,7 +8,7 @@ import utils.LwmDateTime._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import store.UniqueTable
 
 object AbstractDaoSpec {

@@ -7,13 +7,7 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 import utils.LwmDateTime.DateTimeConverter
 
-case class SesameDegree(label: String, abbreviation: String, invalidated: Option[DateTime] = None, id: UUID = SesameDegree.randomUUID) extends UniqueEntity
-
 case class DegreeProtocol(label: String, abbreviation: String)
-
-object SesameDegree extends UriGenerator[SesameDegree] {
-  override def base: String = "degrees"
-}
 
 case class PostgresDegree(label: String, abbreviation: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 

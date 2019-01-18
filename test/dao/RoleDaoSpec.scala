@@ -8,7 +8,7 @@ import store.RoleTable
 class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, PostgresRole] with RoleDao {
 
   import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   override protected val dbEntity: RoleDb = RoleDb("testRole")
   override protected val invalidDuplicateOfDbEntity: RoleDb = dbEntity

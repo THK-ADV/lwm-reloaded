@@ -8,8 +8,6 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.LwmDateTime._
 
-case class SesameReportCardEntryType(entryType: String, bool: Boolean = false, int: Int = 0, invalidated: Option[DateTime] = None, id: UUID = SesameReportCardEntryType.randomUUID) extends UniqueEntity
-
 // POSTGRES
 
 case class PostgresReportCardEntryType(entryType: String, bool: Option[Boolean] = None, int: Int = 0, id: UUID = UUID.randomUUID) extends UniqueEntity
@@ -20,14 +18,6 @@ case class PostgresReportCardEntryTypeProtocol(entryType: String, bool: Option[B
 
 case class ReportCardEntryTypeDb(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID], entryType: String, bool: Option[Boolean] = None, int: Int = 0, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   override def toLwmModel = PostgresReportCardEntryType(entryType, bool, int, id)
-}
-
-// COMPS
-
-object SesameReportCardEntryType extends UriGenerator[SesameReportCardEntryType] {
-
-  override def base: String = "reportCardEntryTypes"
-
 }
 
 object PostgresReportCardEntryType {

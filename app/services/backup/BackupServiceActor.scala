@@ -63,7 +63,7 @@ final class BackupServiceActor[T](private val backupService: BackupService[T], p
       backup(_ => Unit, _ => Unit)
   }
 
-  private def backup(success: (Vector[File]) => Unit, failure: (Throwable) => Unit): Unit = {
+  private def backup(success: Vector[File] => Unit, failure: Throwable => Unit): Unit = {
     backupService.backup(destFolder, shouldOverride = false).onComplete {
       case Success(files) =>
         log.info(s"successfully backup'ed ${files.size} files")

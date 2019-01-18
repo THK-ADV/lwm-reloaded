@@ -9,22 +9,6 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameAssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry], invalidated: Option[DateTime] = None, id: UUID = SesameAssignmentPlan.randomUUID) extends UniqueEntity
-
-case class SesameAssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry])
-
-case class SesameAssignmentEntry(index: Int, label: String, types: Set[SesameAssignmentEntryType], duration: Int = 1)
-
-case class SesameAssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
-
-case class SesameAssignmentPlanAtom(labwork: SesameLabwork, attendance: Int, mandatory: Int, entries: Set[SesameAssignmentEntry], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-object SesameAssignmentPlan extends UriGenerator[SesameAssignmentPlan] {
-  override def base: String = "assignmentPlans"
-}
-
-// Postgres
-
 sealed trait AssignmentPlan extends UniqueEntity
 
 case class PostgresAssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[PostgresAssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlan

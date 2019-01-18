@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, RoleDao, RoleLabelFilter}
+import javax.inject.{Inject, Singleton}
 import models.Role.{God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
-import services._
+import play.api.mvc.ControllerComponents
 import store.{RoleTable, TableFilter}
-import utils.LwmMimeType
+import utils.SecuredAction
 
 import scala.util.{Failure, Try}
 
@@ -16,8 +17,9 @@ object RoleControllerPostgres {
   lazy val labelAttribute = "label"
 }
 
-final class RoleControllerPostgres(val sessionService: SessionHandlingService, val abstractDao: RoleDao, val authorityDao: AuthorityDao)
-  extends AbstractCRUDControllerPostgres[PostgresRole, RoleTable, RoleDb, PostgresRole] {
+@Singleton
+final class RoleControllerPostgres @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val secureAction: SecuredAction)
+  extends AbstractCRUDControllerPostgres[PostgresRole, RoleTable, RoleDb, PostgresRole](cc) {
 
   override protected implicit val writes: Writes[PostgresRole] = PostgresRole.writes
 
@@ -34,11 +36,11 @@ final class RoleControllerPostgres(val sessionService: SessionHandlingService, v
 
   override protected def toDbModel(protocol: PostgresRole, existingId: Option[UUID]): RoleDb = ???
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.roleV1Json
-
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(RightsManager))
     case GetAll => PartialSecureBlock(List(RightsManager))
     case _ => PartialSecureBlock(List(God))
   }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = ???
 }

@@ -1,7 +1,7 @@
 package services
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import us.theatr.akka.quartz.{AddCronSchedule, QuartzActor}
+//import us.theatr.akka.quartz.{AddCronSchedule, QuartzActor}
 
 case class CronJob(expression: String, actorRef: ActorRef, message: Any)
 
@@ -11,9 +11,10 @@ trait CronService {
 
 final class ActorBasedCronService(val system: ActorSystem, val cronJobs: List[CronJob]) extends CronService {
 
-  lazy val quartzActor = system.actorOf(Props[QuartzActor])
+//  lazy val quartzActor = system.actorOf(Props[QuartzActor])
 
   cronJobs.foreach { job =>
-    quartzActor ! AddCronSchedule(job.actorRef, job.expression, job.message)
+    // TODO
+//    quartzActor ! AddCronSchedule(job.actorRef, job.expression, job.message)
   }
 }

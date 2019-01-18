@@ -8,18 +8,6 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.LwmDateTime.DateTimeConverter
 
-case class SesameCourse(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int, invalidated: Option[DateTime] = None, id: UUID = SesameCourse.randomUUID) extends UniqueEntity
-
-case class SesameCourseProtocol(label: String, description: String, abbreviation: String, lecturer: UUID, semesterIndex: Int)
-
-case class SesameCourseAtom(label: String, description: String, abbreviation: String, lecturer: SesameEmployee, semesterIndex: Int, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
-
-object SesameCourse extends UriGenerator[SesameCourse] {
-  override def base: String = "courses"
-}
-
-// Postgres
-
 sealed trait Course extends UniqueEntity
 
 object Course {

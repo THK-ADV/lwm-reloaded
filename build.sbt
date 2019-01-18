@@ -34,8 +34,8 @@ lazy val testDependencies = Seq(
   //  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   //  "org.scalactic" %% "scalactic" % scalatestVersion % "test",
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
-//  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test",
-//  "com.typesafe.akka" % "akka-testkit_2.11" % "2.4.0"
+  //  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test",
+  //  "com.typesafe.akka" % "akka-testkit_2.11" % "2.4.0"
 )
 
 lazy val scalazDependencies = Seq(
@@ -44,10 +44,10 @@ lazy val scalazDependencies = Seq(
 )
 
 lazy val lwmDependencies = Seq(
-//  "com.chuusai" %% "shapeless" % "2.2.5",
-  "com.unboundid" % "unboundid-ldapsdk" % "2.3.6" % Test,
-//  "us.theatr" %% "akka-quartz" % "0.3.0",
-  "com.typesafe.play" %% "play-json" % "2.6.10"
+  //  "com.chuusai" %% "shapeless" % "2.2.5",
+  //  "us.theatr" %% "akka-quartz" % "0.3.0",
+  "com.typesafe.play" %% "play-json" % "2.6.10",
+  "commons-io" % "commons-io" % "2.6"
 )
 
 lazy val postgresDependencies = Seq(

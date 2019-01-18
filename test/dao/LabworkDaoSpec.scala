@@ -7,7 +7,7 @@ import store._
 final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labwork] with LabworkDao {
 
   import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[SemesterTable].forceInsertAll(semesters),

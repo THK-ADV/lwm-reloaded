@@ -1,9 +1,10 @@
 package dao
 
+import javax.inject.{Inject, Singleton}
 import models._
 import slick.dbio.Effect
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import store.{RoleTable, TableFilter}
 
 import scala.concurrent.Future
@@ -43,4 +44,5 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
   }
 }
 
-final class RoleDaoImpl(val db: PostgresDriver.backend.Database) extends RoleDao
+@Singleton
+final class RoleDaoImpl @Inject() (val db: PostgresProfile.backend.Database) extends RoleDao

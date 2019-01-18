@@ -7,13 +7,13 @@ import store._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 object PostgresDbSpec {
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   lazy val db = Database.forConfig("database_test")
 }
 
 abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with DatabaseModule {
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
   import scala.concurrent.duration._
 
   override def db = base.PostgresDbSpec.db

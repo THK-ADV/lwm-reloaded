@@ -1,7 +1,7 @@
 package dao
 
 import models._
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import store._
 import utils.LwmDateTime._

@@ -9,50 +9,6 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameSchedule(labwork: UUID, entries: Set[SesameScheduleEntry], invalidated: Option[DateTime] = None, id: UUID = SesameSchedule.randomUUID) extends UniqueEntity
-
-case class SesameScheduleEntry(labwork: UUID,
-                               start: LocalTime,
-                               end: LocalTime,
-                               date: LocalDate,
-                               room: UUID,
-                               supervisor: Set[UUID],
-                               group: UUID,
-                               invalidated: Option[DateTime] = None,
-                               id: UUID = SesameScheduleEntry.randomUUID) extends UniqueEntity {
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameScheduleEntry(l, s, e, d, r, su, g, _, i) =>
-      l == labwork &&
-        s.isEqual(start) &&
-        e.isEqual(end) &&
-        d.isEqual(date) &&
-        r == room &&
-        su == supervisor &&
-        g == group &&
-        i == id
-    case _ => false
-  }
-}
-
-/**
-  * Atoms
-  */
-
-case class SesameScheduleAtom(labwork: SesameLabworkAtom, entries: Set[SesameScheduleEntryAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-case class SesameScheduleEntryAtom(labwork: SesameLabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: SesameRoom, supervisor: Set[User], group: SesameGroup, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-object SesameSchedule extends UriGenerator[SesameSchedule] {
-  override def base: String = "schedules"
-}
-
-object SesameScheduleEntry extends UriGenerator[SesameScheduleEntry] {
-  override def base: String = "scheduleEntry"
-}
-
-// POSTGRES
-
 sealed trait ScheduleEntry extends UniqueEntity
 
 case class PostgresScheduleEntry(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: UUID, id: UUID = UUID.randomUUID) extends ScheduleEntry

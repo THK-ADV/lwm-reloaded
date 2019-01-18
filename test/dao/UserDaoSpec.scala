@@ -11,7 +11,7 @@ import slick.driver.PostgresDriver
 import store._
 
 final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserDao {
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
   import dao.AbstractDaoSpec._
   import scala.util.Random.nextInt
 
@@ -198,10 +198,10 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
 
       override protected def roleService: RoleDao = new RoleDao {
 
-        override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+        override protected def db: driver.PostgresProfile.backend.Database = sharedDb
       }
 
-      override protected def db: PostgresDriver.backend.Database = sharedDb
+      override protected def db: PostgresProfile.backend.Database = sharedDb
     }
   }
 

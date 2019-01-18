@@ -14,7 +14,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime.DateTimeConverter
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   private lazy val privateLecturers = (0 until 7).map { i =>
     DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
@@ -252,7 +252,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
   override protected val roleService: RoleDao = {
     val sharedDb = db
     new RoleDao {
-      override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+      override protected def db: driver.PostgresProfile.backend.Database = sharedDb
     }
   }
 }

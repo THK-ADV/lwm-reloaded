@@ -8,7 +8,7 @@ import store.SemesterTable
 final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterDao {
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime._
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   val now = LocalDate.parse("2017-01-01")
   val tomorrow = LocalDate.parse("2017-01-02")

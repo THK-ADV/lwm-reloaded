@@ -17,14 +17,12 @@ trait User extends UniqueEntity {
   def email: String
 }
 
-object User extends UriGenerator[User] {
+object User {
 
   lazy val EmployeeType = "employee"
   lazy val LecturerType = "lecturer"
   lazy val StudentType = "student"
   lazy val types = List(EmployeeType, LecturerType, StudentType)
-
-  override def base: String = "users"
 
   implicit val writes: Writes[User] = new Writes[User] {
     override def writes(user: User): JsValue = user match {
@@ -42,17 +40,18 @@ object UserProtocol {
   implicit val reads: Reads[UserProtocol] = Json.reads[UserProtocol]
 }
 
-case class DbUser(systemId: String,
-                  lastname: String,
-                  firstname: String,
-                  email: String,
-                  status: String,
-                  registrationId: Option[String],
-                  enrollment: Option[UUID],
-                  lastModified: Timestamp = DateTime.now.timestamp,
-                  invalidated: Option[Timestamp] = None,
-                  id: UUID = UUID.randomUUID)
-  extends UniqueDbEntity {
+case class DbUser(
+  systemId: String,
+  lastname: String,
+  firstname: String,
+  email: String,
+  status: String,
+  registrationId: Option[String],
+  enrollment: Option[UUID],
+  lastModified: Timestamp = DateTime.now.timestamp,
+  invalidated: Option[Timestamp] = None,
+  id: UUID = UUID.randomUUID
+) extends UniqueDbEntity {
 
   override def toLwmModel: User = this match {
     case DbUser(sId, last, first, mail, stat, Some(regId), Some(enroll), _, _, studentId) if stat == User.StudentType =>

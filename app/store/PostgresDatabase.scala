@@ -3,7 +3,7 @@ package store
 import java.util.UUID
 
 import models._
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 import java.sql.{Date, Time, Timestamp}
 import utils.LwmDateTime._

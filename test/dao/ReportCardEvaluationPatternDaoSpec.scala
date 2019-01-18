@@ -6,7 +6,7 @@ import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb}
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
 import store._
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 
 final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] with ReportCardEvaluationPatternDao {
   import dao.AbstractDaoSpec.{reportCardEvaluationpatterns, labworks, semesters, degrees, courses, employees}

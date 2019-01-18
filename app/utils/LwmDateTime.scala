@@ -6,7 +6,9 @@ import java.util.Calendar
 import models.{PostgresBlacklist, ScheduleEntryGen, TimetableDateEntry}
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
-import play.api.libs.json.{JsString, Writes}
+import play.api.libs.json._
+
+import scala.util.{Failure, Success, Try}
 
 object LwmDateTime {
 
@@ -64,8 +66,6 @@ object LwmDateTime {
 
   def sqlDateNow: Date = new Date(Calendar.getInstance.getTimeInMillis)
 
-  implicit def writes: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
-
   def toLocalTime(date: Date): LocalTime = new LocalTime(date.getTime)
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
@@ -100,5 +100,22 @@ object LwmDateTime {
 
   implicit val dateTimeOrd: Ordering[DateTime] = new Ordering[DateTime] {
     override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
+  }
+
+  implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
+
+  implicit val writeLocalDate: Writes[LocalDate] = Writes(a => JsString(a.toString(dateFormatter)))
+
+  implicit val writeLocalTime: Writes[LocalTime] = Writes(a => JsString(a.toString(timeFormatter)))
+
+  implicit val readLocalDate: Reads[LocalDate] = Reads(js => jsResult(Try(dateFormatter.parseLocalDate(js.toString()))))
+
+  implicit val readLocalTime: Reads[LocalTime] = Reads(js => jsResult(Try(timeFormatter.parseLocalTime(js.toString()))))
+
+  implicit val readDateTime: Reads[DateTime] = Reads(js => jsResult(Try(formatter.parseDateTime(js.toString()))))
+
+  private def jsResult[A](a: Try[A]): JsResult[A] = a match {
+    case Success(s) => JsSuccess(s)
+    case Failure(e) => JsError(e.getLocalizedMessage)
   }
 }

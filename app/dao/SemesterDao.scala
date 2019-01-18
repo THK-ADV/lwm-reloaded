@@ -2,12 +2,13 @@ package dao
 
 import java.util.UUID
 
-import utils.LwmDateTime._
+import javax.inject.{Inject, Singleton}
 import models.{PostgresSemester, SemesterDb}
 import org.joda.time.LocalDate
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import store.{SemesterTable, TableFilter}
+import utils.LwmDateTime._
 
 import scala.concurrent.Future
 
@@ -54,7 +55,7 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
       (existing.label == toUpdate.label && existing.start.equals(toUpdate.start) && existing.end.equals(toUpdate.end))
   }
 
-  override protected def existsQuery(entity: SemesterDb): Query[SemesterTable, SemesterDb, Seq] = {
+  override protected def existsQuery(entity: SemesterDb): PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq] = {
     filterBy(List(
       SemesterLabelFilter(entity.label),
       SemesterStartFilter(entity.start.stringMillis),
@@ -62,11 +63,12 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
     ))
   }
 
-  override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
+  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
     db.run(query.result.map(_.map(_.toLwmModel)))
   }
 }
 
-final class SemesterDaoImpl(val db: PostgresDriver.backend.Database) extends SemesterDao
+@Singleton
+final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database) extends SemesterDao

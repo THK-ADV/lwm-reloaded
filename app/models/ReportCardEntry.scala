@@ -9,33 +9,6 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[SesameReportCardEntryType], rescheduled: Option[SesameRescheduled] = None, invalidated: Option[DateTime] = None, id: UUID = SesameReportCardEntry.randomUUID) extends UniqueEntity {
-
-  override def equals(that: scala.Any): Boolean = that match {
-    case SesameReportCardEntry(s, l, la, d, st, e, r, et, rs, _, i) =>
-      s == student &&
-        l == labwork &&
-        la == label &&
-        d.isEqual(date) &&
-        st.isEqual(start) &&
-        e.isEqual(end) &&
-        r == room &&
-        et == entryTypes &&
-        rs == rescheduled &&
-        i == id
-    case None => false
-  }
-}
-
-case class SesameReportCardEntryAtom(student: SesameStudent, labwork: SesameLabwork, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom, entryTypes: Set[SesameReportCardEntryType], rescheduled: Option[SesameRescheduledAtom], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-object SesameReportCardEntry extends UriGenerator[SesameReportCardEntry] {
-
-  override def base: String = "reportCardEntries"
-}
-
-// POSTGRES
-
 sealed trait ReportCardEntry extends UniqueEntity
 
 case class PostgresReportCardEntry(student: UUID, labwork: UUID, label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], rescheduled: Option[PostgresReportCardRescheduled] = None, retry: Option[PostgresReportCardRetry] = None, id: UUID = UUID.randomUUID) extends ReportCardEntry

@@ -10,24 +10,6 @@ import utils.LwmDateTime
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameLabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = SesameLabworkApplication.randomUUID) extends UniqueEntity {
-
-  override def equals(obj: scala.Any): Boolean = obj match {
-    case SesameLabworkApplication(l, a, f, t, _, i) => l == labwork && a == applicant && f == friends && t.isEqual(timestamp) && i == id
-    case _ => false
-  }
-}
-
-case class SesameLabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
-
-case class SesameLabworkApplicationAtom(labwork: SesameLabworkAtom, applicant: SesameStudent, friends: Set[SesameStudent], timestamp: DateTime, invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-object SesameLabworkApplication extends UriGenerator[SesameLabworkApplication] {
-  override def base: String = "labworkApplications"
-}
-
-// Postgres
-
 sealed trait LabworkApplication extends UniqueEntity {
   def lastModified: DateTime
 }
@@ -76,7 +58,7 @@ object PostgresLabworkApplicationAtom {
     (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writes) and
       (JsPath \ "applicant").write[User] and
       (JsPath \ "friends").writeSet[User] and
-      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writes) and
+      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writeDateTime) and
       (JsPath \ "id").write[UUID]
     ) (unlift(PostgresLabworkApplicationAtom.unapply))
 }

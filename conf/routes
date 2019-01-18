@@ -2,43 +2,43 @@
 # This file defines all() application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                                                                     controllers.HomepageController.index
+GET        /                    controllers.HomepageController.index
 
 # Degree 2.0
-PUT           /api2/degrees/:id                                                     controllers.DegreeControllerPostgres.update(id)
-GET           /api2/degrees                                                         controllers.DegreeControllerPostgres.all()
-GET           /api2/degrees/:id                                                     controllers.DegreeControllerPostgres.get(id)
-
-# Course 2.0
-POST          /api2/courses                                                         controllers.CourseControllerPostgres.create()
-PUT           /api2/courses/:id                                                     controllers.CourseControllerPostgres.update(id)
-GET           /api2/courses                                                         controllers.CourseControllerPostgres.all()
-GET           /api2/courses/:id                                                     controllers.CourseControllerPostgres.get(id)
-DELETE        /api2/courses/:id                                                     controllers.CourseControllerPostgres.delete(id)
-
-# Group 2
-GET           /api2/courses/:c/labworks/:l/groups                                   controllers.GroupControllerPostgres.allFrom(c, l)
-GET           /api2/courses/:c/labworks/:l/groups/preview                           controllers.GroupControllerPostgres.preview(c, l)
-
-# Labwork 2.0
-
-GET           /api2/labworks/degrees/:degree                                        controllers.LabworkControllerPostgres.allWithDegree(degree)
-GET           /api2/labworks/:id                                                    controllers.LabworkControllerPostgres.get(id)
-
-# Labwork 2.0 restricted
-
-POST          /api2/courses/:course/labworks                                        controllers.LabworkControllerPostgres.createFrom(course)
-PUT           /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.updateFrom(course, id)
-GET           /api2/courses/:course/labworks                                        controllers.LabworkControllerPostgres.allFrom(course)
-GET           /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.getFrom(course, id)
-DELETE        /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.deleteFrom(course, id)
-
-# Room 2.0
-POST          /api2/rooms                                                           controllers.RoomControllerPostgres.create()
-PUT           /api2/rooms/:id                                                       controllers.RoomControllerPostgres.update(id)
-GET           /api2/rooms                                                           controllers.RoomControllerPostgres.all()
-GET           /api2/rooms/:id                                                       controllers.RoomControllerPostgres.get(id)
-DELETE        /api2/rooms/:id                                                       controllers.RoomControllerPostgres.delete(id)
+#PUT           /api2/degrees/:id                                                     controllers.DegreeControllerPostgres.update(id)
+#GET           /api2/degrees                                                         controllers.DegreeControllerPostgres.all()
+#GET           /api2/degrees/:id                                                     controllers.DegreeControllerPostgres.get(id)
+#
+## Course 2.0
+#POST          /api2/courses                                                         controllers.CourseControllerPostgres.create()
+#PUT           /api2/courses/:id                                                     controllers.CourseControllerPostgres.update(id)
+#GET           /api2/courses                                                         controllers.CourseControllerPostgres.all()
+#GET           /api2/courses/:id                                                     controllers.CourseControllerPostgres.get(id)
+#DELETE        /api2/courses/:id                                                     controllers.CourseControllerPostgres.delete(id)
+#
+## Group 2
+#GET           /api2/courses/:c/labworks/:l/groups                                   controllers.GroupControllerPostgres.allFrom(c, l)
+#GET           /api2/courses/:c/labworks/:l/groups/preview                           controllers.GroupControllerPostgres.preview(c, l)
+#
+## Labwork 2.0
+#
+#GET           /api2/labworks/degrees/:degree                                        controllers.LabworkControllerPostgres.allWithDegree(degree)
+#GET           /api2/labworks/:id                                                    controllers.LabworkControllerPostgres.get(id)
+#
+## Labwork 2.0 restricted
+#
+#POST          /api2/courses/:course/labworks                                        controllers.LabworkControllerPostgres.createFrom(course)
+#PUT           /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.updateFrom(course, id)
+#GET           /api2/courses/:course/labworks                                        controllers.LabworkControllerPostgres.allFrom(course)
+#GET           /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.getFrom(course, id)
+#DELETE        /api2/courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.deleteFrom(course, id)
+#
+## Room 2.0
+#POST          /api2/rooms                                                           controllers.RoomControllerPostgres.create()
+#PUT           /api2/rooms/:id                                                       controllers.RoomControllerPostgres.update(id)
+#GET           /api2/rooms                                                           controllers.RoomControllerPostgres.all()
+#GET           /api2/rooms/:id                                                       controllers.RoomControllerPostgres.get(id)
+#DELETE        /api2/rooms/:id                                                       controllers.RoomControllerPostgres.delete(id)
 
 # Semester 2.0
 POST          /api2/semesters                                                       controllers.SemesterControllerPostgres.create()
@@ -46,139 +46,112 @@ PUT           /api2/semesters/:id                                               
 GET           /api2/semesters                                                       controllers.SemesterControllerPostgres.all()
 GET           /api2/semesters/:id                                                   controllers.SemesterControllerPostgres.get(id)
 DELETE        /api2/semesters/:id                                                   controllers.SemesterControllerPostgres.delete(id)
-
+#
 # Role 2.0
 GET           /api2/roles/:id                                                       controllers.RoleControllerPostgres.get(id)
 GET           /api2/roles                                                           controllers.RoleControllerPostgres.all()
-
-# Authority 2.0
-POST          /api2/authorities                                                     controllers.AuthorityControllerPostgres.create()
-GET           /api2/authorities                                                     controllers.AuthorityControllerPostgres.all()
-GET           /api2/authorities/:id                                                 controllers.AuthorityControllerPostgres.get(id)
-DELETE        /api2/authorities/:id                                                 controllers.AuthorityControllerPostgres.delete(id)
-
-# LabworkApplications 2.0
-POST          /api2/labworkApplications                                             controllers.LabworkApplicationControllerPostgres.create()
-PUT           /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.update(id)
-GET           /api2/labworkApplications                                             controllers.LabworkApplicationControllerPostgres.all()
-GET           /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.get(id)
-DELETE        /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.delete(id)
-
-# Schedule / ScheduleEntries 2.0
-POST          /api2/courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.createFrom(c)
-GET           /api2/courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryControllerPostgres.preview(c, l)
-
-GET           /api2/courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.allFrom(c)
-GET           /api2/courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.allFromLabwork(c, l)
-GET           /api2/courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.getFrom(c, id)
-PUT           /api2/courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.updateFrom(c, id)
-DELETE        /api2/courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.deleteFrom(c, l)
-
-# Timetable 2.0 restricted
-
-POST          /api2/courses/:c/timetables                                           controllers.TimetableControllerPostgres.createFrom(c)
-PUT           /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.updateFrom(c, id)
-GET           /api2/courses/:c/timetables                                           controllers.TimetableControllerPostgres.allFrom(c)
-GET           /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.getFrom(c, id)
-DELETE        /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.deleteFrom(c, id)
-
-# Blacklist 2.0
-POST          /api2/blacklists                                                      controllers.BlacklistControllerPostgres.create()
-POST          /api2/blacklists/year/:year                                           controllers.BlacklistControllerPostgres.createFor(year)
-PUT           /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.update(id)
-GET           /api2/blacklists                                                      controllers.BlacklistControllerPostgres.all()
-GET           /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.get(id)
-DELETE        /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.delete(id)
-
-# ReportCardEntry 2.0
-GET           /api2/reportCardEntries/student/:s                                    controllers.ReportCardEntryControllerPostgres.getForStudent(s)
-
-POST          /api2/courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
-POST          /api2/courses/:c/reportCardEntries/copy                               controllers.ReportCardEntryControllerPostgres.createByCopy(c)
-
-GET           /api2/courses/:c/reportCardEntries                                    controllers.ReportCardEntryControllerPostgres.allFrom(c)
-GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
-
-# ReportCardEntryType 2.0
-PUT           /api2/courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeControllerPostgres.updateFrom(c, id)
-
-# ReportCardRescheduled 2.0
-POST          /api2/courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
-GET           /api2/courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.allFrom(c)
-GET           /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.getFrom(c, id)
-PUT           /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.updateFrom(c, id)
-DELETE        /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.deleteFrom(c, id)
-
-# ReportCardRetry 2.0
-POST          /api2/courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.createFrom(c)
-GET           /api2/courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.allFrom(c)
-GET           /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.getFrom(c, id)
-PUT           /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.updateFrom(c, id)
-DELETE        /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.deleteFrom(c, id)
-
-# ReportCardEvaluation 2.0
-GET           /api2/reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationControllerPostgres.get(s)
-
-# ReportCardEvaluation restricted
-POST          /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.createFrom(c, l)
-POST          /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
-GET           /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
-GET           /api2/courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
-PUT           /api2/courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationControllerPostgres.updateFrom(c, l, id)
-DELETE        /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.deleteFromLabwork(c, l)
-DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.deleteFromStudent(c, l, s)
-
-# ReportCardEvaluationPattern 2.0
-POST          /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.createFrom(c)
-GET           /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.allFrom(c)
-GET           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.getFrom(c, id)
-PUT           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.updateFrom(c, id)
-DELETE        /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.deleteFrom(c, id)
-
-# AssignmentPlan 2.0
-POST          /api2/courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.createFrom(course)
-PUT           /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.updateFrom(course, id)
-GET           /api2/courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.allFrom(course)
-GET           /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.getFrom(course, id)
-DELETE        /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.deleteFrom(course, id)
-
-# Users 2.0
-POST          /api2/users                                                           controllers.UserControllerPostgres.create()
-GET           /api2/users                                                           controllers.UserControllerPostgres.all()
-GET           /api2/labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserControllerPostgres.buddy(labwork, user, buddy)
-GET           /api2/users/:id                                                       controllers.UserControllerPostgres.get(id)
-
-# Sessions
-POST          /sessions                                                             controllers.SessionController.login
-GET           /sessions                                                             controllers.SessionController.valid
-DELETE        /sessions                                                             controllers.SessionController.logout
-HEAD          /sessions                                                             controllers.SessionController.header
-
-# Dashboard
-GET           /dashboards                                                           controllers.DashboardController.dashboard()
-GET           /dashboards/:id                                                       controllers.DashboardController.dashboardFor(id)
-
-# APIData
-GET           /api/collisions                                                       controllers.ApiDataController.collisionsForCurrentLabworks()
-GET           /api/multipleReportCardEntries/:c                                     controllers.ApiDataController.multipleReportCardEntries(c)
-
-GET           /api/migrate/degrees                                                  controllers.ApiDataController.migrateDegrees()
-GET           /api/migrate/users                                                    controllers.ApiDataController.migrateUsers()
-GET           /api/migrate/roles                                                    controllers.ApiDataController.migrateRoles()
-GET           /api/migrate/semesters                                                controllers.ApiDataController.migrateSemesters()
-GET           /api/migrate/courses                                                  controllers.ApiDataController.migrateCourses()
-GET           /api/migrate/labworks                                                 controllers.ApiDataController.migrateLabworks()
-GET           /api/migrate/labworkApplications                                      controllers.ApiDataController.migrateLabworkApplications()
-GET           /api/migrate/rooms                                                    controllers.ApiDataController.migrateRooms()
-GET           /api/migrate/assignmentPlans                                          controllers.ApiDataController.migrateAssignmentPlans()
-GET           /api/migrate/authorities                                              controllers.ApiDataController.migrateAuthorities()
-GET           /api/migrate/blacklists                                               controllers.ApiDataController.migrateBlacklists()
-GET           /api/migrate/timetables                                               controllers.ApiDataController.migrateTimetables()
-GET           /api/migrate/reportCardEntries                                        controllers.ApiDataController.migrateReportCardEntries()
-GET           /api/migrate/groups                                                   controllers.ApiDataController.migrateGroups()
-GET           /api/migrate/schedules                                                controllers.ApiDataController.migrateSchedules()
-GET           /api/migrate/reportCardEvaluations                                    controllers.ApiDataController.migrateReportCardEvaluations()
-GET           /api/migrate/reportCardEvaluationPatterns                             controllers.ApiDataController.createReportCardEvaluationPatterns()
+#
+## Authority 2.0
+#POST          /api2/authorities                                                     controllers.AuthorityControllerPostgres.create()
+#GET           /api2/authorities                                                     controllers.AuthorityControllerPostgres.all()
+#GET           /api2/authorities/:id                                                 controllers.AuthorityControllerPostgres.get(id)
+#DELETE        /api2/authorities/:id                                                 controllers.AuthorityControllerPostgres.delete(id)
+#
+## LabworkApplications 2.0
+#POST          /api2/labworkApplications                                             controllers.LabworkApplicationControllerPostgres.create()
+#PUT           /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.update(id)
+#GET           /api2/labworkApplications                                             controllers.LabworkApplicationControllerPostgres.all()
+#GET           /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.get(id)
+#DELETE        /api2/labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.delete(id)
+#
+## Schedule / ScheduleEntries 2.0
+#POST          /api2/courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.createFrom(c)
+#GET           /api2/courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryControllerPostgres.preview(c, l)
+#
+#GET           /api2/courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.allFrom(c)
+#GET           /api2/courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.allFromLabwork(c, l)
+#GET           /api2/courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.getFrom(c, id)
+#PUT           /api2/courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.updateFrom(c, id)
+#DELETE        /api2/courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.deleteFrom(c, l)
+#
+## Timetable 2.0 restricted
+#
+#POST          /api2/courses/:c/timetables                                           controllers.TimetableControllerPostgres.createFrom(c)
+#PUT           /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.updateFrom(c, id)
+#GET           /api2/courses/:c/timetables                                           controllers.TimetableControllerPostgres.allFrom(c)
+#GET           /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.getFrom(c, id)
+#DELETE        /api2/courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.deleteFrom(c, id)
+#
+## Blacklist 2.0
+#POST          /api2/blacklists                                                      controllers.BlacklistControllerPostgres.create()
+#POST          /api2/blacklists/year/:year                                           controllers.BlacklistControllerPostgres.createFor(year)
+#PUT           /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.update(id)
+#GET           /api2/blacklists                                                      controllers.BlacklistControllerPostgres.all()
+#GET           /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.get(id)
+#DELETE        /api2/blacklists/:id                                                  controllers.BlacklistControllerPostgres.delete(id)
+#
+## ReportCardEntry 2.0
+#GET           /api2/reportCardEntries/student/:s                                    controllers.ReportCardEntryControllerPostgres.getForStudent(s)
+#
+#POST          /api2/courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
+#POST          /api2/courses/:c/reportCardEntries/copy                               controllers.ReportCardEntryControllerPostgres.createByCopy(c)
+#
+#GET           /api2/courses/:c/reportCardEntries                                    controllers.ReportCardEntryControllerPostgres.allFrom(c)
+#GET           /api2/courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
+#
+## ReportCardEntryType 2.0
+#PUT           /api2/courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeControllerPostgres.updateFrom(c, id)
+#
+## ReportCardRescheduled 2.0
+#POST          /api2/courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
+#GET           /api2/courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.allFrom(c)
+#GET           /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.getFrom(c, id)
+#PUT           /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.updateFrom(c, id)
+#DELETE        /api2/courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.deleteFrom(c, id)
+#
+## ReportCardRetry 2.0
+#POST          /api2/courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.createFrom(c)
+#GET           /api2/courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.allFrom(c)
+#GET           /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.getFrom(c, id)
+#PUT           /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.updateFrom(c, id)
+#DELETE        /api2/courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.deleteFrom(c, id)
+#
+## ReportCardEvaluation 2.0
+#GET           /api2/reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationControllerPostgres.get(s)
+#
+## ReportCardEvaluation restricted
+#POST          /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.createFrom(c, l)
+#POST          /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
+#GET           /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
+#GET           /api2/courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
+#PUT           /api2/courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationControllerPostgres.updateFrom(c, l, id)
+#DELETE        /api2/courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.deleteFromLabwork(c, l)
+#DELETE        /api2/courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.deleteFromStudent(c, l, s)
+#
+## ReportCardEvaluationPattern 2.0
+#POST          /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.createFrom(c)
+#GET           /api2/courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.allFrom(c)
+#GET           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.getFrom(c, id)
+#PUT           /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.updateFrom(c, id)
+#DELETE        /api2/courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.deleteFrom(c, id)
+#
+## AssignmentPlan 2.0
+#POST          /api2/courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.createFrom(course)
+#PUT           /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.updateFrom(course, id)
+#GET           /api2/courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.allFrom(course)
+#GET           /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.getFrom(course, id)
+#DELETE        /api2/courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.deleteFrom(course, id)
+#
+## Users 2.0
+## POST          /api2/users                                                           controllers.UserControllerPostgres.create()
+#GET           /api2/users                                                           controllers.UserControllerPostgres.all()
+#GET           /api2/labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserControllerPostgres.buddy(labwork, user, buddy)
+#GET           /api2/users/:id                                                       controllers.UserControllerPostgres.get(id)
+#
+#
+## Dashboard
+#GET           /dashboards                                                           controllers.DashboardController.dashboard()
+#GET           /dashboards/:id                                                       controllers.DashboardController.dashboardFor(id)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file                                                         controllers.Assets.at(path="/public", file)
+GET        /assets/*file        controllers.Assets.at(path="/public", file)

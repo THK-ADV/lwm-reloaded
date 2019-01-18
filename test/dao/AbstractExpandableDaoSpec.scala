@@ -2,7 +2,7 @@ package dao
 
 import models.{UniqueDbEntity, UniqueEntity}
 import slick.dbio.{DBIOAction, NoStream}
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import store.UniqueTable
 
 abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]

@@ -10,6 +10,8 @@ import play.api.libs.functional.syntax._
 case class ScheduleEntryGen(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: PostgresGroup)
 
 object ScheduleEntryGen {
+  import utils.LwmDateTime.{writeLocalTime, writeLocalDate, readLocalDate, readLocalTime}
+
   implicit val writes: Writes[ScheduleEntryGen] = (
     (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and

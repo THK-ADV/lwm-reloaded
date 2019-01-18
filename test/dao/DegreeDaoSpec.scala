@@ -2,7 +2,7 @@ package dao
 
 import models.{DegreeDb, PostgresDegree}
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import store.DegreeTable
 
 final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeDao {

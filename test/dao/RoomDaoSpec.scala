@@ -2,7 +2,7 @@ package dao
 
 import models.{PostgresRoom, RoomDb}
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import store.RoomTable
 
 final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomDao {

@@ -9,16 +9,6 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-case class SesameGroup(label: String, labwork: UUID, members: Set[UUID], invalidated: Option[DateTime] = None, id: UUID = SesameGroup.randomUUID) extends UniqueEntity
-
-case class SesameGroupProtocol(label: String, labwork: UUID, members: Set[UUID])
-
-case class SesameGroupAtom(label: String, labwork: SesameLabwork, members: Set[SesameStudent], invalidated: Option[DateTime] = None, id: UUID) extends UniqueEntity
-
-object SesameGroup extends UriGenerator[SesameGroup] {
-  override def base: String = "groups"
-}
-
 // POSTGRES
 
 sealed trait Group extends UniqueEntity

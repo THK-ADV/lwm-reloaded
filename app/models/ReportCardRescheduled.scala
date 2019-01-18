@@ -8,12 +8,6 @@ import play.api.libs.functional.syntax.{unlift, _}
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.LwmDateTime._
 
-case class SesameRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID)
-
-case class SesameRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: SesameRoom)
-
-// POSTGRES
-
 trait ReportCardRescheduled extends UniqueEntity
 
 case class PostgresReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRescheduled

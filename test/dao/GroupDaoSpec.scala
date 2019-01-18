@@ -3,7 +3,7 @@ package dao
 import models._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 import store._
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import services.GroupService._
 
 final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, Group] with GroupDao {

@@ -9,7 +9,7 @@ import store._
 
 final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, Timetable] with TimetableDao {
   import utils.LwmDateTime._
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
   private lazy val privateBlacklists = populateBlacklists(50)

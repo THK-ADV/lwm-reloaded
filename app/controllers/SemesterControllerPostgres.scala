@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.Role.{Admin, Employee, Student}
+import javax.inject.{Inject, Singleton}
+import models.Role.{Admin, Employee, God, Student}
 import models.{PostgresSemester, SemesterDb, SemesterProtocol}
 import play.api.libs.json.{Reads, Writes}
-import services._
+import play.api.mvc.ControllerComponents
 import store.{SemesterTable, TableFilter}
-import utils.LwmMimeType
+import utils.SecuredAction
 
 import scala.util.{Failure, Try}
 
@@ -23,10 +24,9 @@ object SemesterControllerPostgres {
   lazy val currentValue = "current"
 }
 
-final class SemesterControllerPostgres(val sessionService: SessionHandlingService, val authorityDao: AuthorityDao, val abstractDao: SemesterDao)
-  extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester] {
-
-  override implicit val mimeType: LwmMimeType = LwmMimeType.semesterV1Json
+@Singleton
+final class SemesterControllerPostgres @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val secureAction: SecuredAction)
+  extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester](cc) {
 
   override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
 
@@ -55,4 +55,8 @@ final class SemesterControllerPostgres(val sessionService: SessionHandlingServic
   }
 
   override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(List(God))
+  }
 }

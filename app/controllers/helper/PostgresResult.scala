@@ -3,12 +3,12 @@ package controllers.helper
 import java.util.UUID
 
 import play.api.libs.json.{Json, Writes}
-import play.api.mvc.{Controller, Result}
+import play.api.mvc.{BaseController, Result}
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-trait PostgresResult { self: Controller =>
+trait PostgresResult { self: BaseController =>
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

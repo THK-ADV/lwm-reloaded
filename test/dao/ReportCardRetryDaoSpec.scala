@@ -8,7 +8,7 @@ import org.joda.time.{DateTime, LocalDate, LocalTime}
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
 import store._
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
 final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetry] with ReportCardRetryDao {

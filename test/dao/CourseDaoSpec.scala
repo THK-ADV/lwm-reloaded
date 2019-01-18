@@ -12,7 +12,7 @@ import store.{CourseTable, RoleTable, UserTable}
 class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseDao {
 
   import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+  import slick.jdbc.PostgresProfile.api._
 
   "A CourseServiceSpec " should {
 
@@ -72,10 +72,10 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with 
 
     new AuthorityDao {
       override protected def roleService: RoleDao = new RoleDao {
-        override protected def db: driver.PostgresDriver.backend.Database = sharedDb
+        override protected def db: driver.PostgresProfile.backend.Database = sharedDb
       }
 
-      override protected def db: PostgresDriver.backend.Database = sharedDb
+      override protected def db: PostgresProfile.backend.Database = sharedDb
     }
   }
 

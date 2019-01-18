@@ -8,11 +8,11 @@ import models.{UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.dbio.Effect
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import slick.profile.FixedSqlAction
 import store.{TableFilter, UniqueTable}
+import slick.sql.FixedSqlAction
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -34,7 +34,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     override def predicate = _.id === UUID.fromString(value)
   }
 
-  protected def db: PostgresDriver.backend.Database
+  protected def db: PostgresProfile.backend.Database
 
   def tableQuery: TableQuery[T]
 
