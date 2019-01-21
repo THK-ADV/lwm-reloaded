@@ -70,5 +70,4 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
   }
 }
 
-@Singleton
 final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database) extends SemesterDao

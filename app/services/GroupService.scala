@@ -7,7 +7,7 @@ import utils.PreferenceSort
 
 import scalaz.StreamT._
 
-object GroupService {
+object GroupService { // TODO DI
 
   def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
 

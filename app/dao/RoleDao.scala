@@ -1,6 +1,6 @@
 package dao
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
@@ -44,5 +44,4 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
   }
 }
 
-@Singleton
-final class RoleDaoImpl @Inject() (val db: PostgresProfile.backend.Database) extends RoleDao
+final class RoleDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends RoleDao

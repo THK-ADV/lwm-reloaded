@@ -25,7 +25,7 @@ object SemesterControllerPostgres {
 }
 
 @Singleton
-final class SemesterControllerPostgres @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val secureAction: SecuredAction)
+final class SemesterControllerPostgres @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecuredAction)
   extends AbstractCRUDControllerPostgres[SemesterProtocol, SemesterTable, SemesterDb, PostgresSemester](cc) {
 
   override protected implicit val writes: Writes[PostgresSemester] = PostgresSemester.writes
@@ -56,7 +56,5 @@ final class SemesterControllerPostgres @Inject() (cc: ControllerComponents, val 
 
   override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(List(God))
-  }
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

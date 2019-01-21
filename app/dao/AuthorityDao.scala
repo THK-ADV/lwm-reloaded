@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -12,21 +12,23 @@ import store._
 import scala.concurrent.Future
 
 case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.user === UUID.fromString(value)
+  override def predicate: AuthorityTable => Rep[Boolean] = _.user === UUID.fromString(value)
 }
 
 case class AuthorityCourseFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
+  override def predicate: AuthorityTable => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
 }
 
 case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
+  override def predicate: AuthorityTable => Rep[Boolean] = _.role === UUID.fromString(value)
 }
+
 case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.roleFk.map(_.label).filter(_ === value).exists
+  override def predicate: AuthorityTable => Rep[Boolean] = _.roleFk.map(_.label).filter(_ === value).exists
 }
 
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
@@ -81,7 +83,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
     db.run(deleteByCourseQuery(course))
   }
 
-  def deleteSingleRightsManagerQuery(lecturer: UUID)= {
+  def deleteSingleRightsManagerQuery(lecturer: UUID) = {
     for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
       rm <- roleService.tableQuery.filter(_.label === Roles.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
@@ -97,7 +99,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
     (existing.invalidated != toUpdate.invalidated ||
-    existing.lastModified != toUpdate.lastModified) &&
+      existing.lastModified != toUpdate.lastModified) &&
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
   }
 
@@ -166,5 +168,4 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
   }
 }
 
-@Singleton
 final class AuthorityDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val roleService: RoleDao) extends AuthorityDao

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 
-object ReportCardService {
+object ReportCardService { // TODO DI
 
   lazy val EvaluatedExplicit: Int = 3201 // this value indicates explicit evaluations
 

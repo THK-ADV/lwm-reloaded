@@ -5,7 +5,7 @@ import java.security.KeyFactory
 import java.security.spec.RSAPublicKeySpec
 import java.util.Base64
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 import org.keycloak.TokenVerifier
 import org.keycloak.adapters.KeycloakDeployment
 import org.keycloak.common.VerificationException
@@ -13,8 +13,8 @@ import org.keycloak.jose.jws.{AlgorithmType, JWSHeader}
 import org.keycloak.representations.AccessToken
 import play.api.libs.json
 import play.api.libs.json.Reads
-import play.api.libs.ws.WSClient
 import play.api.mvc.Request
+import services.Webservice
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,8 +26,7 @@ trait OAuthAuthorization {
   def authorized[R](request: Request[R]): Future[VerifiedToken]
 }
 
-@Singleton
-class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws: WSClient) extends OAuthAuthorization {
+class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws: Webservice) extends OAuthAuthorization {
 
   override def authorized[R](request: Request[R]): Future[VerifiedToken] = for {
     token <- bearerToken(request)
@@ -72,10 +71,10 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
   private def getPublicKey(jwsHeader: JWSHeader) = {
     implicit def reads: Reads[KeycloakCert] = json.Json.reads[KeycloakCert]
 
-    ws.url(keycloakDeployment.getJwksUrl).get.map { response =>
-      val json = response.json \ "keys" \ 0
+    ws.get(keycloakDeployment.getJwksUrl) { json =>
+      val key = json \ "keys" \ 0
 
-      json.validate[KeycloakCert].asOpt.filter(_.kid == jwsHeader.getKeyId) match {
+      key.validate[KeycloakCert].asOpt.filter(_.kid == jwsHeader.getKeyId) match {
         case Some(cert) =>
           val keyFactory = KeyFactory.getInstance(AlgorithmType.RSA.toString)
           val urlDecoder = Base64.getUrlDecoder

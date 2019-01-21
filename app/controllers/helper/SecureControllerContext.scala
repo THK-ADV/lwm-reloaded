@@ -15,17 +15,17 @@ trait SecureControllerContext {
 
   protected def contextFrom: PartialFunction[Rule, SecureContext]
 
-  protected def secureAction: SecuredAction
+  protected def securedAction: SecuredAction
 
   trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => secureAction.secured((opt, role))(block),
+      restricted = (opt, role) => securedAction.secured((opt, role))(block),
       simple = Action(block)
     )
 
     def asyncAction(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => secureAction.securedAsync((opt, role))(block),
+      restricted = (opt, role) => securedAction.securedAsync((opt, role))(block),
       simple = Action.async(block)
     )
 

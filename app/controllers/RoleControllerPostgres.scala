@@ -18,7 +18,7 @@ object RoleControllerPostgres {
 }
 
 @Singleton
-final class RoleControllerPostgres @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val secureAction: SecuredAction)
+final class RoleControllerPostgres @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecuredAction)
   extends AbstractCRUDControllerPostgres[PostgresRole, RoleTable, RoleDb, PostgresRole](cc) {
 
   override protected implicit val writes: Writes[PostgresRole] = PostgresRole.writes
@@ -42,5 +42,5 @@ final class RoleControllerPostgres @Inject()(cc: ControllerComponents, val abstr
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = ???
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

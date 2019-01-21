@@ -5,6 +5,7 @@ import java.util.UUID
 import controllers.helper._
 import dao.AbstractDao
 import javax.inject.Inject
+import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
@@ -14,12 +15,13 @@ import store.{TableFilter, UniqueTable}
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] @Inject()(cc: ControllerComponents) extends AbstractController(cc)
-  with Secured
-  with SecureControllerContext
-  with PostgresResult
-  with AttributeFilter
-  with RequestRebase {
+abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] @Inject()(cc: ControllerComponents)
+  extends AbstractController(cc)
+    with Secured
+    with SecureControllerContext
+    with PostgresResult
+    with AttributeFilter
+    with RequestRebase {
 
   import utils.Ops.unwrapTrys
 
@@ -39,9 +41,13 @@ abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with
 
   protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Seq[LwmModel] = dbModels.map(_.toLwmModel.asInstanceOf[LwmModel]).toSeq
 
-  final protected def parseJson(request: Request[AnyContent])(implicit reads: Reads[Protocol]): Try[Protocol] = unwrap(request).flatMap(js => validate(js)(reads))
+  final protected def parseJson[R](request: Request[AnyContent])(implicit reads: Reads[R]): Try[R] = unwrap(request).flatMap(js => validate(js)(reads))
 
-  final protected def parseJsonArray(request: Request[AnyContent])(implicit reads: Reads[List[Protocol]]): Try[List[Protocol]] = unwrap(request).flatMap(js => validate(js)(reads))
+  final protected def parseJsonArray[R](request: Request[AnyContent])(implicit reads: Reads[List[R]]): Try[List[R]] = unwrap(request).flatMap(js => validate(js)(reads))
+
+  final protected def forbidden(): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(List(God))
+  }
 
   private def validate[A](json: JsValue)(implicit reads: Reads[A]) = json.validate[A].fold[Try[A]](
     errors => Failure(new Throwable(JsError.toJson(errors).toString)),
@@ -57,7 +63,7 @@ abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
-      protocols <- Future.fromTry(parseJsonArray(request))
+      protocols <- Future.fromTry(parseJsonArray(request)(listReads))
       dbModels = protocols.map(p => toDbModel(p, None))
       partialCreated <- abstractDao.createManyPartial(dbModels)
       (succeeded, failed) = unwrapTrys(partialCreated)
@@ -73,7 +79,7 @@ abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
-      protocol <- Future.fromTry(parseJson(request))
+      protocol <- Future.fromTry(parseJson(request)(reads))
       dbModel = toDbModel(protocol, Some(uuid))
       updated <- abstractDao.update(dbModel)
       lwmModel <- if (atomic)
@@ -106,7 +112,7 @@ abstract class AbstractCRUDControllerPostgres[Protocol, T <: Table[DbModel] with
     } yield results).jsonResult
   }
 
-  def get(id: String, secureContext: SecureContext = contextFrom(Get))  = secureContext asyncAction { request =>
+  def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
 
     abstractDao.getById(id, atomic).jsonResult(id)

@@ -4,7 +4,7 @@ import models._
 import org.joda.time.{Interval, Weeks}
 import utils.LwmDateTime._
 
-object TimetableService {
+object TimetableService { // TODO DI
 
   def withoutBlacklists(entries: Vector[TimetableDateEntry], blacklists: Vector[PostgresBlacklist]): Vector[TimetableDateEntry] = {
     entries.filterNot { e =>
