@@ -31,7 +31,7 @@ GET           /courses/:course/labworks                                        c
 GET           /courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.getFrom(course, id)
 DELETE        /courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.deleteFrom(course, id)
 
-# Room 
+# Room
 POST          /rooms                                                           controllers.RoomControllerPostgres.create()
 PUT           /rooms/:id                                                       controllers.RoomControllerPostgres.update(id)
 GET           /rooms                                                           controllers.RoomControllerPostgres.all()
