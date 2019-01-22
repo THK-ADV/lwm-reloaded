@@ -176,7 +176,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), lastModified, None, s.id)
     case e: PostgresEmployee =>
       DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, lastModified, None, e.id)
-    case l: PostgresLecturer =>
+    case l: Lecturer =>
       DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, lastModified, None, l.id)
   }
 

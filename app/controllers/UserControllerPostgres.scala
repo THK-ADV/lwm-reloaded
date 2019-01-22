@@ -25,7 +25,7 @@ object UserControllerPostgres {
 final class UserControllerPostgres @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecuredAction)
   extends AbstractCRUDControllerPostgres[UserProtocol, UserTable, DbUser, User](cc) {
 
-  override protected implicit val writes: Writes[User] = User.writes
+  override protected implicit val writes: Writes[User] = uniqueEntityWrites
 
   override protected implicit val reads: Reads[UserProtocol] = UserProtocol.reads
 

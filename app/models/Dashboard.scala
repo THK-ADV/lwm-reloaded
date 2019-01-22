@@ -1,7 +1,5 @@
 package models
 
-import models.{Group, Labwork, LabworkApplication, PostgresCourseAtom, PostgresSemester, ReportCardEntry, ReportCardEvaluation, ReportCardEvaluationPattern, ScheduleEntry}
-
 sealed trait Dashboard
 
 case class StudentDashboard(

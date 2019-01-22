@@ -29,7 +29,7 @@ object User {
       case postgresStudent: PostgresStudent => Json.toJson(postgresStudent)(PostgresStudent.writes)
       case postgresStudentAtom: PostgresStudentAtom => Json.toJson(postgresStudentAtom)(PostgresStudentAtom.writes)
       case postgresEmployee: PostgresEmployee => Json.toJson(postgresEmployee)(PostgresEmployee.writes)
-      case postgresLecturer: PostgresLecturer => Json.toJson(postgresLecturer)(PostgresLecturer.writes)
+      case postgresLecturer: Lecturer => Json.toJson(postgresLecturer)(Lecturer.writes)
     }
   }
 }
@@ -59,6 +59,6 @@ case class DbUser(
     case DbUser(sId, last, first, mail, stat, None, None, _, _, employeeId) if stat == User.EmployeeType =>
       PostgresEmployee(sId, last, first, mail, employeeId)
     case DbUser(sId, last, first, mail, stat, None, None, _, _, lecturerId) if stat == User.LecturerType =>
-      PostgresLecturer(sId, last, first, mail, lecturerId)
+      Lecturer(sId, last, first, mail, lecturerId)
   }
 }

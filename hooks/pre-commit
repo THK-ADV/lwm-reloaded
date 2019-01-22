@@ -1,8 +1,8 @@
 #!/bin/sh
 
-SRC_PATTERN="conf/application.conf"
-
-if git diff --cached --name-only | grep --quiet "$SRC_PATTERN"
-then
-  git reset head $SRC_PATTERN; git checkout -- $SRC_PATTERN
-fi
+#SRC_PATTERN="conf/application.conf"
+#
+#if git diff --cached --name-only | grep --quiet "$SRC_PATTERN"
+#then
+#  git reset head $SRC_PATTERN; git checkout -- $SRC_PATTERN
+#fi

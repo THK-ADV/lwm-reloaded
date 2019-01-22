@@ -1,7 +1,5 @@
 package models
 
-import models.User
-
 sealed trait BuddyResult {
   override def toString: String = getClass.getSimpleName
 }
