@@ -8,7 +8,7 @@ import models.Role.{CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardRetryTable, TableFilter}
+import store.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
 import utils.LwmDateTime._
 import utils.SecuredAction
 
@@ -31,13 +31,13 @@ object ReportCardRetryController {
 
 @Singleton
 final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecuredAction)
-  extends AbstractCRUDControllerPostgres[PostgresReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetry](cc) {
+  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc) {
 
   import controllers.ReportCardRetryController._
 
-  override protected implicit val writes: Writes[ReportCardRetry] = ReportCardRetry.writes
+  override protected implicit val writes: Writes[ReportCardRetryLike] = ReportCardRetryLike.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardRetryProtocol] = PostgresReportCardRetryProtocol.reads
+  override protected implicit val reads: Reads[ReportCardRetryProtocol] = ReportCardRetryProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes
@@ -48,7 +48,7 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
     }
   }
 
-  override protected def toDbModel(protocol: PostgresReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
+  override protected def toDbModel(protocol: ReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
     val uuid = existingId getOrElse UUID.randomUUID
     val entryTypes = protocol.entryTypes.map(t => ReportCardEntryTypeDb(None, Some(uuid), t.entryType, t.bool, t.int))
 

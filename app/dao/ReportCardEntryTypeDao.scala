@@ -3,12 +3,12 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models.{PostgresReportCardEntryType, ReportCardEntryTypeDb}
+import models.ReportCardEntryType
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEntryTypeTable, TableFilter}
+import store.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -16,7 +16,7 @@ case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[Rep
   override def predicate = _.entryType === value
 }
 
-trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, PostgresReportCardEntryType] {
+trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
 
   import utils.LwmDateTime._
 
@@ -24,10 +24,10 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 
-  override protected def toAtomic(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[PostgresReportCardEntryType]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[ReportCardEntryType]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[PostgresReportCardEntryType]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[ReportCardEntryType]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def existsQuery(entity: ReportCardEntryTypeDb): Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq] = {

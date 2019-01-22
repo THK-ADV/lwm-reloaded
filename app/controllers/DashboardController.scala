@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.helper._
 import dao._
 import javax.inject.{Inject, Singleton}
-import models.Role.{Admin, Employee, God, Student}
+import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Dashboard, EmployeeDashboard, StudentDashboard}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc._
@@ -19,14 +19,12 @@ final class DashboardController @Inject()(cc: ControllerComponents, val authorit
   extends AbstractController(cc)
     with Secured
     with SecureControllerContext
-    with PostgresResult
+    with ResultOps
     with AttributeFilter {
 
-  implicit val writes: Writes[Dashboard] = new Writes[Dashboard] {
-    override def writes(d: Dashboard) = d match {
-      case s: StudentDashboard => Json.writes[StudentDashboard].writes(s)
-      case e: EmployeeDashboard => Json.writes[EmployeeDashboard].writes(e)
-    }
+  implicit val writes: Writes[Dashboard] = {
+    case s: StudentDashboard => Json.writes[StudentDashboard].writes(s)
+    case e: EmployeeDashboard => Json.writes[EmployeeDashboard].writes(e)
   }
 
   def dashboard = contextFrom(Get) asyncAction { implicit request =>
@@ -46,7 +44,7 @@ final class DashboardController @Inject()(cc: ControllerComponents, val authorit
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(Student, Employee))
+    case Get => PartialSecureBlock(List(StudentRole, EmployeeRole))
     case GetAll => PartialSecureBlock(List(Admin))
     case _ => PartialSecureBlock(List(God))
   }

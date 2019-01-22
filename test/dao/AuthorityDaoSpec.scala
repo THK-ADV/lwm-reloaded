@@ -10,14 +10,14 @@ import store._
 
 import scala.util.Random.nextInt
 
-class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Authority] with AuthorityDao {
+class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] with AuthorityDao {
 
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime.DateTimeConverter
   import slick.jdbc.PostgresProfile.api._
 
   private lazy val privateLecturers = (0 until 7).map { i =>
-    DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
+    UserDb(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
   }.toList
 
   private lazy val privateCourses = (0 until 3).map { i =>
@@ -197,15 +197,15 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
       await(roleService.createMany(roles))
 
-      val result1 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole2.toLwmModel))
-      val result2 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole1, module2UserRole2).map(_.toLwmModel))
-      val result3 = checkAuthority((None, List(Role.CourseEmployee)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
-      val result4 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
-      val result5 = checkAuthority((Some(module2), List(Role.CourseAssistant)))(Seq(module1UserRole1.toLwmModel))
-      val result6 = checkAuthority((Some(UUID.randomUUID()), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
-      val result7 = checkAuthority((Some(module1), List(Role.CourseAssistant, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
-      val result8 = checkAuthority((Some(module1), List(Role.Employee, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
-      val result9 = checkAuthority((Some(module1), List(Role.God)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
+      val result1 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole2.toUniqueEntity))
+      val result2 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole1, module2UserRole2).map(_.toUniqueEntity))
+      val result3 = checkAuthority((None, List(Role.CourseEmployee)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toUniqueEntity))
+      val result4 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(adminRefRole.toUniqueEntity))
+      val result5 = checkAuthority((Some(module2), List(Role.CourseAssistant)))(Seq(module1UserRole1.toUniqueEntity))
+      val result6 = checkAuthority((Some(UUID.randomUUID()), List(Role.CourseEmployee)))(Seq(adminRefRole.toUniqueEntity))
+      val result7 = checkAuthority((Some(module1), List(Role.CourseAssistant, Role.CourseManager)))(Seq(module1UserRole2.toUniqueEntity))
+      val result8 = checkAuthority((Some(module1), List(Role.EmployeeRole, Role.CourseManager)))(Seq(module1UserRole2.toUniqueEntity))
+      val result9 = checkAuthority((Some(module1), List(Role.God)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toUniqueEntity))
 
       await(result1) shouldBe false
       await(result2) shouldBe true
@@ -230,18 +230,18 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     TableQuery[CourseTable].forceInsertAll(courses ++ privateCourses ++ privateCoursesWithSameLecturer ++ privateCoursesWithSameLecturer2 ++ privateCoursesWithSameLecturer3)
   )
 
-  override protected val lwmEntity: Authority = dbEntity.toLwmModel
+  override protected val lwmEntity: AuthorityLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresAuthorityAtom = {
+  override protected val lwmAtom: AuthorityAtom = {
     val course = for{
       courseId <- dbEntity.course
       courseDb <- courses.find(_.id == courseId)
       employee <- employees.find( _.id == courseDb.lecturer)
-    } yield PostgresCourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toLwmModel, courseDb.semesterIndex, courseDb.id)
+    } yield CourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toUniqueEntity, courseDb.semesterIndex, courseDb.id)
 
-    PostgresAuthorityAtom(
-      employees.find(_.id == dbEntity.user).get.toLwmModel,
-      roles.find(_.id == dbEntity.role).get.toLwmModel,
+    AuthorityAtom(
+      employees.find(_.id == dbEntity.user).get.toUniqueEntity,
+      roles.find(_.id == dbEntity.role).get.toUniqueEntity,
       course,
       dbEntity.id
     )

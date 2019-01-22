@@ -3,11 +3,11 @@ package dao
 import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
-import models.{PostgresSemester, SemesterDb}
+import models.Semester
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{SemesterTable, TableFilter}
+import store.{SemesterDb, SemesterTable, TableFilter}
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -44,7 +44,7 @@ case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
-trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] {
+trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
@@ -63,10 +63,10 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
     ))
   }
 
-  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 

@@ -3,7 +3,8 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models._
+import models.{genesis, _}
+import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import store._
@@ -47,7 +48,7 @@ case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleE
   override def predicate = _.until(value)
 }
 
-trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
+trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -56,18 +57,18 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   protected val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntryLike]] = collectDependencies(query) {
     case ((e, r, lab, c, d, s, lec), g, subs) =>
       val labwork = {
-        val course = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
-        PostgresLabworkAtom(lab.label, lab.description, s.toLwmModel, course, d.toLwmModel, lab.subscribable, lab.published, lab.id)
+        val course = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+        LabworkAtom(lab.label, lab.description, s.toUniqueEntity, course, d.toUniqueEntity, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toLwmModel, subs.map(_._2.toLwmModel).toSet, g.toLwmModel, e.id)
+      ScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toUniqueEntity, subs.map(_._2.toUniqueEntity).toSet, g.toUniqueEntity, e.id)
   }
 
-  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
-    case ((e, _, _, _, _, _, _), _, subs) => PostgresScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
+  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntryLike]] = collectDependencies(query) {
+    case ((e, _, _, _, _, _, _), _, subs) => ScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
   }
 
   override protected def existsQuery(entity: ScheduleEntryDb): Query[ScheduleEntryTable, ScheduleEntryDb, Seq] = {
@@ -87,7 +88,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   private def collectDependencies(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
-    (build: ((ScheduleEntryDb, RoomDb, LabworkDb, CourseDb, DegreeDb, SemesterDb, DbUser), GroupDb, Seq[(ScheduleEntrySupervisor, DbUser)]) => ScheduleEntry) = {
+    (build: ((ScheduleEntryDb, RoomDb, LabworkDb, CourseDb, DegreeDb, SemesterDb, UserDb), GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => ScheduleEntryLike) = {
     val mandatory = for {
       q <- query
       r <- q.roomFk
@@ -119,7 +120,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   private def collectDependenciesMin[A, B](query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
-    (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, DbUser)]) => A)
+    (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => A)
     (transform: Seq[A] => Vector[B]): Future[Vector[B]] = {
     val mandatory = for {
       q <- query
@@ -168,7 +169,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     }
   })
 
-  def competitive(labwork: PostgresLabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
+  def competitive(labwork: LabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
     val comps = tableQuery
       .flatMap(t => t.labworkFk.withFilter(l => l.id =!= labwork.id)
         .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
@@ -195,11 +196,11 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         se.date.localDate,
         se.room,
         sups.map(_._1.supervisor).toSet,
-        g.toLwmModel
+        g.toUniqueEntity
       ), se.labwork)
     } { entries =>
       entries.groupBy(_._2).map {
-        case (id, e) => ScheduleGen(id, e.map(_._1).toVector)
+        case (id, e) => genesis.ScheduleGen(id, e.map(_._1).toVector)
       }.toVector
     }
   }

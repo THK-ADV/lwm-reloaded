@@ -3,11 +3,11 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb}
+import models.ReportCardEvaluationPattern
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEvaluationPatternTable, TableFilter}
+import store.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 
 case class EvaluationPatternPropertyFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
   override def predicate = _.property.toLowerCase === value.toLowerCase
@@ -34,7 +34,7 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = toUniqueEntity(query)
 
   override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationPatternDb): Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq] = {

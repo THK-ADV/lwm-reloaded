@@ -1,14 +1,14 @@
 package dao
 
-import models.{BlacklistDb, PostgresBlacklist}
+import models.Blacklist
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile.api._
-import store.BlacklistTable
+import store.{BlacklistDb, BlacklistTable}
 
-final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, PostgresBlacklist] with BlacklistDao {
+final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, Blacklist] with BlacklistDao {
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime._
-  import models.PostgresBlacklist._
+  import models.Blacklist._
 
   "A BlacklistService2Spec also" should {
 
@@ -63,9 +63,9 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
   override protected val dbEntities: List[BlacklistDb] = blacklists
 
-  override protected val lwmEntity: PostgresBlacklist = dbEntity.toLwmModel
+  override protected val lwmEntity: Blacklist = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresBlacklist = lwmEntity
+  override protected val lwmAtom: Blacklist = lwmEntity
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq()
 }

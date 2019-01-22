@@ -6,7 +6,7 @@ import slick.lifted.TableQuery
 import store._
 import slick.jdbc.PostgresProfile.api._
 
-final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] with ReportCardEvaluationDao {
+final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] with ReportCardEvaluationDao {
   import dao.AbstractDaoSpec._
 
   override protected def name = "reportCardEvaluationSpec"
@@ -21,22 +21,22 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
 
   override protected val dbEntities: List[ReportCardEvaluationDb] = reportCardEvaluations
 
-  override protected val lwmEntity: PostgresReportCardEvaluation = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardEvaluation = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresReportCardEvaluationAtom = {
+  override protected val lwmAtom: ReportCardEvaluationAtom = {
     val labworkAtom = {
       val labwork = labworks.find(_.id == dbEntity.labwork).get
       val semester = semesters.find(_.id == labwork.semester).get
       val course = courses.find(_.id == labwork.course).get
-      val lecturer = employees.find(_.id == course.lecturer).get.toLwmModel
-      val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+      val lecturer = employees.find(_.id == course.lecturer).get.toUniqueEntity
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
       val degree = degrees.find(_.id == labwork.degree).get
 
-      PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
+      LabworkAtom(labwork.label, labwork.description, semester.toUniqueEntity, courseAtom, degree.toUniqueEntity, labwork.subscribable, labwork.published, labwork.id)
     }
 
-    PostgresReportCardEvaluationAtom(
-      students.find(_.id == lwmEntity.student).get.toLwmModel,
+    ReportCardEvaluationAtom(
+      students.find(_.id == lwmEntity.student).get.toUniqueEntity,
       labworkAtom,
       lwmEntity.label,
       lwmEntity.bool,

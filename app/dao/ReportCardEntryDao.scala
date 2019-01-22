@@ -59,7 +59,7 @@ case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter
   }.exists
 }
 
-trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
+trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -69,28 +69,28 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   protected val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
   protected val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
-  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => PostgresReportCardEntryAtom(
-      student.toLwmModel,
-      labwork.toLwmModel,
+  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
+    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
+      student.toUniqueEntity,
+      labwork.toUniqueEntity,
       entry.label,
       entry.date.localDate,
       entry.start.localTime,
       entry.end.localTime,
-      room.toLwmModel,
-      entryTypes.map(_.toLwmModel).toSet,
-      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toLwmModel, rs.reason, rs.id) },
-      optRt.map { case (rt, r) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toLwmModel, rt.entryTypes.map(_.toLwmModel), rt.reason, rt.id) },
+      room.toUniqueEntity,
+      entryTypes.map(_.toUniqueEntity).toSet,
+      optRs.map { case (rs, r) => ReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toUniqueEntity, rs.reason, rs.id) },
+      optRt.map { case (rt, r) => ReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toUniqueEntity, rt.entryTypes.map(_.toUniqueEntity), rt.reason, rt.id) },
       entry.id
     )
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toLwmModel
+  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
+    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toUniqueEntity
   }
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-    (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntry) = {
+    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntryLike) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk

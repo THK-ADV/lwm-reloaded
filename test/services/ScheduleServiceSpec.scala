@@ -3,7 +3,8 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models._
+import models.{genesis, _}
+import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import org.joda.time.{LocalDate, LocalTime, Weeks}
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
@@ -98,8 +99,8 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
         }).toVector
       }.unzip
 
-      val left = ScheduleGen(labId, entries._1)
-      val right = ScheduleGen(labId, entries._2)
+      val left = genesis.ScheduleGen(labId, entries._1)
+      val right = genesis.ScheduleGen(labId, entries._2)
       val lgroup = left.entries.head.group
       val rgroup = right.entries.head.group
       val eLeft = eval(List(Conflict(left.entries.head, left.entries.head.group.members.toVector.take(3), lgroup)))
@@ -145,43 +146,43 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "evaluate a given schedule when there are some other schedules" in {
       val ap1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
       val students = (0 until 300).map(_ => UUID.randomUUID).toVector
-      val ap1G = shuffle(students).take(250).grouped(10).map(s => PostgresGroup("", ap1Prak.id, s.toSet)).toVector
-      val ma1G = shuffle(students).take(240).grouped(20).map(s => PostgresGroup("", ma1Prak.id, s.toSet)).toVector
+      val ap1G = shuffle(students).take(250).grouped(10).map(s => Group("", ap1Prak.id, s.toSet)).toVector
+      val ma1G = shuffle(students).take(240).grouped(20).map(s => Group("", ma1Prak.id, s.toSet)).toVector
 
-      val ap1T = PostgresTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
-      val ma1T = PostgresTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
 
       val extrapolatedAp1 = TimetableService.extrapolateTimetableByWeeks(ap1T, weeks, Vector.empty, plan, ap1G.size)
       val extrapolatedMa1 = TimetableService.extrapolateTimetableByWeeks(ma1T, weeks, Vector.empty, plan, ma1G.size)
@@ -203,10 +204,10 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     def scheduleGen(shuffleGroups: Boolean): ScheduleGen = {
       val groups = alph(10) zip (population(100) grouped 10 toVector) map {
-        case (label, group) => PostgresGroup(label, labId, group toSet)
+        case (label, group) => Group(label, labId, group toSet)
       }
       val entries = (if (shuffleGroups) shuffle(groups) else groups) map (ScheduleEntryGen(LocalTime.now, LocalTime.now, LocalDate.now, UUID.randomUUID, Set(User.randomUUID), _))
-      ScheduleGen(labId, entries)
+      genesis.ScheduleGen(labId, entries)
     }
 
     "mutate given schedule destructively by exchanging people between groups" in {
@@ -263,8 +264,8 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val (schedule1, schedule2) = (schedule, schedule)
       val (e1, e2) = (schedule1.entries(3), schedule2.entries(5))
 
-      val (eval1, eval2) = (Evaluation(List(Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
-        Evaluation(List(Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
+      val (eval1, eval2) = (Evaluation(List(genesis.Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
+        Evaluation(List(genesis.Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
 
       val (s1, s2) = scheduleService.crossoverDestructive((schedule1, eval1), (schedule2, eval2))
 
@@ -301,8 +302,8 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val (schedule1, schedule2) = (schedule, schedule)
       val (e1, e2) = (schedule1.entries(3), schedule2.entries(5))
 
-      val (eval1, eval2) = (Evaluation(List(Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
-        Evaluation(List(Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
+      val (eval1, eval2) = (Evaluation(List(genesis.Conflict(e1, e1.group.members take 2 toVector, e1.group)), 0),
+        Evaluation(List(genesis.Conflict(e2, e2.group.members take 2 toVector, e2.group)), 0))
 
       val (s1, s2) = scheduleService.crossoverDestructive((schedule1, eval1), (schedule2, eval2))
 
@@ -320,34 +321,34 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate an initial collision free schedule instantly" in {
       val ap1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
 
       import scala.util.Random._
       val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(200).grouped(10).map(s => PostgresGroup("", ap1Prak.id, s.toSet)).toVector
 
-      val ap1T = PostgresTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
 
       val result = scheduleService.generate(ap1T, Vector.empty, ap1G, plan, semester, Vector.empty)
 
@@ -366,46 +367,46 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "generate a schedule with minimal or no collisions considering one existing competitive schedule and more density" in {
       val ap1Plan = plan
-      val ma1Plan = populateAssignmentPlans(1, 4)(labwork)(_ => 2).head.toLwmModel
+      val ma1Plan = populateAssignmentPlans(1, 4)(labwork)(_ => 2).head.toUniqueEntity
 
       val ap1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("15:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("16:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("16:00:00"), ft.parseLocalTime("17:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("09:00:00"), ft.parseLocalTime("10:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("10:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("12:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("12:00:00"), ft.parseLocalTime("13:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("14:00:00"))
       )
       val ma1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("27/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("29/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("14:00:00")),
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("30/10/2015")).index, ft.parseLocalTime("14:00:00"), ft.parseLocalTime("17:00:00"))
       )
 
       val students = (0 until 200).map(_ => User.randomUUID).toVector
       val ap1G = shuffle(students).take(180).grouped(10).map(s => PostgresGroup("", ap1Prak.id, s.toSet)).toVector
       val ma1G = shuffle(students).take(180).grouped(20).map(s => PostgresGroup("", ma1Prak.id, s.toSet)).toVector
 
-      val ap1T = PostgresTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
-      val ma1T = PostgresTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("27/10/2015"), Set.empty)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
 
       val comp = scheduleService.generate(ap1T, Vector.empty, ap1G, ap1Plan, semester, Vector.empty)._1.elem
       val result = scheduleService.generate(ma1T, Vector.empty, ma1G, ma1Plan, semester, Vector(comp))
@@ -425,13 +426,13 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
     "handle deadlocks properly" in {
       val ap1Plan = plan
-      val ma1Plan = populateAssignmentPlans(1, 8)(labwork)(_ => 2).head.toLwmModel
+      val ma1Plan = populateAssignmentPlans(1, 8)(labwork)(_ => 2).head.toUniqueEntity
 
       val ap1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("09:00:00"))
       )
       val ma1Entries = Set(
-        PostgresTimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00"))
+        TimetableEntry(Set(User.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("26/10/2015")).index, ft.parseLocalTime("08:00:00"), ft.parseLocalTime("11:00:00"))
       )
 
       val students = (0 until 200).map(_ => User.randomUUID).toVector
@@ -439,8 +440,8 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
       val ap1G = Vector(PostgresGroup("", ap1Prak.id, deadlock ++ shuffle(students).take(10).toSet))
       val ma1G = Vector(PostgresGroup("", ma1Prak.id, deadlock ++ shuffle(students).take(10).toSet))
 
-      val ap1T = PostgresTimetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
-      val ma1T = PostgresTimetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+      val ap1T = Timetable(ap1Prak.id, ap1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
+      val ma1T = Timetable(ma1Prak.id, ma1Entries, fd.parseLocalDate("26/10/2015"), Set.empty)
 
       val gens = scheduleService.gens
       val comp = scheduleService.generate(ap1T, Vector.empty, ap1G, ap1Plan, semester, Vector.empty)._1.elem
@@ -474,22 +475,22 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
 
   val scheduleService = new ScheduleService(20, 100, 10)
 
-  val semester = PostgresSemester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
+  val semester = Semester("", "", LocalDate.now, LocalDate.now.plusWeeks(30), LocalDate.now.plusWeeks(4))
   val weeks = Weeks.weeksBetween(semester.start, semester.examStart)
 
   val ft = DateTimeFormat.forPattern("HH:mm:ss")
   val fd = DateTimeFormat.forPattern("dd/MM/yyyy")
 
-  val ap1 = PostgresCourse("ap1", "c1", "abbrev", User.randomUUID, 1)
-  val ma1 = PostgresCourse("ma1", "c2", "abbrev", User.randomUUID, 1)
+  val ap1 = Course("ap1", "c1", "abbrev", User.randomUUID, 1)
+  val ma1 = Course("ma1", "c2", "abbrev", User.randomUUID, 1)
   val degree = UUID.randomUUID
   val semester1 = UUID.randomUUID
-  val ap1Prak = PostgresLabwork("ap1Prak", "desc1", semester1, ap1.id, degree)
-  val ma1Prak = PostgresLabwork("ma1Prak", "desc2", semester1, ma1.id, degree)
+  val ap1Prak = Labwork("ap1Prak", "desc1", semester1, ap1.id, degree)
+  val ma1Prak = Labwork("ma1Prak", "desc2", semester1, ma1.id, degree)
 
   val labwork = labworks.take(1)
   val labId = labwork.head.id
-  val timetable = populateTimetables(1, 6)(employees, labwork, List.empty).head.toLwmModel
-  val plan = populateAssignmentPlans(1, 8)(labwork)(_ => 1).head.toLwmModel
-  val groups = populateGroups(8)(labwork, students).map(_.toLwmModel).toVector
+  val timetable = populateTimetables(1, 6)(employees, labwork, List.empty).head.toUniqueEntity
+  val plan = populateAssignmentPlans(1, 8)(labwork)(_ => 1).head.toUniqueEntity
+  val groups = populateGroups(8)(labwork, students).map(_.toUniqueEntity).toVector
 }

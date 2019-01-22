@@ -4,11 +4,11 @@ import java.util.UUID
 
 import javax.inject.Inject
 import models._
+import models.helper._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import store.{TableFilter, UserTable}
-import utils._
+import store.{TableFilter, UserDb, UserTable}
 
 import scala.concurrent.Future
 
@@ -36,7 +36,7 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: UserTable => Rep[Boolean] = _.id === UUID.fromString(value)
 }
 
-trait UserDao extends AbstractDao[UserTable, DbUser, User] {
+trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -76,7 +76,7 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
       b <- buddy.result
       f <- friends.result
     } yield {
-      val optRequestee = b.headOption.map(_._1.toLwmModel)
+      val optRequestee = b.headOption.map(_._1.toUniqueEntity)
       val optSameDegree = b.map(_._2).reduceOption(_ && _)
       val friends = f.exists(_.id == UUID.fromString(requesterId))
 
@@ -99,7 +99,7 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
 
   protected def labworkApplicationService: LabworkApplicationDao
 
-  override protected def shouldUpdate(existing: DbUser, toUpdate: DbUser): Boolean = {
+  override protected def shouldUpdate(existing: UserDb, toUpdate: UserDb): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||
       existing.lastname != toUpdate.lastname ||
       existing.firstname != toUpdate.firstname ||
@@ -107,18 +107,18 @@ trait UserDao extends AbstractDao[UserTable, DbUser, User] {
       existing.systemId == toUpdate.systemId
   }
 
-  override protected def existsQuery(entity: DbUser): Query[UserTable, DbUser, Seq] = {
+  override protected def existsQuery(entity: UserDb): Query[UserTable, UserDb, Seq] = {
     filterBy(List(UserSystemIdFilter(entity.systemId)))
   }
 
-  override protected def toUniqueEntity(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  override protected def toAtomic(query: Query[UserTable, DbUser, Seq]): Future[Seq[User]] = {
+  override protected def toAtomic(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {
     db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
-      case (s, Some(d)) => PostgresStudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toLwmModel, s.id)
-      case (dbUser, None) => dbUser.toLwmModel
+      case (s, Some(d)) => StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toUniqueEntity, s.id)
+      case (dbUser, None) => dbUser.toUniqueEntity
     }))
   }
 }

@@ -5,101 +5,101 @@
 GET           /                                                                controllers.HomepageController.index
 
 # Degree 
-PUT           /degrees/:id                                                     controllers.DegreeControllerPostgres.update(id)
-GET           /degrees                                                         controllers.DegreeControllerPostgres.all()
-GET           /degrees/:id                                                     controllers.DegreeControllerPostgres.get(id)
+PUT           /degrees/:id                                                     controllers.DegreeController.update(id)
+GET           /degrees                                                         controllers.DegreeController.all()
+GET           /degrees/:id                                                     controllers.DegreeController.get(id)
 
 # Course 
-POST          /courses                                                         controllers.CourseControllerPostgres.create()
-PUT           /courses/:id                                                     controllers.CourseControllerPostgres.update(id)
-GET           /courses                                                         controllers.CourseControllerPostgres.all()
-GET           /courses/:id                                                     controllers.CourseControllerPostgres.get(id)
-DELETE        /courses/:id                                                     controllers.CourseControllerPostgres.delete(id)
+POST          /courses                                                         controllers.CourseController.create()
+PUT           /courses/:id                                                     controllers.CourseController.update(id)
+GET           /courses                                                         controllers.CourseController.all()
+GET           /courses/:id                                                     controllers.CourseController.get(id)
+DELETE        /courses/:id                                                     controllers.CourseController.delete(id)
 
 # Group 2
-GET           /courses/:c/labworks/:l/groups                                   controllers.GroupControllerPostgres.allFrom(c, l)
-GET           /courses/:c/labworks/:l/groups/preview                           controllers.GroupControllerPostgres.preview(c, l)
+GET           /courses/:c/labworks/:l/groups                                   controllers.GroupController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/groups/preview                           controllers.GroupController.preview(c, l)
 
 # Labwork 
-GET           /labworks/degrees/:degree                                        controllers.LabworkControllerPostgres.allWithDegree(degree)
-GET           /labworks/:id                                                    controllers.LabworkControllerPostgres.get(id)
+GET           /labworks/degrees/:degree                                        controllers.LabworkController.allWithDegree(degree)
+GET           /labworks/:id                                                    controllers.LabworkController.get(id)
 
 # Labwork restricted
-POST          /courses/:course/labworks                                        controllers.LabworkControllerPostgres.createFrom(course)
-PUT           /courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.updateFrom(course, id)
-GET           /courses/:course/labworks                                        controllers.LabworkControllerPostgres.allFrom(course)
-GET           /courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.getFrom(course, id)
-DELETE        /courses/:course/labworks/:id                                    controllers.LabworkControllerPostgres.deleteFrom(course, id)
+POST          /courses/:course/labworks                                        controllers.LabworkController.createFrom(course)
+PUT           /courses/:course/labworks/:id                                    controllers.LabworkController.updateFrom(course, id)
+GET           /courses/:course/labworks                                        controllers.LabworkController.allFrom(course)
+GET           /courses/:course/labworks/:id                                    controllers.LabworkController.getFrom(course, id)
+DELETE        /courses/:course/labworks/:id                                    controllers.LabworkController.deleteFrom(course, id)
 
 # Room
-POST          /rooms                                                           controllers.RoomControllerPostgres.create()
-PUT           /rooms/:id                                                       controllers.RoomControllerPostgres.update(id)
-GET           /rooms                                                           controllers.RoomControllerPostgres.all()
-GET           /rooms/:id                                                       controllers.RoomControllerPostgres.get(id)
-DELETE        /rooms/:id                                                       controllers.RoomControllerPostgres.delete(id)
+POST          /rooms                                                           controllers.RoomController.create()
+PUT           /rooms/:id                                                       controllers.RoomController.update(id)
+GET           /rooms                                                           controllers.RoomController.all()
+GET           /rooms/:id                                                       controllers.RoomController.get(id)
+DELETE        /rooms/:id                                                       controllers.RoomController.delete(id)
 
 # Semester 
-POST          /semesters                                                       controllers.SemesterControllerPostgres.create()
-PUT           /semesters/:id                                                   controllers.SemesterControllerPostgres.update(id)
-GET           /semesters                                                       controllers.SemesterControllerPostgres.all()
-GET           /semesters/:id                                                   controllers.SemesterControllerPostgres.get(id)
-DELETE        /semesters/:id                                                   controllers.SemesterControllerPostgres.delete(id)
+POST          /semesters                                                       controllers.SemesterController.create()
+PUT           /semesters/:id                                                   controllers.SemesterController.update(id)
+GET           /semesters                                                       controllers.SemesterController.all()
+GET           /semesters/:id                                                   controllers.SemesterController.get(id)
+DELETE        /semesters/:id                                                   controllers.SemesterController.delete(id)
 
 # Role 
-GET           /roles/:id                                                       controllers.RoleControllerPostgres.get(id)
-GET           /roles                                                           controllers.RoleControllerPostgres.all()
+GET           /roles/:id                                                       controllers.RoleController.get(id)
+GET           /roles                                                           controllers.RoleController.all()
 
 # Authority 
-POST          /authorities                                                     controllers.AuthorityControllerPostgres.create()
-GET           /authorities                                                     controllers.AuthorityControllerPostgres.all()
-GET           /authorities/:id                                                 controllers.AuthorityControllerPostgres.get(id)
-DELETE        /authorities/:id                                                 controllers.AuthorityControllerPostgres.delete(id)
+POST          /authorities                                                     controllers.AuthorityController.create()
+GET           /authorities                                                     controllers.AuthorityController.all()
+GET           /authorities/:id                                                 controllers.AuthorityController.get(id)
+DELETE        /authorities/:id                                                 controllers.AuthorityController.delete(id)
 
 # LabworkApplications 
-POST          /labworkApplications                                             controllers.LabworkApplicationControllerPostgres.create()
-PUT           /labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.update(id)
-GET           /labworkApplications                                             controllers.LabworkApplicationControllerPostgres.all()
-GET           /labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.get(id)
-DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationControllerPostgres.delete(id)
+POST          /labworkApplications                                             controllers.LabworkApplicationController.create()
+PUT           /labworkApplications/:id                                         controllers.LabworkApplicationController.update(id)
+GET           /labworkApplications                                             controllers.LabworkApplicationController.all()
+GET           /labworkApplications/:id                                         controllers.LabworkApplicationController.get(id)
+DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.delete(id)
 
 # Schedule / ScheduleEntries 
-POST          /courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.createFrom(c)
-GET           /courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryControllerPostgres.preview(c, l)
+POST          /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.createFrom(c)
+GET           /courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryController.preview(c, l)
 
-GET           /courses/:c/scheduleEntries                                      controllers.ScheduleEntryControllerPostgres.allFrom(c)
-GET           /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.allFromLabwork(c, l)
-GET           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.getFrom(c, id)
-PUT           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryControllerPostgres.updateFrom(c, id)
-DELETE        /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryControllerPostgres.deleteFrom(c, l)
+GET           /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.allFrom(c)
+GET           /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.allFromLabwork(c, l)
+GET           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.getFrom(c, id)
+PUT           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.updateFrom(c, id)
+DELETE        /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.deleteFrom(c, l)
 
 # Timetable restricted
 
-POST          /courses/:c/timetables                                           controllers.TimetableControllerPostgres.createFrom(c)
-PUT           /courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.updateFrom(c, id)
-GET           /courses/:c/timetables                                           controllers.TimetableControllerPostgres.allFrom(c)
-GET           /courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.getFrom(c, id)
-DELETE        /courses/:c/timetables/:id                                       controllers.TimetableControllerPostgres.deleteFrom(c, id)
+POST          /courses/:c/timetables                                           controllers.TimetableController.createFrom(c)
+PUT           /courses/:c/timetables/:id                                       controllers.TimetableController.updateFrom(c, id)
+GET           /courses/:c/timetables                                           controllers.TimetableController.allFrom(c)
+GET           /courses/:c/timetables/:id                                       controllers.TimetableController.getFrom(c, id)
+DELETE        /courses/:c/timetables/:id                                       controllers.TimetableController.deleteFrom(c, id)
 
 # Blacklist 
-POST          /blacklists                                                      controllers.BlacklistControllerPostgres.create()
-POST          /blacklists/year/:year                                           controllers.BlacklistControllerPostgres.createFor(year)
-PUT           /blacklists/:id                                                  controllers.BlacklistControllerPostgres.update(id)
-GET           /blacklists                                                      controllers.BlacklistControllerPostgres.all()
-GET           /blacklists/year/:year                                           controllers.BlacklistControllerPostgres.preview(year)
-GET           /blacklists/:id                                                  controllers.BlacklistControllerPostgres.get(id)
-DELETE        /blacklists/:id                                                  controllers.BlacklistControllerPostgres.delete(id)
+POST          /blacklists                                                      controllers.BlacklistController.create()
+POST          /blacklists/year/:year                                           controllers.BlacklistController.createFor(year)
+PUT           /blacklists/:id                                                  controllers.BlacklistController.update(id)
+GET           /blacklists                                                      controllers.BlacklistController.all()
+GET           /blacklists/year/:year                                           controllers.BlacklistController.preview(year)
+GET           /blacklists/:id                                                  controllers.BlacklistController.get(id)
+DELETE        /blacklists/:id                                                  controllers.BlacklistController.delete(id)
 
 # ReportCardEntry 
-GET           /reportCardEntries/student/:s                                    controllers.ReportCardEntryControllerPostgres.getForStudent(s)
+GET           /reportCardEntries/student/:s                                    controllers.ReportCardEntryController.getForStudent(s)
 
-POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryControllerPostgres.createFrom(c, l)
-POST          /courses/:c/reportCardEntries/copy                               controllers.ReportCardEntryControllerPostgres.createByCopy(c)
+POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
+POST          /courses/:c/reportCardEntries/copy                               controllers.ReportCardEntryController.createByCopy(c)
 
-GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryControllerPostgres.allFrom(c)
-GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryControllerPostgres.allFromScheduleEntry(c, s)
+GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
+GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 
 # ReportCardEntryType 
-PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeControllerPostgres.updateFrom(c, id)
+PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeController.updateFrom(c, id)
 
 # ReportCardRescheduled 
 POST          /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
@@ -116,16 +116,16 @@ PUT           /courses/:c/reportCardRetries/:id                                c
 DELETE        /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.deleteFrom(c, id)
 
 # ReportCardEvaluation 
-GET           /reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationControllerPostgres.get(s)
+GET           /reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationController.get(s)
 
 # ReportCardEvaluation restricted
-POST          /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.createFrom(c, l)
-POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.createForStudent(c, l, s)
-GET           /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.allFrom(c, l)
-GET           /courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationControllerPostgres.preview(c, l)
-PUT           /courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationControllerPostgres.updateFrom(c, l, id)
-DELETE        /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationControllerPostgres.deleteFromLabwork(c, l)
-DELETE        /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationControllerPostgres.deleteFromStudent(c, l, s)
+POST          /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.createFrom(c, l)
+POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.createForStudent(c, l, s)
+GET           /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.allFrom(c, l)
+GET           /courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationController.preview(c, l)
+PUT           /courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationController.updateFrom(c, l, id)
+DELETE        /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.deleteFromLabwork(c, l)
+DELETE        /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.deleteFromStudent(c, l, s)
 
 # ReportCardEvaluationPattern 
 POST          /courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.createFrom(c)
@@ -135,17 +135,17 @@ PUT           /courses/:c/reportCardEvaluationPatterns/:id                     c
 DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.deleteFrom(c, id)
 
 # AssignmentPlan 
-POST          /courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.createFrom(course)
-PUT           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.updateFrom(course, id)
-GET           /courses/:course/assignmentPlans                                 controllers.AssignmentPlanControllerPostgres.allFrom(course)
-GET           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.getFrom(course, id)
-DELETE        /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanControllerPostgres.deleteFrom(course, id)
+POST          /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.createFrom(course)
+PUT           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.updateFrom(course, id)
+GET           /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.allFrom(course)
+GET           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.getFrom(course, id)
+DELETE        /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.deleteFrom(course, id)
 
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()
-GET           /users                                                           controllers.UserControllerPostgres.all()
-GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserControllerPostgres.buddy(labwork, user, buddy)
-GET           /users/:id                                                       controllers.UserControllerPostgres.get(id)
+GET           /users                                                           controllers.UserController.all()
+GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
+GET           /users/:id                                                       controllers.UserController.get(id)
 
 # Dashboard
 GET           /dashboards                                                      controllers.DashboardController.dashboard()

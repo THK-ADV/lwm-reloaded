@@ -1,66 +1,49 @@
 package models
 
-import java.sql.Timestamp
 import java.util.UUID
 
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
-import utils.LwmDateTime
-import utils.LwmDateTime._
+import utils.LwmDateTime.writeDateTime
 
-
-// POSTGRES
-
-sealed trait ReportCardEvaluation extends UniqueEntity {
+sealed trait ReportCardEvaluationLike extends UniqueEntity {
   def lastModified: DateTime
 }
 
-case class PostgresReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike
 
-case class PostgresReportCardEvaluationProtocol(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
+case class ReportCardEvaluationProtocol(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
-case class PostgresReportCardEvaluationAtom(student: User, labwork: PostgresLabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluation
+case class ReportCardEvaluationAtom(student: User, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike
 
-// DB
-
-case class ReportCardEvaluationDb(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toLwmModel = PostgresReportCardEvaluation(student, labwork, label, bool, int, lastModified.dateTime, id)
+object ReportCardEvaluation {
+  implicit val writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
 }
 
-object PostgresReportCardEvaluation {
-  implicit val writes: Writes[PostgresReportCardEvaluation] = Json.writes[PostgresReportCardEvaluation]
+object ReportCardEvaluationProtocol {
+  implicit val reads: Reads[ReportCardEvaluationProtocol] = Json.reads[ReportCardEvaluationProtocol]
 }
 
-object PostgresReportCardEvaluationProtocol {
-  implicit val reads: Reads[PostgresReportCardEvaluationProtocol] = Json.reads[PostgresReportCardEvaluationProtocol]
-}
+object ReportCardEvaluationAtom {
 
-object PostgresReportCardEvaluationAtom {
-
-  implicit val writes: Writes[PostgresReportCardEvaluationAtom] = (
+  implicit val writes: Writes[ReportCardEvaluationAtom] = (
     (JsPath \ "student").write[User](User.writes) and
-      (JsPath \ "labwork").write[PostgresLabworkAtom](PostgresLabworkAtom.writes) and
+      (JsPath \ "labwork").write[LabworkAtom](LabworkAtom.writes) and
       (JsPath \ "label").write[String] and
       (JsPath \ "bool").write[Boolean] and
       (JsPath \ "int").write[Int] and
-      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writeDateTime) and
+      (JsPath \ "lastModified").write[DateTime] and
       (JsPath \ "id").write[UUID]
-    ) (unlift(PostgresReportCardEvaluationAtom.unapply))
+    ) (unlift(ReportCardEvaluationAtom.unapply))
 }
 
-object ReportCardEvaluation {
+object ReportCardEvaluationLike {
 
-  implicit val writes: Writes[ReportCardEvaluation] = new Writes[ReportCardEvaluation] {
-    override def writes(e: ReportCardEvaluation) = e match {
-      case normal: PostgresReportCardEvaluation => Json.toJson(normal)(PostgresReportCardEvaluation.writes)
-      case atom: PostgresReportCardEvaluationAtom => Json.toJson(atom)(PostgresReportCardEvaluationAtom.writes)
-    }
+  implicit val writes: Writes[ReportCardEvaluationLike] = {
+    case normal: ReportCardEvaluation => Json.toJson(normal)(ReportCardEvaluation.writes)
+    case atom: ReportCardEvaluationAtom => Json.toJson(atom)(ReportCardEvaluationAtom.writes)
   }
 }
 
-object ReportCardEvaluationDb {
-  def from(p: PostgresReportCardEvaluationProtocol, existing: Option[UUID]) = {
-    ReportCardEvaluationDb(p.student, p.labwork, p.label, p.bool, p.int, id = existing getOrElse UUID.randomUUID)
-  }
-}
+

@@ -22,23 +22,23 @@ case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] 
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
-trait GroupDao extends AbstractDao[GroupTable, GroupDb, Group] {
+trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[Group]] = collectDependencies(query) {
-    case (g, l, m) => PostgresGroupAtom(g.label, l.toLwmModel, m.map(_.toLwmModel).toSet, g.id)
+  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
+    case (g, l, m) => GroupAtom(g.label, l.toUniqueEntity, m.map(_.toUniqueEntity).toSet, g.id)
   }
 
-  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[Group]] = collectDependencies(query) {
-    case (g, _, m) => PostgresGroup(g.label, g.labwork, m.map(_.id).toSet, g.id)
+  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
+    case (g, _, m) => Group(g.label, g.labwork, m.map(_.id).toSet, g.id)
   }
 
   private def collectDependencies(query: Query[GroupTable, GroupDb, Seq])
-    (build: (GroupDb, LabworkDb, Seq[DbUser]) => Group): Future[Seq[Group]] = {
+    (build: (GroupDb, LabworkDb, Seq[UserDb]) => GroupLike): Future[Seq[GroupLike]] = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk

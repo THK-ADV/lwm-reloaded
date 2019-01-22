@@ -6,7 +6,7 @@ import slick.lifted.TableQuery
 import store._
 import utils.LwmDateTime._
 
-final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] with ScheduleEntryDao {
+final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] with ScheduleEntryDao {
   import dao.AbstractDaoSpec._
 
   private lazy val privateSupervisors = populateEmployees(50)
@@ -36,9 +36,9 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
       val current = {
         val l = labworks.head
         val course = courses.find(_.id == l.course).map { c =>
-          PostgresCourseAtom(c.label, c.description, c.abbreviation, employees.find(_.id == c.lecturer).get.toLwmModel, c.semesterIndex, c.id)
+          CourseAtom(c.label, c.description, c.abbreviation, employees.find(_.id == c.lecturer).get.toUniqueEntity, c.semesterIndex, c.id)
         }
-        PostgresLabworkAtom(l.label, l.description, semesters.find(_.id == l.semester).get.toLwmModel, course.get, degrees.find(_.id == l.degree).get.toLwmModel, l.subscribable, l.published, l.id)
+        LabworkAtom(l.label, l.description, semesters.find(_.id == l.semester).get.toUniqueEntity, course.get, degrees.find(_.id == l.degree).get.toUniqueEntity, l.subscribable, l.published, l.id)
       }
 
       val result = await(competitive(current))
@@ -83,9 +83,9 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
 
   override protected val dbEntities: List[ScheduleEntryDb] = scheduleEntries
 
-  override protected val lwmEntity: ScheduleEntry = dbEntity.toLwmModel
+  override protected val lwmEntity: ScheduleEntryLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: ScheduleEntry = atom(dbEntity)
+  override protected val lwmAtom: ScheduleEntryLike = atom(dbEntity)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -110,24 +110,24 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
     e.copy(room = randomRoom.id, supervisor = takeSomeOf(privateSupervisors).map(_.id).toSet)
   }
 
-  override protected def atom(dbModel: ScheduleEntryDb): ScheduleEntry = {
+  override protected def atom(dbModel: ScheduleEntryDb): ScheduleEntryLike = {
     val labwork = for {
       l <- (privateLabs ++ labworks).find(_.id == dbModel.labwork)
       s <- semesters.find(_.id == l.semester)
       d <- degrees.find(_.id == l.degree)
       c <- courses.find(_.id == l.course)
       lec <- employees.find(_.id == c.lecturer)
-      ca = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
-    } yield PostgresLabworkAtom(l.label, l.description, s.toLwmModel, ca, d.toLwmModel, l.subscribable, l.published, l.id)
+      ca = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+    } yield LabworkAtom(l.label, l.description, s.toUniqueEntity, ca, d.toUniqueEntity, l.subscribable, l.published, l.id)
 
-    PostgresScheduleEntryAtom(
+    ScheduleEntryAtom(
       labwork.get,
       dbModel.start.localTime,
       dbModel.end.localTime,
       dbModel.date.localDate,
-      rooms.find(_.id == dbModel.room).get.toLwmModel,
-      (privateSupervisors ++ employees).filter(u => dbModel.supervisor.contains(u.id)).map(_.toLwmModel).toSet,
-      groups.find(_.id == dbModel.group).get.toLwmModel,
+      rooms.find(_.id == dbModel.room).get.toUniqueEntity,
+      (privateSupervisors ++ employees).filter(u => dbModel.supervisor.contains(u.id)).map(_.toUniqueEntity).toSet,
+      groups.find(_.id == dbModel.group).get.toUniqueEntity,
       dbModel.id
     )
   }

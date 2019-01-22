@@ -3,7 +3,9 @@ package services
 import java.util.UUID
 
 import javax.inject.Inject
-import models._
+import models.{genesis, _}
+import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
+import models.helper.TimetableDateEntry
 import org.joda.time._
 import scalaz.Functor
 import services.ScheduleService.{Crossover, Evaluator, Mutator}
@@ -18,7 +20,7 @@ import scala.language.higherKinds
 import scala.util.Random._
 
 trait ScheduleService {
-  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): Vector[ScheduleGen]
+  def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[Group]): Vector[ScheduleGen]
 
   def mutate: Mutator
 
@@ -36,7 +38,7 @@ trait ScheduleService {
 
   def elite: Int
 
-  def generate(t: PostgresTimetable, bs: Vector[PostgresBlacklist], gs: Vector[PostgresGroup], a: PostgresAssignmentPlan, s: PostgresSemester, cs: Vector[ScheduleGen], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleGen, Conflict, Int], Int)
+  def generate(t: Timetable, bs: Vector[Blacklist], gs: Vector[Group], a: AssignmentPlan, s: Semester, cs: Vector[ScheduleGen], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleGen, Conflict, Int], Int)
 }
 
 object ScheduleService {
@@ -60,7 +62,7 @@ object ScheduleService {
   def randomOne[A](v: Vector[A]): A = shuffle(v).head
 
   @annotation.tailrec
-  def randomAvoiding(avoiding: PostgresGroup)(implicit groups: Vector[PostgresGroup]): PostgresGroup = {
+  def randomAvoiding(avoiding: Group)(implicit groups: Vector[Group]): Group = {
     if (groups.forall(_.id == avoiding.id)) // can't be another group than avoiding. just return it then
       avoiding
     else { // try to get another group than avoiding
@@ -69,15 +71,15 @@ object ScheduleService {
     }
   }
 
-  def randomGroup(implicit groups: Vector[PostgresGroup]): PostgresGroup = groups(nextInt(groups.size))
+  def randomGroup(implicit groups: Vector[Group]): Group = groups(nextInt(groups.size))
 
-  def replaceGroup(s: PostgresGroup)(f: Set[UUID] => Set[UUID]): PostgresGroup = PostgresGroup(s.label, s.labwork, f(s.members), s.id)
+  def replaceGroup(s: Group)(f: Set[UUID] => Set[UUID]): Group = Group(s.label, s.labwork, f(s.members), s.id)
 
-  def replaceSchedule(s: ScheduleGen)(f: ScheduleEntryGen => ScheduleEntryGen): ScheduleGen = ScheduleGen(s.labwork, s.entries map f)
+  def replaceSchedule(s: ScheduleGen)(f: ScheduleEntryGen => ScheduleEntryGen): ScheduleGen = genesis.ScheduleGen(s.labwork, s.entries map f)
 
-  def replaceEntry(e: ScheduleEntryGen)(f: PostgresGroup => PostgresGroup) = ScheduleEntryGen(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
+  def replaceEntry(e: ScheduleEntryGen)(f: Group => Group) = ScheduleEntryGen(e.start, e.end, e.date, e.room, e.supervisor, f(e.group))
 
-  def replaceWithin(s: ScheduleGen)(left: PostgresGroup, right: PostgresGroup): ScheduleGen = replaceSchedule(s)(
+  def replaceWithin(s: ScheduleGen)(left: Group, right: Group): ScheduleGen = replaceSchedule(s)(
     replaceEntry(_) {
       case x if x.id == left.id => right
       case y if y.id == right.id => left
@@ -99,7 +101,7 @@ final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elit
 
   import services.ScheduleService._
 
-  override def generate(t: PostgresTimetable, bs: Vector[PostgresBlacklist], gs: Vector[PostgresGroup], a: PostgresAssignmentPlan, s: PostgresSemester, cs: Vector[ScheduleGen], p: Option[Int], g: Option[Int], e: Option[Int]) = {
+  override def generate(t: Timetable, bs: Vector[Blacklist], gs: Vector[Group], a: AssignmentPlan, s: Semester, cs: Vector[ScheduleGen], p: Option[Int], g: Option[Int], e: Option[Int]) = {
     val entries = TimetableService.extrapolateTimetableByWeeks(t, Weeks.weeksBetween(s.start, s.examStart), bs, a, gs.size)
     val pop = population(p getOrElse pops, t.labwork, entries, gs)
 
@@ -113,21 +115,21 @@ final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elit
     }
   }
 
-  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): Vector[ScheduleGen] = {
+  override def population(times: Int, labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[Group]): Vector[ScheduleGen] = {
     (0 until times).map(_ => populate(labwork, entries, groups)).toVector
   }
 
-  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[PostgresGroup]): ScheduleGen = {
+  private def populate(labwork: UUID, entries: Vector[TimetableDateEntry], groups: Vector[Group]): ScheduleGen = {
     val shuffled = shuffle(groups)
     val scheduleEntries = entries.sortBy(toLocalDateTime).grouped(groups.size).flatMap(_.zip(shuffled).map {
       case (t, group) => ScheduleEntryGen(t.start, t.end, t.date, t.room, t.supervisor, group)
     }).toVector
 
-    ScheduleGen(labwork, scheduleEntries)
+    genesis.ScheduleGen(labwork, scheduleEntries)
   }
 
   override def mutate: Mutator = mutation { (s, _) =>
-    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+    implicit val groups: Vector[Group] = s.entries.map(_.group)
 
     val group1 = randomGroup
     val group2 = randomAvoiding(group1)
@@ -136,7 +138,7 @@ final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elit
   }
 
   override def mutateDestructive: Mutator = mutation { (s, e) =>
-    implicit val groups: Vector[PostgresGroup] = s.entries.map(_.group)
+    implicit val groups: Vector[Group] = s.entries.map(_.group)
 
     e.mapErrWhole(shuffle(_)).fold {
       case ((h :: _, _)) =>

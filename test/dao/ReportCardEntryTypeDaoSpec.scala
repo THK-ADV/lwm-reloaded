@@ -1,12 +1,12 @@
 package dao
 
-import models.{PostgresReportCardEntryType, ReportCardEntryTypeDb}
+import models.{ReportCardEntryType, ReportCardEntryTypeDb}
 import slick.dbio.{DBIO, Effect}
 import slick.lifted.TableQuery
 import store._
 import slick.jdbc.PostgresProfile.api._
 
-final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTypeTable, ReportCardEntryTypeDb, PostgresReportCardEntryType] with ReportCardEntryTypeDao {
+final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] with ReportCardEntryTypeDao {
   import dao.AbstractDaoSpec._
 
   "A ReportCardEntryTypeDaoSpec also" should {
@@ -79,9 +79,9 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
 
   override protected val dbEntities: List[ReportCardEntryTypeDb] = cards.flatMap(_.entryTypes)
 
-  override protected val lwmEntity: PostgresReportCardEntryType = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardEntryType = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresReportCardEntryType = lwmEntity
+  override protected val lwmAtom: ReportCardEntryType = lwmEntity
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),

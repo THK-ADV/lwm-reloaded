@@ -28,15 +28,15 @@ case class LabworkApplicationUntilFilter(value: String) extends TableFilter[Labw
   override def predicate = _.lastModified <= new Timestamp(value.toLong)
 }
 
-trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] {
+trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, DbUser, (CourseDb, DegreeDb, SemesterDb, DbUser)), Option[DbUser])])
+  type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, UserDb, (CourseDb, DegreeDb, SemesterDb, UserDb)), Option[UserDb])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
   protected val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
-  final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, DbUser, Seq] = {
+  final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, UserDb, Seq] = {
     for {
       buddy <- tableQuery if buddy.applicant === applicant && buddy.labwork === labwork
       friends <- lappFriendQuery if friends.labworkApplication === buddy.id
@@ -56,26 +56,26 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
+  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {
     case (labworkApplication, dependencies) =>
       val ((lapp, lab, applicant, (course, degree, semester, lecturer)), _) = dependencies.find(_._1._1.id == labworkApplication.id).get
-      val friends = dependencies.flatMap(_._2.map(_.toLwmModel))
+      val friends = dependencies.flatMap(_._2.map(_.toUniqueEntity))
       val labworkAtom = {
-        val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toLwmModel, course.semesterIndex, course.id)
-        PostgresLabworkAtom(lab.label, lab.description, semester.toLwmModel, courseAtom, degree.toLwmModel, lab.subscribable, lab.published, lab.id)
+        val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer.toUniqueEntity, course.semesterIndex, course.id)
+        LabworkAtom(lab.label, lab.description, semester.toUniqueEntity, courseAtom, degree.toUniqueEntity, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.toSet, lapp.lastModified.dateTime, lapp.id)
+      LabworkApplicationAtom(labworkAtom, applicant.toUniqueEntity, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplication]] = joinDependencies(query) {
+  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {
     case (lapp, dependencies) =>
       val friends = dependencies.flatMap(_._2.map(_.id))
-      PostgresLabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.lastModified.dateTime, lapp.id)
+      LabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
-    (build: LabworkApplicationDependencies => LabworkApplication): Future[Seq[LabworkApplication]] = {
+    (build: LabworkApplicationDependencies => LabworkApplicationLike): Future[Seq[LabworkApplicationLike]] = {
     val mandatory = for {
       q <- query
       l <- q.joinLabwork

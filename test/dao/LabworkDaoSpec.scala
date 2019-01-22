@@ -4,7 +4,7 @@ import models._
 import slick.dbio.Effect.Write
 import store._
 
-final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labwork] with LabworkDao {
+final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, LabworkLike] with LabworkDao {
 
   import dao.AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
@@ -28,23 +28,23 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected val dbEntities: List[LabworkDb] = labworks
 
-  override protected val lwmEntity: Labwork = dbEntity.toLwmModel
+  override protected val lwmEntity: LabworkLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresLabworkAtom = {
+  override protected val lwmAtom: LabworkAtom = {
     val course = courses.find(_.id == dbEntity.course).get
-    PostgresLabworkAtom(
+    LabworkAtom(
       dbEntity.label,
       dbEntity.description,
-      semesters.find(_.id == dbEntity.semester).get.toLwmModel,
-      PostgresCourseAtom(
+      semesters.find(_.id == dbEntity.semester).get.toUniqueEntity,
+      CourseAtom(
         course.label,
         course.description,
         course.abbreviation,
-        employees.find(_.id == course.lecturer).get.toLwmModel,
+        employees.find(_.id == course.lecturer).get.toUniqueEntity,
         course.semesterIndex,
         course.id
       ),
-      degrees.find(_.id == dbEntity.degree).get.toLwmModel,
+      degrees.find(_.id == dbEntity.degree).get.toUniqueEntity,
       dbEntity.subscribable,
       dbEntity.published,
       dbEntity.id

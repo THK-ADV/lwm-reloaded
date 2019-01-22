@@ -19,7 +19,7 @@ case class AssignmentPlanCourseFilter(value: String) extends TableFilter[Assignm
   override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
 }
 
-trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] {
+trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -28,22 +28,22 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   protected val assignmentEntryQuery: TableQuery[AssignmentEntryTable] = TableQuery[AssignmentEntryTable]
   protected val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
 
-  override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlan]] = collectDependencies(query) {
-    case (plan, labwork, entries) => PostgresAssignmentPlanAtom(labwork.toLwmModel, plan.attendance, plan.mandatory, entries, plan.id)
+  override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlanLike]] = collectDependencies(query) {
+    case (plan, labwork, entries) => AssignmentPlanAtom(labwork.toUniqueEntity, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
   // TODO this is a better implementation than LabworkApplicationService.joinDependencies. test first and adjust when they succeed
   private def collectDependencies(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq])
-    (build: (AssignmentPlanDb, LabworkDb, Set[PostgresAssignmentEntry]) => AssignmentPlan) = {
+    (build: (AssignmentPlanDb, LabworkDb, Set[AssignmentEntry]) => AssignmentPlanLike) = {
     def assignmentEntries(entries: Seq[Option[(AssignmentEntryDb, Option[AssignmentEntryTypeDb])]]) = {
       entries.filter(_.isDefined).map(_.get).groupBy(_._1).map {
         case (entry, types) =>
           val entryTypes = types.filter(_._2.isDefined).map { tuple =>
             val db = tuple._2.get
-            PostgresAssignmentEntryType(db.entryType, db.bool, db.int)
+            AssignmentEntryType(db.entryType, db.bool, db.int)
           }
 
-          PostgresAssignmentEntry(entry.index, entry.label, entryTypes.toSet, entry.duration)
+          AssignmentEntry(entry.index, entry.label, entryTypes.toSet, entry.duration)
       }.toSet
     }
 
@@ -66,8 +66,8 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
     db.run(action)
   }
 
-  override protected def toUniqueEntity(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlan]] = collectDependencies(query) {
-    case (plan, labwork, entries) => PostgresAssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
+  override protected def toUniqueEntity(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlanLike]] = collectDependencies(query) {
+    case (plan, labwork, entries) => AssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {

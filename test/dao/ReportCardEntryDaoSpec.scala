@@ -7,7 +7,7 @@ import services._
 import slick.dbio.Effect.Write
 import store._
 
-final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] with ReportCardEntryDao {
+final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] with ReportCardEntryDao {
   import utils.LwmDateTime._
   import dao.AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
@@ -51,20 +51,20 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     }
   }
 
-  def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[DbUser], rooms: List[RoomDb]) = PostgresReportCardEntryAtom(
-    students.find(_.id == entry.student).get.toLwmModel,
-    labworks.find(_.id == entry.labwork).get.toLwmModel,
+  def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[UserDb], rooms: List[RoomDb]) = ReportCardEntryAtom(
+    students.find(_.id == entry.student).get.toUniqueEntity,
+    labworks.find(_.id == entry.labwork).get.toUniqueEntity,
     entry.label,
     entry.date.localDate,
     entry.start.localTime,
     entry.end.localTime,
-    rooms.find(_.id == entry.room).get.toLwmModel,
-    entry.entryTypes.map(_.toLwmModel),
+    rooms.find(_.id == entry.room).get.toUniqueEntity,
+    entry.entryTypes.map(_.toUniqueEntity),
     entry.rescheduled.map(r =>
-      PostgresReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toLwmModel, r.reason, r.id)
+      ReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.reason, r.id)
     ),
     entry.retry.map(r =>
-      PostgresReportCardRetryAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toLwmModel, r.entryTypes.map(_.toLwmModel), r.reason, r.id)
+      ReportCardRetryAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.entryTypes.map(_.toUniqueEntity), r.reason, r.id)
     ),
     entry.id
   )
@@ -81,9 +81,9 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
 
   override protected val dbEntities: List[ReportCardEntryDb] = reportCardEntries
 
-  override protected val lwmEntity: ReportCardEntry = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardEntryLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: ReportCardEntry = reportCardEntryAtom(dbEntity)(labworks, students, rooms)
+  override protected val lwmAtom: ReportCardEntryLike = reportCardEntryAtom(dbEntity)(labworks, students, rooms)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -104,7 +104,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     toUpdate.map(r => r.copy(label = "updated", date = r.date.localDate.plusDays(1).sqlDate, room = takeOneOf(rooms).id))
   }
 
-  override protected def atom(dbModel: ReportCardEntryDb): ReportCardEntry = reportCardEntryAtom(dbModel)(privateLabs, privateStudents, rooms)
+  override protected def atom(dbModel: ReportCardEntryDb): ReportCardEntryLike = reportCardEntryAtom(dbModel)(privateLabs, privateStudents, rooms)
 
   override protected def expanderSpecs(dbModel: ReportCardEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
     entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>

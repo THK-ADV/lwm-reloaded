@@ -1,11 +1,11 @@
 package dao
 
-import models.{PostgresSemester, SemesterDb}
+import models.Semester
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
-import store.SemesterTable
+import store.{SemesterDb, SemesterTable}
 
-final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterDao {
+final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] with SemesterDao {
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime._
   import slick.jdbc.PostgresProfile.api._
@@ -17,7 +17,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
   "A SemesterServiceSpec " should {
 
     "return current semester" in {
-      val current = dbEntities.map(_.toLwmModel).filter(PostgresSemester.isCurrent)
+      val current = dbEntities.map(_.toUniqueEntity).filter(Semester.isCurrent)
 
       val result = await(get(List(SemesterCurrentFilter())))
 
@@ -70,7 +70,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
-  override protected val lwmEntity: PostgresSemester = dbEntity.toLwmModel
+  override protected val lwmEntity: Semester = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresSemester = lwmEntity
+  override protected val lwmAtom: Semester = lwmEntity
 }

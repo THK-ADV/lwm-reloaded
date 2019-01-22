@@ -5,10 +5,10 @@ import java.util.UUID
 import dao._
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
-import models.{PostgresReportCardRescheduledProtocol, ReportCardRescheduled, ReportCardRescheduledDb}
+import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardRescheduledTable, TableFilter}
+import store.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
 import utils.LwmDateTime._
 import utils.SecuredAction
 
@@ -31,13 +31,13 @@ object ReportCardRescheduledController {
 
 @Singleton
 final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecuredAction)
-  extends AbstractCRUDControllerPostgres[PostgresReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled](cc) {
+  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc) {
 
   import controllers.ReportCardRescheduledController._
 
-  override protected implicit val writes: Writes[ReportCardRescheduled] = ReportCardRescheduled.writes
+  override protected implicit val writes: Writes[ReportCardRescheduledLike] = ReportCardRescheduledLike.writes
 
-  override protected implicit val reads: Reads[PostgresReportCardRescheduledProtocol] = PostgresReportCardRescheduledProtocol.reads
+  override protected implicit val reads: Reads[ReportCardRescheduledProtocol] = ReportCardRescheduledProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes
@@ -48,7 +48,7 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
     }
   }
 
-  override protected def toDbModel(protocol: PostgresReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
+  override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
     ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)
   }
 

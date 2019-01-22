@@ -9,6 +9,7 @@ import scala.io.Codec
 
 sealed trait GZIP[I] {
   def compress(input: I): Array[Byte]
+
   def decompress(bytes: Array[Byte]): I
 }
 

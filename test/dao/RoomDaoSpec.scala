@@ -1,11 +1,11 @@
 package dao
 
-import models.{PostgresRoom, RoomDb}
+import models.Room
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import store.RoomTable
+import store.{RoomDb, RoomTable}
 
-final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomDao {
+final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, Room] with RoomDao {
 
   import dao.AbstractDaoSpec._
 
@@ -23,7 +23,7 @@ final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom]
 
   override protected val dbEntities: List[RoomDb] = rooms
 
-  override protected val lwmEntity: PostgresRoom = dbEntity.toLwmModel
+  override protected val lwmEntity: Room = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresRoom = lwmEntity
+  override protected val lwmAtom: Room = lwmEntity
 }

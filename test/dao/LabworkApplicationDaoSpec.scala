@@ -8,7 +8,7 @@ import slick.jdbc.PostgresProfile.api._
 import store._
 
 // TODO migrate to abstractExpanderDaoSpec
-class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationDao {
+class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] with LabworkApplicationDao {
 
   import dao.AbstractDaoSpec._
   import utils.LwmDateTime.SqlTimestampConverter
@@ -25,7 +25,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
   val lapp = labworkApplication(Some(student.id), withFriends = true)
 
   @scala.annotation.tailrec
-  final def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
+  final def randomApplicant(avoiding: Option[UUID] = None): UserDb = {
     val applicant = applicants(nextInt(maxApplicants - reservedApplicants))
 
     avoiding match {
@@ -34,13 +34,13 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
     }
   }
 
-  private def applicant(i: Int): DbUser = DbUser(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
+  private def applicant(i: Int): UserDb = UserDb(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
 
   private def labworkApplication(applicant: Option[UUID] = None, withFriends: Boolean = nextBoolean) = {
     val app = applicant.getOrElse(randomApplicant().id)
     val friends = if (withFriends) (0 until nextInt(2) + 1).map(_ => randomApplicant(Some(app)).id).toSet else Set.empty[UUID]
 
-    LabworkApplicationDb(randomLabwork.id, app, friends)
+    store.LabworkApplicationDb(randomLabwork.id, app, friends)
   }
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
@@ -59,41 +59,41 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
   override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = {
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
+    store.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
   }
 
   override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = {
     val newApplicant = randomApplicant(Some(dbEntity.applicant)).id
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    store.LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val validUpdateOnDbEntity: LabworkApplicationDb = {
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    store.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val dbEntities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
 
-  override protected val lwmEntity: LabworkApplication = dbEntity.toLwmModel
+  override protected val lwmEntity: LabworkApplicationLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: LabworkApplication = {
+  override protected val lwmAtom: LabworkApplicationLike = {
     val labworkAtom = {
       val labwork = labworks.find(_.id == dbEntity.labwork).get
       val semester = semesters.find(_.id == labwork.semester).get
       val course = courses.find(_.id == labwork.course).get
-      val lecturer = employees.find(_.id == course.lecturer).get.toLwmModel
-      val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
+      val lecturer = employees.find(_.id == course.lecturer).get.toUniqueEntity
+      val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
       val degree = degrees.find(_.id == labwork.degree).get
 
-      PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
+      LabworkAtom(labwork.label, labwork.description, semester.toUniqueEntity, courseAtom, degree.toUniqueEntity, labwork.subscribable, labwork.published, labwork.id)
     }
 
-    PostgresLabworkApplicationAtom(
+    LabworkApplicationAtom(
       labworkAtom,
-      applicants.find(_.id == dbEntity.applicant).get.toLwmModel,
+      applicants.find(_.id == dbEntity.applicant).get.toUniqueEntity,
       Set.empty,
       dbEntity.lastModified.dateTime,
       dbEntity.id
@@ -108,7 +108,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
       val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result shouldBe lapp
-      Some(result.toLwmModel) shouldBe dbLapp
+      Some(result.toUniqueEntity) shouldBe dbLapp
       result.friends shouldBe dbFriends.map(_.friend).toSet
       dbFriends.forall(_.labworkApplication == result.id) shouldBe true
     }
@@ -145,11 +145,11 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
           val degree = degrees.find(_.id == labwork.degree).get
           val course = courses.find(_.id == labwork.course).get
           val lecturer = employees.find(_.id == course.lecturer).get
-          val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toLwmModel, course.semesterIndex, course.id)
-          PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
+          val courseAtom = CourseAtom(course.label, course.description, course.abbreviation, lecturer.toUniqueEntity, course.semesterIndex, course.id)
+          LabworkAtom(labwork.label, labwork.description, semester.toUniqueEntity, courseAtom, degree.toUniqueEntity, labwork.subscribable, labwork.published, labwork.id)
         }
 
-        PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.map(_.toLwmModel).toSet, lapp.lastModified.dateTime, lapp.id)
+        LabworkApplicationAtom(labworkAtom, applicant.toUniqueEntity, friends.map(_.toUniqueEntity).toSet, lapp.lastModified.dateTime, lapp.id)
       }
 
       val lapps = applicants.drop(maxApplicants - reservedApplicants).

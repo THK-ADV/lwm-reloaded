@@ -7,9 +7,9 @@ import services._
 import slick.dbio.Effect.Write
 import slick.driver
 import slick.driver.PostgresDriver
-import store.{CourseTable, RoleTable, UserTable}
+import store.{CourseDb, CourseTable, RoleTable, UserTable}
 
-class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with CourseDao {
+class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] with CourseDao {
 
   import dao.AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
@@ -44,17 +44,17 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with 
         CourseSemesterIndexFilter(labelAndSemesterIndexFilterSemesterIndexValue.toString)
       )
 
-      await(get(labelFilter, atomic = false)) shouldBe dbEntities.filter(_.label == labelFilterValue).map(_.toLwmModel)
-      await(get(semesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toLwmModel)
-      await(get(abbreviationFilter, atomic = false)) shouldBe dbEntities.filter(_.abbreviation == abbreviationFilterValue).map(_.toLwmModel)
+      await(get(labelFilter, atomic = false)) shouldBe dbEntities.filter(_.label == labelFilterValue).map(_.toUniqueEntity)
+      await(get(semesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(_.semesterIndex == semesterIndexFilterValue).map(_.toUniqueEntity)
+      await(get(abbreviationFilter, atomic = false)) shouldBe dbEntities.filter(_.abbreviation == abbreviationFilterValue).map(_.toUniqueEntity)
       await(get(abbreviationAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.abbreviation == abbreviationAndSemesterIndexFilterAbbreviationValue
           && course.semesterIndex == abbreviationAndSemesterIndexFilterSemesterIndexValue
-      ).map(_.toLwmModel)
+      ).map(_.toUniqueEntity)
       await(get(labelAndSemesterIndexFilter, atomic = false)) shouldBe dbEntities.filter(course =>
         course.label == labelAndSemesterIndexFilterLabelValue
           && course.semesterIndex == labelAndSemesterIndexFilterSemesterIndexValue
-      ).map(_.toLwmModel)
+      ).map(_.toUniqueEntity)
     }
   }
 
@@ -79,14 +79,14 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, Course] with 
     }
   }
 
-  override protected val lwmEntity: Course = dbEntity.toLwmModel
+  override protected val lwmEntity: CourseLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: Course = {
-    PostgresCourseAtom(
+  override protected val lwmAtom: CourseLike = {
+    CourseAtom(
       dbEntity.label,
       dbEntity.description,
       dbEntity.abbreviation,
-      employees.find(_.id == dbEntity.lecturer).get.toLwmModel,
+      employees.find(_.id == dbEntity.lecturer).get.toUniqueEntity,
       dbEntity.semesterIndex,
       dbEntity.id
     )

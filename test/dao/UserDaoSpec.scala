@@ -10,7 +10,7 @@ import slick.driver
 import slick.driver.PostgresDriver
 import store._
 
-final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with UserDao {
+final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] with UserDao {
   import slick.jdbc.PostgresProfile.api._
   import dao.AbstractDaoSpec._
   import scala.util.Random.nextInt
@@ -22,7 +22,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
     (0 until maxDegrees).map(i => DegreeDb(i.toString, i.toString)).toList
   }
 
-  val dbUser: List[DbUser] = {
+  val dbUser: List[UserDb] = {
     def randomStatus = User.types(nextInt(3))
     def studentAttributes(status: String, number: Int) = {
       if (status == User.StudentType)
@@ -35,13 +35,13 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       val status = randomStatus
       val (regId, enrollment) = studentAttributes(status, i)
 
-      DbUser(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
+      UserDb(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
     }.toList
   }
 
   val chosenDegree = degrees.last
   val semester = populateSemester(1).head
-  val employee = DbUser("", "", "", "", User.EmployeeType, None, None)
+  val employee = UserDb("", "", "", "", User.EmployeeType, None, None)
   val course = CourseDb("", "", "", employee.id, 1)
   val labwork = LabworkDb("label", "desc", semester.id, course.id, chosenDegree.id)
   val otherLabwork = labwork.copy(id = UUID.randomUUID)
@@ -50,24 +50,24 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
     "return a user by id (either atomic or non atomic)" in {
       val student = dbUser.find(_.status == User.StudentType)
       val studentAtom = student.map { u =>
-        val d = u.enrollment.flatMap(id => degrees.find(_.id == id)).get.toLwmModel
-        PostgresStudentAtom(u.systemId, u.lastname, u.firstname, u.email, u.registrationId.get, d, u.id)
+        val d = u.enrollment.flatMap(id => degrees.find(_.id == id)).get.toUniqueEntity
+        StudentAtom(u.systemId, u.lastname, u.firstname, u.email, u.registrationId.get, d, u.id)
       }
 
       val employee = dbUser.find(_.status == User.EmployeeType)
-      val employeeAtom = employee.map(e => PostgresEmployee(e.systemId, e.lastname, e.firstname, e.email, e.id))
+      val employeeAtom = employee.map(e => Employee(e.systemId, e.lastname, e.firstname, e.email, e.id))
 
-      await(get(List(UserIdFilter(student.get.id.toString)), atomic = false)).headOption shouldBe student.map(_.toLwmModel)
-      await(get(List(UserIdFilter(employee.get.id.toString)), atomic = false)).headOption shouldBe employee.map(_.toLwmModel)
+      await(get(List(UserIdFilter(student.get.id.toString)), atomic = false)).headOption shouldBe student.map(_.toUniqueEntity)
+      await(get(List(UserIdFilter(employee.get.id.toString)), atomic = false)).headOption shouldBe employee.map(_.toUniqueEntity)
       await(get(List(UserIdFilter(studentAtom.get.id.toString)))).headOption shouldBe studentAtom
       await(get(List(UserIdFilter(employeeAtom.get.id.toString)))).headOption shouldBe employeeAtom
     }
 
     "filter users by certain attributes" in {
       val degree = degrees(nextInt(maxDegrees))
-      val possibleUsers1 = dbUser.filter(u => u.status == User.StudentType && u.enrollment.get == degree.id).map(_.toLwmModel)
-      val possibleUsers2 = dbUser.filter(u => u.firstname.contains("5") && u.lastname.contains("5")).map(_.toLwmModel)
-      val possibleUsers3 = dbUser.filter(_.systemId == "10").map(_.toLwmModel)
+      val possibleUsers1 = dbUser.filter(u => u.status == User.StudentType && u.enrollment.get == degree.id).map(_.toUniqueEntity)
+      val possibleUsers2 = dbUser.filter(u => u.firstname.contains("5") && u.lastname.contains("5")).map(_.toUniqueEntity)
+      val possibleUsers3 = dbUser.filter(_.systemId == "10").map(_.toUniqueEntity)
 
       await(get(List(
         UserStatusFilter(User.StudentType),
@@ -94,8 +94,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       val degree = degrees.head
       val ldapUser = LdapUser("systemId", "firstname", "lastname", "email", User.EmployeeType, None, None)
       val ldapUser2 = LdapUser("systemId2", "firstname2", "lastname2", "email2", User.StudentType, Some("regId"), Some(degree.label))
-      val dbVariation = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, lastModified, None)
-      val dbVariation2 = DbUser(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), lastModified, None)
+      val dbVariation = UserDb(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, None, None, lastModified, None)
+      val dbVariation2 = UserDb(ldapUser2.systemId, ldapUser2.lastname, ldapUser2.firstname, ldapUser2.email, ldapUser2.status, ldapUser2.registrationId, Some(degree.id), lastModified, None)
 
       val (user, maybeAuth) = await(createOrUpdate(ldapUser))
       val (user2, maybeAuth2) = await(createOrUpdate(ldapUser2))
@@ -116,9 +116,9 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
       val degree = chosenStudent.enrollment.flatMap(current => degrees.find(_.id == current))
 
       val ldapEmployee = LdapUser(chosenEmployee.systemId, "updateFirst", "updateLast", chosenEmployee.email, chosenEmployee.status, None, None)
-      val dbEmployee = DbUser(ldapEmployee.systemId, ldapEmployee.lastname, ldapEmployee.firstname, ldapEmployee.email, ldapEmployee.status, None, None, lastModified, None, chosenEmployee.id)
+      val dbEmployee = UserDb(ldapEmployee.systemId, ldapEmployee.lastname, ldapEmployee.firstname, ldapEmployee.email, ldapEmployee.status, None, None, lastModified, None, chosenEmployee.id)
       val ldapStudent = LdapUser(chosenStudent.systemId, "updateFirst2", chosenStudent.lastname, "updateEmail", chosenStudent.status, chosenStudent.registrationId, degree.map(_.abbreviation))
-      val dbStudent = DbUser(ldapStudent.systemId, ldapStudent.lastname, ldapStudent.firstname, ldapStudent.email, ldapStudent.status, ldapStudent.registrationId, degree.map(_.id), lastModified, None, chosenStudent.id)
+      val dbStudent = UserDb(ldapStudent.systemId, ldapStudent.lastname, ldapStudent.firstname, ldapStudent.email, ldapStudent.status, ldapStudent.registrationId, degree.map(_.id), lastModified, None, chosenStudent.id)
 
       val (employee, maybeAuth) = await(createOrUpdate(ldapEmployee))
       val (student, maybeAuth2) = await(createOrUpdate(ldapStudent))
@@ -172,12 +172,12 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
   }
 
   private def toDbUser(user: User) = user match {
-    case s: PostgresStudent =>
-      DbUser(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), lastModified, None, s.id)
-    case e: PostgresEmployee =>
-      DbUser(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, lastModified, None, e.id)
+    case s: Student =>
+      UserDb(s.systemId, s.lastname, s.firstname, s.email, User.StudentType, Some(s.registrationId), Some(s.enrollment), lastModified, None, s.id)
+    case e: Employee =>
+      UserDb(e.systemId, e.lastname, e.firstname, e.email, User.EmployeeType, None, None, lastModified, None, e.id)
     case l: Lecturer =>
-      DbUser(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, lastModified, None, l.id)
+      UserDb(l.systemId, l.lastname, l.firstname, l.email, User.LecturerType, None, None, lastModified, None, l.id)
   }
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
@@ -215,25 +215,25 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, DbUser, User] with Us
 
   override protected def name: String = "user"
 
-  override protected val dbEntity: DbUser = DbUser("delete", "delete", "delete", "delete", User.StudentType, Some("regId"), Some(degrees.head.id))
+  override protected val dbEntity: UserDb = UserDb("delete", "delete", "delete", "delete", User.StudentType, Some("regId"), Some(degrees.head.id))
 
-  override protected val dbEntities: List[DbUser] = dbUser
+  override protected val dbEntities: List[UserDb] = dbUser
 
-  override protected val invalidDuplicateOfDbEntity: DbUser = DbUser(dbEntity.systemId, "delete2", "delete2", "delete2", User.StudentType, None, None, lastModified, None, dbEntity.id)
+  override protected val invalidDuplicateOfDbEntity: UserDb = UserDb(dbEntity.systemId, "delete2", "delete2", "delete2", User.StudentType, None, None, lastModified, None, dbEntity.id)
 
-  override protected val invalidUpdateOfDbEntity: DbUser = DbUser("new SystemId", "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
+  override protected val invalidUpdateOfDbEntity: UserDb = UserDb("new SystemId", "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
 
-  override protected val validUpdateOnDbEntity: DbUser = DbUser(dbEntity.systemId, "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
+  override protected val validUpdateOnDbEntity: UserDb = UserDb(dbEntity.systemId, "new lastname", dbEntity.firstname, dbEntity.email, dbEntity.status, None, None, lastModified, None, dbEntity.id)
 
-  override protected val lwmEntity: User = dbEntity.toLwmModel
+  override protected val lwmEntity: User = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: User = PostgresStudentAtom(
+  override protected val lwmAtom: User = StudentAtom(
     dbEntity.systemId,
     dbEntity.lastname,
     dbEntity.firstname,
     dbEntity.email,
     dbEntity.registrationId.get,
-    degrees.head.toLwmModel,
+    degrees.head.toUniqueEntity,
     dbEntity.id
   )
 }

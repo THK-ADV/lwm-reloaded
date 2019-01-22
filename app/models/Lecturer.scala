@@ -2,7 +2,7 @@ package models
 
 import java.util.UUID
 
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Json, Writes}
 
 case class Lecturer(systemId: String, lastname: String, firstname: String, email: String, id: UUID = UUID.randomUUID) extends User
 

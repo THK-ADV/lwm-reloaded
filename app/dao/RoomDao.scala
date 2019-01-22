@@ -3,10 +3,10 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models.{PostgresRoom, RoomDb}
+import models.Room
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{RoomTable, TableFilter}
+import store.{RoomDb, RoomTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -18,7 +18,7 @@ case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
-trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
+trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,10 +34,10 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
       existing.label == toUpdate.label
   }
 
-  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 

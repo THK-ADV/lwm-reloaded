@@ -9,7 +9,7 @@ import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import store.UniqueTable
+import store._
 
 object AbstractDaoSpec {
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
@@ -45,7 +45,7 @@ object AbstractDaoSpec {
   def randomRole = roles(nextInt(roles.length))
   def randomAuthority = authorities(nextInt(maxAuthorities))
   def randomGroup = groups(nextInt(maxGroups))
-  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(PostgresReportCardEntryType.all).map { entryType =>
+  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
     ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
   }.toSet
 
@@ -61,7 +61,7 @@ object AbstractDaoSpec {
       val date = LocalDate.now.plusDays(i)
 
       if (global) {
-        (date, PostgresBlacklist.startOfDay, PostgresBlacklist.endOfDay)
+        (date, Blacklist.startOfDay, Blacklist.endOfDay)
       } else {
         val start = LocalTime.now.withHourOfDay(nextInt(23))
         val end = start.plusHours(1)
@@ -77,22 +77,22 @@ object AbstractDaoSpec {
   }.toList
 
   final def populateEmployees(amount: Int) = (0 until amount).map { i =>
-    DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
+    UserDb(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
   }.toList
 
   final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    DbUser(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
+    UserDb(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
   }.toList
 
-  final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[DbUser], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
+  final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
     val entries = (0 until numberOfEntries).map { j =>
-      PostgresTimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j), LocalTime.now.plusHours(j + 1))
+      TimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j), LocalTime.now.plusHours(j + 1))
     }
 
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
   }.toList
 
-  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).map { i =>
+  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[UserDb]) = (0 until amount).map { i =>
     GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
   }.toList
 
@@ -118,14 +118,14 @@ object AbstractDaoSpec {
 
   final def populateAssignmentPlans(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb])(duration: (Int) => Int) = (0 until amount).map { i =>
     val entries = (0 until numberOfEntries).map { j =>
-      val allTypes = PostgresAssignmentEntryType.all
-      PostgresAssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet, duration(j))
+      val allTypes = AssignmentEntryType.all
+      AssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet, duration(j))
     }
 
     AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
   }.toList
 
-  def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[DbUser], groups: List[GroupDb]) = {
+  def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[UserDb], groups: List[GroupDb]) = {
     val labwork = takeOneOf(labworks).id
 
     (0 until amount).map { i =>
@@ -137,7 +137,7 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[DbUser]) = (0 until amount).flatMap { _ =>
+  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = (0 until amount).flatMap { _ =>
     def reportCardRescheduled(e: ReportCardEntryDb) = {
       val rDate = e.date.localDate.plusDays(1)
       val rStart = e.start.localTime.plusHours(1)
@@ -190,14 +190,14 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  def populateReportCardEvaluations(amount: Int, numberOfEntries: Int)(students: List[DbUser], labworks: List[LabworkDb]) = (0 until amount).flatMap { _ =>
+  def populateReportCardEvaluations(amount: Int, numberOfEntries: Int)(students: List[UserDb], labworks: List[LabworkDb]) = (0 until amount).flatMap { _ =>
     val labwork = takeOneOf(labworks).id
 
     (0 until numberOfEntries).map(i => ReportCardEvaluationDb(takeOneOf(students).id, labwork, i.toString, nextBoolean, nextInt(10)))
   }.toList
 
   @scala.annotation.tailrec
-  def randomStudent(avoiding: UUID, applicants: List[DbUser]): UUID = {
+  def randomStudent(avoiding: UUID, applicants: List[UserDb]): UUID = {
     if (applicants.forall(_ == avoiding))
       avoiding
     else {
@@ -207,10 +207,10 @@ object AbstractDaoSpec {
   }
 
   // does not care about business rules such as only one applicant per labwork
-  def populateLabworkApplications(amount: Int, withFriends: Boolean)(labworks: List[LabworkDb], applicants: List[DbUser]) = (0 until amount).map { _ =>
+  def populateLabworkApplications(amount: Int, withFriends: Boolean)(labworks: List[LabworkDb], applicants: List[UserDb]) = (0 until amount).map { _ =>
     val applicant = takeOneOf(applicants).id
     val friends = if (withFriends) Set(randomStudent(applicant, applicants)) else Set.empty[UUID]
-    LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
+    store.LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
   }.toList
 
   def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>

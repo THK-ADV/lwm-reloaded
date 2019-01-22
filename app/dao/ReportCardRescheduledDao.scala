@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{ReportCardRescheduledTable, TableFilter}
+import store.{ReportCardRescheduledDb, ReportCardRescheduledTable, RoomDb, TableFilter}
 
 case class ReportCardRescheduledEntryFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)
@@ -20,7 +20,7 @@ case class ReportCardRescheduledCourseFilter(value: String) extends TableFilter[
   override def predicate = _.joinReportCardEntry.map(_.memberOfCourse(value)).exists
 }
 
-trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] {
+trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] {
 
   import utils.LwmDateTime._
 
@@ -29,15 +29,15 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 
   override protected def toAtomic(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]) = collectDependencies(query) {
-    case (entry, room) => PostgresReportCardRescheduledAtom(entry.date.localDate, entry.start.localTime, entry.end.localTime, room.toLwmModel, entry.reason, entry.id)
+    case (entry, room) => ReportCardRescheduledAtom(entry.date.localDate, entry.start.localTime, entry.end.localTime, room.toUniqueEntity, entry.reason, entry.id)
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]) = collectDependencies(query) {
-    case (entry, _) => entry.toLwmModel
+    case (entry, _) => entry.toUniqueEntity
   }
 
   private def collectDependencies(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq])
-    (build: (ReportCardRescheduledDb, RoomDb) => ReportCardRescheduled) = {
+    (build: (ReportCardRescheduledDb, RoomDb) => ReportCardRescheduledLike) = {
     val mandatory = for {
       q <- query
       r <- q.roomFk

@@ -1,12 +1,13 @@
 package services
 
-import models._
+import models.{helper, _}
+import models.helper.{TimetableDateEntry, Weekday}
 import org.joda.time.{Interval, Weeks}
 import utils.LwmDateTime._
 
 object TimetableService { // TODO DI
 
-  def withoutBlacklists(entries: Vector[TimetableDateEntry], blacklists: Vector[PostgresBlacklist]): Vector[TimetableDateEntry] = {
+  def withoutBlacklists(entries: Vector[TimetableDateEntry], blacklists: Vector[Blacklist]): Vector[TimetableDateEntry] = {
     entries.filterNot { e =>
       val entry = new Interval(e.date.toDateTime(e.start), e.date.toDateTime(e.end))
 
@@ -19,15 +20,15 @@ object TimetableService { // TODO DI
   }
 
   @scala.annotation.tailrec
-  def extrapolateTimetableByWeeks(timetable: PostgresTimetable,
+  def extrapolateTimetableByWeeks(timetable: Timetable,
                                   weeks: Weeks,
-                                  blacklists: Vector[PostgresBlacklist],
-                                  assignmentPlan: PostgresAssignmentPlan,
+                                  blacklists: Vector[Blacklist],
+                                  assignmentPlan: AssignmentPlan,
                                   groupSize: Int): Vector[TimetableDateEntry] = {
     val appointments = assignmentPlan.entries.size * groupSize
     val schemaWeek = timetable.entries.toVector.map { entry =>
       val weekday = Weekday.toDay(entry.dayIndex)
-      TimetableDateEntry(weekday, weekday.sync(timetable.start), entry.start, entry.end, entry.room, entry.supervisor)
+      helper.TimetableDateEntry(weekday, weekday.sync(timetable.start), entry.start, entry.end, entry.room, entry.supervisor)
     }
 
     val extrapolated = (0 until weeks.getWeeks).foldLeft(Vector.empty[TimetableDateEntry]) {
@@ -44,7 +45,7 @@ object TimetableService { // TODO DI
     }
   }
 
-  private def takeAppointments(entries: Vector[TimetableDateEntry], assignmentPlan: PostgresAssignmentPlan, groupSize: Int): Vector[TimetableDateEntry] = {
+  private def takeAppointments(entries: Vector[TimetableDateEntry], assignmentPlan: AssignmentPlan, groupSize: Int): Vector[TimetableDateEntry] = {
     val sorted = entries.sortBy(toLocalDateTime)
     val initial = sorted.take(groupSize)
     val remaining = sorted.drop(groupSize)

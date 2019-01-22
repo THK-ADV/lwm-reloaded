@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{LabworkTable, TableFilter}
+import store.{LabworkDb, LabworkTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -38,7 +38,7 @@ case class LabworkPublishedFilter(value: String) extends TableFilter[LabworkTabl
   override def predicate = _.published === value.toBoolean
 }
 
-trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
+trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,7 +60,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
+  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
     val joinedQuery = for {
       q <- query
       c <- q.courseFk
@@ -71,13 +71,13 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, Labwork] {
 
     db.run(joinedQuery.result.map(_.map {
       case (l, c, s, d, u) =>
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, u.toLwmModel, c.semesterIndex, c.id)
-        PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
+        val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, u.toUniqueEntity, c.semesterIndex, c.id)
+        LabworkAtom(l.label, l.description, s.toUniqueEntity, courseAtom, d.toUniqueEntity, l.subscribable, l.published, l.id)
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[Labwork]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 

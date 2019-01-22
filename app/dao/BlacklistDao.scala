@@ -1,10 +1,10 @@
 package dao
 
 import javax.inject.Inject
-import models.{BlacklistDb, PostgresBlacklist}
+import models.Blacklist
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{BlacklistTable, TableFilter}
+import store.{BlacklistDb, BlacklistTable, TableFilter}
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -37,16 +37,16 @@ case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTabl
   override def predicate = _.until(value)
 }
 
-trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, PostgresBlacklist] {
+trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[BlacklistTable]
 
-  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[Blacklist]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[PostgresBlacklist]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[Blacklist]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {

@@ -15,7 +15,7 @@ class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, PostgresRole] with 
   override protected val invalidUpdateOfDbEntity: RoleDb = dbEntity
   override protected val validUpdateOnDbEntity: RoleDb = dbEntity
   override protected val dbEntities: List[RoleDb] = roles
-  override protected val lwmEntity: PostgresRole = dbEntity.toLwmModel
+  override protected val lwmEntity: PostgresRole = dbEntity.toUniqueEntity
   override protected val lwmAtom: PostgresRole = lwmEntity
   var state = 0 // bloody hack to prevent false update failures
 

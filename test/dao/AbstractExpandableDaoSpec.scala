@@ -16,7 +16,7 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
 
   private def assertEverythingOf(dbModel: List[DbModel], isDefined: Boolean): Unit = {
     val ids = dbModel.map(_.id)
-    val nonAtomic = dbModel.map(_.toLwmModel)
+    val nonAtomic = dbModel.map(_.toUniqueEntity)
     val atomic = dbModel.map(atom)
 
     val start1 = System.currentTimeMillis()

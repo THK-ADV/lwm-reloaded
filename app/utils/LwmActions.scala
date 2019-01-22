@@ -6,7 +6,7 @@ import java.util.concurrent.Executors
 import auth.{OAuthAuthorization, UserToken}
 import dao.AuthorityDao
 import javax.inject.{Inject, Singleton}
-import models.{PostgresAuthority, Role}
+import models.{Authority, Role}
 import play.api.libs.json.Json
 import play.api.mvc.Results.{Forbidden, Unauthorized}
 import play.api.mvc._
@@ -19,7 +19,7 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
 
   private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
-  private def securedAction(predicate: Seq[PostgresAuthority] => Future[Boolean])() = {
+  private def securedAction(predicate: Seq[Authority] => Future[Boolean])() = {
     authenticated andThen authorized andThen allowed(predicate)
   }
 
@@ -42,7 +42,7 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
     override protected def executionContext: ExecutionContext = actionExecutionContext
   }
 
-  private def allowed(predicate: Seq[PostgresAuthority] => Future[Boolean]) = new ActionFilter[AuthRequest] {
+  private def allowed(predicate: Seq[Authority] => Future[Boolean]) = new ActionFilter[AuthRequest] {
     override protected def filter[A](request: AuthRequest[A]): Future[Option[Result]] = predicate(request.authorities).map { allowed =>
       if (allowed) None else Some(Forbidden(Json.obj(
         "status" -> "KO",
@@ -54,7 +54,7 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
   }
 }
 
-case class AuthRequest[A](private val unwrapped: Request[A], authorities: Seq[PostgresAuthority]) extends WrappedRequest[A](unwrapped)
+case class AuthRequest[A](private val unwrapped: Request[A], authorities: Seq[Authority]) extends WrappedRequest[A](unwrapped)
 
 case class IdRequest[A](private val unwrapped: Request[A], systemId: String) extends WrappedRequest[A](unwrapped)
 

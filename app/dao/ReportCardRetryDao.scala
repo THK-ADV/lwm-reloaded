@@ -7,7 +7,7 @@ import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEntryTypeTable, ReportCardRetryTable, TableFilter}
+import store._
 import utils.LwmDateTime._
 
 case class ReportCardRetryEntryFilter(value: String) extends TableFilter[ReportCardRetryTable] {
@@ -22,7 +22,7 @@ case class ReportCardRetryCourseFilter(value: String) extends TableFilter[Report
   override def predicate = _.joinReportCardEntry.map(_.memberOfCourse(value)).exists
 }
 
-trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetry] {
+trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -30,23 +30,23 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
 
   override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]) = collectDependencies(query) {
-    case (entry, room, entryTypes) => PostgresReportCardRetryAtom(
+    case (entry, room, entryTypes) => ReportCardRetryAtom(
       entry.date.localDate,
       entry.start.localTime,
       entry.end.localTime,
-      room.toLwmModel,
-      entryTypes.map(_.toLwmModel).toSet,
+      room.toUniqueEntity,
+      entryTypes.map(_.toUniqueEntity).toSet,
       entry.reason,
       entry.id
     )
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]) = collectDependencies(query) {
-    case (entry, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet).toLwmModel
+    case (entry, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet).toUniqueEntity
   }
 
   private def collectDependencies(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq])
-    (build: (ReportCardRetryDb, RoomDb, Seq[ReportCardEntryTypeDb]) => ReportCardRetry) = {
+    (build: (ReportCardRetryDb, RoomDb, Seq[ReportCardEntryTypeDb]) => ReportCardRetryLike) = {
     val mandatory = for {
       q <- query
       r <- q.roomFk

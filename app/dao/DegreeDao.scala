@@ -3,10 +3,10 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models.{DegreeDb, PostgresDegree}
+import models.Degree
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{DegreeTable, TableFilter}
+import store.{DegreeDb, DegreeTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -22,7 +22,7 @@ case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
-trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
+trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,9 +36,9 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
 }
 
 final class DegreeDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends DegreeDao

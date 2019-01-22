@@ -5,10 +5,10 @@ import java.util.UUID
 import dao._
 import javax.inject.{Inject, Singleton}
 import models.Role.CourseManager
-import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb, ReportCardEvaluationPatternProtocol}
+import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardEvaluationPatternTable, TableFilter}
+import store.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}
@@ -21,7 +21,7 @@ object ReportCardEvaluationPatternController {
 
 @Singleton
 final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecuredAction)
-  extends AbstractCRUDControllerPostgres[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
+  extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
 
   override protected implicit val writes: Writes[ReportCardEvaluationPattern] = ReportCardEvaluationPattern.writes
 

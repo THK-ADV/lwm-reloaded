@@ -1,11 +1,11 @@
 package dao
 
-import models.{DegreeDb, PostgresDegree}
+import models.Degree
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import store.DegreeTable
+import store.{DegreeDb, DegreeTable}
 
-final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeDao {
+final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Degree] with DegreeDao {
   import dao.AbstractDaoSpec._
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
@@ -22,7 +22,7 @@ final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Postgre
 
   override protected val dbEntities: List[DegreeDb] = degrees
 
-  override protected val lwmEntity: PostgresDegree = dbEntity.toLwmModel
+  override protected val lwmEntity: Degree = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresDegree = lwmEntity
+  override protected val lwmAtom: Degree = lwmEntity
 }

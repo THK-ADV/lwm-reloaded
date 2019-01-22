@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb}
+import models.ReportCardEvaluationPattern
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
 import store._
@@ -23,7 +23,7 @@ final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCar
 
   override protected val dbEntities: List[ReportCardEvaluationPatternDb] = reportCardEvaluationpatterns.tail
 
-  override protected val lwmEntity: ReportCardEvaluationPattern = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardEvaluationPattern = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: ReportCardEvaluationPattern = lwmEntity
 

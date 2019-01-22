@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import models.{PostgresReportCardRescheduled, PostgresReportCardRescheduledAtom, ReportCardRescheduled, ReportCardRescheduledDb}
+import models.{ReportCardRescheduled, ReportCardRescheduledAtom, ReportCardRescheduledLike}
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
 import store._
@@ -10,7 +10,7 @@ import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 import org.joda.time.{LocalDate, LocalTime}
 
-final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] with ReportCardRescheduledDao  {
+final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] with ReportCardRescheduledDao  {
   import dao.AbstractDaoSpec._
 
   private val amount = 50
@@ -43,13 +43,13 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
 
   override protected val dbEntities: List[ReportCardRescheduledDb] = (0 until amount).map(i => rescheduled(reportCardEntries(i).id, i)).toList
 
-  override protected val lwmEntity: PostgresReportCardRescheduled = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardRescheduled = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresReportCardRescheduledAtom = PostgresReportCardRescheduledAtom(
+  override protected val lwmAtom: ReportCardRescheduledAtom = ReportCardRescheduledAtom(
     lwmEntity.date,
     lwmEntity.start,
     lwmEntity.end,
-    rooms.find(_.id == lwmEntity.room).head.toLwmModel,
+    rooms.find(_.id == lwmEntity.room).head.toUniqueEntity,
     lwmEntity.reason,
     lwmEntity.id
   )

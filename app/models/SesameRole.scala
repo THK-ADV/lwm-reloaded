@@ -7,10 +7,14 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Json, Reads, Writes}
 import utils.LwmDateTime.DateTimeConverter
 
+sealed trait Role {
+  def label: String
+}
+
 case class PostgresRole(label: String, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class RoleDb(label: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  def toLwmModel = PostgresRole(label, id)
+  def toUniqueEntity = PostgresRole(label, id)
 }
 
 object PostgresRole {
@@ -18,9 +22,6 @@ object PostgresRole {
   implicit val reads: Reads[PostgresRole] = Json.reads[PostgresRole]
 }
 
-sealed trait Role {
-  def label: String
-}
 
 object Role {
 
@@ -32,11 +33,11 @@ object Role {
     override val label = Roles.AdminLabel
   }
 
-  case object Employee extends Role {
+  case object EmployeeRole extends Role {
     override val label = Roles.EmployeeLabel
   }
 
-  case object Student extends Role {
+  case object StudentRole extends Role {
     override val label = Roles.StudentLabel
   }
 

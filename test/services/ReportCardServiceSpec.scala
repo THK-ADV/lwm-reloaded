@@ -3,14 +3,16 @@ package services
 import java.util.UUID
 
 import base.TestBaseDefinition
-import models._
+import models.{genesis, _}
+import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
+import store.ReportCardEvaluationDb
 
 final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
   import utils.LwmDateTime._
-  import models.PostgresReportCardEntryType._
+  import models.ReportCardEntryType._
 
   val labworkId = UUID.randomUUID
   
@@ -36,7 +38,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
         val studentApps = m._2.sortBy(e => e.date.localDate.toLocalDateTime(e.start.localTime))
 
         (assignments, appointments, studentApps).zipped.forall {
-          case (ass, app, s) => integer(ass, app, s.toLwmModel)
+          case (ass, app, s) => integer(ass, app, s.toUniqueEntity)
         }
       } shouldBe true
     }
@@ -45,13 +47,13 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val bonusPoints = 10
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => PostgresReportCardEntryType(att.entryType, Some(!(e.index == 0)))
-          case cert if cert.entryType == Certificate.entryType => PostgresReportCardEntryType(cert.entryType, Some(true))
-          case bonus if bonus.entryType == Bonus.entryType => PostgresReportCardEntryType(bonus.entryType, Some(false), bonusPoints)
-          case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
+          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, Some(!(e.index == 0)))
+          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, Some(true))
+          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, Some(false), bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -65,7 +67,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
 
-      result.size shouldBe PostgresReportCardEntryType.all.size
+      result.size shouldBe ReportCardEntryType.all.size
       result.forall(_.bool) shouldBe true
       result.find(r => r.label == Bonus.entryType && r.int == bonusPoints) shouldBe defined
     }
@@ -73,13 +75,13 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "pass a student's report card even when he barley performed" in {
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => PostgresReportCardEntryType(att.entryType, Some(!(e.index == 0 || e.index == 1)))
-          case cert if cert.entryType == Certificate.entryType => PostgresReportCardEntryType(cert.entryType, Some(!(e.index == 1 || e.index == 2 || e.index == 7)))
-          case bonus if bonus.entryType == Bonus.entryType => PostgresReportCardEntryType(bonus.entryType, Some(false))
-          case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
+          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, Some(!(e.index == 0 || e.index == 1)))
+          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, Some(!(e.index == 1 || e.index == 2 || e.index == 7)))
+          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, Some(false))
+          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -93,7 +95,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
 
-      result.size shouldBe PostgresReportCardEntryType.all.size
+      result.size shouldBe ReportCardEntryType.all.size
       result.foreach {
         case att if att.label == Attendance.entryType => att.bool shouldBe true
         case cert if cert.label == Certificate.entryType => cert.bool shouldBe true
@@ -106,13 +108,13 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       val bonusPoints = 5
       val cardEntries = planEntries.map { e =>
         val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => PostgresReportCardEntryType(att.entryType, Some(true))
-          case cert if cert.entryType == Certificate.entryType => PostgresReportCardEntryType(cert.entryType, Some(!(e.index == 2 || e.index == 5)))
-          case bonus if bonus.entryType == Bonus.entryType => PostgresReportCardEntryType(bonus.entryType, Some(false), bonusPoints)
-          case supp if supp.entryType == Supplement.entryType => PostgresReportCardEntryType(supp.entryType, Some(true))
+          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, Some(true))
+          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, Some(!(e.index == 2 || e.index == 5)))
+          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, Some(false), bonusPoints)
+          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, Some(true))
         }
 
-        PostgresReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
+        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
       }
       val types = planEntries.flatMap(_.types.toVector)
       val attendance = types.count(_.entryType == Attendance.entryType)
@@ -126,7 +128,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       val result = ReportCardService.evaluate(cardEntries.toList, pattern)
 
-      result.size shouldBe PostgresReportCardEntryType.all.size
+      result.size shouldBe ReportCardEntryType.all.size
       result.foreach {
         case att if att.label == Attendance.entryType => att.bool shouldBe true
         case cert if cert.label == Certificate.entryType => cert.bool shouldBe false
@@ -138,25 +140,25 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "evaluate reportCardEntries against different patterns" in {
       val cards = List(
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(false)),
-          PostgresReportCardEntryType(Certificate.entryType, None)
+          ReportCardEntryType(Attendance.entryType, Some(false)),
+          ReportCardEntryType(Certificate.entryType, None)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(false))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(false))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true)),
-          PostgresReportCardEntryType(Bonus.entryType, int = 10)
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true)),
+          ReportCardEntryType(Bonus.entryType, int = 10)
         ))
       )
 
@@ -193,25 +195,25 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "return negative evaluation when reportCardEntries are empty" in {
       val cards = List(
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType),
-          PostgresReportCardEntryType(Bonus.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType),
+          ReportCardEntryType(Bonus.entryType)
         ))
       )
 
@@ -230,25 +232,25 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "return a pending evaluation when reportCardEntries are half set" in {
       val cards = List(
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType),
-          PostgresReportCardEntryType(Bonus.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType),
+          ReportCardEntryType(Bonus.entryType)
         ))
       )
 
@@ -267,25 +269,25 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "return only those evaluation which matches given pattern" in {
       val cards = List(
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType, Some(true)),
-          PostgresReportCardEntryType(Certificate.entryType, Some(true))
+          ReportCardEntryType(Attendance.entryType, Some(true)),
+          ReportCardEntryType(Certificate.entryType, Some(true))
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType),
-          PostgresReportCardEntryType(Bonus.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType),
+          ReportCardEntryType(Bonus.entryType)
         ))
       )
 
@@ -413,7 +415,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 
       result.size shouldBe 4
       result.foreach { eval =>
-        PostgresReportCardEntryType.all.count(_.entryType == eval.label) shouldBe 1
+        ReportCardEntryType.all.count(_.entryType == eval.label) shouldBe 1
         eval.bool shouldBe true
         eval.int shouldBe ReportCardService.EvaluatedExplicit
       }
@@ -422,25 +424,25 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
     "skip evaluation if a given student was evaluated explicit" in {
       val cards = List(
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType)
         )),
         template(Set(
-          PostgresReportCardEntryType(Attendance.entryType),
-          PostgresReportCardEntryType(Certificate.entryType),
-          PostgresReportCardEntryType(Bonus.entryType)
+          ReportCardEntryType(Attendance.entryType),
+          ReportCardEntryType(Certificate.entryType),
+          ReportCardEntryType(Bonus.entryType)
         ))
       )
 
@@ -452,7 +454,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       )
 
       val explicit = ReportCardService.evaluateExplicit(student, labwork)
-      val result = ReportCardService.evaluateDeltas(cards, futurePattern, explicit.map(_.toLwmModel))
+      val result = ReportCardService.evaluateDeltas(cards, futurePattern, explicit.map(_.toUniqueEntity))
 
       result shouldBe empty
     }
@@ -481,14 +483,14 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
   val student: UUID = UUID.randomUUID
   val labwork: UUID = UUID.randomUUID
 
-  val template: (Set[PostgresReportCardEntryType]) => PostgresReportCardEntry = partialReportCardEntry(student, labwork)
+  val template: (Set[ReportCardEntryType]) => ReportCardEntry = partialReportCardEntry(student, labwork)
 
-  private def partialReportCardEntry(student: UUID, labwork: UUID)(types: Set[PostgresReportCardEntryType]) = {
-    PostgresReportCardEntry(student, labwork, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
+  private def partialReportCardEntry(student: UUID, labwork: UUID)(types: Set[ReportCardEntryType]) = {
+    ReportCardEntry(student, labwork, "", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
   }
 
   private def partialReportCardEvaluation(student: UUID, labwork: UUID)(label: String, bool: Boolean, int: Int) = {
-    PostgresReportCardEvaluation(student, labwork, label, bool, int, DateTime.now)
+    ReportCardEvaluation(student, labwork, label, bool, int, DateTime.now)
   }
 
   private def partialReportCardEvaluationDb(student: UUID, labwork: UUID)(label: String, bool: Boolean, int: Int) = {
@@ -496,19 +498,19 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
   }
 
   private def plan(amount: Int) = {
-    def randomTypes: Set[PostgresAssignmentEntryType] = {
+    def randomTypes: Set[AssignmentEntryType] = {
       import scala.util.Random._
 
-      val types = PostgresAssignmentEntryType.all.toVector
+      val types = AssignmentEntryType.all.toVector
       shuffle(types).take(nextInt(types.size)).toSet
     }
 
-    val pe = (0 until amount).map(n => PostgresAssignmentEntry(n, n.toString, randomTypes)).toSet
-    PostgresAssignmentPlan(UUID.randomUUID, amount, amount, pe)
+    val pe = (0 until amount).map(n => AssignmentEntry(n, n.toString, randomTypes)).toSet
+    AssignmentPlan(UUID.randomUUID, amount, amount, pe)
   }
 
-  private def group(students: Int): PostgresGroup = {
-    PostgresGroup("", UUID.randomUUID, (0 until students).map(_ => UUID.randomUUID).toSet)
+  private def group(students: Int): Group = {
+    Group("", UUID.randomUUID, (0 until students).map(_ => UUID.randomUUID).toSet)
   }
 
   private def schedule(amount: Int, aps: Int): ScheduleGen = {
@@ -525,13 +527,13 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       }
     }
 
-    ScheduleGen(UUID.randomUUID, see)
+    genesis.ScheduleGen(UUID.randomUUID, see)
   }
 
-  def integer(assEntry: PostgresAssignmentEntry, appEntry: ScheduleEntryGen, cEntry: PostgresReportCardEntry): Boolean = {
-    def integerTypes(left: Set[PostgresAssignmentEntryType], right: Set[PostgresReportCardEntryType]): Boolean = {
-      def toAssignmentEntryType(cardEntry: PostgresReportCardEntryType): PostgresAssignmentEntryType = {
-        PostgresAssignmentEntryType(cardEntry.entryType, cardEntry.bool.getOrElse(false), cardEntry.int)
+  def integer(assEntry: AssignmentEntry, appEntry: ScheduleEntryGen, cEntry: ReportCardEntry): Boolean = {
+    def integerTypes(left: Set[AssignmentEntryType], right: Set[ReportCardEntryType]): Boolean = {
+      def toAssignmentEntryType(cardEntry: ReportCardEntryType): AssignmentEntryType = {
+        AssignmentEntryType(cardEntry.entryType, cardEntry.bool.getOrElse(false), cardEntry.int)
       }
 
       left == right.map(toAssignmentEntryType)
@@ -544,18 +546,18 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       appEntry.room == cEntry.room
   }
 
-  val planEntries: Vector[PostgresAssignmentEntry] = {
-    import models.PostgresAssignmentEntryType._
+  val planEntries: Vector[AssignmentEntry] = {
+    import models.AssignmentEntryType._
 
     Vector(
-      PostgresAssignmentEntry(0, "Einführung", Set(Attendance)),
-      PostgresAssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
-      PostgresAssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
-      PostgresAssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
-      PostgresAssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
-      PostgresAssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
-      PostgresAssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
-      PostgresAssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
+      AssignmentEntry(0, "Einführung", Set(Attendance)),
+      AssignmentEntry(1, "Liveaufgabe 1 - C", Set(Attendance, Certificate)),
+      AssignmentEntry(2, "Liveaufgabe 2 - C", Set(Attendance, Certificate)),
+      AssignmentEntry(3, "Ilias Test", Set(Attendance, Certificate, Bonus)),
+      AssignmentEntry(4, "Liveaufgabe 3 - Java", Set(Attendance, Certificate)),
+      AssignmentEntry(5, "Liveaufgabe 4 - Java", Set(Attendance, Certificate)),
+      AssignmentEntry(6, "Codereview", Set(Attendance, Certificate, Supplement)),
+      AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
     )
   }
 }

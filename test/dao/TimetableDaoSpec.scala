@@ -7,7 +7,7 @@ import models._
 import org.joda.time.{LocalDate, LocalTime}
 import store._
 
-final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, Timetable] with TimetableDao {
+final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, TimetableLike] with TimetableDao {
   import utils.LwmDateTime._
   import slick.jdbc.PostgresProfile.api._
 
@@ -15,19 +15,19 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
   private lazy val privateBlacklists = populateBlacklists(50)
   private lazy val privateEmployees = populateEmployees(30)
 
-  def timetableEntryAtom(timetable: TimetableDb)(users: List[DbUser], labworks: List[LabworkDb], blacklists: List[BlacklistDb], rooms: List[RoomDb]) = {
+  def timetableEntryAtom(timetable: TimetableDb)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb], rooms: List[RoomDb]) = {
     val entryAtoms = timetable.entries.map { e =>
-      val supervisors = users.filter(u => e.supervisor.contains(u.id)).map(_.toLwmModel).toSet
-      val room = rooms.find(_.id == e.room).get.toLwmModel
+      val supervisors = users.filter(u => e.supervisor.contains(u.id)).map(_.toUniqueEntity).toSet
+      val room = rooms.find(_.id == e.room).get.toUniqueEntity
 
-      PostgresTimetableEntryAtom(supervisors, room, e.dayIndex, e.start, e.end)
+      TimetableEntryAtom(supervisors, room, e.dayIndex, e.start, e.end)
     }
 
-    PostgresTimetableAtom(
-      labworks.find(_.id == timetable.labwork).get.toLwmModel,
+    TimetableAtom(
+      labworks.find(_.id == timetable.labwork).get.toUniqueEntity,
       entryAtoms,
       timetable.start.localDate,
-      blacklists.filter(b => timetable.localBlacklist.contains(b.id)).map(_.toLwmModel).toSet,
+      blacklists.filter(b => timetable.localBlacklist.contains(b.id)).map(_.toUniqueEntity).toSet,
       timetable.id
     )
   }
@@ -44,9 +44,9 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
 
   override protected val dbEntities: List[TimetableDb] = timetables
 
-  override protected val lwmEntity: Timetable = dbEntity.toLwmModel
+  override protected val lwmEntity: TimetableLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: Timetable = timetableEntryAtom(dbEntity)(employees, labworks, blacklists, rooms)
+  override protected val lwmAtom: TimetableLike = timetableEntryAtom(dbEntity)(employees, labworks, blacklists, rooms)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees ++ privateEmployees),
@@ -70,11 +70,11 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
 
     List(
       chosen1.copy(entries = chosen1.entries.drop(chosen1.entries.size/2), localBlacklist = Set.empty),
-      chosen2.copy(entries = chosen2.entries + PostgresTimetableEntry(takeSomeOf(privateEmployees).map(_.id).toSet, randomRoom.id, 10, LocalTime.now.plusHours(10), LocalTime.now.plusHours(11)))
+      chosen2.copy(entries = chosen2.entries + TimetableEntry(takeSomeOf(privateEmployees).map(_.id).toSet, randomRoom.id, 10, LocalTime.now.plusHours(10), LocalTime.now.plusHours(11)))
     )
   }
 
-  override protected def atom(dbModel: TimetableDb): Timetable = timetableEntryAtom(dbModel)(privateEmployees, privateLabs, privateBlacklists, rooms)
+  override protected def atom(dbModel: TimetableDb): TimetableLike = timetableEntryAtom(dbModel)(privateEmployees, privateLabs, privateBlacklists, rooms)
 
   override protected def expanderSpecs(dbModel: TimetableDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
     val timetableEntries = timetableEntryQuery.filter(_.timetable === dbModel.id)

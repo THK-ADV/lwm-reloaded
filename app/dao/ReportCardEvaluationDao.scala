@@ -7,7 +7,7 @@ import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEvaluationTable, TableFilter}
+import store._
 import utils.LwmDateTime.SqlTimestampConverter
 
 import scala.concurrent.Future
@@ -45,28 +45,28 @@ case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationT
   override def predicate = _.int <= Try(value.toInt).getOrElse(-1)
 }
 
-trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
+trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = collectDependencies(query) {
     case (e, (l, c, d, s, lec), u) =>
       val labworkAtom = {
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
-        PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
+        val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+        LabworkAtom(l.label, l.description, s.toUniqueEntity, courseAtom, d.toUniqueEntity, l.subscribable, l.published, l.id)
       }
 
-      PostgresReportCardEvaluationAtom(u.toLwmModel, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
+      ReportCardEvaluationAtom(u.toUniqueEntity, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case (e, _, _) => PostgresReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = collectDependencies(query) {
+    case (e, _, _) => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
   }
 
   private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])
-    (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, DbUser), DbUser) => ReportCardEvaluation) = {
+    (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, UserDb), UserDb) => ReportCardEvaluationLike) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk

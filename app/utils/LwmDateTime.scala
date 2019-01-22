@@ -3,7 +3,9 @@ package utils
 import java.sql.{Date, Time, Timestamp}
 import java.util.Calendar
 
-import models.{PostgresBlacklist, ScheduleEntryGen, TimetableDateEntry}
+import models.genesis.ScheduleEntryGen
+import models.Blacklist
+import models.helper.TimetableDateEntry
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
@@ -20,12 +22,15 @@ object LwmDateTime {
 
   implicit class StringDateConverter(val string: String) {
     def sqlDateFromMillis: Date = new Date(string.toLong)
+
     def sqlTimeFromMillis: Time = new Time(string.toLong)
 
     def sqlDateFromPattern: Date = string.localDate.sqlDate
+
     def sqlTimeFromPattern: Time = string.localTime.sqlTime
 
     def localDate: LocalDate = LocalDate.parse(string, dateFormatter)
+
     def localTime: LocalTime = LocalTime.parse(string, timeFormatter)
   }
 
@@ -76,7 +81,7 @@ object LwmDateTime {
     entry.date.toLocalDateTime(entry.start)
   }
 
-  def toLocalDateTime(bl: PostgresBlacklist): LocalDateTime = {
+  def toLocalDateTime(bl: Blacklist): LocalDateTime = {
     bl.date.toLocalDateTime(bl.start)
   }
 
@@ -86,21 +91,13 @@ object LwmDateTime {
 
   def toDateTime(string: String): DateTime = DateTime.parse(string, formatter)
 
-  implicit val localTimeOrd: Ordering[LocalTime] = new Ordering[LocalTime] {
-    override def compare(x: LocalTime, y: LocalTime): Int = x.compareTo(y)
-  }
+  implicit val localTimeOrd: Ordering[LocalTime] = (x: LocalTime, y: LocalTime) => x.compareTo(y)
 
-  implicit val localDateOrd: Ordering[LocalDate] = new Ordering[LocalDate] {
-    override def compare(x: LocalDate, y: LocalDate): Int = x.compareTo(y)
-  }
+  implicit val localDateOrd: Ordering[LocalDate] = (x: LocalDate, y: LocalDate) => x.compareTo(y)
 
-  implicit val localDateTimeOrd: Ordering[LocalDateTime] = new Ordering[LocalDateTime] {
-    override def compare(x: LocalDateTime, y: LocalDateTime): Int = x.compareTo(y)
-  }
+  implicit val localDateTimeOrd: Ordering[LocalDateTime] = (x: LocalDateTime, y: LocalDateTime) => x.compareTo(y)
 
-  implicit val dateTimeOrd: Ordering[DateTime] = new Ordering[DateTime] {
-    override def compare(x: DateTime, y: DateTime): Int = x.compareTo(y)
-  }
+  implicit val dateTimeOrd: Ordering[DateTime] = (x: DateTime, y: DateTime) => x.compareTo(y)
 
   implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
 

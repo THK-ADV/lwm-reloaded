@@ -11,7 +11,7 @@ import store._
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetry] with ReportCardRetryDao {
+final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] with ReportCardRetryDao {
   import scala.util.Random.nextBoolean
 
   private lazy val privateLabworks = labworks.take(4)
@@ -53,12 +53,12 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
     retry.copy(room = randomRoom.id, reason = Some(s"reason ${DateTime.now}"), entryTypes = maybeNewEntryTypes)
   }
 
-  override protected def atom(dbModel: ReportCardRetryDb): PostgresReportCardRetryAtom = PostgresReportCardRetryAtom(
+  override protected def atom(dbModel: ReportCardRetryDb): ReportCardRetryAtom = ReportCardRetryAtom(
     dbModel.date.localDate,
     dbModel.start.localTime,
     dbModel.end.localTime,
-    rooms.find(_.id == dbModel.room).get.toLwmModel,
-    dbModel.entryTypes.map(_.toLwmModel),
+    rooms.find(_.id == dbModel.room).get.toUniqueEntity,
+    dbModel.entryTypes.map(_.toUniqueEntity),
     dbModel.reason,
     dbModel.id
   )
@@ -81,9 +81,9 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
 
   override protected val dbEntities: List[ReportCardRetryDb] = retries(reportCardEntries.tail.take(60))
 
-  override protected val lwmEntity: PostgresReportCardRetry = dbEntity.toLwmModel
+  override protected val lwmEntity: ReportCardRetry = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresReportCardRetryAtom = atom(dbEntity)
+  override protected val lwmAtom: ReportCardRetryAtom = atom(dbEntity)
 
   override protected val dependencies = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),

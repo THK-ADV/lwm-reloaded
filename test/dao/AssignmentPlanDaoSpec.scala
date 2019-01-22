@@ -6,16 +6,16 @@ import store._
 
 import scala.util.Random.nextInt
 
-final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlan] with AssignmentPlanDao {
+final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] with AssignmentPlanDao {
   import dao.AbstractDaoSpec._
 
   def assignmentPlan(labwork: LabworkDb, number: Int) = {
-    val types = PostgresAssignmentEntryType.all
+    val types = AssignmentEntryType.all
     val entries = (0 until number).map { i =>
-      PostgresAssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
+      AssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
     }.toSet
 
-    AssignmentPlanDb(labwork.id, number, number, entries)
+    store.AssignmentPlanDb(labwork.id, number, number, entries)
   }
 
   "A AssignmentPlanServiceSpec" should {
@@ -64,7 +64,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
 
   override protected val validUpdateOnDbEntity: AssignmentPlanDb = {
     val updatedEntries = Set(
-      PostgresAssignmentEntry(2, "2", Set(PostgresAssignmentEntryType.Bonus))
+      AssignmentEntry(2, "2", Set(AssignmentEntryType.Bonus))
     )
 
     dbEntity.copy(dbEntity.labwork, dbEntity.attendance + 1, dbEntity.mandatory + 1,  updatedEntries)
@@ -72,9 +72,9 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
 
   override protected val dbEntities: List[AssignmentPlanDb] = assignmentPlans
 
-  override protected val lwmEntity: AssignmentPlan = dbEntity.toLwmModel
+  override protected val lwmEntity: AssignmentPlanLike = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: AssignmentPlan = atom(dbEntity)
+  override protected val lwmAtom: AssignmentPlanLike = atom(dbEntity)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees),
@@ -95,14 +95,14 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
   override protected def update(toUpdate: List[AssignmentPlanDb]): List[AssignmentPlanDb] = {
     toUpdate.map { chosen =>
       chosen.copy(chosen.labwork, 1, 1, chosen.entries.drop(2) ++ Set(
-        PostgresAssignmentEntry(10, 10.toString, PostgresAssignmentEntryType.all.take(1)),
-        PostgresAssignmentEntry(11, 11.toString, Set.empty)
+        AssignmentEntry(10, 10.toString, AssignmentEntryType.all.take(1)),
+        AssignmentEntry(11, 11.toString, Set.empty)
       ))
     }
   }
 
-  override protected def atom(dbModel: AssignmentPlanDb): AssignmentPlan = PostgresAssignmentPlanAtom(
-    labworks.find(_.id == dbModel.labwork).get.toLwmModel,
+  override protected def atom(dbModel: AssignmentPlanDb): AssignmentPlanLike = AssignmentPlanAtom(
+    labworks.find(_.id == dbModel.labwork).get.toUniqueEntity,
     dbModel.attendance,
     dbModel.mandatory,
     dbModel.entries,
@@ -112,8 +112,8 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
   override protected def expanderSpecs(dbModel: AssignmentPlanDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
     assignmentEntryQuery.filter(_.assignmentPlan === dbModel.id).joinLeft(assignmentEntryTypeQuery).on(_.id === _.assignmentEntry).result.map(_.groupBy(_._1).map {
       case (entry, values) =>
-        val types = values.flatMap(_._2).map(t => PostgresAssignmentEntryType(t.entryType,  t.bool, t.int))
-        PostgresAssignmentEntry(entry.index, entry.label, types.toSet, entry.duration)
+        val types = values.flatMap(_._2).map(t => AssignmentEntryType(t.entryType,  t.bool, t.int))
+        AssignmentEntry(entry.index, entry.label, types.toSet, entry.duration)
     }).map(entries => entries.toSet shouldBe (if (isDefined) dbModel.entries else Set.empty))
   }
 }
