@@ -21,7 +21,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with SecureControllerContext
     with ResultOps
     with AttributeFilter
-    with RequestRebase {
+    with RequestOps {
 
   import utils.Ops.unwrapTrys
 

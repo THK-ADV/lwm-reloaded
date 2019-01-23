@@ -1,7 +1,5 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper._
 import dao._
 import javax.inject.{Inject, Singleton}
@@ -12,7 +10,6 @@ import play.api.mvc._
 import utils.SecuredAction
 
 import scala.concurrent.Future
-import scala.util.Try
 
 @Singleton
 final class DashboardController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val dashboardDao: DashboardDao, val securedAction: SecuredAction)
@@ -20,7 +17,8 @@ final class DashboardController @Inject()(cc: ControllerComponents, val authorit
     with Secured
     with SecureControllerContext
     with ResultOps
-    with AttributeFilter {
+    with AttributeFilter
+    with RequestOps {
 
   implicit val writes: Writes[Dashboard] = {
     case s: StudentDashboard => Json.writes[StudentDashboard].writes(s)
@@ -28,19 +26,14 @@ final class DashboardController @Inject()(cc: ControllerComponents, val authorit
   }
 
   def dashboard = contextFrom(Get) asyncAction { implicit request =>
-    dashboardRequest(None)
-  }
+    import utils.Ops.OptionOps
+    import scala.concurrent.ExecutionContext.Implicits.global
 
-  def dashboardFor(user: String) = contextFrom(GetAll) asyncAction { implicit request =>
-    dashboardRequest(Try(UUID.fromString(user)).toOption)
-  }
-
-  private def dashboardRequest(user: Option[UUID])(implicit request: Request[AnyContent]) = {
-    //    val attr = extractAttributes(request.queryString)._2
-    //    val id = user getOrElse request.session.get(SessionController.userId).map(UUID.fromString).get
-    //
-    //    dashboardDao.dashboard(id)(attr.atomic, attr.valid, attr.lastModified).jsonResult
-    Future.failed(???)
+    (for {
+      systemId <- Future.fromTry(request.systemId.toTry(new Throwable("No User ID found in request")))
+      attr = extractAttributes(request.queryString)._2
+      board <- dashboardDao.dashboard(systemId)(attr.atomic, attr.valid, attr.lastModified)
+    } yield board).jsonResult
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

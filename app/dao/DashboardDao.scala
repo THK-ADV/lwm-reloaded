@@ -14,13 +14,13 @@ trait DashboardDao {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def dashboard(userId: UUID)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
+  def dashboard(systemId: String)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
     semesterDao.get(List(SemesterCurrentFilter()), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
       case head :: Nil =>
-        userDao.getById(userId.toString, atomic = false, validOnly, sinceLastModified) flatMap {
+        userDao.get(List(UserSystemIdFilter(systemId)), atomic = false, validOnly, sinceLastModified).map (_.headOption) flatMap {
           case Some(Student(_, _, _, _, _, enrollment, id)) => student(id, enrollment, head)(atomic, validOnly, sinceLastModified)
           case Some(user) => employee(user.id, head)(atomic, validOnly, sinceLastModified)
-          case None => Future.failed(new Throwable(s"no user found for $userId"))
+          case None => Future.failed(new Throwable(s"no user found for $systemId"))
         }
       case _ =>
         Future.failed(new Throwable(s"none or more than one semester was found, which is marked as the current semester"))

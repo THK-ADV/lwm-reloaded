@@ -4,6 +4,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import auth.{OAuthAuthorization, UserToken}
+import controllers.helper.RequestOps
 import dao.AuthorityDao
 import javax.inject.{Inject, Singleton}
 import models.{Authority, Role}
@@ -17,9 +18,9 @@ import scala.util.control.NonFatal
 @Singleton
 final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: AuthorityDao) {
 
-  private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+  private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 
-  private def securedAction(predicate: Seq[Authority] => Future[Boolean])() = {
+  private def securedAction(predicate: Seq[Authority] => Future[Boolean]) = {
     authenticated andThen authorized andThen allowed(predicate)
   }
 
@@ -63,7 +64,9 @@ case class Authenticated @Inject()(auth: OAuthAuthorization)(val parser: BodyPar
   extends ActionBuilder[IdRequest, AnyContent] {
 
   override def invokeBlock[A](request: Request[A], block: IdRequest[A] => Future[Result]) = auth.authorized(request).flatMap {
-    case UserToken(_, _, _, _, systemId, _, _) => block(IdRequest(request, systemId))
+    case token@UserToken(_, _, _, _, systemId, _, _) =>
+      val newRequest = request.addAttr(RequestOps.UserToken, token)
+      block(IdRequest(newRequest, systemId))
   }.recover {
     case NonFatal(e) => Unauthorized(Json.obj(
       "status" -> "KO",
