@@ -8,7 +8,7 @@ import models.Role.{God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{RoleTable, TableFilter}
+import database.{RoleTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

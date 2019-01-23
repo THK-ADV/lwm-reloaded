@@ -10,7 +10,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import services._
-import store.{GroupDb, GroupTable, TableFilter}
+import database.{GroupDb, GroupTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

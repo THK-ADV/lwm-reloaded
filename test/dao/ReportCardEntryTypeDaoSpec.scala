@@ -3,7 +3,7 @@ package dao
 import models.{ReportCardEntryType, ReportCardEntryTypeDb}
 import slick.dbio.{DBIO, Effect}
 import slick.lifted.TableQuery
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 
 final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] with ReportCardEntryTypeDao {

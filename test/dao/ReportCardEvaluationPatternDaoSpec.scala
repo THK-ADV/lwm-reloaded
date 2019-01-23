@@ -5,7 +5,7 @@ import java.util.UUID
 import models.ReportCardEvaluationPattern
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 
 final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] with ReportCardEvaluationPatternDao {

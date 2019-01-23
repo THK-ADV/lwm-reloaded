@@ -8,7 +8,7 @@ import models.Role.{CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
+import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
 import utils.LwmDateTime._
 import utils.SecuredAction
 

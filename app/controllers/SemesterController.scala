@@ -8,7 +8,7 @@ import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Semester, SemesterProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{SemesterDb, SemesterTable, TableFilter}
+import database.{SemesterDb, SemesterTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

@@ -11,7 +11,7 @@ import org.scalatest.WordSpecLike
 import org.scalatest.mock.MockitoSugar._
 import services.ldap.LdapSyncServiceActor.SyncRequest
 import services.ldap.{LdapService, LdapSyncServiceActor, LdapUser}
-import store.UserDb
+import database.UserDb
 
 import scala.concurrent.Future
 

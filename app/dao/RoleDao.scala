@@ -5,7 +5,7 @@ import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{RoleTable, TableFilter}
+import database.{RoleTable, TableFilter}
 
 import scala.concurrent.Future
 

@@ -9,7 +9,7 @@ import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{TableFilter, UserDb, UserTable}
+import database.{TableFilter, UserDb, UserTable}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

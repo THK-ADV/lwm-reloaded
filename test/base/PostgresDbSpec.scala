@@ -2,7 +2,7 @@ package base
 
 import modules.DatabaseModule
 import org.scalatest._
-import store._
+import database._
 
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 

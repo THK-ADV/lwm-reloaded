@@ -8,7 +8,7 @@ import services.ldap.LdapUser
 import slick.dbio.Effect.Write
 import slick.driver
 import slick.driver.PostgresDriver
-import store._
+import database._
 
 final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] with UserDao {
   import slick.jdbc.PostgresProfile.api._

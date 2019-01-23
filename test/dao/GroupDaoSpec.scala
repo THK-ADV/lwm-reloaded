@@ -2,7 +2,7 @@ package dao
 
 import models._
 import slick.dbio.{DBIOAction, Effect, NoStream}
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 import services.GroupService._
 

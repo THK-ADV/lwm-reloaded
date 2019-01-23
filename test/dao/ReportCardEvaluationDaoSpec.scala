@@ -3,7 +3,7 @@ package dao
 import models._
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 
 final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] with ReportCardEvaluationDao {

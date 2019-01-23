@@ -7,7 +7,7 @@ import services._
 import slick.dbio.Effect.Write
 import slick.driver
 import slick.driver.PostgresDriver
-import store.{CourseDb, CourseTable, RoleTable, UserTable}
+import database.{CourseDb, CourseTable, RoleTable, UserTable}
 
 class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] with CourseDao {
 

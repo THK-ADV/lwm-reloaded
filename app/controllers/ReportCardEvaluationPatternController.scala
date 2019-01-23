@@ -8,7 +8,7 @@ import models.Role.CourseManager
 import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

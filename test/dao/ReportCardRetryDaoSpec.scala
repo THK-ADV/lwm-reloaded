@@ -7,7 +7,7 @@ import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 

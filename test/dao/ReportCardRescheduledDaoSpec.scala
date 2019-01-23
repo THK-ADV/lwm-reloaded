@@ -5,7 +5,7 @@ import java.util.UUID
 import models.{ReportCardRescheduled, ReportCardRescheduledAtom, ReportCardRescheduledLike}
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
-import store._
+import database._
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 import org.joda.time.{LocalDate, LocalTime}

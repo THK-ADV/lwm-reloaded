@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{LabworkDb, LabworkTable, TableFilter}
+import database.{LabworkDb, LabworkTable, TableFilter}
 
 import scala.concurrent.Future
 

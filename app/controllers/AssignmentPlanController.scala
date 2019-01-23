@@ -7,7 +7,7 @@ import javax.inject.{Inject, Singleton}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{AssignmentPlanDb, AssignmentPlanTable, TableFilter}
+import database.{AssignmentPlanDb, AssignmentPlanTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

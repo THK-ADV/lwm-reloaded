@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models.Room
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{RoomDb, RoomTable, TableFilter}
+import database.{RoomDb, RoomTable, TableFilter}
 
 import scala.concurrent.Future
 

@@ -8,7 +8,7 @@ import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import store.{AuthorityDb, AuthorityTable, TableFilter}
+import database.{AuthorityDb, AuthorityTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

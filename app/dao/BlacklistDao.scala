@@ -4,7 +4,7 @@ import javax.inject.Inject
 import models.Blacklist
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{BlacklistDb, BlacklistTable, TableFilter}
+import database.{BlacklistDb, BlacklistTable, TableFilter}
 import utils.LwmDateTime._
 
 import scala.concurrent.Future

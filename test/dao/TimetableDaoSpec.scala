@@ -5,7 +5,7 @@ import java.util.UUID
 import dao.AbstractDaoSpec._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
-import store._
+import database._
 
 final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, TimetableLike] with TimetableDao {
   import utils.LwmDateTime._

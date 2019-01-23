@@ -3,7 +3,7 @@ package dao
 import models.Blacklist
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile.api._
-import store.{BlacklistDb, BlacklistTable}
+import database.{BlacklistDb, BlacklistTable}
 
 final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, Blacklist] with BlacklistDao {
   import dao.AbstractDaoSpec._

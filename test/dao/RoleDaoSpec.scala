@@ -3,7 +3,7 @@ package dao
 import models._
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
-import store.RoleTable
+import database.RoleTable
 
 class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, PostgresRole] with RoleDao {
 

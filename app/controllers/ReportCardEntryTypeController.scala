@@ -8,7 +8,7 @@ import models.Role.{CourseAssistant, CourseEmployee, CourseManager, God}
 import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
+import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

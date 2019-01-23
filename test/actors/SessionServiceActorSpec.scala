@@ -15,7 +15,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import services.SessionServiceActor
 import services.SessionServiceActor.{Authenticated, Authentication, AuthenticationError, NotAuthenticated}
 import services.ldap.{LdapService, LdapUser}
-import store.UserDb
+import database.UserDb
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._

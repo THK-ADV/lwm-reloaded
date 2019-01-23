@@ -3,7 +3,7 @@ package dao
 import models.Semester
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
-import store.{SemesterDb, SemesterTable}
+import database.{SemesterDb, SemesterTable}
 
 final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] with SemesterDao {
   import dao.AbstractDaoSpec._

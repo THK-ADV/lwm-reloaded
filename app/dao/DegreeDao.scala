@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models.Degree
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{DegreeDb, DegreeTable, TableFilter}
+import database.{DegreeDb, DegreeTable, TableFilter}
 
 import scala.concurrent.Future
 

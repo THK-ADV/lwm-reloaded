@@ -7,7 +7,7 @@ import models.ReportCardEvaluationPattern
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 
 case class EvaluationPatternPropertyFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
   override def predicate = _.property.toLowerCase === value.toLowerCase

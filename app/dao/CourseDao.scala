@@ -4,7 +4,7 @@ import javax.inject.Inject
 import models.{CourseLike, CourseAtom}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{CourseDb, CourseTable, TableFilter}
+import database.{CourseDb, CourseTable, TableFilter}
 
 import scala.concurrent.Future
 

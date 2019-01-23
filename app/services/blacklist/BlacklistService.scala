@@ -3,7 +3,7 @@ package services.blacklist
 import javax.inject.Inject
 import play.api.libs.json.{JsObject, JsValue}
 import services.Webservice
-import store.BlacklistDb
+import database.BlacklistDb
 
 import scala.concurrent.{ExecutionContext, Future}
 

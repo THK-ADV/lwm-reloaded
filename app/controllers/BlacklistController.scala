@@ -9,7 +9,7 @@ import models.{Blacklist, BlacklistProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import services.blacklist.BlacklistService
-import store.{BlacklistDb, BlacklistTable, TableFilter}
+import database.{BlacklistDb, BlacklistTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

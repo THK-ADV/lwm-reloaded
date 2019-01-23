@@ -8,7 +8,7 @@ import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models.{TimetableLike, TimetableProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{TableFilter, TimetableDb, TimetableTable}
+import database.{TableFilter, TimetableDb, TimetableTable}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

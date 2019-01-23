@@ -6,7 +6,7 @@ import models._
 import org.joda.time.DateTime
 import slick.dbio.Effect.Write
 import slick.driver
-import store._
+import database._
 
 import scala.util.Random.nextInt
 

@@ -11,7 +11,7 @@ import models.genesis.{Conflict, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import services._
-import store.{GroupDb, ScheduleEntryDb, ScheduleEntryTable, TableFilter}
+import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable, TableFilter}
 import utils.{Gen, SecuredAction}
 
 import scala.concurrent.Future
@@ -74,7 +74,7 @@ final class ScheduleEntryController @Inject()(
       s <- Future.fromTry(parseJson(request)(ScheduleGen.reads))
       labwork = s.labwork
       groups = s.entries.map(_.group).distinct.map(e => GroupDb(e.label, e.labwork, e.members, id = e.id)).toList
-      se = s.entries.map(e => store.ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)).toList
+      se = s.entries.map(e => database.ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)).toList
       _ <- groupDao.createMany(groups)
       _ <- abstractDao.createMany(se)
 

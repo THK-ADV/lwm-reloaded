@@ -7,7 +7,7 @@ import models.Semester
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{SemesterDb, SemesterTable, TableFilter}
+import database.{SemesterDb, SemesterTable, TableFilter}
 import utils.LwmDateTime._
 
 import scala.concurrent.Future

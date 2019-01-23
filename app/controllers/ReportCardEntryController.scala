@@ -9,7 +9,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import services._
-import store.{ReportCardEntryDb, ReportCardEntryTable, TableFilter}
+import database.{ReportCardEntryDb, ReportCardEntryTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

@@ -9,7 +9,7 @@ import models.{ReportCardEvaluationLike, ReportCardEvaluationProtocol}
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import services.ReportCardService
-import store.{ReportCardEvaluationDb, ReportCardEvaluationTable, TableFilter}
+import database.{ReportCardEvaluationDb, ReportCardEvaluationTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

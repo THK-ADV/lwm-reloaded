@@ -7,7 +7,7 @@ import models.{genesis, _}
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store._
+import database._
 import utils.LwmDateTime._
 
 import scala.concurrent.Future

@@ -11,7 +11,7 @@ import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import store.{TableFilter, UniqueTable}
+import database.{TableFilter, UniqueTable}
 import slick.sql.FixedSqlAction
 
 import scala.concurrent.Future

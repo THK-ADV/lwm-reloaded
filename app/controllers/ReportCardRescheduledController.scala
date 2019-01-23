@@ -8,7 +8,7 @@ import models.Role.{CourseEmployee, CourseManager}
 import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
+import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
 import utils.LwmDateTime._
 import utils.SecuredAction
 

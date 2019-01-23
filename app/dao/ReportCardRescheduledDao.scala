@@ -6,7 +6,7 @@ import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import store.{ReportCardRescheduledDb, ReportCardRescheduledTable, RoomDb, TableFilter}
+import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, RoomDb, TableFilter}
 
 case class ReportCardRescheduledEntryFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)

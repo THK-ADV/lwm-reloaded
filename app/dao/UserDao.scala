@@ -8,7 +8,7 @@ import models.helper._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import store.{TableFilter, UserDb, UserTable}
+import database.{TableFilter, UserDb, UserTable}
 
 import scala.concurrent.Future
 

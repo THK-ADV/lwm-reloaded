@@ -8,7 +8,7 @@ import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{CourseLike, Course, CourseProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import store.{CourseDb, CourseTable, TableFilter}
+import database.{CourseDb, CourseTable, TableFilter}
 import utils.SecuredAction
 
 import scala.concurrent.Future

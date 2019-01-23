@@ -5,7 +5,7 @@ import java.util.UUID
 import models._
 import services._
 import slick.dbio.Effect.Write
-import store._
+import database._
 
 final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] with ReportCardEntryDao {
   import utils.LwmDateTime._

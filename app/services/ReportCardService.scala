@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models._
 import models.genesis.ScheduleGen
-import store.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
+import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
 
 object ReportCardService { // TODO DI
 

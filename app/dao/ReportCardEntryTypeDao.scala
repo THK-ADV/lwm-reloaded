@@ -8,7 +8,7 @@ import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
+import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 
 import scala.concurrent.Future
 

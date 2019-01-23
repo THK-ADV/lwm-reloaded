@@ -7,7 +7,7 @@ import models.{genesis, _}
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import org.scalatest.WordSpec
-import store.ReportCardEvaluationDb
+import database.ReportCardEvaluationDb
 
 final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
 

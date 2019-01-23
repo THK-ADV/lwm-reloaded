@@ -2,7 +2,7 @@ package dao
 
 import models._
 import slick.jdbc.PostgresProfile.api._
-import store._
+import database._
 
 import scala.util.Random.nextInt
 
@@ -15,7 +15,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
       AssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
     }.toSet
 
-    store.AssignmentPlanDb(labwork.id, number, number, entries)
+    database.AssignmentPlanDb(labwork.id, number, number, entries)
   }
 
   "A AssignmentPlanServiceSpec" should {

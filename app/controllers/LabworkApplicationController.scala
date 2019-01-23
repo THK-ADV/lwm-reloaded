@@ -8,7 +8,7 @@ import models.Role.{EmployeeRole, StudentRole}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{LabworkApplicationDb, LabworkApplicationTable, TableFilter}
+import database.{LabworkApplicationDb, LabworkApplicationTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

@@ -9,7 +9,7 @@ import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import store._
+import database._
 
 object AbstractDaoSpec {
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
@@ -210,7 +210,7 @@ object AbstractDaoSpec {
   def populateLabworkApplications(amount: Int, withFriends: Boolean)(labworks: List[LabworkDb], applicants: List[UserDb]) = (0 until amount).map { _ =>
     val applicant = takeOneOf(applicants).id
     val friends = if (withFriends) Set(randomStudent(applicant, applicants)) else Set.empty[UUID]
-    store.LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
+    database.LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
   }.toList
 
   def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>

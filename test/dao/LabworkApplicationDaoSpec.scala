@@ -5,7 +5,7 @@ import java.util.UUID
 import models._
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import store._
+import database._
 
 // TODO migrate to abstractExpanderDaoSpec
 class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] with LabworkApplicationDao {
@@ -40,7 +40,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
     val app = applicant.getOrElse(randomApplicant().id)
     val friends = if (withFriends) (0 until nextInt(2) + 1).map(_ => randomApplicant(Some(app)).id).toSet else Set.empty[UUID]
 
-    store.LabworkApplicationDb(randomLabwork.id, app, friends)
+    database.LabworkApplicationDb(randomLabwork.id, app, friends)
   }
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
@@ -59,20 +59,20 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
   override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = {
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    store.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
+    database.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
   }
 
   override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = {
     val newApplicant = randomApplicant(Some(dbEntity.applicant)).id
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
 
-    store.LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    database.LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val validUpdateOnDbEntity: LabworkApplicationDb = {
     val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
 
-    store.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
+    database.LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
   }
 
   override protected val dbEntities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList

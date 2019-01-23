@@ -7,7 +7,7 @@ import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import store._
+import database._
 
 import scala.concurrent.Future
 

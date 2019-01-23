@@ -8,7 +8,7 @@ import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Room, RoomProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import store.{RoomDb, RoomTable, TableFilter}
+import database.{RoomDb, RoomTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}

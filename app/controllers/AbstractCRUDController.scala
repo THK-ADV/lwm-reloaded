@@ -10,7 +10,7 @@ import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
 import slick.jdbc.PostgresProfile.api._
-import store.{TableFilter, UniqueTable}
+import database.{TableFilter, UniqueTable}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
