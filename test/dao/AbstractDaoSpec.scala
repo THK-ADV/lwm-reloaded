@@ -227,11 +227,11 @@ object AbstractDaoSpec {
 
   lazy val authorities = (0 until maxAuthorities).map{ i =>
     val role: RoleDb = roles((i * 3) % roles.length)
-    val course: Option[UUID] = if (role.label == Roles.RightsManagerLabel) Some(courses((i * 6) % maxCourses).id) else None
+    val course: Option[UUID] = if (role.label == Role.RightsManagerLabel) Some(courses((i * 6) % maxCourses).id) else None
     AuthorityDb(employees( i % maxEmployees).id, role.id, course)
   }.toList
 
-  lazy val roles = Roles.all.map(RoleDb(_))
+  lazy val roles = Role.all.map(RoleDb(_))
 
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 

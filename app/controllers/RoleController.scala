@@ -3,12 +3,12 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, RoleDao, RoleLabelFilter}
+import database.{RoleDb, RoleTable, TableFilter}
 import javax.inject.{Inject, Singleton}
 import models.Role.{God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{RoleTable, TableFilter}
 import utils.SecuredAction
 
 import scala.util.{Failure, Try}
@@ -19,11 +19,11 @@ object RoleController {
 
 @Singleton
 final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecuredAction)
-  extends AbstractCRUDController[PostgresRole, RoleTable, RoleDb, PostgresRole](cc) {
+  extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
 
-  override protected implicit val writes: Writes[PostgresRole] = PostgresRole.writes
+  override protected implicit val writes: Writes[Role] = Role.writes
 
-  override protected implicit val reads: Reads[PostgresRole] = PostgresRole.reads
+  override protected implicit val reads: Reads[Role] = Role.reads
 
   override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[RoleTable]]]): Try[List[TableFilter[RoleTable]]] = {
     import controllers.RoleController._
@@ -34,7 +34,7 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
     }
   }
 
-  override protected def toDbModel(protocol: PostgresRole, existingId: Option[UUID]): RoleDb = ???
+  override protected def toDbModel(protocol: Role, existingId: Option[UUID]): RoleDb = ???
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(RightsManager))

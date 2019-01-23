@@ -7,7 +7,7 @@ import auth.{OAuthAuthorization, UserToken}
 import controllers.helper.RequestOps
 import dao.AuthorityDao
 import javax.inject.{Inject, Singleton}
-import models.{Authority, Role}
+import models.{Authority, LWMRole, Role}
 import play.api.libs.json.Json
 import play.api.mvc.Results.{Forbidden, Unauthorized}
 import play.api.mvc._
@@ -24,11 +24,11 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
     authenticated andThen authorized andThen allowed(predicate)
   }
 
-  def secured(ps: (Option[UUID], List[Role]))(block: Request[AnyContent] => Result) = {
+  def secured[R <: LWMRole](ps: (Option[UUID], List[R]))(block: Request[AnyContent] => Result) = {
     securedAction(authorities => authorityDao.checkAuthority(ps)(authorities)).apply(block)
   }
 
-  def securedAsync(ps: (Option[UUID], List[Role]))(block: Request[AnyContent] => Future[Result]) = {
+  def securedAsync[R <: LWMRole](ps: (Option[UUID], List[R]))(block: Request[AnyContent] => Future[Result]) = {
     securedAction(authorities => authorityDao.checkAuthority(ps)(authorities)).async(block)
   }
 

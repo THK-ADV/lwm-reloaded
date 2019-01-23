@@ -24,7 +24,7 @@ package object models {
     case d: Degree => Degree.writes.writes(d)
     case l: LabworkApplicationLike => LabworkApplicationLike.writes.writes(l)
     case l: LabworkLike => LabworkLike.writes.writes(l)
-    case r: PostgresRole => PostgresRole.writes.writes(r)
+    case r: Role => Role.writes.writes(r)
     case r: Room => Room.writes.writes(r)
     case s: Semester => Semester.writes.writes(s)
     case t: TimetableLike => TimetableLike.writes.writes(t)

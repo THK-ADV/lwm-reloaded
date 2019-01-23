@@ -9,7 +9,7 @@ sealed trait AuthorityLike extends UniqueEntity
 
 case class Authority(user: UUID, role: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends AuthorityLike
 
-case class AuthorityAtom(user: User, role: PostgresRole, course: Option[CourseAtom], id: UUID) extends AuthorityLike
+case class AuthorityAtom(user: User, role: Role, course: Option[CourseAtom], id: UUID) extends AuthorityLike
 
 case class AuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
 
@@ -25,7 +25,7 @@ object AuthorityAtom {
 
   implicit val writes: Writes[AuthorityAtom] = (
     (JsPath \ "user").write[User] and
-      (JsPath \ "role").write[PostgresRole](PostgresRole.writes) and
+      (JsPath \ "role").write[Role](Role.writes) and
       (JsPath \ "course").writeNullable[CourseAtom](CourseAtom.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(AuthorityAtom.unapply))

@@ -5,7 +5,7 @@ import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{RoleTable, TableFilter}
+import database.{RoleDb, RoleTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -13,7 +13,7 @@ case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
-trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
+trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -25,9 +25,9 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
     filterBy(List(RoleLabelFilter(entity.label)))
   }
 
-  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = {
+  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
@@ -36,7 +36,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
   }
 
   def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    tableQuery.filter(_.label === Roles.fromUserStatus(status)).result.headOption
+    tableQuery.filter(_.label === Role.fromUserStatus(status)).result.headOption
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {

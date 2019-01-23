@@ -2,7 +2,7 @@ package controllers.helper
 
 import java.util.UUID
 
-import models.Role
+import models.{LWMRole, Role}
 import play.api.mvc._
 import utils.SecuredAction
 
@@ -29,16 +29,16 @@ trait SecureControllerContext {
       simple = Action.async(block)
     )
 
-    def apply[A](restricted: (Option[UUID], List[Role]) => Action[A], simple: => Action[A]) = this match {
+    def apply[A](restricted: (Option[UUID], List[LWMRole]) => Action[A], simple: => Action[A]) = this match {
       case SecureBlock(id, role) => restricted(Some(UUID.fromString(id)), role)
       case PartialSecureBlock(role) => restricted(None, role)
       case NonSecureBlock => simple()
     }
   }
 
-  case class SecureBlock(restrictionRef: String, roles: List[Role]) extends SecureContext
+  case class SecureBlock(restrictionRef: String, roles: List[LWMRole]) extends SecureContext
 
-  case class PartialSecureBlock(roles: List[Role]) extends SecureContext
+  case class PartialSecureBlock(roles: List[LWMRole]) extends SecureContext
 
   case object NonSecureBlock extends SecureContext
 

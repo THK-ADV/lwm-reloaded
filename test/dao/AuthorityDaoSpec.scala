@@ -44,8 +44,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       await(db.run{
         for{
           _ <- createByCourseQuery(course)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
+          cm <- roleService.byRoleLabelQuery(Role.CourseManagerLabel) if cm.isDefined
           authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
 
         } yield {
@@ -62,8 +62,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       await(db.run{
         for{
           _ <- createByCourseQuery(course)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
+          cm <- roleService.byRoleLabelQuery(Role.CourseManagerLabel) if cm.isDefined
           _ <- deleteByCourseQuery(course)
           authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
 
@@ -92,8 +92,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
           authoritiesOfOldLecturerAfterUpdate <- tableQuery.filter(_.user === course.lecturer).result
           authoritiesOfNewLecturerAfterUpdate <- tableQuery.filter(_.user === sameCourseWithNewLecturer.lecturer).result
 
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
+          cm <- roleService.byRoleLabelQuery(Role.CourseManagerLabel) if cm.isDefined
         } yield{
           authoritiesOfOldLecturerBeforeUpdate.count(_.role === rm.get.id) shouldBe 1
           authoritiesOfOldLecturerBeforeUpdate.count(_.role === cm.get.id) shouldBe 1
@@ -117,7 +117,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         for{
           _ <- createByCourseQuery(course1)
           _ <- createByCourseQuery(course2)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
           authoritiesOfLecturer <- tableQuery.filter(_.user === course1.lecturer).result
         } yield{
           authoritiesOfLecturer.count(_.role === rm.get.id) shouldBe 1
@@ -137,7 +137,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
           authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
           _ <- deleteByCourseQuery(course2)
           authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
         } yield{
           authoritiesOfLecturerAfterDelete1.count(_.role === rm.get.id) shouldBe 1
           authoritiesOfLecturerAfterDelete2.count(_.role === rm.get.id) shouldBe 0
@@ -157,7 +157,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
           authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
           _ <- deleteByCourseQuery(course2)
           authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
+          rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel) if rm.isDefined
         } yield{
           authoritiesOfLecturerAfterDelete1.count(_.role === rm.get.id) shouldBe 1
           authoritiesOfLecturerAfterDelete2.count(_.role === rm.get.id) shouldBe 0
@@ -219,7 +219,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
   }
 
 
-  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == Roles.RightsManagerLabel).get.id, Some(randomCourse.id))
+  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == Role.RightsManagerLabel).get.id, Some(randomCourse.id))
   override protected val invalidDuplicateOfDbEntity: AuthorityDb = AuthorityDb(dbEntity.user, dbEntity.role, dbEntity.course)
   override protected val invalidUpdateOfDbEntity: AuthorityDb = dbEntity
   override protected val validUpdateOnDbEntity: AuthorityDb = dbEntity.copy(lastModified = DateTime.now.plusDays(1).timestamp)

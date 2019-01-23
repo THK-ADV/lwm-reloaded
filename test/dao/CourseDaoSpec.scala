@@ -122,11 +122,11 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] w
   }
 
   private def getRightsManager = {
-    TableQuery[RoleTable].filter(role => role.label === Roles.RightsManagerLabel).result.headOption
+    TableQuery[RoleTable].filter(role => role.label === Role.RightsManagerLabel).result.headOption
   }
 
   private def getCourseManager = {
-    TableQuery[RoleTable].filter(role => role.label === Roles.CourseManagerLabel).result.headOption
+    TableQuery[RoleTable].filter(role => role.label === Role.CourseManagerLabel).result.headOption
   }
 
 }

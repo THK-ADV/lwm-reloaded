@@ -48,8 +48,8 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def createByCourseQuery(course: CourseDb) = {
     (for {
-      cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel)
-      rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel)
+      cm <- roleService.byRoleLabelQuery(Role.CourseManagerLabel)
+      rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel)
 
       rma = AuthorityDb(course.lecturer, rm.head.id)
       cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
@@ -86,7 +86,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def deleteSingleRightsManagerQuery(lecturer: UUID) = {
     for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
-      rm <- roleService.tableQuery.filter(_.label === Roles.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
+      rm <- roleService.tableQuery.filter(_.label === Role.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
       deletedRM <- {
         if (hasCourse) {
           DBIO.successful(0)
@@ -118,14 +118,14 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     db.run(authorities.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def checkAuthority(check: (Option[UUID], List[Role]))(authorities: Seq[Authority]): Future[Boolean] = check match {
+  def checkAuthority[R <: LWMRole](check: (Option[UUID], List[R]))(authorities: Seq[Authority]): Future[Boolean] = check match {
     case (_, roles) if roles contains Role.God => Future.successful(false)
     case (optCourse, minRoles) =>
-      def isAdmin(implicit roles: Seq[PostgresRole]) = roles
+      def isAdmin(implicit roles: Seq[Role]) = roles
         .find(_.label == Role.Admin.label)
         .exists(admin => authorities.exists(_.role == admin.id))
 
-      def hasPermission(implicit roles: Seq[PostgresRole]) = authorities
+      def hasPermission(implicit roles: Seq[Role]) = authorities
         .filter(_.course == optCourse)
         .flatMap(authority => roles.filter(_.id == authority.role))
         .exists(r => minRoles.exists(_.label == r.label))
