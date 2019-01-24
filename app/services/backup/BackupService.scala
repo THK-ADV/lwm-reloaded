@@ -2,17 +2,20 @@ package services.backup
 
 import java.io.File
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Codec
 import scala.util.Try
 
-trait BackupService[T] {
+trait BackupService {
+
   import services.backup.BackupService._
 
-  def backupItems: Future[Vector[BackupItem[T]]]
-  def persist(items: Vector[BackupItem[T]], file: File, shouldOverride: Boolean)(implicit encoding: String = encoding): Try[Vector[File]]
+  def backupItems: Future[Vector[BackupItem]]
 
-  def backup(rootFolder: File, shouldOverride: Boolean)(implicit encoding: String = encoding): Future[Vector[File]]
+  def persist(items: Vector[BackupItem], file: File, shouldOverride: Boolean)(implicit encoding: String = encoding): Try[Vector[File]]
+
+  final def backup(rootFolder: File, shouldOverride: Boolean)(implicit executor: ExecutionContext, encoding: String = encoding): Future[Vector[File]] =
+    backupItems.flatMap(items => Future.fromTry(persist(items, rootFolder, shouldOverride)))
 }
 
 object BackupService {
