@@ -50,7 +50,6 @@ object ActorScheduler {
   def parse(time: String): Try[LocalTime] = Try(LocalTime.parse(time))
 
   def schedule(system: ActorSystem)(ref: ActorRef, message: Any, fireTime: LocalTime): Unit = {
-    println(s"schedule $ref")
     system.scheduler.schedule(delayUntil(fireTime), interval, ref, message)(system.dispatcher)
   }
 }

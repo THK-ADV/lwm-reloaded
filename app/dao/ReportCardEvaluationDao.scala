@@ -69,11 +69,13 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
     (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, UserDb), UserDb) => ReportCardEvaluationLike) = {
     val mandatory = for {
       q <- query
-      l <- q.labworkFk
-      s <- q.studentFk
-      (cou, deg, sem) <- l.fullJoin
-      lec <- cou.joinLecturer
-    } yield (q, l, s, cou, deg, sem, lec)
+      labwork <- q.labworkFk
+      student <- q.studentFk
+      course <- labwork.joinCourse
+      degree <- labwork.joinDegree
+      semester <- labwork.joinSemester
+      lecturer <- course.joinLecturer
+    } yield (q, labwork, student, course, degree, semester, lecturer)
 
     db.run(mandatory.result.map(_.map {
       case (e, l, u, cou, deg, sem, lec) => build(e, (l, cou, deg, sem, lec), u)

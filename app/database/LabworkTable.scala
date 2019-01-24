@@ -31,14 +31,6 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
 
   def joinSemester = TableQuery[SemesterTable].filter(_.id === semester)
 
-  def fullJoin = {
-    for {
-      c <- joinCourse
-      d <- joinDegree
-      s <- joinSemester
-    } yield (c, d, s)
-  }
-
   override def * = (label, description, semester, course, degree, subscribable, published, lastModified, invalidated, id) <> ((LabworkDb.apply _).tupled, LabworkDb.unapply)
 }
 

@@ -27,14 +27,6 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
   def joinApplicant = TableQuery[UserTable].filter(_.id === applicant)
 
   def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
-
-  def fullJoin = {
-    for {
-      f <- friends
-      l <- joinLabwork
-      a <- joinApplicant
-    } yield (f, a, l)
-  }
 }
 
 class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFriend](tag, "LABWORKAPPLICATION_FRIEND") with UniqueTable {

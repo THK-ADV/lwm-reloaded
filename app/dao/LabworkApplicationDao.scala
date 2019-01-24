@@ -80,7 +80,9 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
       q <- query
       l <- q.joinLabwork
       a <- q.joinApplicant
-      (c, d, s) <- l.fullJoin
+      c <- l.joinCourse
+      d <- l.joinDegree
+      s <- l.joinSemester
       lec <- c.joinLecturer
     } yield (q, l, a, (c, d, s, lec))
 
