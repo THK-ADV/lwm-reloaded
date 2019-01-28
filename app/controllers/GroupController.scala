@@ -43,7 +43,7 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
     (for {
       applications <- labworkApplicationDao.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
       apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
-      groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
+      groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
       groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
     } yield groups).jsonResult
   }
