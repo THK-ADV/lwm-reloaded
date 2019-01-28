@@ -68,7 +68,7 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>

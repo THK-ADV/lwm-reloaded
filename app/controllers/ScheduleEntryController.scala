@@ -121,7 +121,7 @@ final class ScheduleEntryController @Inject()(
   } yield scheduleService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -133,7 +133,7 @@ final class ScheduleEntryController @Inject()(
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>

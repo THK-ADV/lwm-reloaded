@@ -48,7 +48,7 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
   }
 
   def allWithDegree(degree: String): Action[AnyContent] = contextFrom(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(degreeAttribute -> Seq(degree)))
+    all(NonSecureBlock)(request.appending(degreeAttribute -> Seq(degree)))
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
@@ -60,7 +60,7 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
   }
 
   def allFrom(course: String): Action[AnyContent] = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String): Action[AnyContent] = restrictedContext(course)(Get) asyncAction { request =>

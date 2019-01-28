@@ -36,7 +36,7 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
   override protected implicit val reads: Reads[GroupProtocol] = GroupProtocol.reads
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.appending(labworkAttribute -> Seq(labwork)))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
