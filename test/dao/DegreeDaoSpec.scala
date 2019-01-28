@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models.Degree
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
@@ -26,3 +27,4 @@ final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Degree]
 
   override protected val lwmAtom: Degree = lwmEntity
 }
+*/

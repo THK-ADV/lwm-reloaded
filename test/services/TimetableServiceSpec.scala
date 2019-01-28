@@ -1,5 +1,6 @@
 package services
 
+/*
 import java.util.UUID
 
 import base.TestBaseDefinition
@@ -236,3 +237,4 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }._1 shouldBe true
   }
 }
+*/

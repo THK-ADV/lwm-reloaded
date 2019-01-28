@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models.Room
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
@@ -27,3 +28,4 @@ final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, Room] with Ro
 
   override protected val lwmAtom: Room = lwmEntity
 }
+*/

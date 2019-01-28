@@ -1,5 +1,6 @@
 package controllers.helper
 
+/*
 import base.TestBaseDefinition
 import utils.LwmDateTime.DateTimeConverter
 import org.joda.time.DateTime
@@ -69,3 +70,4 @@ final class AttributeFilterSpec extends WordSpec with TestBaseDefinition with At
     }
   }
 }
+*/

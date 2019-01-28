@@ -3,11 +3,9 @@ name := """lwm-reloaded"""
 version := "1.0-SNAPSHOT"
 
 resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
-//resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
-//resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
-//resolvers += "theatr.us" at "http://repo.theatr.us"
 
 lazy val scalazVersion = "7.1.12"
+lazy val scalatestVersion = "3.0.5"
 
 lazy val commonSettings = Seq(
   name := "lwm-reloaded",
@@ -30,10 +28,9 @@ lazy val root = (project in file(".")).
 
 
 lazy val testDependencies = Seq(
-  //  "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
-  //  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
-  //  "org.scalactic" %% "scalactic" % scalatestVersion % "test",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
+  "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+  "org.scalactic" %% "scalactic" % scalatestVersion,
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test"
   //  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test",
   //  "com.typesafe.akka" % "akka-testkit_2.11" % "2.4.0"
 )
@@ -44,8 +41,6 @@ lazy val scalazDependencies = Seq(
 )
 
 lazy val lwmDependencies = Seq(
-  //  "com.chuusai" %% "shapeless" % "2.2.5",
-  //  "us.theatr" %% "akka-quartz" % "0.3.0",
   "com.typesafe.play" %% "play-json" % "2.6.10",
   "commons-io" % "commons-io" % "2.6"
 )

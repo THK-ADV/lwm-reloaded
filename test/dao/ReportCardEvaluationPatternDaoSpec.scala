@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models.ReportCardEvaluationPattern
@@ -35,3 +36,4 @@ final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCar
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
 }
+*/

@@ -11,7 +11,7 @@ final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
 
   "A LwmDateTimeSpecs" should {
 
-    "convert from joda LocalDate, -Time and -DateTime, to String and SqlDate, -Time and Timestamp back and forth" in {
+    "convert from joda LocalDate, -Time and -DateTime, to String and SqlDate, -Time and Timestamp back and forth" in { // TODO expand
       val dateStringPattern = "2017-02-05"
       val timeStringPattern = "11:00:00"
 

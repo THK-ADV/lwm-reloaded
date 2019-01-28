@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.sql.Timestamp
 import java.util.UUID
 
@@ -324,3 +325,4 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
   }
 }
+*/

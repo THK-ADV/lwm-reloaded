@@ -1,5 +1,6 @@
 package services
 
+/*
 import java.util.UUID
 
 import base.TestBaseDefinition
@@ -493,4 +494,4 @@ final class ScheduleServiceSpec extends WordSpec with TestBaseDefinition {
   val timetable = populateTimetables(1, 6)(employees, labwork, List.empty).head.toUniqueEntity
   val plan = populateAssignmentPlans(1, 8)(labwork)(_ => 1).head.toUniqueEntity
   val groups = populateGroups(8)(labwork, students).map(_.toUniqueEntity).toVector
-}
+}*/

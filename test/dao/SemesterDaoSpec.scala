@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models.Semester
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
@@ -74,3 +75,4 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
 
   override protected val lwmAtom: Semester = lwmEntity
 }
+*/

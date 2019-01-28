@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models.Blacklist
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile.api._
@@ -69,3 +70,4 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq()
 }
+*/

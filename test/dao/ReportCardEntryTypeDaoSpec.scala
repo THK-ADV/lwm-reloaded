@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models.{ReportCardEntryType, ReportCardEntryTypeDb}
 import slick.dbio.{DBIO, Effect}
 import slick.lifted.TableQuery
@@ -93,3 +94,4 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     TableQuery[ReportCardEntryTable].forceInsertAll(cards ++ List(card))
   )
 }
+*/

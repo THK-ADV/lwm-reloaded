@@ -1,6 +1,6 @@
 package services
 
-import java.util.UUID
+/*import java.util.UUID
 
 import base.TestBaseDefinition
 import models.{genesis, _}
@@ -560,4 +560,4 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       AssignmentEntry(7, "Codereview", Set(Attendance, Certificate, Supplement))
     )
   }
-}
+}*/

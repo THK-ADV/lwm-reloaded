@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models.{ReportCardRescheduled, ReportCardRescheduledAtom, ReportCardRescheduledLike}
@@ -64,3 +65,4 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
     TableQuery[ReportCardEntryTable].forceInsertAll(reportCardEntries)
   )
 }
+*/

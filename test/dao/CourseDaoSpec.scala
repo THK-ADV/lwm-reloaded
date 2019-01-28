@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models._
@@ -130,3 +131,4 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] w
   }
 
 }
+*/

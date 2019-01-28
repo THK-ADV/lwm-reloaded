@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import dao.AbstractDaoSpec._
@@ -92,3 +93,4 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
     )
   }
 }
+*/

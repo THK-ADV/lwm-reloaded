@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models._
 import slick.jdbc.PostgresProfile.api._
 import database._
@@ -117,3 +118,4 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
     }).map(entries => entries.toSet shouldBe (if (isDefined) dbModel.entries else Set.empty))
   }
 }
+*/

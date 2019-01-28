@@ -1,6 +1,6 @@
 package services
 
-import java.io.File
+/*import java.io.File
 
 import akka.util.Timeout
 import base.TestBaseDefinition
@@ -141,4 +141,4 @@ final class BackupServiceSpec extends WordSpec with TestBaseDefinition {
 
     Await.result(backupService.backupItems, timeout)
   }
-}
+}*/

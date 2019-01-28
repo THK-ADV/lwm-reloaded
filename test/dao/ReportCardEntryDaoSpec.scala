@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models._
@@ -118,3 +119,4 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     })
   )
 }
+*/

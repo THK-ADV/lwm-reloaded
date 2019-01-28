@@ -1,5 +1,6 @@
 package actors
 
+/*
 import java.util.UUID
 
 import akka.actor.ActorSystem
@@ -106,3 +107,4 @@ class SessionServiceActorSpec extends WordSpec with TestBaseDefinition {
     system.terminate()
   }
 }
+*/

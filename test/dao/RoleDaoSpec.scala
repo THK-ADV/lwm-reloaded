@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models._
 import slick.dbio.Effect.Write
 import slick.driver.PostgresDriver
@@ -28,3 +29,4 @@ class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, PostgresRole] with 
 
   override protected def dependencies: PostgresDriver.api.DBIOAction[Unit, PostgresDriver.api.NoStream, Write] = DBIO.seq()
 }
+*/
