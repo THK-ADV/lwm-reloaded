@@ -33,21 +33,21 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
   }
 
   private def authorized = new ActionRefiner[IdRequest, AuthRequest] {
-//    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map { authorities =>
-//      Either.cond(authorities.nonEmpty, AuthRequest(request, authorities), Unauthorized(Json.obj(
-//        "status" -> "KO",
-//        "message" -> s"No authority found for ${request.systemId}"
-//      )))
-//    }
-
-    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map {
-      case authorities =>
-        Right(AuthRequest(request, authorities))
-      case Nil =>
-        val token = request.userToken.get
-
-        ???
+    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map { authorities =>
+      Either.cond(authorities.nonEmpty, AuthRequest(request, authorities), Unauthorized(Json.obj(
+        "status" -> "KO",
+        "message" -> s"No authority found for ${request.systemId}"
+      )))
     }
+
+//    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map {
+//      case authorities =>
+//        Right(AuthRequest(request, authorities))
+//      case Nil =>
+//        val token = request.userToken.get
+//
+//        ???
+//    }
 
     override protected def executionContext: ExecutionContext = actionExecutionContext
   }

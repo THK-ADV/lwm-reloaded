@@ -1,14 +1,14 @@
 #!/bin/sh
 
-APP_CONF="conf/application.conf"
-KEYCLOAK_CONF="conf/keycloak.json"
+#APP_CONF="conf/application.conf"
+#KEYCLOAK_CONF="conf/keycloak.json"
 
-if git diff --cached --name-only | grep --quiet "$APP_CONF"
-then
-  git reset head $APP_CONF; git checkout -- $APP_CONF
-fi
+#if git diff --cached --name-only | grep --quiet "$APP_CONF"
+#then
+#  git reset head $APP_CONF; git checkout -- $APP_CONF
+#fi
 
-if git diff --cached --name-only | grep --quiet "$KEYCLOAK_CONF"
-then
-  git reset head $KEYCLOAK_CONF; git checkout -- $KEYCLOAK_CONF
-fi
+#if git diff --cached --name-only | grep --quiet "$KEYCLOAK_CONF"
+#then
+#  git reset head $KEYCLOAK_CONF; git checkout -- $KEYCLOAK_CONF
+#fi

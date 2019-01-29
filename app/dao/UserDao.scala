@@ -66,7 +66,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     val user = UserDb(systemId, lastName, firstName, email, status, None, None, id = id)
 
     for {
-      updated <- createOrUpdate(user)
+      updated <- super.createOrUpdate(user)
       maybeCreated <- updated.fold(Future.successful(Option.empty[(AuthorityAtom, User)]))(u => authorityService.createWith(u).map(a => Some((a, u.toUniqueEntity))))
     } yield maybeCreated
   }

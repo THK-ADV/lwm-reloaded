@@ -51,7 +51,7 @@ class RequestOpsSpec extends WordSpec with TestBaseDefinition with RequestOps {
 
     "extract user token if present" in {
       val fake = FakeRequest("GET", "/")
-      val token = UserToken("id", Set.empty, "first", "last", "systemId value", "email", "status")
+      val token = UserToken("id", Set.empty, "first", "last", "systemId value", "email", "status", Some("abbreviation"), Some("regId"))
       val updated = fake.addAttr(RequestOps.UserToken, token)
 
       updated.userToken.value shouldBe token
