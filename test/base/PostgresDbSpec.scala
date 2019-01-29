@@ -1,28 +1,25 @@
 package base
 
-/*
-import modules.DatabaseModule
-import org.scalatest._
 import database._
+import org.scalatest._
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import slick.jdbc.PostgresProfile
 
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, Future}
 
-object PostgresDbSpec {
+abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication {
+
   import slick.jdbc.PostgresProfile.api._
 
-  lazy val db = Database.forConfig("database_test")
-}
-
-abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with DatabaseModule {
-  import slick.jdbc.PostgresProfile.api._
   import scala.concurrent.duration._
 
-  override def db = base.PostgresDbSpec.db
-
-  implicit lazy val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.Implicits.global
+  val db = app.injector.instanceOf(classOf[PostgresProfile.backend.Database])
 
   protected final def await[R](future: Future[R]): R = Await.result(future, Duration.Inf)
+
   protected final def run[R](action: DBIOAction[R, NoStream, Nothing]): R = await(db.run(action))
+
+  protected final def runAsync[R](action: DBIOAction[R, NoStream, Nothing])(assert: R => Unit): Unit = whenReady(db.run(action))(assert)
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
@@ -75,4 +72,3 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
     ).transactionally))
   }
 }
-*/
