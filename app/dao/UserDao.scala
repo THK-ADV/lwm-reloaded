@@ -2,13 +2,13 @@ package dao
 
 import java.util.UUID
 
+import database.{TableFilter, UserDb, UserTable}
 import javax.inject.Inject
 import models._
 import models.helper._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import database.{TableFilter, UserDb, UserTable}
 
 import scala.concurrent.Future
 
@@ -46,16 +46,39 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     (for (q <- tableQuery if q.systemId === systemId) yield q.id).result.headOption
   }
 
-  //  final def createOrUpdate(ldapUser: LdapUser): Future[(User, Option[PostgresAuthorityAtom])] = { // TODO
+  final def create(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: Option[String], registrationId: Option[String]) = {
+    for {
+      maybeId <- userId(systemId)
+      id = maybeId getOrElse UUID.randomUUID // create if needed
+      res <- createOrUpdate(firstName, lastName, systemId, email, status, degreeAbbrev, registrationId, id)
+    } yield res
+  }
+
+  private def createOrUpdate(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: Option[String], registrationId: Option[String], id: UUID) = {
+    (degreeAbbrev, registrationId) match {
+      case (Some(degree), Some(regId)) => createStudent(firstName, lastName, systemId, email, status, degree, regId, id) // TODO
+      case (None, None) => createEmployee(firstName, lastName, systemId, email, status, id)
+      case _ => Future.failed(new Throwable(s"user has either some $degreeAbbrev or $registrationId which should never happen"))
+    }
+  }
+
+  private def createEmployee(firstName: String, lastName: String, systemId: String, email: String, status: String, id: UUID) = {
+    val user = UserDb(systemId, lastName, firstName, email, status, None, None, id = id)
+
+    for {
+      updated <- createOrUpdate(user)
+      maybeCreated <- updated.fold(Future.successful(Option.empty[(AuthorityAtom, User)]))(u => authorityService.createWith(u).map(a => Some((a, u.toUniqueEntity))))
+    } yield maybeCreated
+  }
+
   //    for {
   //      degrees <- degreeService.get()
-  //      existing <- get(List(UserSystemIdFilter(ldapUser.systemId)), atomic = false)
   //      maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
   //      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, id = existing.headOption.fold(UUID.randomUUID)(_.id))
   //      updated <- createOrUpdate(dbUser)
   //      maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).map(Some(_)))
   //    } yield (dbUser.toLwmModel, maybeAuth)
-  //  }
+  private def createStudent(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: String, registrationId: String, id: UUID) = Future.successful(Option.empty[(AuthorityAtom, User)])
 
   final def buddyResult(requesterId: String, requesteeSystemId: String, labwork: String): Future[BuddyResult] = {
     val requesteeSystemIdFilter = UserSystemIdFilter(requesteeSystemId)

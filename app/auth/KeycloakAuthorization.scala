@@ -44,7 +44,9 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
       id = accessToken.getId
       email = accessToken.getEmail
       allowedOrigins = accessToken.getAllowedOrigins.asScala.toSet
-    } yield UserToken(id, allowedOrigins, firstname, lastname, systemId, email, status)
+      degreeAbbrev = attributes.get("degreeAbbrev").map(_.toString)
+      registrationId = attributes.get("registrationId").map(_.toString)
+    } yield UserToken(id, allowedOrigins, firstname, lastname, systemId, email, status, degreeAbbrev, registrationId)
 
     asFuture(maybeToken, "Can't build VerifiedToken")
   }

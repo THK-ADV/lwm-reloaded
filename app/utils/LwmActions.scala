@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 
 import auth.{OAuthAuthorization, UserToken}
 import controllers.helper.RequestOps
-import dao.AuthorityDao
+import dao.{AuthorityDao, UserDao}
 import javax.inject.{Inject, Singleton}
 import models.{Authority, LWMRole, Role}
 import play.api.libs.json.Json
@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: AuthorityDao) {
+final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: AuthorityDao, userDao: UserDao) extends RequestOps {
 
   private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 
@@ -33,11 +33,20 @@ final class SecuredAction @Inject()(authenticated: Authenticated, authorityDao: 
   }
 
   private def authorized = new ActionRefiner[IdRequest, AuthRequest] {
-    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map { authorities =>
-      Either.cond(authorities.nonEmpty, AuthRequest(request, authorities), Unauthorized(Json.obj(
-        "status" -> "KO",
-        "message" -> s"No authority found for ${request.systemId}"
-      )))
+//    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map { authorities =>
+//      Either.cond(authorities.nonEmpty, AuthRequest(request, authorities), Unauthorized(Json.obj(
+//        "status" -> "KO",
+//        "message" -> s"No authority found for ${request.systemId}"
+//      )))
+//    }
+
+    override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] = authorityDao.authoritiesFor(request.systemId).map {
+      case authorities =>
+        Right(AuthRequest(request, authorities))
+      case Nil =>
+        val token = request.userToken.get
+
+        ???
     }
 
     override protected def executionContext: ExecutionContext = actionExecutionContext
@@ -64,9 +73,9 @@ case class Authenticated @Inject()(auth: OAuthAuthorization)(val parser: BodyPar
   extends ActionBuilder[IdRequest, AnyContent] {
 
   override def invokeBlock[A](request: Request[A], block: IdRequest[A] => Future[Result]) = auth.authorized(request).flatMap {
-    case token@UserToken(_, _, _, _, systemId, _, _) =>
+    case token: UserToken =>
       val newRequest = request.addAttr(RequestOps.UserToken, token)
-      block(IdRequest(newRequest, systemId))
+      block(IdRequest(newRequest, token.systemId))
   }.recover {
     case NonFatal(e) => Unauthorized(Json.obj(
       "status" -> "KO",
