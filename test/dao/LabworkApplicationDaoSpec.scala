@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models._
@@ -168,4 +169,4 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
       } shouldBe true
     }
   }
-}
+}*/

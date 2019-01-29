@@ -1,6 +1,6 @@
 package services
 
-import akka.util.Timeout
+/*import akka.util.Timeout
 import base.TestBaseDefinition
 import models.Blacklist
 import org.joda.time.{DateTime, LocalDate}
@@ -34,4 +34,4 @@ final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
       result.map(_.date.localDate) should contain(LocalDate.now.withDayOfYear(1))
     }
   }
-}
+}*/

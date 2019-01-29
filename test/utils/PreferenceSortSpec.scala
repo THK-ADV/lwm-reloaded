@@ -37,7 +37,7 @@ class PreferenceSortSpec extends WordSpec with TestBaseDefinition {
     val filtered = people filter (_._2.nonEmpty)
     val sat = filtered.foldLeft(0) { (ls, n) =>
       n match {
-        case ((v, set)) => groups find (_ contains v) match {
+        case (v, set) => groups find (_ contains v) match {
           case Some(g) =>
             if (set.isEmpty) ls
             else set.foldLeft(ls) { (ns, f) =>

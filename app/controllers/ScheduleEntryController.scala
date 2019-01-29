@@ -101,7 +101,7 @@ final class ScheduleEntryController @Inject()(
     applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
     apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
 
-    groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
+    groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
     groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
 
     assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
@@ -121,7 +121,7 @@ final class ScheduleEntryController @Inject()(
   } yield scheduleService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
@@ -133,7 +133,7 @@ final class ScheduleEntryController @Inject()(
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>

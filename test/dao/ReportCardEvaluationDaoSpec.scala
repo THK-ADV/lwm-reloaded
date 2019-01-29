@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models._
 import slick.dbio.DBIO
 import slick.lifted.TableQuery
@@ -54,3 +55,4 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
 }
+*/

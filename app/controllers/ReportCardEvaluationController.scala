@@ -37,7 +37,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def get(student: String) = contextFrom(Get) asyncAction { request =>
-    all(NonSecureBlock)(request.append(studentAttribute -> Seq(student)))
+    all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
@@ -59,7 +59,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def deleteFromStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>

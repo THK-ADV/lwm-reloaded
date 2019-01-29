@@ -62,7 +62,7 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     import controllers.AssignmentPlanController.courseAttribute
 
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>

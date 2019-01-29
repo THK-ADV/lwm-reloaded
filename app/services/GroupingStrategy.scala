@@ -29,16 +29,16 @@ sealed trait GroupingStrategy {
 
   def apply(people: Vector[UUID]): List[Vector[UUID]] = this match {
     case CountGrouping(value) =>
-      val count = value.toInt
+      val count = value
       val min = people.size / count
       val max = min + 1
 
       go(min, max, Some(count), people)
 
-    case RangeGrouping(min, max) => go(min.toInt, max.toInt, None, people)
+    case RangeGrouping(min, max) => go(min, max, None, people)
   }
 }
 
-case class CountGrouping(value: String) extends GroupingStrategy
+case class CountGrouping(value: Int) extends GroupingStrategy
 
-case class RangeGrouping(min: String, max: String) extends GroupingStrategy
+case class RangeGrouping(min: Int, max: Int) extends GroupingStrategy

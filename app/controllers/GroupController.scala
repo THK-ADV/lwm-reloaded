@@ -36,14 +36,14 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
   override protected implicit val reads: Reads[GroupProtocol] = GroupProtocol.reads
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(labworkAttribute -> Seq(labwork)))
+    all(NonSecureBlock)(request.appending(labworkAttribute -> Seq(labwork)))
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
     (for {
       applications <- labworkApplicationDao.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
       apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
-      groupingStrategy <- Future.fromTry(strategyOf(request.queryString))
+      groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
       groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
     } yield groups).jsonResult
   }

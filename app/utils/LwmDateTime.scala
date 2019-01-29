@@ -1,10 +1,8 @@
 package utils
 
 import java.sql.{Date, Time, Timestamp}
-import java.util.Calendar
 
 import models.genesis.ScheduleEntryGen
-import models.Blacklist
 import models.helper.TimetableDateEntry
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
@@ -60,18 +58,12 @@ object LwmDateTime {
     def dateTime: DateTime = new DateTime(timestamp.getTime)
   }
 
-  lazy val pattern = "yyyy-MM-dd'T'HH:mm"
+  lazy val dateTimePattern = "yyyy-MM-dd'T'HH:mm"
   lazy val datePattern = "yyyy-MM-dd"
   lazy val timePattern = "HH:mm:ss"
-  lazy val formatter: DateTimeFormatter = DateTimeFormat.forPattern(pattern)
+  lazy val dateTimeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(dateTimePattern)
   lazy val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern(datePattern)
   lazy val timeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(timePattern)
-
-  def sqlTimeNow: Time = new Time(sqlDateNow.getTime)
-
-  def sqlDateNow: Date = new Date(Calendar.getInstance.getTimeInMillis)
-
-  def toLocalTime(date: Date): LocalTime = new LocalTime(date.getTime)
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
@@ -81,16 +73,6 @@ object LwmDateTime {
     entry.date.toLocalDateTime(entry.start)
   }
 
-  def toLocalDateTime(bl: Blacklist): LocalDateTime = {
-    bl.date.toLocalDateTime(bl.start)
-  }
-
-  def isEqual(inputDates: Set[String], outputDates: Set[DateTime]): Boolean = {
-    inputDates.map(toDateTime).diff(outputDates.map(date => DateTime.parse(date.toString(formatter)))).isEmpty
-  }
-
-  def toDateTime(string: String): DateTime = DateTime.parse(string, formatter)
-
   implicit val localTimeOrd: Ordering[LocalTime] = (x: LocalTime, y: LocalTime) => x.compareTo(y)
 
   implicit val localDateOrd: Ordering[LocalDate] = (x: LocalDate, y: LocalDate) => x.compareTo(y)
@@ -99,7 +81,7 @@ object LwmDateTime {
 
   implicit val dateTimeOrd: Ordering[DateTime] = (x: DateTime, y: DateTime) => x.compareTo(y)
 
-  implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(formatter)))
+  implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(dateTimeFormatter)))
 
   implicit val writeLocalDate: Writes[LocalDate] = Writes(a => JsString(a.toString(dateFormatter)))
 
@@ -109,7 +91,7 @@ object LwmDateTime {
 
   implicit val readLocalTime: Reads[LocalTime] = Reads(js => jsResult(Try(timeFormatter.parseLocalTime(js.toString()))))
 
-  implicit val readDateTime: Reads[DateTime] = Reads(js => jsResult(Try(formatter.parseDateTime(js.toString()))))
+  implicit val readDateTime: Reads[DateTime] = Reads(js => jsResult(Try(dateTimeFormatter.parseDateTime(js.toString()))))
 
   private def jsResult[A](a: Try[A]): JsResult[A] = a match {
     case Success(s) => JsSuccess(s)

@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models._
@@ -236,4 +237,4 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] with Us
     degrees.head.toUniqueEntity,
     dbEntity.id
   )
-}
+}*/

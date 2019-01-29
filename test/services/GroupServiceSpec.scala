@@ -1,6 +1,6 @@
 package services
 
-import java.util.UUID
+/*import java.util.UUID
 
 import base.TestBaseDefinition
 import models.{LabworkApplication, User}
@@ -132,4 +132,4 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       r4.last.size shouldBe minEight + 1
     }
   }
-}
+}*/

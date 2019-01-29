@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models._
 import slick.dbio.Effect.Write
 import database._
@@ -51,3 +52,4 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
     )
   }
 }
+*/

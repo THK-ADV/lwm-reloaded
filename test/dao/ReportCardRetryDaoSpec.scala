@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import dao.AbstractDaoSpec._
@@ -95,3 +96,4 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
     TableQuery[ReportCardEntryTable].forceInsertAll(reportCardEntries)
   )
 }
+*/

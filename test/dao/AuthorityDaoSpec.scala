@@ -1,5 +1,6 @@
 package dao
 
+/*
 import java.util.UUID
 
 import models._
@@ -256,3 +257,4 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
   }
 }
+*/

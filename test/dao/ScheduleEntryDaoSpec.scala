@@ -1,5 +1,6 @@
 package dao
 
+/*
 import models._
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
@@ -138,3 +139,4 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
     }
   )
 }
+*/

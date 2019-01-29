@@ -13,7 +13,7 @@ class OpsSpec extends WordSpec with TestBaseDefinition with PropertyChecks {
       import utils.Ops.MonadInstances._
       import utils.Ops._
 
-      forAll { (l: List[Int]) =>
+      forAll { l: List[Int] =>
         val m = l map Option.apply
         m.sequence shouldBe Option(l)
       }
@@ -23,7 +23,7 @@ class OpsSpec extends WordSpec with TestBaseDefinition with PropertyChecks {
       import utils.Ops.MonadInstances._
       import utils.Ops._
 
-      forAll { (o: Option[Int]) =>
+      forAll { o: Option[Int] =>
         val nested1 = List(o)
         val nested2 = Try(o)
 

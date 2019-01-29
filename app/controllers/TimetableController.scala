@@ -49,7 +49,7 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     import controllers.TimetableController.courseAttribute
 
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>

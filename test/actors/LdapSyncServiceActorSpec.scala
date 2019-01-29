@@ -1,5 +1,6 @@
 package actors
 
+/*
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import base.TestBaseDefinition
@@ -66,3 +67,4 @@ final class LdapSyncServiceActorSpec extends TestKit(ActorSystem("test_system"))
     system.terminate
   }
 }
+*/

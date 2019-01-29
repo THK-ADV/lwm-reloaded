@@ -1,24 +1,41 @@
 package utils
 
-import java.util.UUID
-
 import base.TestBaseDefinition
-import models.Labwork
+import org.scalacheck.{Gen => Generator}
 import org.scalatest.WordSpec
+import org.scalatest.prop.PropertyChecks
 import play.api.libs.json.Json
 
-final class GZIPSpec extends WordSpec with TestBaseDefinition {
+final class GZIPSpec extends WordSpec with TestBaseDefinition with PropertyChecks {
 
   "A GZIP" should {
 
     "compress and decompress strings properly" in {
-      val simpleString = "She borrowed the book from him many years ago and hasn't yet returned it."
-      val json = (0 until 100).
-        map(i => Labwork(i.toString, i.toString, UUID.randomUUID, UUID.randomUUID, UUID.randomUUID)).
-        map(l => Json.toJson(l)(Labwork.writes))
+      val strings = for {
+        c1 <- Generator.listOfN(10, Generator.numChar)
+        c2 <- Generator.listOfN(10, Generator.alphaUpperChar)
+        c3 <- Generator.listOfN(10, Generator.alphaLowerChar)
+        c4 <- Generator.listOfN(10, Generator.alphaChar)
+        c5 <- Generator.listOfN(10, Generator.alphaNumChar)
+      } yield List(c1, c2, c3, c4, c5).flatten.mkString
 
-      (StringBasedGZIP.compress _ andThen StringBasedGZIP.decompress) (simpleString) shouldBe simpleString
-      json.map(j => (JsonBasedGZIP.compress _ andThen JsonBasedGZIP.decompress) (j)) shouldBe json
+      forAll(strings) { string =>
+        (StringBasedGZIP.compress _ andThen StringBasedGZIP.decompress) (string) shouldBe string
+      }
+    }
+
+    "compress and decompress json objects properly" in {
+      val json = for {
+        n <- Generator.choose(0, 100)
+      } yield Json.obj(
+        "string" -> n.toString,
+        "int" -> n,
+        "bool" -> (n % 2 == 0)
+      )
+
+      forAll(json) { j =>
+        (JsonBasedGZIP.compress _ andThen JsonBasedGZIP.decompress) (j) shouldBe j
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 package base
 
+/*
 import modules.DatabaseModule
 import org.scalatest._
 import database._
@@ -74,3 +75,4 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
     ).transactionally))
   }
 }
+*/

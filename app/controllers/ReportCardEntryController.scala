@@ -71,15 +71,15 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
   }
 
   def getForStudent(student: String) = contextFrom(Get) asyncAction { request =>
-    all(NonSecureBlock)(request.append(studentAttribute -> Seq(student)))
+    all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
   }
 
   def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(scheduleEntryAttribute -> Seq(scheduleEntry)))
+    all(NonSecureBlock)(request.appending(scheduleEntryAttribute -> Seq(scheduleEntry)))
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
