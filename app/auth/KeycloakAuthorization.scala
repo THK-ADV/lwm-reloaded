@@ -20,16 +20,12 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait OAuthAuthorization {
-  protected val AuthorizationHeader = "Authorization"
-
-  def authorized[R](request: Request[R]): Future[VerifiedToken]
-}
-
 class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws: Webservice) extends OAuthAuthorization {
 
+  import OAuthAuthorization._
+
   override def authorized[R](request: Request[R]): Future[VerifiedToken] = for {
-    token <- bearerToken(request)
+    token <- asFuture(bearerToken(request), s"could not find $BearerPrefix in $AuthorizationHeader header")
     accessToken <- verifyToken(token)
     verifiedToken <- extractAttributes(accessToken)
   } yield verifiedToken
@@ -51,12 +47,7 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
     asFuture(maybeToken, "Can't build VerifiedToken")
   }
 
-  private def bearerToken[_](request: Request[_]) = {
-    val token = request.headers.get(AuthorizationHeader).flatMap(_.split(" ").lastOption)
-    asFuture(token, s"$AuthorizationHeader header key is missing")
-  }
-
-  private def verifyToken(token: String): Future[AccessToken] = {
+  def verifyToken(token: String): Future[AccessToken] = {
     val tokenVerifier = TokenVerifier.create(token, classOf[AccessToken]).withDefaultChecks()
     tokenVerifier.realmUrl(keycloakDeployment.getRealmInfoUrl)
 
