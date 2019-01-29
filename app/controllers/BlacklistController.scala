@@ -10,7 +10,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import services.blacklist.BlacklistService
 import database.{BlacklistDb, BlacklistTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -27,7 +27,7 @@ object BlacklistController {
 }
 
 @Singleton
-final class BlacklistController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: BlacklistDao, val blacklistService: BlacklistService, val securedAction: SecuredAction)
+final class BlacklistController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: BlacklistDao, val blacklistService: BlacklistService, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[BlacklistProtocol, BlacklistTable, BlacklistDb, Blacklist](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global

@@ -8,7 +8,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{AssignmentPlanDb, AssignmentPlanTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -18,7 +18,7 @@ object AssignmentPlanController {
 }
 
 @Singleton
-final class AssignmentPlanController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: AssignmentPlanDao, val securedAction: SecuredAction)
+final class AssignmentPlanController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: AssignmentPlanDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike](cc) {
 
   override protected implicit val writes: Writes[AssignmentPlanLike] = AssignmentPlanLike.writes

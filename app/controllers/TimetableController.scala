@@ -9,7 +9,7 @@ import models.{TimetableLike, TimetableProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{TableFilter, TimetableDb, TimetableTable}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -19,7 +19,7 @@ object TimetableController {
 }
 
 @Singleton
-final class TimetableController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: TimetableDao, val securedAction: SecuredAction)
+final class TimetableController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: TimetableDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[TimetableProtocol, TimetableTable, TimetableDb, TimetableLike](cc) {
 
   override protected implicit val writes: Writes[TimetableLike] = TimetableLike.writes

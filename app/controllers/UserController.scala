@@ -10,7 +10,7 @@ import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{TableFilter, UserDb, UserTable}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -23,7 +23,7 @@ object UserController {
 }
 
 @Singleton
-final class UserController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecuredAction)
+final class UserController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global

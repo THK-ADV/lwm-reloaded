@@ -9,13 +9,13 @@ import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Success, Try}
 
 @Singleton
-class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryTypeDao, val securedAction: SecuredAction)
+class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryTypeDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global

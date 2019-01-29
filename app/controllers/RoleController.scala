@@ -9,7 +9,7 @@ import models.Role.{God, RightsManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -18,7 +18,7 @@ object RoleController {
 }
 
 @Singleton
-final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecuredAction)
+final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
 
   override protected implicit val writes: Writes[Role] = Role.writes

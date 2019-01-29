@@ -9,7 +9,7 @@ import models.{Room, RoomProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{RoomDb, RoomTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -18,7 +18,7 @@ object RoomController {
 }
 
 @Singleton
-final class RoomController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: RoomDao, val securedAction: SecuredAction)
+final class RoomController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: RoomDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[RoomProtocol, RoomTable, RoomDb, Room](cc) {
 
   override protected implicit val writes: Writes[Room] = Room.writes

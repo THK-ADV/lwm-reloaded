@@ -9,7 +9,7 @@ import models.{Semester, SemesterProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{SemesterDb, SemesterTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -25,7 +25,7 @@ object SemesterController {
 }
 
 @Singleton
-final class SemesterController @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecuredAction)
+final class SemesterController @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[SemesterProtocol, SemesterTable, SemesterDb, Semester](cc) {
 
   override protected implicit val writes: Writes[Semester] = Semester.writes

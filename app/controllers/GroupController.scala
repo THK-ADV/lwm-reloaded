@@ -11,7 +11,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import services._
 import database.{GroupDb, GroupTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -23,7 +23,7 @@ object GroupController {
 }
 
 @Singleton
-final class GroupController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: GroupDao, val labworkApplicationDao: LabworkApplicationDao, val securedAction: SecuredAction)
+final class GroupController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: GroupDao, val labworkApplicationDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[GroupProtocol, GroupTable, GroupDb, GroupLike](cc)
     with GroupingStrategyAttributeFilter {
 

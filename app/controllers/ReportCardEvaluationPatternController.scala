@@ -9,7 +9,7 @@ import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -20,7 +20,7 @@ object ReportCardEvaluationPatternController {
 }
 
 @Singleton
-final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecuredAction)
+final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
 
   override protected implicit val writes: Writes[ReportCardEvaluationPattern] = ReportCardEvaluationPattern.writes

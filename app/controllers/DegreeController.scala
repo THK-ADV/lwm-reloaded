@@ -5,11 +5,11 @@ import java.util.UUID
 import dao._
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, God, StudentRole}
-import models.{DegreeProtocol, Degree}
+import models.{Degree, DegreeProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{DegreeDb, DegreeTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -19,7 +19,7 @@ object DegreeController {
 }
 
 @Singleton
-final class DegreeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: DegreeDao, val securedAction: SecuredAction)
+final class DegreeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: DegreeDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[DegreeProtocol, DegreeTable, DegreeDb, Degree](cc) {
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

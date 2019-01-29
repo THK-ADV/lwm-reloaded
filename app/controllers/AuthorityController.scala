@@ -9,7 +9,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import database.{AuthorityDb, AuthorityTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -22,7 +22,7 @@ object AuthorityController {
 }
 
 @Singleton
-final class AuthorityController @Inject()(cc: ControllerComponents, val abstractDao: AuthorityDao, val securedAction: SecuredAction)
+final class AuthorityController @Inject()(cc: ControllerComponents, val abstractDao: AuthorityDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[AuthorityProtocol, AuthorityTable, AuthorityDb, AuthorityLike](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global

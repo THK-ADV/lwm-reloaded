@@ -1,8 +1,9 @@
 package base
 
+import akka.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
-import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 
 trait LwmFakeApplication {
   self: GuiceOneAppPerSuite =>
@@ -14,7 +15,13 @@ trait LwmFakeApplication {
     "database.properties.password" -> ""
   )
 
+  implicit lazy val materializer: Materializer = app.materializer
+
+  // import play.api.inject.bind
+  protected def bindings: Seq[GuiceableModule]
+
   override def fakeApplication() = new GuiceApplicationBuilder()
     .configure(fakeDbConfig)
-    .build()
+    .overrides(bindings: _*)
+    .build
 }

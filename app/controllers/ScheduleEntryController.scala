@@ -12,7 +12,8 @@ import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import services._
 import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable, TableFilter}
-import utils.{Gen, SecuredAction}
+import security.SecurityActionChain
+import utils.Gen
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -47,7 +48,7 @@ final class ScheduleEntryController @Inject()(
   val timetableService: TimetableDao,
   val labworkApplicationService2: LabworkApplicationDao,
   val groupDao: GroupDao,
-  val securedAction: SecuredAction
+  val securedAction: SecurityActionChain
 ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter {
 
   import controllers.ScheduleEntryController._

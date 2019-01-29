@@ -9,7 +9,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{LabworkApplicationDb, LabworkApplicationTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -22,7 +22,7 @@ object LabworkApplicationController {
 }
 
 @Singleton
-final class LabworkApplicationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: LabworkApplicationDao, val securedAction: SecuredAction)
+final class LabworkApplicationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc) {
 
   override protected implicit val writes: Writes[LabworkApplicationLike] = LabworkApplicationLike.writes

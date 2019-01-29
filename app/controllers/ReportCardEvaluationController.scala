@@ -10,7 +10,7 @@ import play.api.libs.json._
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import services.ReportCardService
 import database.{ReportCardEvaluationDb, ReportCardEvaluationTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -29,7 +29,7 @@ object ReportCardEvaluationController {
 }
 
 @Singleton
-final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecuredAction)
+final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
 
   import controllers.ReportCardEvaluationController._

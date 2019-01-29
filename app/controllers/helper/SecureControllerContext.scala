@@ -4,7 +4,7 @@ import java.util.UUID
 
 import models.{LWMRole, Role}
 import play.api.mvc._
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 
@@ -15,7 +15,7 @@ trait SecureControllerContext {
 
   protected def contextFrom: PartialFunction[Rule, SecureContext]
 
-  protected def securedAction: SecuredAction
+  protected def securedAction: SecurityActionChain
 
   trait SecureContext {
 

@@ -31,8 +31,8 @@ lazy val testDependencies = Seq(
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
   "org.scalactic" %% "scalactic" % scalatestVersion,
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test"
-  //  "org.mockito" % "mockito-core" % "2.0.8-beta" % "test",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % "test",
+  "org.mockito" % "mockito-core" % "2.23.4"
   //  "com.typesafe.akka" % "akka-testkit_2.11" % "2.4.0"
 )
 

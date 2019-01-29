@@ -7,12 +7,12 @@ import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Dashboard, EmployeeDashboard, StudentDashboard}
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc._
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 
 @Singleton
-final class DashboardController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val dashboardDao: DashboardDao, val securedAction: SecuredAction)
+final class DashboardController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val dashboardDao: DashboardDao, val securedAction: SecurityActionChain)
   extends AbstractController(cc)
     with Secured
     with SecureControllerContext

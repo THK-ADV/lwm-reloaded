@@ -5,11 +5,11 @@ import java.util.UUID
 import dao._
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
-import models.{CourseLike, Course, CourseProtocol}
+import models.{Course, CourseLike, CourseProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import database.{CourseDb, CourseTable, TableFilter}
-import utils.SecuredAction
+import security.SecurityActionChain
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -22,7 +22,7 @@ object CourseController {
 }
 
 @Singleton
-final class CourseController @Inject()(cc: ControllerComponents, val abstractDao: CourseDao, val authorityDao: AuthorityDao, val securedAction: SecuredAction)
+final class CourseController @Inject()(cc: ControllerComponents, val abstractDao: CourseDao, val authorityDao: AuthorityDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[CourseProtocol, CourseTable, CourseDb, CourseLike](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global

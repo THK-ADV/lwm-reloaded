@@ -9,8 +9,8 @@ import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
+import security.SecurityActionChain
 import utils.LwmDateTime._
-import utils.SecuredAction
 
 import scala.util.{Failure, Try}
 
@@ -30,7 +30,7 @@ object ReportCardRescheduledController {
 }
 
 @Singleton
-final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecuredAction)
+final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc) {
 
   import controllers.ReportCardRescheduledController._

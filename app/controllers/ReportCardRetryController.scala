@@ -9,8 +9,8 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
+import security.SecurityActionChain
 import utils.LwmDateTime._
-import utils.SecuredAction
 
 import scala.util.{Failure, Try}
 
@@ -30,7 +30,7 @@ object ReportCardRetryController {
 }
 
 @Singleton
-final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecuredAction)
+final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc) {
 
   import controllers.ReportCardRetryController._
