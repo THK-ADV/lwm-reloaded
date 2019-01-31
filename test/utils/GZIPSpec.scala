@@ -24,6 +24,10 @@ final class GZIPSpec extends WordSpec with TestBaseDefinition with PropertyCheck
       }
     }
 
+    "compress and decompress empty strings properly" in {
+      (StringBasedGZIP.compress _ andThen StringBasedGZIP.decompress) ("") shouldBe empty
+    }
+
     "compress and decompress json objects properly" in {
       val json = for {
         n <- Generator.choose(0, 100)

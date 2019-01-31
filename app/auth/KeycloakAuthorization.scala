@@ -1,7 +1,7 @@
 package auth
 
 import java.math.BigInteger
-import java.security.KeyFactory
+import java.security.{KeyFactory, PublicKey}
 import java.security.spec.RSAPublicKeySpec
 import java.util.Base64
 
@@ -20,38 +20,49 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+object KeycloakAuthorization {
+  protected val SystemIdAttribute = "systemId"
+  protected val FirstNameAttribute = "firstName"
+  protected val LastNameAttribute = "lastName"
+  protected val StatusAttribute = "status"
+  protected val DegreeAttribute = "degreeAbbrev"
+  protected val RegistrationIdAttribute = "registrationId"
+}
+
 class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws: Webservice) extends OAuthAuthorization {
 
   import OAuthAuthorization._
+  import KeycloakAuthorization._
 
   override def authorized[R](request: Request[R]): Future[VerifiedToken] = for {
     token <- asFuture(bearerToken(request), s"could not find $BearerPrefix in $AuthorizationHeader header")
-    accessToken <- verifyToken(token)
+    tokenVerifier = buildTokenVerifier(token)
+    key <- getPublicKey(tokenVerifier.getHeader)
+    accessToken = tokenVerifier.publicKey(key).verify().getToken
     verifiedToken <- extractAttributes(accessToken)
   } yield verifiedToken
 
-  private def extractAttributes(accessToken: AccessToken) = {
+  private def extractAttributes(accessToken: AccessToken): Future[UserToken] = {
     val attributes = accessToken.getOtherClaims.asScala
     val maybeToken = for {
-      systemId <- attributes.get("systemId").map(_.toString)
-      firstname <- attributes.get("firstName").map(_.toString)
-      lastname <- attributes.get("lastName").map(_.toString)
-      status <- attributes.get("status").map(_.toString)
+      systemId <- attributes.get(SystemIdAttribute).map(_.toString)
+      firstname <- attributes.get(FirstNameAttribute).map(_.toString)
+      lastname <- attributes.get(LastNameAttribute).map(_.toString)
+      status <- attributes.get(StatusAttribute).map(_.toString)
       id = accessToken.getId
       email = accessToken.getEmail
       allowedOrigins = accessToken.getAllowedOrigins.asScala.toSet
-      degreeAbbrev = attributes.get("degreeAbbrev").map(_.toString)
-      registrationId = attributes.get("registrationId").map(_.toString)
+      degreeAbbrev = attributes.get(DegreeAttribute).map(_.toString)
+      registrationId = attributes.get(RegistrationIdAttribute).map(_.toString)
     } yield UserToken(id, allowedOrigins, firstname, lastname, systemId, email, status, degreeAbbrev, registrationId)
 
     asFuture(maybeToken, "Can't build VerifiedToken")
   }
 
-  def verifyToken(token: String): Future[AccessToken] = {
+  private def buildTokenVerifier(token: String): TokenVerifier[AccessToken] = {
     val tokenVerifier = TokenVerifier.create(token, classOf[AccessToken]).withDefaultChecks()
     tokenVerifier.realmUrl(keycloakDeployment.getRealmInfoUrl)
-
-    getPublicKey(tokenVerifier.getHeader).map(key => tokenVerifier.publicKey(key).verify().getToken)
+    tokenVerifier
   }
 
   private def asFuture[A](option: Option[A], message: String): Future[A] = option match {
@@ -61,7 +72,7 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
 
   private case class KeycloakCert(kid: String, n: String, e: String)
 
-  private def getPublicKey(jwsHeader: JWSHeader) = {
+  private def getPublicKey(jwsHeader: JWSHeader): Future[PublicKey] = {
     implicit def reads: Reads[KeycloakCert] = json.Json.reads[KeycloakCert]
 
     ws.get(keycloakDeployment.getJwksUrl) { json =>

@@ -1,6 +1,5 @@
 package auth
 
-import org.keycloak.representations.AccessToken
 import play.api.mvc.Request
 
 import scala.concurrent.Future
@@ -10,9 +9,7 @@ trait OAuthAuthorization {
 
   def authorized[R](request: Request[R]): Future[VerifiedToken]
 
-  def verifyToken(token: String): Future[AccessToken]
-
-  def bearerToken[_](request: Request[_]) = request.headers.get(AuthorizationHeader)
+  def bearerToken[_](request: Request[_]): Option[String] = request.headers.get(AuthorizationHeader)
     .filter(_.contains(BearerPrefix))
     .map(_.stripPrefix(BearerPrefix))
     .filter(_.nonEmpty)

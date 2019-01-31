@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class Webservice @Inject()(ws: WSClient, applicationLifecycle: ApplicationLifecycle) {
 
-  def get[A](url: String)(parse: JsValue => A)(implicit executor: ExecutionContext) =
+  def get[A](url: String)(parse: JsValue => A)(implicit executor: ExecutionContext): Future[A] =
     ws.url(url).get.map(resp => parse(resp.json))
 
   applicationLifecycle.addStopHook { () =>
