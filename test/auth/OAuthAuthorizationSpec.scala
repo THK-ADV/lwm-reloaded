@@ -7,11 +7,12 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.inject.guice.GuiceableModule
 import play.api.test.FakeRequest
 
-class KeycloakAuthorizationSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication with MockitoSugar {
+class OAuthAuthorizationSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication with MockitoSugar {
 
   val auth = app.injector.instanceOf(classOf[OAuthAuthorization])
 
-  "A KeycloakAuthorizationSpec" should {
+  "A OAuthAuthorization" should {
+
     "extract bearer token from request when present" in {
       val request = FakeRequest().withHeaders(("Authorization", "Bearer RANDOM_HASH"))
       val maybeToken = auth.bearerToken(request)
