@@ -1,16 +1,17 @@
 package dao
 
-/*
 import java.util.UUID
 
-import models.ReportCardEvaluationPattern
-import slick.dbio.DBIO
-import slick.lifted.TableQuery
 import database._
+import models.ReportCardEvaluationPattern
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
 
-final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] with ReportCardEvaluationPatternDao {
-  import dao.AbstractDaoSpec.{reportCardEvaluationpatterns, labworks, semesters, degrees, courses, employees}
+final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
+
+  import AbstractDaoSpec._
 
   override protected def name: String = "reportCardEvaluationPattern"
 
@@ -24,9 +25,7 @@ final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCar
 
   override protected val dbEntities: List[ReportCardEvaluationPatternDb] = reportCardEvaluationpatterns.tail
 
-  override protected val lwmEntity: ReportCardEvaluationPattern = dbEntity.toUniqueEntity
-
-  override protected val lwmAtom: ReportCardEvaluationPattern = lwmEntity
+  override protected val lwmAtom: ReportCardEvaluationPattern = dbEntity.toUniqueEntity
 
   override protected val dependencies = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -35,5 +34,8 @@ final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCar
     TableQuery[CourseTable].forceInsertAll(courses),
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
+
+  override protected val dao: ReportCardEvaluationPatternDao = app.injector.instanceOf(classOf[ReportCardEvaluationPatternDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

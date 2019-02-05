@@ -1,16 +1,18 @@
 package dao
 
-/*
-import models._
-import slick.dbio.DBIO
-import slick.lifted.TableQuery
 import database._
+import models._
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
 
-final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] with ReportCardEvaluationDao {
-  import dao.AbstractDaoSpec._
+final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
 
-  override protected def name = "reportCardEvaluationSpec"
+  import AbstractDaoSpec._
+  import utils.LwmDateTime.SqlTimestampConverter
+
+  override protected def name = "reportCardEvaluation"
 
   override protected val dbEntity: ReportCardEvaluationDb = populateReportCardEvaluations(1, 1)(students, labworks).head
 
@@ -21,8 +23,6 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
   override protected val validUpdateOnDbEntity: ReportCardEvaluationDb = dbEntity.copy(bool = !dbEntity.bool)
 
   override protected val dbEntities: List[ReportCardEvaluationDb] = reportCardEvaluations
-
-  override protected val lwmEntity: ReportCardEvaluation = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: ReportCardEvaluationAtom = {
     val labworkAtom = {
@@ -37,13 +37,13 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
     }
 
     ReportCardEvaluationAtom(
-      students.find(_.id == lwmEntity.student).get.toUniqueEntity,
+      students.find(_.id == dbEntity.student).get.toUniqueEntity,
       labworkAtom,
-      lwmEntity.label,
-      lwmEntity.bool,
-      lwmEntity.int,
-      lwmEntity.lastModified,
-      lwmEntity.id
+      dbEntity.label,
+      dbEntity.bool,
+      dbEntity.int,
+      dbEntity.lastModified.dateTime,
+      dbEntity.id
     )
   }
 
@@ -54,5 +54,8 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
     TableQuery[CourseTable].forceInsertAll(courses),
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
+
+  override protected val dao: ReportCardEvaluationDao = app.injector.instanceOf(classOf[ReportCardEvaluationDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

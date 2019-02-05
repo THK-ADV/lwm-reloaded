@@ -1,14 +1,15 @@
 package dao
 
-/*
-import models.{ReportCardEntryType, ReportCardEntryTypeDb}
-import slick.dbio.{DBIO, Effect}
-import slick.lifted.TableQuery
 import database._
+import models.ReportCardEntryType
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.{DBIO, Effect}
 import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
 
-final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] with ReportCardEntryTypeDao {
-  import dao.AbstractDaoSpec._
+final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
+
+  import AbstractDaoSpec._
 
   "A ReportCardEntryTypeDaoSpec also" should {
     "update certain fields of entryType properly" in {
@@ -17,29 +18,29 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
       val cards = populateReportCardEntries(1, 8, withRescheduledAndRetry = false)(labworks, students)
       val entryTypes = cards.flatMap(_.entryTypes)
 
-      run(DBIO.seq(
-        tableQuery.delete,
+      runAsync(DBIO.seq(
+        dao.tableQuery.delete,
         TableQuery[ReportCardEntryTable].delete,
         TableQuery[ReportCardEntryTable].forceInsertAll(cards),
-        tableQuery.forceInsertAll(entryTypes)
-      ))
+        dao.tableQuery.forceInsertAll(entryTypes)
+      ))( _ => Unit)
 
       val shuffled = shuffle(entryTypes)
-      val first = shuffled(0)
+      val first = shuffled.head
       val second = shuffled(1)
       val third = shuffled(2)
       val fourth = shuffled(3)
       val fifth = shuffled(4)
       val sixth = shuffled(5)
 
-      await(updateFields(first.id, Some(true), 0))
-      await(updateFields(second.id, Some(true), 10))
-      await(updateFields(third.id, Some(false), 0))
-      await(updateFields(fourth.id, Some(false), 5))
-      await(updateFields(fifth.id, None, 0))
-      await(updateFields(sixth.id, None, 3))
+      async(dao.updateFields(first.id, Some(true), 0))(_ == true)
+      async(dao.updateFields(second.id, Some(true), 10))(_ == true)
+      async(dao.updateFields(third.id, Some(false), 0))(_ == true)
+      async(dao.updateFields(fourth.id, Some(false), 5))(_ == true)
+      async(dao.updateFields(fifth.id, None, 0))(_ == true)
+      async(dao.updateFields(sixth.id, None, 3))(_ == true)
 
-      await(getMany(shuffled.take(6).map(_.id))).foreach { e =>
+      async(dao.getMany(shuffled.take(6).map(_.id)))(_.foreach { e =>
         e.id match {
           case first.id =>
             e.bool shouldBe Some(true)
@@ -61,11 +62,12 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
             e.int shouldBe 3
           case _ => fail("no id found")
         }
-      }
+      })
     }
   }
 
   private val card = populateReportCardEntries(1, 1, withRescheduledAndRetry = false)(labworks, students).head
+
   private val cards = populateReportCardEntries(5, 5, withRescheduledAndRetry = false)(labworks, students)
 
   override protected def name: String = "reportCardEntryType"
@@ -80,9 +82,7 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
 
   override protected val dbEntities: List[ReportCardEntryTypeDb] = cards.flatMap(_.entryTypes)
 
-  override protected val lwmEntity: ReportCardEntryType = dbEntity.toUniqueEntity
-
-  override protected val lwmAtom: ReportCardEntryType = lwmEntity
+  override protected val lwmAtom: ReportCardEntryType = dbEntity.toUniqueEntity
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -93,5 +93,8 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     TableQuery[RoomTable].forceInsertAll(rooms),
     TableQuery[ReportCardEntryTable].forceInsertAll(cards ++ List(card))
   )
+
+  override protected val dao: ReportCardEntryTypeDao = app.injector.instanceOf(classOf[ReportCardEntryTypeDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

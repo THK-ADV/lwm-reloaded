@@ -2,6 +2,7 @@ package models
 
 import java.util.UUID
 
+import models.helper.EvaluationProperty
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -29,31 +30,4 @@ object ReportCardEvaluationPatternProtocol {
       (JsPath \ "min").read[Int] and
       (JsPath \ "property").read[EvaluationProperty]
     ) (ReportCardEvaluationPatternProtocol.apply _)
-}
-
-sealed trait EvaluationProperty {
-  override def toString = this match {
-    case BoolBased => "bool"
-    case IntBased => "int"
-  }
-}
-
-case object BoolBased extends EvaluationProperty
-
-case object IntBased extends EvaluationProperty
-
-object EvaluationProperty {
-
-  def apply(string: String) = string match {
-    case "bool" => BoolBased
-    case "int" => IntBased
-  }
-
-  implicit val writes: Writes[EvaluationProperty] = (p: EvaluationProperty) => JsString(p.toString)
-
-  implicit val reads: Reads[EvaluationProperty] = {
-    case JsString("bool") => JsSuccess(BoolBased)
-    case JsString("int") => JsSuccess(IntBased)
-    case json => JsError(s"$json's value must either be 'bool' or 'int'")
-  }
 }

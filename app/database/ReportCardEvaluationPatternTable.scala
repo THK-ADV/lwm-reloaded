@@ -3,7 +3,8 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.{EvaluationProperty, ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol, UniqueDbEntity}
+import models.helper.EvaluationProperty
+import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime.DateTimeConverter

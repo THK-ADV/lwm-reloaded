@@ -6,6 +6,7 @@ resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositori
 
 lazy val scalazVersion = "7.1.12"
 lazy val scalatestVersion = "3.0.5"
+lazy val slickVersion = "3.3.0"
 
 lazy val commonSettings = Seq(
   name := "lwm-reloaded",
@@ -47,9 +48,9 @@ lazy val lwmDependencies = Seq(
 )
 
 lazy val postgresDependencies = Seq(
-  "com.typesafe.slick" %% "slick" % "3.2.0",
-  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.0",
-  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
+  "com.typesafe.slick" %% "slick" % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
+  "org.postgresql" % "postgresql" % "9.4-1206-jdbc42"
 )
 
 val keycloakDepencencies = Seq(

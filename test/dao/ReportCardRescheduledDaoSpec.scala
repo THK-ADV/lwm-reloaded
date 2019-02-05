@@ -1,22 +1,23 @@
 package dao
 
-/*
 import java.util.UUID
 
-import models.{ReportCardRescheduled, ReportCardRescheduledAtom, ReportCardRescheduledLike}
-import slick.dbio.DBIO
-import slick.lifted.TableQuery
 import database._
-import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import models.{ReportCardRescheduledAtom, ReportCardRescheduledLike}
 import org.joda.time.{LocalDate, LocalTime}
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.DBIO
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
+import utils.LwmDateTime._
 
-final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] with ReportCardRescheduledDao  {
-  import dao.AbstractDaoSpec._
+final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] {
+
+  import AbstractDaoSpec._
 
   private val amount = 50
   private lazy val privateLabworks = labworks.take(4)
-  private lazy val reportCardEntries = populateReportCardEntries(amount, 8, withRescheduledAndRetry = false)(privateLabworks, students)
+  private lazy val reportCardEntries = populateReportCardEntries(amount, 8, withRescheduledAndRetry = true)(privateLabworks, students)
 
   def rescheduled(reportCardEntryId: UUID, i: Int): ReportCardRescheduledDb = {
     val rDate = LocalDate.now.plusDays(i)
@@ -24,12 +25,6 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
     val rEnd = rStart.plusHours(1)
 
     ReportCardRescheduledDb(reportCardEntryId, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id)
-  }
-
-  "A ReportCardRescheduledDaoSpec also" should {
-    "filter rescheduled properly" in {
-      await(get(List(ReportCardRescheduledLabworkFilter(privateLabworks.head.id.toString)))).size < amount shouldBe true
-    }
   }
 
   override protected def name = "reportCardRescheduleSpec"
@@ -40,19 +35,19 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
 
   override protected val invalidUpdateOfDbEntity: ReportCardRescheduledDb = dbEntity.copy(reportCardEntry = reportCardEntries.last.id)
 
-  override protected val validUpdateOnDbEntity: ReportCardRescheduledDb = dbEntity.copy(room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate)
+  override protected val validUpdateOnDbEntity: ReportCardRescheduledDb = dbEntity.copy(
+    room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate
+  )
 
   override protected val dbEntities: List[ReportCardRescheduledDb] = (0 until amount).map(i => rescheduled(reportCardEntries(i).id, i)).toList
 
-  override protected val lwmEntity: ReportCardRescheduled = dbEntity.toUniqueEntity
-
   override protected val lwmAtom: ReportCardRescheduledAtom = ReportCardRescheduledAtom(
-    lwmEntity.date,
-    lwmEntity.start,
-    lwmEntity.end,
-    rooms.find(_.id == lwmEntity.room).head.toUniqueEntity,
-    lwmEntity.reason,
-    lwmEntity.id
+    dbEntity.date.localDate,
+    dbEntity.start.localTime,
+    dbEntity.end.localTime,
+    rooms.find(_.id == dbEntity.room).get.toUniqueEntity,
+    dbEntity.reason,
+    dbEntity.id
   )
 
   override protected val dependencies = DBIO.seq(
@@ -64,5 +59,8 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
     TableQuery[RoomTable].forceInsertAll(rooms),
     TableQuery[ReportCardEntryTable].forceInsertAll(reportCardEntries)
   )
+
+  override protected val dao: ReportCardRescheduledDao = app.injector.instanceOf(classOf[ReportCardRescheduledDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

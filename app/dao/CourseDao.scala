@@ -1,10 +1,10 @@
 package dao
 
+import database.{CourseDb, CourseTable, TableFilter}
 import javax.inject.Inject
-import models.{CourseLike, CourseAtom}
+import models.{CourseAtom, CourseLike}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{CourseDb, CourseTable, TableFilter}
 
 import scala.concurrent.Future
 
@@ -25,8 +25,6 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
-
-  protected def authorityService: AuthorityDao
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
     filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
@@ -55,5 +53,5 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   }
 }
 
-final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val authorityService: AuthorityDao) extends CourseDao
+final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends CourseDao
 

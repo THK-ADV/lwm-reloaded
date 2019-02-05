@@ -1,25 +1,21 @@
 package dao
 
-/*
-import models._
-import slick.dbio.Effect.Write
 import database._
+import models._
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.Effect.Write
 
-final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, LabworkLike] with LabworkDao {
-
-  import dao.AbstractDaoSpec._
+final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, LabworkLike] {
+  import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[SemesterTable].forceInsertAll(semesters),
-    TableQuery[DegreeTable].forceInsertAll(degrees),
-    TableQuery[UserTable].forceInsertAll(employees),
-    TableQuery[CourseTable].forceInsertAll(courses)
-  )
+  override protected val dao: LabworkDao = app.injector.instanceOf(classOf[LabworkDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 
   override protected def name: String = "labwork"
 
-  override protected val dbEntity: LabworkDb = LabworkDb("label", "description",semesters.head.id,courses.head.id,degrees.head.id)
+  override protected val dbEntity: LabworkDb = LabworkDb("label", "description", semesters.head.id, courses.head.id, degrees.head.id)
 
   override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb(dbEntity.label, dbEntity.description, dbEntity.semester, dbEntity.course, dbEntity.degree, dbEntity.subscribable, dbEntity.published)
 
@@ -28,8 +24,6 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
   override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", dbEntity.semester, dbEntity.course, dbEntity.degree)
 
   override protected val dbEntities: List[LabworkDb] = labworks
-
-  override protected val lwmEntity: LabworkLike = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: LabworkAtom = {
     val course = courses.find(_.id == dbEntity.course).get
@@ -51,5 +45,11 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
       dbEntity.id
     )
   }
+
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    TableQuery[SemesterTable].forceInsertAll(semesters),
+    TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[UserTable].forceInsertAll(employees),
+    TableQuery[CourseTable].forceInsertAll(courses)
+  )
 }
-*/

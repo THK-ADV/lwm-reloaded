@@ -5,6 +5,7 @@ import java.util.UUID
 import models._
 import models.genesis.ScheduleGen
 import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
+import models.helper.{BoolBased, IntBased}
 
 object ReportCardService { // TODO DI
 

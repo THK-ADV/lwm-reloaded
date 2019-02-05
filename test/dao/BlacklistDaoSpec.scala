@@ -1,19 +1,20 @@
 package dao
 
-/*
+import database.{BlacklistDb, BlacklistTable}
 import models.Blacklist
 import org.joda.time.LocalDate
+import play.api.inject.guice.GuiceableModule
 import slick.jdbc.PostgresProfile.api._
-import database.{BlacklistDb, BlacklistTable}
 
-final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, Blacklist] with BlacklistDao {
-  import dao.AbstractDaoSpec._
+final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, Blacklist] {
+
+  import AbstractDaoSpec._
+  import Blacklist._
   import utils.LwmDateTime._
-  import models.Blacklist._
+
+  val dao = app.injector.instanceOf(classOf[BlacklistDao])
 
   "A BlacklistService2Spec also" should {
-
-    // TODO ADD FETCHING SPEC FROM BLACKLISTSERVICESPEC
 
     "filter properly" in {
       val (since, until) = {
@@ -25,30 +26,32 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
         (chosen.head.date, takeOneOf(chosen.tail).date)
       }
 
-      run(DBIO.seq(
-        filterBy(List(BlacklistGlobalFilter(true.toString))).result.map { blacklists =>
-          blacklists shouldBe dbEntities.filter(_.global)
-          blacklists.forall(b => b.start.localTime.isEqual(startOfDay) && b.end.localTime.isEqual(endOfDay)) shouldBe true
-        },
-        filterBy(List(BlacklistDateFilter(randomBlacklist.date.stringMillis))).result.map { blacklists =>
-          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
-        },
-        filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result.map { blacklists =>
-          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.start.localTime.isEqual(b.start.localTime)))
-        },
-        filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result.map { blacklists =>
-          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
-        },
-        filterBy(List(BlacklistSinceFilter(since.stringMillis), BlacklistUntilFilter(until.stringMillis))).result.map { blacklists =>
-          blacklists.forall { b =>
-            val date = b.date.localDate
-            val lower = since.localDate
-            val upper = until.localDate
+      runAsync(dao.filterBy(List(BlacklistGlobalFilter(true.toString))).result) { blacklists =>
+        blacklists shouldBe dbEntities.filter(_.global)
+        blacklists.forall(b => b.start.localTime.isEqual(startOfDay) && b.end.localTime.isEqual(endOfDay)) shouldBe true
+      }
 
-            (date.isAfter(lower) || date.isEqual(lower)) && (date.isBefore(upper) || date.isEqual(upper))
-          } shouldBe true
-        }
-      ))
+      runAsync(dao.filterBy(List(BlacklistDateFilter(randomBlacklist.date.stringMillis))).result) { blacklists =>
+        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
+      }
+
+      runAsync(dao.filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result) { blacklists =>
+        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.start.localTime.isEqual(b.start.localTime)))
+      }
+
+      runAsync(dao.filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result) { blacklists =>
+        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
+      }
+
+      runAsync(dao.filterBy(List(BlacklistSinceFilter(since.stringMillis), BlacklistUntilFilter(until.stringMillis))).result) { blacklists =>
+        blacklists.forall { b =>
+          val date = b.date.localDate
+          val lower = since.localDate
+          val upper = until.localDate
+
+          (date.isAfter(lower) || date.isEqual(lower)) && (date.isBefore(upper) || date.isEqual(upper))
+        } shouldBe true
+      }
     }
   }
 
@@ -64,10 +67,9 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
   override protected val dbEntities: List[BlacklistDb] = blacklists
 
-  override protected val lwmEntity: Blacklist = dbEntity.toUniqueEntity
-
-  override protected val lwmAtom: Blacklist = lwmEntity
-
   override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq()
+
+  override protected val lwmAtom: Blacklist = dbEntity.toUniqueEntity
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/
