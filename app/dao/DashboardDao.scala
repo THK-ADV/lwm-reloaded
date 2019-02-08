@@ -15,7 +15,7 @@ trait DashboardDao {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def dashboard(systemId: String)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
-    semesterDao.get(List(SemesterCurrentFilter()), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
+    semesterDao.get(List(SemesterCurrentFilter), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
       case head :: Nil =>
         userDao.get(List(UserSystemIdFilter(systemId)), atomic = false, validOnly, sinceLastModified).map (_.headOption) flatMap {
           case Some(Student(_, _, _, _, _, enrollment, id)) => student(id, enrollment, head)(atomic, validOnly, sinceLastModified)

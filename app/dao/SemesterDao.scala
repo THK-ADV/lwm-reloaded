@@ -36,8 +36,9 @@ case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.end === value.sqlDateFromMillis
 }
 
-case class SemesterCurrentFilter(value: String = LocalDate.now.stringMillis) extends TableFilter[SemesterTable] {
+case object SemesterCurrentFilter extends TableFilter[SemesterTable] {
   override def predicate = t => t.start <= value.sqlDateFromMillis && t.end >= value.sqlDateFromMillis
+  override def value: String = LocalDate.now.stringMillis
 }
 
 case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {

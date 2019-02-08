@@ -36,7 +36,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 
   def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    tableQuery.filter(_.label === Role.fromUserStatus(status)).result.headOption
+    byRoleLabelQuery(Role.fromUserStatus(status))
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {

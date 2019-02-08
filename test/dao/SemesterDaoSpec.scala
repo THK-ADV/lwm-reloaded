@@ -1,32 +1,32 @@
 package dao
 
-/*
 import models.Semester
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
 import database.{SemesterDb, SemesterTable}
+import play.api.inject.guice.GuiceableModule
+import slick.jdbc.PostgresProfile.api._
 
-final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] with SemesterDao {
-  import dao.AbstractDaoSpec._
+final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] {
+  import AbstractDaoSpec._
   import utils.LwmDateTime._
-  import slick.jdbc.PostgresProfile.api._
 
   val now = LocalDate.parse("2017-01-01")
   val tomorrow = LocalDate.parse("2017-01-02")
   val exam = LocalDate.parse("2017-01-03")
 
-  "A SemesterServiceSpec " should {
+  "A SemesterServiceSpec" should {
 
     "return current semester" in {
       val current = dbEntities.map(_.toUniqueEntity).filter(Semester.isCurrent)
 
-      val result = await(get(List(SemesterCurrentFilter())))
-
-      result.size shouldBe 1
-      result shouldBe current
+      async(dao.get(List(SemesterCurrentFilter))) { result =>
+        result.size shouldBe 1
+        result shouldBe current
+      }
     }
 
-    "filter properly" in {
+/*    "filter properly" in { // TODO continue
       run(DBIO.seq(
         filterBy(List(SemesterStartFilter(randomSemester.start.stringMillis))).result.map { semester =>
           semester.size shouldBe 1
@@ -48,7 +48,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
           semester.size shouldBe dbEntities.size - maxSemesters/2 + 1
         }
       ))
-    }
+    }*/
   }
 
   override protected def name: String = "semester"
@@ -71,8 +71,9 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
-  override protected val lwmEntity: Semester = dbEntity.toUniqueEntity
+  override protected val lwmAtom: Semester = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: Semester = lwmEntity
+  override protected val dao: AbstractDao[SemesterTable, SemesterDb, Semester] = app.injector.instanceOf(classOf[SemesterDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/
