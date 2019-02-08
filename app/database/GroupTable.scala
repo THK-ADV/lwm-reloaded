@@ -18,7 +18,7 @@ class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable
     case (label, labwork, lastModified, invalidated, id) => GroupDb(label, labwork, Set.empty, lastModified, invalidated, id)
   }
 
-  def unmapRow: (GroupDb) => Option[(String, UUID, Timestamp, Option[Timestamp], UUID)] = { group =>
+  def unmapRow: GroupDb => Option[(String, UUID, Timestamp, Option[Timestamp], UUID)] = { group =>
     Option((group.label, group.labwork, group.lastModified, group.invalidated, group.id))
   }
 }

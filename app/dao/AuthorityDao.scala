@@ -48,8 +48,8 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def createByCourseQuery(course: CourseDb) = {
     (for {
-      cm <- roleService.byRoleLabelQuery(Role.CourseManagerLabel)
-      rm <- roleService.byRoleLabelQuery(Role.RightsManagerLabel)
+      cm <- roleService.byRoleLabelQuery(Role.CourseManager.label)
+      rm <- roleService.byRoleLabelQuery(Role.RightsManager.label)
 
       rma = AuthorityDb(course.lecturer, rm.head.id)
       cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
@@ -86,7 +86,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def deleteSingleRightsManagerQuery(lecturer: UUID) = {
     for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
-      rm <- roleService.tableQuery.filter(_.label === Role.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
+      rm <- roleService.tableQuery.filter(_.label === Role.RightsManager.label).map(_.id).result.headOption if rm.isDefined
       deletedRM <- {
         if (hasCourse) {
           DBIO.successful(0)

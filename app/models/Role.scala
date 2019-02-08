@@ -2,6 +2,7 @@ package models
 
 import java.util.UUID
 
+import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import play.api.libs.json.{Json, Reads, Writes}
 
 sealed trait LWMRole {
@@ -20,54 +21,46 @@ object Role {
   }
 
   case object Admin extends LWMRole {
-    override val label = AdminLabel
+    override val label = "Administrator"
   }
 
   case object EmployeeRole extends LWMRole {
-    override val label = EmployeeLabel
+    override val label = "Mitarbeiter"
   }
 
   case object StudentRole extends LWMRole {
-    override val label = StudentLabel
+    override val label = "Student"
   }
 
   case object CourseEmployee extends LWMRole {
-    override val label = CourseEmployeeLabel
+    override val label = "Modulmitarbeiter"
   }
 
   case object CourseAssistant extends LWMRole {
-    override val label = CourseAssistantLabel
+    override val label = "Hilfskraft"
   }
 
   case object CourseManager extends LWMRole {
-    override val label = CourseManagerLabel
+    override val label = "Modulverantwortlicher"
   }
 
   case object RightsManager extends LWMRole {
-    override val label = RightsManagerLabel
+    override val label = "Rechteverantwortlicher"
   }
 
-  lazy val AdminLabel = "Administrator"
-  lazy val EmployeeLabel = "Mitarbeiter"
-  lazy val StudentLabel = "Student"
-  lazy val CourseEmployeeLabel = "Modulmitarbeiter"
-  lazy val CourseAssistantLabel = "Hilfskraft"
-  lazy val CourseManagerLabel = "Modulverantwortlicher"
-  lazy val RightsManagerLabel = "Rechteverantwortlicher"
-
-  lazy val all = List(
-    AdminLabel,
-    EmployeeLabel,
-    StudentLabel,
-    CourseEmployeeLabel,
-    CourseAssistantLabel,
-    CourseManagerLabel,
-    RightsManagerLabel
+  lazy val all: List[LWMRole] = List(
+    Admin,
+    EmployeeRole,
+    StudentRole,
+    CourseEmployee,
+    CourseAssistant,
+    CourseManager,
+    RightsManager
   )
 
-  def fromUserStatus(status: String): String = status match {
-    case User.EmployeeType => EmployeeLabel
-    case User.LecturerType => EmployeeLabel
-    case User.StudentType => StudentLabel
+  def fromUserStatus(status: LdapUserStatus): LWMRole = status match {
+    case EmployeeStatus => EmployeeRole
+    case LecturerStatus => EmployeeRole
+    case StudentStatus => StudentRole
   }
 }

@@ -3,6 +3,7 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
+import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import models.{Employee, Lecturer, Student, UniqueDbEntity, User}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
@@ -27,7 +28,16 @@ class UserTable(tag: Tag) extends Table[UserDb](tag, "USERS") with UniqueTable {
 
   //def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
 
-  override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) <> ((UserDb.apply _).tupled, UserDb.unapply)
+  override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((String, String, String, String, String, Option[String], Option[UUID], Timestamp, Option[Timestamp], UUID)) => UserDb = {
+    case (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) =>
+      UserDb(systemId, lastname, firstname, email, LdapUserStatus(status).get, registrationId, enrollment, lastModified, invalidated, id)
+  }
+
+  def unmapRow: UserDb => Option[(String, String, String, String, String, Option[String], Option[UUID], Timestamp, Option[Timestamp], UUID)] = { user =>
+    Option((user.systemId, user.lastname, user.firstname, user.email, user.status.label, user.registrationId, user.enrollment, user.lastModified, user.invalidated, user.id))
+  }
 }
 
 case class UserDb(
@@ -35,7 +45,7 @@ case class UserDb(
   lastname: String,
   firstname: String,
   email: String,
-  status: String,
+  status: LdapUserStatus,
   registrationId: Option[String],
   enrollment: Option[UUID],
   lastModified: Timestamp = DateTime.now.timestamp,
@@ -43,12 +53,9 @@ case class UserDb(
   id: UUID = UUID.randomUUID
 ) extends UniqueDbEntity {
 
-  override def toUniqueEntity: User = this match {
-    case UserDb(sId, last, first, mail, stat, Some(regId), Some(enroll), _, _, studentId) if stat == User.StudentType =>
-      Student(sId, last, first, mail, regId, enroll, studentId)
-    case UserDb(sId, last, first, mail, stat, None, None, _, _, employeeId) if stat == User.EmployeeType =>
-      Employee(sId, last, first, mail, employeeId)
-    case UserDb(sId, last, first, mail, stat, None, None, _, _, lecturerId) if stat == User.LecturerType =>
-      Lecturer(sId, last, first, mail, lecturerId)
+  override def toUniqueEntity: User = status match {
+    case StudentStatus => Student(systemId, lastname, firstname, email, registrationId.get, enrollment.get, id)
+    case EmployeeStatus => Employee(systemId, lastname, firstname, email, id)
+    case LecturerStatus => Lecturer(systemId, lastname, firstname, email, id)
   }
 }

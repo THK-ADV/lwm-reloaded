@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import database.helper.LdapUserStatus
 import database.{TableFilter, UserDb, UserTable}
 import javax.inject.Inject
 import models._
@@ -63,9 +64,9 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
   }
 
   private def createEmployee(firstName: String, lastName: String, systemId: String, email: String, status: String, id: UUID) = {
-    val user = UserDb(systemId, lastName, firstName, email, status, None, None, id = id)
-
     for {
+      userStatus <- Future.fromTry(LdapUserStatus(status))
+      user = UserDb(systemId, lastName, firstName, email, userStatus, None, None, id = id)
       updated <- super.createOrUpdate(user)
       maybeCreated <- updated.fold(Future.successful(Option.empty[(AuthorityAtom, User)]))(u => authorityService.createWith(u).map(a => Some((a, u.toUniqueEntity))))
     } yield maybeCreated

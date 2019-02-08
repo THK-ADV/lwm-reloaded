@@ -26,29 +26,37 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
       }
     }
 
-/*    "filter properly" in { // TODO continue
-      run(DBIO.seq(
-        filterBy(List(SemesterStartFilter(randomSemester.start.stringMillis))).result.map { semester =>
-          semester.size shouldBe 1
-        }
-      ).andThen(
-        filterBy(List(SemesterEndFilter(randomSemester.end.stringMillis))).result.map { semester =>
-          semester.size shouldBe 1
-        }
-      ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities.head.start.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size
-        }
-      ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities(maxSemesters/2).start.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size - maxSemesters/2
-        }
-      ).andThen(
-        filterBy(List(SemesterUntilFilter(dbEntities(maxSemesters/2).end.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size - maxSemesters/2 + 1
-        }
-      ))
-    }*/
+    "filter semesters by start date" in {
+      val start = randomSemester.start
+      runAsync(dao.filterBy(List(SemesterStartFilter(start.stringMillis))).result) { semester =>
+        semester.size shouldBe 1
+        semester.head.start shouldBe start
+      }
+    }
+
+    "filter semesters by end date" in {
+      val end = randomSemester.end
+      runAsync(dao.filterBy(List(SemesterEndFilter(end.stringMillis))).result) { semester =>
+        semester.size shouldBe 1
+        semester.head.end shouldBe end
+      }
+    }
+
+    "filter semesters since start date" in {
+      val start = randomSemester.start
+      runAsync(dao.filterBy(List(SemesterSinceFilter(start.stringMillis))).result) { semester =>
+        semester.nonEmpty shouldBe true
+        semester.forall(s => s.start.equals(start) || s.start.after(start)) shouldBe true
+      }
+    }
+
+    "filter semesters until end date" in {
+      val end = randomSemester.end
+      runAsync(dao.filterBy(List(SemesterUntilFilter(end.stringMillis))).result) { semester =>
+        semester.nonEmpty shouldBe true
+        semester.forall(s => s.end.equals(end) || s.end.before(end)) shouldBe true
+      }
+    }
   }
 
   override protected def name: String = "semester"

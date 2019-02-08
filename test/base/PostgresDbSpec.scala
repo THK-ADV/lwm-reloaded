@@ -68,5 +68,7 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Guic
       DBIO.seq(schema.reverseMap(_.drop): _*)
         .transactionally
     )(_ => Unit)
+
+    db.close()
   }
 }

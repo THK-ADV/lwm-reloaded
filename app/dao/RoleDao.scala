@@ -1,5 +1,6 @@
 package dao
 
+import database.helper.LdapUserStatus
 import javax.inject.Inject
 import models._
 import slick.dbio.Effect
@@ -31,12 +32,12 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
+  def byUserStatus(status: LdapUserStatus): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
     db.run(byUserStatusQuery(status))
   }
 
-  def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    byRoleLabelQuery(Role.fromUserStatus(status))
+  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    byRoleLabelQuery(Role.fromUserStatus(status).label)
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {

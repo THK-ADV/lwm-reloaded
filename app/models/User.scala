@@ -16,11 +16,6 @@ case class UserProtocol(systemId: String)
 
 object User {
 
-  lazy val EmployeeType = "employee"
-  lazy val LecturerType = "lecturer"
-  lazy val StudentType = "student"
-  lazy val types = List(EmployeeType, LecturerType, StudentType)
-
   implicit val writes: Writes[User] = {
     case postgresStudent: Student => Json.toJson(postgresStudent)(Student.writes)
     case postgresStudentAtom: StudentAtom => Json.toJson(postgresStudentAtom)(StudentAtom.writes)

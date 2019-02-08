@@ -5,6 +5,7 @@ import java.util.UUID
 
 import base.PostgresDbSpec
 import database._
+import database.helper.{EmployeeStatus, LdapUserStatus, StudentStatus}
 import models._
 import models.helper.{BoolBased, IntBased}
 import org.joda.time.{LocalDate, LocalTime}
@@ -88,11 +89,11 @@ object AbstractDaoSpec {
   }.toList
 
   final def populateEmployees(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
+    UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None)
   }.toList
 
   final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
+    UserDb(i.toString, i.toString, i.toString, i.toString, StudentStatus, Some(i.toString), Some(randomDegree.id))
   }.toList
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
@@ -238,11 +239,11 @@ object AbstractDaoSpec {
 
   lazy val authorities = (0 until maxAuthorities).map { i =>
     val role: RoleDb = roles((i * 3) % roles.length)
-    val course: Option[UUID] = if (role.label == Role.RightsManagerLabel) Some(courses((i * 6) % maxCourses).id) else None
+    val course: Option[UUID] = if (role.label == Role.RightsManager.label) Some(courses((i * 6) % maxCourses).id) else None
     AuthorityDb(employees(i % maxEmployees).id, role.id, course)
   }.toList
 
-  lazy val roles = Role.all.map(RoleDb(_))
+  lazy val roles = Role.all.map(r => RoleDb(r.label))
 
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 
