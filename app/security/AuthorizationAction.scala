@@ -12,12 +12,10 @@ import scala.util.control.NonFatal
 
 @Singleton
 case class AuthorizationAction @Inject()(auth: OAuthAuthorization)(val parser: BodyParsers.Default)(implicit val executionContext: ExecutionContext)
-  extends ActionBuilder[IdRequest, AnyContent] {
+  extends ActionBuilder[IdRequest, AnyContent] with RequestOps {
 
-  override def invokeBlock[A](request: Request[A], block: IdRequest[A] => Future[Result]) = auth.authorized(request).flatMap {
-    case token: UserToken =>
-      val newRequest = request.addAttr(RequestOps.UserToken, token)
-      block(IdRequest(newRequest, token.systemId))
+  override def invokeBlock[A](request: Request[A], block: IdRequest[A] => Future[Result]): Future[Result] = auth.authorized(request).flatMap {
+    case token: UserToken => block(IdRequest(request.withUserToken(token), token.systemId))
   }.recover {
     case NonFatal(e) => Unauthorized(Json.obj(
       "status" -> "KO",

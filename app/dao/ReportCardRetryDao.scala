@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database._
 import utils.LwmDateTime._
 
 case class ReportCardRetryEntryFilter(value: String) extends TableFilter[ReportCardRetryTable] {
@@ -79,20 +79,18 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardRetryDb]] = Some(new DatabaseExpander[ReportCardRetryDb] {
 
-    override def expandCreationOf[E <: Effect](entities: Seq[ReportCardRetryDb]) = {
-      for {
-        _ <- entryTypeQuery ++= entities.flatMap(_.entryTypes)
-      } yield entities
-    }
+    override def expandCreationOf[E <: Effect](entities: Seq[ReportCardRetryDb]) = for {
+      _ <- entryTypeQuery ++= entities.flatMap(_.entryTypes)
+    } yield entities
 
-    override def expandDeleteOf(entity: ReportCardRetryDb) = (for {
-      d1 <- entryTypeQuery.filter(_.reportCardRetry === entity.id).delete
-    } yield d1).map(_ => Some(entity))
+    override def expandDeleteOf(entity: ReportCardRetryDb) = for {
+      _ <- entryTypeQuery.filter(_.reportCardRetry === entity.id).delete
+    } yield entity
 
     override def expandUpdateOf(entity: ReportCardRetryDb) = for {
-      d <- expandDeleteOf(entity) if d.isDefined
-      c <- expandCreationOf(Seq(entity))
-    } yield c.headOption
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(Seq(d))
+    } yield c.head
   })
 }
 

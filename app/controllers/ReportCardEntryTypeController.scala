@@ -30,7 +30,7 @@ class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val auth
     (for {
       protocol <- Future.fromTry(parseJson(request))
       updated <- abstractDao.updateFields(uuid, protocol.bool, protocol.int)
-    } yield if (updated) Some(protocol) else None).jsonResult(uuid)
+    } yield if (updated) Some(protocol) else None).updated(uuid)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

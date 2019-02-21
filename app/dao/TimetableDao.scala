@@ -2,11 +2,11 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database._
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -108,21 +108,17 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     override def expandDeleteOf(entity: TimetableDb) = {
       val timetableEntries = timetableEntryQuery.filter(_.timetable === entity.id).map(_.id)
 
-      val deleted = for {
-        d1 <- timetableEntrySupervisorQuery.filter(_.timetableEntry in timetableEntries).delete
-        d2 <- timetableEntryQuery.filter(_.id in timetableEntries).delete
-        d3 <- timetableBlacklistQuery.filter(_.timetable === entity.id).delete
-      } yield d1 + d2 + d3
-
-      deleted.map(_ => Some(entity))
-    }
-
-    override def expandUpdateOf(entity: TimetableDb) = {
       for {
-        d <- expandDeleteOf(entity) if d.isDefined
-        c <- expandCreationOf(Seq(entity))
-      } yield c.headOption
+        _ <- timetableEntrySupervisorQuery.filter(_.timetableEntry in timetableEntries).delete
+        _ <- timetableEntryQuery.filter(_.id in timetableEntries).delete
+        _ <- timetableBlacklistQuery.filter(_.timetable === entity.id).delete
+      } yield entity
     }
+
+    override def expandUpdateOf(entity: TimetableDb) = for {
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(Seq(d))
+    } yield c.head
   })
 
   private lazy val schemas = List(

@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database._
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -149,16 +149,14 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       val rt = retryQuery.filter(_.reportCardEntry === entity.id)
       val types = entryTypeQuery.filter(t => t.reportCardEntry === entity.id || t.reportCardRetry.in(rt.map(_.id)))
 
-      val deleted = for {
-        d1 <- types.delete
-        d2 <- rt.delete
-        d3 <- rs.delete
-      } yield d1 + d2 + d3
-
-      deleted.map(_ => Some(entity))
+      for {
+        _ <- types.delete
+        _ <- rt.delete
+        _ <- rs.delete
+      } yield entity
     }
 
-    override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(Some(entity)) // entry only
+    override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(entity) // entry only
   })
 
   private lazy val schemas = List(

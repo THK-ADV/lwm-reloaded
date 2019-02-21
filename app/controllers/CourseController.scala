@@ -42,7 +42,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
         abstractDao.getById(dbModel.id.toString, atomic)
       else
         Future.successful(Some(dbModel.toUniqueEntity))
-    } yield lwmModel.get).jsonResult
+    } yield lwmModel.get).created
   }
 
   override def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { request =>
@@ -57,10 +57,10 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
       updatedCourse <- abstractDao.update(dbModel)
       _ <- authorityDao.updateByCourse(CourseDb(oc.label, oc.description, oc.abbreviation, oc.lecturer, oc.semesterIndex), dbModel)
       lwmModel <- if (atomic)
-        abstractDao.getById(uuid.toString, atomic)
+        abstractDao.getById(uuid.toString, atomic).map(_.get)
       else
-        Future.successful(updatedCourse.map(_.toUniqueEntity))
-    } yield lwmModel).jsonResult(uuid)
+        Future.successful(updatedCourse.toUniqueEntity)
+    } yield lwmModel).updated
   }
 
   override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
@@ -72,9 +72,9 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     (for {
       courseBeforeDelete <- abstractDao.getById(id) if courseBeforeDelete.isDefined
       c = courseBeforeDelete.get.asInstanceOf[Course]
-      deletedCourse <- abstractDao.delete(uuid) if deletedCourse.isDefined
+      deletedCourse <- abstractDao.delete(uuid)
       _ <- authorityDao.deleteByCourse(CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex))
-    } yield deletedCourse.map(_.dateTime)).jsonResult(uuid)
+    } yield deletedCourse.dateTime).deleted
   }
 
   override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {

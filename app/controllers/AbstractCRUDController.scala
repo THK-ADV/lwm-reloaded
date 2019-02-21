@@ -83,10 +83,10 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
       dbModel = toDbModel(protocol, Some(uuid))
       updated <- abstractDao.update(dbModel)
       lwmModel <- if (atomic)
-        abstractDao.getById(uuid.toString, atomic)
+        abstractDao.getById(uuid.toString, atomic).map(_.get)
       else
-        Future.successful(updated.map(_.toUniqueEntity.asInstanceOf[LwmModel]))
-    } yield lwmModel).jsonResult(uuid)
+        Future.successful(updated.toUniqueEntity.asInstanceOf[LwmModel])
+    } yield lwmModel).updated
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
@@ -95,8 +95,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def delete0(uuid: UUID): Future[Result] = {
     import utils.LwmDateTime.{SqlTimestampConverter, writeDateTime}
-
-    abstractDao.delete(uuid).map(_.map(_.dateTime)).jsonResult(uuid)
+    abstractDao.delete(uuid).map(_.dateTime).deleted
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>

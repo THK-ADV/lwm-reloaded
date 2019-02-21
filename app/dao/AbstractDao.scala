@@ -3,7 +3,7 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
-import utils.LwmDateTime._
+import database.{TableFilter, UniqueTable}
 import models.{UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.dbio.Effect
@@ -11,16 +11,18 @@ import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import database.{TableFilter, UniqueTable}
 import slick.sql.FixedSqlAction
+import utils.LwmDateTime._
 
 import scala.concurrent.Future
 import scala.util.Try
 
 trait DatabaseExpander[DbModel <: UniqueDbEntity] {
   def expandCreationOf[E <: Effect](entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Write with E]
-  def expandUpdateOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
-  def expandDeleteOf(entity: DbModel): DBIOAction[Option[DbModel], NoStream, Write]
+
+  def expandUpdateOf(entity: DbModel): DBIOAction[DbModel, NoStream, Write]
+
+  def expandDeleteOf(entity: DbModel): DBIOAction[DbModel, NoStream, Write]
 }
 
 case class ModelAlreadyExists[A](value: A) extends Throwable {
@@ -28,6 +30,7 @@ case class ModelAlreadyExists[A](value: A) extends Throwable {
 }
 
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   case class IdFilter(value: String) extends TableFilter[T] {
@@ -48,7 +51,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   protected def databaseExpander: Option[DatabaseExpander[DbModel]] = None
 
-  def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args:_*).transactionally)
+  final def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
 
   final def create(entity: DbModel): Future[DbModel] = {
     val query = createQuery(entity)
@@ -90,12 +93,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def createManyQuery(entities: Seq[DbModel]): FixedSqlAction[Seq[DbModel], NoStream, Write] = (tableQuery returning tableQuery) ++= entities
 
-  private def createOrUpdate0(entity: DbModel) = (tableQuery returning tableQuery).insertOrUpdate(entity)
-
-  final def createOrUpdate(entity: DbModel): Future[Option[DbModel]] = db.run(createOrUpdate0(entity))
-
   final def createOrUpdateMany(entities: Seq[DbModel]): Future[Seq[DbModel]] = {
-    val action = DBIO.seq(entities.map(createOrUpdate0):_*)
+    val query = entities.map(e => (tableQuery returning tableQuery).insertOrUpdate(e))
+    val action = DBIO.seq(query: _*)
 
     db.run(action.transactionally).map(_ => entities)
   }
@@ -103,9 +103,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
   final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
-          t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
-            query.filter(nextFilter.predicate)
-          }
+        t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
+          query.filter(nextFilter.predicate)
+        }
       case _ => tableQuery
     }
 
@@ -143,40 +143,36 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     getMany(List(UUID.fromString(id)), atomic, validOnly, sinceLastModified).map(_.headOption)
   }
 
-  final def delete(entity: DbModel): Future[Option[Timestamp]] = delete(entity.id)
+  final def delete(entity: DbModel): Future[Timestamp] = delete(entity.id)
 
-  final def delete(id: UUID): Future[Option[Timestamp]] = db.run(delete0(id))
+  final def delete(id: UUID): Future[Timestamp] = db.run(delete0(id))
 
-  final def deleteManyEntities(ids: List[DbModel]): Future[List[Option[Timestamp]]] = deleteMany(ids.map(_.id))
+  final def deleteManyEntities(entities: List[DbModel]): Future[List[Timestamp]] = deleteMany(entities.map(_.id))
 
-  final def deleteMany(ids: List[UUID]): Future[List[Option[Timestamp]]] = {
+  final def deleteMany(ids: List[UUID]): Future[List[Timestamp]] = {
     val query = ids.map(delete0)
-
     db.run(DBIO.sequence(query))
   }
 
   private final def delete0(id: UUID) = {
-    val now = DateTime.now.timestamp
-    val query = deleteQuery(id, now)
+    val query = deleteQuery(id)
 
     databaseExpander.fold(query) { expander =>
       (for {
-        q <- query if q.isDefined
-        e <- expander.expandDeleteOf(q.get)
+        q <- query
+        e <- expander.expandDeleteOf(q)
       } yield e).transactionally
-    }.map(_.map(_ => now))
+    }.map(_.lastModified)
   }
 
   final def deleteQuery(id: UUID, now: Timestamp = DateTime.now.timestamp) = {
     val found = tableQuery.filter(_.id === id)
+    val action = for {
+      existing <- found.result if existing.nonEmpty
+      _ <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
+    } yield existing.head
 
-    found.result.head.flatMap { existing =>
-      (for {
-        u <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
-      } yield u).transactionally.map { rowsAffected =>
-        if (rowsAffected > 0) Some(existing) else None
-      }
-    }
+    action.transactionally
   }
 
   final def updateQuery(entity: DbModel) = {
@@ -187,17 +183,15 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
         (for {
           u1 <- found.update(entity)
           u2 <- found.map(_.lastModified).update(DateTime.now.timestamp)
-        } yield u1 + u2).transactionally.map { rowsAffected =>
-          if (rowsAffected >= 2) Some(entity) else None
-        }
+        } yield u1 + u2).transactionally.map(_ => entity)
       else
         DBIO.failed(ModelAlreadyExists(existing))
     }
   }
 
-  final def update(entity: DbModel): Future[Option[DbModel]] = db.run(update0(entity))
+  final def update(entity: DbModel): Future[DbModel] = db.run(update0(entity))
 
-  final def updateMany(entities: List[DbModel]): Future[List[Option[DbModel]]] = {
+  final def updateMany(entities: List[DbModel]): Future[List[DbModel]] = {
     val query = entities.map(update0)
 
     db.run(DBIO.sequence(query))
@@ -208,8 +202,8 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
     databaseExpander.fold(query) { expander =>
       (for {
-        q <- query if q.isDefined
-        e <- expander.expandUpdateOf(q.get)
+        q <- query
+        e <- expander.expandUpdateOf(q)
       } yield e).transactionally
     }
   }

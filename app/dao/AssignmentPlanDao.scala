@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database._
 
 import scala.concurrent.Future
 
@@ -99,19 +99,17 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
     override def expandDeleteOf(entity: AssignmentPlanDb) = {
       val entries = assignmentEntryQuery.filter(_.assignmentPlan === entity.id)
 
-      val deleted = for {
-        d1 <- assignmentEntryTypeQuery.filter(_.assignmentEntry in entries.map(_.id)).delete
-        d2 <- entries.delete
-      } yield d1 + d2
-
-      deleted.map(_ => Some(entity))
+      for {
+        _ <- assignmentEntryTypeQuery.filter(_.assignmentEntry in entries.map(_.id)).delete
+        _ <- entries.delete
+      } yield entity
     }
 
     override def expandUpdateOf(entity: AssignmentPlanDb) = {
       for {
-        d <- expandDeleteOf(entity) if d.isDefined
-        c <- expandCreationOf(Seq(entity))
-      } yield c.headOption
+        d <- expandDeleteOf(entity)
+        c <- expandCreationOf(Seq(d))
+      } yield c.head
     }
   })
 

@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
-import models.{genesis, _}
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
+import models.{genesis, _}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database._
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -147,26 +147,20 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[ScheduleEntryDb]) = {
-      for {
-        _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
-          e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
-        }
-      } yield entities
-    }
+    override def expandCreationOf[E <: Effect](entities: Seq[ScheduleEntryDb]) = for {
+      _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
+        e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
+      }
+    } yield entities
 
-    override def expandDeleteOf(entity: ScheduleEntryDb) = {
-      (for {
-        d <- scheduleEntrySupervisorQuery.filter(_.scheduleEntry === entity.id).delete
-      } yield d).map(_ => Some(entity))
-    }
+    override def expandDeleteOf(entity: ScheduleEntryDb) = for {
+      _ <- scheduleEntrySupervisorQuery.filter(_.scheduleEntry === entity.id).delete
+    } yield entity
 
-    override def expandUpdateOf(entity: ScheduleEntryDb) = {
-      for {
-        d <- expandDeleteOf(entity) if d.isDefined
-        c <- expandCreationOf(Seq(entity))
-      } yield c.headOption
-    }
+    override def expandUpdateOf(entity: ScheduleEntryDb) = for {
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(Seq(d))
+    } yield c.head
   })
 
   def competitive(labwork: LabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {

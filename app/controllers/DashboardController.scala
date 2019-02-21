@@ -33,7 +33,7 @@ final class DashboardController @Inject()(cc: ControllerComponents, val authorit
       systemId <- Future.fromTry(request.systemId.toTry(new Throwable("No User ID found in request")))
       attr = extractAttributes(request.queryString)._2
       board <- dashboardDao.dashboard(systemId)(attr.atomic, attr.valid, attr.lastModified)
-    } yield board).jsonResult
+    } yield board).created
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {

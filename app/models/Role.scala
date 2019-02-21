@@ -57,10 +57,4 @@ object Role {
     CourseManager,
     RightsManager
   )
-
-  def fromUserStatus(status: LdapUserStatus): LWMRole = status match {
-    case EmployeeStatus => EmployeeRole
-    case LecturerStatus => EmployeeRole
-    case StudentStatus => StudentRole
-  }
 }

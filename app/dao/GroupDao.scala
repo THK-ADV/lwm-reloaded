@@ -2,11 +2,11 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database._
 
 import scala.concurrent.Future
 
@@ -72,14 +72,14 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
       _ <- groupMembershipQuery ++= entities.flatMap(g => g.members.map(s => GroupMembership(g.id, s)))
     } yield entities
 
-    override def expandDeleteOf(entity: GroupDb) = (for {
-      d <- groupMembershipQuery.filter(_.group === entity.id).delete
-    } yield d).map(_ => Some(entity))
+    override def expandDeleteOf(entity: GroupDb) = for {
+      _ <- groupMembershipQuery.filter(_.group === entity.id).delete
+    } yield entity
 
     override def expandUpdateOf(entity: GroupDb) = for {
-      d <- expandDeleteOf(entity) if d.isDefined
-      c <- expandCreationOf(Seq(entity))
-    } yield c.headOption
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(Seq(d))
+    } yield c.head
   })
 
   private lazy val schemas = List(

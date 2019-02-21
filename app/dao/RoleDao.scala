@@ -1,12 +1,13 @@
 package dao
 
-import database.helper.LdapUserStatus
+import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import javax.inject.Inject
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import database.{RoleDb, RoleTable, TableFilter}
+import models.Role.{EmployeeRole, StudentRole}
 
 import scala.concurrent.Future
 
@@ -32,16 +33,18 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def byUserStatus(status: LdapUserStatus): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
-    db.run(byUserStatusQuery(status))
-  }
-
-  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    byRoleLabelQuery(Role.fromUserStatus(status).label)
+  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = { // TODO test
+    byRoleLabelQuery(roleOf(status).label)
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
     tableQuery.filter(_.label === label).result.headOption
+  }
+
+  private def roleOf(status: LdapUserStatus): LWMRole = status match {
+    case EmployeeStatus => EmployeeRole
+    case LecturerStatus => EmployeeRole
+    case StudentStatus => StudentRole
   }
 }
 

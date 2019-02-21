@@ -3,11 +3,11 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database._
 import utils.LwmDateTime._
 
 import scala.concurrent.Future
@@ -99,18 +99,20 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     override def expandCreationOf[X <: Effect](entities: Seq[LabworkApplicationDb]) = {
       val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
-      (lappFriendQuery ++= friends).map(_ => entities)
+      for {
+        _ <- lappFriendQuery ++= friends
+      } yield entities
     }
+
+    override def expandDeleteOf(entity: LabworkApplicationDb) = for {
+      _ <- lappFriendQuery.filter(_.labworkApplication === entity.id).delete
+    } yield entity
 
     override def expandUpdateOf(entity: LabworkApplicationDb) = {
       for {
-        deleted <- expandDeleteOf(entity) if deleted.isDefined
-        created <- expandCreationOf(Seq(entity))
-      } yield created.headOption
-    }
-
-    override def expandDeleteOf(entity: LabworkApplicationDb) = {
-      lappFriendQuery.filter(_.labworkApplication === entity.id).delete.map(_ => Some(entity))
+        d <- expandDeleteOf(entity)
+        c <- expandCreationOf(Seq(d))
+      } yield c.head
     }
   })
 

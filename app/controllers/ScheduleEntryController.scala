@@ -89,7 +89,7 @@ final class ScheduleEntryController @Inject()(
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    generate(labwork).jsonResult
+    generate(labwork).created
   }
 
   private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {

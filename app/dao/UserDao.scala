@@ -2,7 +2,8 @@ package dao
 
 import java.util.UUID
 
-import database.helper.LdapUserStatus
+import dao.helper.{Created, DBResult, Updated}
+import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import database.{TableFilter, UserDb, UserTable}
 import javax.inject.Inject
 import models._
@@ -43,43 +44,74 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
-  final def userId(systemId: String): Future[Option[UUID]] = db.run {
-    (for (q <- tableQuery if q.systemId === systemId) yield q.id).result.headOption
+  def degreeDao: DegreeDao
+
+  def authorityDao: AuthorityDao
+
+  def labworkApplicationDao: LabworkApplicationDao
+
+  final def userId(systemId: String) = {
+    (for {
+      q <- tableQuery if q.systemId === systemId
+    } yield q.id).result.headOption
   }
 
-  final def create(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: Option[String], registrationId: Option[String]) = {
+  final def makeUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
     for {
-      maybeId <- userId(systemId)
-      id = maybeId getOrElse UUID.randomUUID // create if needed
-      res <- createOrUpdate(firstName, lastName, systemId, email, status, degreeAbbrev, registrationId, id)
-    } yield res
+      status <- DBIO.from(Future.fromTry(LdapUserStatus(status)))
+      maybeDegree <- status match {
+        case StudentStatus if enrollment.isDefined && registrationId.isDefined =>
+          degreeDao.filterBy(List(DegreeAbbreviationFilter(enrollment.get))).result.flatMap { degrees =>
+            degrees.headOption
+              .map(d => DBIO.successful(Some(d.id)))
+              .getOrElse(DBIO.failed(new Throwable(s"degree with label '${enrollment.get}' not found")))
+          }
+        case EmployeeStatus | LecturerStatus => DBIO.successful(Option.empty[UUID])
+        case _ => DBIO.failed(new Throwable(s"user with $status label must have a associated registration-id and degree abbreviation, but was $registrationId and $enrollment"))
+      }
+      user = UserDb(systemId, lastname, firstname, email, status, registrationId, maybeDegree)
+    } yield user
   }
 
-  private def createOrUpdate(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: Option[String], registrationId: Option[String], id: UUID) = {
-    (degreeAbbrev, registrationId) match {
-      case (Some(degree), Some(regId)) => createStudent(firstName, lastName, systemId, email, status, degree, regId, id) // TODO
-      case (None, None) => createEmployee(firstName, lastName, systemId, email, status, id)
-      case _ => Future.failed(new Throwable(s"user has either some $degreeAbbrev or $registrationId which should never happen"))
-    }
+  final def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]] = {
+    val result = for {
+      existing <- userId(user.systemId)
+      createOrUpdated <- existing match {
+        case Some(_) => updateQuery(user).map(u => Updated(u))
+        case None => createWithBasicAuthorityQuery(user).map(t => Created(t._1))
+      }
+    } yield createOrUpdated
+
+    db.run(result)
   }
 
-  private def createEmployee(firstName: String, lastName: String, systemId: String, email: String, status: String, id: UUID) = {
-    for {
-      userStatus <- Future.fromTry(LdapUserStatus(status))
-      user = UserDb(systemId, lastName, firstName, email, userStatus, None, None, id = id)
-      updated <- super.createOrUpdate(user)
-      maybeCreated <- updated.fold(Future.successful(Option.empty[(AuthorityAtom, User)]))(u => authorityService.createWith(u).map(a => Some((a, u.toUniqueEntity))))
-    } yield maybeCreated
+  final def createOrUpdateWithBasicAuthority(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[DBResult[UserDb]] = {
+    val result = for {
+      user <- makeUser(systemId, lastname, firstname, email, status, registrationId, enrollment)
+      existing <- userId(user.systemId)
+      createOrUpdated <- existing match {
+        case Some(_) => updateQuery(user).map(u => Updated(u))
+        case None => createWithBasicAuthorityQuery(user).map(t => Created(t._1))
+      }
+    } yield createOrUpdated
+
+    db.run(result)
   }
 
-  //    for {
-  //      degrees <- degreeService.get()
-  //      maybeEnrollment = ldapUser.degreeAbbrev.flatMap(abbrev => degrees.find(_.abbreviation.toLowerCase == abbrev.toLowerCase)).map(_.id)
-  //      dbUser = DbUser(ldapUser.systemId, ldapUser.lastname, ldapUser.firstname, ldapUser.email, ldapUser.status, ldapUser.registrationId, maybeEnrollment, id = existing.headOption.fold(UUID.randomUUID)(_.id))
-  //      updated <- createOrUpdate(dbUser)
-  //      maybeAuth <- updated.fold[Future[Option[PostgresAuthorityAtom]]](Future.successful(None))(user => authorityService.createWith(user).map(Some(_)))
-  //    } yield (dbUser.toLwmModel, maybeAuth)
-  private def createStudent(firstName: String, lastName: String, systemId: String, email: String, status: String, degreeAbbrev: String, registrationId: String, id: UUID) = Future.successful(Option.empty[(AuthorityAtom, User)])
+  final def createWithBasicAuthorityQuery(user: UserDb) = {
+    (for {
+      createdUser <- createQuery(user)
+      baseAuth <- authorityDao.createBasicAuthorityFor(user)
+    } yield (createdUser, baseAuth)).transactionally
+  }
+
+  final def createWithBasicAuthorityQuery(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
+    (for {
+      user <- makeUser(systemId, lastname, firstname, email, status, registrationId, enrollment)
+      createdUser <- createQuery(user)
+      baseAuth <- authorityDao.createBasicAuthorityFor(user)
+    } yield (createdUser, baseAuth)).transactionally
+  }
 
   final def buddyResult(requesterId: String, requesteeSystemId: String, labwork: String): Future[BuddyResult] = {
     val requesteeSystemIdFilter = UserSystemIdFilter(requesteeSystemId)
@@ -93,7 +125,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
     val friends = for {
       b <- buddy
-      friends <- labworkApplicationService.friendsOf(b._1.id, UUID.fromString(labwork))
+      friends <- labworkApplicationDao.friendsOf(b._1.id, UUID.fromString(labwork))
     } yield friends
 
     val action = for {
@@ -117,12 +149,6 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     db.run(action)
   }
 
-  protected def degreeService: DegreeDao
-
-  protected def authorityService: AuthorityDao
-
-  protected def labworkApplicationService: LabworkApplicationDao
-
   override protected def shouldUpdate(existing: UserDb, toUpdate: UserDb): Boolean = {
     (existing.enrollment != toUpdate.enrollment ||
       existing.lastname != toUpdate.lastname ||
@@ -140,7 +166,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
   }
 
   override protected def toAtomic(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {
-    db.run(query.joinLeft(degreeService.tableQuery).on(_.enrollment === _.id).result.map(_.map {
+    db.run(query.joinLeft(degreeDao.tableQuery).on(_.enrollment === _.id).result.map(_.map {
       case (s, Some(d)) => StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toUniqueEntity, s.id)
       case (dbUser, None) => dbUser.toUniqueEntity
     }))
@@ -149,7 +175,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
 final class UserDaoImpl @Inject()(
   val db: PostgresProfile.backend.Database,
-  val authorityService: AuthorityDao,
-  val degreeService: DegreeDao,
-  val labworkApplicationService: LabworkApplicationDao
+  val authorityDao: AuthorityDao,
+  val degreeDao: DegreeDao,
+  val labworkApplicationDao: LabworkApplicationDao
 ) extends UserDao

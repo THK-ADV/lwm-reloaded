@@ -33,23 +33,20 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  protected def roleService: RoleDao
+  protected def roleDao: RoleDao
 
-  // TODO maybe we can do this with Expander
-  def createWith(dbUser: UserDb): Future[AuthorityAtom] = {
+  def createBasicAuthorityFor(user: UserDb) = { // TODO test
     for {
-      role <- roleService.byUserStatus(dbUser.status)
-      created <- role.fold[Future[AuthorityDb]](Future.failed(new Throwable(s"No appropriate Role found while resolving user $dbUser"))) { role =>
-        val authority = AuthorityDb(dbUser.id, role.id)
-        create(authority)
-      }
-    } yield AuthorityAtom(dbUser.toUniqueEntity, role.map(_.toUniqueEntity).get, None, created.id)
+      baseRole <- roleDao.byUserStatusQuery(user.status) if baseRole.isDefined
+      baseAuth = AuthorityDb(user.id, baseRole.get.id)
+      created <- createQuery(baseAuth)
+    } yield created
   }
 
   def createByCourseQuery(course: CourseDb) = {
     (for {
-      cm <- roleService.byRoleLabelQuery(Role.CourseManager.label)
-      rm <- roleService.byRoleLabelQuery(Role.RightsManager.label)
+      cm <- roleDao.byRoleLabelQuery(Role.CourseManager.label)
+      rm <- roleDao.byRoleLabelQuery(Role.RightsManager.label)
 
       rma = AuthorityDb(course.lecturer, rm.head.id)
       cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
@@ -86,7 +83,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def deleteSingleRightsManagerQuery(lecturer: UUID) = {
     for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
-      rm <- roleService.tableQuery.filter(_.label === Role.RightsManager.label).map(_.id).result.headOption if rm.isDefined
+      rm <- roleDao.tableQuery.filter(_.label === Role.RightsManager.label).map(_.id).result.headOption if rm.isDefined
       deletedRM <- {
         if (hasCourse) {
           DBIO.successful(0)
@@ -130,7 +127,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
         .flatMap(authority => roles.filter(_.id == authority.role))
         .exists(r => minRoles.exists(_.label == r.label))
 
-      roleService.get().map { implicit roles =>
+      roleDao.get().map { implicit roles =>
         isAdmin || hasPermission
       }
   }
@@ -168,4 +165,4 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 }
 
-final class AuthorityDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val roleService: RoleDao) extends AuthorityDao
+final class AuthorityDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val roleDao: RoleDao) extends AuthorityDao

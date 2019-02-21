@@ -14,7 +14,7 @@ import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-final class SecurityActionChain @Inject()(authorizationAction: AuthorizationAction, authorityAction: AuthorityAction, authorityDao: AuthorityDao, userDao: UserDao) extends RequestOps {
+final class SecurityActionChain @Inject()(authorizationAction: AuthorizationAction, authorityAction: AuthorityAction, authorityDao: AuthorityDao, userDao: UserDao) {
 
   private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 

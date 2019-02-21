@@ -275,6 +275,8 @@ object AbstractDaoSpec {
 abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends PostgresDbSpec {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   protected val lastModified: Timestamp = {
     import org.joda.time.DateTime
     import utils.LwmDateTime.DateTimeConverter
@@ -318,19 +320,20 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"update a $name properly" in {
-      async(dao.update(validUpdateOnDbEntity))(_.value shouldBe validUpdateOnDbEntity)
+      async(dao.update(validUpdateOnDbEntity))(_ shouldBe validUpdateOnDbEntity)
     }
 
     s"create many $name" in {
       async(dao.createMany(dbEntities))(_ shouldBe dbEntities)
     }
 
-    /*    s"get many $name" in {
-          // TODO we need something like this, but lwmModel trait is necessary
-        }*/
-
     s"delete a $name by invalidating it" in {
-      async(dao.delete(dbEntity))(_ shouldBe defined)
+      val deleted = for {
+        _ <- dao.delete(dbEntity)
+        e <- dao.getById(dbEntity.id.toString)
+      } yield e
+
+      async(deleted)(_ shouldBe empty)
     }
   }
 }
