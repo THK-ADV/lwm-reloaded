@@ -1,13 +1,15 @@
 package dao
 
+import java.util.UUID
+
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.{RoleDb, RoleTable, TableFilter}
 import javax.inject.Inject
+import models.Role.{EmployeeRole, StudentRole}
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{RoleDb, RoleTable, TableFilter}
-import models.Role.{EmployeeRole, StudentRole}
 
 import scala.concurrent.Future
 
@@ -45,6 +47,23 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     case EmployeeStatus => EmployeeRole
     case LecturerStatus => EmployeeRole
     case StudentStatus => StudentRole
+  }
+
+  def checkAuthority[R <: LWMRole](check: (Option[UUID], List[R]))(authorities: Seq[Authority]): Future[Boolean] = check match { // TODO test and refactor
+    case (_, roles) if roles contains Role.God => Future.successful(false)
+    case (optCourse, minRoles) =>
+      def isAdmin(implicit roles: Seq[Role]) = roles
+        .find(_.label == Role.Admin.label)
+        .exists(admin => authorities.exists(_.role == admin.id))
+
+      def hasPermission(implicit roles: Seq[Role]) = authorities
+        .filter(_.course == optCourse)
+        .flatMap(authority => roles.filter(_.id == authority.role))
+        .exists(r => minRoles.exists(_.label == r.label))
+
+      get().map { implicit roles =>
+        isAdmin || hasPermission
+      }
   }
 }
 

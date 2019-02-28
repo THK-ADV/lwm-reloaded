@@ -1,6 +1,5 @@
 package dao
 
-/*
 import java.util.UUID
 
 import models._
@@ -8,38 +7,50 @@ import org.joda.time.DateTime
 import slick.dbio.Effect.Write
 import slick.driver
 import database._
+import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
+import play.api.inject.guice.GuiceableModule
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
+import play.api.inject.bind
 
 import scala.util.Random.nextInt
 
-class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] with AuthorityDao {
+class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
 
-  import dao.AbstractDaoSpec._
+  import AbstractDaoSpec._
   import utils.LwmDateTime.DateTimeConverter
   import slick.jdbc.PostgresProfile.api._
 
-  private lazy val privateLecturers = (0 until 7).map { i =>
-    UserDb(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
-  }.toList
+  "A AuthorityDaoSpec" should {
 
-  private lazy val privateCourses = (0 until 3).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(i).id, 1)
-  }.toList
+    "create a associated basic authority for a given user" in {
+      val employee = UserDb("id", "last", "first", "mail", EmployeeStatus, None, None)
+      val lecturer = UserDb("id", "last", "first", "mail", LecturerStatus, None, None)
+      val student = UserDb("id", "last", "first", "mail", StudentStatus, None, None)
 
-  private lazy val privateCoursesWithSameLecturer = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(3).id, 1)
-  }.toList
+      runAsync(TableQuery[UserTable].forceInsertAll(List(employee, lecturer, student)))(_ => Unit)
 
-  private lazy val privateCoursesWithSameLecturer2 = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(4).id, 1)
-  }.toList
+      runAsync(dao.createBasicAuthorityFor(employee)) { auth =>
+        auth.user shouldBe employee.id
+        auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
+        auth.course shouldBe empty
+      }
 
-  private lazy val privateCoursesWithSameLecturer3 = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(5).id, 1)
-  }.toList
+      runAsync(dao.createBasicAuthorityFor(lecturer)) { auth =>
+        auth.user shouldBe lecturer.id
+        auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
+        auth.course shouldBe empty
+      }
 
-  "A AuthorityServiceSpec " should {
+      runAsync(dao.createBasicAuthorityFor(student)) { auth =>
+        auth.user shouldBe student.id
+        auth.role shouldBe roles.find(_.label == Role.StudentRole.label).get.id
+        auth.course shouldBe empty
+      }
+    }
 
-    "create Authorities by Course" in {
+/*    "create Authorities by Course" in {
       val course = privateCourses.head
 
       await(db.run{
@@ -216,25 +227,28 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       await(result7) shouldBe true
       await(result8) shouldBe false
       await(result9) shouldBe false
-    }
+    }*/
   }
 
 
-  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == Role.RightsManagerLabel).get.id, Some(randomCourse.id))
+  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == Role.EmployeeRole.label).get.id)
+
   override protected val invalidDuplicateOfDbEntity: AuthorityDb = AuthorityDb(dbEntity.user, dbEntity.role, dbEntity.course)
+
   override protected val invalidUpdateOfDbEntity: AuthorityDb = dbEntity
+
   override protected val validUpdateOnDbEntity: AuthorityDb = dbEntity.copy(lastModified = DateTime.now.plusDays(1).timestamp)
+
   override protected val dbEntities: List[AuthorityDb] = authorities
+
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[UserTable].forceInsertAll(employees ++ privateLecturers),
+    TableQuery[UserTable].forceInsertAll(employees),
     TableQuery[RoleTable].forceInsertAll(roles),
-    TableQuery[CourseTable].forceInsertAll(courses ++ privateCourses ++ privateCoursesWithSameLecturer ++ privateCoursesWithSameLecturer2 ++ privateCoursesWithSameLecturer3)
+    TableQuery[CourseTable].forceInsertAll(courses)
   )
 
-  override protected val lwmEntity: AuthorityLike = dbEntity.toUniqueEntity
-
   override protected val lwmAtom: AuthorityAtom = {
-    val course = for{
+    val course = for {
       courseId <- dbEntity.course
       courseDb <- courses.find(_.id == courseId)
       employee <- employees.find( _.id == courseDb.lecturer)
@@ -250,11 +264,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   override protected def name: String = "authority"
 
-  override protected val roleService: RoleDao = {
-    val sharedDb = db
-    new RoleDao {
-      override protected def db: driver.PostgresProfile.backend.Database = sharedDb
-    }
-  }
+  override protected def dao: AuthorityDao = app.injector.instanceOf(classOf[AuthorityDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

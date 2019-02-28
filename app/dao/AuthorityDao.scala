@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import database._
 
 import scala.concurrent.Future
 
@@ -35,7 +35,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   protected def roleDao: RoleDao
 
-  def createBasicAuthorityFor(user: UserDb) = { // TODO test
+  def createBasicAuthorityFor(user: UserDb) = {
     for {
       baseRole <- roleDao.byUserStatusQuery(user.status) if baseRole.isDefined
       baseAuth = AuthorityDb(user.id, baseRole.get.id)
@@ -43,7 +43,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     } yield created
   }
 
-  def createByCourseQuery(course: CourseDb) = {
+  def createByCourseQuery(course: CourseDb) = { // TODO inspect, test and refactor
     (for {
       cm <- roleDao.byRoleLabelQuery(Role.CourseManager.label)
       rm <- roleDao.byRoleLabelQuery(Role.RightsManager.label)
@@ -58,29 +58,29 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     } yield c).transactionally
   }
 
-  def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = {
+  def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
     DBIO.seq(
       deleteByCourseQuery(oldCourse),
       createByCourseQuery(newCourse)
     ).transactionally
   }
 
-  def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = {
+  def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
     db.run(updateByCourseQuery(oldCourse, newCourse))
   }
 
-  final def deleteByCourseQuery(course: CourseDb) = {
+  final def deleteByCourseQuery(course: CourseDb) = { // TODO inspect, test and refactor
     for {
       deleted <- filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
       deletedAuthority <- deleteSingleRightsManagerQuery(course.lecturer)
     } yield deletedAuthority + deleted
   }
 
-  final def deleteByCourse(course: CourseDb): Future[Int] = {
+  final def deleteByCourse(course: CourseDb): Future[Int] = { // TODO inspect, test and refactor
     db.run(deleteByCourseQuery(course))
   }
 
-  def deleteSingleRightsManagerQuery(lecturer: UUID) = {
+  def deleteSingleRightsManagerQuery(lecturer: UUID) = { // TODO inspect, test and refactor
     for {
       hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
       rm <- roleDao.tableQuery.filter(_.label === Role.RightsManager.label).map(_.id).result.headOption if rm.isDefined
@@ -100,13 +100,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
   }
 
-  def authoritiesFor(userId: UUID): Future[Seq[Authority]] = { // TODO still needed? replaced with def authoritiesFor(systemId: String): Future[Seq[PostgresAuthority]]
-    val authorities = for (q <- tableQuery if q.user === userId) yield q
-
-    db.run(authorities.result.map(_.map(_.toUniqueEntity)))
-  }
-
-  def authoritiesFor(systemId: String): Future[Seq[Authority]] = {
+  def authoritiesFor(systemId: String): Future[Seq[Authority]] = { // TODO test
     val authorities = for {
       q <- tableQuery
       u <- q.userFk if u.systemId === systemId
@@ -115,28 +109,10 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     db.run(authorities.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def checkAuthority[R <: LWMRole](check: (Option[UUID], List[R]))(authorities: Seq[Authority]): Future[Boolean] = check match {
-    case (_, roles) if roles contains Role.God => Future.successful(false)
-    case (optCourse, minRoles) =>
-      def isAdmin(implicit roles: Seq[Role]) = roles
-        .find(_.label == Role.Admin.label)
-        .exists(admin => authorities.exists(_.role == admin.id))
-
-      def hasPermission(implicit roles: Seq[Role]) = authorities
-        .filter(_.course == optCourse)
-        .flatMap(authority => roles.filter(_.id == authority.role))
-        .exists(r => minRoles.exists(_.label == r.label))
-
-      roleDao.get().map { implicit roles =>
-        isAdmin || hasPermission
-      }
-  }
-
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
-    filterBy(List(
-      AuthorityUserFilter(entity.user.toString),
-      AuthorityRoleFilter(entity.role.toString))
-    ).filter(_.course === entity.course)
+    val approximately = List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))
+    val sufficient = entity.course.fold(approximately)(c => approximately :+ AuthorityCourseFilter(c.toString))
+    filterBy(sufficient)
   }
 
   // TODO refactor based on AssignmentPlanService.toAtomic
@@ -165,4 +141,4 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 }
 
-final class AuthorityDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val roleDao: RoleDao) extends AuthorityDao
+final class AuthorityDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val roleDao: RoleDao) extends AuthorityDao
