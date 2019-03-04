@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database._
 import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models._
@@ -52,6 +54,47 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
           t.getMessage.containsSlice(student.id.toString) shouldBe true
         }
       )
+    }
+
+    "delete authorities as long as the are not associated with a basic role" in {
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val nonBasicRoles = roles.filter(r => r.label == Role.CourseAssistant.label || r.label == Role.CourseEmployee.label)
+      val auths = courses.take(2).zip(nonBasicRoles).map {
+        case (course, role) => AuthorityDb(student.id, role.id, Some(course.id))
+      }
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(otherUser, student)),
+        dao.createBasicAuthorityFor(student),
+        dao.tableQuery.forceInsertAll(auths)
+      )
+
+      async(dao.deleteAuthorityIfNotBasic(auths.head.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
+      async(dao.deleteAuthorityIfNotBasic(auths.last.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
+
+      async(dao.get(List(AuthorityUserFilter(student.id.toString)), atomic = false)) { as =>
+        as.map(_.asInstanceOf[Authority]).forall { a =>
+          !auths.map(_.id).contains(a.id) &&
+          a.role == roles.find(_.label == Role.StudentRole.label).get.id
+        } shouldBe true
+      }
+    }
+
+    "never delete an authority which is associated with a basic role" in {
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val basicAuth = AuthorityDb(student.id, roles.find(_.label == Role.StudentRole.label).get.id)
+      val nonBasicAuth = AuthorityDb(student.id, roles.find(_.label == Role.CourseAssistant.label).get.id)
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(otherUser, student)),
+        dao.tableQuery.forceInsertAll(List(basicAuth, nonBasicAuth))
+      )
+
+      async(dao.deleteAuthorityIfNotBasic(nonBasicAuth.id))(_.role shouldBe nonBasicAuth.role)
+      async(dao.deleteAuthorityIfNotBasic(basicAuth.id).failed)(_.getMessage.containsSlice(Role.StudentRole.label) shouldBe true)
+      async(dao.get(List(AuthorityUserFilter(student.id.toString)), atomic = false))(_.size == 1)
     }
 
 /*    "create Authorities by Course" in {

@@ -43,6 +43,26 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     } yield created
   }
 
+  def deleteAuthorityIfNotBasic(id: UUID): Future[AuthorityDb] = {
+    val student = Role.StudentRole.label
+    val employee = Role.EmployeeRole.label
+
+    val query = for {
+      q <- tableQuery if q.id === id
+      r <- q.roleFk if r.label =!= student && r.label =!= employee
+    } yield (q, r)
+
+    val action = for {
+      as <- query.result
+      d <- if (as.nonEmpty)
+        deleteQuery(id)
+      else
+        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely $student or $employee"))
+    } yield d
+
+    db run action
+  }
+
   def createByCourseQuery(course: CourseDb) = { // TODO inspect, test and refactor
     (for {
       cm <- roleDao.byRoleLabelQuery(Role.CourseManager.label)
