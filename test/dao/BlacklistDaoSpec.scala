@@ -11,6 +11,7 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
   import AbstractDaoSpec._
   import Blacklist._
   import utils.LwmDateTime._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   val dao = app.injector.instanceOf(classOf[BlacklistDao])
 
@@ -26,32 +27,30 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
         (chosen.head.date, takeOneOf(chosen.tail).date)
       }
 
-      runAsync(dao.filterBy(List(BlacklistGlobalFilter(true.toString))).result) { blacklists =>
-        blacklists shouldBe dbEntities.filter(_.global)
-        blacklists.forall(b => b.start.localTime.isEqual(startOfDay) && b.end.localTime.isEqual(endOfDay)) shouldBe true
-      }
+      runAsyncSequence(
+        dao.filterBy(List(BlacklistGlobalFilter(true.toString))).result map { blacklists =>
+          blacklists shouldBe dbEntities.filter(_.global)
+          blacklists.forall(b => b.start.localTime.isEqual(startOfDay) && b.end.localTime.isEqual(endOfDay)) shouldBe true
+        },
+        dao.filterBy(List(BlacklistDateFilter(randomBlacklist.date.stringMillis))).result map { blacklists =>
+          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
+        },
+        dao.filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result map { blacklists =>
+          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.start.localTime.isEqual(b.start.localTime)))
+        },
+        dao.filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result map { blacklists =>
+          blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
+        },
+        dao.filterBy(List(BlacklistSinceFilter(since.stringMillis), BlacklistUntilFilter(until.stringMillis))).result map { blacklists =>
+          blacklists.forall { b =>
+            val date = b.date.localDate
+            val lower = since.localDate
+            val upper = until.localDate
 
-      runAsync(dao.filterBy(List(BlacklistDateFilter(randomBlacklist.date.stringMillis))).result) { blacklists =>
-        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.date.localDate.isEqual(b.date.localDate)))
-      }
-
-      runAsync(dao.filterBy(List(BlacklistStartFilter(randomBlacklist.start.stringMillis))).result) { blacklists =>
-        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.start.localTime.isEqual(b.start.localTime)))
-      }
-
-      runAsync(dao.filterBy(List(BlacklistEndFilter(randomBlacklist.end.stringMillis))).result) { blacklists =>
-        blacklists shouldBe dbEntities.filter(b => blacklists.exists(_.end.localTime.isEqual(b.end.localTime)))
-      }
-
-      runAsync(dao.filterBy(List(BlacklistSinceFilter(since.stringMillis), BlacklistUntilFilter(until.stringMillis))).result) { blacklists =>
-        blacklists.forall { b =>
-          val date = b.date.localDate
-          val lower = since.localDate
-          val upper = until.localDate
-
-          (date.isAfter(lower) || date.isEqual(lower)) && (date.isBefore(upper) || date.isEqual(upper))
-        } shouldBe true
-      }
+            (date.isAfter(lower) || date.isEqual(lower)) && (date.isBefore(upper) || date.isEqual(upper))
+          } shouldBe true
+        }
+      )
     }
   }
 

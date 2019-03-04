@@ -18,13 +18,6 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
       val cards = populateReportCardEntries(1, 8, withRescheduledAndRetry = false)(labworks, students)
       val entryTypes = cards.flatMap(_.entryTypes)
 
-      runAsync(DBIO.seq(
-        dao.tableQuery.delete,
-        TableQuery[ReportCardEntryTable].delete,
-        TableQuery[ReportCardEntryTable].forceInsertAll(cards),
-        dao.tableQuery.forceInsertAll(entryTypes)
-      ))( _ => Unit)
-
       val shuffled = shuffle(entryTypes)
       val first = shuffled.head
       val second = shuffled(1)
@@ -32,6 +25,13 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
       val fourth = shuffled(3)
       val fifth = shuffled(4)
       val sixth = shuffled(5)
+
+      runAsyncSequence(
+        dao.tableQuery.delete,
+        TableQuery[ReportCardEntryTable].delete,
+        TableQuery[ReportCardEntryTable].forceInsertAll(cards),
+        dao.tableQuery.forceInsertAll(entryTypes)
+      )
 
       async(dao.updateFields(first.id, Some(true), 0))(_ == true)
       async(dao.updateFields(second.id, Some(true), 10))(_ == true)

@@ -18,6 +18,8 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Guic
 
   protected final def runAsync[R](action: DBIOAction[R, NoStream, Nothing])(assert: R => Unit): Unit = async(db.run(action))(assert)
 
+  protected final def runAsyncSequence[R](args: DBIO[R]*): Unit = async(db.run(DBIO.seq(args: _*).transactionally))(_ => Unit)
+
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
   private val schema = List(
@@ -54,21 +56,13 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Guic
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    runAsync(
-      DBIO.seq(schema.map(_.create): _*)
-        .andThen(dependencies)
-        .transactionally
-    )(_ => Unit)
+    runAsyncSequence(schema.map(_.create) :+ dependencies: _*)
   }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
 
-    runAsync(
-      DBIO.seq(schema.reverseMap(_.drop): _*)
-        .transactionally
-    )(_ => Unit)
-
+    runAsyncSequence(schema.reverseMap(_.drop): _*)
     db.close()
   }
 }

@@ -1,26 +1,19 @@
 package dao
 
-import java.util.UUID
-
-import models._
-import org.joda.time.DateTime
-import slick.dbio.Effect.Write
-import slick.driver
 import database._
 import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
+import models._
+import org.joda.time.DateTime
 import play.api.inject.guice.GuiceableModule
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import play.api.inject.bind
-
-import scala.util.Random.nextInt
+import slick.dbio.Effect.Write
 
 class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   import AbstractDaoSpec._
-  import utils.LwmDateTime.DateTimeConverter
   import slick.jdbc.PostgresProfile.api._
+  import utils.LwmDateTime.DateTimeConverter
 
   "A AuthorityDaoSpec" should {
 
@@ -29,25 +22,36 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val lecturer = UserDb("id", "last", "first", "mail", LecturerStatus, None, None)
       val student = UserDb("id", "last", "first", "mail", StudentStatus, None, None)
 
-      runAsync(TableQuery[UserTable].forceInsertAll(List(employee, lecturer, student)))(_ => Unit)
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(employee, lecturer, student)),
+        dao.createBasicAuthorityFor(employee) map { auth =>
+          auth.user shouldBe employee.id
+          auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
+          auth.course shouldBe empty
+        },
+        dao.createBasicAuthorityFor(lecturer) map { auth =>
+          auth.user shouldBe lecturer.id
+          auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
+          auth.course shouldBe empty
+        },
+        dao.createBasicAuthorityFor(student) map { auth =>
+          auth.user shouldBe student.id
+          auth.role shouldBe roles.find(_.label == Role.StudentRole.label).get.id
+          auth.course shouldBe empty
+        }
+      )
+    }
 
-      runAsync(dao.createBasicAuthorityFor(employee)) { auth =>
-        auth.user shouldBe employee.id
-        auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
-        auth.course shouldBe empty
-      }
+    "not create a associated basic authority for a given user if he already has one" in {
+      val student = UserDb("system id", "last", "first", "mail", StudentStatus, None, None)
 
-      runAsync(dao.createBasicAuthorityFor(lecturer)) { auth =>
-        auth.user shouldBe lecturer.id
-        auth.role shouldBe roles.find(_.label == Role.EmployeeRole.label).get.id
-        auth.course shouldBe empty
-      }
-
-      runAsync(dao.createBasicAuthorityFor(student)) { auth =>
-        auth.user shouldBe student.id
-        auth.role shouldBe roles.find(_.label == Role.StudentRole.label).get.id
-        auth.course shouldBe empty
-      }
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(student),
+        dao.createBasicAuthorityFor(student),
+        dao.createBasicAuthorityFor(student).failed.map { t =>
+          t.getMessage.containsSlice(student.id.toString) shouldBe true
+        }
+      )
     }
 
 /*    "create Authorities by Course" in {
