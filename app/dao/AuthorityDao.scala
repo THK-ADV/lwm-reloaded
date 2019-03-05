@@ -5,9 +5,11 @@ import java.util.UUID
 import database._
 import javax.inject.Inject
 import models._
+import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
+import slick.sql.FixedSqlAction
 
 import scala.concurrent.Future
 
@@ -35,7 +37,43 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   protected def roleDao: RoleDao
 
-  def createBasicAuthorityFor(user: UserDb) = {
+  def studentRole: LWMRole = Role.StudentRole
+
+  def employeeRole: LWMRole = Role.EmployeeRole
+
+  def courseManagerRole: LWMRole = Role.CourseManager
+
+  def rightsManagerRole: LWMRole = Role.RightsManager
+
+  private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    (for (q <- tableQuery if q.user === user && q.role === role && q.isValid) yield q).exists.result // TODO .isValid should never be called on ever query
+  }
+
+  def isCourseManager(user: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    (for {
+      q <- tableQuery if q.user === user && q.course.isDefined && q.isValid // TODO .isValid should never be called on ever query
+      r <- q.roleFk if r.label === courseManagerRole.label
+    } yield q).exists.result
+  }
+
+  def deleteCourseManagerQuery(course: CourseDb): FixedSqlAction[Int, NoStream, Effect.Write] = {
+    tableQuery.filter { q =>
+      q.user === course.lecturer &&
+        q.course.map(_ === course.id).getOrElse(false) &&
+        q.roleFk.filter(_.label === courseManagerRole.label).exists &&
+        q.isValid // TODO .isValid should never be called on ever query
+    }.delete
+  }
+
+  def deleteRightsManagerQuery(user: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
+    tableQuery.filter { q =>
+      q.user === user &&
+        q.roleFk.filter(_.label === rightsManagerRole.label).exists &&
+        q.isValid // TODO .isValid should never be called on ever query
+    }.delete
+  }
+
+  def createBasicAuthorityFor(user: UserDb): DBIOAction[AuthorityDb, NoStream, Effect.Read with Effect.Read with Effect.Write] = {
     for {
       baseRole <- roleDao.byUserStatusQuery(user.status) if baseRole.isDefined
       baseAuth = AuthorityDb(user.id, baseRole.get.id)
@@ -44,74 +82,46 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   def deleteAuthorityIfNotBasic(id: UUID): Future[AuthorityDb] = {
-    val student = Role.StudentRole.label
-    val employee = Role.EmployeeRole.label
-
     val query = for {
-      q <- tableQuery if q.id === id
-      r <- q.roleFk if r.label =!= student && r.label =!= employee
+      q <- tableQuery if q.id === id && q.isValid // TODO .isValid should never be called on ever query
+      r <- q.roleFk if r.label =!= studentRole.label && r.label =!= employeeRole.label
     } yield (q, r)
 
     val action = for {
-      as <- query.result
-      d <- if (as.nonEmpty)
+      nonBasic <- query.exists.result
+      d <- if (nonBasic)
         deleteQuery(id)
       else
-        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely $student or $employee"))
+        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${studentRole.label} or ${employeeRole.label}"))
     } yield d
 
     db run action
   }
 
-  def createByCourseQuery(course: CourseDb) = { // TODO inspect, test and refactor
+  def createAssociatedAuthorities(course: CourseDb) = {
     (for {
-      cm <- roleDao.byRoleLabelQuery(Role.CourseManager.label)
-      rm <- roleDao.byRoleLabelQuery(Role.RightsManager.label)
+      courseManager <- roleDao.byRoleLabelQuery(courseManagerRole.label) if courseManager.isDefined
+      rightsManager <- roleDao.byRoleLabelQuery(rightsManagerRole.label) if rightsManager.isDefined
 
-      rma = AuthorityDb(course.lecturer, rm.head.id)
-      cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
+      courseManagerAuth = AuthorityDb(course.lecturer, courseManager.head.id, Some(course.id))
+      rightsManagerAuth = AuthorityDb(course.lecturer, rightsManager.head.id)
 
-      hasRM <- filterBy(List(AuthorityUserFilter(course.lecturer.toString), AuthorityRoleFilter(rm.head.id.toString))).exists.result
-      authoritiesToCreate = if (hasRM) Seq(cma) else Seq(cma, rma)
-
-      c <- createManyQuery(authoritiesToCreate)
-    } yield c).transactionally
+      isRightsManagerAlready <- hasAuthority(course.lecturer, rightsManager.head.id)
+      toCreate = if (isRightsManagerAlready) Seq(courseManagerAuth) else Seq(courseManagerAuth, rightsManagerAuth)
+      created <- createManyQuery(toCreate)
+    } yield created).transactionally
   }
 
-  def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
-    DBIO.seq(
-      deleteByCourseQuery(oldCourse),
-      createByCourseQuery(newCourse)
-    ).transactionally
-  }
-
-  def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
-    db.run(updateByCourseQuery(oldCourse, newCourse))
-  }
-
-  final def deleteByCourseQuery(course: CourseDb) = { // TODO inspect, test and refactor
+  def deleteAssociatedAuthorities(course: CourseDb) = {
     for {
-      deleted <- filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
-      deletedAuthority <- deleteSingleRightsManagerQuery(course.lecturer)
-    } yield deletedAuthority + deleted
+      deletedCourseManager <- deleteCourseManagerQuery(course)
+      isCourseManager <- isCourseManager(course.lecturer)
+      deletedRightsManager <- if (isCourseManager) DBIO.successful(0) else deleteRightsManagerQuery(course.lecturer)
+    } yield deletedCourseManager + deletedRightsManager
   }
 
-  final def deleteByCourse(course: CourseDb): Future[Int] = { // TODO inspect, test and refactor
-    db.run(deleteByCourseQuery(course))
-  }
-
-  def deleteSingleRightsManagerQuery(lecturer: UUID) = { // TODO inspect, test and refactor
-    for {
-      hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
-      rm <- roleDao.tableQuery.filter(_.label === Role.RightsManager.label).map(_.id).result.headOption if rm.isDefined
-      deletedRM <- {
-        if (hasCourse) {
-          DBIO.successful(0)
-        } else {
-          filterBy(List(AuthorityUserFilter(lecturer.toString), AuthorityRoleFilter(rm.get.toString))).delete
-        }
-      }
-    } yield deletedRM
+  def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
+    (deleteAssociatedAuthorities(oldCourse) zip createAssociatedAuthorities(newCourse)).transactionally
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
@@ -122,7 +132,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def authoritiesFor(systemId: String): Future[Seq[Authority]] = { // TODO test
     val authorities = for {
-      q <- tableQuery
+      q <- tableQuery if q.isValid // TODO .isValid should never be called on ever query
       u <- q.userFk if u.systemId === systemId
     } yield q
 
@@ -135,7 +145,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     filterBy(sufficient)
   }
 
-  // TODO refactor based on AssignmentPlanService.toAtomic
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[AuthorityLike]] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
@@ -144,16 +153,16 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
       r <- a.roleFk
     } yield (a, u, r, c, l)
 
-    db.run(joinedQuery.result.map(_.foldLeft(List.empty[AuthorityAtom]) {
-      case (list, (a, u, r, Some(c), Some(l))) =>
-        val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
-        val atom = AuthorityAtom(u.toUniqueEntity, r.toUniqueEntity, Some(courseAtom), a.id)
+    val action = joinedQuery.result.map(_.groupBy(_._1.id).map {
+      case (id, dependencies) =>
+        val (_, user, role, maybeCourse, maybeLecturer) = dependencies.find(_._1.id == id).get
+        val maybeCourseAtom = maybeCourse zip maybeLecturer map {
+          case (c, l) => CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
+        }
+        AuthorityAtom(user.toUniqueEntity, role.toUniqueEntity, maybeCourseAtom.headOption, id)
+    }.toSeq)
 
-        list.+:(atom)
-      case (list, (a, u, r, None, None)) =>
-        list.+:(AuthorityAtom(u.toUniqueEntity, r.toUniqueEntity, None, a.id))
-      case (list, _) => list // this should never happen
-    }))
+    db.run(action)
   }
 
   override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[AuthorityLike]] = {

@@ -3,12 +3,12 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{CourseDb, CourseTable, TableFilter}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import database.{CourseDb, CourseTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.concurrent.Future
@@ -37,7 +37,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     (for {
       protocol <- Future.fromTry(parseJson(request))
       dbModel = toDbModel(protocol, None)
-      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityDao.createByCourseQuery(dbModel))
+      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityDao.createAssociatedAuthorities(dbModel))
       lwmModel <- if (atomic)
         abstractDao.getById(dbModel.id.toString, atomic)
       else
@@ -51,30 +51,27 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
 
     (for {
       protocol <- Future.fromTry(parseJson(request))
-      dbModel = toDbModel(protocol, Some(uuid))
-      oldCourse <- abstractDao.getById(id, atomic = false) if oldCourse.isDefined
-      oc = oldCourse.get.asInstanceOf[Course]
-      updatedCourse <- abstractDao.update(dbModel)
-      _ <- authorityDao.updateByCourse(CourseDb(oc.label, oc.description, oc.abbreviation, oc.lecturer, oc.semesterIndex), dbModel)
+      newCourse = toDbModel(protocol, Some(uuid))
+      maybeCourse <- abstractDao.getById(id, atomic = false) if maybeCourse.isDefined
+      oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
+      _ <- abstractDao.transaction(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
       lwmModel <- if (atomic)
         abstractDao.getById(uuid.toString, atomic).map(_.get)
       else
-        Future.successful(updatedCourse.toUniqueEntity)
+        Future.successful(newCourse.toUniqueEntity)
     } yield lwmModel).updated
   }
 
   override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
 
   override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
-    import utils.LwmDateTime._
     val uuid = UUID.fromString(id)
 
     (for {
-      courseBeforeDelete <- abstractDao.getById(id) if courseBeforeDelete.isDefined
-      c = courseBeforeDelete.get.asInstanceOf[Course]
-      deletedCourse <- abstractDao.delete(uuid)
-      _ <- authorityDao.deleteByCourse(CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex))
-    } yield deletedCourse.dateTime).deleted
+      course <- abstractDao.getById(id) if course.isDefined
+      courseDb = course.map(_.asInstanceOf[Course]).map(toCourseDb).get
+      _ <- abstractDao.transaction(abstractDao.deleteQuery(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
+    } yield course).deleted
   }
 
   override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
@@ -95,4 +92,6 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+
+  private def toCourseDb(c: Course) = CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, id = c.id)
 }

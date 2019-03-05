@@ -41,8 +41,8 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
       (existing.reportCardEntry == existing.reportCardEntry && existing.entryType == toUpdate.entryType)
   }
 
-  def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Boolean] = db.run(
-    tableQuery.filter(_.id === id).map(f => (f.bool, f.int, f.lastModified)).update((bool, int, DateTime.now.timestamp)).map(_ > 0)
+  def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Int] = db.run(
+    tableQuery.filter(_.id === id).map(f => (f.bool, f.int, f.lastModified)).update((bool, int, DateTime.now.timestamp))
   )
 }
 

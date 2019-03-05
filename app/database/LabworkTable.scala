@@ -25,12 +25,6 @@ class LabworkTable(tag: Tag) extends Table[LabworkDb](tag, "LABWORK") with Uniqu
 
   def degreeFk = foreignKey("DEGREES_fkey", degree, TableQuery[DegreeTable])(_.id)
 
-  def joinCourse = TableQuery[CourseTable].filter(_.id === course)
-
-  def joinDegree = TableQuery[DegreeTable].filter(_.id === degree)
-
-  def joinSemester = TableQuery[SemesterTable].filter(_.id === semester)
-
   override def * = (label, description, semester, course, degree, subscribable, published, lastModified, invalidated, id) <> ((LabworkDb.apply _).tupled, LabworkDb.unapply)
 }
 

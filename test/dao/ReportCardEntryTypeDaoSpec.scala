@@ -25,6 +25,8 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
       val fourth = shuffled(3)
       val fifth = shuffled(4)
       val sixth = shuffled(5)
+      val seven = shuffled(6)
+      val eight = shuffled(7)
 
       runAsyncSequence(
         dao.tableQuery.delete,
@@ -33,14 +35,16 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
         dao.tableQuery.forceInsertAll(entryTypes)
       )
 
-      async(dao.updateFields(first.id, Some(true), 0))(_ == true)
-      async(dao.updateFields(second.id, Some(true), 10))(_ == true)
-      async(dao.updateFields(third.id, Some(false), 0))(_ == true)
-      async(dao.updateFields(fourth.id, Some(false), 5))(_ == true)
-      async(dao.updateFields(fifth.id, None, 0))(_ == true)
-      async(dao.updateFields(sixth.id, None, 3))(_ == true)
+      async(dao.updateFields(first.id, Some(true), 0))(_ == 3)
+      async(dao.updateFields(second.id, Some(true), 10))(_ == 3)
+      async(dao.updateFields(third.id, Some(false), 0))(_ == 3)
+      async(dao.updateFields(fourth.id, Some(false), 5))(_ == 3)
+      async(dao.updateFields(fifth.id, None, 0))(_ == 3)
+      async(dao.updateFields(sixth.id, None, 3))(_ == 3)
+      async(dao.updateFields(seven.id, seven.bool, 5))(_ == 2)
+      async(dao.updateFields(eight.id, eight.bool, eight.int))(_ == 0)
 
-      async(dao.getMany(shuffled.take(6).map(_.id)))(_.foreach { e =>
+      async(dao.getMany(shuffled.take(8).map(_.id)))(_.foreach { e =>
         e.id match {
           case first.id =>
             e.bool shouldBe Some(true)
@@ -60,6 +64,12 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
           case sixth.id =>
             e.bool shouldBe None
             e.int shouldBe 3
+          case seven.id =>
+            e.bool shouldBe seven.bool
+            e.int shouldBe 5
+          case eight.id =>
+            e.bool shouldBe eight.bool
+            e.int shouldBe eight.int
           case _ => fail("no id found")
         }
       })

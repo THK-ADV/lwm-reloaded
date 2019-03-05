@@ -118,8 +118,8 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     val requesterIdFilter = UserIdFilter(requesterId)
 
     val buddy = for {
-      requestee <- tableQuery.filter(requesteeSystemIdFilter.predicate)
-      requester <- tableQuery.filter(requesterIdFilter.predicate)
+      requestee <- filterBy(List(requesteeSystemIdFilter))
+      requester <- filterBy(List(requesterIdFilter))
       sameDegree = requestee.enrollment === requester.enrollment
     } yield (requestee, sameDegree.getOrElse(false))
 

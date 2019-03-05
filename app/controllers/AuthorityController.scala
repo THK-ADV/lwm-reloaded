@@ -3,15 +3,14 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{AuthorityDb, AuthorityTable, TableFilter}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import database.{AuthorityDb, AuthorityTable, TableFilter}
 import security.SecurityActionChain
 
-import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 object AuthorityController {
@@ -35,7 +34,6 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
 
   override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
     import utils.LwmDateTime.{SqlTimestampConverter, writeDateTime}
-
     abstractDao.deleteAuthorityIfNotBasic(UUID.fromString(id)).map(_.lastModified.dateTime).deleted
   }
 

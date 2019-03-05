@@ -51,35 +51,30 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = collectDependencies(query) {
-    case (e, (l, c, d, s, lec), u) =>
-      val labworkAtom = {
-        val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
-        LabworkAtom(l.label, l.description, s.toUniqueEntity, courseAtom, d.toUniqueEntity, l.subscribable, l.published, l.id)
-      }
-
-      ReportCardEvaluationAtom(u.toUniqueEntity, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
-  }
-
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = collectDependencies(query) {
-    case (e, _, _) => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
-  }
-
-  private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])
-    (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, UserDb), UserDb) => ReportCardEvaluationLike) = {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
     val mandatory = for {
       q <- query
       labwork <- q.labworkFk
       student <- q.studentFk
-      course <- labwork.joinCourse
-      degree <- labwork.joinDegree
-      semester <- labwork.joinSemester
-      lecturer <- course.joinLecturer
+      course <- labwork.courseFk
+      degree <- labwork.degreeFk
+      semester <- labwork.semesterFk
+      lecturer <- course.lecturerFk
     } yield (q, labwork, student, course, degree, semester, lecturer)
 
     db.run(mandatory.result.map(_.map {
-      case (e, l, u, cou, deg, sem, lec) => build(e, (l, cou, deg, sem, lec), u)
+      case (e, l, u, c, d, s, lec) =>
+        val labworkAtom = {
+          val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+          LabworkAtom(l.label, l.description, s.toUniqueEntity, courseAtom, d.toUniqueEntity, l.subscribable, l.published, l.id)
+        }
+
+        ReportCardEvaluationAtom(u.toUniqueEntity, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
     }.toSeq))
+  }
+
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
+    db.run(query.result.map(_.map(e => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id))))
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationDb): Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq] = {

@@ -41,12 +41,6 @@ trait ResultOps {
     }.recover {
       case NonFatal(e) => internalServerError(e)
     }
-
-    def updated(idOfEntity: UUID)(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future.map { maybeA =>
-      maybeA.fold(internalServerError(s"can't update $idOfEntity"))(a => update(a))
-    }.recover {
-      case NonFatal(e) => internalServerError(e)
-    }
   }
 
   implicit class CreatedResult[A](val future: Future[A]) {

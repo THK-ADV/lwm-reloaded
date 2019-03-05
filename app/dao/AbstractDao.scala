@@ -155,7 +155,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     db.run(DBIO.sequence(query))
   }
 
-  protected final def deleteExpandableQuery(id: UUID): DBIOAction[Timestamp, NoStream, Effect.Read with Write with Effect.Transactional] = {
+  final def deleteExpandableQuery(id: UUID): DBIOAction[Timestamp, NoStream, Effect.Read with Write with Effect.Transactional] = {
     val query = deleteQuery(id)
 
     databaseExpander.fold(query) { expander =>
@@ -166,7 +166,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     }.map(_.lastModified)
   }
 
-  protected final def deleteQuery(id: UUID, now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+  final def deleteQuery(id: UUID, now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
     val found = tableQuery.filter(_.id === id)
 
     for {
@@ -182,7 +182,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     db.run(DBIO.sequence(query))
   }
 
-  protected final def updateQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
+  final def updateQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
     val found = tableQuery.filter(_.id === entity.id)
 
     found.result.head.flatMap { existing =>
@@ -196,7 +196,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     }
   }
 
-  protected final def updateExpandableQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
+  final def updateExpandableQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
     val query = updateQuery(entity)
 
     databaseExpander.fold(query) { expander =>
