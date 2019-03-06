@@ -275,59 +275,6 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       async(dao.authoritiesFor(lecturer2.systemId))(_ shouldBe auths.filter(_.user == lecturer2.id).map(_.toUniqueEntity))
       async(dao.authoritiesFor(lecturer3.systemId))(_ shouldBe auths.filter(_.user == lecturer3.id).map(_.toUniqueEntity))
     }
-    /*
-
-        "check authorities properly" in {
-          val modules = populateCourses(2)(i => i)
-          val module1 = modules.head.id
-          val module2 = modules.last.id
-
-          val role1 = RoleDb(Role.CourseEmployee.label) // suff
-          val role2 = RoleDb(Role.CourseAssistant.label) // insuff
-          val role3 = RoleDb(Role.Admin.label) // admin
-
-          val roles = List(role1, role2, role3)
-
-          val students = populateStudents(6)
-
-          val noneModule1Role1 = AuthorityDb(students(0).id, role1.id)
-
-          val module1UserRole1 = AuthorityDb(students(2).id, role1.id, Some(module1))
-          val module1UserRole2 = AuthorityDb(students(3).id, role2.id, Some(module1))
-          val module2UserRole2 = AuthorityDb(students(4).id, role2.id, Some(module2))
-          val adminRefRole = AuthorityDb(students(5).id, role3.id)
-
-          run(DBIO.seq(
-            TableQuery[AuthorityTable].delete,
-            TableQuery[RoleTable].delete,
-            TableQuery[DegreeTable].delete,
-            TableQuery[CourseTable].delete,
-            TableQuery[DegreeTable].forceInsertAll(degrees),
-            TableQuery[CourseTable].forceInsertAll(modules),
-            TableQuery[UserTable].forceInsertAll(students)
-          ))
-
-          await(roleService.createMany(roles))
-
-          val result1 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole2.toUniqueEntity))
-          val result2 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole1, module2UserRole2).map(_.toUniqueEntity))
-          val result3 = checkAuthority((None, List(Role.CourseEmployee)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toUniqueEntity))
-          val result4 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(adminRefRole.toUniqueEntity))
-          val result5 = checkAuthority((Some(module2), List(Role.CourseAssistant)))(Seq(module1UserRole1.toUniqueEntity))
-          val result6 = checkAuthority((Some(UUID.randomUUID()), List(Role.CourseEmployee)))(Seq(adminRefRole.toUniqueEntity))
-          val result7 = checkAuthority((Some(module1), List(Role.CourseAssistant, Role.CourseManager)))(Seq(module1UserRole2.toUniqueEntity))
-          val result8 = checkAuthority((Some(module1), List(Role.EmployeeRole, Role.CourseManager)))(Seq(module1UserRole2.toUniqueEntity))
-          val result9 = checkAuthority((Some(module1), List(Role.God)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toUniqueEntity))
-
-          await(result1) shouldBe false
-          await(result2) shouldBe true
-          await(result3) shouldBe true
-          await(result4) shouldBe true
-          await(result5) shouldBe false
-          await(result7) shouldBe true
-          await(result8) shouldBe false
-          await(result9) shouldBe false
-        }*/
   }
 
 

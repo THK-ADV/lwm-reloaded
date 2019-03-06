@@ -69,23 +69,28 @@ class RoleDaoSpec extends PostgresDbSpec {
     }
 
     "check authority validation in different cases" in {
-      val course = UUID.randomUUID
+      val course1 = UUID.randomUUID
+      val course2 = UUID.randomUUID
       val auths = List(
         Authority(UUID.randomUUID, employeeRole.id),
-        Authority(UUID.randomUUID, courseEmployeeRole.id, Some(course))
+        Authority(UUID.randomUUID, courseEmployeeRole.id, Some(course1)),
+        Authority(UUID.randomUUID, courseStudentRole.id, Some(course2))
       )
 
       async(dao.isAuthorized(None, List(Role.EmployeeRole, Role.StudentRole))(auths))(_ shouldBe true)
-      async(dao.isAuthorized(Some(course), List(Role.CourseEmployee))(auths))(_ shouldBe true)
-      async(dao.isAuthorized(Some(course), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe true)
-      async(dao.isAuthorized(Some(course), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe true)
-
+      async(dao.isAuthorized(Some(course1), List(Role.CourseEmployee))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course1), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course1), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course2), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course2), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe false)
       async(dao.isAuthorized(Some(UUID.randomUUID), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe false)
       async(dao.isAuthorized(None, List(Role.StudentRole))(auths))(_ shouldBe false)
       async(dao.isAuthorized(None, List(Role.RightsManager, Role.CourseManager))(auths))(_ shouldBe false)
-
+      async(dao.isAuthorized(None, List(Role.Admin))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(Some(course1), List(Role.Admin))(auths))(_ shouldBe false)
       async(dao.isAuthorized(Some(UUID.randomUUID), List.empty)(auths))(_ shouldBe false)
       async(dao.isAuthorized(None, List.empty)(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.StudentRole))(Seq.empty))(_ shouldBe false)
     }
   }
 
