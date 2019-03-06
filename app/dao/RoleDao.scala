@@ -33,7 +33,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = { // TODO test
+  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
     byRoleLabelQuery(roleOf(status).label)
   }
 
@@ -47,7 +47,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     case StudentStatus => StudentRole
   }
 
-  def checkAuthority[R <: LWMRole](check: (Option[UUID], List[R]))(authorities: Seq[Authority]): Future[Boolean] = check match { // TODO test and refactor
+  def isAuthorized(restricted: Option[UUID], required: List[LWMRole])(authorities: Seq[Authority]): Future[Boolean] = (restricted, required) match {
     case (_, roles) if roles contains Role.God => Future.successful(false)
     case (optCourse, minRoles) =>
       def isAdmin(implicit roles: Seq[Role]) = roles
@@ -59,9 +59,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
         .flatMap(authority => roles.filter(_.id == authority.role))
         .exists(r => minRoles.exists(_.label == r.label))
 
-      get().map { implicit roles => // TODO native query?
-        isAdmin || hasPermission
-      }
+      get().map(implicit roles => isAdmin || hasPermission)
   }
 }
 

@@ -21,12 +21,12 @@ final class SecurityActionChain @Inject()(authorizationAction: AuthorizationActi
     authorizationAction andThen authorityAction andThen allowed(predicate)
   }
 
-  def secured[R <: LWMRole](ps: (Option[UUID], List[R]))(block: Request[AnyContent] => Result) = {
-    securedAction(authorities => roleDao.checkAuthority(ps)(authorities)).apply(block)
+  def secured[R <: LWMRole](restricted: Option[UUID], required: List[R])(block: Request[AnyContent] => Result) = {
+    securedAction(authorities => roleDao.isAuthorized(restricted, required)(authorities)).apply(block)
   }
 
-  def securedAsync[R <: LWMRole](ps: (Option[UUID], List[R]))(block: Request[AnyContent] => Future[Result]) = {
-    securedAction(authorities => roleDao.checkAuthority(ps)(authorities)).async(block)
+  def securedAsync[R <: LWMRole](restricted: Option[UUID], required: List[R])(block: Request[AnyContent] => Future[Result]) = {
+    securedAction(authorities => roleDao.isAuthorized(restricted, required)(authorities)).async(block)
   }
 
   private def allowed(predicate: Seq[Authority] => Future[Boolean]) = new ActionFilter[AuthRequest] {

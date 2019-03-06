@@ -20,12 +20,12 @@ trait SecureControllerContext {
   trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => securedAction.secured((opt, role))(block),
+      restricted = (opt, role) => securedAction.secured(opt, role)(block),
       simple = Action(block)
     )
 
     def asyncAction(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => securedAction.securedAsync((opt, role))(block),
+      restricted = (opt, role) => securedAction.securedAsync(opt, role)(block),
       simple = Action.async(block)
     )
 
