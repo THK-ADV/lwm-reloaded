@@ -2,7 +2,7 @@ package dao.helper
 
 import models.UniqueDbEntity
 
-sealed trait DBResult[A <: UniqueDbEntity] { // TODO use this instead of Option[A] for create or update queries
+sealed trait DBResult[A <: UniqueDbEntity] {
   def entity: A
 }
 

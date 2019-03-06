@@ -49,17 +49,19 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
   def isAuthorized(restricted: Option[UUID], required: List[LWMRole])(authorities: Seq[Authority]): Future[Boolean] = (restricted, required) match {
     case (_, roles) if roles contains Role.God => Future.successful(false)
-    case (optCourse, minRoles) =>
-      def isAdmin(implicit roles: Seq[Role]) = roles
-        .find(_.label == Role.Admin.label)
-        .exists(admin => authorities.exists(_.role == admin.id))
+    case (optCourse, requiredRoles) =>
+      val userRoles = authorities.map(_.role)
+      val restrictedUserRoles = authorities.filter(_.course == optCourse).map(_.role)
+      val requiredRoleLabels = requiredRoles.map(_.label)
 
-      def hasPermission(implicit roles: Seq[Role]) = authorities
-        .filter(_.course == optCourse)
-        .flatMap(authority => roles.filter(_.id == authority.role))
-        .exists(r => minRoles.exists(_.label == r.label))
+      val query = filterValidOnly { r =>
+        def isAdmin: Rep[Boolean] = r.label === Role.Admin.label && r.id.inSet(userRoles)
+        def hasPermission: Rep[Boolean] = r.id.inSet(restrictedUserRoles) && r.label.inSet(requiredRoleLabels)
 
-      get().map(implicit roles => isAdmin || hasPermission)
+        isAdmin || hasPermission
+      }
+
+      db.run(query.exists.result)
   }
 }
 
