@@ -8,7 +8,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import database.{LabworkDb, LabworkTable, TableFilter}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class LabworkIdFilter(value: String) extends TableFilter[LabworkTable] {
   override def predicate = _.id === UUID.fromString(value)
@@ -39,8 +39,6 @@ case class LabworkPublishedFilter(value: String) extends TableFilter[LabworkTabl
 }
 
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
@@ -81,4 +79,4 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
   }
 }
 
-final class LabworkDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends LabworkDao
+final class LabworkDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends LabworkDao

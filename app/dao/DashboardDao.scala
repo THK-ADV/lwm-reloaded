@@ -3,16 +3,18 @@ package dao
 import java.util.UUID
 
 import javax.inject.Inject
-import models.{EmployeeDashboard, AuthorityAtom, Semester, Student, StudentDashboard}
+import models.{AuthorityAtom, EmployeeDashboard, Semester, Student, StudentDashboard}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait DashboardDao {
+trait DashboardDao { // TODO check and refactor
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  protected implicit def executionContext: ExecutionContext
+
+//  import scala.concurrent.ExecutionContext.Implicits.global
 
   def dashboard(systemId: String)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
     semesterDao.get(List(SemesterCurrentFilter), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
@@ -80,5 +82,6 @@ final class DashboardDaoImpl @Inject()(
   val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
   val groupDao: GroupDao,
   val authorityDao: AuthorityDao,
-  val scheduleEntryDao: ScheduleEntryDao
+  val scheduleEntryDao: ScheduleEntryDao,
+  val executionContext: ExecutionContext
 ) extends DashboardDao

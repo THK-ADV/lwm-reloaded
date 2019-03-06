@@ -39,7 +39,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
       dbModel = toDbModel(protocol, None)
       _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityDao.createAssociatedAuthorities(dbModel))
       lwmModel <- if (atomic)
-        abstractDao.getById(dbModel.id.toString, atomic)
+        abstractDao.getSingle(dbModel.id, atomic)
       else
         Future.successful(Some(dbModel.toUniqueEntity))
     } yield lwmModel.get).created
@@ -52,11 +52,11 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     (for {
       protocol <- Future.fromTry(parseJson(request))
       newCourse = toDbModel(protocol, Some(uuid))
-      maybeCourse <- abstractDao.getById(id, atomic = false) if maybeCourse.isDefined
+      maybeCourse <- abstractDao.getSingle(uuid, atomic = false) if maybeCourse.isDefined
       oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
       _ <- abstractDao.transaction(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
       lwmModel <- if (atomic)
-        abstractDao.getById(uuid.toString, atomic).map(_.get)
+        abstractDao.getSingle(uuid, atomic).map(_.get)
       else
         Future.successful(newCourse.toUniqueEntity)
     } yield lwmModel).updated
@@ -68,7 +68,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     val uuid = UUID.fromString(id)
 
     (for {
-      course <- abstractDao.getById(id) if course.isDefined
+      course <- abstractDao.getSingle(uuid) if course.isDefined
       courseDb = course.map(_.asInstanceOf[Course]).map(toCourseDb).get
       _ <- abstractDao.transaction(abstractDao.deleteQuery(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
     } yield course).deleted

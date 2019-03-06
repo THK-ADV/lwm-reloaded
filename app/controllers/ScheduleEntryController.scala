@@ -108,7 +108,7 @@ final class ScheduleEntryController @Inject()(
     assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
     ap = assignmentPlans.head.asInstanceOf[AssignmentPlan]
 
-    lab <- labworkService.getById(labwork) if lab.isDefined
+    lab <- labworkService.getSingle(UUID.fromString(labwork)) if lab.isDefined
     labAtom = lab.get.asInstanceOf[LabworkAtom]
     semester = labAtom.semester
 

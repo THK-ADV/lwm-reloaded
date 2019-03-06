@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -9,19 +10,17 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[AssignmentPlanTable] {
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
 case class AssignmentPlanCourseFilter(value: String) extends TableFilter[AssignmentPlanTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[AssignmentPlanTable]
 
@@ -32,7 +31,6 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
     case (plan, labwork, entries) => AssignmentPlanAtom(labwork.toUniqueEntity, plan.attendance, plan.mandatory, entries, plan.id)
   }
 
-  // TODO this is a better implementation than LabworkApplicationService.joinDependencies. test first and adjust when they succeed
   private def collectDependencies(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq])
     (build: (AssignmentPlanDb, LabworkDb, Set[AssignmentEntry]) => AssignmentPlanLike) = {
     def assignmentEntries(entries: Seq[Option[(AssignmentEntryDb, Option[AssignmentEntryTypeDb])]]) = {
@@ -49,18 +47,18 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
 
     val mandatory = for {
       q <- query
-      l <- q.joinLabwork
+      l <- q.labworkFk
     } yield (q, l)
 
     val innerJoin = assignmentEntryQuery.joinLeft(assignmentEntryTypeQuery).on(_.id === _.assignmentEntry)
     val outerJoin = mandatory.joinLeft(innerJoin).on(_._1.id === _._1.assignmentPlan)
 
-    val action = outerJoin.result.map(_.groupBy(_._1._1).map {
-      case (assignmentPlan, dependencies) =>
-        val ((plan, labwork), _) = dependencies.find(_._1._1.id == assignmentPlan.id).get
+    val action = outerJoin.result.map(_.groupBy(_._1._1.id).map {
+      case (id, dependencies) =>
+        val ((assignmentPlan, labwork), _) = dependencies.find(_._1._1.id == id).get
         val entries = assignmentEntries(dependencies.map(_._2))
 
-        build(plan, labwork, entries)
+        build(assignmentPlan, labwork, entries)
     }.toSeq)
 
     db.run(action)
@@ -128,4 +126,4 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   }
 }
 
-final class AssignmentPlanDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends AssignmentPlanDao
+final class AssignmentPlanDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends AssignmentPlanDao

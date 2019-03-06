@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -10,21 +11,21 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import utils.LwmDateTime._
 
+import scala.concurrent.ExecutionContext
+
 case class ReportCardRetryEntryFilter(value: String) extends TableFilter[ReportCardRetryTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)
 }
 
 case class ReportCardRetryLabworkFilter(value: String) extends TableFilter[ReportCardRetryTable] {
-  override def predicate = _.joinReportCardEntry.map(_.labwork).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.reportCardEntryFk.filter(_.labwork === UUID.fromString(value)).exists
 }
 
 case class ReportCardRetryCourseFilter(value: String) extends TableFilter[ReportCardRetryTable] {
-  override def predicate = _.joinReportCardEntry.map(_.memberOfCourse(value)).exists
+  override def predicate = _.reportCardEntryFk.map(_.memberOfCourse(value)).exists
 }
 
 trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardRetryTable]
   protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
@@ -94,4 +95,4 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   })
 }
 
-final class ReportCardRetryDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardRetryDao
+final class ReportCardRetryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardRetryDao

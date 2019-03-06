@@ -26,9 +26,7 @@ trait LabworkIdTable {
 
   def labworkFk = foreignKey("LABWORKS_fkey", labwork, TableQuery[LabworkTable])(_.id)
 
-  def joinLabwork = TableQuery[LabworkTable].filter(_.id === labwork)
-
-  def memberOfCourse(course: String) = labworkFk.map(_.course).filter(_ === UUID.fromString(course)).exists
+  def memberOfCourse(course: String) = labworkFk.filter(_.course === UUID.fromString(course)).exists
 }
 
 trait RoomIdTable {
@@ -50,8 +48,6 @@ trait ReportCardEntryIdTable {
   def reportCardEntry = column[UUID]("REPORT_CARD_ENTRY")
 
   def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id)
-
-  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
 }
 
 trait LabelTable {
@@ -105,8 +101,6 @@ trait GroupIdTable {
   def group = column[UUID]("GROUP")
 
   def groupFk = foreignKey("GROUP_fkey", group, TableQuery[GroupTable])(_.id)
-
-  def joinGroup = TableQuery[GroupTable].filter(_.id === group)
 }
 
 trait StudentIdTable {

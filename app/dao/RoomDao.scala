@@ -8,7 +8,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import database.{RoomDb, RoomTable, TableFilter}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class RoomIdFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.id === UUID.fromString(value)
@@ -19,8 +19,6 @@ case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
 }
 
 trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
 
@@ -41,4 +39,4 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
   }
 }
 
-final class RoomDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends RoomDao
+final class RoomDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoomDao

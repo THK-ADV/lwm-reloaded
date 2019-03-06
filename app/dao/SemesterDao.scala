@@ -10,7 +10,7 @@ import slick.jdbc.PostgresProfile.api._
 import database.{SemesterDb, SemesterTable, TableFilter}
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -46,7 +46,6 @@ case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
 }
 
 trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
@@ -71,4 +70,4 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   }
 }
 
-final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database) extends SemesterDao
+final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends SemesterDao

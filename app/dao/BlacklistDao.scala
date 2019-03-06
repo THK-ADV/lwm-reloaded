@@ -7,7 +7,7 @@ import slick.jdbc.PostgresProfile.api._
 import database.{BlacklistDb, BlacklistTable, TableFilter}
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class BlacklistGlobalFilter(value: String) extends TableFilter[BlacklistTable] {
   override def predicate = _.global === value.toBoolean
@@ -39,8 +39,6 @@ case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTabl
 
 trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   override val tableQuery = TableQuery[BlacklistTable]
 
   override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[Blacklist]] = toUniqueEntity(query)
@@ -68,4 +66,4 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
   }
 }
 
-final class BlacklistDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends BlacklistDao
+final class BlacklistDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends BlacklistDao

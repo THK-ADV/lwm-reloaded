@@ -11,15 +11,13 @@ import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
 trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
@@ -40,7 +38,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    tableQuery.filter(_.label === label).result.headOption
+    filterValidOnly(_.label === label).take(1).result.headOption
   }
 
   private def roleOf(status: LdapUserStatus): LWMRole = status match {
@@ -61,10 +59,10 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
         .flatMap(authority => roles.filter(_.id == authority.role))
         .exists(r => minRoles.exists(_.label == r.label))
 
-      get().map { implicit roles =>
+      get().map { implicit roles => // TODO native query?
         isAdmin || hasPermission
       }
   }
 }
 
-final class RoleDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends RoleDao
+final class RoleDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoleDao

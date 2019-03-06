@@ -5,7 +5,7 @@ import java.util.UUID
 import auth.UserToken
 import base.LwmFakeApplication
 import controllers.helper.RequestOps
-import dao.helper.Created
+import dao.helper.DBResult.Created
 import dao.{AuthorityDao, UserDao}
 import database.UserDb
 import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}

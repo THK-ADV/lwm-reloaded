@@ -2,15 +2,15 @@ package dao
 
 import java.util.UUID
 
+import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 import javax.inject.Inject
 import models.ReportCardEntryType
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
   override def predicate = _.entryType === value
@@ -19,8 +19,6 @@ case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[Rep
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
 
   import utils.LwmDateTime._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 
@@ -42,8 +40,8 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
   }
 
   def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Int] = db.run(
-    tableQuery.filter(_.id === id).map(f => (f.bool, f.int, f.lastModified)).update((bool, int, DateTime.now.timestamp))
+    filterValidOnly(_.id === id).map(f => (f.bool, f.int, f.lastModified)).update((bool, int, DateTime.now.timestamp))
   )
 }
 
-final class ReportCardEntryTypeDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardEntryTypeDao
+final class ReportCardEntryTypeDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEntryTypeDao

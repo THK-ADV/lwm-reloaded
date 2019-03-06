@@ -8,23 +8,23 @@ import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import scala.concurrent.ExecutionContext
+
 case class ReportCardRescheduledEntryFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)
 }
 
 case class ReportCardRescheduledLabworkFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
-  override def predicate = _.joinReportCardEntry.map(_.labwork).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.reportCardEntryFk.filter(_.labwork === UUID.fromString(value)).exists
 }
 
 case class ReportCardRescheduledCourseFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
-  override def predicate = _.joinReportCardEntry.map(_.memberOfCourse(value)).exists
+  override def predicate = _.reportCardEntryFk.map(_.memberOfCourse(value)).exists
 }
 
 trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] {
 
   import utils.LwmDateTime._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 
@@ -57,4 +57,4 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   }
 }
 
-final class ReportCardRescheduledDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardRescheduledDao
+final class ReportCardRescheduledDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardRescheduledDao

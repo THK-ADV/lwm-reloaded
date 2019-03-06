@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -10,7 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ReportCardEntryStudentFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = _.student === UUID.fromString(value)
@@ -60,9 +61,7 @@ case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter
 }
 
 trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-
+  
   override val tableQuery = TableQuery[ReportCardEntryTable]
 
   protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
@@ -175,4 +174,4 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 }
 
-final class ReportCardEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardEntryDao
+final class ReportCardEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEntryDao

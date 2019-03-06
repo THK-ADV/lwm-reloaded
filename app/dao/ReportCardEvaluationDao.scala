@@ -10,7 +10,7 @@ import slick.lifted.TableQuery
 import database._
 import utils.LwmDateTime.SqlTimestampConverter
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
@@ -22,7 +22,7 @@ case class LabworkFilter(value: String) extends TableFilter[ReportCardEvaluation
 }
 
 case class CourseFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 case class LabelFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
@@ -46,8 +46,6 @@ case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationT
 }
 
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
@@ -87,4 +85,4 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 }
 
-final class ReportCardEvaluationDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardEvaluationDao
+final class ReportCardEvaluationDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationDao

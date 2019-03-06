@@ -6,7 +6,7 @@ import models.{CourseAtom, CourseLike}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -21,8 +21,6 @@ case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTab
 }
 
 trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
@@ -53,5 +51,5 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   }
 }
 
-final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends CourseDao
+final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends CourseDao
 

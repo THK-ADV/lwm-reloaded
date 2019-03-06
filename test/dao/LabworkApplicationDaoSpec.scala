@@ -105,7 +105,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
 
     "create a labworkApplication with friends" in {
       val result = await(create(lapp))
-      val dbLapp = await(getById(lapp.id.toString, atomic = false))
+      val dbLapp = await(getSingle(lapp.id.toString, atomic = false))
       val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result shouldBe lapp
@@ -128,7 +128,7 @@ class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable,
     "delete a labworkApplication with friends" in {
       // TODO ADJUST
       /*val result = await(delete(lapp)).get
-      val dbLapp = await(getById(lapp.id.toString, atomic = false))
+      val dbLapp = await(getSingle(lapp.id.toString, atomic = false))
       val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
 
       result.id shouldBe lapp.id

@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -9,19 +10,17 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTable] {
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
 case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[TimetableTable]
   protected val timetableBlacklistQuery: TableQuery[TimetableBlacklistTable] = TableQuery[TimetableBlacklistTable]
@@ -57,7 +56,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[UserDb]]) => A) = {
     val mandatory = for {
       q <- query
-      l <- q.joinLabwork
+      l <- q.labworkFk
     } yield (q, l)
 
     val innerBlacklist = timetableBlacklistQuery.join(TableQuery[BlacklistTable]).on(_.blacklist === _.id)
@@ -137,4 +136,4 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 }
 
-final class TimetableDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends TimetableDao
+final class TimetableDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends TimetableDao

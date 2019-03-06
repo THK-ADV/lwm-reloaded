@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
@@ -10,7 +11,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[ScheduleEntryTable] {
   override def predicate = _.labwork === UUID.fromString(value)
@@ -49,8 +50,6 @@ case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleE
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
   protected val scheduleEntrySupervisorQuery: TableQuery[ScheduleEntrySupervisorTable] = TableQuery[ScheduleEntrySupervisorTable]
@@ -171,16 +170,10 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
             .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
               .map(_ => t)))))
 
-    scheduleGen(comps)
+    scheduleGen(filterValidOnly(comps))
   }
 
-  def scheduleGenBy(labworkId: String) = {
-    val query = for {
-      t <- tableQuery if t.labwork === UUID.fromString(labworkId)
-    } yield t
-
-    scheduleGen(query)
-  }
+  def scheduleGenBy(labworkId: String) = scheduleGen(filterValidOnly(_.labwork === UUID.fromString(labworkId)))
 
   private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
     collectDependenciesMin(query) {
@@ -214,4 +207,4 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 }
 
-final class ScheduleEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ScheduleEntryDao
+final class ScheduleEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ScheduleEntryDao

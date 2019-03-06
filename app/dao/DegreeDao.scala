@@ -8,7 +8,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import database.{DegreeDb, DegreeTable, TableFilter}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTable] {
   override def predicate = _.abbreviation.toLowerCase === value.toLowerCase
@@ -23,8 +23,6 @@ case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
 }
 
 trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
@@ -41,4 +39,4 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
   override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
 }
 
-final class DegreeDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends DegreeDao
+final class DegreeDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends DegreeDao

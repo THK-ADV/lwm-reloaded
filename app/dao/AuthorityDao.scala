@@ -11,7 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 import slick.sql.FixedSqlAction
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
   override def predicate: AuthorityTable => Rep[Boolean] = _.user === UUID.fromString(value)
@@ -26,12 +26,14 @@ case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable
 }
 
 case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.roleFk.map(_.label).filter(_ === value).exists
+  override def predicate: AuthorityTable => Rep[Boolean] = _.roleFk.filter(_.label === value).exists
+}
+
+case class AuthoritySystemIdFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: AuthorityTable => Rep[Boolean] = _.userFk.filter(_.systemId === value).exists // TODO FK comparision should be done this way
 }
 
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
@@ -46,30 +48,30 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def rightsManagerRole: LWMRole = Role.RightsManager
 
   private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
-    (for (q <- tableQuery if q.user === user && q.role === role && q.isValid) yield q).exists.result // TODO .isValid should never be called on ever query
+    filterValidOnly(a => a.user === user && a.role === role).exists.result
   }
 
   def isCourseManager(user: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
-    (for {
-      q <- tableQuery if q.user === user && q.course.isDefined && q.isValid // TODO .isValid should never be called on ever query
+    val query = for {
+      q <- tableQuery if q.user === user && q.course.isDefined
       r <- q.roleFk if r.label === courseManagerRole.label
-    } yield q).exists.result
+    } yield q
+
+    filterValidOnly(query).exists.result
   }
 
   def deleteCourseManagerQuery(course: CourseDb): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    tableQuery.filter { q =>
-      q.user === course.lecturer &&
-        q.course.map(_ === course.id).getOrElse(false) &&
-        q.roleFk.filter(_.label === courseManagerRole.label).exists &&
-        q.isValid // TODO .isValid should never be called on ever query
+    filterValidOnly { a =>
+      a.user === course.lecturer &&
+        a.course.map(_ === course.id).getOrElse(false) &&
+        a.roleFk.filter(_.label === courseManagerRole.label).exists
     }.delete
   }
 
   def deleteRightsManagerQuery(user: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    tableQuery.filter { q =>
-      q.user === user &&
-        q.roleFk.filter(_.label === rightsManagerRole.label).exists &&
-        q.isValid // TODO .isValid should never be called on ever query
+    filterValidOnly { a =>
+      a.user === user &&
+        a.roleFk.filter(_.label === rightsManagerRole.label).exists
     }.delete
   }
 
@@ -82,10 +84,12 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   def deleteAuthorityIfNotBasic(id: UUID): Future[AuthorityDb] = {
-    val query = for {
-      q <- tableQuery if q.id === id && q.isValid // TODO .isValid should never be called on ever query
-      r <- q.roleFk if r.label =!= studentRole.label && r.label =!= employeeRole.label
-    } yield (q, r)
+    val query = filterValidOnly {
+      for {
+        q <- tableQuery if q.id === id
+        r <- q.roleFk if r.label =!= studentRole.label && r.label =!= employeeRole.label
+      } yield q
+    }
 
     val action = for {
       nonBasic <- query.exists.result
@@ -120,23 +124,18 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     } yield deletedCourseManager + deletedRightsManager
   }
 
-  def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = { // TODO inspect, test and refactor
+  def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = {
     (deleteAssociatedAuthorities(oldCourse) zip createAssociatedAuthorities(newCourse)).transactionally
+  }
+
+  def authoritiesFor(systemId: String): Future[Seq[Authority]] = {
+    db.run(filterBy(List(AuthoritySystemIdFilter(systemId))).result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
     (existing.invalidated != toUpdate.invalidated ||
       existing.lastModified != toUpdate.lastModified) &&
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
-  }
-
-  def authoritiesFor(systemId: String): Future[Seq[Authority]] = { // TODO test
-    val authorities = for {
-      q <- tableQuery if q.isValid // TODO .isValid should never be called on ever query
-      u <- q.userFk if u.systemId === systemId
-    } yield q
-
-    db.run(authorities.result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
@@ -147,8 +146,9 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[AuthorityLike]] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
-      ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
-        joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
+      ((a, c), l) <- query
+        .joinLeft(TableQuery[CourseTable]).on(_.course === _.id)
+        .joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
       u <- a.userFk
       r <- a.roleFk
     } yield (a, u, r, c, l)
@@ -170,4 +170,4 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 }
 
-final class AuthorityDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val roleDao: RoleDao) extends AuthorityDao
+final class AuthorityDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val roleDao: RoleDao, val executionContext: ExecutionContext) extends AuthorityDao

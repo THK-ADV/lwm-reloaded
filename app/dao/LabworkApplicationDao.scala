@@ -3,6 +3,7 @@ package dao
 import java.sql.Timestamp
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -10,7 +11,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class LabworkApplicationApplicantFilter(value: String) extends TableFilter[LabworkApplicationTable] {
   override def predicate = _.applicant === UUID.fromString(value)
@@ -30,17 +31,15 @@ case class LabworkApplicationUntilFilter(value: String) extends TableFilter[Labw
 
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, UserDb, (CourseDb, DegreeDb, SemesterDb, UserDb)), Option[UserDb])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
   protected val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, UserDb, Seq] = {
     for {
-      buddy <- tableQuery if buddy.applicant === applicant && buddy.labwork === labwork
-      friends <- lappFriendQuery if friends.labworkApplication === buddy.id
-      friend <- friends.friendFk
+      buddy <- tableQuery if buddy.applicant === applicant && buddy.labwork === labwork && buddy.isValid
+      friends <- lappFriendQuery if friends.labworkApplication === buddy.id && friends.isValid
+      friend <- friends.friendFk if friend.isValid
     } yield friend
   }
 
@@ -78,7 +77,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     (build: LabworkApplicationDependencies => LabworkApplicationLike): Future[Seq[LabworkApplicationLike]] = {
     val mandatory = for {
       q <- query
-      l <- q.joinLabwork
+      l <- q.labworkFk
       a <- q.joinApplicant
       c <- l.courseFk
       d <- l.degreeFk
@@ -130,4 +129,4 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 }
 
-final class LabworkApplicationDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends LabworkApplicationDao
+final class LabworkApplicationDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends LabworkApplicationDao

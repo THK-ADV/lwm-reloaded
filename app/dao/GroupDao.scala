@@ -2,13 +2,14 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class GroupLabworkTableFilter(value: String) extends TableFilter[GroupTable] {
   override def predicate = _.labwork === UUID.fromString(value)
@@ -23,8 +24,6 @@ case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] 
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
@@ -68,15 +67,15 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[GroupDb]) = for {
+    override def expandCreationOf[E <: Effect](entities: Seq[GroupDb]): DBIOAction[Seq[GroupDb], NoStream, Effect.Write] = for {
       _ <- groupMembershipQuery ++= entities.flatMap(g => g.members.map(s => GroupMembership(g.id, s)))
     } yield entities
 
-    override def expandDeleteOf(entity: GroupDb) = for {
+    override def expandDeleteOf(entity: GroupDb): DBIOAction[GroupDb, NoStream, Effect.Write] = for {
       _ <- groupMembershipQuery.filter(_.group === entity.id).delete
     } yield entity
 
-    override def expandUpdateOf(entity: GroupDb) = for {
+    override def expandUpdateOf(entity: GroupDb): DBIOAction[GroupDb, NoStream, Effect.Write with Effect.Write] = for {
       d <- expandDeleteOf(entity)
       c <- expandCreationOf(Seq(d))
     } yield c.head
@@ -96,4 +95,4 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 }
 
-final class GroupDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends GroupDao
+final class GroupDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends GroupDao

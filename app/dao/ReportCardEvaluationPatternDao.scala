@@ -9,6 +9,8 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 
+import scala.concurrent.{ExecutionContext, Future}
+
 case class EvaluationPatternPropertyFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
   override def predicate = _.property.toLowerCase === value.toLowerCase
 }
@@ -27,13 +29,11 @@ case class EvaluationPatternCourseFilter(value: String) extends TableFilter[Repo
 
 trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   override val tableQuery = TableQuery[ReportCardEvaluationPatternTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Seq[ReportCardEvaluationPattern]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = {
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Seq[ReportCardEvaluationPattern]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
@@ -51,4 +51,4 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   }
 }
 
-final class ReportCardEvaluationPatternDaoImpl @Inject()(val db: PostgresProfile.backend.Database) extends ReportCardEvaluationPatternDao
+final class ReportCardEvaluationPatternDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationPatternDao

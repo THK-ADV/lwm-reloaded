@@ -253,6 +253,28 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         }
       )
     }
+
+    "successfully return all authorities for a user's system id" in {
+      val lecturer1 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer2 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer3 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val auths = List(
+        AuthorityDb(lecturer1.id, employeeRole.id),
+        AuthorityDb(lecturer1.id, rightsManager.id),
+        AuthorityDb(lecturer2.id, employeeRole.id),
+        AuthorityDb(lecturer3.id, employeeRole.id),
+        AuthorityDb(lecturer3.id, rightsManager.id)
+      )
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(lecturer1, lecturer2, lecturer3)),
+        dao.createManyQuery(auths)
+      )
+
+      async(dao.authoritiesFor(lecturer1.systemId))(_ shouldBe auths.filter(_.user == lecturer1.id).map(_.toUniqueEntity))
+      async(dao.authoritiesFor(lecturer2.systemId))(_ shouldBe auths.filter(_.user == lecturer2.id).map(_.toUniqueEntity))
+      async(dao.authoritiesFor(lecturer3.systemId))(_ shouldBe auths.filter(_.user == lecturer3.id).map(_.toUniqueEntity))
+    }
     /*
 
         "check authorities properly" in {

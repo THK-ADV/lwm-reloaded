@@ -83,7 +83,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
       dbModel = toDbModel(protocol, Some(uuid))
       updated <- abstractDao.update(dbModel)
       lwmModel <- if (atomic)
-        abstractDao.getById(uuid.toString, atomic).map(_.get)
+        abstractDao.getSingle(uuid, atomic).map(_.get)
       else
         Future.successful(updated.toUniqueEntity.asInstanceOf[LwmModel])
     } yield lwmModel).updated
@@ -113,7 +113,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
-
-    abstractDao.getById(id, atomic).jsonResult(id)
+    val uuid = UUID.fromString(id)
+    abstractDao.getSingle(uuid, atomic).jsonResult(id)
   }
 }

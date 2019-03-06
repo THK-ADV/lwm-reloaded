@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{Created, Updated}
+import dao.helper.DBResult
 import database._
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import models._
@@ -207,26 +207,26 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val degree = degrees(nextInt(maxDegrees))
 
       val user = UserDb("another student systemId", "another student last", "another student first", "another student email", StudentStatus, Some("another regId"), Some(degree.id))
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe Created(user))
+      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated student last", email = "updated student email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe Updated(updated))
+      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
     }
 
     "create and update employee with dedicated basic authority" in {
       val user = UserDb("another employee systemId", "another employee last", "another employee first", "another employee email", EmployeeStatus, None, None)
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe Created(user))
+      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated employee last", email = "updated employee email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe Updated(updated))
+      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
     }
 
     "create and update lecturer with dedicated basic authority" in {
       val user = UserDb("another lecturer systemId", "another lecturer last", "another lecturer first", "another lecturer email", LecturerStatus, None, None)
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe Created(user))
+      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated lecturer last", email = "updated lecturer email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe Updated(updated))
+      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
     }
 
     "deny buddy requests properly" in {

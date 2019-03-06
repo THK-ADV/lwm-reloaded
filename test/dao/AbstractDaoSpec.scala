@@ -4,6 +4,7 @@ import java.sql.Timestamp
 import java.util.UUID
 
 import base.PostgresDbSpec
+import dao.helper.ModelAlreadyExists
 import database._
 import database.helper.{EmployeeStatus, LdapUserStatus, StudentStatus}
 import models._
@@ -307,8 +308,8 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"get a $name" in {
-      async(dao.getById(dbEntity.id.toString, atomic = false))(_.value shouldBe dbEntity.toUniqueEntity)
-      async(dao.getById(dbEntity.id.toString))(_.value shouldBe lwmAtom)
+      async(dao.getSingle(dbEntity.id, atomic = false))(_.value shouldBe dbEntity.toUniqueEntity)
+      async(dao.getSingle(dbEntity.id))(_.value shouldBe lwmAtom)
     }
 
     s"not create a $name because model already exists" in {
@@ -330,7 +331,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     s"delete a $name by invalidating it" in {
       val deleted = for {
         _ <- dao.delete(dbEntity)
-        e <- dao.getById(dbEntity.id.toString)
+        e <- dao.getSingle(dbEntity.id)
       } yield e
 
       async(deleted)(_ shouldBe empty)

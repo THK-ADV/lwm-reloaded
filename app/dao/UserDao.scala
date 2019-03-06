@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{Created, DBResult, Updated}
+import dao.helper.DBResult
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import database.{TableFilter, UserDb, UserTable}
 import javax.inject.Inject
@@ -12,7 +12,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
   override def predicate: UserTable => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
@@ -40,8 +40,6 @@ case class UserIdFilter(value: String) extends TableFilter[UserTable] {
 
 trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
   def degreeDao: DegreeDao
@@ -50,11 +48,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   def labworkApplicationDao: LabworkApplicationDao
 
-  final def userId(systemId: String) = {
-    (for {
-      q <- tableQuery if q.systemId === systemId
-    } yield q.id).result.headOption
-  }
+  final def userId(systemId: String) = filterValidOnly(_.systemId === systemId).map(_.id).take(1).result.headOption
 
   final def makeUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
     for {
@@ -77,8 +71,8 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     val result = for {
       existing <- userId(user.systemId)
       createOrUpdated <- existing match {
-        case Some(_) => updateQuery(user).map(u => Updated(u))
-        case None => createWithBasicAuthorityQuery(user).map(t => Created(t._1))
+        case Some(_) => updateQuery(user).map(u => DBResult.Updated(u))
+        case None => createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
       }
     } yield createOrUpdated
 
@@ -90,8 +84,8 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
       user <- makeUser(systemId, lastname, firstname, email, status, registrationId, enrollment)
       existing <- userId(user.systemId)
       createOrUpdated <- existing match {
-        case Some(_) => updateQuery(user).map(u => Updated(u))
-        case None => createWithBasicAuthorityQuery(user).map(t => Created(t._1))
+        case Some(_) => updateQuery(user).map(u => DBResult.Updated(u))
+        case None => createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
       }
     } yield createOrUpdated
 
@@ -177,5 +171,6 @@ final class UserDaoImpl @Inject()(
   val db: PostgresProfile.backend.Database,
   val authorityDao: AuthorityDao,
   val degreeDao: DegreeDao,
-  val labworkApplicationDao: LabworkApplicationDao
+  val labworkApplicationDao: LabworkApplicationDao,
+  val executionContext: ExecutionContext
 ) extends UserDao
