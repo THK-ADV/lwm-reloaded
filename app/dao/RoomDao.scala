@@ -2,11 +2,11 @@ package dao
 
 import java.util.UUID
 
+import database.{RoomDb, RoomTable, TableFilter}
 import javax.inject.Inject
 import models.Room
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{RoomDb, RoomTable, TableFilter}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,9 +32,9 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
       existing.label == toUpdate.label
   }
 
-  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = {
+  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

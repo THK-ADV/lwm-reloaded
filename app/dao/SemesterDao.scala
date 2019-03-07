@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
-import javax.inject.{Inject, Singleton}
+import database.{SemesterDb, SemesterTable, TableFilter}
+import javax.inject.Inject
 import models.Semester
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{SemesterDb, SemesterTable, TableFilter}
 import utils.LwmDateTime._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,9 +63,9 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
     ))
   }
 
-  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = {
+  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

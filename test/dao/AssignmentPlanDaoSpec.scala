@@ -1,14 +1,17 @@
 package dao
 
-/*
-import models._
-import slick.jdbc.PostgresProfile.api._
 import database._
+import models._
+import play.api.inject.guice.GuiceableModule
+import slick.jdbc.PostgresProfile.api._
 
 import scala.util.Random.nextInt
 
-final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] with AssignmentPlanDao {
-  import dao.AbstractDaoSpec._
+final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] {
+
+  import AbstractDaoSpec._
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def assignmentPlan(labwork: LabworkDb, number: Int) = {
     val types = AssignmentEntryType.all
@@ -35,45 +38,31 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
       val plans = labworks.map(l => assignmentPlan(l, 5))
       val chosenCourse = courses.head
 
-      run(DBIO.seq( // TODO we should setup db testing suites like this
+      runAsyncSequence(
         TableQuery[CourseTable].forceInsertAll(courses),
-        TableQuery[LabworkTable].forceInsertAll(labworks)
-      ).andThen(
-        tableQuery.forceInsertAll(plans)
-      ).andFinally(
-        filterBy(List(AssignmentPlanCourseFilter(chosenCourse.id.toString))).result.map { dbPlans =>
+        TableQuery[LabworkTable].forceInsertAll(labworks),
+        dao.tableQuery.forceInsertAll(plans),
+        dao.filterBy(List(AssignmentPlanCourseFilter(chosenCourse.id.toString))).result.map { dbPlans =>
           dbPlans.size shouldBe maxLabworksInCourse
           dbPlans.map(_.labwork) shouldBe labworks.filter(_.course == chosenCourse.id).map(_.id)
         }
-      ))
+      )
     }
   }
 
   override protected def name: String = "assignmentPlan"
 
-  override protected val dbEntity: AssignmentPlanDb = {
-    AssignmentPlanDb(labworks.head.id, 5, 5, Set.empty)
+  override protected val dbEntity: AssignmentPlanDb = AssignmentPlanDb(labworks.head.id, 5, 5, Set.empty)
+
+  override protected val invalidDuplicateOfDbEntity: AssignmentPlanDb = AssignmentPlanDb(dbEntity.labwork, 10, 10, dbEntity.entries)
+
+  override protected val invalidUpdateOfDbEntity: AssignmentPlanDb = dbEntity.copy(labworks.last.id)
+
+  override protected val validUpdateOnDbEntity: AssignmentPlanDb = dbEntity.copy(dbEntity.labwork, dbEntity.attendance + 1, dbEntity.mandatory + 1, Set(AssignmentEntry(2, "2", Set(AssignmentEntryType.Bonus))))
+
+  override protected val dbEntities: List[AssignmentPlanDb] = labworks.slice(1, 6).tail.zipWithIndex map {
+    case (labwork, i) => AssignmentPlanDb(labwork.id, i, i, Set.empty)
   }
-
-  override protected val invalidDuplicateOfDbEntity: AssignmentPlanDb = {
-    AssignmentPlanDb(dbEntity.labwork, 10, 10, dbEntity.entries)
-  }
-
-  override protected val invalidUpdateOfDbEntity: AssignmentPlanDb = {
-    dbEntity.copy(labworks.last.id)
-  }
-
-  override protected val validUpdateOnDbEntity: AssignmentPlanDb = {
-    val updatedEntries = Set(
-      AssignmentEntry(2, "2", Set(AssignmentEntryType.Bonus))
-    )
-
-    dbEntity.copy(dbEntity.labwork, dbEntity.attendance + 1, dbEntity.mandatory + 1,  updatedEntries)
-  }
-
-  override protected val dbEntities: List[AssignmentPlanDb] = assignmentPlans
-
-  override protected val lwmEntity: AssignmentPlanLike = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: AssignmentPlanLike = atom(dbEntity)
 
@@ -85,7 +74,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
     TableQuery[LabworkTable].forceInsertAll(labworks)
   )
 
-  override protected val toAdd: List[AssignmentPlanDb] = labworks.drop(maxLabworks - 5).zip(List(5, 8, 3, 9, 4)).map {
+  override protected val toAdd: List[AssignmentPlanDb] = labworks.drop(6).zip(List(5, 8, 3, 9, 4)).map {
     case (labwork, number) => assignmentPlan(labwork, number)
   }
 
@@ -111,11 +100,14 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
   )
 
   override protected def expanderSpecs(dbModel: AssignmentPlanDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
-    assignmentEntryQuery.filter(_.assignmentPlan === dbModel.id).joinLeft(assignmentEntryTypeQuery).on(_.id === _.assignmentEntry).result.map(_.groupBy(_._1).map {
+    dao.assignmentEntryQuery.filter(_.assignmentPlan === dbModel.id).joinLeft(dao.assignmentEntryTypeQuery).on(_.id === _.assignmentEntry).result.map(_.groupBy(_._1).map {
       case (entry, values) =>
-        val types = values.flatMap(_._2).map(t => AssignmentEntryType(t.entryType,  t.bool, t.int))
+        val types = values.flatMap(_._2).map(t => AssignmentEntryType(t.entryType, t.bool, t.int))
         AssignmentEntry(entry.index, entry.label, types.toSet, entry.duration)
     }).map(entries => entries.toSet shouldBe (if (isDefined) dbModel.entries else Set.empty))
   }
+
+  override protected val dao: AssignmentPlanDao = app.injector.instanceOf(classOf[AssignmentPlanDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/

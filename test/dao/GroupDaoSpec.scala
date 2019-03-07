@@ -38,7 +38,7 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
       async(dao.createMany(groups))(_ shouldBe groups)
 
       async(dao.get(List(GroupStudentTableFilter(superPrivateStudent1.id.toString)), atomic = false)) { g =>
-        g.map(_.asInstanceOf[Group]).sortBy(_.label) shouldBe groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity).sortBy(_.label)
+        g.map(_.asInstanceOf[Group]).toList.sortBy(_.label) shouldBe groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity).sortBy(_.label)
       }
 
       async(dao.get(List(GroupStudentTableFilter(superPrivateStudent2.id.toString)), atomic = false)) { g =>

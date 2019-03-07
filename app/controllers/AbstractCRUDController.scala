@@ -39,7 +39,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
-  protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Seq[LwmModel] = dbModels.map(_.toUniqueEntity.asInstanceOf[LwmModel]).toSeq
+  protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Traversable[LwmModel] = dbModels.map(_.toUniqueEntity.asInstanceOf[LwmModel]).toTraversable
 
   final protected def parseJson[R](request: Request[AnyContent])(implicit reads: Reads[R]): Try[R] = unwrap(request).flatMap(js => validate(js)(reads))
 

@@ -8,7 +8,7 @@ import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ReportCardRescheduledEntryFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)
@@ -28,7 +28,7 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 
-  override protected def toAtomic(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]) = {
+  override protected def toAtomic(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Traversable[ReportCardRescheduledLike]] = {
     val mandatory = for {
       q <- query
       r <- q.roomFk
@@ -39,7 +39,7 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]) = {
+  override protected def toUniqueEntity(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Traversable[ReportCardRescheduledLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 

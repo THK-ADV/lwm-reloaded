@@ -2,11 +2,11 @@ package dao
 
 import java.util.UUID
 
+import database.{LabworkDb, LabworkTable, TableFilter}
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import database.{LabworkDb, LabworkTable, TableFilter}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -58,7 +58,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
+  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Traversable[LabworkLike]] = {
     val joinedQuery = for {
       q <- query
       c <- q.courseFk
@@ -74,7 +74,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
+  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Traversable[LabworkLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

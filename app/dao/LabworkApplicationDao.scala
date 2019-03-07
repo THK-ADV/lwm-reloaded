@@ -55,7 +55,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {
+  override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Traversable[LabworkApplicationLike]] = joinDependencies(query) {
     case (labworkApplication, dependencies) =>
       val ((lapp, lab, applicant, (course, degree, semester, lecturer)), _) = dependencies.find(_._1._1.id == labworkApplication.id).get
       val friends = dependencies.flatMap(_._2.map(_.toUniqueEntity))
@@ -67,14 +67,14 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
       LabworkApplicationAtom(labworkAtom, applicant.toUniqueEntity, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {
+  override protected def toUniqueEntity(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Traversable[LabworkApplicationLike]] = joinDependencies(query) {
     case (lapp, dependencies) =>
       val friends = dependencies.flatMap(_._2.map(_.id))
       LabworkApplication(lapp.labwork, lapp.applicant, friends.toSet, lapp.lastModified.dateTime, lapp.id)
   }
 
   private def joinDependencies(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq])
-    (build: LabworkApplicationDependencies => LabworkApplicationLike): Future[Seq[LabworkApplicationLike]] = {
+    (build: LabworkApplicationDependencies => LabworkApplicationLike) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
@@ -91,7 +91,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
       case (((lapp, lab, a, (c, d, s, lec)), _), friend) => ((lapp, lab, a, (c, d, s, lec)), friend)
     }.result.map(_.groupBy(_._1._1).map {
       case (labworkApplication, dependencies) => build(labworkApplication, dependencies)
-    }.toSeq))
+    }))
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {

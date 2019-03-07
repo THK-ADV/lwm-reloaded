@@ -27,7 +27,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   protected val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
   protected val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
 
-  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[TimetableLike]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Traversable[TimetableLike]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) =>
       val timetableEntries = entries.map {
         case ((e, r), s) => TimetableEntryAtom(s.map(_.toUniqueEntity).toSet, r.toUniqueEntity, e.dayIndex, e.start.localTime, e.end.localTime)
@@ -36,7 +36,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
       TimetableAtom(labwork.toUniqueEntity, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toUniqueEntity).toSet, timetable.id)
   }
 
-  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[TimetableLike]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Traversable[TimetableLike]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
@@ -71,7 +71,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
         val entries = dependencies.flatMap(_._3).groupBy(_._1).mapValues(_.flatMap(_._2))
 
         build(timetable, labwork, blacklists, entries)
-    }.toSeq)
+    })
 
     db.run(action)
   }

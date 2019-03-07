@@ -155,11 +155,11 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     filterBy(List(UserSystemIdFilter(entity.systemId)))
   }
 
-  override protected def toUniqueEntity(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {
+  override protected def toUniqueEntity(query: Query[UserTable, UserDb, Seq]): Future[Traversable[User]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  override protected def toAtomic(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {
+  override protected def toAtomic(query: Query[UserTable, UserDb, Seq]): Future[Traversable[User]] = {
     db.run(query.joinLeft(degreeDao.tableQuery).on(_.enrollment === _.id).result.map(_.map {
       case (s, Some(d)) => StudentAtom(s.systemId, s.lastname, s.firstname, s.email, s.registrationId.head, d.toUniqueEntity, s.id)
       case (dbUser, None) => dbUser.toUniqueEntity

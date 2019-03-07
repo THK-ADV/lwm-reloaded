@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 import javax.inject.Inject
 import models.ReportCardEvaluationPattern
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,9 +31,9 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
 
   override val tableQuery = TableQuery[ReportCardEvaluationPatternTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Seq[ReportCardEvaluationPattern]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Traversable[ReportCardEvaluationPattern]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Seq[ReportCardEvaluationPattern]] = {
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Traversable[ReportCardEvaluationPattern]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 

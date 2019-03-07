@@ -2,12 +2,12 @@ package dao
 
 import java.util.UUID
 
+import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import database._
 import utils.LwmDateTime.SqlTimestampConverter
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +49,7 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
     val mandatory = for {
       q <- query
       labwork <- q.labworkFk
@@ -68,10 +68,10 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
         }
 
         ReportCardEvaluationAtom(u.toUniqueEntity, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
-    }.toSeq))
+    }))
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
     db.run(query.result.map(_.map(e => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id))))
   }
 

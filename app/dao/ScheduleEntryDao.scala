@@ -56,7 +56,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   protected val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntryLike]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Traversable[ScheduleEntryLike]] = collectDependencies(query) {
     case ((e, r, lab, c, d, s, lec), g, subs) =>
       val labwork = {
         val course = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
@@ -66,7 +66,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
       ScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toUniqueEntity, subs.map(_._2.toUniqueEntity).toSet, g.toUniqueEntity, e.id)
   }
 
-  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntryLike]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Traversable[ScheduleEntryLike]] = collectDependencies(query) {
     case ((e, _, _, _, _, _, _), _, subs) => ScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
   }
 
@@ -113,14 +113,14 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         val gm = dependencies.flatMap(_._2.flatMap(_._2))
 
         build((se, r, l, c, d, s, lec), g.copy(members = gm.map(_.student).toSet), sups)
-    }.toSeq)
+    })
 
     db.run(action)
   }
 
   private def collectDependenciesMin[A, B](query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
     (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => A)
-    (transform: Seq[A] => Vector[B]): Future[Vector[B]] = {
+    (transform: Traversable[A] => Vector[B]): Future[Vector[B]] = {
     val mandatory = for {
       q <- query
       g <- q.groupFk
@@ -140,7 +140,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         val gm = dependencies.flatMap(_._2.flatMap(_._2))
 
         build(se, g.copy(members = gm.map(_.student).toSet), sups)
-    }.toSeq)
+    })
 
     db.run(action map transform)
   }

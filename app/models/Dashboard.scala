@@ -1,19 +1,21 @@
 package models
 
+import scala.collection.Traversable
+
 sealed trait Dashboard
 
 case class StudentDashboard(
   semester: Semester,
-  labworks: Seq[LabworkLike],
-  applications: Seq[LabworkApplicationLike],
-  groups: Seq[GroupLike],
-  cardEntries: Seq[ReportCardEntryLike],
-  evaluations: Seq[ReportCardEvaluationLike],
-  evaluationPatterns: Seq[ReportCardEvaluationPattern]
+  labworks: Traversable[LabworkLike],
+  applications: Traversable[LabworkApplicationLike],
+  groups: Traversable[GroupLike],
+  cardEntries: Traversable[ReportCardEntryLike],
+  evaluations: Traversable[ReportCardEvaluationLike],
+  evaluationPatterns: Traversable[ReportCardEvaluationPattern]
 ) extends Dashboard
 
 case class EmployeeDashboard(
   semester: Semester,
-  courses: Seq[CourseAtom],
-  scheduleEntries: Seq[ScheduleEntryLike]
+  courses: Traversable[CourseAtom],
+  scheduleEntries: Traversable[ScheduleEntryLike]
 ) extends Dashboard

@@ -27,9 +27,9 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     filterBy(List(RoleLabelFilter(entity.label)))
   }
 
-  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Traversable[Role]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = {
+  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Traversable[Role]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
@@ -56,6 +56,7 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
       val query = filterValidOnly { r =>
         def isAdmin: Rep[Boolean] = r.label === Role.Admin.label && r.id.inSet(userRoles)
+
         def hasPermission: Rep[Boolean] = r.id.inSet(restrictedUserRoles) && r.label.inSet(requiredRoleLabels)
 
         isAdmin || hasPermission

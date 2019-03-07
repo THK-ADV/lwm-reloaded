@@ -35,7 +35,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
+  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
     val joinedQuery = for {
       q <- query
       l <- q.joinLecturer
@@ -43,10 +43,10 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
 
     db.run(joinedQuery.result.map(_.map {
       case (c, l) => CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
-    }.toSeq))
+    }))
   }
 
-  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
+  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

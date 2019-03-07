@@ -11,7 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import utils.LwmDateTime._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ReportCardRetryEntryFilter(value: String) extends TableFilter[ReportCardRetryTable] {
   override def predicate = _.reportCardEntry === UUID.fromString(value)
@@ -30,7 +30,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   override val tableQuery = TableQuery[ReportCardRetryTable]
   protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
 
-  override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]) = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Traversable[ReportCardRetryLike]] = collectDependencies(query) {
     case (entry, room, entryTypes) => ReportCardRetryAtom(
       entry.date.localDate,
       entry.start.localTime,
@@ -42,7 +42,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
     )
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]) = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Traversable[ReportCardRetryLike]] = collectDependencies(query) {
     case (entry, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet).toUniqueEntity
   }
 
@@ -59,7 +59,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
       val entryTypes = dependencies.flatMap(_._2) // rhs
 
         build(retry, room, entryTypes)
-    }.toSeq)
+    })
 
     db.run(action)
   }

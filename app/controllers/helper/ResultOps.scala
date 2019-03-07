@@ -23,7 +23,7 @@ trait ResultOps {
 
   protected def notFound(element: String): Result = NotFound(Json.obj("status" -> "KO", "message" -> s"No such element for $element"))
 
-  implicit class SequenceResult[A](val future: Future[Seq[A]]) {
+  implicit class TraversableResult[A](val future: Future[Traversable[A]]) {
     def jsonResult(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future.map(a => ok(a)).recover {
       case NonFatal(e) => internalServerError(e)
     }
@@ -59,7 +59,7 @@ trait ResultOps {
     }
   }
 
-  implicit class PartialResult[A](val future: Future[(Seq[A], Seq[A], List[Throwable])]) {
+  implicit class PartialResult[A](val future: Future[(Traversable[A], Traversable[A], List[Throwable])]) {
     def jsonResult(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future.map { res =>
       val (attempted, created, throwable) = res
       val status = if (created.isEmpty) "KO" else if (throwable.isEmpty) "OK" else "Partial OK"

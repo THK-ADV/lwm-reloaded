@@ -24,7 +24,6 @@ object AbstractDaoSpec {
   lazy val maxCourses = 10
   lazy val maxRooms = 10
   lazy val maxEmployees = 10
-  lazy val maxAssignmentPlans = 10
   lazy val maxBlacklists = 100
   lazy val maxTimetables = 10
   lazy val maxStudents = 100
@@ -128,15 +127,6 @@ object AbstractDaoSpec {
         (list.:+(current), end)
     }._1
   }
-
-  final def populateAssignmentPlans(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb])(duration: (Int) => Int) = (0 until amount).map { i =>
-    val entries = (0 until numberOfEntries).map { j =>
-      val allTypes = AssignmentEntryType.all
-      AssignmentEntry(j, j.toString, takeSomeOf(allTypes).toSet, duration(j))
-    }
-
-    AssignmentPlanDb(labworks(i).id, i, i, entries.toSet)
-  }.toList
 
   def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[UserDb], groups: List[GroupDb]) = {
     val labwork = takeOneOf(labworks).id
@@ -243,8 +233,6 @@ object AbstractDaoSpec {
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 
   lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString, i)).toList
-
-  lazy val assignmentPlans = populateAssignmentPlans(maxAssignmentPlans, 10)(labworks)(_ => 1)
 
   lazy val blacklists = populateBlacklists(maxBlacklists)
 
