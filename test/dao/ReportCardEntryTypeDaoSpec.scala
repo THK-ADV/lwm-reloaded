@@ -11,6 +11,8 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
 
   import AbstractDaoSpec._
 
+  import scala.util.Random.{nextBoolean, nextInt}
+
   "A ReportCardEntryTypeDaoSpec also" should {
     "update certain fields of entryType properly" in {
       import scala.util.Random.shuffle
@@ -76,21 +78,21 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     }
   }
 
-  private val card = populateReportCardEntries(1, 1, withRescheduledAndRetry = false)(labworks, students).head
-
   private val cards = populateReportCardEntries(5, 5, withRescheduledAndRetry = false)(labworks, students)
 
   override protected def name: String = "reportCardEntryType"
 
-  override protected val dbEntity: ReportCardEntryTypeDb = card.entryTypes.head
+  override protected val dbEntity: ReportCardEntryTypeDb = ReportCardEntryTypeDb(Some(cards.head.id), None, "entryType", Some(true), 10)
 
   override protected val invalidDuplicateOfDbEntity: ReportCardEntryTypeDb = dbEntity
 
   override protected val invalidUpdateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(entryType = "entryType")
 
-  override protected val validUpdateOnDbEntity: ReportCardEntryTypeDb = dbEntity.copy(bool = Some(true), int = 10)
+  override protected val validUpdateOnDbEntity: ReportCardEntryTypeDb = dbEntity.copy(bool = Some(false), int = 3)
 
-  override protected val dbEntities: List[ReportCardEntryTypeDb] = cards.flatMap(_.entryTypes)
+  override protected val dbEntities: List[ReportCardEntryTypeDb] = cards.tail flatMap { card =>
+    0 until 5 map (i => ReportCardEntryTypeDb(Some(card.id), None, i.toString, if (nextBoolean) Some(nextBoolean) else None, nextInt(10)))
+  }
 
   override protected val lwmAtom: ReportCardEntryType = dbEntity.toUniqueEntity
 
@@ -101,7 +103,7 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     TableQuery[CourseTable].forceInsertAll(courses),
     TableQuery[LabworkTable].forceInsertAll(labworks),
     TableQuery[RoomTable].forceInsertAll(rooms),
-    TableQuery[ReportCardEntryTable].forceInsertAll(cards ++ List(card))
+    TableQuery[ReportCardEntryTable].forceInsertAll(cards)
   )
 
   override protected val dao: ReportCardEntryTypeDao = app.injector.instanceOf(classOf[ReportCardEntryTypeDao])

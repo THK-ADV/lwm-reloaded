@@ -15,17 +15,17 @@ trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 
-  final def update(entity: DbModel): Future[DbModel] = db.run(updateExpandableQuery(entity))
+  final def update(entity: DbModel): Future[DbModel] = db.run(updateQuery(entity))
 
   final def updateMany(entities: List[DbModel]): Future[List[DbModel]] = {
-    val query = entities.map(updateExpandableQuery)
+    val query = entities.map(updateQuery)
     db.run(DBIO.sequence(query))
   }
 
   final def updateQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
     val found = tableQuery.filter(_.id === entity.id)
 
-    found.result.head.flatMap { existing =>
+    val singleQuery = found.result.head.flatMap { existing =>
       if (shouldUpdate(existing, entity))
         (for {
           u1 <- found.update(entity)
@@ -34,14 +34,12 @@ trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
       else
         DBIO.failed(ModelAlreadyExists(existing))
     }
-  }
 
-  final def updateExpandableQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
-    val query = updateQuery(entity)
-
-    databaseExpander.fold(query) { expander =>
+    databaseExpander.fold {
+      singleQuery
+    } { expander =>
       (for {
-        q <- query
+        q <- singleQuery
         e <- expander.expandUpdateOf(q)
       } yield e).transactionally
     }

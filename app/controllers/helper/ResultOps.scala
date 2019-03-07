@@ -1,7 +1,5 @@
 package controllers.helper
 
-import java.util.UUID
-
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{BaseController, Result}
 

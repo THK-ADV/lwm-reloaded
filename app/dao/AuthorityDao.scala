@@ -75,7 +75,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     }.delete
   }
 
-  def createBasicAuthorityFor(user: UserDb): DBIOAction[AuthorityDb, NoStream, Effect.Read with Effect.Read with Effect.Write] = {
+  def createBasicAuthorityFor(user: UserDb): DBIOAction[AuthorityDb, NoStream, Effect.Read with Effect.Read with Effect.Write with Effect.Transactional] = {
     for {
       baseRole <- roleDao.byUserStatusQuery(user.status) if baseRole.isDefined
       baseAuth = AuthorityDb(user.id, baseRole.get.id)

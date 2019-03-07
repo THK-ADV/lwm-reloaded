@@ -278,7 +278,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
   }
 
 
-  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == employeeRole.label).get.id)
+  override protected val dbEntity: AuthorityDb = authorities.head
 
   override protected val invalidDuplicateOfDbEntity: AuthorityDb = AuthorityDb(dbEntity.user, dbEntity.role, dbEntity.course)
 
@@ -286,7 +286,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   override protected val validUpdateOnDbEntity: AuthorityDb = dbEntity.copy(lastModified = DateTime.now.plusDays(1).timestamp)
 
-  override protected val dbEntities: List[AuthorityDb] = authorities
+  override protected val dbEntities: List[AuthorityDb] = authorities.tail
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[UserTable].forceInsertAll(employees),

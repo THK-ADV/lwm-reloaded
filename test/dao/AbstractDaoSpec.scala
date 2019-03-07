@@ -203,12 +203,6 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  def populateReportCardEvaluations(amount: Int, numberOfEntries: Int)(students: List[UserDb], labworks: List[LabworkDb]) = (0 until amount).flatMap { _ =>
-    val labwork = takeOneOf(labworks).id
-
-    (0 until numberOfEntries).map(i => ReportCardEvaluationDb(takeOneOf(students).id, labwork, i.toString, nextBoolean, nextInt(10)))
-  }.toList
-
   @scala.annotation.tailrec
   def randomStudent(avoiding: UUID, applicants: List[UserDb]): UUID = {
     if (applicants.forall(_.id == avoiding))
@@ -265,8 +259,6 @@ object AbstractDaoSpec {
   lazy val groupMemberships = groups.flatMap(g => g.members.map(m => GroupMembership(g.id, m)))
 
   lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
-
-  lazy val reportCardEvaluations = populateReportCardEvaluations(maxEvaluations, 4)(students, labworks)
 
   lazy val labworkApplications = populateLabworkApplications(maxLabworkApplications, withFriends = true)(labworks, students)
 

@@ -38,6 +38,11 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       .filterBy(validOnly, sinceLastModified)
       .retrieve(atomic)
 
+  final def getManyQuery(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None) =
+    tableQuery
+      .filter(_.id.inSet(ids))
+      .filterBy(validOnly, sinceLastModified)
+
   final def getSingle(id: UUID, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Option[LwmModel]] =
     tableQuery
       .filter(_.id === id)

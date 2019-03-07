@@ -26,7 +26,8 @@ case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
   override val tableQuery = TableQuery[GroupTable]
-  protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
+
+  val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
   override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
     case (g, l, m) => GroupAtom(g.label, l.toUniqueEntity, m.map(_.toUniqueEntity).toSet, g.id)

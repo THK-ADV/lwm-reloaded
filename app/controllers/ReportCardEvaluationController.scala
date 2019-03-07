@@ -75,12 +75,10 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   }
 
   private def delete(list: List[TableFilter[ReportCardEvaluationTable]]) = {
-    import utils.LwmDateTime._
-
     (for {
       existing <- abstractDao.get(list, atomic = false)
       deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
-    } yield deleted.map(_.dateTime)).deleted
+    } yield deleted).deleted
   }
 
   private def evaluate(labwork: String, persistence: Boolean)(implicit request: Request[AnyContent]) = {

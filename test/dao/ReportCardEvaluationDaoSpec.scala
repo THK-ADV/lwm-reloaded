@@ -11,10 +11,13 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
 
   import AbstractDaoSpec._
   import utils.LwmDateTime.SqlTimestampConverter
+  import scala.util.Random.{nextBoolean, nextInt}
 
   override protected def name = "reportCardEvaluation"
 
-  override protected val dbEntity: ReportCardEvaluationDb = populateReportCardEvaluations(1, 1)(students, labworks).head
+  override protected val dbEntity: ReportCardEvaluationDb = ReportCardEvaluationDb(
+    randomStudent.id, randomLabwork.id, "label", bool = true, 10
+  )
 
   override protected val invalidDuplicateOfDbEntity: ReportCardEvaluationDb = dbEntity.copy(bool = !dbEntity.bool)
 
@@ -22,7 +25,11 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
 
   override protected val validUpdateOnDbEntity: ReportCardEvaluationDb = dbEntity.copy(bool = !dbEntity.bool)
 
-  override protected val dbEntities: List[ReportCardEvaluationDb] = reportCardEvaluations
+  override protected val dbEntities: List[ReportCardEvaluationDb] = labworks take 4 flatMap { l =>
+    students take 10 flatMap { s =>
+      0 until 5 map (i => ReportCardEvaluationDb(s.id, l.id, i.toString, nextBoolean, nextInt(10)))
+    }
+  }
 
   override protected val lwmAtom: ReportCardEvaluationAtom = {
     val labworkAtom = {

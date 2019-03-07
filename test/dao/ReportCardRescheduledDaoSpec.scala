@@ -39,7 +39,10 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
     room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate
   )
 
-  override protected val dbEntities: List[ReportCardRescheduledDb] = (0 until amount).map(i => rescheduled(reportCardEntries(i).id, i)).toList
+  override protected val dbEntities: List[ReportCardRescheduledDb] = {
+    val entries = reportCardEntries.drop(1)
+    (0 until amount).map(i => rescheduled(entries(i).id, i)).toList
+  }
 
   override protected val lwmAtom: ReportCardRescheduledAtom = ReportCardRescheduledAtom(
     dbEntity.date.localDate,

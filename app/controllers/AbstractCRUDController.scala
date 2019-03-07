@@ -94,8 +94,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   }
 
   protected def delete0(uuid: UUID): Future[Result] = {
-    import utils.LwmDateTime.{SqlTimestampConverter, writeDateTime}
-    abstractDao.delete(uuid).map(_.dateTime).deleted
+    abstractDao.delete(uuid).deleted
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>

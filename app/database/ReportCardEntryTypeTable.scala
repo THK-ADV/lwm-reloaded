@@ -18,10 +18,6 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
 
   def reportCardRetry = column[Option[UUID]]("REPORT_CARD_RETRY")
 
-  def joinReportCardEntry = TableQuery[ReportCardEntryTable].filter(_.id === reportCardEntry)
-
-  def joinReportCardRetry = TableQuery[ReportCardRetryTable].filter(_.id === reportCardRetry)
-
   def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id.?)
 
   def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)

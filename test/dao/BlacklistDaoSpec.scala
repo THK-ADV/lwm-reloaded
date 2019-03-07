@@ -17,7 +17,7 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
 
   "A BlacklistService2Spec also" should {
 
-    "filter properly" in {
+    "filter properly" in { // TODO this test fails from time to time
       val (since, until) = {
         val chosen = takeSomeOf(dbEntities.
           filter(b => !b.start.localTime.isEqual(startOfDay))).

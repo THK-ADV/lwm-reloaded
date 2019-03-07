@@ -15,7 +15,7 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected def name: String = "labwork"
 
-  override protected val dbEntity: LabworkDb = LabworkDb("label", "description", semesters.head.id, courses.head.id, degrees.head.id)
+  override protected val dbEntity: LabworkDb = labworks.head
 
   override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb(dbEntity.label, dbEntity.description, dbEntity.semester, dbEntity.course, dbEntity.degree, dbEntity.subscribable, dbEntity.published)
 
@@ -23,7 +23,7 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", dbEntity.semester, dbEntity.course, dbEntity.degree)
 
-  override protected val dbEntities: List[LabworkDb] = labworks
+  override protected val dbEntities: List[LabworkDb] = labworks.tail
 
   override protected val lwmAtom: LabworkAtom = {
     val course = courses.find(_.id == dbEntity.course).get

@@ -16,6 +16,14 @@ case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[Rep
   override def predicate = _.entryType === value
 }
 
+case class ReportCardEntryTypeEntryFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
+  override def predicate = _.reportCardEntryFk.filter(_.id === UUID.fromString(value)).exists
+}
+
+case class ReportCardEntryTypeRetryFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
+  override def predicate = _.reportCardRetryFk.filter(_.id === UUID.fromString(value)).exists
+}
+
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
 
   import utils.LwmDateTime._
@@ -29,7 +37,11 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
   }
 
   override protected def existsQuery(entity: ReportCardEntryTypeDb): Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq] = {
-    filterBy(List(ReportCardEntryTypeLabelFilter(entity.entryType)))
+    val min: List[TableFilter[ReportCardEntryTypeTable]] = List(ReportCardEntryTypeLabelFilter(entity.entryType))
+    val max = entity.reportCardEntry.fold(min)(id => min :+ ReportCardEntryTypeEntryFilter(id.toString))
+    val max2 = entity.reportCardRetry.fold(max)(id => max :+ ReportCardEntryTypeRetryFilter(id.toString))
+
+    filterBy(max2)
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryTypeDb, toUpdate: ReportCardEntryTypeDb): Boolean = {
