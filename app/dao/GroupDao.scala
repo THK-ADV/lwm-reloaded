@@ -6,6 +6,7 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
@@ -68,7 +69,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[GroupDb]): DBIOAction[Seq[GroupDb], NoStream, Effect.Write] = for {
+    override def expandCreationOf[E <: Effect](entities: GroupDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[GroupDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
       _ <- groupMembershipQuery ++= entities.flatMap(g => g.members.map(s => GroupMembership(g.id, s)))
     } yield entities
 
@@ -78,7 +79,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
     override def expandUpdateOf(entity: GroupDb): DBIOAction[GroupDb, NoStream, Effect.Write with Effect.Write] = for {
       d <- expandDeleteOf(entity)
-      c <- expandCreationOf(Seq(d))
+      c <- expandCreationOf(d)
     } yield c.head
   })
 

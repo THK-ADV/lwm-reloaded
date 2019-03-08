@@ -7,6 +7,7 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
@@ -95,7 +96,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {
-    override def expandCreationOf[X <: Effect](entities: Seq[LabworkApplicationDb]) = {
+    override def expandCreationOf[X <: Effect](entities: LabworkApplicationDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[LabworkApplicationDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
       for {
@@ -110,7 +111,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     override def expandUpdateOf(entity: LabworkApplicationDb) = {
       for {
         d <- expandDeleteOf(entity)
-        c <- expandCreationOf(Seq(d))
+        c <- expandCreationOf(d)
       } yield c.head
     }
   })

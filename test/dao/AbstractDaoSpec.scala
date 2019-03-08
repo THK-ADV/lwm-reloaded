@@ -6,7 +6,7 @@ import java.util.UUID
 import base.PostgresDbSpec
 import dao.helper.ModelAlreadyExists
 import database._
-import database.helper.{EmployeeStatus, LdapUserStatus, StudentStatus}
+import database.helper.{EmployeeStatus, StudentStatus}
 import models._
 import models.helper.{BoolBased, IntBased}
 import org.joda.time.{LocalDate, LocalTime}
@@ -17,6 +17,8 @@ import utils.LwmDateTime._
 object AbstractDaoSpec {
 
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
+
+  // NOTE almost each population ignores business rules and can crash on abstractDao.exsistsQueryø
 
   lazy val maxDegrees = 10
   lazy val maxLabworks = 20
@@ -60,7 +62,6 @@ object AbstractDaoSpec {
   def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
     ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
   }.toSet
-
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 
@@ -275,8 +276,6 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   protected def validUpdateOnDbEntity: DbModel // validUpdateOnDbEntity should not expand
   protected def dbEntities: List[DbModel] // dbEntities should not expand
 
-  /*protected def lwmEntity: LwmModel*/
-
   protected def lwmAtom: LwmModel
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Write]
@@ -306,6 +305,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
 
     s"create many $name" in {
       async(dao.createMany(dbEntities))(_ shouldBe dbEntities)
+      async(dao.getMany(dbEntities.map(_.id), atomic = false))(_.map(_.id).toList.sorted shouldEqual dbEntities.map(_.id).sorted)
     }
 
     s"delete a $name by invalidating it" in {

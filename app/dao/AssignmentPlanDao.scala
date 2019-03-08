@@ -6,6 +6,7 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
@@ -81,7 +82,7 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
 
   override protected def databaseExpander: Option[DatabaseExpander[AssignmentPlanDb]] = Some(new DatabaseExpander[AssignmentPlanDb] {
 
-    override def expandCreationOf[X <: Effect](entities: Seq[AssignmentPlanDb]) = {
+    override def expandCreationOf[X <: Effect](entities: AssignmentPlanDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[AssignmentPlanDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val assignmentEntries = entities.flatMap(p => p.entries.map { entry =>
         val entryID = UUID.randomUUID
         val types = entry.types.map(t => AssignmentEntryTypeDb(entryID, t.entryType, t.bool, t.int))
@@ -106,7 +107,7 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
     override def expandUpdateOf(entity: AssignmentPlanDb) = {
       for {
         d <- expandDeleteOf(entity)
-        c <- expandCreationOf(Seq(d))
+        c <- expandCreationOf(d)
       } yield c.head
     }
   })

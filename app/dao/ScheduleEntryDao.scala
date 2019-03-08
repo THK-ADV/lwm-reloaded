@@ -7,6 +7,7 @@ import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import models.{genesis, _}
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
@@ -146,7 +147,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[ScheduleEntryDb]) = for {
+    override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ScheduleEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
       _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
         e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
       }
@@ -158,7 +159,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
 
     override def expandUpdateOf(entity: ScheduleEntryDb) = for {
       d <- expandDeleteOf(entity)
-      c <- expandCreationOf(Seq(d))
+      c <- expandCreationOf(d)
     } yield c.head
   })
 

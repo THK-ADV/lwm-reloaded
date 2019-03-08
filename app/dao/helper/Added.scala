@@ -44,7 +44,7 @@ trait Added[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     } { expander =>
       for {
         _ <- singleQuery
-        e <- expander.expandCreationOf(List(entity))
+        e <- expander.expandCreationOf(entity)
       } yield e.head
     }
 
@@ -52,17 +52,6 @@ trait Added[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
   }
 
   final def createManyQuery(entities: Seq[DbModel]): DBIOAction[Seq[DbModel], NoStream, Effect.Read with Write with Effect.Transactional] = {
-    val singleQuery = DBIO.sequence(entities map createQuery)
-
-    val expandedQuery = databaseExpander.fold {
-      singleQuery
-    } { expander =>
-      for {
-        _ <- singleQuery
-        e <- expander.expandCreationOf(entities)
-      } yield e
-    }
-
-    expandedQuery.transactionally
+    DBIO.sequence(entities map createQuery)
   }
 }

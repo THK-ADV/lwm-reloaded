@@ -31,7 +31,8 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
   }
 
   final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
-    filterBy(tableFilter, validOnly, sinceLastModified).retrieve(atomic)
+    filterBy(tableFilter, validOnly, sinceLastModified)
+      .retrieve(atomic)
 
   final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
     tableQuery

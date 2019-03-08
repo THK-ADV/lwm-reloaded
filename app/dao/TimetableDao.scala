@@ -6,6 +6,7 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
@@ -88,7 +89,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {
-    override def expandCreationOf[X <: Effect](entities: Seq[TimetableDb]) = {
+    override def expandCreationOf[X <: Effect](entities: TimetableDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[TimetableDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val timetableEntries = entities.flatMap { timetable =>
         timetable.entries.map { entry =>
           TimetableEntryDb(timetable.id, entry.room, entry.supervisor, entry.dayIndex, entry.start.sqlTime, entry.end.sqlTime)
@@ -116,7 +117,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
 
     override def expandUpdateOf(entity: TimetableDb) = for {
       d <- expandDeleteOf(entity)
-      c <- expandCreationOf(Seq(d))
+      c <- expandCreationOf(d)
     } yield c.head
   })
 

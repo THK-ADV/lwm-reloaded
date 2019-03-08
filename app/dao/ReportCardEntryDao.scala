@@ -6,6 +6,7 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
+import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
@@ -132,7 +133,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[ReportCardEntryDb]) = { // entry -> types, rescheduled, (retry -> types)
+    override def expandCreationOf[E <: Effect](entities: ReportCardEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ReportCardEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = { // entry -> types, rescheduled, (retry -> types)
       val rts = entities.flatMap(_.retry)
       val rtTypes = rts.flatMap(_.entryTypes)
 
