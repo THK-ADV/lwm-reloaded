@@ -84,7 +84,7 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
     (for {
-      schedules <- scheduleEntryDao.scheduleGenBy(labwork) if schedules.size == 1
+      schedules <- scheduleEntryDao.scheduleGenBy(labwork) if schedules.isDefined
       plans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if plans.size == 1
       plan = plans.head.asInstanceOf[AssignmentPlan]
       reportCardEntries = ReportCardService.reportCards(schedules.head, plan)

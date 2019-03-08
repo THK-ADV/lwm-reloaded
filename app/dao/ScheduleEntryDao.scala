@@ -174,7 +174,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     scheduleGen(filterValidOnly(comps))
   }
 
-  def scheduleGenBy(labworkId: String) = scheduleGen(filterValidOnly(_.labwork === UUID.fromString(labworkId)))
+  def scheduleGenBy(labworkId: String) = scheduleGen(filterValidOnly(_.labwork === UUID.fromString(labworkId)).take(1)).map(_.headOption)
 
   private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
     collectDependenciesMin(query) {

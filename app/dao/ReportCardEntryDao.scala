@@ -30,6 +30,10 @@ case class ReportCardEntryRoomFilter(value: String) extends TableFilter[ReportCa
   override def predicate = _.room === UUID.fromString(value)
 }
 
+case class ReportCardEntryLabelFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.label === value
+}
+
 case class ReportCardEntryDateFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = _.onDate(value)
 }
@@ -62,12 +66,12 @@ case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter
 }
 
 trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
-  
+
   override val tableQuery = TableQuery[ReportCardEntryTable]
 
-  protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
-  protected val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
-  protected val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
+  val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
+  val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
+  val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Traversable[ReportCardEntryLike]] = collectDependencies(query) {
     case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
@@ -122,14 +126,21 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(
-      ReportCardEntryLabworkFilter(entity.labwork.toString),
-      ReportCardEntryStudentFilter(entity.student.toString)
-    ))
+    filterBy(List(IdFilter(entity.id.toString)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    existing.labwork == toUpdate.labwork && existing.student == toUpdate.student
+    (!existing.date.equals(toUpdate.date) ||
+      !existing.date.equals(toUpdate.date) ||
+      !existing.date.equals(toUpdate.date) ||
+      existing.room != toUpdate.room ||
+      existing.entryTypes != toUpdate.entryTypes ||
+      existing.rescheduled != toUpdate.rescheduled ||
+      existing.retry != toUpdate.retry ||
+      existing.labwork != toUpdate.labwork ||
+      existing.student != toUpdate.student ||
+      existing.label != toUpdate.label) &&
+      existing.id == toUpdate.id
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {

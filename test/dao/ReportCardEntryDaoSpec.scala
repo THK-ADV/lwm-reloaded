@@ -1,17 +1,19 @@
 package dao
 
-/*
-import java.util.UUID
+import java.sql.{Date, Time}
 
-import models._
-import services._
-import slick.dbio.Effect.Write
 import database._
+import models._
+import play.api.inject.guice.GuiceableModule
+import slick.dbio.Effect.Write
 
-final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] with ReportCardEntryDao {
-  import utils.LwmDateTime._
-  import dao.AbstractDaoSpec._
+final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
+
+  import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
+  import utils.LwmDateTime._
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
   private lazy val privateStudents = populateStudents(100)
@@ -72,17 +74,15 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
 
   override protected def name: String = "reportCardEntry"
 
-  override protected val dbEntity: ReportCardEntryDb = populateReportCardEntries(1, 8, withRescheduledAndRetry = false)(labworks, students).head.copy(entryTypes = Set.empty) // need to be empty because basic tests don't expand
+  override protected val dbEntity: ReportCardEntryDb = ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity.copy(id = UUID.randomUUID)
+  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb = dbEntity.copy(student = students.find(_.id != dbEntity.student).get.id)
+  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb = dbEntity
 
-  override protected val validUpdateOnDbEntity: ReportCardEntryDb = dbEntity.copy(label = "updated label")
+  override protected val validUpdateOnDbEntity: ReportCardEntryDb = dbEntity.copy(date = Date.valueOf("1990-06-02"), start = Time.valueOf("16:00:00"))
 
   override protected val dbEntities: List[ReportCardEntryDb] = reportCardEntries
-
-  override protected val lwmEntity: ReportCardEntryLike = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: ReportCardEntryLike = reportCardEntryAtom(dbEntity)(labworks, students, rooms)
 
@@ -108,15 +108,18 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
   override protected def atom(dbModel: ReportCardEntryDb): ReportCardEntryLike = reportCardEntryAtom(dbModel)(privateLabs, privateStudents, rooms)
 
   override protected def expanderSpecs(dbModel: ReportCardEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
-    entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
+    dao.entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
       entryTypes.toSet shouldBe (if (isDefined) dbModel.entryTypes else Set.empty)
     },
-    rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
+    dao.rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
       rescheduled.toSet shouldBe (if (isDefined) dbModel.rescheduled.toSet else Set.empty)
     },
-    retryQuery.filter(_.reportCardEntry === dbModel.id).joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry).result.map(_.groupBy(_._1.id)).map(_.foreach {
+    dao.retryQuery.filter(_.reportCardEntry === dbModel.id).joinLeft(dao.entryTypeQuery).on(_.id === _.reportCardRetry).result.map(_.groupBy(_._1.id)).map(_.foreach {
       case (_, values) => values.map(_._1).head.copy(entryTypes = values.flatMap(_._2).toSet) shouldBe dbModel.retry.get
     })
   )
+
+  override protected val dao: ReportCardEntryDao = app.injector.instanceOf(classOf[ReportCardEntryDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/
