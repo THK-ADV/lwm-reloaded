@@ -24,9 +24,10 @@ case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTab
 trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] {
 
   override val tableQuery = TableQuery[TimetableTable]
-  protected val timetableBlacklistQuery: TableQuery[TimetableBlacklistTable] = TableQuery[TimetableBlacklistTable]
-  protected val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
-  protected val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
+
+  val timetableBlacklistQuery: TableQuery[TimetableBlacklistTable] = TableQuery[TimetableBlacklistTable]
+  val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
+  val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
 
   override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Traversable[TimetableLike]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) =>
