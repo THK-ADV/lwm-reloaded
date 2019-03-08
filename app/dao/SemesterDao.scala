@@ -50,9 +50,11 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
+    import utils.LwmDateTime.SqlDateConverter
+
     (existing.abbreviation != toUpdate.abbreviation ||
-      !existing.examStart.equals(toUpdate.examStart)) &&
-      (existing.label == toUpdate.label && existing.start.equals(toUpdate.start) && existing.end.equals(toUpdate.end))
+      existing.examStart.localDate != toUpdate.examStart.localDate) &&
+      (existing.label == toUpdate.label && existing.start.localDate == toUpdate.start.localDate && existing.end.localDate == toUpdate.end.localDate)
   }
 
   override protected def existsQuery(entity: SemesterDb): PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq] = {

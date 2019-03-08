@@ -19,7 +19,12 @@ case class BlacklistDb(label: String, date: Date, start: Time, end: Time, global
 
   override def equals(that: scala.Any) = that match {
     case BlacklistDb(l, d, s, e, g, _, _, i) =>
-      l == label && d.localDate.isEqual(date.localDate) && s.localTime.isEqual(start.localTime) && e.localTime.isEqual(end.localTime) && g == global && i == id
+      l == label &&
+        d.localDate.isEqual(date.localDate) && s
+        .localTime.isEqual(start.localTime) &&
+        e.localTime.isEqual(end.localTime) &&
+        g == global &&
+        i == id
     case _ => false
   }
 }

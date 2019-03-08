@@ -79,10 +79,12 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
     (existing.supervisor != toUpdate.supervisor ||
-      !existing.date.equals(toUpdate.date) ||
-      !existing.start.equals(toUpdate.start) ||
-      !existing.end.equals(toUpdate.end) ||
+      existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
       existing.room != toUpdate.room) &&
       (existing.labwork == toUpdate.labwork && existing.group == toUpdate.group)
   }

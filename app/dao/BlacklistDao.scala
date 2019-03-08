@@ -59,9 +59,9 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
 
   override protected def shouldUpdate(existing: BlacklistDb, toUpdate: BlacklistDb): Boolean = {
     existing.label != toUpdate.label &&
-      (existing.date.localDate.isEqual(toUpdate.date.localDate) &&
-        existing.start.localTime.isEqual(toUpdate.start.localTime) &&
-        existing.end.localTime.isEqual(toUpdate.end.localTime) &&
+      (existing.date.localDate == toUpdate.date.localDate &&
+        existing.start.localTime == toUpdate.start.localTime &&
+        existing.end.localTime == toUpdate.end.localTime &&
         existing.global == toUpdate.global)
   }
 }

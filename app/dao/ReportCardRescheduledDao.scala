@@ -48,9 +48,11 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   }
 
   override protected def shouldUpdate(existing: ReportCardRescheduledDb, toUpdate: ReportCardRescheduledDb): Boolean = {
-    (!existing.date.equals(toUpdate.date) ||
-      !existing.start.equals(toUpdate.start) ||
-      !existing.end.equals(toUpdate.end) ||
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
+    (existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
       existing.reason != toUpdate.reason ||
       existing.room != toUpdate.room) &&
       existing.reportCardEntry == toUpdate.reportCardEntry

@@ -130,9 +130,11 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    (!existing.date.equals(toUpdate.date) ||
-      !existing.date.equals(toUpdate.date) ||
-      !existing.date.equals(toUpdate.date) ||
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
+    (existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
       existing.room != toUpdate.room ||
       existing.entryTypes != toUpdate.entryTypes ||
       existing.rescheduled != toUpdate.rescheduled ||

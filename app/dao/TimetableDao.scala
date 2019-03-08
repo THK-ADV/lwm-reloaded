@@ -82,7 +82,9 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    (!existing.start.equals(toUpdate.start) ||
+    import utils.LwmDateTime.SqlDateConverter
+
+    (existing.start.localDate != toUpdate.start.localDate ||
       existing.entries != toUpdate.entries ||
       existing.localBlacklist != toUpdate.localBlacklist) &&
       existing.labwork == toUpdate.labwork

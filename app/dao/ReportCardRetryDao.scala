@@ -29,7 +29,7 @@ case class ReportCardRetryCourseFilter(value: String) extends TableFilter[Report
 trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
 
   override val tableQuery = TableQuery[ReportCardRetryTable]
-  protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
+  val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
 
   override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Traversable[ReportCardRetryLike]] = collectDependencies(query) {
     case (entry, room, entryTypes) => ReportCardRetryAtom(
@@ -70,9 +70,11 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   }
 
   override protected def shouldUpdate(existing: ReportCardRetryDb, toUpdate: ReportCardRetryDb): Boolean = {
-    (!existing.date.equals(toUpdate.date) ||
-      !existing.start.equals(toUpdate.start) ||
-      !existing.end.equals(toUpdate.end) ||
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
+    (existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
       existing.reason != toUpdate.reason ||
       existing.room != toUpdate.room ||
       existing.entryTypes != toUpdate.entryTypes) &&

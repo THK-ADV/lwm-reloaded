@@ -1,18 +1,20 @@
 package dao
 
-/*
 import java.util.UUID
 
 import dao.AbstractDaoSpec._
+import database._
 import models._
 import org.joda.time.{DateTime, LocalDate, LocalTime}
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.DBIO
-import slick.lifted.TableQuery
-import database._
 import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
 import utils.LwmDateTime._
 
-final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] with ReportCardRetryDao {
+final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
   import scala.util.Random.nextBoolean
 
   private lazy val privateLabworks = labworks.take(4)
@@ -65,7 +67,7 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
   )
 
   override protected def expanderSpecs(dbModel: ReportCardRetryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
-    entryTypeQuery.filter(_.reportCardRetry === dbModel.id).result.map { entryTypes =>
+    dao.entryTypeQuery.filter(_.reportCardRetry === dbModel.id).result.map { entryTypes =>
       entryTypes.toSet shouldBe (if (isDefined) dbModel.entryTypes else Set.empty)
     }
   )
@@ -74,15 +76,13 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
 
   override protected val dbEntity: ReportCardRetryDb = retry(reportCardEntries.head.id, 0).copy(entryTypes = Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardRetryDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: ReportCardRetryDb = dbEntity.copy(reportCardEntry = reportCardEntries.head.id)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardRetryDb = dbEntity.copy(reportCardEntry = reportCardEntries.last.id)
+  override protected val invalidUpdateOfDbEntity: ReportCardRetryDb = invalidDuplicateOfDbEntity
 
   override protected val validUpdateOnDbEntity: ReportCardRetryDb = dbEntity.copy(room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate)
 
   override protected val dbEntities: List[ReportCardRetryDb] = retries(reportCardEntries.tail.take(60))
-
-  override protected val lwmEntity: ReportCardRetry = dbEntity.toUniqueEntity
 
   override protected val lwmAtom: ReportCardRetryAtom = atom(dbEntity)
 
@@ -95,5 +95,8 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
     TableQuery[RoomTable].forceInsertAll(rooms),
     TableQuery[ReportCardEntryTable].forceInsertAll(reportCardEntries)
   )
+
+  override protected val dao: ReportCardRetryDao = app.injector.instanceOf(classOf[ReportCardRetryDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
-*/
