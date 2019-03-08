@@ -15,8 +15,6 @@ class CourseTable(tag: Tag) extends Table[CourseDb](tag, "COURSES") with UniqueT
 
   def lecturerFk = foreignKey("LECTURERS_fkey", lecturer, TableQuery[UserTable])(_.id)
 
-  def joinLecturer = TableQuery[UserTable].filter(_.id === lecturer)
-
   override def * = (label, description, abbreviation, lecturer, semesterIndex, lastModified, invalidated, id) <> ((CourseDb.apply _).tupled, CourseDb.unapply)
 }
 

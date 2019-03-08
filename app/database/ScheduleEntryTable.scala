@@ -31,8 +31,6 @@ class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervis
 
   def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
 
-  def joinSupervisor = TableQuery[UserTable].filter(_.id === supervisor)
-
   override def * = (scheduleEntry, supervisor, id) <> ((ScheduleEntrySupervisor.apply _).tupled, ScheduleEntrySupervisor.unapply)
 }
 

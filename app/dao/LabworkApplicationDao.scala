@@ -79,7 +79,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     val mandatory = for {
       q <- query
       l <- q.labworkFk
-      a <- q.joinApplicant
+      a <- q.applicantFk
       c <- l.courseFk
       d <- l.degreeFk
       s <- l.semesterFk
