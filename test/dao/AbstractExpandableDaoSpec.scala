@@ -22,8 +22,8 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
     val atomic = dbModel.map(atom)
 
     val future = for {
-      a <- dao.getMany(ids, atomic = false)
-      b <- dao.getMany(ids)
+      a <- dao.getMany(ids, atomic = false) if a.nonEmpty == isDefined
+      b <- dao.getMany(ids) if b.nonEmpty == isDefined
     } yield (zipAndCompare(a, nonAtomic), zipAndCompare(b, atomic))
 
     async(future) { b =>

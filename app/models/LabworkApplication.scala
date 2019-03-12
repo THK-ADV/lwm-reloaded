@@ -12,14 +12,35 @@ sealed trait LabworkApplicationLike extends UniqueEntity {
   def lastModified: DateTime
 }
 
-case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: DateTime, id: UUID = UUID.randomUUID) extends LabworkApplicationLike
+case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: DateTime, id: UUID = UUID.randomUUID) extends LabworkApplicationLike {
 
-case class LabworkApplicationAtom(labwork: LabworkAtom, applicant: User, friends: Set[User], lastModified: DateTime, id: UUID) extends LabworkApplicationLike
+  override def equals(obj: Any) = obj match {
+    case LabworkApplication(l, a, f, _, i) =>
+      l == labwork &&
+        a == applicant &&
+        f == friends &&
+        i == id
+    case _ => false
+  }
+}
+
+case class LabworkApplicationAtom(labwork: LabworkAtom, applicant: User, friends: Set[User], lastModified: DateTime, id: UUID) extends LabworkApplicationLike {
+  override def equals(obj: Any) = obj match {
+    case LabworkApplicationAtom(l, a, f, _, i) =>
+      l == labwork &&
+        a == applicant &&
+        f == friends &&
+        i == id
+    case _ => false
+  }
+}
 
 case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: Set[UUID])
 
 object LabworkApplication {
+
   import utils.LwmDateTime.writeDateTime
+
   implicit val writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
 }
 

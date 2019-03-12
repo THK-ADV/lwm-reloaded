@@ -30,17 +30,21 @@ case class LabworkApplicationUntilFilter(value: String) extends TableFilter[Labw
   override def predicate = _.lastModified <= new Timestamp(value.toLong)
 }
 
+/*case class LabworkApplicationFriendFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+  override def predicate = _.friends.filter(_.id === UUID.fromString(value)).exists
+}*/
+
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
   type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, UserDb, (CourseDb, DegreeDb, SemesterDb, UserDb)), Option[UserDb])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
-  protected val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
+  val lappFriendQuery: TableQuery[LabworkApplicationFriendTable] = TableQuery[LabworkApplicationFriendTable]
 
   final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, UserDb, Seq] = {
     for {
-      buddy <- tableQuery if buddy.applicant === applicant && buddy.labwork === labwork && buddy.isValid
-      friends <- lappFriendQuery if friends.labworkApplication === buddy.id && friends.isValid
-      friend <- friends.friendFk if friend.isValid
+      app <- filterValidOnly(l => l.applicant === applicant && l.labwork === labwork)
+      friends <- lappFriendQuery if friends.labworkApplication === app.id
+      friend <- friends.friendFk if friend.isValid && friend != applicant
     } yield friend
   }
 
@@ -127,6 +131,13 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
 
   override def dropSchema: Future[Unit] = {
     db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
+  }
+
+  override def createQuery(entity: LabworkApplicationDb) = { // TODO this is business logic, which normally belongs to a service class
+    if (entity.friends.contains(entity.applicant))
+      DBIO.failed(new Throwable(s"user with id $entity.applicant can't be an applicant and friend for this own application"))
+    else
+      super.createQuery(entity)
   }
 }
 

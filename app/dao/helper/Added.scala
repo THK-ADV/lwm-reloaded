@@ -30,7 +30,7 @@ trait Added[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     db.run(action.transactionally).map(_ => entities)
   }
 
-  final def createQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+  def createQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
     val singleQuery = for {
       existing <- existsQuery(entity).result
       created <- if (existing.nonEmpty)
