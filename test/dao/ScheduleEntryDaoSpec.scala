@@ -118,8 +118,8 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
 
   override protected val toAdd: List[ScheduleEntryDb] = {
     for {
-      labwork <- labworks drop 5
-      group <- groups drop 6
+      labwork <- labworks.slice(5, 9)
+      group <- groups.slice(6, 11)
     } yield {
       import scala.util.Random.nextInt
 

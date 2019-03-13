@@ -12,7 +12,7 @@ import scala.collection.Traversable
 import scala.concurrent.Future
 
 trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
-  self: Core[T, DbModel] =>
+  self: Core with Accessible[T, DbModel] =>
 
   protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Traversable[LwmModel]]
 

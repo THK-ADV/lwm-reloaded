@@ -38,6 +38,7 @@ case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
 
 case object SemesterCurrentFilter extends TableFilter[SemesterTable] {
   override def predicate = t => t.start <= value.sqlDateFromMillis && t.end >= value.sqlDateFromMillis
+
   override def value: String = LocalDate.now.stringMillis
 }
 
@@ -72,4 +73,4 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   }
 }
 
-final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends SemesterDao
+final class SemesterDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends SemesterDao

@@ -39,4 +39,4 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
   override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Traversable[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
 }
 
-final class DegreeDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends DegreeDao
+final class DegreeDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends DegreeDao

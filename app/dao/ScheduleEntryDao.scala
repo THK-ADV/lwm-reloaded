@@ -149,7 +149,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     db.run(action map transform)
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
     override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ScheduleEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
       _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
         e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
@@ -196,19 +196,10 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     }
   }
 
-
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     scheduleEntrySupervisorQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 }
 
-final class ScheduleEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ScheduleEntryDao
+final class ScheduleEntryDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ScheduleEntryDao

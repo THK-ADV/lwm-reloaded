@@ -91,7 +91,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
       existing.labwork == toUpdate.labwork
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {
     override def expandCreationOf[X <: Effect](entities: TimetableDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[TimetableDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val timetableEntries = entities.flatMap { timetable =>
         timetable.entries.map { entry =>
@@ -124,20 +124,12 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     } yield c.head
   })
 
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     timetableBlacklistQuery.schema,
     timetableEntryQuery.schema,
     timetableEntrySupervisorQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 }
 
-final class TimetableDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends TimetableDao
+final class TimetableDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends TimetableDao

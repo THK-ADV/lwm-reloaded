@@ -7,7 +7,6 @@ import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import utils.LwmDateTime._
@@ -81,7 +80,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
       existing.reportCardEntry == toUpdate.reportCardEntry
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[ReportCardRetryDb]] = Some(new DatabaseExpander[ReportCardRetryDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[ReportCardRetryDb]] = Some(new DatabaseExpander[ReportCardRetryDb] {
 
     override def expandCreationOf[E <: Effect](entities: ReportCardRetryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ReportCardRetryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
       _ <- entryTypeQuery ++= entities.flatMap(_.entryTypes)
@@ -98,4 +97,4 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   })
 }
 
-final class ReportCardRetryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardRetryDao
+final class ReportCardRetryDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardRetryDao

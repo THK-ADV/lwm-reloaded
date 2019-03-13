@@ -145,7 +145,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       existing.id == toUpdate.id
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
     override def expandCreationOf[E <: Effect](entities: ReportCardEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ReportCardEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = { // entry -> types, rescheduled, (retry -> types)
       val rts = entities.flatMap(_.retry)
       val rtTypes = rts.flatMap(_.entryTypes)
@@ -172,20 +172,12 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(entity) // entry only
   })
 
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     rescheduledQuery.schema,
     retryQuery.schema,
     entryTypeQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 }
 
-final class ReportCardEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEntryDao
+final class ReportCardEntryDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardEntryDao

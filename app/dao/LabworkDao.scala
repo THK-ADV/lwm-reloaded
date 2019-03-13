@@ -5,7 +5,6 @@ import java.util.UUID
 import database.{LabworkDb, LabworkTable, TableFilter}
 import javax.inject.Inject
 import models._
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -79,4 +78,4 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
   }
 }
 
-final class LabworkDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends LabworkDao
+final class LabworkDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends LabworkDao

@@ -2,17 +2,15 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.Core
 import javax.inject.Inject
 import models.{AuthorityAtom, EmployeeDashboard, Semester, Student, StudentDashboard}
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait DashboardDao { // TODO check and refactor
-
-  protected implicit def executionContext: ExecutionContext
+trait DashboardDao extends Core { // TODO check and refactor
 
   def dashboard(systemId: String)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
     semesterDao.get(List(SemesterCurrentFilter), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
@@ -46,8 +44,6 @@ trait DashboardDao { // TODO check and refactor
     scheduleEntries <- scheduleEntryDao.get(scheduleEntryFilter, atomic, validOnly, sinceLastModified)
   } yield EmployeeDashboard(semester, courses, scheduleEntries)
 
-  protected def db: PostgresProfile.backend.Database
-
   protected def userDao: UserDao
 
   protected def semesterDao: SemesterDao
@@ -70,7 +66,7 @@ trait DashboardDao { // TODO check and refactor
 }
 
 final class DashboardDaoImpl @Inject()(
-  val db: PostgresProfile.backend.Database,
+  val db: Database,
   val userDao: UserDao,
   val semesterDao: SemesterDao,
   val labworkDao: LabworkDao,

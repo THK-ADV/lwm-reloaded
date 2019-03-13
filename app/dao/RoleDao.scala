@@ -8,7 +8,6 @@ import javax.inject.Inject
 import models.Role.{EmployeeRole, StudentRole}
 import models._
 import slick.dbio.Effect
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -66,4 +65,4 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
   }
 }
 
-final class RoleDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoleDao
+final class RoleDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends RoleDao

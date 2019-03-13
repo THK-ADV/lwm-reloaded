@@ -170,4 +170,4 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 }
 
-final class AuthorityDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val roleDao: RoleDao, val executionContext: ExecutionContext) extends AuthorityDao
+final class AuthorityDaoImpl @Inject()(val db: Database, val roleDao: RoleDao, val executionContext: ExecutionContext) extends AuthorityDao

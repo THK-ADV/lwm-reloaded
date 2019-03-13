@@ -99,7 +99,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     }))
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[LabworkApplicationDb]] = Some(new DatabaseExpander[LabworkApplicationDb] {
     override def expandCreationOf[X <: Effect](entities: LabworkApplicationDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[LabworkApplicationDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val friends = entities.flatMap(l => l.friends.map(f => LabworkApplicationFriend(l.id, f)))
 
@@ -120,18 +120,10 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     }
   })
 
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     lappFriendQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 
   override def createQuery(entity: LabworkApplicationDb) = { // TODO this is business logic, which normally belongs to a service class
     if (entity.friends.contains(entity.applicant))
@@ -141,4 +133,4 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 }
 
-final class LabworkApplicationDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends LabworkApplicationDao
+final class LabworkApplicationDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends LabworkApplicationDao

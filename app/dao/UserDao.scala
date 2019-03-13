@@ -8,7 +8,6 @@ import database.{TableFilter, UserDb, UserTable}
 import javax.inject.Inject
 import models._
 import models.helper._
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
@@ -168,7 +167,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 }
 
 final class UserDaoImpl @Inject()(
-  val db: PostgresProfile.backend.Database,
+  val db: Database,
   val authorityDao: AuthorityDao,
   val degreeDao: DegreeDao,
   val labworkApplicationDao: LabworkApplicationDao,

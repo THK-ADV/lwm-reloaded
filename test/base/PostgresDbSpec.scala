@@ -4,15 +4,16 @@ import database._
 import org.scalatest._
 import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
+import slick.jdbc.JdbcBackend.Database
 
 import scala.concurrent.Future
 
 abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication {
+  val db = app.injector.instanceOf(classOf[Database])
 
-  import slick.jdbc.PostgresProfile.api._
-
-  val db = app.injector.instanceOf(classOf[PostgresProfile.backend.Database])
+  val profile: JdbcProfile = _root_.slick.jdbc.PostgresProfile
+  import profile.api._
 
   protected final def async[R](future: Future[R])(assert: R => Unit): Unit = whenReady(future, timeout(Span(5, Seconds)))(assert)
 

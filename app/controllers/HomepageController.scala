@@ -5,7 +5,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 
 @Singleton
-class HomepageController @Inject() (cc: ControllerComponents) extends AbstractController(cc) {
+class HomepageController @Inject()(cc: ControllerComponents) extends AbstractController(cc) {
 
   def index = Action {
     Ok(Json.obj(

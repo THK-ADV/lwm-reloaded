@@ -66,4 +66,4 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
   }
 }
 
-final class BlacklistDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends BlacklistDao
+final class BlacklistDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends BlacklistDao

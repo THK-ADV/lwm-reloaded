@@ -5,7 +5,6 @@ import java.util.UUID
 import database._
 import javax.inject.Inject
 import models._
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import utils.LwmDateTime.SqlTimestampConverter
@@ -85,4 +84,4 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 }
 
-final class ReportCardEvaluationDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationDao
+final class ReportCardEvaluationDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardEvaluationDao
