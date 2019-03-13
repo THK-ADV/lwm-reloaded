@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import javax.inject.{Inject, Singleton}
 import models.Role.CourseManager
-import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb, ReportCardEvaluationPatternProtocol}
+import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
-import services.SessionHandlingService
-import store.{ReportCardEvaluationPatternTable, TableFilter}
-import utils.LwmMimeType
+import play.api.mvc.ControllerComponents
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
+import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
 
@@ -18,21 +19,19 @@ object ReportCardEvaluationPatternController {
   lazy val entryTypeAttribute = "entryType"
 }
 
-
-final class ReportCardEvaluationPatternController(val authorityDao: AuthorityDao,
-                                                  val sessionService: SessionHandlingService,
-                                                  val abstractDao: ReportCardEvaluationPatternDao)
-  extends AbstractCRUDControllerPostgres[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
+@Singleton
+final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
+  extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
 
   override protected implicit val writes: Writes[ReportCardEvaluationPattern] = ReportCardEvaluationPattern.writes
 
   override protected implicit val reads: Reads[ReportCardEvaluationPatternProtocol] = ReportCardEvaluationPatternProtocol.reads
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     create(NonSecureBlock)(request)
   }
 
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
     update(id, NonSecureBlock)(request)
   }
 
@@ -43,14 +42,12 @@ final class ReportCardEvaluationPatternController(val authorityDao: AuthorityDao
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     import controllers.ReportCardEvaluationPatternController.courseAttribute
 
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>
     get(id, NonSecureBlock)(request)
   }
-
-  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardEvaluationPatternV1Json
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, List(CourseManager))
@@ -74,4 +71,6 @@ final class ReportCardEvaluationPatternController(val authorityDao: AuthorityDao
   override protected def toDbModel(protocol: ReportCardEvaluationPatternProtocol, existingId: Option[UUID]): ReportCardEvaluationPatternDb = {
     ReportCardEvaluationPatternDb.from(protocol, existingId)
   }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
 }

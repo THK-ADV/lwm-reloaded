@@ -1,20 +1,23 @@
 package dao
 
+import java.util.UUID
+
+import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.{RoleDb, RoleTable, TableFilter}
+import javax.inject.Inject
+import models.Role.{EmployeeRole, StudentRole}
 import models._
 import slick.dbio.Effect
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store.{RoleTable, TableFilter}
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
   override def predicate = _.label.toLowerCase === value.toLowerCase
 }
 
-trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
@@ -24,23 +27,43 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, PostgresRole] {
     filterBy(List(RoleLabelFilter(entity.label)))
   }
 
-  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Traversable[Role]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[PostgresRole]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[RoleTable, RoleDb, Seq]): Future[Traversable[Role]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
-  def byUserStatus(status: String): Future[Option[RoleDb]] = { // TODO get rid of db.run calls. return queries instead
-    db.run(byUserStatusQuery(status))
-  }
-
-  def byUserStatusQuery(status: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    tableQuery.filter(_.label === Roles.fromUserStatus(status)).result.headOption
+  def byUserStatusQuery(status: LdapUserStatus): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
+    byRoleLabelQuery(roleOf(status).label)
   }
 
   def byRoleLabelQuery(label: String): DBIOAction[Option[RoleDb], NoStream, Effect.Read] = {
-    tableQuery.filter(_.label === label).result.headOption
+    filterValidOnly(_.label === label).take(1).result.headOption
+  }
+
+  private def roleOf(status: LdapUserStatus): LWMRole = status match {
+    case EmployeeStatus => EmployeeRole
+    case LecturerStatus => EmployeeRole
+    case StudentStatus => StudentRole
+  }
+
+  def isAuthorized(restricted: Option[UUID], required: List[LWMRole])(authorities: Seq[Authority]): Future[Boolean] = (restricted, required) match {
+    case (_, roles) if roles contains Role.God => Future.successful(false)
+    case (optCourse, requiredRoles) =>
+      val userRoles = authorities.map(_.role)
+      val restrictedUserRoles = authorities.filter(_.course == optCourse).map(_.role)
+      val requiredRoleLabels = requiredRoles.map(_.label)
+
+      val query = filterValidOnly { r =>
+        def isAdmin: Rep[Boolean] = r.label === Role.Admin.label && r.id.inSet(userRoles)
+
+        def hasPermission: Rep[Boolean] = r.id.inSet(restrictedUserRoles) && r.label.inSet(requiredRoleLabels)
+
+        isAdmin || hasPermission
+      }
+
+      db.run(query.exists.result)
   }
 }
 
-final class RoleDaoImpl(val db: PostgresDriver.backend.Database) extends RoleDao
+final class RoleDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoleDao

@@ -1,30 +1,106 @@
 package dao
 
-import models._
+import java.util.UUID
+
+import base.PostgresDbSpec
+import database.RoleDb
+import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
+import models.{Authority, Role}
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver
-import store.RoleTable
+import slick.jdbc.PostgresProfile.api._
 
-class RoleDaoSpec extends AbstractDaoSpec[RoleTable, RoleDb, PostgresRole] with RoleDao {
+import scala.concurrent.Future
 
-  import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+class RoleDaoSpec extends PostgresDbSpec {
 
-  override protected val dbEntity: RoleDb = RoleDb("testRole")
-  override protected val invalidDuplicateOfDbEntity: RoleDb = dbEntity
-  override protected val invalidUpdateOfDbEntity: RoleDb = dbEntity
-  override protected val validUpdateOnDbEntity: RoleDb = dbEntity
-  override protected val dbEntities: List[RoleDb] = roles
-  override protected val lwmEntity: PostgresRole = dbEntity.toLwmModel
-  override protected val lwmAtom: PostgresRole = lwmEntity
-  var state = 0 // bloody hack to prevent false update failures
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def name: String = "role"
+  val dao = app.injector.instanceOf(classOf[RoleDao])
+  val roles = Role.all.map(r => RoleDb(r.label))
 
-  override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = {
-    state += 1
-    state != 1 // abstractDaoSpec calls shouldUpdate two times
+  def studentRole = roles.find(_.label == Role.StudentRole.label).get
+
+  def employeeRole = roles.find(_.label == Role.EmployeeRole.label).get
+
+  def adminRole = roles.find(_.label == Role.Admin.label).get
+
+  def courseEmployeeRole = roles.find(_.label == Role.CourseEmployee.label).get
+
+  def courseStudentRole = roles.find(_.label == Role.CourseAssistant.label).get
+
+  "A RoleDaoSpec" should {
+
+    "return role which matches user status" in {
+      runAsyncSequence(
+        dao.byUserStatusQuery(StudentStatus) map (_.value shouldBe studentRole),
+        dao.byUserStatusQuery(EmployeeStatus) map (_.value shouldBe employeeRole),
+        dao.byUserStatusQuery(LecturerStatus) map (_.value shouldBe employeeRole)
+      )
+    }
+
+    "return role which matches role label" in {
+      runAsyncSequence(
+        dao.byRoleLabelQuery(Role.StudentRole.label) map (_.value shouldBe studentRole),
+        dao.byRoleLabelQuery(Role.EmployeeRole.label) map (_.value shouldBe employeeRole),
+        dao.byRoleLabelQuery(Role.Admin.label) map (_.value shouldBe adminRole)
+      )
+    }
+
+    "not return role when not found" in {
+      runAsyncSequence(
+        dao.byRoleLabelQuery(Role.God.label) map (_ shouldBe None),
+        dao.byRoleLabelQuery("other") map (_ shouldBe None)
+      )
+    }
+
+    "always pass authority validation if the user is an admin" in {
+      val auths = List(Authority(UUID.randomUUID, adminRole.id))
+
+      val results = Future.sequence(Role.all.map(role => dao.isAuthorized(Some(UUID.randomUUID), List(role))(auths)))
+      async(results)(_.reduce(_ && _) shouldBe true)
+    }
+
+    "always deny authority validation if god is requested" in {
+      val user = UUID.randomUUID
+      val auths = roles.map(r => Authority(user, r.id))
+
+      async(dao.isAuthorized(None, List(Role.God))(auths))(_ shouldBe false)
+    }
+
+    "check authority validation in different cases" in {
+      val course1 = UUID.randomUUID
+      val course2 = UUID.randomUUID
+      val auths = List(
+        Authority(UUID.randomUUID, employeeRole.id),
+        Authority(UUID.randomUUID, courseEmployeeRole.id, Some(course1)),
+        Authority(UUID.randomUUID, courseStudentRole.id, Some(course2))
+      )
+
+      async(dao.isAuthorized(None, List(Role.EmployeeRole, Role.StudentRole))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course1), List(Role.CourseEmployee))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course1), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course1), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course2), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe true)
+      async(dao.isAuthorized(Some(course2), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(Some(UUID.randomUUID), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.StudentRole))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.RightsManager, Role.CourseManager))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.Admin))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(Some(course1), List(Role.Admin))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(Some(UUID.randomUUID), List.empty)(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List.empty)(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.StudentRole))(Seq.empty))(_ shouldBe false)
+    }
   }
 
-  override protected def dependencies: PostgresDriver.api.DBIOAction[Unit, PostgresDriver.api.NoStream, Write] = DBIO.seq()
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+
+    async(dao.createMany(roles))(_ => Unit)
+  }
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
+
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 }

@@ -4,37 +4,36 @@ import java.io.File
 import java.util.UUID
 
 import dao._
+import javax.inject.Inject
 import org.apache.commons.io.FileUtils
 import org.joda.time.LocalDateTime
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.util.Try
 
-final class PSQLBackupService(val userDao: UserDao,
-                              val assignmentPlanDao: AssignmentPlanDao,
-                              val courseDao: CourseDao,
-                              val degreeDao: DegreeDao,
-                              val labworkApplicationDao: LabworkApplicationDao,
-                              val labworkDao: LabworkDao,
-                              val roleDao: RoleDao,
-                              val roomDao: RoomDao,
-                              val semesterDao: SemesterDao,
-                              val timetableDao: TimetableDao,
-                              val blacklistDao: BlacklistDao,
-                              val reportCardEntryDao: ReportCardEntryDao,
-                              val authorityDao: AuthorityDao,
-                              val scheduleEntryDao: ScheduleEntryDao,
-                              val groupDao: GroupDao,
-                              val reportCardEvaluationDao: ReportCardEvaluationDao) extends BackupService[JsValue] {
+final class PSQLBackupService @Inject()(
+  val userDao: UserDao,
+  val assignmentPlanDao: AssignmentPlanDao,
+  val courseDao: CourseDao,
+  val degreeDao: DegreeDao,
+  val labworkApplicationDao: LabworkApplicationDao,
+  val labworkDao: LabworkDao,
+  val roleDao: RoleDao,
+  val roomDao: RoomDao,
+  val semesterDao: SemesterDao,
+  val timetableDao: TimetableDao,
+  val blacklistDao: BlacklistDao,
+  val reportCardEntryDao: ReportCardEntryDao,
+  val authorityDao: AuthorityDao,
+  val scheduleEntryDao: ScheduleEntryDao,
+  val groupDao: GroupDao,
+  val reportCardEvaluationDao: ReportCardEvaluationDao
+) extends BackupService {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override def backup(rootFolder: File, shouldOverride: Boolean)(implicit encoding: String): Future[Vector[File]] = {
-    backupItems.flatMap(items => Future.fromTry(persist(items, rootFolder, shouldOverride)))
-  }
-
-  override def backupItems: Future[Vector[BackupItem[JsValue]]] = {
+  override def backupItems: Future[Vector[BackupItem]] = {
     for {
       users <- userDao.get(atomic = false, validOnly = false)
       assignmentPlans <- assignmentPlanDao.get(atomic = false, validOnly = false)
@@ -55,11 +54,11 @@ final class PSQLBackupService(val userDao: UserDao,
     } yield List(users, assignmentPlans, courses, degrees, labworkApplications, labworks, roles, rooms,
       semesters, timetables, blacklists, reportCardEntries, authorities, scheduleEntries, groups, reportCardEvaluations)
       .filter(_.nonEmpty)
-      .map(seq => JsonBackupItem(seq.head.getClass.getSimpleName, Json.toJson(seq)))
+      .map(seq => BackupItem(seq.head.getClass.getSimpleName, Json.toJson(seq)))
       .toVector
   }
 
-  override def persist(items: Vector[BackupItem[JsValue]], rootFolder: File, shouldOverride: Boolean)(implicit encoding: String): Try[Vector[File]] = {
+  override def persist(items: Vector[BackupItem], rootFolder: File, shouldOverride: Boolean)(implicit encoding: String): Try[Vector[File]] = {
     import utils.Ops.MonadInstances.tryM
     import utils.Ops._
 

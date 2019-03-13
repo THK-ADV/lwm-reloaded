@@ -1,5 +1,6 @@
 package actors
 
+/*
 import java.io.File
 import java.time.LocalTime
 import java.util.UUID
@@ -81,3 +82,4 @@ final class BackupServiceActorSpec extends TestKit(ActorSystem("BackupServiceAct
     FileUtils.deleteDirectory(destFolder.get)
   }
 }
+*/

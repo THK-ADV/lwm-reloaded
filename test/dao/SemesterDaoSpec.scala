@@ -1,52 +1,61 @@
 package dao
 
-import models.{PostgresSemester, SemesterDb}
+import models.Semester
 import org.joda.time.LocalDate
 import slick.dbio.Effect.Write
-import store.SemesterTable
+import database.{SemesterDb, SemesterTable}
+import play.api.inject.guice.GuiceableModule
+import slick.jdbc.PostgresProfile.api._
 
-final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, PostgresSemester] with SemesterDao {
-  import dao.AbstractDaoSpec._
+final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] {
+  import AbstractDaoSpec._
   import utils.LwmDateTime._
-  import slick.driver.PostgresDriver.api._
 
   val now = LocalDate.parse("2017-01-01")
   val tomorrow = LocalDate.parse("2017-01-02")
   val exam = LocalDate.parse("2017-01-03")
 
-  "A SemesterServiceSpec " should {
+  "A SemesterServiceSpec" should {
 
     "return current semester" in {
-      val current = dbEntities.map(_.toLwmModel).filter(PostgresSemester.isCurrent)
+      val current = dbEntities.map(_.toUniqueEntity).filter(Semester.isCurrent)
 
-      val result = await(get(List(SemesterCurrentFilter())))
-
-      result.size shouldBe 1
-      result shouldBe current
+      async(dao.get(List(SemesterCurrentFilter))) { result =>
+        result.size shouldBe 1
+        result should contain theSameElementsAs current
+      }
     }
 
-    "filter properly" in {
-      run(DBIO.seq(
-        filterBy(List(SemesterStartFilter(randomSemester.start.stringMillis))).result.map { semester =>
-          semester.size shouldBe 1
-        }
-      ).andThen(
-        filterBy(List(SemesterEndFilter(randomSemester.end.stringMillis))).result.map { semester =>
-          semester.size shouldBe 1
-        }
-      ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities.head.start.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size
-        }
-      ).andThen(
-        filterBy(List(SemesterSinceFilter(dbEntities(maxSemesters/2).start.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size - maxSemesters/2
-        }
-      ).andThen(
-        filterBy(List(SemesterUntilFilter(dbEntities(maxSemesters/2).end.stringMillis))).result.map { semester =>
-          semester.size shouldBe dbEntities.size - maxSemesters/2 + 1
-        }
-      ))
+    "filter semesters by start date" in {
+      val start = randomSemester.start
+      runAsync(dao.filterBy(List(SemesterStartFilter(start.stringMillis))).result) { semester =>
+        semester.size shouldBe 1
+        semester.head.start shouldBe start
+      }
+    }
+
+    "filter semesters by end date" in {
+      val end = randomSemester.end
+      runAsync(dao.filterBy(List(SemesterEndFilter(end.stringMillis))).result) { semester =>
+        semester.size shouldBe 1
+        semester.head.end shouldBe end
+      }
+    }
+
+    "filter semesters since start date" in {
+      val start = randomSemester.start
+      runAsync(dao.filterBy(List(SemesterSinceFilter(start.stringMillis))).result) { semester =>
+        semester.nonEmpty shouldBe true
+        semester.forall(s => s.start.equals(start) || s.start.after(start)) shouldBe true
+      }
+    }
+
+    "filter semesters until end date" in {
+      val end = randomSemester.end
+      runAsync(dao.filterBy(List(SemesterUntilFilter(end.stringMillis))).result) { semester =>
+        semester.nonEmpty shouldBe true
+        semester.forall(s => s.end.equals(end) || s.end.before(end)) shouldBe true
+      }
     }
   }
 
@@ -70,7 +79,9 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, P
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
-  override protected val lwmEntity: PostgresSemester = dbEntity.toLwmModel
+  override protected val lwmAtom: Semester = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresSemester = lwmEntity
+  override protected val dao: AbstractDao[SemesterTable, SemesterDb, Semester] = app.injector.instanceOf(classOf[SemesterDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

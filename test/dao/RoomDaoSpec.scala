@@ -1,15 +1,16 @@
 package dao
 
-import models.{PostgresRoom, RoomDb}
+import models.Room
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
-import store.RoomTable
+import slick.jdbc.PostgresProfile.api._
+import database.{RoomDb, RoomTable}
+import play.api.inject.guice.GuiceableModule
 
-final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom] with RoomDao {
+final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, Room] {
 
-  import dao.AbstractDaoSpec._
+  import AbstractDaoSpec._
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
   override protected def name: String = "room"
 
@@ -23,7 +24,9 @@ final class RoomDaoSpec extends AbstractDaoSpec[RoomTable, RoomDb, PostgresRoom]
 
   override protected val dbEntities: List[RoomDb] = rooms
 
-  override protected val lwmEntity: PostgresRoom = dbEntity.toLwmModel
+  override protected val lwmAtom: Room = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresRoom = lwmEntity
+  override protected val dao: AbstractDao[RoomTable, RoomDb, Room] = app.injector.instanceOf(classOf[RoomDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

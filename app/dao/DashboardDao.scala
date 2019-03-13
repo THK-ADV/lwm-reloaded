@@ -2,49 +2,32 @@ package dao
 
 import java.util.UUID
 
-import models.{Group, Labwork, LabworkApplication, PostgresAuthorityAtom, PostgresCourseAtom, PostgresSemester, PostgresStudent, ReportCardEntry, ReportCardEvaluation, ReportCardEvaluationPattern, ScheduleEntry}
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import javax.inject.Inject
+import models.{AuthorityAtom, EmployeeDashboard, Semester, Student, StudentDashboard}
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-sealed trait Dashboard
+trait DashboardDao { // TODO check and refactor
 
-case class StudentDashboard(
-  semester: PostgresSemester,
-  labworks: Seq[Labwork],
-  applications: Seq[LabworkApplication],
-  groups: Seq[Group],
-  cardEntries: Seq[ReportCardEntry],
-  evaluations: Seq[ReportCardEvaluation],
-  evaluationPatterns: Seq[ReportCardEvaluationPattern]
-) extends Dashboard
+  protected implicit def executionContext: ExecutionContext
 
-case class EmployeeDashboard(
-  semester: PostgresSemester,
-  courses: Seq[PostgresCourseAtom],
-  scheduleEntries: Seq[ScheduleEntry]
-) extends Dashboard
-
-trait DashboardDao {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  def dashboard(userId: UUID)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
-    semesterDao.get(List(SemesterCurrentFilter()), atomic, validOnly, sinceLastModified) map(_.toList) flatMap {
+  def dashboard(systemId: String)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = {
+    semesterDao.get(List(SemesterCurrentFilter), atomic, validOnly, sinceLastModified) map (_.toList) flatMap {
       case head :: Nil =>
-        userDao.getById(userId.toString, atomic = false, validOnly, sinceLastModified) flatMap {
-          case Some(PostgresStudent(_, _, _, _, _, enrollment, id)) => student(id, enrollment, head)(atomic, validOnly, sinceLastModified)
+        userDao.get(List(UserSystemIdFilter(systemId)), atomic = false, validOnly, sinceLastModified).map(_.headOption) flatMap {
+          case Some(Student(_, _, _, _, _, enrollment, id)) => student(id, enrollment, head)(atomic, validOnly, sinceLastModified)
           case Some(user) => employee(user.id, head)(atomic, validOnly, sinceLastModified)
-          case None => Future.failed(new Throwable(s"no user found for $userId"))
+          case None => Future.failed(new Throwable(s"no user found for $systemId"))
         }
       case _ =>
         Future.failed(new Throwable(s"none or more than one semester was found, which is marked as the current semester"))
     }
   }
 
-  private def student(student: UUID, enrollment: UUID, semester: PostgresSemester)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = for {
+  private def student(student: UUID, enrollment: UUID, semester: Semester)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = for {
     labworks <- labworkDao.filter(l => l.semester === semester.id && l.degree === enrollment, atomic, validOnly, sinceLastModified)
     labworIds = labworks.map(_.id)
 
@@ -55,15 +38,15 @@ trait DashboardDao {
     evalPatterns <- reportCardEvaluationPatternDao.filter(_.labwork.inSet(labworIds), atomic, validOnly, sinceLastModified)
   } yield StudentDashboard(semester, labworks, apps, groups, cards, evals, evalPatterns)
 
-  private def employee(employee: UUID, semester: PostgresSemester)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = for {
+  private def employee(employee: UUID, semester: Semester)(atomic: Boolean, validOnly: Boolean, sinceLastModified: Option[String]) = for {
     auths <- authorityDao.get(List(AuthorityUserFilter(employee.toString)), atomic = true, validOnly, sinceLastModified) // must be atomic
-    courses = auths.filter(_.isInstanceOf[PostgresAuthorityAtom]).map(_.asInstanceOf[PostgresAuthorityAtom]).flatMap(_.course)
+    courses = auths.filter(_.isInstanceOf[AuthorityAtom]).map(_.asInstanceOf[AuthorityAtom]).flatMap(_.course)
 
     scheduleEntryFilter = List(ScheduleEntrySupervisorFilter(employee.toString), ScheduleEntrySinceFilter(semester.start.stringMillis), ScheduleEntryUntilFilter(semester.end.stringMillis))
     scheduleEntries <- scheduleEntryDao.get(scheduleEntryFilter, atomic, validOnly, sinceLastModified)
   } yield EmployeeDashboard(semester, courses, scheduleEntries)
 
-  protected def db: PostgresDriver.backend.Database
+  protected def db: PostgresProfile.backend.Database
 
   protected def userDao: UserDao
 
@@ -86,8 +69,8 @@ trait DashboardDao {
   protected def scheduleEntryDao: ScheduleEntryDao
 }
 
-final class DashboardDaoImpl(
-  val db: PostgresDriver.backend.Database,
+final class DashboardDaoImpl @Inject()(
+  val db: PostgresProfile.backend.Database,
   val userDao: UserDao,
   val semesterDao: SemesterDao,
   val labworkDao: LabworkDao,
@@ -97,5 +80,6 @@ final class DashboardDaoImpl(
   val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
   val groupDao: GroupDao,
   val authorityDao: AuthorityDao,
-  val scheduleEntryDao: ScheduleEntryDao
+  val scheduleEntryDao: ScheduleEntryDao,
+  val executionContext: ExecutionContext
 ) extends DashboardDao

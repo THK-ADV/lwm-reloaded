@@ -2,60 +2,63 @@ package dao
 
 import java.util.UUID
 
-import utils.LwmDateTime._
+import dao.helper.DatabaseExpander
+import database._
+import javax.inject.Inject
 import models._
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store._
+import slick.jdbc
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
+import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTable] {
   override def predicate = _.labwork === UUID.fromString(value)
 }
 
 case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
-trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] {
 
   override val tableQuery = TableQuery[TimetableTable]
-  protected val timetableBlacklistQuery: TableQuery[TimetableBlacklistTable] = TableQuery[TimetableBlacklistTable]
-  protected val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
-  protected val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
 
-  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+  val timetableBlacklistQuery: TableQuery[TimetableBlacklistTable] = TableQuery[TimetableBlacklistTable]
+  val timetableEntryQuery: TableQuery[TimetableEntryTable] = TableQuery[TimetableEntryTable]
+  val timetableEntrySupervisorQuery: TableQuery[TimetableEntrySupervisorTable] = TableQuery[TimetableEntrySupervisorTable]
+
+  override protected def toAtomic(query: Query[TimetableTable, TimetableDb, Seq]): Future[Traversable[TimetableLike]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) =>
       val timetableEntries = entries.map {
-        case ((e, r), s) => PostgresTimetableEntryAtom(s.map(_.toLwmModel).toSet, r.toLwmModel, e.dayIndex, e.start.localTime, e.end.localTime)
+        case ((e, r), s) => TimetableEntryAtom(s.map(_.toUniqueEntity).toSet, r.toUniqueEntity, e.dayIndex, e.start.localTime, e.end.localTime)
       }
 
-      PostgresTimetableAtom(labwork.toLwmModel, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toLwmModel).toSet, timetable.id)
+      TimetableAtom(labwork.toUniqueEntity, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.toUniqueEntity).toSet, timetable.id)
   }
 
-  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Seq[Timetable]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[TimetableTable, TimetableDb, Seq]): Future[Traversable[TimetableLike]] = collectDependencies(query) {
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
   def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
-    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toLwmModel))
+    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
   }
 
-  private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) = {
+  private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[UserDb]]) = {
     val timetableEntries = entries.map {
-      case ((e, _), s) => PostgresTimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
+      case ((e, _), s) => TimetableEntry(s.map(_.id).toSet, e.room, e.dayIndex, e.start.localTime, e.end.localTime)
     }
 
-    PostgresTimetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
+    Timetable(labwork.id, timetableEntries.toSet, timetable.start.localDate, blacklists.map(_.id).toSet, timetable.id)
   }
 
   private final def collectDependencies[A](query: Query[TimetableTable, TimetableDb, Seq])
-                                          (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[DbUser]]) => A) = {
+    (build: (TimetableDb, LabworkDb, Seq[BlacklistDb], Map[(TimetableEntryDb, RoomDb), Seq[UserDb]]) => A) = {
     val mandatory = for {
       q <- query
-      l <- q.joinLabwork
+      l <- q.labworkFk
     } yield (q, l)
 
     val innerBlacklist = timetableBlacklistQuery.join(TableQuery[BlacklistTable]).on(_.blacklist === _.id)
@@ -70,7 +73,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
         val entries = dependencies.flatMap(_._3).groupBy(_._1).mapValues(_.flatMap(_._2))
 
         build(timetable, labwork, blacklists, entries)
-    }.toSeq)
+    })
 
     db.run(action)
   }
@@ -80,14 +83,16 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    (!existing.start.equals(toUpdate.start) ||
+    import utils.LwmDateTime.SqlDateConverter
+
+    (existing.start.localDate != toUpdate.start.localDate ||
       existing.entries != toUpdate.entries ||
       existing.localBlacklist != toUpdate.localBlacklist) &&
       existing.labwork == toUpdate.labwork
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {
-    override def expandCreationOf[X <: Effect](entities: Seq[TimetableDb]) = {
+    override def expandCreationOf[X <: Effect](entities: TimetableDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[TimetableDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
       val timetableEntries = entities.flatMap { timetable =>
         timetable.entries.map { entry =>
           TimetableEntryDb(timetable.id, entry.room, entry.supervisor, entry.dayIndex, entry.start.sqlTime, entry.end.sqlTime)
@@ -106,21 +111,17 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
     override def expandDeleteOf(entity: TimetableDb) = {
       val timetableEntries = timetableEntryQuery.filter(_.timetable === entity.id).map(_.id)
 
-      val deleted = for {
-        d1 <- timetableEntrySupervisorQuery.filter(_.timetableEntry in timetableEntries).delete
-        d2 <- timetableEntryQuery.filter(_.id in timetableEntries).delete
-        d3 <- timetableBlacklistQuery.filter(_.timetable === entity.id).delete
-      } yield d1 + d2 + d3
-
-      deleted.map(_ => Some(entity))
-    }
-
-    override def expandUpdateOf(entity: TimetableDb) = {
       for {
-        d <- expandDeleteOf(entity) if d.isDefined
-        c <- expandCreationOf(Seq(entity))
-      } yield c.headOption
+        _ <- timetableEntrySupervisorQuery.filter(_.timetableEntry in timetableEntries).delete
+        _ <- timetableEntryQuery.filter(_.id in timetableEntries).delete
+        _ <- timetableBlacklistQuery.filter(_.timetable === entity.id).delete
+      } yield entity
     }
+
+    override def expandUpdateOf(entity: TimetableDb) = for {
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(d)
+    } yield c.head
   })
 
   private lazy val schemas = List(
@@ -139,4 +140,4 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, Timetable] {
   }
 }
 
-final class TimetableDaoImpl(val db: PostgresDriver.backend.Database) extends TimetableDao
+final class TimetableDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends TimetableDao

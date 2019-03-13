@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models._
+import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
+import models._
 import play.api.libs.json.{Reads, Writes}
-import services.SessionHandlingService
-import store.{ReportCardRetryTable, TableFilter}
-import utils.LwmMimeType
+import play.api.mvc.ControllerComponents
+import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
+import security.SecurityActionChain
 import utils.LwmDateTime._
 
 import scala.util.{Failure, Try}
@@ -28,18 +29,15 @@ object ReportCardRetryController {
   lazy val untilAttribute = "until"
 }
 
-final class ReportCardRetryController(val sessionService: SessionHandlingService,
-                                      val authorityDao: AuthorityDao,
-                                      val abstractDao: ReportCardRetryDao)
-  extends AbstractCRUDControllerPostgres[PostgresReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetry] {
+@Singleton
+final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecurityActionChain)
+  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc) {
 
   import controllers.ReportCardRetryController._
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardRetryV1Json
+  override protected implicit val writes: Writes[ReportCardRetryLike] = ReportCardRetryLike.writes
 
-  override protected implicit val writes: Writes[ReportCardRetry] = ReportCardRetry.writes
-
-  override protected implicit val reads: Reads[PostgresReportCardRetryProtocol] = PostgresReportCardRetryProtocol.reads
+  override protected implicit val reads: Reads[ReportCardRetryProtocol] = ReportCardRetryProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes
@@ -50,7 +48,7 @@ final class ReportCardRetryController(val sessionService: SessionHandlingService
     }
   }
 
-  override protected def toDbModel(protocol: PostgresReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
+  override protected def toDbModel(protocol: ReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
     val uuid = existingId getOrElse UUID.randomUUID
     val entryTypes = protocol.entryTypes.map(t => ReportCardEntryTypeDb(None, Some(uuid), t.entryType, t.bool, t.int))
 
@@ -65,23 +63,25 @@ final class ReportCardRetryController(val sessionService: SessionHandlingService
     case Update => SecureBlock(restrictionId, List(CourseManager))
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     create(NonSecureBlock)(request)
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>
     get(id, NonSecureBlock)(request)
   }
 
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
     update(id, NonSecureBlock)(request)
   }
 
   def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
     delete(id, NonSecureBlock)(request)
   }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
 }

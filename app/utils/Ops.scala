@@ -167,6 +167,13 @@ object Ops { self =>
     def asTrys: Future[List[Try[T]]] = Future.sequence(futures.map(futureToFutureTry))
   }
 
+  implicit class OptionOps[A](val option: Option[A]) {
+    def toTry(throwable: Throwable): Try[A] = option match {
+      case Some(a) => Success(a)
+      case None => Failure(throwable)
+    }
+  }
+
   def unwrapTrys[T](partialCreated: List[Try[T]]): (List[T], List[Throwable]) = {
     val succeeded = partialCreated.collect { case Success(s) => s }
     val failed = partialCreated.collect { case Failure(e) => e }

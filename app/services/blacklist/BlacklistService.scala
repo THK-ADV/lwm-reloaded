@@ -1,39 +1,34 @@
 package services.blacklist
 
-import models.BlacklistDb
+import database.BlacklistDb
+import javax.inject.Inject
 import play.api.libs.json.{JsObject, JsValue}
+import services.Webservice
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait BlacklistService {
-  def fetchLegalHolidays(year: Int): Future[List[BlacklistDb]]
+  def fetchLegalHolidays(year: Int)(implicit executor: ExecutionContext): Future[List[BlacklistDb]]
+
+  protected def shortLegalHolidayLabel(year: Int) = s"NRW $year"
+
+  protected def legalHolidayLabel(year: Int, holiday: String) = s"${shortLegalHolidayLabel(year)} - $holiday"
+
+  protected def uri(year: Int) = s"http://feiertage.jarmedia.de/api/?jahr=$year&nur_land=NW"
 }
 
-final class BlacklistServiceImpl extends BlacklistService {
+final class BlacklistServiceImpl @Inject()(ws: Webservice) extends BlacklistService {
 
-  private def shortLegalHolidayLabel(year: Int) = s"NRW $year"
+  def fetchLegalHolidays(year: Int)(implicit executor: ExecutionContext): Future[List[BlacklistDb]] = {
+    import utils.LwmDateTime.StringDateConverter
 
-  private def legalHolidayLabel(year: Int, holiday: String) = s"${shortLegalHolidayLabel(year)} - $holiday"
+    ws.get(uri(year)) { json =>
+      val blacklists = for {
+        (key, value) <- json.asOpt[JsObject].fold(Seq.empty[(String, JsValue)])(_.fields) if (value \ "datum").isDefined
+        date = (value \ "datum").as[String]
+      } yield BlacklistDb.entireDay(legalHolidayLabel(year, key), date.localDate, global = true)
 
-  private def uri(year: Int) = s"http://feiertage.jarmedia.de/api/?jahr=$year&nur_land=NW"
-
-  def fetchLegalHolidays(year: Int): Future[List[BlacklistDb]] = {
-    import play.api.libs.ws.ning._
-    import utils.LwmDateTime._
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    for {
-      sslClient <- Future.successful(NingWSClient())
-      response <- sslClient.url(uri(year)).get
-      json = response.json.asOpt[JsObject].fold(Seq.empty[(String, JsValue)])(_.fields)
-      blacklistDbs = json.foldLeft(List.empty[BlacklistDb]) {
-        case (list, (key, value)) => value.\("datum")
-          .asOpt[String]
-          .map(_.localDate)
-          .fold(list)(date => list.+:(BlacklistDb.entireDay(legalHolidayLabel(year, key), date, global = true)))
-      }
-      _ <- Future.successful(sslClient.close())
-    } yield blacklistDbs
+      blacklists.toList
+    }
   }
 }

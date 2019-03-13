@@ -2,158 +2,172 @@ package dao
 
 import java.util.UUID
 
+import database._
+import javax.inject.Inject
 import models._
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.dbio.Effect
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import store._
+import slick.sql.FixedSqlAction
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.user === UUID.fromString(value)
+  override def predicate: AuthorityTable => Rep[Boolean] = _.user === UUID.fromString(value)
 }
 
 case class AuthorityCourseFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
+  override def predicate: AuthorityTable => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
 }
 
 case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.role === UUID.fromString(value)
-}
-case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: (AuthorityTable) => Rep[Boolean] = _.roleFk.map(_.label).filter(_ === value).exists
+  override def predicate: AuthorityTable => Rep[Boolean] = _.role === UUID.fromString(value)
 }
 
-trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, Authority] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: AuthorityTable => Rep[Boolean] = _.roleFk.filter(_.label === value).exists
+}
+
+case class AuthoritySystemIdFilter(value: String) extends TableFilter[AuthorityTable] {
+  override def predicate: AuthorityTable => Rep[Boolean] = _.userFk.filter(_.systemId === value).exists // TODO FK comparision should be done this way
+}
+
+trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLike] {
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
-  protected def roleService: RoleDao
+  protected def roleDao: RoleDao
 
-  // TODO maybe we can do this with Expander
-  def createWith(dbUser: DbUser): Future[PostgresAuthorityAtom] = {
-    for {
-      role <- roleService.byUserStatus(dbUser.status)
-      created <- role.fold[Future[AuthorityDb]](Future.failed(new Throwable(s"No appropriate Role found while resolving user $dbUser"))) { role =>
-        val authority = AuthorityDb(dbUser.id, role.id)
-        create(authority)
-      }
-    } yield PostgresAuthorityAtom(dbUser.toLwmModel, role.map(_.toLwmModel).get, None, created.id)
+  def studentRole: LWMRole = Role.StudentRole
+
+  def employeeRole: LWMRole = Role.EmployeeRole
+
+  def courseManagerRole: LWMRole = Role.CourseManager
+
+  def rightsManagerRole: LWMRole = Role.RightsManager
+
+  private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    filterValidOnly(a => a.user === user && a.role === role).exists.result
   }
 
-  def createByCourseQuery(course: CourseDb) = {
+  def isCourseManager(user: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    val query = for {
+      q <- tableQuery if q.user === user && q.course.isDefined
+      r <- q.roleFk if r.label === courseManagerRole.label
+    } yield q
+
+    filterValidOnly(query).exists.result
+  }
+
+  def deleteCourseManagerQuery(course: CourseDb): FixedSqlAction[Int, NoStream, Effect.Write] = {
+    filterValidOnly { a =>
+      a.user === course.lecturer &&
+        a.course.map(_ === course.id).getOrElse(false) &&
+        a.roleFk.filter(_.label === courseManagerRole.label).exists
+    }.delete
+  }
+
+  def deleteRightsManagerQuery(user: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
+    filterValidOnly { a =>
+      a.user === user &&
+        a.roleFk.filter(_.label === rightsManagerRole.label).exists
+    }.delete
+  }
+
+  def createBasicAuthorityFor(user: UserDb): DBIOAction[AuthorityDb, NoStream, Effect.Read with Effect.Read with Effect.Write with Effect.Transactional] = {
+    for {
+      baseRole <- roleDao.byUserStatusQuery(user.status) if baseRole.isDefined
+      baseAuth = AuthorityDb(user.id, baseRole.get.id)
+      created <- createQuery(baseAuth)
+    } yield created
+  }
+
+  def deleteAuthorityIfNotBasic(id: UUID): Future[AuthorityDb] = {
+    val query = filterValidOnly {
+      for {
+        q <- tableQuery if q.id === id
+        r <- q.roleFk if r.label =!= studentRole.label && r.label =!= employeeRole.label
+      } yield q
+    }
+
+    val action = for {
+      nonBasic <- query.exists.result
+      d <- if (nonBasic)
+        deleteQuery(id)
+      else
+        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${studentRole.label} or ${employeeRole.label}"))
+    } yield d
+
+    db run action
+  }
+
+  def createAssociatedAuthorities(course: CourseDb) = {
     (for {
-      cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel)
-      rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel)
+      courseManager <- roleDao.byRoleLabelQuery(courseManagerRole.label) if courseManager.isDefined
+      rightsManager <- roleDao.byRoleLabelQuery(rightsManagerRole.label) if rightsManager.isDefined
 
-      rma = AuthorityDb(course.lecturer, rm.head.id)
-      cma = AuthorityDb(course.lecturer, cm.head.id, Some(course.id))
+      courseManagerAuth = AuthorityDb(course.lecturer, courseManager.head.id, Some(course.id))
+      rightsManagerAuth = AuthorityDb(course.lecturer, rightsManager.head.id)
 
-      hasRM <- filterBy(List(AuthorityUserFilter(course.lecturer.toString), AuthorityRoleFilter(rm.head.id.toString))).exists.result
-      authoritiesToCreate = if (hasRM) Seq(cma) else Seq(cma, rma)
-
-      c <- createManyQuery(authoritiesToCreate)
-    } yield c).transactionally
+      isRightsManagerAlready <- hasAuthority(course.lecturer, rightsManager.head.id)
+      toCreate = if (isRightsManagerAlready) Seq(courseManagerAuth) else Seq(courseManagerAuth, rightsManagerAuth)
+      created <- createManyQuery(toCreate)
+    } yield created).transactionally
   }
 
-  def updateByCourseQuery(oldCourse: CourseDb, newCourse: CourseDb) = {
-    DBIO.seq(
-      deleteByCourseQuery(oldCourse),
-      createByCourseQuery(newCourse)
-    ).transactionally
-  }
-
-  def updateByCourse(oldCourse: CourseDb, newCourse: CourseDb) = {
-    db.run(updateByCourseQuery(oldCourse, newCourse))
-  }
-
-  final def deleteByCourseQuery(course: CourseDb) = {
+  def deleteAssociatedAuthorities(course: CourseDb) = {
     for {
-      deleted <- filterBy(List(AuthorityCourseFilter(course.id.toString), AuthorityUserFilter(course.lecturer.toString))).delete
-      deletedAuthority <- deleteSingleRightsManagerQuery(course.lecturer)
-    } yield deletedAuthority + deleted
+      deletedCourseManager <- deleteCourseManagerQuery(course)
+      isCourseManager <- isCourseManager(course.lecturer)
+      deletedRightsManager <- if (isCourseManager) DBIO.successful(0) else deleteRightsManagerQuery(course.lecturer)
+    } yield deletedCourseManager + deletedRightsManager
   }
 
-  final def deleteByCourse(course: CourseDb): Future[Int] = {
-    db.run(deleteByCourseQuery(course))
+  def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = {
+    (deleteAssociatedAuthorities(oldCourse) zip createAssociatedAuthorities(newCourse)).transactionally
   }
 
-  def deleteSingleRightsManagerQuery(lecturer: UUID)= {
-    for {
-      hasCourse <- filterBy(List(AuthorityUserFilter(lecturer.toString))).filter(_.course.isDefined).exists.result
-      rm <- roleService.tableQuery.filter(_.label === Roles.RightsManagerLabel).map(_.id).result.headOption if rm.isDefined
-      deletedRM <- {
-        if (hasCourse) {
-          DBIO.successful(0)
-        } else {
-          filterBy(List(AuthorityUserFilter(lecturer.toString), AuthorityRoleFilter(rm.get.toString))).delete
-        }
-      }
-    } yield deletedRM
+  def authoritiesFor(systemId: String): Future[Seq[Authority]] = {
+    db.run(filterBy(List(AuthoritySystemIdFilter(systemId))).result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
     (existing.invalidated != toUpdate.invalidated ||
-    existing.lastModified != toUpdate.lastModified) &&
+      existing.lastModified != toUpdate.lastModified) &&
       (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
   }
 
-  def authoritiesFor(userId: UUID): Future[Seq[PostgresAuthority]] = {
-    val authorities = for (q <- tableQuery if q.user === userId) yield q
-
-    db.run(authorities.result.map(_.map(_.toLwmModel)))
-  }
-
-  def checkAuthority(check: (Option[UUID], List[Role]))(authorities: Seq[PostgresAuthority]): Future[Boolean] = check match {
-    case (_, roles) if roles contains Role.God => Future.successful(false)
-    case (optCourse, minRoles) =>
-      def isAdmin(implicit roles: Seq[PostgresRole]) = roles
-        .find(_.label == Role.Admin.label)
-        .exists(admin => authorities.exists(_.role == admin.id))
-
-      def hasPermission(implicit roles: Seq[PostgresRole]) = authorities
-        .filter(_.course == optCourse)
-        .flatMap(authority => roles.filter(_.id == authority.role))
-        .exists(r => minRoles.exists(_.label == r.label))
-
-      roleService.get().map { implicit roles =>
-        isAdmin || hasPermission
-      }
-  }
-
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
-    filterBy(List(
-      AuthorityUserFilter(entity.user.toString),
-      AuthorityRoleFilter(entity.role.toString))
-    ).filter(_.course === entity.course)
+    val approximately = List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))
+    val sufficient = entity.course.fold(approximately)(c => approximately :+ AuthorityCourseFilter(c.toString))
+    filterBy(sufficient)
   }
 
-  // TODO refactor based on AssignmentPlanService.toAtomic
-  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
+  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Traversable[AuthorityLike]] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
-      ((a, c), l) <- query.joinLeft(TableQuery[CourseTable]).on(_.course === _.id).
-        joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
+      ((a, c), l) <- query
+        .joinLeft(TableQuery[CourseTable]).on(_.course === _.id)
+        .joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
       u <- a.userFk
       r <- a.roleFk
     } yield (a, u, r, c, l)
 
-    db.run(joinedQuery.result.map(_.foldLeft(List.empty[PostgresAuthorityAtom]) {
-      case (list, (a, u, r, Some(c), Some(l))) =>
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toLwmModel, c.semesterIndex, c.id)
-        val atom = PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, Some(courseAtom), a.id)
+    val action = joinedQuery.result.map(_.groupBy(_._1.id).map {
+      case (id, dependencies) =>
+        val (_, user, role, maybeCourse, maybeLecturer) = dependencies.find(_._1.id == id).get
+        val maybeCourseAtom = maybeCourse zip maybeLecturer map {
+          case (c, l) => CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
+        }
+        AuthorityAtom(user.toUniqueEntity, role.toUniqueEntity, maybeCourseAtom.headOption, id)
+    })
 
-        list.+:(atom)
-      case (list, (a, u, r, None, None)) =>
-        list.+:(PostgresAuthorityAtom(u.toLwmModel, r.toLwmModel, None, a.id))
-      case (list, _) => list // this should never happen
-    }))
+    db.run(action)
   }
 
-  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[Authority]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Traversable[AuthorityLike]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 
-final class AuthorityDaoImpl(val db: PostgresDriver.backend.Database, val roleService: RoleDao) extends AuthorityDao
+final class AuthorityDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val roleDao: RoleDao, val executionContext: ExecutionContext) extends AuthorityDao

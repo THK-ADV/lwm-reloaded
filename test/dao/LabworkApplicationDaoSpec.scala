@@ -2,170 +2,147 @@ package dao
 
 import java.util.UUID
 
+import database._
 import models._
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
-import store._
+import slick.jdbc.PostgresProfile.api._
 
-// TODO migrate to abstractExpanderDaoSpec
-class LabworkApplicationDaoSpec extends AbstractDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplication] with LabworkApplicationDao {
+class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
-  import dao.AbstractDaoSpec._
+  import AbstractDaoSpec._
   import utils.LwmDateTime.SqlTimestampConverter
 
-  import scala.util.Random.{nextBoolean, nextInt}
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.util.Random.{nextInt, shuffle}
 
-  val maxApplicants = 600
-  val reservedApplicants = 5
-  val maxApplications = 200
+  "A LabworkApplicationDaoSpec also" should {
 
-  val applicants = (0 until maxApplicants).map(applicant).toList
+    "successfully return friends of applicant" in {
+      val withFriends = for {
+        withFriends <- db.run(dao.filterValidOnly(l => l.friends.exists).take(5).result)
+        res <- db.run(DBIO.sequence(withFriends.map(f => dao.friendsOf(f.applicant, f.labwork).result)))
+      } yield res
 
-  val student = populateStudents(1).head
-  val lapp = labworkApplication(Some(student.id), withFriends = true)
+      async(withFriends) { nestedFriends =>
+        nestedFriends foreach { friends =>
+          friends.map(_.toUniqueEntity) should contain theSameElementsAs expandedStudents.filter(u => friends.exists(_.id == u.id)).map(_.toUniqueEntity)
+        }
+      }
 
-  @scala.annotation.tailrec
-  final def randomApplicant(avoiding: Option[UUID] = None): DbUser = {
-    val applicant = applicants(nextInt(maxApplicants - reservedApplicants))
+      val withOutFriends = for {
+        withFriends <- db.run(dao.filterValidOnly(l => !l.friends.exists).take(5).result)
+        res <- db.run(DBIO.sequence(withFriends.map(f => dao.friendsOf(f.applicant, f.labwork).result)))
+      } yield res
 
-    avoiding match {
-      case Some(avoid) if applicant.id == avoid => randomApplicant(Some(avoid))
-      case _ => applicant
+      async(withOutFriends) { friends =>
+        friends foreach (_ shouldBe empty)
+      }
     }
   }
 
-  private def applicant(i: Int): DbUser = DbUser(i.toString, i.toString, i.toString, i.toString, User.StudentType, Some(i.toString), Some(randomDegree.id))
+  private val normalLabworks = labworks take 5
 
-  private def labworkApplication(applicant: Option[UUID] = None, withFriends: Boolean = nextBoolean) = {
-    val app = applicant.getOrElse(randomApplicant().id)
-    val friends = if (withFriends) (0 until nextInt(2) + 1).map(_ => randomApplicant(Some(app)).id).toSet else Set.empty[UUID]
+  private val expandedLabworks = labworks drop 5
 
-    LabworkApplicationDb(randomLabwork.id, app, friends)
+  private val expandedStudents = populateStudents(100)
+
+  private def randomAvoiding(element: UUID, source: List[UUID], atLeastOne: Boolean): Set[UUID] = {
+    random(source.filterNot(_ == element), atLeastOne)
   }
 
-  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[DegreeTable].forceInsertAll(degrees),
-    TableQuery[UserTable].forceInsertAll(employees ++ List(student)),
-    TableQuery[SemesterTable].forceInsertAll(semesters),
-    TableQuery[CourseTable].forceInsertAll(courses),
-    TableQuery[LabworkTable].forceInsertAll(labworks),
-    TableQuery[UserTable].forceInsertAll(applicants)
-  )
-
-  override protected def name: String = "labworkApplication"
-
-  override protected val dbEntity: LabworkApplicationDb = labworkApplication(None, withFriends = false)
-
-  override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = {
-    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
-
-    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends)
+  private def random(source: List[UUID], atLeastOne: Boolean): Set[UUID] = {
+    val offset = if (atLeastOne) 1 else 0
+    shuffle(source).take(nextInt(3) + offset).toSet
   }
 
-  override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = {
-    val newApplicant = randomApplicant(Some(dbEntity.applicant)).id
-    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(newApplicant)).id) else Set.empty[UUID]
+  override protected val toAdd: List[LabworkApplicationDb] = for {
+    labwork <- expandedLabworks.map(_.id)
+    student <- expandedStudents.map(_.id)
+    friends = randomAvoiding(student, expandedStudents.map(_.id), atLeastOne = false)
+  } yield LabworkApplicationDb(labwork, student, friends)
 
-    LabworkApplicationDb(dbEntity.labwork, newApplicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
-  }
+  override protected val numberOfUpdates: Int = (toAdd.size * 0.1).toInt
 
-  override protected val validUpdateOnDbEntity: LabworkApplicationDb = {
-    val newFriends = if (dbEntity.friends.isEmpty) Set(randomApplicant(Some(dbEntity.applicant)).id) else Set.empty[UUID]
+  override protected val numberOfDeletions: Int = (toAdd.size * 0.3).toInt
 
-    LabworkApplicationDb(dbEntity.labwork, dbEntity.applicant, newFriends, dbEntity.lastModified, dbEntity.invalidated, dbEntity.id)
-  }
+  override protected def update(toUpdate: List[LabworkApplicationDb]): List[LabworkApplicationDb] = {
+    val students = expandedStudents map (_.id)
 
-  override protected val dbEntities: List[LabworkApplicationDb] = (0 until maxApplications).map(_ => labworkApplication()).toList
+    toUpdate map { lapp =>
+      val friends = if (lapp.friends.isEmpty)
+        randomAvoiding(lapp.applicant, students, atLeastOne = true)
+      else
+        lapp.friends.flatMap(f => randomAvoiding(f, students.filterNot(_ == lapp.applicant), atLeastOne = true))
 
-  override protected val lwmEntity: LabworkApplication = dbEntity.toLwmModel
-
-  override protected val lwmAtom: LabworkApplication = {
-    val labworkAtom = {
-      val labwork = labworks.find(_.id == dbEntity.labwork).get
-      val semester = semesters.find(_.id == labwork.semester).get
-      val course = courses.find(_.id == labwork.course).get
-      val lecturer = employees.find(_.id == course.lecturer).get.toLwmModel
-      val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer, course.semesterIndex, course.id)
-      val degree = degrees.find(_.id == labwork.degree).get
-
-      PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
+      lapp.copy(friends = friends)
     }
+  }
 
-    PostgresLabworkApplicationAtom(
+  override protected def atom(dbModel: LabworkApplicationDb): LabworkApplicationLike = {
+    val labwork = labworks.find(_.id == dbModel.labwork).get
+    val course = courses.find(_.id == labwork.course).get
+    val courseAtom = CourseAtom(
+      course.label,
+      course.description,
+      course.abbreviation,
+      employees.find(_.id == course.lecturer).get.toUniqueEntity,
+      course.semesterIndex,
+      course.id
+    )
+
+    val labworkAtom = LabworkAtom(
+      labwork.label,
+      labwork.description,
+      semesters.find(_.id == labwork.semester).get.toUniqueEntity,
+      courseAtom,
+      degrees.find(_.id == labwork.degree).get.toUniqueEntity,
+      labwork.subscribable,
+      labwork.published,
+      labwork.id
+    )
+
+    LabworkApplicationAtom(
       labworkAtom,
-      applicants.find(_.id == dbEntity.applicant).get.toLwmModel,
-      Set.empty,
-      dbEntity.lastModified.dateTime,
-      dbEntity.id
+      (students ++ expandedStudents).find(_.id == dbModel.applicant).get.toUniqueEntity,
+      expandedStudents.filter(s => dbModel.friends.contains(s.id)).map(_.toUniqueEntity).toSet,
+      dbModel.lastModified.dateTime,
+      dbModel.id
     )
   }
 
-  "A LabworkApplicationService2Spec " should {
+  override protected val dao: LabworkApplicationDao = app.injector.instanceOf(classOf[LabworkApplicationDao])
 
-    "create a labworkApplication with friends" in {
-      val result = await(create(lapp))
-      val dbLapp = await(getById(lapp.id.toString, atomic = false))
-      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
+  override protected def name: String = "labworkApplication"
 
-      result shouldBe lapp
-      Some(result.toLwmModel) shouldBe dbLapp
-      result.friends shouldBe dbFriends.map(_.friend).toSet
-      dbFriends.forall(_.labworkApplication == result.id) shouldBe true
-    }
+  override protected val dbEntity: LabworkApplicationDb = LabworkApplicationDb(normalLabworks.head.id, students.head.id, Set.empty)
 
-    "update a labworkApplication with friends" in {
-      val updated = lapp.copy(lapp.labwork, lapp.applicant, lapp.friends ++ Set(randomApplicant(Some(lapp.applicant)).id))
+  override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = dbEntity.copy(id = UUID.randomUUID)
 
-      val result = await(update(updated)).get
-      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
+  override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = dbEntity
 
-      result shouldBe updated
-      result.friends shouldBe dbFriends.map(_.friend).toSet
-      dbFriends.forall(_.labworkApplication == result.id) shouldBe true
-    }
+  override protected val validUpdateOnDbEntity: LabworkApplicationDb = dbEntity.copy(friends = students.slice(1, 3).map(_.id).toSet)
 
-    "delete a labworkApplication with friends" in {
-      // TODO ADJUST
-      /*val result = await(delete(lapp)).get
-      val dbLapp = await(getById(lapp.id.toString, atomic = false))
-      val dbFriends = await(db.run(lappFriendQuery.filter(_.labworkApplication === result.id).result))
+  override protected val dbEntities: List[LabworkApplicationDb] = for {
+    labwork <- normalLabworks drop 1
+    student <- students drop 1
+  } yield LabworkApplicationDb(labwork.id, student.id, Set.empty)
 
-      result.id shouldBe lapp.id
-      dbLapp shouldBe empty
-      dbFriends shouldBe empty*/
-    }
+  override protected val lwmAtom: LabworkApplicationLike = atom(dbEntity)
 
-    "return a atom of labworkApplication with friends" in {
-      def randomLabworkApplicationAtomWith(lapp: LabworkApplicationDb) = {
-        val applicant = applicants.find(_.id == lapp.applicant).get
-        val friends = applicants.filter(a => lapp.friends.contains(a.id))
-        val labworkAtom = {
-          val labwork = labworks.find(_.id == lapp.labwork).get
-          val semester = semesters.find(_.id == labwork.semester).get
-          val degree = degrees.find(_.id == labwork.degree).get
-          val course = courses.find(_.id == labwork.course).get
-          val lecturer = employees.find(_.id == course.lecturer).get
-          val courseAtom = PostgresCourseAtom(course.label, course.description, course.abbreviation, lecturer.toLwmModel, course.semesterIndex, course.id)
-          PostgresLabworkAtom(labwork.label, labwork.description, semester.toLwmModel, courseAtom, degree.toLwmModel, labwork.subscribable, labwork.published, labwork.id)
-        }
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[UserTable].forceInsertAll(employees ++ students ++ expandedStudents),
+    TableQuery[SemesterTable].forceInsertAll(semesters),
+    TableQuery[CourseTable].forceInsertAll(courses),
+    TableQuery[LabworkTable].forceInsertAll(labworks)
+  )
 
-        PostgresLabworkApplicationAtom(labworkAtom, applicant.toLwmModel, friends.map(_.toLwmModel).toSet, lapp.lastModified.dateTime, lapp.id)
-      }
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 
-      val lapps = applicants.drop(maxApplicants - reservedApplicants).
-        map(a => labworkApplication(Some(a.id), withFriends = true))
-      val atoms = lapps.map(randomLabworkApplicationAtomWith)
-
-      val createdLapps = await(createMany(lapps))
-      val getAtoms = await(getMany(createdLapps.map(_.id).toList))
-
-      createdLapps shouldBe lapps
-      (getAtoms ++ atoms).groupBy(_.id).forall {
-        case (_, labworkApplications) =>
-          val size = labworkApplications.size
-          val equals = labworkApplications.head == labworkApplications.last
-          size == 2 && equals
-      } shouldBe true
+  override protected def expanderSpecs(dbModel: LabworkApplicationDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
+    dao.lappFriendQuery.filter(_.labworkApplication === dbModel.id).result.map { friends =>
+      friends.map(_.friend) should contain theSameElementsAs (if (isDefined) dbModel.friends else Nil)
     }
   }
 }

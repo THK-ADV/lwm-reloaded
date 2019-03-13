@@ -3,8 +3,11 @@ package services
 import java.util.UUID
 
 import models._
+import models.genesis.ScheduleGen
+import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
+import models.helper.{BoolBased, IntBased}
 
-object ReportCardService {
+object ReportCardService { // TODO DI
 
   lazy val EvaluatedExplicit: Int = 3201 // this value indicates explicit evaluations
 
@@ -12,7 +15,7 @@ object ReportCardService {
     ReportCardEvaluationDb(student, labwork, entryType, boolean, int)
   }
 
-  def evaluate(student: UUID, cards: List[PostgresReportCardEntry], patterns: List[ReportCardEvaluationPattern], labwork: UUID): List[ReportCardEvaluationDb] = {
+  def evaluate(student: UUID, cards: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], labwork: UUID): List[ReportCardEvaluationDb] = {
     val eval = partialEval(student, labwork) _
 
     patterns.map { pattern =>
@@ -25,7 +28,7 @@ object ReportCardService {
     }
   }
 
-  def deltas(oldEvals: List[PostgresReportCardEvaluation], newEvals: List[ReportCardEvaluationDb]): List[ReportCardEvaluationDb] = {
+  def deltas(oldEvals: List[ReportCardEvaluation], newEvals: List[ReportCardEvaluationDb]): List[ReportCardEvaluationDb] = {
     newEvals.foldLeft(List.empty[ReportCardEvaluationDb]) {
       case (list, newEval) => oldEvals.find(_.label == newEval.label).fold(list.:+(newEval)) {
         case abort if abort.int == EvaluatedExplicit => list // abort when student was evaluated explicit
@@ -35,25 +38,25 @@ object ReportCardService {
     }
   }
 
-  def evaluateDeltas(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], existing: List[ReportCardEvaluation]): List[ReportCardEvaluationDb] = {
-    reportCardEntries.map(_.asInstanceOf[PostgresReportCardEntry]).groupBy(_.student).flatMap {
+  def evaluateDeltas(reportCardEntries: List[ReportCardEntryLike], patterns: List[ReportCardEvaluationPattern], existing: List[ReportCardEvaluationLike]): List[ReportCardEvaluationDb] = {
+    reportCardEntries.map(_.asInstanceOf[ReportCardEntry]).groupBy(_.student).flatMap {
       case (student, cards) =>
         val newEvals = evaluate(student, cards, patterns, cards.head.labwork)
-        val oldEvals = existing.map(_.asInstanceOf[PostgresReportCardEvaluation]).filter(_.student == student)
+        val oldEvals = existing.map(_.asInstanceOf[ReportCardEvaluation]).filter(_.student == student)
 
         if (oldEvals.isEmpty) newEvals else deltas(oldEvals, newEvals)
     }.toList
   }
 
-  def evaluate(reportCardEntries: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern]): List[ReportCardEvaluationDb] = {
+  def evaluate(reportCardEntries: List[ReportCardEntryLike], patterns: List[ReportCardEvaluationPattern]): List[ReportCardEvaluationDb] = {
     evaluateDeltas(reportCardEntries, patterns, List.empty)
   }
 
   def evaluateExplicit(student: UUID, labwork: UUID): List[ReportCardEvaluationDb] = { // TODO replace with dynamic PostgresReportCardEntryType.all when needed
-    PostgresReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
+    ReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
   }
 
-  def reportCards(schedule: ScheduleGen, assignmentPlan: PostgresAssignmentPlan): Vector[ReportCardEntryDb] = {
+  def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlan): Vector[ReportCardEntryDb] = {
     import utils.LwmDateTime._
 
     val students = schedule.entries.flatMap(_.group.members).toSet

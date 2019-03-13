@@ -2,11 +2,13 @@ package utils
 
 import java.sql.{Date, Time, Timestamp}
 
-import base.TestBaseDefinition
+import base.{DateGenerator, TestBaseDefinition}
 import org.joda.time._
 import org.scalatest.WordSpec
+import org.scalatest.prop.PropertyChecks
+import play.api.libs.json.Json
 
-final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
+final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition with PropertyChecks with DateGenerator {
   import utils.LwmDateTime._
 
   "A LwmDateTimeSpecs" should {
@@ -19,7 +21,7 @@ final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
       val localTime = LocalTime.parse(timeStringPattern, timeFormatter)
       val dateTime = DateTime.now
 
-      val fullLocalDate = LocalDateTime.parse(dateStringPattern + "T00:00", formatter)
+      val fullLocalDate = LocalDateTime.parse(dateStringPattern + "T00:00", dateTimeFormatter)
       val fullLocalTime = LocalDateTime.now.withHourOfDay(11).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
 
       val sqlDate = localDate.sqlDate
@@ -49,6 +51,24 @@ final class LwmDateTimeSpecs extends WordSpec with TestBaseDefinition {
 
       dateStringPattern.sqlDateFromPattern shouldBe sqlDate
       timeStringPattern.sqlTimeFromPattern shouldBe sqlTime
+    }
+
+    "convert different joda.DateTimes to and from json" in {
+      forAll { dateTime: DateTime =>
+        Json.toJson(dateTime).as[String] shouldBe dateTime.toString(dateTimeFormatter)
+      }
+    }
+
+    "convert different joda.LocalTime to and from json" in {
+      forAll { localTime: LocalTime =>
+        Json.toJson(localTime).as[String] shouldBe localTime.toString(timeFormatter)
+      }
+    }
+
+    "convert different joda.LocalDate to and from json" in {
+      forAll { localDate: LocalDate =>
+        Json.toJson(localDate).as[String] shouldBe localDate.toString(dateFormatter)
+      }
     }
   }
 }

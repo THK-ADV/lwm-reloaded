@@ -2,246 +2,308 @@ package dao
 
 import java.util.UUID
 
+import database._
+import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models._
 import org.joda.time.DateTime
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import slick.driver
-import store._
 
-import scala.util.Random.nextInt
+class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
 
-class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Authority] with AuthorityDao {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  import dao.AbstractDaoSpec._
+  import AbstractDaoSpec._
+  import slick.jdbc.PostgresProfile.api._
   import utils.LwmDateTime.DateTimeConverter
-  import slick.driver.PostgresDriver.api._
 
-  private lazy val privateLecturers = (0 until 7).map { i =>
-    DbUser(i.toString, i.toString, i.toString, i.toString, User.EmployeeType, None, None)
-  }.toList
+  private def rightsManager: RoleDb = roles.find(_.label == Role.RightsManager.label).get
 
-  private lazy val privateCourses = (0 until 3).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(i).id, 1)
-  }.toList
+  private def courseManager: RoleDb = roles.find(_.label == Role.CourseManager.label).get
 
-  private lazy val privateCoursesWithSameLecturer = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(3).id, 1)
-  }.toList
+  private def employeeRole: RoleDb = roles.find(_.label == Role.EmployeeRole.label).get
 
-  private lazy val privateCoursesWithSameLecturer2 = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(4).id, 1)
-  }.toList
+  private def studentRole: RoleDb = roles.find(_.label == Role.StudentRole.label).get
 
-  private lazy val privateCoursesWithSameLecturer3 = (0 until 2).map { i =>
-    CourseDb(s"testCourse$i", s"testCourse$i", s"tC$i", privateLecturers(5).id, 1)
-  }.toList
+  "A AuthorityDaoSpec" should {
 
-  "A AuthorityServiceSpec " should {
+    "create a associated basic authority for a given user" in {
+      val employee = UserDb("id", "last", "first", "mail", EmployeeStatus, None, None)
+      val lecturer = UserDb("id", "last", "first", "mail", LecturerStatus, None, None)
+      val student = UserDb("id", "last", "first", "mail", StudentStatus, None, None)
 
-    "create Authorities by Course" in {
-      val course = privateCourses.head
-
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
-          authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
-
-        } yield {
-          authoritiesOfLecturer.exists(a => a.role == rm.get.id && a.user == course.lecturer) shouldBe true
-          authoritiesOfLecturer.exists(a => a.role == cm.get.id && a.course.get == course.id && a.user == course.lecturer) shouldBe true
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(employee, lecturer, student)),
+        dao.createBasicAuthorityFor(employee) map { auth =>
+          auth.user shouldBe employee.id
+          auth.role shouldBe roles.find(_.label == employeeRole.label).get.id
+          auth.course shouldBe empty
+        },
+        dao.createBasicAuthorityFor(lecturer) map { auth =>
+          auth.user shouldBe lecturer.id
+          auth.role shouldBe roles.find(_.label == employeeRole.label).get.id
+          auth.course shouldBe empty
+        },
+        dao.createBasicAuthorityFor(student) map { auth =>
+          auth.user shouldBe student.id
+          auth.role shouldBe roles.find(_.label == studentRole.label).get.id
+          auth.course shouldBe empty
         }
-      })
-
+      )
     }
 
-    "delete Authorities by Course" in {
-      val course = privateCourses(1)
+    "not create a associated basic authority for a given user if he already has one" in {
+      val student = UserDb("system id", "last", "first", "mail", StudentStatus, None, None)
 
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
-          _ <- deleteByCourseQuery(course)
-          authoritiesOfLecturer <- tableQuery.filter(_.user === course.lecturer).result
-
-        } yield {
-          if(authoritiesOfLecturer.exists(a => a.role == cm.get.id)){
-            authoritiesOfLecturer.exists(a => a.role == rm.get.id && a.user == course.lecturer) shouldBe true
-          }else{
-            authoritiesOfLecturer.exists(a => a.role == rm.get.id && a.user == course.lecturer) shouldBe false
-          }
-          authoritiesOfLecturer.exists(a => a.role == cm.get.id && a.course.get == course.id && a.user == course.lecturer) shouldBe false
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(student),
+        dao.createBasicAuthorityFor(student),
+        dao.createBasicAuthorityFor(student).failed.map { t =>
+          t.getMessage.containsSlice(student.id.toString) shouldBe true
         }
-      })
+      )
     }
 
-    "update Authorities by Course" in {
-      val course = privateCourses(2)
-      val newLecturer = privateLecturers(6)
-      val sameCourseWithNewLecturer = course.copy(lecturer = newLecturer.id)
+    "delete authorities as long as the are not associated with a basic role" in {
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val nonBasicRoles = roles.filter(r => r.label == Role.CourseAssistant.label || r.label == Role.CourseEmployee.label)
+      val auths = courses.take(2).zip(nonBasicRoles).map {
+        case (course, role) => AuthorityDb(student.id, role.id, Some(course.id))
+      }
 
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course)
-          authoritiesOfOldLecturerBeforeUpdate <- tableQuery.filter(_.user === course.lecturer).result
-          authoritiesOfNewLecturerBeforeUpdate <- tableQuery.filter(_.user === sameCourseWithNewLecturer.lecturer).result
-          _ <- updateByCourseQuery(course, sameCourseWithNewLecturer)
-          authoritiesOfOldLecturerAfterUpdate <- tableQuery.filter(_.user === course.lecturer).result
-          authoritiesOfNewLecturerAfterUpdate <- tableQuery.filter(_.user === sameCourseWithNewLecturer.lecturer).result
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(otherUser, student)),
+        dao.createBasicAuthorityFor(student),
+        dao.tableQuery.forceInsertAll(auths)
+      )
 
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          cm <- roleService.byRoleLabelQuery(Roles.CourseManagerLabel) if cm.isDefined
-        } yield{
-          authoritiesOfOldLecturerBeforeUpdate.count(_.role === rm.get.id) shouldBe 1
-          authoritiesOfOldLecturerBeforeUpdate.count(_.role === cm.get.id) shouldBe 1
-          authoritiesOfNewLecturerBeforeUpdate.count(_.role === rm.get.id) shouldBe 0
-          authoritiesOfNewLecturerBeforeUpdate.count(_.role === cm.get.id) shouldBe 0
+      async(dao.deleteAuthorityIfNotBasic(auths.head.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
+      async(dao.deleteAuthorityIfNotBasic(auths.last.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
 
-          authoritiesOfOldLecturerAfterUpdate.count(_.role === rm.get.id) shouldBe 0
-          authoritiesOfOldLecturerAfterUpdate.count(_.role === cm.get.id) shouldBe 0
-          authoritiesOfNewLecturerAfterUpdate.count(_.role === rm.get.id) shouldBe 1
-          authoritiesOfNewLecturerAfterUpdate.count(_.role === cm.get.id) shouldBe 1
-        }
-      })
-
+      async(dao.get(List(AuthorityUserFilter(student.id.toString)), atomic = false)) { as =>
+        as.map(_.asInstanceOf[Authority]).forall { a =>
+          !auths.map(_.id).contains(a.id) &&
+            a.role == roles.find(_.label == studentRole.label).get.id
+        } shouldBe true
+      }
     }
 
-    "not duplicate RightsManager for one User" in {
-      val course1 = privateCoursesWithSameLecturer.head
-      val course2 = privateCoursesWithSameLecturer(1)
+    "never delete an authority which is associated with a basic role" in {
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val basicAuth = AuthorityDb(student.id, roles.find(_.label == studentRole.label).get.id)
+      val nonBasicAuth = AuthorityDb(student.id, roles.find(_.label == Role.CourseAssistant.label).get.id)
 
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course1)
-          _ <- createByCourseQuery(course2)
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-          authoritiesOfLecturer <- tableQuery.filter(_.user === course1.lecturer).result
-        } yield{
-          authoritiesOfLecturer.count(_.role === rm.get.id) shouldBe 1
-        }
-      })
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(otherUser, student)),
+        dao.tableQuery.forceInsertAll(List(basicAuth, nonBasicAuth))
+      )
+
+      async(dao.deleteAuthorityIfNotBasic(nonBasicAuth.id))(_.role shouldBe nonBasicAuth.role)
+      async(dao.deleteAuthorityIfNotBasic(basicAuth.id).failed)(_.getMessage.containsSlice(studentRole.label) shouldBe true)
+      async(dao.get(List(AuthorityUserFilter(student.id.toString)), atomic = false))(_.size == 1)
     }
 
-    "delete RightsManager if the User doesn't have other CourseManagers" in {
-      val course1 = privateCoursesWithSameLecturer2.head
-      val course2 = privateCoursesWithSameLecturer2(1)
+    "create course and rights manager authorities for a given course" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
+      val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
 
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course1)
-          _ <- createByCourseQuery(course2)
-          _ <- deleteByCourseQuery(course1)
-          authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
-          _ <- deleteByCourseQuery(course2)
-          authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-        } yield{
-          authoritiesOfLecturerAfterDelete1.count(_.role === rm.get.id) shouldBe 1
-          authoritiesOfLecturerAfterDelete2.count(_.role === rm.get.id) shouldBe 0
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
+        dao.createAssociatedAuthorities(course1) map { auths =>
+          auths.size shouldBe 2
+          auths.exists(_.role == rightsManager.id) shouldBe true
+          auths.exists(_.role == courseManager.id) shouldBe true
+          auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(course1.id)
+        },
+        dao.createAssociatedAuthorities(course2) map { auths =>
+          auths.size shouldBe 1
+          auths.exists(_.role == courseManager.id) shouldBe true
+          auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(course2.id)
         }
-      })
+      )
     }
 
-    "not delete RightsManager if the User has other CourseManagers" in {
-      val course1 = privateCoursesWithSameLecturer2.head
-      val course2 = privateCoursesWithSameLecturer2(1)
+    "successfully return if a given user is a course manager" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
+      val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
+      val auths = List(
+        AuthorityDb(lecturer.id, employeeRole.id),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
+        AuthorityDb(lecturer.id, rightsManager.id)
+      )
 
-      await(db.run{
-        for{
-          _ <- createByCourseQuery(course1)
-          _ <- createByCourseQuery(course2)
-          _ <- deleteByCourseQuery(course1)
-          authoritiesOfLecturerAfterDelete1 <- tableQuery.filter(_.user === course1.lecturer).result
-          _ <- deleteByCourseQuery(course2)
-          authoritiesOfLecturerAfterDelete2 <- tableQuery.filter(_.user === course1.lecturer).result
-          rm <- roleService.byRoleLabelQuery(Roles.RightsManagerLabel) if rm.isDefined
-        } yield{
-          authoritiesOfLecturerAfterDelete1.count(_.role === rm.get.id) shouldBe 1
-          authoritiesOfLecturerAfterDelete2.count(_.role === rm.get.id) shouldBe 0
-        }
-      })
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
+        dao.createManyQuery(auths),
+        dao.isCourseManager(lecturer.id) map (_ shouldBe true),
+        dao.deleteQuery(auths(1).id),
+        dao.isCourseManager(lecturer.id) map (_ shouldBe true),
+        dao.deleteQuery(auths(2).id),
+        dao.isCourseManager(lecturer.id) map (_ shouldBe false)
+      )
     }
 
-    "check authorities properly" in {
-      val modules = populateCourses(2)(i => i)
-      val module1 = modules.head.id
-      val module2 = modules.last.id
+    "successfully return if a given user is not a course manager at all" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val auths = List(
+        AuthorityDb(lecturer.id, employeeRole.id),
+        AuthorityDb(lecturer.id, rightsManager.id)
+      )
 
-      val role1 = RoleDb(Role.CourseEmployee.label) // suff
-      val role2 = RoleDb(Role.CourseAssistant.label) // insuff
-      val role3 = RoleDb(Role.Admin.label) // admin
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        dao.createManyQuery(auths),
+        dao.isCourseManager(lecturer.id) map (_ shouldBe false)
+      )
+    }
 
-      val roles = List(role1, role2, role3)
+    "delete course manager authority for a given course" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
+      val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
+      val auths = List(
+        AuthorityDb(lecturer.id, employeeRole.id),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
+        AuthorityDb(lecturer.id, rightsManager.id)
+      )
 
-      val students = populateStudents(6)
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
+        dao.createManyQuery(auths),
+        dao.deleteCourseManagerQuery(course1) map (_ shouldBe 1),
+        dao.deleteCourseManagerQuery(course2) map (_ shouldBe 1),
+        dao.deleteCourseManagerQuery(course1) map (_ shouldBe 0)
+      )
+    }
 
-      val noneModule1Role1 = AuthorityDb(students(0).id, role1.id)
+    "delete rights manager authority from a given user" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val auths = List(
+        AuthorityDb(lecturer.id, employeeRole.id),
+        AuthorityDb(lecturer.id, rightsManager.id)
+      )
 
-      val module1UserRole1 = AuthorityDb(students(2).id, role1.id, Some(module1))
-      val module1UserRole2 = AuthorityDb(students(3).id, role2.id, Some(module1))
-      val module2UserRole2 = AuthorityDb(students(4).id, role2.id, Some(module2))
-      val adminRefRole = AuthorityDb(students(5).id, role3.id)
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        dao.createManyQuery(auths),
+        dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 1),
+        dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 0),
+        dao.filterBy(List(AuthorityUserFilter(lecturer.id.toString))).result map (_ shouldBe auths.take(1))
+      )
+    }
 
-      run(DBIO.seq(
-        TableQuery[AuthorityTable].delete,
-        TableQuery[RoleTable].delete,
-        TableQuery[DegreeTable].delete,
-        TableQuery[CourseTable].delete,
-        TableQuery[DegreeTable].forceInsertAll(degrees),
-        TableQuery[CourseTable].forceInsertAll(modules),
-        TableQuery[UserTable].forceInsertAll(students)
-      ))
+    "delete course and rights manager authorities for a given course" in {
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
+      val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
+      val auths = List(
+        AuthorityDb(lecturer.id, employeeRole.id),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
+        AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
+        AuthorityDb(lecturer.id, rightsManager.id)
+      )
 
-      await(roleService.createMany(roles))
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsert(lecturer),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
+        dao.createManyQuery(auths),
+        dao.deleteAssociatedAuthorities(course1) map (_ shouldBe 1),
+        dao.deleteAssociatedAuthorities(course2) map (_ shouldBe 2), // TODO counting affected rows actually work. maybe this should be applied to each deletion in order to test it properly
+        dao.filterBy(List(AuthorityUserFilter(lecturer.id.toString))).result map (_ shouldBe auths.take(1))
+      )
+    }
 
-      val result1 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole2.toLwmModel))
-      val result2 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(module1UserRole1, module2UserRole2).map(_.toLwmModel))
-      val result3 = checkAuthority((None, List(Role.CourseEmployee)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
-      val result4 = checkAuthority((Some(module1), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
-      val result5 = checkAuthority((Some(module2), List(Role.CourseAssistant)))(Seq(module1UserRole1.toLwmModel))
-      val result6 = checkAuthority((Some(UUID.randomUUID()), List(Role.CourseEmployee)))(Seq(adminRefRole.toLwmModel))
-      val result7 = checkAuthority((Some(module1), List(Role.CourseAssistant, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
-      val result8 = checkAuthority((Some(module1), List(Role.Employee, Role.CourseManager)))(Seq(module1UserRole2.toLwmModel))
-      val result9 = checkAuthority((Some(module1), List(Role.God)))(Seq(module1UserRole1, noneModule1Role1, module2UserRole2).map(_.toLwmModel))
+    "update course and rights manager authorities for a given course" in {
+      val oldLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val newLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val oldCourse1 = CourseDb("course1", "course1", "course1", oldLecturer.id, 1)
+      val oldCourse2 = CourseDb("course2", "course2", "course2", oldLecturer.id, 3)
+      val newCourse = oldCourse1.copy(lecturer = newLecturer.id, label = "new course")
+      val oldLecturerAuths = List(
+        AuthorityDb(oldLecturer.id, employeeRole.id),
+        AuthorityDb(oldLecturer.id, courseManager.id, Some(oldCourse1.id)),
+        AuthorityDb(oldLecturer.id, courseManager.id, Some(oldCourse2.id)),
+        AuthorityDb(oldLecturer.id, rightsManager.id)
+      )
+      val newLecturerAuths = List(
+        AuthorityDb(newLecturer.id, employeeRole.id)
+      )
 
-      await(result1) shouldBe false
-      await(result2) shouldBe true
-      await(result3) shouldBe true
-      await(result4) shouldBe true
-      await(result5) shouldBe false
-      await(result7) shouldBe true
-      await(result8) shouldBe false
-      await(result9) shouldBe false
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(oldLecturer, newLecturer)),
+        TableQuery[CourseTable].forceInsertAll(List(oldCourse1, oldCourse2)),
+        dao.createManyQuery(oldLecturerAuths ++ newLecturerAuths),
+        dao.updateAssociatedAuthorities(oldCourse1, newCourse) map {
+          case (deletedRows, auths) =>
+            deletedRows shouldBe 1
+
+            auths.size shouldBe 2
+            auths.exists(_.role == rightsManager.id) shouldBe true
+            auths.exists(_.role == courseManager.id) shouldBe true
+            auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(newCourse.id)
+        }
+      )
+    }
+
+    "successfully return all authorities for a user's system id" in {
+      val lecturer1 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer2 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer3 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val auths = List(
+        AuthorityDb(lecturer1.id, employeeRole.id),
+        AuthorityDb(lecturer1.id, rightsManager.id),
+        AuthorityDb(lecturer2.id, employeeRole.id),
+        AuthorityDb(lecturer3.id, employeeRole.id),
+        AuthorityDb(lecturer3.id, rightsManager.id)
+      )
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(lecturer1, lecturer2, lecturer3)),
+        dao.createManyQuery(auths)
+      )
+
+      async(dao.authoritiesFor(lecturer1.systemId))(_ shouldBe auths.filter(_.user == lecturer1.id).map(_.toUniqueEntity))
+      async(dao.authoritiesFor(lecturer2.systemId))(_ shouldBe auths.filter(_.user == lecturer2.id).map(_.toUniqueEntity))
+      async(dao.authoritiesFor(lecturer3.systemId))(_ shouldBe auths.filter(_.user == lecturer3.id).map(_.toUniqueEntity))
     }
   }
 
 
-  override protected val dbEntity: AuthorityDb = AuthorityDb(randomEmployee.id, roles.find(_.label == Roles.RightsManagerLabel).get.id, Some(randomCourse.id))
+  override protected val dbEntity: AuthorityDb = authorities.head
+
   override protected val invalidDuplicateOfDbEntity: AuthorityDb = AuthorityDb(dbEntity.user, dbEntity.role, dbEntity.course)
+
   override protected val invalidUpdateOfDbEntity: AuthorityDb = dbEntity
+
   override protected val validUpdateOnDbEntity: AuthorityDb = dbEntity.copy(lastModified = DateTime.now.plusDays(1).timestamp)
-  override protected val dbEntities: List[AuthorityDb] = authorities
+
+  override protected val dbEntities: List[AuthorityDb] = authorities.tail
+
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[UserTable].forceInsertAll(employees ++ privateLecturers),
+    TableQuery[UserTable].forceInsertAll(employees),
     TableQuery[RoleTable].forceInsertAll(roles),
-    TableQuery[CourseTable].forceInsertAll(courses ++ privateCourses ++ privateCoursesWithSameLecturer ++ privateCoursesWithSameLecturer2 ++ privateCoursesWithSameLecturer3)
+    TableQuery[CourseTable].forceInsertAll(courses)
   )
 
-  override protected val lwmEntity: Authority = dbEntity.toLwmModel
-
-  override protected val lwmAtom: PostgresAuthorityAtom = {
-    val course = for{
+  override protected val lwmAtom: AuthorityAtom = {
+    val course = for {
       courseId <- dbEntity.course
       courseDb <- courses.find(_.id == courseId)
-      employee <- employees.find( _.id == courseDb.lecturer)
-    } yield PostgresCourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toLwmModel, courseDb.semesterIndex, courseDb.id)
+      employee <- employees.find(_.id == courseDb.lecturer)
+    } yield CourseAtom(courseDb.label, courseDb.description, courseDb.abbreviation, employee.toUniqueEntity, courseDb.semesterIndex, courseDb.id)
 
-    PostgresAuthorityAtom(
-      employees.find(_.id == dbEntity.user).get.toLwmModel,
-      roles.find(_.id == dbEntity.role).get.toLwmModel,
+    AuthorityAtom(
+      employees.find(_.id == dbEntity.user).get.toUniqueEntity,
+      roles.find(_.id == dbEntity.role).get.toUniqueEntity,
       course,
       dbEntity.id
     )
@@ -249,10 +311,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   override protected def name: String = "authority"
 
-  override protected val roleService: RoleDao = {
-    val sharedDb = db
-    new RoleDao {
-      override protected def db: driver.PostgresDriver.backend.Database = sharedDb
-    }
-  }
+  override protected val dao: AuthorityDao = app.injector.instanceOf(classOf[AuthorityDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

@@ -1,14 +1,15 @@
 package dao
 
-import models.{DegreeDb, PostgresDegree}
+import database.{DegreeDb, DegreeTable}
+import models.Degree
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import slick.driver.PostgresDriver.api._
-import store.DegreeTable
+import slick.jdbc.PostgresProfile.api._
 
-final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, PostgresDegree] with DegreeDao {
-  import dao.AbstractDaoSpec._
+final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Degree] {
+  import AbstractDaoSpec.degrees
 
-  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected val dao: DegreeDao = app.injector.instanceOf(classOf[DegreeDao])
 
   override protected def name: String = "degree"
 
@@ -16,13 +17,15 @@ final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Postgre
 
   override protected val invalidDuplicateOfDbEntity: DegreeDb = DegreeDb(dbEntity.label, dbEntity.abbreviation)
 
-  override protected val invalidUpdateOfDbEntity: DegreeDb = DegreeDb("new label", "new abbrev", lastModified, dbEntity.invalidated, dbEntity.id)
+  override protected val invalidUpdateOfDbEntity: DegreeDb = dbEntity.copy("new label", "new abbrev")
 
-  override protected val validUpdateOnDbEntity: DegreeDb = DegreeDb("new label", dbEntity.abbreviation, lastModified, dbEntity.invalidated, dbEntity.id)
+  override protected val validUpdateOnDbEntity: DegreeDb = dbEntity.copy("new label")
 
   override protected val dbEntities: List[DegreeDb] = degrees
 
-  override protected val lwmEntity: PostgresDegree = dbEntity.toLwmModel
+  override protected val lwmAtom: Degree = dbEntity.toUniqueEntity
 
-  override protected val lwmAtom: PostgresDegree = lwmEntity
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
+
+  override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 }

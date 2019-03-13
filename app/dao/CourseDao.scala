@@ -1,11 +1,12 @@
 package dao
 
-import models.{Course, CourseDb, PostgresCourseAtom}
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store.{CourseTable, TableFilter}
+import database.{CourseDb, CourseTable, TableFilter}
+import javax.inject.Inject
+import models.{CourseAtom, CourseLike}
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -16,15 +17,12 @@ case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTa
 }
 
 case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTable] {
-  override def predicate: (CourseTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
+  override def predicate = _.abbreviation.toLowerCase === value.toLowerCase
 }
 
-trait CourseDao extends AbstractDao[CourseTable, CourseDb, Course] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
-
-  protected def authorityService: AuthorityDao
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
     filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
@@ -37,21 +35,21 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, Course] {
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
+  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
     val joinedQuery = for {
       q <- query
-      l <- q.joinLecturer
+      l <- q.lecturerFk
     } yield (q, l)
 
     db.run(joinedQuery.result.map(_.map {
-      case (c, l) => PostgresCourseAtom(c.label, c.description, c.abbreviation, l.toLwmModel, c.semesterIndex, c.id)
-    }.toSeq))
+      case (c, l) => CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
+    }))
   }
 
-  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[Course]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 
-final class CourseDaoImpl(val db: PostgresDriver.backend.Database, val authorityService: AuthorityDao) extends CourseDao
+final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends CourseDao
 

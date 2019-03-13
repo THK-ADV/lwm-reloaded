@@ -1,27 +1,24 @@
 package base
 
-import modules.DatabaseModule
+import database._
 import org.scalatest._
-import store._
+import org.scalatest.time.{Seconds, Span}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import slick.jdbc.PostgresProfile
 
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.Future
 
-object PostgresDbSpec {
-  import slick.driver.PostgresDriver.api._
+abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication {
 
-  lazy val db = Database.forConfig("database_test")
-}
+  import slick.jdbc.PostgresProfile.api._
 
-abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with DatabaseModule {
-  import slick.driver.PostgresDriver.api._
-  import scala.concurrent.duration._
+  val db = app.injector.instanceOf(classOf[PostgresProfile.backend.Database])
 
-  override def db = base.PostgresDbSpec.db
+  protected final def async[R](future: Future[R])(assert: R => Unit): Unit = whenReady(future, timeout(Span(5, Seconds)))(assert)
 
-  implicit lazy val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.Implicits.global
+  protected final def runAsync[R](action: DBIOAction[R, NoStream, Nothing])(assert: R => Unit): Unit = async(db.run(action))(assert)
 
-  protected final def await[R](future: Future[R]): R = Await.result(future, Duration.Inf)
-  protected final def run[R](action: DBIOAction[R, NoStream, Nothing]): R = await(db.run(action))
+  protected final def runAsyncSequence[R](args: DBIO[R]*): Unit = async(db.run(DBIO.seq(args: _*).transactionally))(_ => Unit)
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
@@ -59,18 +56,13 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Data
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    await(db.run(DBIO.seq(
-      schema.map(_.create): _*
-    ).andThen(dependencies).
-      transactionally)
-    )
+    runAsyncSequence(schema.map(_.create) :+ dependencies: _*)
   }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
 
-    await(db.run(DBIO.seq(
-      schema.reverseMap(_.drop): _*
-    ).transactionally))
+    runAsyncSequence(schema.reverseMap(_.drop): _*)
+    db.close()
   }
 }

@@ -2,22 +2,23 @@ package dao
 
 import java.util.UUID
 
-import models.{PostgresRoom, RoomDb}
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store.{RoomTable, TableFilter}
+import database.{RoomDb, RoomTable, TableFilter}
+import javax.inject.Inject
+import models.Room
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class RoomIdFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
+
 case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
 }
 
-trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
 
@@ -27,15 +28,15 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, PostgresRoom] {
 
   override protected def shouldUpdate(existing: RoomDb, toUpdate: RoomDb): Boolean = {
     (existing.description != toUpdate.description ||
-    existing.capacity != toUpdate.capacity) &&
-    existing.label == toUpdate.label
+      existing.capacity != toUpdate.capacity) &&
+      existing.label == toUpdate.label
   }
 
-  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[PostgresRoom]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 
-final class RoomDaoImpl(val db: PostgresDriver.backend.Database) extends RoomDao
+final class RoomDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoomDao

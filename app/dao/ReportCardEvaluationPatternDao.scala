@@ -2,11 +2,14 @@ package dao
 
 import java.util.UUID
 
-import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternDb}
-import slick.driver.PostgresDriver
-import slick.lifted.{Rep, TableQuery}
-import store.{ReportCardEvaluationPatternTable, TableFilter}
-import slick.driver.PostgresDriver.api._
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
+import javax.inject.Inject
+import models.ReportCardEvaluationPattern
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.TableQuery
+
+import scala.concurrent.{ExecutionContext, Future}
 
 case class EvaluationPatternPropertyFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
   override def predicate = _.property.toLowerCase === value.toLowerCase
@@ -25,14 +28,13 @@ case class EvaluationPatternCourseFilter(value: String) extends TableFilter[Repo
 }
 
 trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val tableQuery = TableQuery[ReportCardEvaluationPatternTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Traversable[ReportCardEvaluationPattern]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]) = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq]): Future[Traversable[ReportCardEvaluationPattern]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationPatternDb): Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq] = {
@@ -49,4 +51,4 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   }
 }
 
-final class ReportCardEvaluationPatternDaoImpl(val db: PostgresDriver.backend.Database) extends ReportCardEvaluationPatternDao
+final class ReportCardEvaluationPatternDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationPatternDao

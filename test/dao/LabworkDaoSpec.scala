@@ -1,24 +1,23 @@
 package dao
 
+import java.util.UUID
+
+import database._
 import models._
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import store._
 
-final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labwork] with LabworkDao {
+final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, LabworkLike] { // TODO create many fails from time to time
+  import AbstractDaoSpec._
+  import slick.jdbc.PostgresProfile.api._
 
-  import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+  override protected val dao: LabworkDao = app.injector.instanceOf(classOf[LabworkDao])
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[SemesterTable].forceInsertAll(semesters),
-    TableQuery[DegreeTable].forceInsertAll(degrees),
-    TableQuery[UserTable].forceInsertAll(employees),
-    TableQuery[CourseTable].forceInsertAll(courses)
-  )
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 
   override protected def name: String = "labwork"
 
-  override protected val dbEntity: LabworkDb = LabworkDb("label", "description",semesters.head.id,courses.head.id,degrees.head.id)
+  override protected val dbEntity: LabworkDb = LabworkDb("label", "desc", semesters.head.id, courses.head.id, degrees.head.id)
 
   override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb(dbEntity.label, dbEntity.description, dbEntity.semester, dbEntity.course, dbEntity.degree, dbEntity.subscribable, dbEntity.published)
 
@@ -26,28 +25,37 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", dbEntity.semester, dbEntity.course, dbEntity.degree)
 
-  override protected val dbEntities: List[LabworkDb] = labworks
+  override protected val dbEntities: List[LabworkDb] = (semesters.tail, courses.tail, degrees.tail).zipped.toList.map {
+    case (s, c, d) =>
+      val r = UUID.randomUUID.toString
+      LabworkDb(s"label $r", s"desc $r", s.id, c.id, d.id)
+  }
 
-  override protected val lwmEntity: Labwork = dbEntity.toLwmModel
-
-  override protected val lwmAtom: PostgresLabworkAtom = {
+  override protected val lwmAtom: LabworkAtom = {
     val course = courses.find(_.id == dbEntity.course).get
-    PostgresLabworkAtom(
+    LabworkAtom(
       dbEntity.label,
       dbEntity.description,
-      semesters.find(_.id == dbEntity.semester).get.toLwmModel,
-      PostgresCourseAtom(
+      semesters.find(_.id == dbEntity.semester).get.toUniqueEntity,
+      CourseAtom(
         course.label,
         course.description,
         course.abbreviation,
-        employees.find(_.id == course.lecturer).get.toLwmModel,
+        employees.find(_.id == course.lecturer).get.toUniqueEntity,
         course.semesterIndex,
         course.id
       ),
-      degrees.find(_.id == dbEntity.degree).get.toLwmModel,
+      degrees.find(_.id == dbEntity.degree).get.toUniqueEntity,
       dbEntity.subscribable,
       dbEntity.published,
       dbEntity.id
     )
   }
+
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
+    TableQuery[SemesterTable].forceInsertAll(semesters),
+    TableQuery[DegreeTable].forceInsertAll(degrees),
+    TableQuery[UserTable].forceInsertAll(employees),
+    TableQuery[CourseTable].forceInsertAll(courses)
+  )
 }

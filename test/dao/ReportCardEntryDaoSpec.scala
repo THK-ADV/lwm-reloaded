@@ -1,16 +1,19 @@
 package dao
 
-import java.util.UUID
+import java.sql.{Date, Time}
 
+import database._
 import models._
-import services._
+import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import store._
 
-final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] with ReportCardEntryDao {
+final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
+
+  import AbstractDaoSpec._
+  import slick.jdbc.PostgresProfile.api._
   import utils.LwmDateTime._
-  import dao.AbstractDaoSpec._
-  import slick.driver.PostgresDriver.api._
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
   private lazy val privateStudents = populateStudents(100)
@@ -51,39 +54,37 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     }
   }
 
-  def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[DbUser], rooms: List[RoomDb]) = PostgresReportCardEntryAtom(
-    students.find(_.id == entry.student).get.toLwmModel,
-    labworks.find(_.id == entry.labwork).get.toLwmModel,
+  def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[UserDb], rooms: List[RoomDb]) = ReportCardEntryAtom(
+    students.find(_.id == entry.student).get.toUniqueEntity,
+    labworks.find(_.id == entry.labwork).get.toUniqueEntity,
     entry.label,
     entry.date.localDate,
     entry.start.localTime,
     entry.end.localTime,
-    rooms.find(_.id == entry.room).get.toLwmModel,
-    entry.entryTypes.map(_.toLwmModel),
+    rooms.find(_.id == entry.room).get.toUniqueEntity,
+    entry.entryTypes.map(_.toUniqueEntity),
     entry.rescheduled.map(r =>
-      PostgresReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toLwmModel, r.reason, r.id)
+      ReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.reason, r.id)
     ),
     entry.retry.map(r =>
-      PostgresReportCardRetryAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toLwmModel, r.entryTypes.map(_.toLwmModel), r.reason, r.id)
+      ReportCardRetryAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.entryTypes.map(_.toUniqueEntity), r.reason, r.id)
     ),
     entry.id
   )
 
   override protected def name: String = "reportCardEntry"
 
-  override protected val dbEntity: ReportCardEntryDb = populateReportCardEntries(1, 8, withRescheduledAndRetry = false)(labworks, students).head.copy(entryTypes = Set.empty) // need to be empty because basic tests don't expand
+  override protected val dbEntity: ReportCardEntryDb = ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity.copy(id = UUID.randomUUID)
+  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb = dbEntity.copy(student = students.find(_.id != dbEntity.student).get.id)
+  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb = dbEntity
 
-  override protected val validUpdateOnDbEntity: ReportCardEntryDb = dbEntity.copy(label = "updated label")
+  override protected val validUpdateOnDbEntity: ReportCardEntryDb = dbEntity.copy(date = Date.valueOf("1990-06-02"), start = Time.valueOf("16:00:00"))
 
   override protected val dbEntities: List[ReportCardEntryDb] = reportCardEntries
 
-  override protected val lwmEntity: ReportCardEntry = dbEntity.toLwmModel
-
-  override protected val lwmAtom: ReportCardEntry = reportCardEntryAtom(dbEntity)(labworks, students, rooms)
+  override protected val lwmAtom: ReportCardEntryLike = reportCardEntryAtom(dbEntity)(labworks, students, rooms)
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -104,17 +105,21 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     toUpdate.map(r => r.copy(label = "updated", date = r.date.localDate.plusDays(1).sqlDate, room = takeOneOf(rooms).id))
   }
 
-  override protected def atom(dbModel: ReportCardEntryDb): ReportCardEntry = reportCardEntryAtom(dbModel)(privateLabs, privateStudents, rooms)
+  override protected def atom(dbModel: ReportCardEntryDb): ReportCardEntryLike = reportCardEntryAtom(dbModel)(privateLabs, privateStudents, rooms)
 
   override protected def expanderSpecs(dbModel: ReportCardEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
-    entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
+    dao.entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
       entryTypes.toSet shouldBe (if (isDefined) dbModel.entryTypes else Set.empty)
     },
-    rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
+    dao.rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
       rescheduled.toSet shouldBe (if (isDefined) dbModel.rescheduled.toSet else Set.empty)
     },
-    retryQuery.filter(_.reportCardEntry === dbModel.id).joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry).result.map(_.groupBy(_._1.id)).map(_.foreach {
+    dao.retryQuery.filter(_.reportCardEntry === dbModel.id).joinLeft(dao.entryTypeQuery).on(_.id === _.reportCardRetry).result.map(_.groupBy(_._1.id)).map(_.foreach {
       case (_, values) => values.map(_._1).head.copy(entryTypes = values.flatMap(_._2).toSet) shouldBe dbModel.retry.get
     })
   )
+
+  override protected val dao: ReportCardEntryDao = app.injector.instanceOf(classOf[ReportCardEntryDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

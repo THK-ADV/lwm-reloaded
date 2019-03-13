@@ -1,66 +1,46 @@
 package models
 
-import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import org.joda.time.{DateTime, LocalDate, LocalTime}
+import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-sealed trait ReportCardRetry extends UniqueEntity
+sealed trait ReportCardRetryLike extends UniqueEntity
 
-case class PostgresReportCardRetry(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRetry
+case class ReportCardRetry(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryType], reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRetryLike
 
-case class PostgresReportCardRetryProtocol(reportCardEntry: UUID, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[PostgresReportCardEntryTypeProtocol], reason: Option[String])
+case class ReportCardRetryProtocol(reportCardEntry: UUID, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[ReportCardEntryTypeProtocol], reason: Option[String])
 
-case class PostgresReportCardRetryAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: PostgresRoom, entryTypes: Set[PostgresReportCardEntryType], reason: Option[String], id: UUID) extends ReportCardRetry
+case class ReportCardRetryAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room, entryTypes: Set[ReportCardEntryType], reason: Option[String], id: UUID) extends ReportCardRetryLike
 
-case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, entryTypes: Set[ReportCardEntryTypeDb], reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-
-  override def equals(that: scala.Any) = that match {
-    case ReportCardRetryDb(rc, dt, st, et, r, ts, rs, _, _, i) =>
-      rc == reportCardEntry &&
-        dt.localDate.isEqual(date.localDate) &&
-        st.localTime.isEqual(start.localTime) &&
-        et.localTime.isEqual(end.localTime) &&
-        r == room &&
-        ts == entryTypes &&
-        rs == reason &&
-        i == id
-  }
-
-  override def toLwmModel = PostgresReportCardRetry(date.localDate, start.localTime, end.localTime, room, entryTypes.map(_.toLwmModel), reason, id)
+object ReportCardRetry {
+  implicit val writes: Writes[ReportCardRetry] = Json.writes[ReportCardRetry]
 }
 
-object PostgresReportCardRetry {
-  implicit val writes: Writes[PostgresReportCardRetry] = Json.writes[PostgresReportCardRetry]
+object ReportCardRetryProtocol {
+  implicit val reads: Reads[ReportCardRetryProtocol] = Json.reads[ReportCardRetryProtocol]
 }
 
-object PostgresReportCardRetryProtocol {
-  implicit val reads: Reads[PostgresReportCardRetryProtocol] = Json.reads[PostgresReportCardRetryProtocol]
-}
+object ReportCardRetryAtom {
 
-object PostgresReportCardRetryAtom {
-
-  implicit val writes: Writes[PostgresReportCardRetryAtom] = (
+  implicit val writes: Writes[ReportCardRetryAtom] = (
     (JsPath \ "date").write[LocalDate] and
       (JsPath \ "start").write[LocalTime] and
       (JsPath \ "end").write[LocalTime] and
-      (JsPath \ "room").write[PostgresRoom](PostgresRoom.writes) and
-      (JsPath \ "entryTypes").writeSet[PostgresReportCardEntryType](PostgresReportCardEntryType.writes) and
+      (JsPath \ "room").write[Room](Room.writes) and
+      (JsPath \ "entryTypes").writeSet[ReportCardEntryType](ReportCardEntryType.writes) and
       (JsPath \ "reason").writeNullable[String] and
       (JsPath \ "id").write[UUID]
-    ) (unlift(PostgresReportCardRetryAtom.unapply))
+    ) (unlift(ReportCardRetryAtom.unapply))
 }
 
-object ReportCardRetry {
+object ReportCardRetryLike {
 
-  implicit val writes: Writes[ReportCardRetry] = new Writes[ReportCardRetry] {
-    override def writes(r: ReportCardRetry) = r match {
-      case normal: PostgresReportCardRetry => Json.toJson(normal)(PostgresReportCardRetry.writes)
-      case atom: PostgresReportCardRetryAtom => Json.toJson(atom)(PostgresReportCardRetryAtom.writes)
-    }
+  implicit val writes: Writes[ReportCardRetryLike] = {
+    case normal: ReportCardRetry => Json.toJson(normal)(ReportCardRetry.writes)
+    case atom: ReportCardRetryAtom => Json.toJson(atom)(ReportCardRetryAtom.writes)
   }
 }

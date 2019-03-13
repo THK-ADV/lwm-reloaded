@@ -2,14 +2,15 @@ package dao
 
 import java.util.UUID
 
-import utils.LwmDateTime._
-import models.{PostgresSemester, SemesterDb}
+import database.{SemesterDb, SemesterTable, TableFilter}
+import javax.inject.Inject
+import models.Semester
 import org.joda.time.LocalDate
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store.{SemesterTable, TableFilter}
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
+import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class SemesterLabelFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
@@ -35,26 +36,28 @@ case class SemesterEndFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.end === value.sqlDateFromMillis
 }
 
-case class SemesterCurrentFilter(value: String = LocalDate.now.stringMillis) extends TableFilter[SemesterTable] {
+case object SemesterCurrentFilter extends TableFilter[SemesterTable] {
   override def predicate = t => t.start <= value.sqlDateFromMillis && t.end >= value.sqlDateFromMillis
+  override def value: String = LocalDate.now.stringMillis
 }
 
 case class SemesterIdFilter(value: String) extends TableFilter[SemesterTable] {
   override def predicate = _.id === UUID.fromString(value)
 }
 
-trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemester] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
+    import utils.LwmDateTime.SqlDateConverter
+
     (existing.abbreviation != toUpdate.abbreviation ||
-      !existing.examStart.equals(toUpdate.examStart)) &&
-      (existing.label == toUpdate.label && existing.start.equals(toUpdate.start) && existing.end.equals(toUpdate.end))
+      existing.examStart.localDate != toUpdate.examStart.localDate) &&
+      (existing.label == toUpdate.label && existing.start.localDate == toUpdate.start.localDate && existing.end.localDate == toUpdate.end.localDate)
   }
 
-  override protected def existsQuery(entity: SemesterDb): Query[SemesterTable, SemesterDb, Seq] = {
+  override protected def existsQuery(entity: SemesterDb): PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq] = {
     filterBy(List(
       SemesterLabelFilter(entity.label),
       SemesterStartFilter(entity.start.stringMillis),
@@ -62,11 +65,11 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, PostgresSemeste
     ))
   }
 
-  override protected def toAtomic(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[SemesterTable, SemesterDb, Seq]): Future[Seq[PostgresSemester]] = {
-    db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = {
+    db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
 
-final class SemesterDaoImpl(val db: PostgresDriver.backend.Database) extends SemesterDao
+final class SemesterDaoImpl @Inject() (val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends SemesterDao

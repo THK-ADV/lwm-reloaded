@@ -2,13 +2,15 @@ package dao
 
 import java.util.UUID
 
+import database._
+import javax.inject.Inject
 import models._
-import slick.driver.PostgresDriver
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store.{ReportCardEvaluationTable, TableFilter}
-import slick.driver.PostgresDriver.api._
 import utils.LwmDateTime.SqlTimestampConverter
-import scala.concurrent.Future
+
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
@@ -20,7 +22,7 @@ case class LabworkFilter(value: String) extends TableFilter[ReportCardEvaluation
 }
 
 case class CourseFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.labworkFk.map(_.course).filter(_ === UUID.fromString(value)).exists
+  override def predicate = _.memberOfCourse(value)
 }
 
 case class LabelFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
@@ -43,38 +45,34 @@ case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationT
   override def predicate = _.int <= Try(value.toInt).getOrElse(-1)
 }
 
-trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluation] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, (l, c, d, s, lec), u)) =>
-      val labworkAtom = {
-        val courseAtom = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
-        PostgresLabworkAtom(l.label, l.description, s.toLwmModel, courseAtom, d.toLwmModel, l.subscribable, l.published, l.id)
-      }
-
-      PostgresReportCardEvaluationAtom(u.toLwmModel, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
-  }
-
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluation]] = collectDependencies(query) {
-    case ((e, _, _)) => PostgresReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
-  }
-
-  private def collectDependencies(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq])
-                                 (build: (ReportCardEvaluationDb, (LabworkDb, CourseDb, DegreeDb, SemesterDb, DbUser), DbUser) => ReportCardEvaluation) = {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
     val mandatory = for {
       q <- query
-      l <- q.labworkFk
-      s <- q.studentFk
-      (cou, deg, sem) <- l.fullJoin
-      lec <- cou.joinLecturer
-    } yield (q, l, s, cou, deg, sem, lec)
+      labwork <- q.labworkFk
+      student <- q.studentFk
+      course <- labwork.courseFk
+      degree <- labwork.degreeFk
+      semester <- labwork.semesterFk
+      lecturer <- course.lecturerFk
+    } yield (q, labwork, student, course, degree, semester, lecturer)
 
     db.run(mandatory.result.map(_.map {
-      case (e, l, u, cou, deg, sem, lec) => build(e, (l, cou, deg, sem, lec), u)
-    }.toSeq))
+      case (e, l, u, c, d, s, lec) =>
+        val labworkAtom = {
+          val courseAtom = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+          LabworkAtom(l.label, l.description, s.toUniqueEntity, courseAtom, d.toUniqueEntity, l.subscribable, l.published, l.id)
+        }
+
+        ReportCardEvaluationAtom(u.toUniqueEntity, labworkAtom, e.label, e.bool, e.int, e.lastModified.dateTime, e.id)
+    }))
+  }
+
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
+    db.run(query.result.map(_.map(e => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id))))
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationDb): Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq] = {
@@ -87,4 +85,4 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 }
 
-final class ReportCardEvaluationDaoImpl(val db: PostgresDriver.backend.Database) extends ReportCardEvaluationDao
+final class ReportCardEvaluationDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationDao

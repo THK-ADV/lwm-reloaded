@@ -2,13 +2,17 @@ package dao
 
 import java.util.UUID
 
-import models._
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import store._
+import dao.helper.DatabaseExpander
+import database._
+import javax.inject.Inject
+import models.genesis.{ScheduleEntryGen, ScheduleGen}
+import models.{genesis, _}
+import slick.jdbc
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[ScheduleEntryTable] {
   override def predicate = _.labwork === UUID.fromString(value)
@@ -46,26 +50,26 @@ case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleE
   override def predicate = _.until(value)
 }
 
-trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntry] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
-  protected val scheduleEntrySupervisorQuery: TableQuery[ScheduleEntrySupervisorTable] = TableQuery[ScheduleEntrySupervisorTable]
+
+  val scheduleEntrySupervisorQuery: TableQuery[ScheduleEntrySupervisorTable] = TableQuery[ScheduleEntrySupervisorTable]
   protected val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Traversable[ScheduleEntryLike]] = collectDependencies(query) {
     case ((e, r, lab, c, d, s, lec), g, subs) =>
       val labwork = {
-        val course = PostgresCourseAtom(c.label, c.description, c.abbreviation, lec.toLwmModel, c.semesterIndex, c.id)
-        PostgresLabworkAtom(lab.label, lab.description, s.toLwmModel, course, d.toLwmModel, lab.subscribable, lab.published, lab.id)
+        val course = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
+        LabworkAtom(lab.label, lab.description, s.toUniqueEntity, course, d.toUniqueEntity, lab.subscribable, lab.published, lab.id)
       }
 
-      PostgresScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toLwmModel, subs.map(_._2.toLwmModel).toSet, g.toLwmModel, e.id)
+      ScheduleEntryAtom(labwork, e.start.localTime, e.end.localTime, e.date.localDate, r.toUniqueEntity, subs.map(_._2.toUniqueEntity).toSet, g.toUniqueEntity, e.id)
   }
 
-  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Seq[ScheduleEntry]] = collectDependencies(query) {
-    case ((e, _, _, _, _, _, _), _, subs) => PostgresScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
+  override protected def toUniqueEntity(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Traversable[ScheduleEntryLike]] = collectDependencies(query) {
+    case ((e, _, _, _, _, _, _), _, subs) => ScheduleEntry(e.labwork, e.start.localTime, e.end.localTime, e.date.localDate, e.room, subs.map(_._1.supervisor).toSet, e.group, e.id)
   }
 
   override protected def existsQuery(entity: ScheduleEntryDb): Query[ScheduleEntryTable, ScheduleEntryDb, Seq] = {
@@ -76,16 +80,18 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
     (existing.supervisor != toUpdate.supervisor ||
-    !existing.date.equals(toUpdate.date) ||
-    !existing.start.equals(toUpdate.start) ||
-    !existing.end.equals(toUpdate.end) ||
-    existing.room != toUpdate.room) &&
+      existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
+      existing.room != toUpdate.room) &&
       (existing.labwork == toUpdate.labwork && existing.group == toUpdate.group)
   }
 
   private def collectDependencies(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
-                                 (build: ((ScheduleEntryDb, RoomDb, LabworkDb, CourseDb, DegreeDb, SemesterDb, DbUser), GroupDb, Seq[(ScheduleEntrySupervisor, DbUser)]) => ScheduleEntry) = {
+    (build: ((ScheduleEntryDb, RoomDb, LabworkDb, CourseDb, DegreeDb, SemesterDb, UserDb), GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => ScheduleEntryLike) = {
     val mandatory = for {
       q <- query
       r <- q.roomFk
@@ -111,14 +117,14 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         val gm = dependencies.flatMap(_._2.flatMap(_._2))
 
         build((se, r, l, c, d, s, lec), g.copy(members = gm.map(_.student).toSet), sups)
-    }.toSeq)
+    })
 
     db.run(action)
   }
 
   private def collectDependenciesMin[A, B](query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
-                                          (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, DbUser)]) => A)
-                                          (transform: (Seq[A]) => Vector[B]): Future[Vector[B]] = {
+    (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => A)
+    (transform: Traversable[A] => Vector[B]): Future[Vector[B]] = {
     val mandatory = for {
       q <- query
       g <- q.groupFk
@@ -138,60 +144,40 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         val gm = dependencies.flatMap(_._2.flatMap(_._2))
 
         build(se, g.copy(members = gm.map(_.student).toSet), sups)
-    }.toSeq)
+    })
 
     db.run(action map transform)
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[ScheduleEntryDb]) = {
-      for {
-        _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
-          e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
-        }
-      } yield entities
-    }
+    override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ScheduleEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
+      _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
+        e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
+      }
+    } yield entities
 
-    override def expandDeleteOf(entity: ScheduleEntryDb) = {
-      (for {
-        d <- scheduleEntrySupervisorQuery.filter(_.scheduleEntry === entity.id).delete
-      } yield d).map(_ => Some(entity))
-    }
+    override def expandDeleteOf(entity: ScheduleEntryDb) = for {
+      _ <- scheduleEntrySupervisorQuery.filter(_.scheduleEntry === entity.id).delete
+    } yield entity
 
-    override def expandUpdateOf(entity: ScheduleEntryDb) = {
-      for {
-        d <- expandDeleteOf(entity) if d.isDefined
-        c <- expandCreationOf(Seq(entity))
-      } yield c.headOption
-    }
+    override def expandUpdateOf(entity: ScheduleEntryDb) = for {
+      d <- expandDeleteOf(entity)
+      c <- expandCreationOf(d)
+    } yield c.head
   })
 
-  /*
-  val comps = all
-        .filter(_.labwork.course.semesterIndex == labwork.course.semesterIndex)
-        .filter(_.labwork.semester.id == labwork.semester.id)
-        .filter(_.labwork.degree.id == labwork.degree.id)
-        .filterNot(_.labwork.id == labwork.id)
-   */
-
-  def competitive(labwork: PostgresLabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
+  def competitive(labwork: LabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
     val comps = tableQuery
       .flatMap(t => t.labworkFk.withFilter(l => l.id =!= labwork.id)
-      .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
-      .flatMap(_ => l.semesterFk.withFilter(s => s.id === labwork.semester.id)
-      .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
-      .map(_ => t)))))
+        .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
+          .flatMap(_ => l.semesterFk.withFilter(s => s.id === labwork.semester.id)
+            .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
+              .map(_ => t)))))
 
-    scheduleGen(comps)
+    scheduleGen(filterValidOnly(comps))
   }
 
-  def scheduleGenBy(labworkId: String) = {
-    val query = for {
-      t <- tableQuery if t.labwork === UUID.fromString(labworkId)
-    } yield t
-
-    scheduleGen(query)
-  }
+  def scheduleGenBy(labworkId: String) = scheduleGen(filterValidOnly(_.labwork === UUID.fromString(labworkId)).take(1)).map(_.headOption)
 
   private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
     collectDependenciesMin(query) {
@@ -201,11 +187,11 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
         se.date.localDate,
         se.room,
         sups.map(_._1.supervisor).toSet,
-        g.toLwmModel
+        g.toUniqueEntity
       ), se.labwork)
     } { entries =>
       entries.groupBy(_._2).map {
-        case (id, e) => ScheduleGen(id, e.map(_._1).toVector)
+        case (id, e) => genesis.ScheduleGen(id, e.map(_._1).toVector)
       }.toVector
     }
   }
@@ -225,4 +211,4 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 }
 
-final class ScheduleEntryDaoImpl(val db: PostgresDriver.backend.Database) extends ScheduleEntryDao
+final class ScheduleEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ScheduleEntryDao

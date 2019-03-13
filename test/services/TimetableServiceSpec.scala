@@ -1,10 +1,12 @@
 package services
 
+/*
 import java.util.UUID
 
 import base.TestBaseDefinition
 import utils.LwmDateTime._
 import models._
+import models.helper.TimetableDateEntry
 import org.joda.time._
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.WordSpec
@@ -18,10 +20,10 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where some assignments takes more than one week with blacklists applied" in {
       val tt = timetable
       val aEntries = (0 until 7).map {
-        case e if e < 5 => PostgresAssignmentEntry(e, "label", Set.empty[PostgresAssignmentEntryType])
-        case e => PostgresAssignmentEntry(e, "label", Set.empty[PostgresAssignmentEntryType], e - 3)
+        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
+        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
       }.toSet
-      val plan = PostgresAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groupSize = 6
 
       val expectedStart = Vector(
@@ -41,8 +43,8 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "extrapolate further entries based on frontend's timetable protocol template and assignment plan where each assignment takes 2 weeks with blacklists applied" in {
       val tt = timetable
-      val aEntries = (0 until 5).map(PostgresAssignmentEntry(_, "label", Set.empty[PostgresAssignmentEntryType], 2)).toSet
-      val plan = PostgresAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val aEntries = (0 until 5).map(AssignmentEntry(_, "label", Set.empty[AssignmentEntryType], 2)).toSet
+      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groupSize = 6
 
       val expectedStart = Vector(
@@ -66,14 +68,14 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         fdt.parseLocalDateTime("30/11/2015 13:00:00"),
         fdt.parseLocalDateTime("30/11/2015 15:00:00"),
         fdt.parseLocalDateTime("30/11/2015 17:00:00")
-      ).map(PostgresBlacklist.partialDay("A", _, 1, global = true))
+      ).map(Blacklist.partialDay("A", _, 1, global = true))
 
       val tt = timetable
       val aEntries = (0 until 7).map {
-        case e if e < 5 => PostgresAssignmentEntry(e, "label", Set.empty[PostgresAssignmentEntryType])
-        case e => PostgresAssignmentEntry(e, "label", Set.empty[PostgresAssignmentEntryType], e - 3)
+        case e if e < 5 => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType])
+        case e => AssignmentEntry(e, "label", Set.empty[AssignmentEntryType], e - 3)
       }.toSet
-      val plan = PostgresAssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
+      val plan = AssignmentPlan(tt.labwork, aEntries.size, aEntries.size, aEntries)
       val groupSize = 6
 
       val expectedStart = Vector(
@@ -97,7 +99,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
 
     "pass timetable entries when there are no blacklists" in {
       val entries = timetableDateEntries
-      val blacklists = Vector.empty[PostgresBlacklist]
+      val blacklists = Vector.empty[Blacklist]
 
       val result = TimetableService.withoutBlacklists(entries, blacklists)
 
@@ -146,12 +148,12 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
         LocalDateTime.now.withDayOfMonth(DAY_TWO).withTime(10, 0, 0, 0), // 2. 10 - 11
         LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(9, 0, 0, 0), // 3. 9 - 10
         LocalDateTime.now.withDayOfMonth(DAY_OTHER).withTime(16, 0, 0, 0) // 3. 16 - 17
-      ).map(PostgresBlacklist.partialDay("", _, 1, global = true))
+      ).map(Blacklist.partialDay("", _, 1, global = true))
 
       val blacklists2 = Vector(
         LocalDate.now.withDayOfMonth(DAY_OTHER),
         LocalDate.now.withDayOfMonth(DAY_YET_ANOTHER)
-      ).map(PostgresBlacklist.entireDay("", _, global = true))
+      ).map(Blacklist.entireDay("", _, global = true))
 
       val result = TimetableService.withoutBlacklists(entries, blacklists ++ blacklists2)
 
@@ -168,20 +170,20 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
   val profileWeek = (0 until 5).map(n => fd.parseDateTime("23/11/2015").plusDays(n)).toSet
   val christmas = (0 until 3 * 7).map(n => fd.parseDateTime("21/12/2015").plusDays(n)).toSet
   val globalBlacklist2 = {
-    PostgresBlacklist.entireDay("Profil hoch 2", profileWeek.map(_.toLocalDate).toVector, global = true) ++
-      PostgresBlacklist.entireDay("Weihnachten", christmas.map(_.toLocalDate).toVector, global = true)
+    Blacklist.entireDay("Profil hoch 2", profileWeek.map(_.toLocalDate).toVector, global = true) ++
+      Blacklist.entireDay("Weihnachten", christmas.map(_.toLocalDate).toVector, global = true)
   }
 
   private def timetable = {
     val tEntries = Set(
-      PostgresTimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
-      PostgresTimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
-      PostgresTimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
-      PostgresTimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
-      PostgresTimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
+      TimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("11:00:00"), ft.parseLocalTime("13:00:00")),
+      TimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("13:00:00"), ft.parseLocalTime("15:00:00")),
+      TimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00")),
+      TimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("19/10/2015")).index, ft.parseLocalTime("17:00:00"), ft.parseLocalTime("19:00:00")),
+      TimetableEntry(Set(UUID.randomUUID), UUID.randomUUID, Weekday.toDay(fd.parseLocalDate("23/10/2015")).index, ft.parseLocalTime("15:00:00"), ft.parseLocalTime("17:00:00"))
     )
 
-    PostgresTimetable(UUID.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty)
+    Timetable(UUID.randomUUID, tEntries, fd.parseLocalDate("19/10/2015"), Set.empty)
   }
 
   private def timetableDateEntries = (0 until 100).map { n =>
@@ -192,12 +194,12 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     TimetableDateEntry(Weekday.toDay(date), date, start, end, UUID.randomUUID, Set(UUID.randomUUID))
   }.toVector
 
-  private def asBlacklist(d: TimetableDateEntry): PostgresBlacklist = {
-    PostgresBlacklist("", d.date, d.start, d.end, global = true)
+  private def asBlacklist(d: TimetableDateEntry): Blacklist = {
+    Blacklist("", d.date, d.start, d.end, global = true)
   }
 
   private def assertEverything(entries: Vector[TimetableDateEntry],
-                               blacklists: Vector[PostgresBlacklist],
+                               blacklists: Vector[Blacklist],
                                result: Vector[TimetableDateEntry])
                               (countSizeAssert: (Int) => Unit)
                               (resultSizeAssert: (Int) => Unit) {
@@ -219,7 +221,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     result.map(toLocalDateTime).sorted shouldBe sorted
   }
 
-  private def checkAssertion(timetable: PostgresTimetable, plan: PostgresAssignmentPlan, groupSize: Int, expectedStart: Vector[LocalDateTime], result: Vector[TimetableDateEntry]) {
+  private def checkAssertion(timetable: Timetable, plan: AssignmentPlan, groupSize: Int, expectedStart: Vector[LocalDateTime], result: Vector[TimetableDateEntry]) {
     import utils.LwmDateTime.localDateTimeOrd
 
     val sortedResult = result.map(toLocalDateTime).sorted
@@ -235,3 +237,4 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition {
     }._1 shouldBe true
   }
 }
+*/

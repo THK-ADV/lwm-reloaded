@@ -2,14 +2,17 @@ package dao
 
 import java.util.UUID
 
-import utils.LwmDateTime._
+import dao.helper.DatabaseExpander
+import database._
+import javax.inject.Inject
 import models._
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import store._
+import utils.LwmDateTime._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ReportCardEntryStudentFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = _.student === UUID.fromString(value)
@@ -25,6 +28,10 @@ case class ReportCardEntryCourseFilter(value: String) extends TableFilter[Report
 
 case class ReportCardEntryRoomFilter(value: String) extends TableFilter[ReportCardEntryTable] {
   override def predicate = _.room === UUID.fromString(value)
+}
+
+case class ReportCardEntryLabelFilter(value: String) extends TableFilter[ReportCardEntryTable] {
+  override def predicate = _.label === value
 }
 
 case class ReportCardEntryDateFilter(value: String) extends TableFilter[ReportCardEntryTable] {
@@ -58,37 +65,36 @@ case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter
   }.exists
 }
 
-trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntry] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
 
   override val tableQuery = TableQuery[ReportCardEntryTable]
 
-  protected val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
-  protected val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
-  protected val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
+  val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
+  val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
+  val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
-  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => PostgresReportCardEntryAtom(
-      student.toLwmModel,
-      labwork.toLwmModel,
+  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Traversable[ReportCardEntryLike]] = collectDependencies(query) {
+    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
+      student.toUniqueEntity,
+      labwork.toUniqueEntity,
       entry.label,
       entry.date.localDate,
       entry.start.localTime,
       entry.end.localTime,
-      room.toLwmModel,
-      entryTypes.map(_.toLwmModel).toSet,
-      optRs.map { case (rs, r) => PostgresReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toLwmModel, rs.reason, rs.id) },
-      optRt.map { case (rt, r) => PostgresReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toLwmModel, rt.entryTypes.map(_.toLwmModel), rt.reason, rt.id) },
+      room.toUniqueEntity,
+      entryTypes.map(_.toUniqueEntity).toSet,
+      optRs.map { case (rs, r) => ReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toUniqueEntity, rs.reason, rs.id) },
+      optRt.map { case (rt, r) => ReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toUniqueEntity, rt.entryTypes.map(_.toUniqueEntity), rt.reason, rt.id) },
       entry.id
     )
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntry]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toLwmModel
+  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Traversable[ReportCardEntryLike]] = collectDependencies(query) {
+    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toUniqueEntity
   }
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-                                 (build: ((ReportCardEntryDb, LabworkDb, DbUser, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntry) = {
+    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntryLike) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
@@ -109,29 +115,38 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
       case (id, dependencies) =>
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
-        val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
-        val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
+      val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
+      val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
+      val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
 
         build(entry, rescheduled, retryWithEntryTypes, entryTypes)
-    }.toSeq)
+    })
 
     db.run(action)
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(
-      ReportCardEntryLabworkFilter(entity.labwork.toString),
-      ReportCardEntryStudentFilter(entity.student.toString)
-    ))
+    filterBy(List(IdFilter(entity.id.toString)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    existing.labwork == toUpdate.labwork && existing.student == toUpdate.student
+    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+
+    (existing.date.localDate != toUpdate.date.localDate ||
+      existing.start.localTime != toUpdate.start.localTime ||
+      existing.end.localTime != toUpdate.end.localTime ||
+      existing.room != toUpdate.room ||
+      existing.entryTypes != toUpdate.entryTypes ||
+      existing.rescheduled != toUpdate.rescheduled ||
+      existing.retry != toUpdate.retry ||
+      existing.labwork != toUpdate.labwork ||
+      existing.student != toUpdate.student ||
+      existing.label != toUpdate.label) &&
+      existing.id == toUpdate.id
   }
 
   override protected def databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: Seq[ReportCardEntryDb]) = { // entry -> types, rescheduled, (retry -> types)
+    override def expandCreationOf[E <: Effect](entities: ReportCardEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ReportCardEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = { // entry -> types, rescheduled, (retry -> types)
       val rts = entities.flatMap(_.retry)
       val rtTypes = rts.flatMap(_.entryTypes)
 
@@ -147,16 +162,14 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       val rt = retryQuery.filter(_.reportCardEntry === entity.id)
       val types = entryTypeQuery.filter(t => t.reportCardEntry === entity.id || t.reportCardRetry.in(rt.map(_.id)))
 
-      val deleted = for {
-        d1 <- types.delete
-        d2 <- rt.delete
-        d3 <- rs.delete
-      } yield d1 + d2 + d3
-
-      deleted.map(_ => Some(entity))
+      for {
+        _ <- types.delete
+        _ <- rt.delete
+        _ <- rs.delete
+      } yield entity
     }
 
-    override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(Some(entity)) // entry only
+    override def expandUpdateOf(entity: ReportCardEntryDb) = DBIO.successful(entity) // entry only
   })
 
   private lazy val schemas = List(
@@ -175,4 +188,4 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 }
 
-final class ReportCardEntryDaoImpl(val db: PostgresDriver.backend.Database) extends ReportCardEntryDao
+final class ReportCardEntryDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEntryDao

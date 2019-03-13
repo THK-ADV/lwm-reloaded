@@ -3,13 +3,14 @@ package controllers
 import java.util.UUID
 
 import dao._
-import models.{PostgresReportCardRescheduled, PostgresReportCardRescheduledProtocol, ReportCardRescheduled, ReportCardRescheduledDb}
+import javax.inject.{Inject, Singleton}
+import models.Role.{CourseEmployee, CourseManager}
+import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
-import services.SessionHandlingService
-import store.{ReportCardRescheduledTable, TableFilter}
-import utils.LwmMimeType
+import play.api.mvc.ControllerComponents
+import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
+import security.SecurityActionChain
 import utils.LwmDateTime._
-import models.Role.{CourseEmployee, CourseManager, God}
 
 import scala.util.{Failure, Try}
 
@@ -28,18 +29,15 @@ object ReportCardRescheduledController {
   lazy val untilAttribute = "until"
 }
 
-final class ReportCardRescheduledController(val sessionService: SessionHandlingService,
-                                            val authorityDao: AuthorityDao,
-                                            val abstractDao: ReportCardRescheduledDao)
-  extends AbstractCRUDControllerPostgres[PostgresReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduled] {
+@Singleton
+final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecurityActionChain)
+  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc) {
 
   import controllers.ReportCardRescheduledController._
 
-  override implicit val mimeType: LwmMimeType = LwmMimeType.reportCardRescheduledV1Json
+  override protected implicit val writes: Writes[ReportCardRescheduledLike] = ReportCardRescheduledLike.writes
 
-  override protected implicit val writes: Writes[ReportCardRescheduled] = ReportCardRescheduled.writes
-
-  override protected implicit val reads: Reads[PostgresReportCardRescheduledProtocol] = PostgresReportCardRescheduledProtocol.reads
+  override protected implicit val reads: Reads[ReportCardRescheduledProtocol] = ReportCardRescheduledProtocol.reads
 
   override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
     (appendTo, (attribute, value)) match { // TODO more attributes
@@ -50,7 +48,7 @@ final class ReportCardRescheduledController(val sessionService: SessionHandlingS
     }
   }
 
-  override protected def toDbModel(protocol: PostgresReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
+  override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
     ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)
   }
 
@@ -62,23 +60,25 @@ final class ReportCardRescheduledController(val sessionService: SessionHandlingS
     case Update => SecureBlock(restrictionId, List(CourseManager))
   }
 
-  def createFrom(course: String) = restrictedContext(course)(Create) asyncContentTypedAction { request =>
+  def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     create(NonSecureBlock)(request)
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.append(courseAttribute -> Seq(course)))
+    all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>
     get(id, NonSecureBlock)(request)
   }
 
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncContentTypedAction { request =>
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
     update(id, NonSecureBlock)(request)
   }
 
   def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
     delete(id, NonSecureBlock)(request)
   }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
 }

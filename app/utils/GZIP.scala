@@ -7,8 +7,9 @@ import play.api.libs.json.{JsValue, Json}
 
 import scala.io.Codec
 
-trait GZIP[I] {
+sealed trait GZIP[I] {
   def compress(input: I): Array[Byte]
+
   def decompress(bytes: Array[Byte]): I
 }
 

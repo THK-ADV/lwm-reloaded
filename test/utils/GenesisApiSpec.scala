@@ -10,20 +10,17 @@ final class GenesisApiSpec extends WordSpec with Matchers with PropertyChecks {
 
   implicit val monInt: scalaz.Monoid[Int] = scalaz.Monoid.instance[Int](_ + _, 0)
 
+  implicit val ordering: Ordering[(Int, Int)] = (x: (Int, Int), y: (Int, Int)) => x._1 - y._1
+
   "A genetic algorithm" should {
-    implicit val ordering: Ordering[(Int, Int)] = new Ordering[(Int, Int)] {
-      override def compare(x: (Int, Int), y: (Int, Int)): Int = x._1 - y._1
-    }
 
     "apply a genesis function with possibility of early exit" in {
       implicit val eval: Eval[(Int, Int), Nothing, Int] = Eval.instance[(Int, Int), Nothing, Int](t => withValue(t._2))
-      implicit val zero: Zero[Int] = new Zero[Int] {
-        override def apply(a: Int): Boolean = a == 4
-      }
+      implicit val zero: Zero[Int] = (a: Int) => a == 4
       val vec = Genesis.lift[(Int, Int), Nothing, Int](Vector(1, 2, 3, 4) map ((_, 0)))
 
       val applied = attempt[(Int, Int), Nothing, Int, Gen[(Int, Int), Nothing, Int]](vec, 12)((a, _) => a) {
-        case ((pop, _)) => pop.map(gen => gen.map(t => (t._1, t._2 + 1)))
+        case (pop, _) => pop.map(gen => gen.map(t => (t._1, t._2 + 1)))
       }
 
       applied.evaluate.value shouldBe 4

@@ -2,26 +2,27 @@ package dao
 
 import java.util.UUID
 
-import models.{DegreeDb, PostgresDegree}
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
-import slick.lifted.Rep
-import store.{DegreeTable, TableFilter}
+import database.{DegreeDb, DegreeTable, TableFilter}
+import javax.inject.Inject
+import models.Degree
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate: (DegreeTable) => Rep[Boolean] = _.abbreviation.toLowerCase === value.toLowerCase
-}
-case class DegreeLabelFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate: (DegreeTable) => Rep[Boolean] = _.label.toLowerCase like s"%${value.toLowerCase}%"
-}
-case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate: (DegreeTable) => Rep[Boolean] = _.id === UUID.fromString(value)
+  override def predicate = _.abbreviation.toLowerCase === value.toLowerCase
 }
 
-trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
-  import scala.concurrent.ExecutionContext.Implicits.global
+case class DegreeLabelFilter(value: String) extends TableFilter[DegreeTable] {
+  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
+}
+
+case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
+  override def predicate = _.id === UUID.fromString(value)
+}
+
+trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
@@ -33,9 +34,9 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, PostgresDegree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Traversable[Degree]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[PostgresDegree]] = db.run(query.result.map(_.map(_.toLwmModel)))
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Traversable[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
 }
 
-final class DegreeDaoImpl(val db: PostgresDriver.backend.Database) extends DegreeDao
+final class DegreeDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends DegreeDao

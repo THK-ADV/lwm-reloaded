@@ -1,16 +1,19 @@
 package dao
 
+import database._
 import models._
-import slick.dbio.{DBIOAction, Effect, NoStream}
-import store._
-import slick.driver.PostgresDriver.api._
+import play.api.inject.guice.GuiceableModule
 import services.GroupService._
+import slick.dbio.{DBIOAction, Effect, NoStream}
+import slick.jdbc.PostgresProfile.api._
 
-final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, Group] with GroupDao {
-  import dao.AbstractDaoSpec._
-  import scala.util.Random.{shuffle, nextBoolean, nextInt}
+final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, GroupLike] {
 
-  private lazy val privateStudents = populateStudents(20*8*2)
+  import AbstractDaoSpec._
+  import scala.util.Random.{nextBoolean, nextInt, shuffle}
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  private lazy val privateStudents = populateStudents(20 * 8 * 2)
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
 
   private def takeSomeStudents(amount: Int) = shuffle(privateStudents) take (if (nextBoolean) amount + nextInt(3) else amount - nextInt(3))
@@ -31,16 +34,20 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
         GroupDb("F", takeOneOf(privateLabs).id, takeSomeStudents(5).+:(superPrivateStudent3).map(_.id).toSet)
       )
 
-      run(TableQuery[UserTable].forceInsertAll(superPrivateStudents))
-      await(createMany(groups))
+      runAsync(TableQuery[UserTable].forceInsertAll(superPrivateStudents))(_ => Unit)
+      async(dao.createMany(groups))(_ should contain theSameElementsAs groups)
 
-      val res1 = await(get(List(GroupStudentTableFilter(superPrivateStudent1.id.toString)), atomic = false)).map(_.asInstanceOf[PostgresGroup])
-      val res2 = await(get(List(GroupStudentTableFilter(superPrivateStudent2.id.toString)), atomic = false)).map(_.asInstanceOf[PostgresGroup])
-      val res3 = await(get(List(GroupStudentTableFilter(superPrivateStudent3.id.toString)), atomic = false)).map(_.asInstanceOf[PostgresGroup])
+      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent1.id.toString)), atomic = false)) { g =>
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity)
+      }
 
-      res1.sortBy(_.label) shouldBe groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toLwmModel).sortBy(_.label)
-      res2 shouldBe List(groups(3).toLwmModel)
-      res3 shouldBe List(groups.last.toLwmModel)
+      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent2.id.toString)), atomic = false)) { g =>
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups(3).toUniqueEntity)
+      }
+
+      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent3.id.toString)), atomic = false)) { g =>
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups.last.toUniqueEntity)
+      }
     }
   }
 
@@ -54,10 +61,10 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
     case (g, alpha) => g.copy(label = alpha, members = takeSomeStudents(g.members.size).map(_.id).toSet)
   }
 
-  override protected def atom(dbModel: GroupDb): Group = PostgresGroupAtom(
+  override protected def atom(dbModel: GroupDb): GroupLike = GroupAtom(
     dbModel.label,
-    (privateLabs ++ labworks).find(_.id == dbModel.labwork).get.toLwmModel,
-    (students ++ privateStudents).filter(s => dbModel.members.contains(s.id)).map(_.toLwmModel).toSet,
+    (privateLabs ++ labworks).find(_.id == dbModel.labwork).get.toUniqueEntity,
+    (students ++ privateStudents).filter(s => dbModel.members.contains(s.id)).map(_.toUniqueEntity).toSet,
     dbModel.id
   )
 
@@ -73,9 +80,7 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
 
   override protected val dbEntities: List[GroupDb] = groups
 
-  override protected def lwmEntity: Group = dbEntity.toLwmModel
-
-  override protected def lwmAtom: Group = atom(dbEntity)
+  override protected def lwmAtom: GroupLike = atom(dbEntity)
 
   override protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
     TableQuery[DegreeTable].forceInsertAll(degrees),
@@ -86,8 +91,12 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
   )
 
   override protected def expanderSpecs(dbModel: GroupDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
-    groupMembershipQuery.filter(_.group === dbModel.id).result.map { memberships =>
-      memberships.map(_.student).toSet shouldBe (if (isDefined) dbModel.members else Set.empty)
+    dao.groupMembershipQuery.filter(_.group === dbModel.id).result.map { memberships =>
+      memberships.map(_.student) should contain theSameElementsAs (if (isDefined) dbModel.members else Nil)
     }
   )
+
+  override protected val dao: GroupDao = app.injector.instanceOf(classOf[GroupDao])
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
