@@ -304,8 +304,8 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"create many $name" in {
-      async(dao.createMany(dbEntities))(_ shouldBe dbEntities)
-      async(dao.getMany(dbEntities.map(_.id), atomic = false))(_.map(_.id).toList.sorted shouldEqual dbEntities.map(_.id).sorted)
+      async(dao.createMany(dbEntities))(_ should contain theSameElementsAs dbEntities)
+      async(dao.getMany(dbEntities.map(_.id), atomic = false))(_.map(_.id) should contain theSameElementsAs dbEntities.map(_.id))
     }
 
     s"delete a $name by invalidating it" in {

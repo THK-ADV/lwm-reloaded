@@ -53,7 +53,8 @@ case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleE
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
-  protected val scheduleEntrySupervisorQuery: TableQuery[ScheduleEntrySupervisorTable] = TableQuery[ScheduleEntrySupervisorTable]
+
+  val scheduleEntrySupervisorQuery: TableQuery[ScheduleEntrySupervisorTable] = TableQuery[ScheduleEntrySupervisorTable]
   protected val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   protected val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 

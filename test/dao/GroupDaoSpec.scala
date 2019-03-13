@@ -35,18 +35,18 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
       )
 
       runAsync(TableQuery[UserTable].forceInsertAll(superPrivateStudents))(_ => Unit)
-      async(dao.createMany(groups))(_ shouldBe groups)
+      async(dao.createMany(groups))(_ should contain theSameElementsAs groups)
 
       async(dao.get(List(GroupStudentTableFilter(superPrivateStudent1.id.toString)), atomic = false)) { g =>
-        g.map(_.asInstanceOf[Group]).toList.sortBy(_.label) shouldBe groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity).sortBy(_.label)
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity)
       }
 
       async(dao.get(List(GroupStudentTableFilter(superPrivateStudent2.id.toString)), atomic = false)) { g =>
-        g.map(_.asInstanceOf[Group]) shouldBe List(groups(3).toUniqueEntity)
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups(3).toUniqueEntity)
       }
 
       async(dao.get(List(GroupStudentTableFilter(superPrivateStudent3.id.toString)), atomic = false)) { g =>
-        g.map(_.asInstanceOf[Group]) shouldBe List(groups.last.toUniqueEntity)
+        g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups.last.toUniqueEntity)
       }
     }
   }
@@ -92,7 +92,7 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
 
   override protected def expanderSpecs(dbModel: GroupDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
     dao.groupMembershipQuery.filter(_.group === dbModel.id).result.map { memberships =>
-      memberships.map(_.student).toSet shouldBe (if (isDefined) dbModel.members else Set.empty)
+      memberships.map(_.student) should contain theSameElementsAs (if (isDefined) dbModel.members else Nil)
     }
   )
 

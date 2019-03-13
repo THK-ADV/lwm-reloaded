@@ -49,14 +49,14 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
   s"A AbstractExpandableDaoSpec with $name " should {
 
     s"create $name's by expanding" in {
-      async(dao.createMany(toAdd))(_ shouldBe toAdd)
+      async(dao.createMany(toAdd))(_ should contain theSameElementsAs toAdd)
       assertEverythingOf(toAdd, isDefined = true)
     }
 
     s"update few $name's by expanding" in {
       val updated = update(toAdd.take(numberOfUpdates))
 
-      async(dao.updateMany(updated))(_ shouldBe updated)
+      async(dao.updateMany(updated))(_ should contain theSameElementsAs updated)
       assertEverythingOf(updated, isDefined = true)
     }
 

@@ -18,17 +18,17 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
 
     "filter courses by label" in {
       val labelFilter = List(CourseLabelFilter("3"))
-      async(dao.get(labelFilter, atomic = false))(_ shouldBe dbEntities.filter(_.label == "3").map(_.toUniqueEntity))
+      async(dao.get(labelFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.label == "3").map(_.toUniqueEntity))
     }
 
     "filter courses by semester index" in {
       val semesterIndexFilter = List(CourseSemesterIndexFilter("2"))
-      async(dao.get(semesterIndexFilter, atomic = false))(_ shouldBe dbEntities.filter(_.semesterIndex == 2).map(_.toUniqueEntity))
+      async(dao.get(semesterIndexFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.semesterIndex == 2).map(_.toUniqueEntity))
     }
 
     "filter courses by abbreviation" in {
       val abbreviationFilter = List(CourseAbbreviationFilter("4"))
-      async(dao.get(abbreviationFilter, atomic = false))(_ shouldBe dbEntities.filter(_.abbreviation == "4").map(_.toUniqueEntity))
+      async(dao.get(abbreviationFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.abbreviation == "4").map(_.toUniqueEntity))
     }
 
     "filter courses by abbreviation and semester index" in {
@@ -38,7 +38,7 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
       )
 
       async(dao.get(abbreviationAndSemesterIndexFilter, atomic = false))(
-        _ shouldBe dbEntities
+        _ should contain theSameElementsAs dbEntities
           .filter(c => c.abbreviation == "5" && c.semesterIndex == 2)
           .map(_.toUniqueEntity)
       )
@@ -51,7 +51,7 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
       )
 
       async(dao.get(labelAndSemesterIndexFilter, atomic = false))(
-        _ shouldBe dbEntities
+        _ should contain theSameElementsAs dbEntities
           .filter(course => course.label == "six" && course.semesterIndex == 6)
           .map(_.toUniqueEntity)
       )

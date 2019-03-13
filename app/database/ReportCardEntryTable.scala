@@ -57,9 +57,9 @@ case class ReportCardEntryDb(
       s == student &&
         l == labwork &&
         lb == label &&
-        dt.localDate.isEqual(date.localDate) &&
-        st.localTime.isEqual(start.localTime) &&
-        et.localTime.isEqual(end.localTime) &&
+        dt.localDate == date.localDate &&
+        st.localTime == start.localTime &&
+        et.localTime == end.localTime &&
         r == room &&
         ts == entryTypes &&
         rs == rescheduled &&

@@ -22,7 +22,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
 
       async(dao.get(List(SemesterCurrentFilter))) { result =>
         result.size shouldBe 1
-        result shouldBe current
+        result should contain theSameElementsAs current
       }
     }
 

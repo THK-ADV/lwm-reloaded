@@ -44,7 +44,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
         dao.tableQuery.forceInsertAll(plans),
         dao.filterBy(List(AssignmentPlanCourseFilter(chosenCourse.id.toString))).result.map { dbPlans =>
           dbPlans.size shouldBe maxLabworksInCourse
-          dbPlans.map(_.labwork) shouldBe labworks.filter(_.course == chosenCourse.id).map(_.id)
+          dbPlans.map(_.labwork) should contain theSameElementsAs labworks.filter(_.course == chosenCourse.id).map(_.id)
         }
       )
     }
@@ -104,7 +104,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
       case (entry, values) =>
         val types = values.flatMap(_._2).map(t => AssignmentEntryType(t.entryType, t.bool, t.int))
         AssignmentEntry(entry.index, entry.label, types.toSet, entry.duration)
-    }).map(entries => entries.toSet shouldBe (if (isDefined) dbModel.entries else Set.empty))
+    }).map(entries => entries should contain theSameElementsAs (if (isDefined) dbModel.entries else Nil))
   }
 
   override protected val dao: AssignmentPlanDao = app.injector.instanceOf(classOf[AssignmentPlanDao])

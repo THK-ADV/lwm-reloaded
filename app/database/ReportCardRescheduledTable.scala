@@ -20,11 +20,12 @@ case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Tim
   override def equals(that: scala.Any) = that match {
     case ReportCardRescheduledDb(rc, dt, st, et, r, rs, _, _, i) =>
       rc == reportCardEntry &&
-        dt.localDate.isEqual(date.localDate) &&
-        st.localTime.isEqual(start.localTime) &&
-        et.localTime.isEqual(end.localTime) &&
+        dt.localDate == date.localDate &&
+        st.localTime == start.localTime &&
+        et.localTime == end.localTime &&
         r == room &&
         rs == reason &&
         i == id
+    case _ => false
   }
 }

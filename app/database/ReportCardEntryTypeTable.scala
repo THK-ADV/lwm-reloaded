@@ -36,4 +36,15 @@ case class ReportCardEntryTypeDb(
   id: UUID = UUID.randomUUID
 ) extends UniqueDbEntity {
   override def toUniqueEntity = ReportCardEntryType(entryType, bool, int, id)
+
+  override def equals(obj: Any) = obj match {
+    case ReportCardEntryTypeDb(e, r, t, _bool, _int, _, _, i) =>
+      e == reportCardEntry &&
+        r == reportCardRetry &&
+        t == entryType &&
+        _bool == bool &&
+        _int == int &&
+        i == id
+    case _ => false
+  }
 }

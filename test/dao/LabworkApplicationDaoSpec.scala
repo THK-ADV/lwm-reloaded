@@ -22,19 +22,21 @@ class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplica
       val withFriends = for {
         withFriends <- db.run(dao.filterValidOnly(l => l.friends.exists).take(5).result)
         res <- db.run(DBIO.sequence(withFriends.map(f => dao.friendsOf(f.applicant, f.labwork).result)))
-      } yield res.flatten
+      } yield res
 
-      async(withFriends) { friends =>
-        friends.map(_.toUniqueEntity).toList.sortBy(_.id) shouldBe expandedStudents.filter(u => friends.exists(_.id == u.id)).map(_.toUniqueEntity).sortBy(_.id)
+      async(withFriends) { nestedFriends =>
+        nestedFriends foreach { friends =>
+          friends.map(_.toUniqueEntity) should contain theSameElementsAs expandedStudents.filter(u => friends.exists(_.id == u.id)).map(_.toUniqueEntity)
+        }
       }
 
       val withOutFriends = for {
         withFriends <- db.run(dao.filterValidOnly(l => !l.friends.exists).take(5).result)
         res <- db.run(DBIO.sequence(withFriends.map(f => dao.friendsOf(f.applicant, f.labwork).result)))
-      } yield res.flatten
+      } yield res
 
       async(withOutFriends) { friends =>
-        friends shouldBe empty
+        friends foreach (_ shouldBe empty)
       }
     }
   }
@@ -71,7 +73,7 @@ class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplica
       val friends = if (lapp.friends.isEmpty)
         randomAvoiding(lapp.applicant, students, atLeastOne = true)
       else
-        lapp.friends.flatMap(f => randomAvoiding(f, students, atLeastOne = true)).filterNot(_ == lapp.applicant)
+        lapp.friends.flatMap(f => randomAvoiding(f, students.filterNot(_ == lapp.applicant), atLeastOne = true))
 
       lapp.copy(friends = friends)
     }
@@ -140,7 +142,7 @@ class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplica
 
   override protected def expanderSpecs(dbModel: LabworkApplicationDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
     dao.lappFriendQuery.filter(_.labworkApplication === dbModel.id).result.map { friends =>
-      friends.map(_.friend).toSet shouldBe (if (isDefined) dbModel.friends else Set.empty)
+      friends.map(_.friend) should contain theSameElementsAs (if (isDefined) dbModel.friends else Nil)
     }
   }
 }

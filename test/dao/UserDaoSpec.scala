@@ -81,16 +81,16 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       async(dao.get(List(
         UserStatusFilter(StudentStatus.label),
         UserDegreeFilter(degree.id.toString)
-      ), atomic = false))(_.toList.sortBy(_.id) shouldBe possibleUsers1.sortBy(_.id))
+      ), atomic = false))(_ should contain theSameElementsAs possibleUsers1)
 
       async(dao.get(List(
         UserFirstnameFilter("5"),
         UserLastnameFilter("5")
-      ), atomic = false))(_.toList.sortBy(_.id) shouldBe possibleUsers2.sortBy(_.id))
+      ), atomic = false))(_ should contain theSameElementsAs possibleUsers2)
 
       async(dao.get(List(
         UserSystemIdFilter("10")
-      ), atomic = false))(_.toList.sortBy(_.id) shouldBe possibleUsers3.sortBy(_.id))
+      ), atomic = false))(_ should contain theSameElementsAs possibleUsers3)
 
       async(dao.get(List(
         UserFirstnameFilter("3"),

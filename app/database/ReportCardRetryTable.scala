@@ -28,13 +28,14 @@ case class ReportCardRetryDb(reportCardEntry: UUID, date: Date, start: Time, end
   override def equals(that: scala.Any) = that match {
     case ReportCardRetryDb(rc, dt, st, et, r, ts, rs, _, _, i) =>
       rc == reportCardEntry &&
-        dt.localDate.isEqual(date.localDate) &&
-        st.localTime.isEqual(start.localTime) &&
-        et.localTime.isEqual(end.localTime) &&
+        dt.localDate == date.localDate &&
+        st.localTime == start.localTime &&
+        et.localTime == end.localTime &&
         r == room &&
         ts == entryTypes &&
         rs == reason &&
         i == id
+    case _ => false
   }
 
   override def toUniqueEntity = ReportCardRetry(date.localDate, start.localTime, end.localTime, room, entryTypes.map(_.toUniqueEntity), reason, id)
