@@ -68,7 +68,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
         (existing.id == toUpdate.id)
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {
     override def expandCreationOf[E <: Effect](entities: GroupDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[GroupDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
       _ <- groupMembershipQuery ++= entities.flatMap(g => g.members.map(s => GroupMembership(g.id, s)))
     } yield entities
@@ -83,18 +83,10 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
     } yield c.head
   })
 
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     groupMembershipQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 }
 
-final class GroupDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends GroupDao
+final class GroupDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends GroupDao

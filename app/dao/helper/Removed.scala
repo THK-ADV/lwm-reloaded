@@ -14,7 +14,7 @@ import utils.LwmDateTime.DateTimeConverter
 import scala.concurrent.Future
 
 trait Removed[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
-  self: Core[T, DbModel] =>
+  self: Core with Expandable[DbModel] with Accessible[T, DbModel] =>
 
   final def delete(entity: DbModel): Future[DbModel] = delete(entity.id)
 

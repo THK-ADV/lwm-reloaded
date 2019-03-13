@@ -11,7 +11,7 @@ import utils.LwmDateTime.DateTimeConverter
 import scala.concurrent.Future
 
 trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
-  self: Core[T, DbModel] =>
+  self: Core with Expandable[DbModel] with Accessible[T, DbModel] =>
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 

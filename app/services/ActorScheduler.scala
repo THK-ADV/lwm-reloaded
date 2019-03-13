@@ -3,13 +3,14 @@ package services
 import java.time.LocalTime
 
 import akka.actor.{ActorRef, ActorSystem}
+import di.BackupServiceActorAnnotation
 import javax.inject.{Inject, Named}
 
 import scala.util.Try
 
 class ActorScheduler @Inject()(
   system: ActorSystem,
-  @Named("backupActor") ref1: ActorRef,
+  @BackupServiceActorAnnotation ref1: ActorRef,
   @Named("backupMessage") message1: Any,
   @Named("backupFireTime") fireTime1: String
 ) {

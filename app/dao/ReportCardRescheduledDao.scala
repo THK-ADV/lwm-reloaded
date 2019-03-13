@@ -5,7 +5,6 @@ import java.util.UUID
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
 import javax.inject.Inject
 import models._
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,4 +58,4 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   }
 }
 
-final class ReportCardRescheduledDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardRescheduledDao
+final class ReportCardRescheduledDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardRescheduledDao

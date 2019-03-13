@@ -10,7 +10,9 @@ import slick.jdbc.PostgresProfile.api._
 import scala.concurrent.Future
 
 trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
-  extends Core[T, DbModel]
+  extends Core
+    with Accessible[T, DbModel]
+    with Expandable[DbModel]
     with Added[T, DbModel]
     with Removed[T, DbModel]
     with Updated[T, DbModel]
@@ -22,7 +24,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
 
-  protected def createSchema: Future[Unit] = db.run(tableQuery.schema.create)
+  final def createSchema: Future[Unit] = db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
 
-  protected def dropSchema: Future[Unit] = db.run(tableQuery.schema.create)
+  final def dropSchema: Future[Unit] = db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
+
+  def close = Future.successful(db.close())
 }

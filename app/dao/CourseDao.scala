@@ -51,5 +51,5 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   }
 }
 
-final class CourseDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends CourseDao
+final class CourseDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends CourseDao
 

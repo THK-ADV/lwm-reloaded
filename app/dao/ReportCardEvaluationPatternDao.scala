@@ -5,7 +5,6 @@ import java.util.UUID
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 import javax.inject.Inject
 import models.ReportCardEvaluationPattern
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 
@@ -51,4 +50,4 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   }
 }
 
-final class ReportCardEvaluationPatternDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEvaluationPatternDao
+final class ReportCardEvaluationPatternDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardEvaluationPatternDao

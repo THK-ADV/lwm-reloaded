@@ -5,7 +5,6 @@ import java.util.UUID
 import database.{RoomDb, RoomTable, TableFilter}
 import javax.inject.Inject
 import models.Room
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,4 +38,4 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
   }
 }
 
-final class RoomDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends RoomDao
+final class RoomDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends RoomDao

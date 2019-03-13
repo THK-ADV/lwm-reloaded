@@ -6,7 +6,6 @@ import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
-import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
@@ -80,9 +79,9 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
       existing.labwork == toUpdate.labwork
   }
 
-  override protected def databaseExpander: Option[DatabaseExpander[AssignmentPlanDb]] = Some(new DatabaseExpander[AssignmentPlanDb] {
+  override protected val databaseExpander: Option[DatabaseExpander[AssignmentPlanDb]] = Some(new DatabaseExpander[AssignmentPlanDb] {
 
-    override def expandCreationOf[X <: Effect](entities: AssignmentPlanDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[AssignmentPlanDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
+    override def expandCreationOf[X <: Effect](entities: AssignmentPlanDb*): DBIOAction[Seq[AssignmentPlanDb], NoStream, Effect.Write with Any] = {
       val assignmentEntries = entities.flatMap(p => p.entries.map { entry =>
         val entryID = UUID.randomUUID
         val types = entry.types.map(t => AssignmentEntryTypeDb(entryID, t.entryType, t.bool, t.int))
@@ -112,19 +111,11 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
     }
   })
 
-  private lazy val schemas = List(
+  override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
     assignmentEntryQuery.schema,
     assignmentEntryTypeQuery.schema
   )
-
-  override def createSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
-  }
-
-  override def dropSchema: Future[Unit] = {
-    db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
-  }
 }
 
-final class AssignmentPlanDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends AssignmentPlanDao
+final class AssignmentPlanDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends AssignmentPlanDao

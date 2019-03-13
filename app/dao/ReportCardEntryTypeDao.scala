@@ -6,7 +6,6 @@ import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 import javax.inject.Inject
 import models.ReportCardEntryType
 import org.joda.time.DateTime
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 
@@ -56,4 +55,4 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
   )
 }
 
-final class ReportCardEntryTypeDaoImpl @Inject()(val db: PostgresProfile.backend.Database, val executionContext: ExecutionContext) extends ReportCardEntryTypeDao
+final class ReportCardEntryTypeDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardEntryTypeDao

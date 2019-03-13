@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import scala.util.Try
 
 trait Added[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
-  self: Core[T, DbModel] =>
+  self: Core with Expandable[DbModel] with Accessible[T, DbModel] =>
 
   protected def existsQuery(entity: DbModel): Query[T, DbModel, Seq]
 
