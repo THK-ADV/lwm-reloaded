@@ -50,6 +50,8 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
+  final def current(atomic: Boolean) = getSingleWhere(SemesterCurrentFilter.predicate)
+
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
     import utils.LwmDateTime.SqlDateConverter
 

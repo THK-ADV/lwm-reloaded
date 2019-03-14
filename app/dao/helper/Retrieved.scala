@@ -53,6 +53,14 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       .retrieve(atomic)
       .map(_.headOption)
 
+  final def getSingleWhere(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Option[LwmModel]] =
+    tableQuery
+      .filter(where)
+      .take(1)
+      .filterBy(validOnly, sinceLastModified)
+      .retrieve(atomic)
+      .map(_.headOption)
+
   final def filter(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
     tableQuery
       .filter(where)
