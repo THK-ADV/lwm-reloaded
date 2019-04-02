@@ -68,9 +68,9 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
     ))
   }
 
-  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = toUniqueEntity(query)
+  override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Traversable[Semester]] = {
+  override protected def toUniqueEntity(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

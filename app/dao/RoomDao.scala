@@ -31,9 +31,9 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
       existing.label == toUpdate.label
   }
 
-  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Traversable[Room]] = {
+  override protected def toUniqueEntity(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

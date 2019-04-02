@@ -14,23 +14,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait DashboardDao extends Core { // TODO continue
 
-  def dashboard(systemId: String)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean): Future[Dashboard] = {
+  def dashboard(systemId: String)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean): Future[Dashboard] = {
     for {
       maybeSemester <- semesterDao.getSingle(UUID.fromString("0496eec7-ad06-4d82-86e1-ad7782dcd92b")) //semesterDao.current(atomic)
       semester <- maybeSemester.fold(throw new Throwable(s"none or more than one semester was found, which is marked as the current semester"))(Future.successful)
       user <- userDao.getSingleWhere(_.systemId === systemId, atomic = false)
       board <- user match {
         case Some(student: Student) =>
-          studentDashboard(student, semester)(atomic, numberOfUpcomingElements, entriesSinceNow)
+          studentDashboard(student, semester)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
         case Some(employee) =>
-          employeeDashboard(employee, semester)(atomic, numberOfUpcomingElements, entriesSinceNow)
+          employeeDashboard(employee, semester)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
         case None =>
           throw new Throwable(s"no user found for $systemId")
       }
     } yield board
   }
 
-  private def studentDashboard(student: Student, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean) = { // current semester
+  private def studentDashboard(student: Student, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = { // current semester
     //    for {
     //      labworks <- labworkDao.filter(l => l.semester === semester.id && l.degree === enrollment, atomic, validOnly, sinceLastModified)
     //      labworIds = labworks.map(_.id)
@@ -41,23 +41,24 @@ trait DashboardDao extends Core { // TODO continue
     //      evals <- reportCardEvaluationDao.filter(_.student === student, atomic, validOnly, sinceLastModified) // with semester and combine with patterns
     //      evalPatterns <- reportCardEvaluationPatternDao.filter(_.labwork.inSet(labworIds), atomic, validOnly, sinceLastModified)
     //    } yield StudentDashboard(semester, labworks, apps, groups, cards, evals, evalPatterns)
-    Future.successful(StudentDashboard(student, StudentStatus, semester, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty))
+    Future.successful(StudentDashboard(student, StudentStatus, semester, Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty))
   }
 
-  private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean) = {
+  private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {
     for {
       authorities <- authorityDao.get(List(AuthorityUserFilter(employee.id.toString))) // must be atomic
       courses = authorities.flatMap(_.asInstanceOf[AuthorityAtom].course)
       courseIds = courses.map(_.id)
 
-      now = ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate
-      currentEntries = scheduleEntryDao
-        .filterValidOnly(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds) && (if (entriesSinceNow) now.apply(q) else true))
-        .sortBy(q => (q.date.asc, q.start.asc))
+      inSemesterAndCourse = scheduleEntryDao.filterValidOnly(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds))
+      sinceNowFilter = if (entriesSinceNow) Option.apply(ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate) else Option.empty
+      isSemesterAndCourseAndSinceNow = sinceNowFilter.fold(inSemesterAndCourse)(f => inSemesterAndCourse.filter(f.apply))
 
-      scheduleEntries <- scheduleEntryDao.getByQuery(currentEntries, atomic = atomic)
-      upcomingEntries = numberOfUpcomingElements.fold(scheduleEntries)(n => scheduleEntries.groupBy(_.labworkId).flatMap(_._2.take(n)))
-    } yield EmployeeDashboard(employee, EmployeeStatus, semester, courses, upcomingEntries)
+      scheduleEntries <- scheduleEntryDao.getByQuery(isSemesterAndCourseAndSinceNow, atomic = atomic)
+      upcomingEntries = numberOfUpcomingElements.fold(scheduleEntries)(n => scheduleEntries.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
+      sortedUpcomingEntries = if (sortedByDate) upcomingEntries.sortBy(s => (s.date, s.start)) else upcomingEntries
+
+    } yield EmployeeDashboard(employee, EmployeeStatus, semester, courses, sortedUpcomingEntries)
   }
 
   protected def userDao: UserDao

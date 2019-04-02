@@ -17,6 +17,7 @@ object DashboardController {
   lazy val systemIdAttribute = "systemId"
   lazy val numberOfUpcomingElementsAttribute = "numberOfUpcomingElements"
   lazy val entriesSinceNowAttribute = "entriesSinceNow"
+  lazy val sortedByDateAttribute = "sortedByDate"
 }
 
 @Singleton
@@ -48,7 +49,8 @@ final class DashboardController @Inject()(
       atomic = extractAttributes(request.queryString)._2.atomic
       numberOfUpcomingElements = intOf(request.queryString)(numberOfUpcomingElementsAttribute)
       entriesSinceNow = boolOf(request.queryString)(entriesSinceNowAttribute) getOrElse true
-      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements, entriesSinceNow)
+      sortedByDate = boolOf(request.queryString)(sortedByDateAttribute) getOrElse true
+      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
     } yield board).jsonResult(d => Ok(Json.toJson(d)))
   }
 

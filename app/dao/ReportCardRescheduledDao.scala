@@ -27,7 +27,7 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 
-  override protected def toAtomic(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Traversable[ReportCardRescheduledLike]] = {
+  override protected def toAtomic(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Seq[ReportCardRescheduledLike]] = {
     val mandatory = for {
       q <- query
       r <- q.roomFk
@@ -38,7 +38,7 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Traversable[ReportCardRescheduledLike]] = {
+  override protected def toUniqueEntity(query: Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq]): Future[Seq[ReportCardRescheduledLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 

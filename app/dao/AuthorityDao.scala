@@ -6,7 +6,6 @@ import database._
 import javax.inject.Inject
 import models._
 import slick.dbio.Effect
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 import slick.sql.FixedSqlAction
@@ -144,7 +143,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     filterBy(sufficient)
   }
 
-  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Traversable[AuthorityLike]] = {
+  override protected def toAtomic(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[AuthorityLike]] = {
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query
         .joinLeft(TableQuery[CourseTable]).on(_.course === _.id)
@@ -160,12 +159,12 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
           case (c, l) => CourseAtom(c.label, c.description, c.abbreviation, l.toUniqueEntity, c.semesterIndex, c.id)
         }
         AuthorityAtom(user.toUniqueEntity, role.toUniqueEntity, maybeCourseAtom.headOption, id)
-    })
+    }.toSeq)
 
     db.run(action)
   }
 
-  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Traversable[AuthorityLike]] = {
+  override protected def toUniqueEntity(query: Query[AuthorityTable, AuthorityDb, Seq]): Future[Seq[AuthorityLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

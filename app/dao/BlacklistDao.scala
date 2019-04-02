@@ -3,7 +3,6 @@ package dao
 import database.{BlacklistDb, BlacklistTable, TableFilter}
 import javax.inject.Inject
 import models.Blacklist
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.LwmDateTime._
 
@@ -41,9 +40,9 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
 
   override val tableQuery = TableQuery[BlacklistTable]
 
-  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Traversable[Blacklist]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[Blacklist]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Traversable[Blacklist]] = {
+  override protected def toUniqueEntity(query: Query[BlacklistTable, BlacklistDb, Seq]): Future[Seq[Blacklist]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 

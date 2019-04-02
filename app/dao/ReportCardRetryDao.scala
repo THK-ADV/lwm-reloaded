@@ -30,7 +30,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   override val tableQuery = TableQuery[ReportCardRetryTable]
   val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
 
-  override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Traversable[ReportCardRetryLike]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Seq[ReportCardRetryLike]] = collectDependencies(query) {
     case (entry, room, entryTypes) => ReportCardRetryAtom(
       entry.date.localDate,
       entry.start.localTime,
@@ -42,7 +42,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
     )
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Traversable[ReportCardRetryLike]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[ReportCardRetryTable, ReportCardRetryDb, Seq]): Future[Seq[ReportCardRetryLike]] = collectDependencies(query) {
     case (entry, _, entryTypes) => entry.copy(entryTypes = entryTypes.toSet).toUniqueEntity
   }
 
@@ -59,7 +59,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
       val entryTypes = dependencies.flatMap(_._2) // rhs
 
         build(retry, room, entryTypes)
-    })
+    }.toSeq)
 
     db.run(action)
   }

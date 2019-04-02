@@ -2,7 +2,7 @@ package models
 
 import database.helper.LdapUserStatus
 
-import scala.collection.Traversable
+import scala.collection.Seq
 
 sealed trait Dashboard {
   def user: User
@@ -13,18 +13,18 @@ case class StudentDashboard(
   user: User,
   status: LdapUserStatus,
   semester: Semester,
-  labworks: Traversable[LabworkLike],
-  applications: Traversable[LabworkApplicationLike],
-  groups: Traversable[GroupLike],
-  cardEntries: Traversable[ReportCardEntryLike],
-  evaluations: Traversable[ReportCardEvaluationLike],
-  evaluationPatterns: Traversable[ReportCardEvaluationPattern]
+  labworks: Seq[LabworkLike],
+  applications: Seq[LabworkApplicationLike],
+  groups: Seq[GroupLike],
+  cardEntries: Seq[ReportCardEntryLike],
+  evaluations: Seq[ReportCardEvaluationLike],
+  evaluationPatterns: Seq[ReportCardEvaluationPattern]
 ) extends Dashboard
 
 case class EmployeeDashboard(
   user: User,
   status: LdapUserStatus,
   semester: Semester,
-  courses: Traversable[CourseAtom],
-  scheduleEntries: Traversable[ScheduleEntryLike]
+  courses: Seq[CourseAtom],
+  scheduleEntries: Seq[ScheduleEntryLike]
 ) extends Dashboard

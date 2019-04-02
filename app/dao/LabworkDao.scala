@@ -57,7 +57,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
     ))
   }
 
-  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Traversable[LabworkLike]] = {
+  override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
     val joinedQuery = for {
       q <- query
       c <- q.courseFk
@@ -73,7 +73,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Traversable[LabworkLike]] = {
+  override protected def toUniqueEntity(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }
