@@ -14,23 +14,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait DashboardDao extends Core { // TODO continue
 
-  def dashboard(systemId: String)(atomic: Boolean, numberOfUpcomingElements: Option[Int]): Future[Dashboard] = {
+  def dashboard(systemId: String)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean): Future[Dashboard] = {
     for {
       maybeSemester <- semesterDao.getSingle(UUID.fromString("0496eec7-ad06-4d82-86e1-ad7782dcd92b")) //semesterDao.current(atomic)
       semester <- maybeSemester.fold(throw new Throwable(s"none or more than one semester was found, which is marked as the current semester"))(Future.successful)
       user <- userDao.getSingleWhere(_.systemId === systemId, atomic = false)
       board <- user match {
         case Some(student: Student) =>
-          studentDashboard(student, semester)(atomic, numberOfUpcomingElements)
+          studentDashboard(student, semester)(atomic, numberOfUpcomingElements, entriesSinceNow)
         case Some(employee) =>
-          employeeDashboard(employee, semester)(atomic, numberOfUpcomingElements)
+          employeeDashboard(employee, semester)(atomic, numberOfUpcomingElements, entriesSinceNow)
         case None =>
           throw new Throwable(s"no user found for $systemId")
       }
     } yield board
   }
 
-  private def studentDashboard(student: Student, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int]) = { // current semester
+  private def studentDashboard(student: Student, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean) = { // current semester
     //    for {
     //      labworks <- labworkDao.filter(l => l.semester === semester.id && l.degree === enrollment, atomic, validOnly, sinceLastModified)
     //      labworIds = labworks.map(_.id)
@@ -44,7 +44,7 @@ trait DashboardDao extends Core { // TODO continue
     Future.successful(StudentDashboard(student, StudentStatus, semester, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty, Traversable.empty))
   }
 
-  private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int]) = {
+  private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean) = {
     for {
       authorities <- authorityDao.get(List(AuthorityUserFilter(employee.id.toString))) // must be atomic
       courses = authorities.flatMap(_.asInstanceOf[AuthorityAtom].course)
@@ -52,7 +52,7 @@ trait DashboardDao extends Core { // TODO continue
 
       now = ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate
       currentEntries = scheduleEntryDao
-        .filterValidOnly(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds) && now.apply(q))
+        .filterValidOnly(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds) && (if (entriesSinceNow) now.apply(q) else true))
         .sortBy(q => (q.date.asc, q.start.asc))
 
       scheduleEntries <- scheduleEntryDao.getByQuery(currentEntries, atomic = atomic)

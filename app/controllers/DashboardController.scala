@@ -15,7 +15,8 @@ import scala.util.Try
 
 object DashboardController {
   lazy val systemIdAttribute = "systemId"
-  lazy val numberOfUpcomingElements = "numberOfUpcomingElements"
+  lazy val numberOfUpcomingElementsAttribute = "numberOfUpcomingElements"
+  lazy val entriesSinceNowAttribute = "entriesSinceNow"
 }
 
 @Singleton
@@ -40,18 +41,22 @@ final class DashboardController @Inject()(
   implicit val statusWrites: Writes[LdapUserStatus] = (o: LdapUserStatus) => JsString(o.label)
 
   def dashboard = contextFrom(Get) asyncAction { implicit request =>
+    import DashboardController._
+
     (for {
       id <- Future.fromTry(extractSystemId)
       atomic = extractAttributes(request.queryString)._2.atomic
-      numberOfUpcomingElements = intOf(request.queryString)(DashboardController.numberOfUpcomingElements)
-      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements)
+      numberOfUpcomingElements = intOf(request.queryString)(numberOfUpcomingElementsAttribute)
+      entriesSinceNow = boolOf(request.queryString)(entriesSinceNowAttribute) getOrElse true
+      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements, entriesSinceNow)
     } yield board).jsonResult(d => Ok(Json.toJson(d)))
   }
 
   private def extractSystemId(implicit request: Request[AnyContent]): Try[String] = {
     import utils.Ops.OptionOps
+    import DashboardController.systemIdAttribute
 
-    val explicitly = valueOf(request.queryString)(DashboardController.systemIdAttribute)
+    val explicitly = valueOf(request.queryString)(systemIdAttribute)
     val implicitly = request.systemId
 
     explicitly orElse implicitly toTry new Throwable("No User ID found in request")

@@ -10,6 +10,9 @@ import utils.Ops.JsPathX
 
 sealed trait ScheduleEntryLike extends UniqueEntity {
   def labworkId: UUID
+  def start: LocalTime
+  def end: LocalTime
+  def date: LocalDate
 }
 
 case class ScheduleEntry(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: UUID, id: UUID = UUID.randomUUID) extends ScheduleEntryLike {
