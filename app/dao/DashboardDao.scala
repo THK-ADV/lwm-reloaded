@@ -51,8 +51,8 @@ trait DashboardDao extends Core { // TODO continue
       courseIds = courses.map(_.id)
 
       now = ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate
-      currentEntries = scheduleEntryDao.tableQuery
-        .filter(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds) && now.apply(q))
+      currentEntries = scheduleEntryDao
+        .filterValidOnly(q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds) && now.apply(q))
         .sortBy(q => (q.date.asc, q.start.asc))
 
       scheduleEntries <- scheduleEntryDao.getByQuery(currentEntries, atomic = atomic)
