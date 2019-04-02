@@ -1,10 +1,17 @@
 package models
 
+import database.helper.LdapUserStatus
+
 import scala.collection.Traversable
 
-sealed trait Dashboard
+sealed trait Dashboard {
+  def user: User
+  def status: LdapUserStatus
+}
 
 case class StudentDashboard(
+  user: User,
+  status: LdapUserStatus,
   semester: Semester,
   labworks: Traversable[LabworkLike],
   applications: Traversable[LabworkApplicationLike],
@@ -15,6 +22,8 @@ case class StudentDashboard(
 ) extends Dashboard
 
 case class EmployeeDashboard(
+  user: User,
+  status: LdapUserStatus,
   semester: Semester,
   courses: Traversable[CourseAtom],
   scheduleEntries: Traversable[ScheduleEntryLike]

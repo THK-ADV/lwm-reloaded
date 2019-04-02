@@ -26,7 +26,9 @@ trait LabworkIdTable {
 
   def labworkFk = foreignKey("LABWORKS_fkey", labwork, TableQuery[LabworkTable])(_.id)
 
-  def memberOfCourse(course: String) = labworkFk.filter(_.course === UUID.fromString(course)).exists
+  def memberOfCourse(course: String) = memberOfCourses(List(UUID.fromString(course)))
+
+  def memberOfCourses(course: Traversable[UUID]) = labworkFk.filter(_.course.inSet(course)).exists
 }
 
 trait RoomIdTable {

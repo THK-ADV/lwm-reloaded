@@ -34,6 +34,10 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
     filterBy(tableFilter, validOnly, sinceLastModified)
       .retrieve(atomic)
 
+  final def getByQuery(query: Query[T, DbModel, Seq], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
+    query.filterBy(validOnly, sinceLastModified)
+      .retrieve(atomic)
+
   final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
     tableQuery
       .filter(_.id.inSet(ids))

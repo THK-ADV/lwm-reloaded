@@ -2,10 +2,11 @@ package controllers
 
 import controllers.helper._
 import dao._
+import database.helper.LdapUserStatus
 import javax.inject.{Inject, Singleton}
 import models.Role.{EmployeeRole, God, StudentRole}
 import models.{Dashboard, EmployeeDashboard, StudentDashboard}
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsString, Json, Writes}
 import play.api.mvc._
 import security.SecurityActionChain
 
@@ -14,6 +15,7 @@ import scala.util.Try
 
 object DashboardController {
   lazy val systemIdAttribute = "systemId"
+  lazy val numberOfUpcomingElements = "numberOfUpcomingElements"
 }
 
 @Singleton
@@ -30,17 +32,20 @@ final class DashboardController @Inject()(
     with AttributeFilter
     with RequestOps {
 
-  implicit val writes: Writes[Dashboard] = {
+  implicit val dashboardWrites: Writes[Dashboard] = {
     case s: StudentDashboard => Json.writes[StudentDashboard].writes(s)
     case e: EmployeeDashboard => Json.writes[EmployeeDashboard].writes(e)
   }
+
+  implicit val statusWrites: Writes[LdapUserStatus] = (o: LdapUserStatus) => JsString(o.label)
 
   def dashboard = contextFrom(Get) asyncAction { implicit request =>
     (for {
       id <- Future.fromTry(extractSystemId)
       atomic = extractAttributes(request.queryString)._2.atomic
-      board <- dashboardDao.dashboard(id)(atomic)
-    } yield board).created
+      numberOfUpcomingElements = intOf(request.queryString)(DashboardController.numberOfUpcomingElements)
+      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements)
+    } yield board).jsonResult(d => Ok(Json.toJson(d)))
   }
 
   private def extractSystemId(implicit request: Request[AnyContent]): Try[String] = {
