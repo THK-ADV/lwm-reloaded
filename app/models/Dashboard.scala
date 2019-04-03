@@ -6,6 +6,7 @@ import scala.collection.Seq
 
 sealed trait Dashboard {
   def user: User
+
   def status: LdapUserStatus
 }
 
@@ -14,11 +15,11 @@ case class StudentDashboard(
   status: LdapUserStatus,
   semester: Semester,
   labworks: Seq[LabworkLike],
-  applications: Seq[LabworkApplicationLike],
-  groups: Seq[GroupLike],
-  cardEntries: Seq[ReportCardEntryLike],
-  evaluations: Seq[ReportCardEvaluationLike],
-  evaluationPatterns: Seq[ReportCardEvaluationPattern]
+  labworkApplications: Seq[LabworkApplicationLike],
+  groups: Seq[(String, LabworkLike)],
+  reportCardEntries: Seq[ReportCardEntryLike],
+  allEvaluations: Seq[ReportCardEvaluationLike],
+  passedEvaluations: Seq[(String, String, Boolean, Int)]
 ) extends Dashboard
 
 case class EmployeeDashboard(

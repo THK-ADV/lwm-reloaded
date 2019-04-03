@@ -8,7 +8,12 @@ import play.api.libs.json._
 import utils.LwmDateTime._
 import utils.Ops.JsPathX
 
-sealed trait ReportCardEntryLike extends UniqueEntity
+sealed trait ReportCardEntryLike extends UniqueEntity {
+  def labworkId: UUID
+  def date: LocalDate
+  def start: LocalTime
+  def end: LocalTime
+}
 
 case class ReportCardEntry(
   student: UUID,
@@ -22,7 +27,9 @@ case class ReportCardEntry(
   rescheduled: Option[ReportCardRescheduled] = None,
   retry: Option[ReportCardRetry] = None,
   id: UUID = UUID.randomUUID
-) extends ReportCardEntryLike
+) extends ReportCardEntryLike {
+  override def labworkId = labwork
+}
 
 case class ReportCardEntryProtocol(
   student: UUID,
@@ -46,7 +53,9 @@ case class ReportCardEntryAtom(
   rescheduled: Option[ReportCardRescheduledAtom],
   retry: Option[ReportCardRetryAtom],
   id: UUID
-) extends ReportCardEntryLike
+) extends ReportCardEntryLike {
+  override def labworkId = labwork.id
+}
 
 object ReportCardEntry {
 

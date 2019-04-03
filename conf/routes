@@ -148,7 +148,7 @@ GET           /labworks/:labwork/users/:user/buddies/:buddy                    c
 GET           /users/:id                                                       controllers.UserController.get(id)
 
 # Dashboard
-GET           /dashboard                                                      controllers.DashboardController.dashboard()
+GET           /dashboard                                                      controllers.DashboardController.dashboard(systemId: Option[String])
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)

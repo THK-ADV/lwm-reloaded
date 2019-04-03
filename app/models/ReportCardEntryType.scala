@@ -21,6 +21,10 @@ object ReportCardEntryType {
 
   lazy val Supplement = ReportCardEntryType(AssignmentEntryType.Supplement.entryType)
 
+  lazy val BooleanBasedTypes = List(Attendance, Certificate, Supplement)
+
+  lazy val IntBasedTypes = List(Bonus)
+
   implicit val writes: Writes[ReportCardEntryType] = (
     (JsPath \ "entryType").write[String] and
       (JsPath \ "bool").write[Option[Boolean]] and

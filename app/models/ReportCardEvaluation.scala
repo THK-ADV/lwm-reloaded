@@ -9,13 +9,21 @@ import utils.LwmDateTime.writeDateTime
 
 sealed trait ReportCardEvaluationLike extends UniqueEntity {
   def lastModified: DateTime
+  def label: String
+  def bool: Boolean
+  def int: Int
+  def labworkId: UUID
 }
 
-case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike
+case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike {
+  override def labworkId = labwork
+}
 
 case class ReportCardEvaluationProtocol(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
-case class ReportCardEvaluationAtom(student: User, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike
+case class ReportCardEvaluationAtom(student: User, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike {
+  override def labworkId = labwork.id
+}
 
 object ReportCardEvaluation {
   implicit val writes: Writes[ReportCardEvaluation] = Json.writes[ReportCardEvaluation]
