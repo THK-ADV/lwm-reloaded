@@ -4,13 +4,15 @@ import java.util.UUID
 
 import controllers.helper._
 import dao.AbstractDao
+import dao.helper.{Retrieved, TableFilterable}
+import database.{LabworkIdTable, UniqueTable}
 import javax.inject.Inject
 import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
 import slick.jdbc.PostgresProfile.api._
-import database.{TableFilter, UniqueTable}
+import slick.lifted.Rep
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -21,7 +23,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with SecureControllerContext
     with ResultOps
     with AttributeFilter
-    with RequestOps {
+    with RequestOps
+    with TableFilterable[T] {
 
   import utils.Ops.unwrapTrys
 
@@ -35,7 +38,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
 
-  protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[T]]]): Try[List[TableFilter[T]]]
+  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = Failure(new Throwable(""))
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
@@ -98,11 +101,11 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>
-    val (queryString, defaults) = extractAttributes(request.queryString)
+    import utils.Ops.MonadInstances.tryM
+    import utils.Ops._
 
-    val filter = queryString.foldLeft(Try(List.empty[TableFilter[T]])) {
-      case (list, (attribute, values)) => tableFilter(attribute, values.head)(list)
-    }
+    val (queryString, defaults) = extractAttributes(request.queryString)
+    val filter = makeTableFilter(queryString).sequence
 
     (for {
       filter <- Future.fromTry(filter)
@@ -110,9 +113,31 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     } yield results).jsonResult
   }
 
+  private def makeTableFilter(queryString: QueryString): List[Try[TableFilterPredicate]] = {
+    (for {
+      (attribute, values) <- queryString if values.nonEmpty
+    } yield makeTableFilter(attribute, values.head)).toList
+  }
+
   def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
     val uuid = UUID.fromString(id)
     abstractDao.getSingle(uuid, atomic).jsonResult(id)
   }
+
+  implicit class AbstractTableFilter(string: String) {
+
+    private def labworkFilter[A <: LabworkIdTable](labwork: UUID): A => Rep[Boolean] = _.labwork === labwork
+
+    private def courseFilter[A <: LabworkIdTable](course: UUID): A => Rep[Boolean] = _.memberOfCourse(course)
+
+    def uuid: Try[UUID] = Try(UUID.fromString(string))
+
+    def uuidF: Future[UUID] = Future.fromTry(string.uuid)
+
+    def makeCourseFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map courseFilter
+
+    def makeLabworkFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map labworkFilter
+  }
+
 }

@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.TableFilterable
 import database._
 import javax.inject.Inject
 import models._
@@ -12,39 +13,40 @@ import utils.LwmDateTime.SqlTimestampConverter
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.student === UUID.fromString(value)
-}
-
-case class LabworkFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class CourseFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.memberOfCourse(value)
-}
-
-case class LabelFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.label === value
-}
-
-case class BoolFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.bool === Try(value.toBoolean).getOrElse(false)
-}
-
-case class IntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.int === Try(value.toInt).getOrElse(-1)
-}
-
-case class MinIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.int >= Try(value.toInt).getOrElse(-1)
-}
-
-case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-  override def predicate = _.int <= Try(value.toInt).getOrElse(-1)
-}
+//case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] { // TODO rethink
+//  override def predicate = _.student === UUID.fromString(value)
+//}
+//
+//case class LabworkFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.labwork === UUID.fromString(value)
+//}
+//
+//case class CourseFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.memberOfCourse(value)
+//}
+//
+//case class LabelFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.label === value
+//}
+//
+//case class BoolFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.bool === Try(value.toBoolean).getOrElse(false)
+//}
+//
+//case class IntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.int === Try(value.toInt).getOrElse(-1)
+//}
+//
+//case class MinIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.int >= Try(value.toInt).getOrElse(-1)
+//}
+//
+//case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
+//  override def predicate = _.int <= Try(value.toInt).getOrElse(-1)
+//}
 
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
+  import TableFilterable.{studentFilter, labelFilterEquals, labworkFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
@@ -75,7 +77,7 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationDb): Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq] = {
-    filterBy(List(StudentFilter(entity.student.toString), LabworkFilter(entity.labwork.toString), LabelFilter(entity.label)))
+    filterBy(List(studentFilter(entity.student), labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEvaluationDb, toUpdate: ReportCardEvaluationDb): Boolean = {

@@ -9,10 +9,10 @@ trait LwmFakeApplication {
   self: GuiceOneAppPerSuite =>
 
   val fakeDbConfig = Configuration(
-    "database.properties.url" -> "jdbc:postgresql://localhost:5432/postgres",
-    "database.properties.user" -> "alex",
-    "database.properties.databaseName" -> "postgres",
-    "database.properties.password" -> ""
+    "database.properties.url" -> "jdbc:postgresql://139.6.56.147:5432/lwm_spec",
+    "database.properties.user" -> "lwm",
+    "database.properties.databaseName" -> "lwm_spec",
+    "database.properties.password" -> "abcde123"
   )
 
   implicit lazy val materializer: Materializer = app.materializer

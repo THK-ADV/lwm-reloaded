@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilterable}
 import database._
 import javax.inject.Inject
 import models._
@@ -12,16 +12,12 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class GroupLabworkTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
+object GroupDao extends TableFilterable[GroupTable] {
+  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterEquals(label)
 
-case class GroupStudentTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.contains(UUID.fromString(value))
-}
+  def studentFilter(student: UUID): TableFilterPredicate = _.contains(student)
 
-case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.label.toLowerCase === value.toLowerCase
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
@@ -58,7 +54,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {
-    filterBy(List(IdFilter(entity.id.toString)))
+    filterBy(List(TableFilterable.idFilter(entity.id)))
   }
 
   override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean = {

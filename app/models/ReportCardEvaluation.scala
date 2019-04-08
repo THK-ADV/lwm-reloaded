@@ -5,13 +5,17 @@ import java.util.UUID
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
-import utils.LwmDateTime.writeDateTime
+import utils.LwmDateTimeFormatter._
 
 sealed trait ReportCardEvaluationLike extends UniqueEntity {
   def lastModified: DateTime
+
   def label: String
+
   def bool: Boolean
+
   def int: Int
+
   def labworkId: UUID
 }
 

@@ -5,7 +5,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.LwmDateTime
+import utils.LwmDateTimeFormatter._
 import utils.Ops.JsPathX
 
 sealed trait LabworkApplicationLike extends UniqueEntity {
@@ -39,8 +39,6 @@ case class LabworkApplicationProtocol(labwork: UUID, applicant: UUID, friends: S
 
 object LabworkApplication {
 
-  import utils.LwmDateTime.writeDateTime
-
   implicit val writes: Writes[LabworkApplication] = Json.writes[LabworkApplication]
 }
 
@@ -62,7 +60,7 @@ object LabworkApplicationAtom {
     (JsPath \ "labwork").write[LabworkAtom](LabworkAtom.writes) and
       (JsPath \ "applicant").write[User] and
       (JsPath \ "friends").writeSet[User] and
-      (JsPath \ "lastModified").write[DateTime](LwmDateTime.writeDateTime) and
+      (JsPath \ "lastModified").write[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(LabworkApplicationAtom.unapply))
 }

@@ -1,8 +1,7 @@
 package dao
 
-import java.util.UUID
-
-import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
+import dao.helper.TableFilterable
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable}
 import javax.inject.Inject
 import models.ReportCardEvaluationPattern
 import slick.jdbc.PostgresProfile.api._
@@ -10,23 +9,14 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class EvaluationPatternPropertyFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
-  override def predicate = _.property.toLowerCase === value.toLowerCase
-}
-
-case class EvaluationPatternEntryTypeFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
-  override def predicate = _.entryType.toLowerCase === value.toLowerCase
-}
-
-case class EvaluationPatternLabworkFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class EvaluationPatternCourseFilter(value: String) extends TableFilter[ReportCardEvaluationPatternTable] {
-  override def predicate = _.memberOfCourse(value)
+object ReportCardEvaluationPatternDao extends TableFilterable[ReportCardEvaluationPatternTable] {
+  def propertyFilter(property: String): TableFilterPredicate = _.property.toLowerCase === property.toLowerCase
 }
 
 trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
+
+  import ReportCardEvaluationPatternDao._
+  import TableFilterable.{entryTypeFilter, labworkFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationPatternTable]
 
@@ -37,11 +27,7 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationPatternDb): Query[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, Seq] = {
-    filterBy(List(
-      EvaluationPatternPropertyFilter(entity.property),
-      EvaluationPatternEntryTypeFilter(entity.entryType),
-      EvaluationPatternLabworkFilter(entity.labwork.toString)
-    ))
+    filterBy(List(propertyFilter(entity.property), entryTypeFilter(entity.entryType), labworkFilter(entity.labwork)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEvaluationPatternDb, toUpdate: ReportCardEvaluationPatternDb): Boolean = {

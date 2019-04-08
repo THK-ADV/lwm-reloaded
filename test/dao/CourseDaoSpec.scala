@@ -17,24 +17,24 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
   "A CourseServiceSpec " should {
 
     "filter courses by label" in {
-      val labelFilter = List(CourseLabelFilter("3"))
+      val labelFilter = List(CourseDao.labelFilter("3"))
       async(dao.get(labelFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.label == "3").map(_.toUniqueEntity))
     }
 
     "filter courses by semester index" in {
-      val semesterIndexFilter = List(CourseSemesterIndexFilter("2"))
+      val semesterIndexFilter = List(CourseDao.semesterIndexFilter(2))
       async(dao.get(semesterIndexFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.semesterIndex == 2).map(_.toUniqueEntity))
     }
 
     "filter courses by abbreviation" in {
-      val abbreviationFilter = List(CourseAbbreviationFilter("4"))
+      val abbreviationFilter = List(CourseDao.abbreviationFilter("4"))
       async(dao.get(abbreviationFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.abbreviation == "4").map(_.toUniqueEntity))
     }
 
     "filter courses by abbreviation and semester index" in {
       val abbreviationAndSemesterIndexFilter = List(
-        CourseAbbreviationFilter("5"),
-        CourseSemesterIndexFilter("2")
+        CourseDao.abbreviationFilter("5"),
+        CourseDao.semesterIndexFilter(2)
       )
 
       async(dao.get(abbreviationAndSemesterIndexFilter, atomic = false))(
@@ -46,8 +46,8 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
 
     "filter courses by label and semester" in {
       val labelAndSemesterIndexFilter = List(
-        CourseLabelFilter("six"),
-        CourseSemesterIndexFilter("6")
+        CourseDao.labelFilter("six"),
+        CourseDao.semesterIndexFilter(6)
       )
 
       async(dao.get(labelAndSemesterIndexFilter, atomic = false))(

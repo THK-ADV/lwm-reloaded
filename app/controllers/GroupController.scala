@@ -4,17 +4,16 @@ import java.util.UUID
 
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
+import database.{GroupDb, GroupTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager, God}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import services._
-import database.{GroupDb, GroupTable, TableFilter}
 import security.SecurityActionChain
+import services._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
 
 object GroupController {
   lazy val labworkAttribute = "labwork"
@@ -41,10 +40,11 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
     (for {
-      applications <- labworkApplicationDao.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
+      labworkId <- Future.fromTry(labwork.uuid)
+      applications <- labworkApplicationDao.get(List(LabworkApplicationDao.labworkFilter(labworkId)), atomic = false)
       apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
       groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
-      groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
+      groups = GroupService.groupApplicantsBy(groupingStrategy, apps, labworkId)
     } yield groups).jsonResult
   }
 
@@ -54,14 +54,14 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[GroupTable]]]): Try[List[TableFilter[GroupTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`studentAttribute`, student)) => list.map(_.+:(GroupStudentTableFilter(student)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(GroupLabworkTableFilter(labwork)))
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(GroupLabelTableFilter(label)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[GroupTable]]]): Try[List[TableFilter[GroupTable]]] = {
+//    (appendTo, (attribute, value)) match {
+//      case (list, (`studentAttribute`, student)) => list.map(_.+:(GroupStudentTableFilter(student)))
+//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(GroupLabworkTableFilter(labwork)))
+//      case (list, (`labelAttribute`, label)) => list.map(_.+:(GroupLabelTableFilter(label)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: GroupProtocol, existingId: Option[UUID]): GroupDb = ???
 

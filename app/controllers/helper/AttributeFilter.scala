@@ -13,7 +13,7 @@ trait AttributeFilter {
 
   protected case class DefaultAttributes(atomic: Boolean = true, valid: Boolean = true, lastModified: Option[String] = None)
 
-  private type QueryString = Map[String, Seq[String]]
+  protected type QueryString = Map[String, Seq[String]]
 
   final protected def extractAttributes(queryString: QueryString, defaultAtomic: Boolean = true): (QueryString, DefaultAttributes) = {
     def extractBool(seq: Seq[String], fallback: Boolean): Boolean = {

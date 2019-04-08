@@ -4,19 +4,18 @@ import java.util.UUID
 
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
+import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models._
 import models.genesis.{Conflict, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
-import services._
-import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable, TableFilter}
 import security.SecurityActionChain
+import services._
 import utils.Gen
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
 
 object ScheduleEntryController {
   lazy val courseAttribute = "course"
@@ -52,6 +51,7 @@ final class ScheduleEntryController @Inject()(
 ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter {
 
   import controllers.ScheduleEntryController._
+  import dao.helper.TableFilterable.labworkFilter
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -89,26 +89,26 @@ final class ScheduleEntryController @Inject()(
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    generate(labwork).created
+    labwork.uuidF.flatMap(l => generate(l)).created
   }
 
-  private def generate(labwork: String)(implicit request: Request[AnyContent]) = for {
-    timetables <- timetableService.withBlacklists(List(TimetableLabworkFilter(labwork))) if timetables.nonEmpty
+  private def generate(labwork: UUID)(implicit request: Request[AnyContent]) = for {
+    timetables <- timetableService.withBlacklists(List(labworkFilter(labwork))) if timetables.nonEmpty
     (timetable, blacklists) = {
       val h = timetables.head
       (h._1, h._2.toVector)
     }
 
-    applications <- labworkApplicationService2.get(List(LabworkApplicationLabworkFilter(labwork)), atomic = false)
+    applications <- labworkApplicationService2.get(List(labworkFilter(labwork)), atomic = false)
     apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
 
     groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
-    groups = GroupService.groupApplicantsBy(groupingStrategy, apps, UUID.fromString(labwork))
+    groups = GroupService.groupApplicantsBy(groupingStrategy, apps, labwork)
 
-    assignmentPlans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
+    assignmentPlans <- assignmentPlanService.get(List(labworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
     ap = assignmentPlans.head.asInstanceOf[AssignmentPlan]
 
-    lab <- labworkService.getSingle(UUID.fromString(labwork)) if lab.isDefined
+    lab <- labworkService.getSingle(labwork) if lab.isDefined
     labAtom = lab.get.asInstanceOf[LabworkAtom]
     semester = labAtom.semester
 
@@ -149,20 +149,20 @@ final class ScheduleEntryController @Inject()(
     ???
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
-      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
-      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
-      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
-      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
-      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
-      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
-      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+  //  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
+  //    (appendTo, (attribute, value)) match {
+  //      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
+  //      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
+  //      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
+  //      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
+  //      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
+  //      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
+  //      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
+  //      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
+  //      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
+  //      case _ => Failure(new Throwable("Unknown attribute"))
+  //    }
+  //  }
 
   override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
 

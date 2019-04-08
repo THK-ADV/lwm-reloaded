@@ -5,8 +5,8 @@ import java.util.UUID
 import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.LwmDateTime._
 import utils.Ops.JsPathX
+import utils.LwmDateTimeFormatter._
 
 sealed trait ScheduleEntryLike extends UniqueEntity {
   def labworkId: UUID

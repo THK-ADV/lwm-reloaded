@@ -3,7 +3,7 @@ package dao
 import java.util.UUID
 
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
-import database.{RoleDb, RoleTable, TableFilter}
+import database.{RoleDb, RoleTable}
 import javax.inject.Inject
 import models.Role.{EmployeeRole, StudentRole}
 import models._
@@ -12,18 +12,16 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class RoleLabelFilter(value: String) extends TableFilter[RoleTable] {
-  override def predicate = _.label.toLowerCase === value.toLowerCase
-}
-
 trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
+
+  import dao.helper.TableFilterable.labelFilterEquals
 
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 
   override protected def shouldUpdate(existing: RoleDb, toUpdate: RoleDb): Boolean = false
 
   override protected def existsQuery(entity: RoleDb): Query[RoleTable, RoleDb, Seq] = {
-    filterBy(List(RoleLabelFilter(entity.label)))
+    filterBy(List(labelFilterEquals(entity.label)))
   }
 
   override protected def toAtomic(query: Query[RoleTable, RoleDb, Seq]): Future[Seq[Role]] = toUniqueEntity(query)

@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilterable}
 import database._
 import javax.inject.Inject
 import models._
@@ -13,15 +13,8 @@ import utils.LwmDateTime._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.memberOfCourse(value)
-}
-
-trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] {
+trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] with TableFilterable[TimetableTable] {
+  import TableFilterable.labworkFilter
 
   override val tableQuery = TableQuery[TimetableTable]
 
@@ -42,7 +35,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
+  def withBlacklists(tableFilter: List[TableFilterPredicate]) = collectDependencies(filterBy(tableFilter)) {
     case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
   }
 
@@ -79,7 +72,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = {
-    filterBy(List(TimetableLabworkFilter(entity.labwork.toString)))
+    filterBy(List(labworkFilter(entity.labwork)))
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {

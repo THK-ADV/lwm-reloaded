@@ -1,9 +1,8 @@
 package dao
 
-import java.sql.Timestamp
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilterable}
 import database._
 import javax.inject.Inject
 import models._
@@ -14,27 +13,27 @@ import utils.LwmDateTime._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class LabworkApplicationApplicantFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.applicant === UUID.fromString(value)
-}
-
-case class LabworkApplicationLabworkFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.lastModified >= new Timestamp(value.toLong)
-}
-
-case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.lastModified <= new Timestamp(value.toLong)
-}
+//case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] { // TODO
+//  override def predicate = _.lastModified >= new Timestamp(value.toLong)
+//}
+//
+//case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
+//  override def predicate = _.lastModified <= new Timestamp(value.toLong)
+//}
 
 /*case class LabworkApplicationFriendFilter(value: String) extends TableFilter[LabworkApplicationTable] {
   override def predicate = _.friends.filter(_.id === UUID.fromString(value)).exists
 }*/
 
+object LabworkApplicationDao extends TableFilterable[LabworkApplicationTable] {
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
+
+  def applicantFilter(applicant: UUID): TableFilterPredicate = _.applicant === applicant
+}
+
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
+
+  import LabworkApplicationDao._
 
   type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, UserDb, (CourseDb, DegreeDb, SemesterDb, UserDb)), Option[UserDb])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
@@ -54,10 +53,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 
   override protected def existsQuery(entity: LabworkApplicationDb): Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = {
-    filterBy(List(
-      LabworkApplicationApplicantFilter(entity.applicant.toString),
-      LabworkApplicationLabworkFilter(entity.labwork.toString)
-    ))
+    filterBy(List(applicantFilter(entity.applicant), labworkFilter(entity.labwork)))
   }
 
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {

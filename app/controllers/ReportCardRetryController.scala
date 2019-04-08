@@ -3,16 +3,14 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
 import security.SecurityActionChain
 import utils.LwmDateTime._
-
-import scala.util.{Failure, Try}
 
 object ReportCardRetryController {
   lazy val reportCardEntryAttribute = "reportCardEntry"
@@ -39,14 +37,14 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
 
   override protected implicit val reads: Reads[ReportCardRetryProtocol] = ReportCardRetryProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
-    (appendTo, (attribute, value)) match { // TODO more attributes
-      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRetryEntryFilter(reportCardEntry)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRetryLabworkFilter(labwork)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRetryCourseFilter(course)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
+//    (appendTo, (attribute, value)) match { // TODO more attributes
+//      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRetryEntryFilter(reportCardEntry)))
+//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRetryLabworkFilter(labwork)))
+//      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRetryCourseFilter(course)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: ReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
     val uuid = existingId getOrElse UUID.randomUUID

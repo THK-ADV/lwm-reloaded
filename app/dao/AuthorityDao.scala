@@ -2,37 +2,32 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.TableFilterable
 import database._
 import javax.inject.Inject
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.Rep
 import slick.sql.FixedSqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AuthorityUserFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.user === UUID.fromString(value)
-}
+object AuthorityDao extends TableFilterable[AuthorityTable] {
 
-case class AuthorityCourseFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.course.map(_ === UUID.fromString(value)).getOrElse(false)
-}
+  def userFilter(user: UUID): TableFilterPredicate = _.user === user
 
-case class AuthorityRoleFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.role === UUID.fromString(value)
-}
+  def courseFilter(course: UUID): TableFilterPredicate = _.course.map(_ === course).getOrElse(false)
 
-case class AuthorityRoleLabelFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.roleFk.filter(_.label === value).exists
-}
+  def roleFilter(role: UUID): TableFilterPredicate = _.role === role
 
-case class AuthoritySystemIdFilter(value: String) extends TableFilter[AuthorityTable] {
-  override def predicate: AuthorityTable => Rep[Boolean] = _.userFk.filter(_.systemId === value).exists // TODO FK comparision should be done this way
+  def roleLabelFilter(label: String): TableFilterPredicate = _.roleFk.filter(_.label === label).exists
+
+  def systemIdFilter(systemId: String): TableFilterPredicate = _.userFk.filter(_.systemId === systemId).exists // TODO FK comparision should be done this way
 }
 
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLike] {
+
+  import AuthorityDao._
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
@@ -128,7 +123,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   def authoritiesFor(systemId: String): Future[Seq[Authority]] = {
-    db.run(filterBy(List(AuthoritySystemIdFilter(systemId))).result.map(_.map(_.toUniqueEntity)))
+    db.run(filterBy(List(systemIdFilter(systemId))).result.map(_.map(_.toUniqueEntity)))
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
@@ -138,8 +133,8 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
-    val approximately = List(AuthorityUserFilter(entity.user.toString), AuthorityRoleFilter(entity.role.toString))
-    val sufficient = entity.course.fold(approximately)(c => approximately :+ AuthorityCourseFilter(c.toString))
+    val approximately = List(userFilter(entity.user), roleFilter(entity.role))
+    val sufficient = entity.course.fold(approximately)(c => approximately.+:(courseFilter(c)))
     filterBy(sufficient)
   }
 

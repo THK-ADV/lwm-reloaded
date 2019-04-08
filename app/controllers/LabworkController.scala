@@ -3,15 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{LabworkDb, LabworkTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import database.{LabworkDb, LabworkTable, TableFilter}
 import security.SecurityActionChain
-
-import scala.util.{Failure, Try}
 
 object LabworkController {
   lazy val labelAttribute = "label"
@@ -71,19 +69,19 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
     delete(id, NonSecureBlock)(request)
   }
 
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[LabworkTable]]]): Try[List[TableFilter[LabworkTable]]] = {
-    import controllers.LabworkController._
-
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(LabworkLabelFilter(label)))
-      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(LabworkDegreeFilter(degree)))
-      case (list, (`semesterAttribute`, semester)) => list.map(_.+:(LabworkSemesterFilter(semester)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(LabworkCourseFilter(course)))
-      case (list, (`subscribableAttribute`, subscribable)) => list.map(_.+:(LabworkSubscribableFilter(subscribable)))
-      case (list, (`publishedAttribute`, published)) => list.map(_.+:(LabworkPublishedFilter(published)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[LabworkTable]]]): Try[List[TableFilter[LabworkTable]]] = {
+//    import controllers.LabworkController._
+//
+//    (appendTo, (attribute, values)) match {
+//      case (list, (`labelAttribute`, label)) => list.map(_.+:(LabworkLabelFilter(label)))
+//      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(LabworkDegreeFilter(degree)))
+//      case (list, (`semesterAttribute`, semester)) => list.map(_.+:(LabworkSemesterFilter(semester)))
+//      case (list, (`courseAttribute`, course)) => list.map(_.+:(LabworkCourseFilter(course)))
+//      case (list, (`subscribableAttribute`, subscribable)) => list.map(_.+:(LabworkSubscribableFilter(subscribable)))
+//      case (list, (`publishedAttribute`, published)) => list.map(_.+:(LabworkPublishedFilter(published)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = LabworkDb.from(protocol, existingId)
 }

@@ -10,7 +10,16 @@ import play.api.libs.json._
 
 import scala.util.{Failure, Success, Try}
 
-object LwmDateTime {
+trait DateTimeFormatterPattern {
+  lazy val dateTimePattern = "yyyy-MM-dd'T'HH:mm"
+  lazy val datePattern = "yyyy-MM-dd"
+  lazy val timePattern = "HH:mm:ss"
+  lazy val dateTimeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(dateTimePattern)
+  lazy val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern(datePattern)
+  lazy val timeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(timePattern)
+}
+
+object LwmDateTime extends DateTimeFormatterPattern {
 
   implicit class LocalDateConverter(val date: LocalDate) {
     def sqlDate: Date = date.stringMillis.sqlDateFromMillis
@@ -58,12 +67,12 @@ object LwmDateTime {
     def dateTime: DateTime = new DateTime(timestamp.getTime)
   }
 
-  lazy val dateTimePattern = "yyyy-MM-dd'T'HH:mm"
-  lazy val datePattern = "yyyy-MM-dd"
-  lazy val timePattern = "HH:mm:ss"
-  lazy val dateTimeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(dateTimePattern)
-  lazy val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern(datePattern)
-  lazy val timeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(timePattern)
+  //  lazy val dateTimePattern = "yyyy-MM-dd'T'HH:mm"
+  //  lazy val datePattern = "yyyy-MM-dd"
+  //  lazy val timePattern = "HH:mm:ss"
+  //  lazy val dateTimeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(dateTimePattern)
+  //  lazy val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern(datePattern)
+  //  lazy val timeFormatter: DateTimeFormatter = DateTimeFormat.forPattern(timePattern)
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
@@ -80,6 +89,9 @@ object LwmDateTime {
   implicit val localDateTimeOrd: Ordering[LocalDateTime] = (x: LocalDateTime, y: LocalDateTime) => x.compareTo(y)
 
   implicit val dateTimeOrd: Ordering[DateTime] = (x: DateTime, y: DateTime) => x.compareTo(y)
+}
+
+object LwmDateTimeFormatter extends DateTimeFormatterPattern {
 
   implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(dateTimeFormatter)))
 
@@ -87,14 +99,20 @@ object LwmDateTime {
 
   implicit val writeLocalTime: Writes[LocalTime] = Writes(a => JsString(a.toString(timeFormatter)))
 
-  implicit val readLocalDate: Reads[LocalDate] = Reads(js => jsResult(Try(dateFormatter.parseLocalDate(js.toString()))))
+  implicit val readLocalDate: Reads[LocalDate] = Reads { js =>
+    val triedDate = jsStringValue(js).flatMap(s => Try(dateFormatter.parseLocalDate(s)))
+    jsResult(triedDate)
+  }
 
-  implicit val readLocalTime: Reads[LocalTime] = Reads(js => jsResult(Try(timeFormatter.parseLocalTime(js.toString()))))
-
-  implicit val readDateTime: Reads[DateTime] = Reads(js => jsResult(Try(dateTimeFormatter.parseDateTime(js.toString()))))
+  implicit val readLocalTime: Reads[LocalTime] = Reads { js =>
+    val triedDate = jsStringValue(js).flatMap(s => Try(timeFormatter.parseLocalTime(s)))
+    jsResult(triedDate)
+  }
 
   private def jsResult[A](a: Try[A]): JsResult[A] = a match {
     case Success(s) => JsSuccess(s)
     case Failure(e) => JsError(e.getLocalizedMessage)
   }
+
+  private def jsStringValue(js: JsValue): Try[String] = Try(js.as[JsString].value)
 }

@@ -3,15 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.CourseManager
 import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable, TableFilter}
 import security.SecurityActionChain
-
-import scala.util.{Failure, Try}
 
 object ReportCardEvaluationPatternController {
   lazy val courseAttribute = "course"
@@ -57,16 +55,16 @@ final class ReportCardEvaluationPatternController @Inject()(cc: ControllerCompon
     case Delete => SecureBlock(restrictionId, List(CourseManager))
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEvaluationPatternTable]]]): Try[List[TableFilter[ReportCardEvaluationPatternTable]]] = {
-    import controllers.ReportCardEvaluationPatternController._
-
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(EvaluationPatternCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(EvaluationPatternLabworkFilter(labwork)))
-      case (list, (`entryTypeAttribute`, entryType)) => list.map(_.+:(EvaluationPatternEntryTypeFilter(entryType)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEvaluationPatternTable]]]): Try[List[TableFilter[ReportCardEvaluationPatternTable]]] = {
+//    import controllers.ReportCardEvaluationPatternController._
+//
+//    (appendTo, (attribute, value)) match {
+//      case (list, (`courseAttribute`, course)) => list.map(_.+:(EvaluationPatternCourseFilter(course)))
+//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(EvaluationPatternLabworkFilter(labwork)))
+//      case (list, (`entryTypeAttribute`, entryType)) => list.map(_.+:(EvaluationPatternEntryTypeFilter(entryType)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: ReportCardEvaluationPatternProtocol, existingId: Option[UUID]): ReportCardEvaluationPatternDb = {
     ReportCardEvaluationPatternDb.from(protocol, existingId)

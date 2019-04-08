@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import database.{CourseDb, CourseTable, TableFilter}
+import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
@@ -12,12 +12,11 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
 
 object CourseController {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
-  lazy val lecturerAttribute = "lecturer"
+//  lazy val lecturerAttribute = "lecturer"
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
@@ -74,16 +73,16 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     } yield course).deleted
   }
 
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
-    import controllers.CourseController._
-
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
-      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
+//    import controllers.CourseController._
+//
+//    (appendTo, (attribute, values)) match {
+//      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
+//      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
+//      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(EmployeeRole, StudentRole))

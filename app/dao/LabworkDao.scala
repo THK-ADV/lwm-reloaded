@@ -2,42 +2,34 @@ package dao
 
 import java.util.UUID
 
-import database.{LabworkDb, LabworkTable, TableFilter}
+import dao.helper.TableFilterable
+import database.{LabworkDb, LabworkTable}
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class LabworkIdFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.id === UUID.fromString(value)
-}
 
-case class LabworkDegreeFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.degree === UUID.fromString(value)
-}
+object LabworkDao extends TableFilterable[LabworkTable] {
+  def publishedFilter(published: Boolean): TableFilterPredicate = _.published === published
 
-case class LabworkSemesterFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.semester === UUID.fromString(value)
-}
+  def subscribableFilter(subscribable: Boolean): TableFilterPredicate = _.subscribable === subscribable
 
-case class LabworkCourseFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.course === UUID.fromString(value)
-}
+  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterLike(label)
 
-case class LabworkLabelFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
-}
+  def courseFilter(course: UUID): TableFilterPredicate = _.course === course
 
-case class LabworkSubscribableFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.subscribable === value.toBoolean
-}
+  def semesterFilter(semester: UUID): TableFilterPredicate = _.semester === semester
 
-case class LabworkPublishedFilter(value: String) extends TableFilter[LabworkTable] {
-  override def predicate = _.published === value.toBoolean
+  def degreeFilter(degree: UUID): TableFilterPredicate = _.degree === degree
+
+  def idFilter(id: UUID): TableFilterPredicate = TableFilterable.idFilter(id)
 }
 
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
+
+  import LabworkDao.{courseFilter, degreeFilter, semesterFilter}
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
@@ -50,11 +42,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
   }
 
   override protected def existsQuery(entity: LabworkDb): Query[LabworkTable, LabworkDb, Seq] = {
-    filterBy(List(
-      LabworkSemesterFilter(entity.semester.toString),
-      LabworkCourseFilter(entity.course.toString),
-      LabworkDegreeFilter(entity.degree.toString)
-    ))
+    filterBy(List(semesterFilter(entity.semester), courseFilter(entity.course), degreeFilter(entity.degree)))
   }
 
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {

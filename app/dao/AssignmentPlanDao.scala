@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilterable}
 import database._
 import javax.inject.Inject
 import models._
@@ -12,15 +12,16 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AssignmentPlanLabworkFilter(value: String) extends TableFilter[AssignmentPlanTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
+object AssignmentPlanDao extends TableFilterable[AssignmentPlanTable] {
 
-case class AssignmentPlanCourseFilter(value: String) extends TableFilter[AssignmentPlanTable] {
-  override def predicate = _.memberOfCourse(value)
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
+
+  def courseFilter(course: UUID): TableFilterPredicate = TableFilterable.courseFilter(course)
 }
 
 trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] {
+
+  import AssignmentPlanDao._
 
   override val tableQuery = TableQuery[AssignmentPlanTable]
 
@@ -69,7 +70,7 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   }
 
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {
-    filterBy(List(AssignmentPlanLabworkFilter(entity.labwork.toString)))
+    filterBy(List(labworkFilter(entity.labwork)))
   }
 
   override protected def shouldUpdate(existing: AssignmentPlanDb, toUpdate: AssignmentPlanDb): Boolean = {

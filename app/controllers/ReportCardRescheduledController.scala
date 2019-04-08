@@ -3,16 +3,14 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
 import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
 import security.SecurityActionChain
 import utils.LwmDateTime._
-
-import scala.util.{Failure, Try}
 
 object ReportCardRescheduledController {
   lazy val reportCardEntryAttribute = "reportCardEntry"
@@ -39,14 +37,14 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
 
   override protected implicit val reads: Reads[ReportCardRescheduledProtocol] = ReportCardRescheduledProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
-    (appendTo, (attribute, value)) match { // TODO more attributes
-      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRescheduledEntryFilter(reportCardEntry)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRescheduledLabworkFilter(labwork)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRescheduledCourseFilter(course)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
+//    (appendTo, (attribute, value)) match { // TODO more attributes
+//      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRescheduledEntryFilter(reportCardEntry)))
+//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRescheduledLabworkFilter(labwork)))
+//      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRescheduledCourseFilter(course)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
     ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)

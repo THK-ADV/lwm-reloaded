@@ -3,16 +3,16 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{ReportCardEntryDb, ReportCardEntryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import services._
-import database.{ReportCardEntryDb, ReportCardEntryTable, TableFilter}
 import security.SecurityActionChain
+import services._
 
-import scala.util.{Failure, Try}
+import scala.concurrent.Future
 
 object ReportCardEntryController {
   lazy val studentAttribute = "student"
@@ -40,21 +40,21 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
 
   override protected implicit val reads: Reads[ReportCardEntryProtocol] = ReportCardEntryProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
-      case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
-      case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
-      case (list, (`dateAttribute`, date)) => list.map(_.+:(ReportCardEntryDateFilter(date)))
-      case (list, (`startAttribute`, start)) => list.map(_.+:(ReportCardEntryStartFilter(start)))
-      case (list, (`endAttribute`, end)) => list.map(_.+:(ReportCardEntryEndFilter(end)))
-      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ReportCardEntrySinceFilter(since)))
-      case (list, (`untilAttribute`, until)) => list.map(_.+:(ReportCardEntryUntilFilter(until)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
-  }
+//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
+//    (appendTo, (attribute, value)) match {
+//      case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
+//      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
+//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
+//      case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
+//      case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
+//      case (list, (`dateAttribute`, date)) => list.map(_.+:(ReportCardEntryDateFilter(date)))
+//      case (list, (`startAttribute`, start)) => list.map(_.+:(ReportCardEntryStartFilter(start)))
+//      case (list, (`endAttribute`, end)) => list.map(_.+:(ReportCardEntryEndFilter(end)))
+//      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ReportCardEntrySinceFilter(since)))
+//      case (list, (`untilAttribute`, until)) => list.map(_.+:(ReportCardEntryUntilFilter(until)))
+//      case _ => Failure(new Throwable("Unknown attribute"))
+//    }
+//  }
 
   override protected def toDbModel(protocol: ReportCardEntryProtocol, existingId: Option[UUID]): ReportCardEntryDb = ???
 
@@ -84,10 +84,10 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
     (for {
+      labworkId <- Future.fromTry(labwork.uuid)
       schedules <- scheduleEntryDao.scheduleGenBy(labwork) if schedules.isDefined
-      plans <- assignmentPlanService.get(List(AssignmentPlanLabworkFilter(labwork)), atomic = false) if plans.size == 1
-      plan = plans.head.asInstanceOf[AssignmentPlan]
-      reportCardEntries = ReportCardService.reportCards(schedules.head, plan)
+      maybePlan <- assignmentPlanService.getSingleWhere(AssignmentPlanDao.labworkFilter(labworkId).apply, atomic = false) if maybePlan.isDefined
+      reportCardEntries = ReportCardService.reportCards(schedules.head, maybePlan.head)
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
   }

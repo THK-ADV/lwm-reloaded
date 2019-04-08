@@ -56,7 +56,7 @@ object ReportCardService { // TODO DI
     ReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
   }
 
-  def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlan): Vector[ReportCardEntryDb] = {
+  def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlanLike): Vector[ReportCardEntryDb] = {
     import utils.LwmDateTime._
 
     val students = schedule.entries.flatMap(_.group.members).toSet
@@ -70,7 +70,7 @@ object ReportCardService { // TODO DI
           val entryId = UUID.randomUUID
           val types = ap.types.map(t => ReportCardEntryTypeDb(Some(entryId), None, t.entryType))
 
-          ReportCardEntryDb(student, assignmentPlan.labwork, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
+          ReportCardEntryDb(student, assignmentPlan.labworkId, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
       } ++ vec
     }
   }
