@@ -1,5 +1,7 @@
 package database.helper
 
+import play.api.libs.json.Writes
+
 import scala.util.{Failure, Success, Try}
 
 sealed trait LdapUserStatus {

@@ -5,7 +5,6 @@ import java.util.UUID
 import database.{DegreeDb, DegreeTable, TableFilter}
 import javax.inject.Inject
 import models.Degree
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,9 +33,9 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
     filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
   }
 
-  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Traversable[Degree]] = toUniqueEntity(query)
+  override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = toUniqueEntity(query)
 
-  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Traversable[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
+  override protected def toUniqueEntity(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = db.run(query.result.map(_.map(_.toUniqueEntity)))
 }
 
 final class DegreeDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends DegreeDao

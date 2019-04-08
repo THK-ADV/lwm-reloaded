@@ -1,13 +1,14 @@
 package dao
 
+import database.{SemesterDb, SemesterTable}
 import models.Semester
 import org.joda.time.LocalDate
-import slick.dbio.Effect.Write
-import database.{SemesterDb, SemesterTable}
 import play.api.inject.guice.GuiceableModule
+import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
 
 final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, Semester] {
+
   import AbstractDaoSpec._
   import utils.LwmDateTime._
 
@@ -18,11 +19,10 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
   "A SemesterServiceSpec" should {
 
     "return current semester" in {
-      val current = dbEntities.map(_.toUniqueEntity).filter(Semester.isCurrent)
+      val current = dbEntities.map(_.toUniqueEntity).filter(Semester.isCurrent).head
 
-      async(dao.get(List(SemesterCurrentFilter))) { result =>
-        result.size shouldBe 1
-        result should contain theSameElementsAs current
+      async(dao.current(false)) { result =>
+        result.value shouldBe current
       }
     }
 
@@ -81,7 +81,7 @@ final class SemesterDaoSpec extends AbstractDaoSpec[SemesterTable, SemesterDb, S
 
   override protected val lwmAtom: Semester = dbEntity.toUniqueEntity
 
-  override protected val dao: AbstractDao[SemesterTable, SemesterDb, Semester] = app.injector.instanceOf(classOf[SemesterDao])
+  override protected val dao: SemesterDao = app.injector.instanceOf(classOf[SemesterDao])
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

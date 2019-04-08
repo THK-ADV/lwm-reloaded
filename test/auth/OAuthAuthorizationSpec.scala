@@ -13,17 +13,22 @@ class OAuthAuthorizationSpec extends WordSpec with TestBaseDefinition with Guice
 
   "A OAuthAuthorization" should {
 
-    "extract bearer token from request when present" in {
-      val request = FakeRequest().withHeaders(("Authorization", "Bearer RANDOM_HASH"))
-      val maybeToken = auth.bearerToken(request)
+    "extract bearer token from request when present, regardless of capitalization" in {
+      val request1 = FakeRequest().withHeaders(("Authorization", "Bearer RANDOM_HASH"))
+      val maybeToken1 = auth.bearerToken(request1)
+      val request2 = FakeRequest().withHeaders(("Authorization", "bearer random_hash"))
+      val maybeToken2 = auth.bearerToken(request2)
 
-      maybeToken.value shouldBe "RANDOM_HASH"
+      maybeToken1.value shouldBe "RANDOM_HASH"
+      maybeToken2.value shouldBe "random_hash"
     }
 
     "not extract bearer token from request with wrong header configurations" in {
       auth.bearerToken(FakeRequest().withHeaders()) shouldBe None
       auth.bearerToken(FakeRequest().withHeaders(("fake", "fake"))) shouldBe None
       auth.bearerToken(FakeRequest().withHeaders(("Authorization", "fake"))) shouldBe None
+      auth.bearerToken(FakeRequest().withHeaders(("Authorization", "bearer"))) shouldBe None
+      auth.bearerToken(FakeRequest().withHeaders(("Authorization", "bearer "))) shouldBe None
     }
   }
 

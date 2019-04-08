@@ -35,7 +35,7 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
   import KeycloakAuthorization._
 
   override def authorized[R](request: Request[R]): Future[VerifiedToken] = for {
-    token <- asFuture(bearerToken(request), s"could not find $BearerPrefix in $AuthorizationHeader header")
+    token <- asFuture(bearerToken(request), s"could not find $BearerPrefix Token in $AuthorizationHeader header")
     tokenVerifier = buildTokenVerifier(token)
     key <- getPublicKey(tokenVerifier.getHeader)
     accessToken = tokenVerifier.publicKey(key).verify().getToken

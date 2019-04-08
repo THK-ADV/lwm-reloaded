@@ -48,7 +48,7 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
-  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
+  override protected def toAtomic(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
     val mandatory = for {
       q <- query
       labwork <- q.labworkFk
@@ -70,7 +70,7 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Traversable[ReportCardEvaluationLike]] = {
+  override protected def toUniqueEntity(query: Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq]): Future[Seq[ReportCardEvaluationLike]] = {
     db.run(query.result.map(_.map(e => ReportCardEvaluation(e.student, e.labwork, e.label, e.bool, e.int, e.lastModified.dateTime, e.id))))
   }
 

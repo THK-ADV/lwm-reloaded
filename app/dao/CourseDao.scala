@@ -3,7 +3,6 @@ package dao
 import database.{CourseDb, CourseTable, TableFilter}
 import javax.inject.Inject
 import models.{CourseAtom, CourseLike}
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,7 +34,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
       (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
   }
 
-  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
+  override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
     val joinedQuery = for {
       q <- query
       l <- q.lecturerFk
@@ -46,7 +45,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
     }))
   }
 
-  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Traversable[CourseLike]] = {
+  override protected def toUniqueEntity(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
     db.run(query.result.map(_.map(_.toUniqueEntity)))
   }
 }

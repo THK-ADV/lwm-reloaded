@@ -30,11 +30,11 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
   val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Traversable[GroupLike]] = collectDependencies(query) {
+  override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
     case (g, l, m) => GroupAtom(g.label, l.toUniqueEntity, m.map(_.toUniqueEntity).toSet, g.id)
   }
 
-  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): Future[Traversable[GroupLike]] = collectDependencies(query) {
+  override protected def toUniqueEntity(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
     case (g, _, m) => Group(g.label, g.labwork, m.map(_.id).toSet, g.id)
   }
 
@@ -54,7 +54,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
         val labwork = dependencies.find(_._1._1._1.labwork == group.labwork).head._1._1._2
 
         build(group, labwork, members)
-    }))
+    }.toSeq))
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {

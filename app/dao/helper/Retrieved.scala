@@ -8,15 +8,15 @@ import models.{UniqueDbEntity, UniqueEntity}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
-import scala.collection.Traversable
+import scala.collection.Seq
 import scala.concurrent.Future
 
 trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
   self: Core with Accessible[T, DbModel] =>
 
-  protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Traversable[LwmModel]]
+  protected def toAtomic(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
-  protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Traversable[LwmModel]]
+  protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
   final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
@@ -30,11 +30,15 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
     query.filterBy(validOnly, sinceLastModified)
   }
 
-  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
+  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
     filterBy(tableFilter, validOnly, sinceLastModified)
       .retrieve(atomic)
 
-  final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
+  final def getByQuery(query: Query[T, DbModel, Seq], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
+    query.filterBy(validOnly, sinceLastModified)
+      .retrieve(atomic)
+
+  final def getMany(ids: List[UUID], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
     tableQuery
       .filter(_.id.inSet(ids))
       .filterBy(validOnly, sinceLastModified)
@@ -53,7 +57,15 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       .retrieve(atomic)
       .map(_.headOption)
 
-  final def filter(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Traversable[LwmModel]] =
+  final def getSingleWhere(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Option[LwmModel]] =
+    tableQuery
+      .filter(where)
+      .take(1)
+      .filterBy(validOnly, sinceLastModified)
+      .retrieve(atomic)
+      .map(_.headOption)
+
+  final def filter(where: T => Rep[Boolean], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
     tableQuery
       .filter(where)
       .filterBy(validOnly, sinceLastModified)
@@ -64,7 +76,7 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
   final def filterValidOnly(query: Query[T, DbModel, Seq]): Query[T, DbModel, Seq] = query.filterBy(validOnly = true, None)
 
   protected implicit class QueryOps(val query: Query[T, DbModel, Seq]) {
-    def retrieve(atomic: Boolean): Future[Traversable[LwmModel]] = if (atomic) toAtomic(query) else toUniqueEntity(query)
+    def retrieve(atomic: Boolean): Future[Seq[LwmModel]] = if (atomic) toAtomic(query) else toUniqueEntity(query)
 
     def filterBy(validOnly: Boolean, sinceLastModified: Option[String]): Query[T, DbModel, Seq] = query.filterLastModified(sinceLastModified).filterValidOnly(validOnly)
 
