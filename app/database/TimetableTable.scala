@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{Timetable, TimetableEntry, TimetableProtocol, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 class TimetableTable(tag: Tag) extends Table[TimetableDb](tag, "TIMETABLE") with UniqueTable with LabworkIdTable {
   def start = column[Date]("START")

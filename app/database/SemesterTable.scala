@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{Semester, SemesterProtocol, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with UniqueTable with LabelTable with AbbreviationTable {
   def start = column[Date]("START")
@@ -20,7 +20,7 @@ class SemesterTable(tag: Tag) extends Table[SemesterDb](tag, "SEMESTERS") with U
 
 case class SemesterDb(label: String, abbreviation: String, start: Date, end: Date, examStart: Date, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
 
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   override def toUniqueEntity = Semester(label, abbreviation, start.localDate, end.localDate, examStart.localDate, id)
 }

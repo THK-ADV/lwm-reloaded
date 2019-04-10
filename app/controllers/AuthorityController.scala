@@ -34,8 +34,8 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
   override implicit val authorityDao: AuthorityDao = abstractDao
 
   override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
-    import utils.LwmDateTime.SqlTimestampConverter
-    import utils.LwmDateTimeFormatter.writeDateTime
+    import utils.date.DateTimeOps.SqlTimestampConverter
+    import utils.date.DateTimeJsonFormatter.writeDateTime
 
     abstractDao.deleteAuthorityIfNotBasic(UUID.fromString(id)).map(_.lastModified.dateTime).deleted
   }

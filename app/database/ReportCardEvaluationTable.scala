@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{ReportCardEvaluation, ReportCardEvaluationProtocol, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.{DateTimeConverter, SqlTimestampConverter}
+import utils.date.DateTimeOps.{DateTimeConverter, SqlTimestampConverter}
 
 class ReportCardEvaluationTable(tag: Tag) extends Table[ReportCardEvaluationDb](tag, "REPORT_CARD_EVALUATION") with UniqueTable with StudentIdTable with LabworkIdTable with LabelTable with EntryTypeLikeTable {
 

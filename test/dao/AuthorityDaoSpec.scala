@@ -13,7 +13,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
-  import utils.LwmDateTime.DateTimeConverter
+  import utils.date.DateTimeOps.DateTimeConverter
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

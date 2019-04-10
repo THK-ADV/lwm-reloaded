@@ -3,7 +3,7 @@ package controllers.helper
 import base.TestBaseDefinition
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 final class AttributeFilterSpec extends WordSpec with TestBaseDefinition with AttributeFilter {
 

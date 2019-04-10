@@ -10,7 +10,7 @@ import org.joda.time._
 import scalaz.Functor
 import services.ScheduleService.{Crossover, Evaluator, Mutator}
 import utils.Evaluation._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.TypeClasses.{Cross, Eval, Mutate}

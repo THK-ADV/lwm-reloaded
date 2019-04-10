@@ -9,7 +9,7 @@ import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -76,7 +76,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    import utils.LwmDateTime.SqlDateConverter
+    import utils.date.DateTimeOps.SqlDateConverter
 
     (existing.start.localDate != toUpdate.start.localDate ||
       existing.entries != toUpdate.entries ||

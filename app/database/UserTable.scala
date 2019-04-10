@@ -7,7 +7,7 @@ import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentS
 import models.{Employee, Lecturer, Student, UniqueDbEntity, User}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class UserTable(tag: Tag) extends Table[UserDb](tag, "USERS") with UniqueTable {
   def systemId = column[String]("SYSTEM_ID")

@@ -7,7 +7,7 @@ import models.helper.EvaluationProperty
 import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class ReportCardEvaluationPatternTable(tag: Tag) extends Table[ReportCardEvaluationPatternDb](tag, "REPORT_CARD_EVALUATION_PATTERN") with UniqueTable with LabworkIdTable with EntryTypeTable {
   def min = column[Int]("MIN")

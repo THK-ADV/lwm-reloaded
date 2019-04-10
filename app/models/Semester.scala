@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.joda.time.{Interval, LocalDate}
 import play.api.libs.json.{Json, Reads, Writes}
-import utils.LwmDateTimeFormatter._
+import utils.date.DateTimeJsonFormatter._
 
 case class Semester(label: String, abbreviation: String, start: LocalDate, end: LocalDate, examStart: LocalDate, id: UUID = UUID.randomUUID) extends UniqueEntity
 

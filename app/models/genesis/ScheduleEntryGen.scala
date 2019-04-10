@@ -7,7 +7,7 @@ import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.Ops.JsPathX
-import utils.LwmDateTimeFormatter._
+import utils.date.DateTimeJsonFormatter._
 
 case class ScheduleEntryGen(start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: Group)
 

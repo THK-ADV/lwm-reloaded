@@ -57,7 +57,7 @@ object ReportCardService { // TODO DI
   }
 
   def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlanLike): Vector[ReportCardEntryDb] = {
-    import utils.LwmDateTime._
+    import utils.date.DateTimeOps._
 
     val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)

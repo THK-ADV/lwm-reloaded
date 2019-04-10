@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{LabworkApplication, LabworkApplicationProtocol, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.{DateTimeConverter, SqlTimestampConverter}
+import utils.date.DateTimeOps.{DateTimeConverter, SqlTimestampConverter}
 
 class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable {
   def applicant = column[UUID]("APPLICANT")

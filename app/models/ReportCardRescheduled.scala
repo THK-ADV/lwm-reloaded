@@ -5,7 +5,7 @@ import java.util.UUID
 import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.functional.syntax.{unlift, _}
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
-import utils.LwmDateTimeFormatter._
+import utils.date.DateTimeJsonFormatter._
 
 trait ReportCardRescheduledLike extends UniqueEntity
 

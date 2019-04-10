@@ -5,7 +5,7 @@ import java.util.UUID
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 trait UniqueTable {
   self: Table[_] =>
@@ -87,7 +87,7 @@ trait DateStartEndTable {
 
   def end = column[Time]("END")
 
-  def onDate(millis: String) = date === millis.sqlDateFromMillis
+/*  def onDate(millis: String) = date === millis.sqlDateFromMillis // TODO
 
   def onStart(millis: String) = start === millis.sqlTimeFromMillis
 
@@ -95,7 +95,7 @@ trait DateStartEndTable {
 
   def since(millis: String) = date >= millis.sqlDateFromMillis
 
-  def until(millis: String) = date <= millis.sqlDateFromMillis
+  def until(millis: String) = date <= millis.sqlDateFromMillis*/
 }
 
 trait GroupIdTable {

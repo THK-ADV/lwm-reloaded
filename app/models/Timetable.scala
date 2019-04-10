@@ -6,7 +6,7 @@ import org.joda.time.{LocalDate, LocalTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
-import utils.LwmDateTimeFormatter._
+import utils.date.DateTimeJsonFormatter._
 
 sealed trait TimetableLike extends UniqueEntity
 

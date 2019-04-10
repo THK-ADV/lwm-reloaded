@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{Role, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class RoleTable(tag: Tag) extends Table[RoleDb](tag, "ROLES") with UniqueTable with LabelTable {
   override def * = (label, lastModified, invalidated, id) <> ((RoleDb.apply _).tupled, RoleDb.unapply)

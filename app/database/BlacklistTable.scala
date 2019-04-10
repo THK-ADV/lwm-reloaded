@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{Blacklist, BlacklistProtocol, UniqueDbEntity}
 import org.joda.time.{DateTime, LocalDate}
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 class BlacklistTable(tag: Tag) extends Table[BlacklistDb](tag, "BLACKLIST") with UniqueTable with LabelTable with DateStartEndTable {
   def global = column[Boolean]("GLOBAL")
@@ -34,7 +34,7 @@ object BlacklistDb {
   import models.Blacklist.{endOfDay, startOfDay}
 
   def from(protocol: BlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
-    BlacklistDb(protocol.label, protocol.date.sqlDateFromPattern, protocol.start.sqlTimeFromPattern, protocol.end.sqlTimeFromPattern, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+    BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
   }
 
   def entireDay(label: String, date: LocalDate, global: Boolean): BlacklistDb = entireDay(label, date.sqlDate, global)

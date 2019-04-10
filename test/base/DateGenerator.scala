@@ -1,16 +1,41 @@
 package base
 
 import org.joda.time.{DateTime, LocalDate, LocalTime}
-import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.Suite
+import org.scalacheck.{Arbitrary, Gen}
 
-trait DateGenerator { this: Suite =>
+trait DateGenerator {
+  self: Suite =>
+
+  protected def localDate(year: Int, month: Int, day: Int): LocalDate = LocalDate.now
+    .withYear(year)
+    .withMonthOfYear(month)
+    .withDayOfMonth(day)
+
+  protected def localTime(hour: Int, minute: Int, second: Int, milliSeconds: Int): LocalTime = LocalTime.now
+    .withHourOfDay(hour)
+    .withMinuteOfHour(minute)
+    .withSecondOfMinute(second)
+    .withMillisOfSecond(milliSeconds)
+
+  protected def dateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, milliSeconds: Int): DateTime = DateTime.now
+    .withYear(year)
+    .withMonthOfYear(month)
+    .withDayOfMonth(day)
+    .withHourOfDay(hour)
+    .withMinuteOfHour(minute)
+    .withSecondOfMinute(second)
+    .withMillisOfSecond(milliSeconds)
 
   def dates: Gen[DateTime] = {
-    val now = DateTime.now
     for {
-      l <- Gen.choose(0, now.getMillis)
-    } yield now.minus(l)
+      year <- Gen.choose(1970, 2019)
+      month <- Gen.choose(1, 12)
+      day <- Gen.choose(1, 28)
+      hour <- Gen.choose(0, 23)
+      minute <- Gen.choose(0, 59)
+      second <- Gen.choose(0, 59)
+    } yield dateTime(year, month, day, hour, minute, second, 0)
   }
 
   implicit val arbitraryDateTime: Arbitrary[DateTime] = Arbitrary(dates)

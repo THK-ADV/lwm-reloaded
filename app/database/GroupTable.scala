@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{Group, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable with LabworkIdTable with LabelTable {
 

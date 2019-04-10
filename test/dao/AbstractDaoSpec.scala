@@ -12,7 +12,7 @@ import models.helper.{BoolBased, IntBased}
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 object AbstractDaoSpec {
 
@@ -261,7 +261,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
 
   protected val lastModified: Timestamp = {
     import org.joda.time.DateTime
-    import utils.LwmDateTime.DateTimeConverter
+    import utils.date.DateTimeOps.DateTimeConverter
 
     DateTime.now.timestamp
   }

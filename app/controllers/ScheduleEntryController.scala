@@ -69,7 +69,7 @@ final class ScheduleEntryController @Inject()(
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    import utils.LwmDateTime.{LocalDateConverter, LocalTimeConverter}
+    import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
 
     (for {
       s <- Future.fromTry(parseJson(request)(ScheduleGen.reads))

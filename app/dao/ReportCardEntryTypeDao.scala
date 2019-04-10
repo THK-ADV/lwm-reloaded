@@ -21,7 +21,7 @@ object ReportCardEntryTypeDao extends TableFilterable[ReportCardEntryTypeTable] 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
   import ReportCardEntryTypeDao._
   import TableFilterable.entryTypeFilter
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 

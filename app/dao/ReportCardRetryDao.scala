@@ -7,7 +7,7 @@ import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -57,7 +57,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   }
 
   override protected def shouldUpdate(existing: ReportCardRetryDb, toUpdate: ReportCardRetryDb): Boolean = {
-    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     (existing.date.localDate != toUpdate.date.localDate ||
       existing.start.localTime != toUpdate.start.localTime ||

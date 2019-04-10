@@ -9,7 +9,7 @@ import slick.jdbc.PostgresProfile.api._
 final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb, Blacklist] {
 
   import AbstractDaoSpec._
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   val dao = app.injector.instanceOf(classOf[BlacklistDao])
 

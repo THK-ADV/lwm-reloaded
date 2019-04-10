@@ -4,11 +4,11 @@ import java.util.UUID
 
 import org.joda.time.{LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
-import utils.LwmDateTimeFormatter._
+import utils.date.DateTimeJsonFormatter._
 
 case class Blacklist(label: String, date: LocalDate, start: LocalTime, end: LocalTime, global: Boolean, id: UUID = UUID.randomUUID) extends UniqueEntity
 
-case class BlacklistProtocol(label: String, date: String, start: String, end: String, global: Boolean)
+case class BlacklistProtocol(label: String, date: LocalDate, start: LocalTime, end: LocalTime, global: Boolean)
 
 object Blacklist {
 

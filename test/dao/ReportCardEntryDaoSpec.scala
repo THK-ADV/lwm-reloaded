@@ -11,7 +11,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
 
   import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

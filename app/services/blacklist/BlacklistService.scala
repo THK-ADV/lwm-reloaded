@@ -20,7 +20,8 @@ trait BlacklistService {
 final class BlacklistServiceImpl @Inject()(ws: Webservice) extends BlacklistService {
 
   def fetchLegalHolidays(year: Int)(implicit executor: ExecutionContext): Future[List[BlacklistDb]] = {
-    import utils.LwmDateTime.StringDateConverter
+    Future.successful(List.empty)
+/*    import utils.date.DateTimeOps.StringDateConverter TODO
 
     ws.get(uri(year)) { json =>
       val blacklists = for {
@@ -29,6 +30,6 @@ final class BlacklistServiceImpl @Inject()(ws: Webservice) extends BlacklistServ
       } yield BlacklistDb.entireDay(legalHolidayLabel(year, key), date.localDate, global = true)
 
       blacklists.toList
-    }
+    }*/
   }
 }

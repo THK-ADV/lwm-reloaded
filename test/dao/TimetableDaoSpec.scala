@@ -9,7 +9,7 @@ import play.api.inject.guice.GuiceableModule
 final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, TimetableDb, TimetableLike] {
 
   import slick.jdbc.PostgresProfile.api._
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

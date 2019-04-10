@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{AssignmentPlan, AssignmentEntry, AssignmentPlanProtocol, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGNMENT_PLAN") with UniqueTable with LabworkIdTable {
   def attendance = column[Int]("ATTENDANCE")

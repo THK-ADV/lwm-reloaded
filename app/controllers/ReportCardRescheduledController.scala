@@ -10,7 +10,7 @@ import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 object ReportCardRescheduledController {
   lazy val reportCardEntryAttribute = "reportCardEntry"

@@ -8,7 +8,7 @@ import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import utils.LwmDateTime.SqlTimestampConverter
+import utils.date.DateTimeOps.SqlTimestampConverter
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try

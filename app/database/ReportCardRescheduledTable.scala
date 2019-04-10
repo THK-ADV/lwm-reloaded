@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{ReportCardRescheduled, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 class ReportCardRescheduledTable(tag: Tag) extends Table[ReportCardRescheduledDb](tag, "REPORT_CARD_RESCHEDULED") with UniqueTable with DateStartEndTable with RoomIdTable with ReportCardEntryIdTable {
   def reason = column[Option[String]]("REASON")

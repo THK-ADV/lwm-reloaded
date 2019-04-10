@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import slick.dbio.Effect
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 import scala.concurrent.Future
 

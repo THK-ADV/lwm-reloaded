@@ -10,7 +10,7 @@ import slick.lifted.TableQuery
 final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
 
   import AbstractDaoSpec._
-  import utils.LwmDateTime.SqlTimestampConverter
+  import utils.date.DateTimeOps.SqlTimestampConverter
   import scala.util.Random.{nextBoolean, nextInt}
 
   override protected def name = "reportCardEvaluation"
