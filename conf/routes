@@ -242,6 +242,8 @@ GET           /api/course/:c/assignmentStats                                    
 GET           /api/course/:c/assignmentEvals                                          controllers.ApiDataController.assignmentEvaluation(c)
 GET           /api/course/:c/labwork/:l/assignmentEvals                               controllers.ApiDataController.assignmentEvaluationA(c, l)
 GET           /api/course/:c/bonicheck                                                controllers.ApiDataController.bonicheck(c)
+PUT           /api/insertSupervisor/preview/:p                                        controllers.ApiDataController.insertSupervisor(p)
+PUT           /api/removeSupervisor/preview/:p                                        controllers.ApiDataController.removeSupervisor(p)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                           controllers.Assets.at(path="/public", file)
