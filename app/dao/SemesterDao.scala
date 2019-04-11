@@ -10,7 +10,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object SemesterDao extends TableFilterable[SemesterTable] { // TODO test
+object SemesterDao extends TableFilterable[SemesterTable] {
 
   import utils.date.DateTimeOps.LocalDateConverter
 
@@ -45,11 +45,7 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   }
 
   override protected def existsQuery(entity: SemesterDb): PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq] = {
-    filterBy(List(
-      labelFilterLike(entity.label),
-      startFilter(entity.start.localDate),
-      endFilter(entity.end.localDate)
-    ))
+    filterBy(List(labelFilterLike(entity.label), startFilter(entity.start.localDate), endFilter(entity.end.localDate)))
   }
 
   override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = toUniqueEntity(query)
