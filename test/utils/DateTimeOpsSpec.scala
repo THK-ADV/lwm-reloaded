@@ -22,7 +22,7 @@ final class DateTimeOpsSpec extends WordSpec with TestBaseDefinition with DateGe
       }
     }
 
-    "test LocalTimeConverter" in {
+    "test LocalTime to sql.Time conversions" in {
       import utils.date.DateTimeOps.{LocalTimeConverter, SqlTimeConverter}
 
       forAll { localTime: LocalTime =>
@@ -33,7 +33,7 @@ final class DateTimeOpsSpec extends WordSpec with TestBaseDefinition with DateGe
       }
     }
 
-    "test DateTimeConverter" in {
+    "test DateTime to sql.Timestamp conversions" in {
       import utils.date.DateTimeOps.{DateTimeConverter, SqlTimestampConverter}
 
       forAll { dateTime: DateTime =>

@@ -1,7 +1,6 @@
 package utils
 
 import base.{DateGenerator, TestBaseDefinition}
-import org.joda.time.DateTime
 import org.scalatest.WordSpec
 import play.api.libs.json.{JsObject, JsString}
 
