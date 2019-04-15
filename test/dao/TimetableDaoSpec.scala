@@ -68,9 +68,17 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
     val chosen1 = toUpdate.head
     val chosen2 = toUpdate.last
 
+    val entryToUpdate = TimetableEntry(
+      takeSomeOf(privateEmployees).map(_.id).toSet,
+      randomRoom.id,
+      10,
+      LocalTime.now.plusHours(10).withMillisOfSecond(0),
+      LocalTime.now.plusHours(11).withMillisOfSecond(0)
+    )
+
     List(
       chosen1.copy(entries = chosen1.entries.drop(chosen1.entries.size / 2), localBlacklist = Set.empty),
-      chosen2.copy(entries = chosen2.entries + TimetableEntry(takeSomeOf(privateEmployees).map(_.id).toSet, randomRoom.id, 10, LocalTime.now.plusHours(10), LocalTime.now.plusHours(11)))
+      chosen2.copy(entries = chosen2.entries + entryToUpdate)
     )
   }
 
@@ -81,13 +89,13 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
 
     DBIO.seq(
       dao.timetableBlacklistQuery.filter(_.timetable === dbModel.id).flatMap(_.blacklistFk).result.map { blacklists =>
-        blacklists.map(_.id).toSet shouldBe (if (isDefined) dbModel.localBlacklist else Set.empty)
+        blacklists.map(_.id).toSet should contain theSameElementsAs (if (isDefined) dbModel.localBlacklist else Set.empty)
       },
       timetableEntries.result.map { entries =>
-        entries.map(_.toTimetableEntry).toSet shouldBe (if (isDefined) dbModel.entries.map(_.copy(Set.empty)) else Set.empty)
+        entries.map(_.toTimetableEntry).toSet should contain theSameElementsAs (if (isDefined) dbModel.entries.map(_.copy(Set.empty)) else Set.empty)
       },
       dao.timetableEntrySupervisorQuery.filter(_.timetableEntry.in(timetableEntries.map(_.id))).flatMap(_.supervisorFk).result.map { supervisors =>
-        supervisors.map(_.id).toSet shouldBe (if (isDefined) dbModel.entries.flatMap(_.supervisor) else Set.empty)
+        supervisors.map(_.id).toSet should contain theSameElementsAs (if (isDefined) dbModel.entries.flatMap(_.supervisor) else Set.empty)
       }
     )
   }

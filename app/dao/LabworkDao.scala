@@ -10,7 +10,6 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 object LabworkDao extends TableFilter[LabworkTable] {
   def publishedFilter(published: Boolean): TableFilterPredicate = _.published === published
 

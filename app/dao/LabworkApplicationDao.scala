@@ -13,18 +13,6 @@ import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-//case class LabworkApplicationSinceFilter(value: String) extends TableFilter[LabworkApplicationTable] { // TODO
-//  override def predicate = _.lastModified >= new Timestamp(value.toLong)
-//}
-//
-//case class LabworkApplicationUntilFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-//  override def predicate = _.lastModified <= new Timestamp(value.toLong)
-//}
-
-/*case class LabworkApplicationFriendFilter(value: String) extends TableFilter[LabworkApplicationTable] {
-  override def predicate = _.friends.filter(_.id === UUID.fromString(value)).exists
-}*/
-
 object LabworkApplicationDao extends TableFilter[LabworkApplicationTable] {
   def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 

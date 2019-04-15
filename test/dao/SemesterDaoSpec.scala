@@ -17,6 +17,11 @@ class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
     runAsync(dao.tableQuery.schema.create)(_ => Unit)
   }
 
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    runAsync(dao.tableQuery.schema.drop)(_ => Unit)
+  }
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     runAsync(dao.tableQuery.delete)(_ => Unit)

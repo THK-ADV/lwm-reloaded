@@ -14,26 +14,6 @@ import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-//case class ReportCardEntryDateFilter(value: String) extends TableFilter[ReportCardEntryTable] { // TODO
-//  override def predicate = _.onDate(value)
-//}
-//
-//case class ReportCardEntryStartFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-//  override def predicate = _.onStart(value)
-//}
-//
-//case class ReportCardEntryEndFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-//  override def predicate = _.onEnd(value)
-//}
-//
-//case class ReportCardEntrySinceFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-//  override def predicate = _.since(value)
-//}
-//
-//case class ReportCardEntryUntilFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-//  override def predicate = _.until(value)
-//}
-
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
   def studentFilter(student: UUID): TableFilterPredicate = TableFilter.studentFilter(student)
 

@@ -14,26 +14,6 @@ import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-//case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] { // TODO
-//  override def predicate = _.onDate(value)
-//}
-//
-//case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-//  override def predicate = _.onStart(value)
-//}
-//
-//case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-//  override def predicate = _.onEnd(value)
-//}
-//
-//case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-//  override def predicate = _.since(value)
-//}
-//
-//case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-//  override def predicate = _.until(value)
-//}
-
 object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
   def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.supervisor === supervisor).exists
 }
