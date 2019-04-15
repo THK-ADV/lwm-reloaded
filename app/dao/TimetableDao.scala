@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilterable}
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -13,8 +13,8 @@ import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] with TableFilterable[TimetableTable] {
-  import TableFilterable.labworkFilter
+trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] with TableFilter[TimetableTable] {
+  import TableFilter.labworkFilter
 
   override val tableQuery = TableQuery[TimetableTable]
 

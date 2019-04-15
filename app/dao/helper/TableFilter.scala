@@ -1,16 +1,18 @@
 package dao.helper
 
+import java.sql.{Date, Time}
 import java.util.UUID
 
-import database.{AbbreviationTable, EntryTypeTable, GroupIdTable, LabelTable, LabworkIdTable, ReportCardEntryIdTable, RoomIdTable, StudentIdTable, UniqueTable}
+import database.{AbbreviationTable, DateStartEndTable, EntryTypeTable, GroupIdTable, LabelTable, LabworkIdTable, ReportCardEntryIdTable, RoomIdTable, StudentIdTable, UniqueTable}
+import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
-trait TableFilterable[T <: Table[_]] {
+trait TableFilter[T <: Table[_]] {
   type TableFilterPredicate = T => Rep[Boolean]
 }
 
-object TableFilterable {
+object TableFilter {
 
   def labworkFilter[T <: LabworkIdTable](labwork: UUID): T => Rep[Boolean] = _.labwork === labwork
 
@@ -37,4 +39,14 @@ object TableFilterable {
   def courseByReportCardEntryFilter[T <: ReportCardEntryIdTable](course: UUID): T => Rep[Boolean] = _.reportCardEntryFk.map(_.memberOfCourse(course)).exists
 
   def groupFilter[T <: GroupIdTable](group: UUID): T => Rep[Boolean] = _.group === group
+
+  def onDateFilter[T <: DateStartEndTable](date: Date): T => Rep[Boolean] = _.date === date
+
+  def onStartFilter[T <: DateStartEndTable](start: Time): T => Rep[Boolean] = _.start === start
+
+  def onEndFilter[T <: DateStartEndTable](end: Time): T => Rep[Boolean] = _.end === end
+
+  def sinceFilter[T <: DateStartEndTable](since: Date): T => Rep[Boolean] = _.date >= since
+
+  def untilFilter[T <: DateStartEndTable](until: Date): T => Rep[Boolean] = _.date <= until
 }

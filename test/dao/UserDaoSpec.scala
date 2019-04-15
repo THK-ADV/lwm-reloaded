@@ -4,7 +4,7 @@ import java.util.UUID
 
 import dao.UserDao._
 import dao.helper.DBResult
-import dao.helper.TableFilterable.idFilter
+import dao.helper.TableFilter.idFilter
 import database._
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import models._

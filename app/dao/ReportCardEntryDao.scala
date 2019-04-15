@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilterable}
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -34,16 +34,16 @@ import scala.concurrent.{ExecutionContext, Future}
 //  override def predicate = _.until(value)
 //}
 
-object ReportCardEntryDao extends TableFilterable[ReportCardEntryTable] {
-  def studentFilter(student: UUID): TableFilterPredicate = TableFilterable.studentFilter(student)
+object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
+  def studentFilter(student: UUID): TableFilterPredicate = TableFilter.studentFilter(student)
 
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 
-  def courseFilter(course: UUID): TableFilterPredicate = TableFilterable.courseFilter(course)
+  def courseFilter(course: UUID): TableFilterPredicate = TableFilter.courseFilter(course)
 
-  def roomFilter(room: UUID): TableFilterPredicate = TableFilterable.roomFilter(room)
+  def roomFilter(room: UUID): TableFilterPredicate = TableFilter.roomFilter(room)
 
-  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterEquals(label)
+  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterEquals(label)
 
   def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s => // TODO test
     val schedule = s.id === scheduleEntry
@@ -116,7 +116,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(TableFilterable.idFilter(entity.id)))
+    filterBy(List(TableFilter.idFilter(entity.id)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {

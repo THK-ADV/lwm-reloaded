@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
 import javax.inject.Inject
 import models.ReportCardEntryType
@@ -12,7 +12,7 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object ReportCardEntryTypeDao extends TableFilterable[ReportCardEntryTypeTable] {
+object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
   def reportCardEntryFilter(reportCardEntry: UUID): TableFilterPredicate = _.reportCardEntryFk.filter(_.id === reportCardEntry).exists
 
   def reportCardRetryFilter(reportCardRetry: UUID): TableFilterPredicate = _.reportCardRetryFk.filter(_.id === reportCardRetry).exists
@@ -20,7 +20,7 @@ object ReportCardEntryTypeDao extends TableFilterable[ReportCardEntryTypeTable] 
 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
   import ReportCardEntryTypeDao._
-  import TableFilterable.entryTypeFilter
+  import TableFilter.entryTypeFilter
   import utils.date.DateTimeOps._
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]

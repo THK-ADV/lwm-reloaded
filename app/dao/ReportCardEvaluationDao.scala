@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database._
 import javax.inject.Inject
 import models._
@@ -46,7 +46,7 @@ import scala.util.Try
 //}
 
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
-  import TableFilterable.{studentFilter, labelFilterEquals, labworkFilter}
+  import TableFilter.{studentFilter, labelFilterEquals, labworkFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 

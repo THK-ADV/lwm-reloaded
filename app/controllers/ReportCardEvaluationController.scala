@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{ReportCardEvaluationDb, ReportCardEvaluationTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
@@ -32,7 +32,7 @@ object ReportCardEvaluationController {
 final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
 
-  import TableFilterable.{labworkFilter, studentFilter}
+  import TableFilter.{labworkFilter, studentFilter}
   import controllers.ReportCardEvaluationController._
 
   import scala.concurrent.ExecutionContext.Implicits.global

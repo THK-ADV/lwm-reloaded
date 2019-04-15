@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{LabworkDb, LabworkTable}
 import javax.inject.Inject
 import models._
@@ -11,12 +11,12 @@ import slick.jdbc.PostgresProfile.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 
-object LabworkDao extends TableFilterable[LabworkTable] {
+object LabworkDao extends TableFilter[LabworkTable] {
   def publishedFilter(published: Boolean): TableFilterPredicate = _.published === published
 
   def subscribableFilter(subscribable: Boolean): TableFilterPredicate = _.subscribable === subscribable
 
-  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterLike(label)
+  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterLike(label)
 
   def courseFilter(course: UUID): TableFilterPredicate = _.course === course
 
@@ -24,7 +24,7 @@ object LabworkDao extends TableFilterable[LabworkTable] {
 
   def degreeFilter(degree: UUID): TableFilterPredicate = _.degree === degree
 
-  def idFilter(id: UUID): TableFilterPredicate = TableFilterable.idFilter(id)
+  def idFilter(id: UUID): TableFilterPredicate = TableFilter.idFilter(id)
 }
 
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {

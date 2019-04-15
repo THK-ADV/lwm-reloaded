@@ -1,6 +1,6 @@
 package dao
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{CourseDb, CourseTable}
 import javax.inject.Inject
 import models.{CourseAtom, CourseLike}
@@ -8,10 +8,10 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object CourseDao extends TableFilterable[CourseTable] {
-  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterEquals(label)
+object CourseDao extends TableFilter[CourseTable] {
+  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterEquals(label)
 
-  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilterable.abbreviationFilter(abbreviation)
+  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilter.abbreviationFilter(abbreviation)
 
   def semesterIndexFilter(index: Int): TableFilterPredicate = _.semesterIndex === index
 }

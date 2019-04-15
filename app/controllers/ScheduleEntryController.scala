@@ -51,7 +51,7 @@ final class ScheduleEntryController @Inject()(
 ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter {
 
   import controllers.ScheduleEntryController._
-  import dao.helper.TableFilterable.labworkFilter
+  import dao.helper.TableFilter.labworkFilter
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

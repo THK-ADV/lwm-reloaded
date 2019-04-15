@@ -1,6 +1,6 @@
 package dao
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{SemesterDb, SemesterTable}
 import javax.inject.Inject
 import models.Semester
@@ -10,7 +10,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object SemesterDao extends TableFilterable[SemesterTable] {
+object SemesterDao extends TableFilter[SemesterTable] {
 
   import utils.date.DateTimeOps.LocalDateConverter
 
@@ -31,7 +31,7 @@ object SemesterDao extends TableFilterable[SemesterTable] {
 trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
 
   import SemesterDao.{currentFilter, endFilter, startFilter}
-  import dao.helper.TableFilterable.labelFilterLike
+  import dao.helper.TableFilter.labelFilterLike
   import utils.date.DateTimeOps.SqlDateConverter
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]

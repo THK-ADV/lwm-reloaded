@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
 
-  import dao.helper.TableFilterable.reportCardEntryFilter
+  import dao.helper.TableFilter.reportCardEntryFilter
 
   override val tableQuery = TableQuery[ReportCardRetryTable]
   val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]

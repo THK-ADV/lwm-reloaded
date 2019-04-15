@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
-  import dao.helper.TableFilterable.labelFilterEquals
+  import dao.helper.TableFilter.labelFilterEquals
 
   override val tableQuery: TableQuery[RoleTable] = TableQuery[RoleTable]
 

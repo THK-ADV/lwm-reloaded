@@ -1,6 +1,6 @@
 package dao
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
 import javax.inject.Inject
 import models._
@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] {
 
-  import TableFilterable.reportCardEntryFilter
+  import TableFilter.reportCardEntryFilter
   import utils.date.DateTimeOps._
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]

@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
 
-  import dao.helper.TableFilterable.labelFilterEquals
+  import dao.helper.TableFilter.labelFilterEquals
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
 

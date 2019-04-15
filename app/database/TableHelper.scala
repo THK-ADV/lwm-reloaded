@@ -86,16 +86,6 @@ trait DateStartEndTable {
   def start = column[Time]("START")
 
   def end = column[Time]("END")
-
-/*  def onDate(millis: String) = date === millis.sqlDateFromMillis // TODO
-
-  def onStart(millis: String) = start === millis.sqlTimeFromMillis
-
-  def onEnd(millis: String) = end === millis.sqlTimeFromMillis
-
-  def since(millis: String) = date >= millis.sqlDateFromMillis
-
-  def until(millis: String) = date <= millis.sqlDateFromMillis*/
 }
 
 trait GroupIdTable {

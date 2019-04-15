@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilterable}
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -25,8 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   override def predicate = _.friends.filter(_.id === UUID.fromString(value)).exists
 }*/
 
-object LabworkApplicationDao extends TableFilterable[LabworkApplicationTable] {
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
+object LabworkApplicationDao extends TableFilter[LabworkApplicationTable] {
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 
   def applicantFilter(applicant: UUID): TableFilterPredicate = _.applicant === applicant
 }

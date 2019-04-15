@@ -1,17 +1,21 @@
 package dao
 
-import base.{DateGenerator, PostgresDbSpec}
+import base.{DatabaseSpec, DateGenerator}
 import dao.SemesterDao.{endFilter, sinceFilter, startFilter, untilFilter}
 import database.SemesterDb
 import org.joda.time.LocalDate
 import play.api.inject.guice.GuiceableModule
-import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
 
-class SemesterDaoSpec extends PostgresDbSpec with DateGenerator {
+class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
 
   val dao = app.injector.instanceOf(classOf[SemesterDao])
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    runAsync(dao.tableQuery.schema.create)(_ => Unit)
+  }
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -114,8 +118,6 @@ class SemesterDaoSpec extends PostgresDbSpec with DateGenerator {
       }
     }
   }
-
-  override protected def dependencies: profile.api.DBIOAction[Unit, profile.api.NoStream, Effect.Write] = DBIO.seq()
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

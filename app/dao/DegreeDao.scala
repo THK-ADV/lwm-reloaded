@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{DegreeDb, DegreeTable}
 import javax.inject.Inject
 import models.Degree
@@ -10,12 +10,12 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object DegreeDao extends TableFilterable[DegreeTable] {
-  def idFilter(id: UUID): TableFilterPredicate = TableFilterable.idFilter(id)
+object DegreeDao extends TableFilter[DegreeTable] {
+  def idFilter(id: UUID): TableFilterPredicate = TableFilter.idFilter(id)
 
-  def labelFilter(label: String): TableFilterPredicate = TableFilterable.labelFilterLike(label)
+  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterLike(label)
 
-  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilterable.abbreviationFilter(abbreviation)
+  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilter.abbreviationFilter(abbreviation)
 }
 
 trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {

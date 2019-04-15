@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilterable}
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -12,11 +12,11 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object AssignmentPlanDao extends TableFilterable[AssignmentPlanTable] {
+object AssignmentPlanDao extends TableFilter[AssignmentPlanTable] {
 
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilterable.labworkFilter(labwork)
+  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 
-  def courseFilter(course: UUID): TableFilterPredicate = TableFilterable.courseFilter(course)
+  def courseFilter(course: UUID): TableFilterPredicate = TableFilter.courseFilter(course)
 }
 
 trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike] {

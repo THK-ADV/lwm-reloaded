@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database._
 import javax.inject.Inject
 import models._
@@ -12,7 +12,7 @@ import slick.sql.FixedSqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object AuthorityDao extends TableFilterable[AuthorityTable] {
+object AuthorityDao extends TableFilter[AuthorityTable] {
 
   def userFilter(user: UUID): TableFilterPredicate = _.user === user
 

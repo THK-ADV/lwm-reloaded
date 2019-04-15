@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.helper._
 import dao.AbstractDao
-import dao.helper.{Retrieved, TableFilterable}
+import dao.helper.{Retrieved, TableFilter}
 import database.{LabworkIdTable, UniqueTable}
 import javax.inject.Inject
 import models.Role.God
@@ -24,7 +24,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with ResultOps
     with AttributeFilter
     with RequestOps
-    with TableFilterable[T] {
+    with TableFilter[T] {
 
   import utils.Ops.unwrapTrys
 

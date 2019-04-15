@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilterable}
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
@@ -34,13 +34,13 @@ import scala.concurrent.{ExecutionContext, Future}
 //  override def predicate = _.until(value)
 //}
 
-object ScheduleEntryDao extends TableFilterable[ScheduleEntryTable] {
+object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
   def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.supervisor === supervisor).exists
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
 
-  import dao.helper.TableFilterable.{groupFilter, labworkFilter}
+  import dao.helper.TableFilter.{groupFilter, labworkFilter}
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
 

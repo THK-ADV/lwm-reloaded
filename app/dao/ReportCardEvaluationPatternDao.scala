@@ -1,6 +1,6 @@
 package dao
 
-import dao.helper.TableFilterable
+import dao.helper.TableFilter
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable}
 import javax.inject.Inject
 import models.ReportCardEvaluationPattern
@@ -9,14 +9,14 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object ReportCardEvaluationPatternDao extends TableFilterable[ReportCardEvaluationPatternTable] {
+object ReportCardEvaluationPatternDao extends TableFilter[ReportCardEvaluationPatternTable] {
   def propertyFilter(property: String): TableFilterPredicate = _.property.toLowerCase === property.toLowerCase
 }
 
 trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern] {
 
   import ReportCardEvaluationPatternDao._
-  import TableFilterable.{entryTypeFilter, labworkFilter}
+  import TableFilter.{entryTypeFilter, labworkFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationPatternTable]
 

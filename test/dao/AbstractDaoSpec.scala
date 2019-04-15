@@ -18,7 +18,7 @@ object AbstractDaoSpec {
 
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
 
-  // NOTE almost each population ignores business rules and can crash on abstractDao.exsistsQueryø
+  // NOTE almost each population ignores business rules and can crash on abstractDao.exsistsQuery
 
   lazy val maxDegrees = 10
   lazy val maxLabworks = 20

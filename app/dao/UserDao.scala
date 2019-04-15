@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DBResult, TableFilterable}
+import dao.helper.{DBResult, TableFilter}
 import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import database.{UserDb, UserTable}
 import javax.inject.Inject
@@ -12,7 +12,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object UserDao extends TableFilterable[UserTable] {
+object UserDao extends TableFilter[UserTable] {
   def enrollmentFilter(enrollment: UUID): TableFilterPredicate = _.enrollment.map(_ === enrollment).getOrElse(false)
 
   def firstnameFilter(firstname: String): TableFilterPredicate = _.firstname.toLowerCase like s"%${firstname.toLowerCase}%"
@@ -26,7 +26,7 @@ object UserDao extends TableFilterable[UserTable] {
 
 trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
-  import TableFilterable.{abbreviationFilter, idFilter}
+  import TableFilter.{abbreviationFilter, idFilter}
   import UserDao.systemIdFilter
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
