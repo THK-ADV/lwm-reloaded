@@ -22,16 +22,14 @@ class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE
   }
 }
 
-class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervisor](tag, "SCHEDULE_ENTRY_SUPERVISOR") with UniqueTable {
-  def scheduleEntry = column[UUID]("SCHEDULE_ENTRY")
+class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervisor](tag, "SCHEDULE_ENTRY_SUPERVISOR") with UniqueTable with UserIdTable {
+  override protected def userColumnName: String = "SUPERVISOR"
 
-  def supervisor = column[UUID]("SUPERVISOR")
+  def scheduleEntry = column[UUID]("SCHEDULE_ENTRY")
 
   def scheduleEntryFk = foreignKey("SCHEDULE_ENTRIES_fkey", scheduleEntry, TableQuery[ScheduleEntryTable])(_.id)
 
-  def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
-
-  override def * = (scheduleEntry, supervisor, id) <> ((ScheduleEntrySupervisor.apply _).tupled, ScheduleEntrySupervisor.unapply)
+  override def * = (scheduleEntry, user, id) <> ((ScheduleEntrySupervisor.apply _).tupled, ScheduleEntrySupervisor.unapply)
 }
 
 case class ScheduleEntryDb(labwork: UUID, start: Time, end: Time, date: Date, room: UUID, supervisor: Set[UUID], group: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {

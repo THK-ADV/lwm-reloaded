@@ -35,6 +35,7 @@ case class ReportCardEntryTypeDb(
   invalidated: Option[Timestamp] = None,
   id: UUID = UUID.randomUUID
 ) extends UniqueDbEntity {
+
   override def toUniqueEntity = ReportCardEntryType(entryType, bool, int, id)
 
   override def equals(obj: Any) = obj match {

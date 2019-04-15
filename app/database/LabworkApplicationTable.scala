@@ -8,10 +8,9 @@ import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.{DateTimeConverter, SqlTimestampConverter}
 
-class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable {
-  def applicant = column[UUID]("APPLICANT")
+class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag, "LABWORKAPPLICATIONS") with UniqueTable with LabworkIdTable with UserIdTable {
 
-  override def * = (labwork, applicant, lastModified, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (labwork, user, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
   def mapRow: ((UUID, UUID, Timestamp, Option[Timestamp], UUID)) => LabworkApplicationDb = {
     case (labwork, applicant, lastModified, invalidated, id) =>
@@ -22,21 +21,19 @@ class LabworkApplicationTable(tag: Tag) extends Table[LabworkApplicationDb](tag,
     Option((lapp.labwork, lapp.applicant, lapp.lastModified, lapp.invalidated, lapp.id))
   }
 
-  def applicantFk = foreignKey("STUDENTS_fkey", applicant, TableQuery[UserTable])(_.id)
+  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.userFk)
 
-  def friends = TableQuery[LabworkApplicationFriendTable].filter(_.labworkApplication === id).flatMap(_.friendFk)
+  override protected def userColumnName: String = "APPLICANT"
 }
 
-class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFriend](tag, "LABWORKAPPLICATION_FRIEND") with UniqueTable {
+class LabworkApplicationFriendTable(tag: Tag) extends Table[LabworkApplicationFriend](tag, "LABWORKAPPLICATION_FRIEND") with UniqueTable with UserIdTable {
   def labworkApplication = column[UUID]("LABWORKAPPLICATION")
-
-  def friend = column[UUID]("FRIEND")
 
   def labworkApplicationFk = foreignKey("LABWORKAPPLICATIONS_fkey", labworkApplication, TableQuery[LabworkApplicationTable])(_.id)
 
-  def friendFk = foreignKey("USERS_fkey", friend, TableQuery[UserTable])(_.id)
+  override def * = (labworkApplication, user, lastModified, invalidated, id) <> ((LabworkApplicationFriend.apply _).tupled, LabworkApplicationFriend.unapply)
 
-  override def * = (labworkApplication, friend, lastModified, invalidated, id) <> ((LabworkApplicationFriend.apply _).tupled, LabworkApplicationFriend.unapply)
+  override protected def userColumnName: String = "FRIEND"
 }
 
 case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
@@ -45,11 +42,5 @@ case class LabworkApplicationDb(labwork: UUID, applicant: UUID, friends: Set[UUI
 
 case class LabworkApplicationFriend(labworkApplication: UUID, friend: UUID, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   override def toUniqueEntity = this
-}
-
-object LabworkApplicationDb {
-  def from(protocol: LabworkApplicationProtocol, existingId: Option[UUID]) = {
-    LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends, id = existingId getOrElse UUID.randomUUID)
-  }
 }
 

@@ -54,7 +54,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     } yield (q, l)
 
     val innerBlacklist = timetableBlacklistQuery.join(TableQuery[BlacklistTable]).on(_.blacklist === _.id)
-    val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.supervisor === _.id)
+    val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.user === _.id)
     val innerTimetableEntry = timetableEntryQuery.join(TableQuery[RoomTable]).on(_.room === _.id).joinLeft(innerSupervisor).on(_._1.id === _._1.timetableEntry)
 
     val action = mandatory.joinLeft(innerBlacklist).on(_._1.id === _._1.timetable).joinLeft(innerTimetableEntry).on(_._1._1.id === _._1._1.timetable).map {

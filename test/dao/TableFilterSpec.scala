@@ -5,6 +5,7 @@ import java.util.UUID
 
 import base.{DateGenerator, PostgresDbSpec}
 import database._
+import database.helper.EmployeeStatus
 import play.api.inject.guice.GuiceableModule
 import slick.jdbc.PostgresProfile.api._
 
@@ -16,8 +17,14 @@ class FakeLabelTable(tag: Tag) extends Table[(String, UUID)](tag, "FAKE_LABEL") 
   def * = (label, id)
 }
 
-class FakeDateStartEndTable(tag: Tag) extends Table[(Date, Time, Time, UUID)](tag, "FAKE_DATE_START_END") with UniqueTable with DateStartEndTable {
+class FakeDateStartEndTable(tag: Tag) extends Table[(Date, Time, Time, UUID)](tag, "FAKE_DATESTARTEND") with UniqueTable with DateStartEndTable {
   def * = (date, start, end, id)
+}
+
+class FakeUserRefTable(tag: Tag) extends Table[(UUID, UUID)](tag, "FAKE_USERREF") with UniqueTable with UserIdTable {
+  override protected def userColumnName: String = "FAKE_USER"
+
+  def * = (user, id)
 }
 
 class TableFilterSpec extends PostgresDbSpec with DateGenerator {
@@ -30,7 +37,8 @@ class TableFilterSpec extends PostgresDbSpec with DateGenerator {
   private val schemas = List(
     TableQuery[FakeLabworkTable],
     TableQuery[FakeLabelTable],
-    TableQuery[FakeDateStartEndTable]
+    TableQuery[FakeDateStartEndTable],
+    TableQuery[FakeUserRefTable],
   )
 
   override protected def beforeAll(): Unit = {
@@ -128,6 +136,29 @@ class TableFilterSpec extends PostgresDbSpec with DateGenerator {
         result should contain theSameElementsAs entries
       }
       runAsync(TableQuery[FakeDateStartEndTable].filter(untilFilter(localDate(2009, 3, 1).sqlDate)).result) { result =>
+        result shouldBe empty
+      }
+    }
+
+    "filter by systemId through users" in {
+      val users = (0 until 10).map { i =>
+        UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None)
+      }.toList
+
+      val entries = users.map(u => (u.id, UUID.randomUUID))
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(users),
+        TableQuery[FakeUserRefTable].forceInsertAll(entries)
+      )
+
+      runAsync(TableQuery[FakeUserRefTable].filter(systemIdFilter("3")).result) { result =>
+        result shouldBe Seq(entries(3))
+      }
+      runAsync(TableQuery[FakeUserRefTable].filter(systemIdFilter("8")).result) { result =>
+        result shouldBe Seq(entries(8))
+      }
+      runAsync(TableQuery[FakeUserRefTable].filter(systemIdFilter("other")).result) { result =>
         result shouldBe empty
       }
     }

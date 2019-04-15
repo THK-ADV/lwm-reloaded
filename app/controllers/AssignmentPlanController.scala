@@ -6,6 +6,7 @@ import dao._
 import database.{AssignmentPlanDb, AssignmentPlanTable}
 import javax.inject.{Inject, Singleton}
 import models._
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -25,7 +26,10 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
 
   override protected implicit val reads: Reads[AssignmentPlanProtocol] = AssignmentPlanProtocol.reads
 
-  override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    AssignmentPlanDb(protocol.labwork, protocol.attendance, protocol.mandatory, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 
   import models.Role._
 

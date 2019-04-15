@@ -75,7 +75,10 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
 //    }
 //  }
 
-  override protected def toDbModel(protocol: BlacklistProtocol, existingId: Option[UUID]): BlacklistDb = BlacklistDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: BlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
+    import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
+    BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

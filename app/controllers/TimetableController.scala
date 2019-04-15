@@ -64,7 +64,10 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
 //    }
 //  }
 
-  override protected def toDbModel(protocol: TimetableProtocol, existingId: Option[UUID]): TimetableDb = TimetableDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: TimetableProtocol, existingId: Option[UUID]): TimetableDb = {
+    import utils.date.DateTimeOps.LocalDateConverter
+    TimetableDb(protocol.labwork, protocol.entries, protocol.start.sqlDate, protocol.localBlacklist, id = existingId getOrElse UUID.randomUUID)
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
 }

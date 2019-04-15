@@ -12,7 +12,7 @@ class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable
 
   override def * = (label, labwork, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def contains(student: UUID) = TableQuery[GroupMembershipTable].filter(m => m.group === id && m.student === student).exists
+  def contains(student: UUID) = TableQuery[GroupMembershipTable].filter(m => m.group === id && m.user === student).exists
 
   def mapRow: ((String, UUID, Timestamp, Option[Timestamp], UUID)) => GroupDb = {
     case (label, labwork, lastModified, invalidated, id) => GroupDb(label, labwork, Set.empty, lastModified, invalidated, id)
@@ -23,8 +23,11 @@ class GroupTable(tag: Tag) extends Table[GroupDb](tag, "GROUP") with UniqueTable
   }
 }
 
-class GroupMembershipTable(tag: Tag) extends Table[GroupMembership](tag, "GROUP_MEMBERSHIP") with UniqueTable with GroupIdTable with StudentIdTable {
-  override def * = (group, student, id) <> ((GroupMembership.apply _).tupled, GroupMembership.unapply)
+class GroupMembershipTable(tag: Tag) extends Table[GroupMembership](tag, "GROUP_MEMBERSHIP") with UniqueTable with GroupIdTable with UserIdTable {
+
+  override protected def userColumnName: String = "STUDENT"
+
+  override def * = (group, user, id) <> ((GroupMembership.apply _).tupled, GroupMembership.unapply)
 }
 
 case class GroupDb(label: String, labwork: UUID, members: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {

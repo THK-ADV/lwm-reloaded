@@ -50,7 +50,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
       c <- q.courseFk
       s <- q.semesterFk
       d <- q.degreeFk
-      l <- c.lecturerFk
+      l <- c.userFk
     } yield (q, c, s, d, l)
 
     db.run(joinedQuery.result.map(_.map {

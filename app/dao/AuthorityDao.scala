@@ -21,13 +21,12 @@ object AuthorityDao extends TableFilter[AuthorityTable] {
   def roleFilter(role: UUID): TableFilterPredicate = _.role === role
 
   def roleLabelFilter(label: String): TableFilterPredicate = _.roleFk.filter(_.label === label).exists
-
-  def systemIdFilter(systemId: String): TableFilterPredicate = _.userFk.filter(_.systemId === systemId).exists // TODO FK comparision should be done this way
 }
 
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLike] {
 
   import AuthorityDao._
+  import dao.helper.TableFilter.systemIdFilter
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 
@@ -142,7 +141,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     val joinedQuery = for { // TODO wait for https://github.com/slick/slick/issues/179
       ((a, c), l) <- query
         .joinLeft(TableQuery[CourseTable]).on(_.course === _.id)
-        .joinLeft(TableQuery[UserTable]).on(_._2.map(_.lecturer) === _.id)
+        .joinLeft(TableQuery[UserTable]).on(_._2.map(_.user) === _.id)
       u <- a.userFk
       r <- a.roleFk
     } yield (a, u, r, c, l)

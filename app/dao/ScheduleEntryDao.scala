@@ -15,7 +15,7 @@ import utils.date.DateTimeOps._
 import scala.concurrent.{ExecutionContext, Future}
 
 object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
-  def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.supervisor === supervisor).exists
+  def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.user === supervisor).exists
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
@@ -67,12 +67,12 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
       c <- l.courseFk
       d <- l.degreeFk
       s <- l.semesterFk
-      lec <- c.lecturerFk
+      lec <- c.userFk
     } yield (q, r, g, l, c, d, s, lec)
 
     val supervisors = for {
       s <- scheduleEntrySupervisorQuery
-      u <- s.supervisorFk
+      u <- s.userFk
     } yield (s, u)
 
     val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)
@@ -99,7 +99,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
 
     val supervisors = for {
       s <- scheduleEntrySupervisorQuery
-      u <- s.supervisorFk
+      u <- s.userFk
     } yield (s, u)
 
     val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)

@@ -20,6 +20,16 @@ trait UniqueTable {
   final def lastModifiedSince(timestamp: Timestamp): Rep[Boolean] = lastModified >= timestamp
 }
 
+trait UserIdTable {
+  self: Table[_] =>
+
+  protected def userColumnName: String
+
+  def user = column[UUID](userColumnName)
+
+  def userFk = foreignKey("USERS_fkey", user, TableQuery[UserTable])(_.id)
+}
+
 trait LabworkIdTable {
   self: Table[_] =>
   def labwork = column[UUID]("LABWORK")
@@ -93,11 +103,4 @@ trait GroupIdTable {
   def group = column[UUID]("GROUP")
 
   def groupFk = foreignKey("GROUP_fkey", group, TableQuery[GroupTable])(_.id)
-}
-
-trait StudentIdTable {
-  self: Table[_] =>
-  def student = column[UUID]("STUDENT")
-
-  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
 }

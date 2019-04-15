@@ -36,7 +36,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
     val joinedQuery = for {
       q <- query
-      l <- q.lecturerFk
+      l <- q.userFk
     } yield (q, l)
 
     db.run(joinedQuery.result.map(_.map {

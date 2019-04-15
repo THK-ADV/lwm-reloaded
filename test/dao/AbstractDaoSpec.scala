@@ -8,7 +8,6 @@ import dao.helper.ModelAlreadyExists
 import database._
 import database.helper.{EmployeeStatus, StudentStatus}
 import models._
-import models.helper.{BoolBased, IntBased}
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
@@ -212,6 +211,7 @@ object AbstractDaoSpec {
   }.toList
 
   def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>
+    import models.helper.EvaluationProperty._
     ReportCardEvaluationPatternDb(takeOneOf(labworks).id, i.toString, nextInt(10) + 1, (if (nextBoolean) BoolBased else IntBased).toString)
   }.toList
 

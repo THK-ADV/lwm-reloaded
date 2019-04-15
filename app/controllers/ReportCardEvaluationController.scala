@@ -32,7 +32,7 @@ object ReportCardEvaluationController {
 final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
 
-  import TableFilter.{labworkFilter, studentFilter}
+  import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,7 +49,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     for {
       labworkId <- labwork.uuidF
       studentId <- student.uuidF
-      existing <- abstractDao.get(List(labworkFilter(labworkId), studentFilter(studentId)), atomic = false)
+      existing <- abstractDao.get(List(labworkFilter(labworkId), userFilter(studentId)), atomic = false)
       result <- if (existing.isEmpty)
         abstractDao.createMany(ReportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).map(_.map(_.toUniqueEntity)).jsonResult
       else
@@ -69,7 +69,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     for {
       labworkId <- labwork.uuidF
       studentId <- student.uuidF
-      result <- delete(List(labworkFilter(labworkId), studentFilter(studentId)))
+      result <- delete(List(labworkFilter(labworkId), userFilter(studentId)))
     } yield result
   }
 
@@ -127,7 +127,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   //  }
 
   override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb = {
-    ReportCardEvaluationDb.from(protocol, existingId)
+    ReportCardEvaluationDb(protocol.student, protocol.labwork, protocol.label, protocol.bool, protocol.int, id = existingId getOrElse UUID.randomUUID)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

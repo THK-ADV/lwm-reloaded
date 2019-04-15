@@ -3,8 +3,7 @@ package dao.helper
 import java.sql.{Date, Time}
 import java.util.UUID
 
-import database.{AbbreviationTable, DateStartEndTable, EntryTypeTable, GroupIdTable, LabelTable, LabworkIdTable, ReportCardEntryIdTable, RoomIdTable, StudentIdTable, UniqueTable}
-import org.joda.time.LocalDate
+import database._
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
@@ -26,7 +25,7 @@ object TableFilter {
 
   def abbreviationFilter[T <: AbbreviationTable](abbreviation: String): T => Rep[Boolean] = _.abbreviation.toLowerCase === abbreviation.toLowerCase
 
-  def studentFilter[T <: StudentIdTable](student: UUID): T => Rep[Boolean] = _.student === student
+  def userFilter[T <: UserIdTable](user: UUID): T => Rep[Boolean] = _.user === user
 
   def roomFilter[T <: RoomIdTable](room: UUID): T => Rep[Boolean] = _.room === room
 
@@ -49,4 +48,6 @@ object TableFilter {
   def sinceFilter[T <: DateStartEndTable](since: Date): T => Rep[Boolean] = _.date >= since
 
   def untilFilter[T <: DateStartEndTable](until: Date): T => Rep[Boolean] = _.date <= until
+
+  def systemIdFilter[T <: UserIdTable](systemId: String): T => Rep[Boolean] = _.userFk.filter(_.systemId.toLowerCase === systemId.toLowerCase).exists // TODO FK comparision should be done this way
 }

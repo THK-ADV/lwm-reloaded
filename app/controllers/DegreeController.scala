@@ -7,6 +7,7 @@ import database.{DegreeDb, DegreeTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Degree, DegreeProtocol}
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -41,7 +42,10 @@ final class DegreeController @Inject()(cc: ControllerComponents, val authorityDa
 //    }
 //  }
 
-  override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = DegreeDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    DegreeDb(protocol.label, protocol.abbreviation, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

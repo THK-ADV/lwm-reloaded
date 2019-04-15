@@ -7,6 +7,7 @@ import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
@@ -61,7 +62,10 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     } yield lwmModel).updated
   }
 
-  override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 
   override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
     val uuid = UUID.fromString(id)

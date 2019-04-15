@@ -51,6 +51,7 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import controllers.AuthorityController._
     import dao.AuthorityDao._
+    import dao.helper.TableFilter.systemIdFilter
 
     (attribute, value) match {
       case (`userAttribute`, user) => user.uuid map userFilter

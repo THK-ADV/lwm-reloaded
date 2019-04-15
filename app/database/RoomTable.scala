@@ -17,9 +17,3 @@ class RoomTable(tag: Tag) extends Table[RoomDb](tag, "ROOMS") with UniqueTable w
 case class RoomDb(label: String, description: String, capacity: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
   override def toUniqueEntity = Room(label, description, capacity, id)
 }
-
-object RoomDb {
-  def from(protocol: RoomProtocol, existingId: Option[UUID]): RoomDb = {
-    RoomDb(protocol.label, protocol.description, protocol.capacity, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
-  }
-}

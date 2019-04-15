@@ -94,7 +94,7 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
       timetableEntries.result.map { entries =>
         entries.map(_.toTimetableEntry).toSet should contain theSameElementsAs (if (isDefined) dbModel.entries.map(_.copy(Set.empty)) else Set.empty)
       },
-      dao.timetableEntrySupervisorQuery.filter(_.timetableEntry.in(timetableEntries.map(_.id))).flatMap(_.supervisorFk).result.map { supervisors =>
+      dao.timetableEntrySupervisorQuery.filter(_.timetableEntry.in(timetableEntries.map(_.id))).flatMap(_.userFk).result.map { supervisors =>
         supervisors.map(_.id).toSet should contain theSameElementsAs (if (isDefined) dbModel.entries.flatMap(_.supervisor) else Set.empty)
       }
     )

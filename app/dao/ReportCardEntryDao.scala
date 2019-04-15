@@ -15,7 +15,7 @@ import utils.date.DateTimeOps._
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
-  def studentFilter(student: UUID): TableFilterPredicate = TableFilter.studentFilter(student)
+  def studentFilter(student: UUID): TableFilterPredicate = TableFilter.userFilter(student)
 
   def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 
@@ -68,7 +68,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     val mandatory = for {
       q <- query
       l <- q.labworkFk
-      s <- q.studentFk
+      s <- q.userFk
       r <- q.roomFk
     } yield (q, l, s, r)
 

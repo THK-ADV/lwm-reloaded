@@ -7,6 +7,7 @@ import database.{LabworkDb, LabworkTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
@@ -83,5 +84,8 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
 //    }
 //  }
 
-  override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = LabworkDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    LabworkDb(protocol.label, protocol.description, protocol.semester, protocol.course, protocol.degree, protocol.subscribable, protocol.published, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
+  }
 }

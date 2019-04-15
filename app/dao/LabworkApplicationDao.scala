@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
 import models._
@@ -13,15 +13,9 @@ import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object LabworkApplicationDao extends TableFilter[LabworkApplicationTable] {
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
-
-  def applicantFilter(applicant: UUID): TableFilterPredicate = _.applicant === applicant
-}
-
 trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
-  import LabworkApplicationDao._
+  import dao.helper.TableFilter.{labworkFilter, userFilter}
 
   type LabworkApplicationDependencies = (LabworkApplicationDb, Seq[((LabworkApplicationDb, LabworkDb, UserDb, (CourseDb, DegreeDb, SemesterDb, UserDb)), Option[UserDb])])
   override val tableQuery: TableQuery[LabworkApplicationTable] = TableQuery[LabworkApplicationTable]
@@ -29,9 +23,9 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
 
   final def friendsOf(applicant: Rep[UUID], labwork: UUID): Query[UserTable, UserDb, Seq] = {
     for {
-      app <- filterValidOnly(l => l.applicant === applicant && l.labwork === labwork)
+      app <- filterValidOnly(l => l.user === applicant && l.labwork === labwork)
       friends <- lappFriendQuery if friends.labworkApplication === app.id
-      friend <- friends.friendFk if friend.isValid && friend != applicant
+      friend <- friends.userFk if friend.isValid && friend != applicant
     } yield friend
   }
 
@@ -41,7 +35,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 
   override protected def existsQuery(entity: LabworkApplicationDb): Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = {
-    filterBy(List(applicantFilter(entity.applicant), labworkFilter(entity.labwork)))
+    filterBy(List(userFilter(entity.applicant), labworkFilter(entity.labwork)))
   }
 
   override protected def toAtomic(query: Query[LabworkApplicationTable, LabworkApplicationDb, Seq]): Future[Seq[LabworkApplicationLike]] = joinDependencies(query) {
@@ -67,16 +61,16 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
     val mandatory = for {
       q <- query
       l <- q.labworkFk
-      a <- q.applicantFk
+      a <- q.userFk
       c <- l.courseFk
       d <- l.degreeFk
       s <- l.semesterFk
-      lec <- c.lecturerFk
+      lec <- c.userFk
     } yield (q, l, a, (c, d, s, lec))
 
     db.run(mandatory.
       joinLeft(lappFriendQuery).on(_._1.id === _.labworkApplication).
-      joinLeft(TableQuery[UserTable]).on(_._2.map(_.friend) === _.id).map {
+      joinLeft(TableQuery[UserTable]).on(_._2.map(_.user) === _.id).map {
       case (((lapp, lab, a, (c, d, s, lec)), _), friend) => ((lapp, lab, a, (c, d, s, lec)), friend)
     }.result.map(_.groupBy(_._1._1).map {
       case (labworkApplication, dependencies) => build(labworkApplication, dependencies)

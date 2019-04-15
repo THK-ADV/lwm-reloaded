@@ -67,7 +67,7 @@ final class ReportCardEvaluationPatternController @Inject()(cc: ControllerCompon
 //  }
 
   override protected def toDbModel(protocol: ReportCardEvaluationPatternProtocol, existingId: Option[UUID]): ReportCardEvaluationPatternDb = {
-    ReportCardEvaluationPatternDb.from(protocol, existingId)
+    ReportCardEvaluationPatternDb(protocol.labwork, protocol.entryType, protocol.min, protocol.property.toString, id = existingId getOrElse UUID.randomUUID)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()

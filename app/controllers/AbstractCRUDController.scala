@@ -125,11 +125,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     abstractDao.getSingle(uuid, atomic).jsonResult(id)
   }
 
-  implicit class AbstractTableFilter(string: String) {
-
-    private def labworkFilter[A <: LabworkIdTable](labwork: UUID): A => Rep[Boolean] = _.labwork === labwork
-
-    private def courseFilter[A <: LabworkIdTable](course: UUID): A => Rep[Boolean] = _.memberOfCourse(course)
+  protected implicit class AbstractTableFilter(string: String) {
+    import dao.helper.TableFilter._
 
     def uuid: Try[UUID] = Try(UUID.fromString(string))
 

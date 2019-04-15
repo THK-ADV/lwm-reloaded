@@ -26,8 +26,6 @@ class UserTable(tag: Tag) extends Table[UserDb](tag, "USERS") with UniqueTable {
 
   def degreeFk = foreignKey("DEGREES_fkey", enrollment, TableQuery[DegreeTable])(_.id.?)
 
-  //def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
-
   override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
   def mapRow: ((String, String, String, String, String, Option[String], Option[UUID], Timestamp, Option[Timestamp], UUID)) => UserDb = {

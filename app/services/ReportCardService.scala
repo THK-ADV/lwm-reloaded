@@ -2,10 +2,10 @@ package services
 
 import java.util.UUID
 
+import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
 import models._
 import models.genesis.ScheduleGen
-import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
-import models.helper.{BoolBased, IntBased}
+import models.helper.EvaluationProperty
 
 object ReportCardService { // TODO DI
 
@@ -20,8 +20,8 @@ object ReportCardService { // TODO DI
 
     patterns.map { pattern =>
       val counts = pattern.property match {
-        case BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
-        case IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
+        case EvaluationProperty.BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
+        case EvaluationProperty.IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
       }
 
       eval(pattern.entryType, counts >= pattern.min, counts)

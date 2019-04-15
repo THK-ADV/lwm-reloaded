@@ -3,7 +3,7 @@ package database
 import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
-import models.{Timetable, TimetableEntry, TimetableProtocol, UniqueDbEntity, UniqueEntity}
+import models.{Timetable, TimetableEntry, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
@@ -46,16 +46,14 @@ class TimetableEntryTable(tag: Tag) extends Table[TimetableEntryDb](tag, "TIMETA
   }
 }
 
-class TimetableEntrySupervisorTable(tag: Tag) extends Table[TimetableEntrySupervisor](tag, "TIMETABLE_ENTRY_SUPERVISOR") with UniqueTable {
-  def timetableEntry = column[UUID]("TIMETABLE_ENTRY")
+class TimetableEntrySupervisorTable(tag: Tag) extends Table[TimetableEntrySupervisor](tag, "TIMETABLE_ENTRY_SUPERVISOR") with UniqueTable with UserIdTable {
+  override protected def userColumnName: String = "SUPERVISOR"
 
-  def supervisor = column[UUID]("SUPERVISOR")
+  def timetableEntry = column[UUID]("TIMETABLE_ENTRY")
 
   def timetableEntryFk = foreignKey("TIMETABLE_ENTRIES_fkey", timetableEntry, TableQuery[TimetableEntryTable])(_.id)
 
-  def supervisorFk = foreignKey("USERS_fkey", supervisor, TableQuery[UserTable])(_.id)
-
-  override def * = (timetableEntry, supervisor, id) <> ((TimetableEntrySupervisor.apply _).tupled, TimetableEntrySupervisor.unapply)
+  override def * = (timetableEntry, user, id) <> ((TimetableEntrySupervisor.apply _).tupled, TimetableEntrySupervisor.unapply)
 }
 
 case class TimetableDb(labwork: UUID, entries: Set[TimetableEntry], start: Date, localBlacklist: Set[UUID], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
@@ -69,9 +67,3 @@ case class TimetableEntryDb(timetable: UUID, room: UUID, supervisor: Set[UUID], 
 case class TimetableEntrySupervisor(timetableEntry: UUID, supervisor: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class TimetableBlacklist(timetable: UUID, blacklist: UUID, id: UUID = UUID.randomUUID) extends UniqueEntity
-
-object TimetableDb {
-  def from(p: TimetableProtocol, existing: Option[UUID]) = {
-    TimetableDb(p.labwork, p.entries, p.start.sqlDate, p.localBlacklist, id = existing getOrElse UUID.randomUUID)
-  }
-}

@@ -46,7 +46,7 @@ import scala.util.Try
 //}
 
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
-  import TableFilter.{studentFilter, labelFilterEquals, labworkFilter}
+  import TableFilter.{userFilter, labelFilterEquals, labworkFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
@@ -54,11 +54,11 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
     val mandatory = for {
       q <- query
       labwork <- q.labworkFk
-      student <- q.studentFk
+      student <- q.userFk
       course <- labwork.courseFk
       degree <- labwork.degreeFk
       semester <- labwork.semesterFk
-      lecturer <- course.lecturerFk
+      lecturer <- course.userFk
     } yield (q, labwork, student, course, degree, semester, lecturer)
 
     db.run(mandatory.result.map(_.map {
@@ -77,7 +77,7 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 
   override protected def existsQuery(entity: ReportCardEvaluationDb): Query[ReportCardEvaluationTable, ReportCardEvaluationDb, Seq] = {
-    filterBy(List(studentFilter(entity.student), labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
+    filterBy(List(userFilter(entity.student), labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEvaluationDb, toUpdate: ReportCardEvaluationDb): Boolean = {

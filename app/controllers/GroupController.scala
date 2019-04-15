@@ -4,6 +4,7 @@ import java.util.UUID
 
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
+import dao.helper.TableFilter
 import database.{GroupDb, GroupTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager, God}
@@ -41,7 +42,7 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
     (for {
       labworkId <- Future.fromTry(labwork.uuid)
-      applications <- labworkApplicationDao.get(List(LabworkApplicationDao.labworkFilter(labworkId)), atomic = false)
+      applications <- labworkApplicationDao.get(List(TableFilter.labworkFilter(labworkId)), atomic = false)
       apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
       groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
       groups = GroupService.groupApplicantsBy(groupingStrategy, apps, labworkId)

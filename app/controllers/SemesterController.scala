@@ -7,6 +7,7 @@ import database.{SemesterDb, SemesterTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Semester, SemesterProtocol}
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -52,7 +53,10 @@ final class SemesterController @Inject() (cc: ControllerComponents, val authorit
 //    }
 //  }
 
-  override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = SemesterDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = {
+    import utils.date.DateTimeOps.{DateTimeConverter, LocalDateConverter}
+    SemesterDb(protocol.label, protocol.abbreviation, protocol.start.sqlDate, protocol.end.sqlDate, protocol.examStart.sqlDate, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

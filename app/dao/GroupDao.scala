@@ -43,7 +43,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
     db.run(mandatory
       .joinLeft(groupMembershipQuery).on(_._1.id === _.group)
-      .joinLeft(TableQuery[UserTable]).on((l, r) => l._2.map(_.student === r.id).getOrElse(false))
+      .joinLeft(TableQuery[UserTable]).on((l, r) => l._2.map(_.user === r.id).getOrElse(false))
       .result.map(_.groupBy(_._1._1._1).map {
       case (group, dependencies) =>
         val members = dependencies.flatMap(_._2)
