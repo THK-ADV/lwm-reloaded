@@ -1,4 +1,4 @@
-package services
+package service
 
 import java.util.UUID
 
@@ -8,9 +8,9 @@ import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import models.helper.TimetableDateEntry
 import org.joda.time._
 import scalaz.Functor
-import services.ScheduleService.{Crossover, Evaluator, Mutator}
+import service.ScheduleService.{Crossover, Evaluator, Mutator}
 import utils.Evaluation._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 import utils.Ops.FunctorInstances.setF
 import utils.Ops.MonoidInstances.intM
 import utils.TypeClasses.{Cross, Eval, Mutate}
@@ -99,7 +99,7 @@ object ScheduleService {
 
 final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elite: Int) extends ScheduleService {
 
-  import services.ScheduleService._
+  import service.ScheduleService._
 
   override def generate(t: Timetable, bs: Vector[Blacklist], gs: Vector[Group], a: AssignmentPlan, s: Semester, cs: Vector[ScheduleGen], p: Option[Int], g: Option[Int], e: Option[Int]) = {
     val entries = TimetableService.extrapolateTimetableByWeeks(t, Weeks.weeksBetween(s.start, s.examStart), bs, a, gs.size)

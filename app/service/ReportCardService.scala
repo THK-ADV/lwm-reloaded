@@ -1,11 +1,11 @@
-package services
+package service
 
 import java.util.UUID
 
+import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
 import models._
 import models.genesis.ScheduleGen
-import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb}
-import models.helper.{BoolBased, IntBased}
+import models.helper.EvaluationProperty
 
 object ReportCardService { // TODO DI
 
@@ -20,8 +20,8 @@ object ReportCardService { // TODO DI
 
     patterns.map { pattern =>
       val counts = pattern.property match {
-        case BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
-        case IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
+        case EvaluationProperty.BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
+        case EvaluationProperty.IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
       }
 
       eval(pattern.entryType, counts >= pattern.min, counts)
@@ -56,8 +56,8 @@ object ReportCardService { // TODO DI
     ReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
   }
 
-  def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlan): Vector[ReportCardEntryDb] = {
-    import utils.LwmDateTime._
+  def reportCards(schedule: ScheduleGen, assignmentPlan: AssignmentPlanLike): Vector[ReportCardEntryDb] = {
+    import utils.date.DateTimeOps._
 
     val students = schedule.entries.flatMap(_.group.members).toSet
     val assignments = assignmentPlan.entries.toVector.sortBy(_.index)
@@ -70,7 +70,7 @@ object ReportCardService { // TODO DI
           val entryId = UUID.randomUUID
           val types = ap.types.map(t => ReportCardEntryTypeDb(Some(entryId), None, t.entryType))
 
-          ReportCardEntryDb(student, assignmentPlan.labwork, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
+          ReportCardEntryDb(student, assignmentPlan.labworkId, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
       } ++ vec
     }
   }

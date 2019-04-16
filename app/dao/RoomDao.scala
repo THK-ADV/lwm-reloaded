@@ -1,28 +1,20 @@
 package dao
 
-import java.util.UUID
-
-import database.{RoomDb, RoomTable, TableFilter}
+import database.{RoomDb, RoomTable}
 import javax.inject.Inject
 import models.Room
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class RoomIdFilter(value: String) extends TableFilter[RoomTable] {
-  override def predicate = _.id === UUID.fromString(value)
-}
-
-case class RoomLabelFilter(value: String) extends TableFilter[RoomTable] {
-  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
-}
-
 trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
+
+  import dao.helper.TableFilter.labelFilterEquals
 
   override val tableQuery: TableQuery[RoomTable] = TableQuery[RoomTable]
 
   override protected def existsQuery(entity: RoomDb): Query[RoomTable, RoomDb, Seq] = {
-    filterBy(List(RoomLabelFilter(entity.label)))
+    filterBy(List(labelFilterEquals(entity.label)))
   }
 
   override protected def shouldUpdate(existing: RoomDb, toUpdate: RoomDb): Boolean = {

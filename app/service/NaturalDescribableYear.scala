@@ -1,10 +1,10 @@
-package services
+package service
 
 import org.joda.time.LocalDate
 
 sealed trait NaturalDescribableYear {
 
-  import services.NaturalDescribableYear._
+  import service.NaturalDescribableYear._
 
   def number: Int = date.getYear
 

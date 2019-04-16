@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{AssignmentPlan, AssignmentEntry, AssignmentPlanProtocol, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGNMENT_PLAN") with UniqueTable with LabworkIdTable {
   def attendance = column[Int]("ATTENDANCE")
@@ -60,9 +60,3 @@ case class AssignmentPlanDb(labwork: UUID, attendance: Int, mandatory: Int, entr
 case class AssignmentEntryDb(assignmentPlan: UUID, index: Int, label: String, types: Set[AssignmentEntryTypeDb], duration: Int = 1, id: UUID = UUID.randomUUID) extends UniqueEntity
 
 case class AssignmentEntryTypeDb(assignmentEntry: UUID, entryType: String, bool: Boolean = false, int: Int = 0, id: UUID = UUID.randomUUID) extends UniqueEntity
-
-object AssignmentPlanDb {
-  def from(protocol: AssignmentPlanProtocol, existingId: Option[UUID]) = {
-    AssignmentPlanDb(protocol.labwork, protocol.attendance, protocol.mandatory, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
-  }
-}

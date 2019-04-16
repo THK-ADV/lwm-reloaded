@@ -3,6 +3,7 @@ package models.helper
 import play.api.libs.json._
 
 sealed trait EvaluationProperty {
+  import models.helper.EvaluationProperty.{BoolBased, IntBased}
 
   override def toString: String = this match {
     case BoolBased => "bool"
@@ -24,8 +25,9 @@ object EvaluationProperty {
     case JsString("int") => JsSuccess(IntBased)
     case json => JsError(s"$json's value must either be 'bool' or 'int'")
   }
+
+  case object BoolBased extends EvaluationProperty
+
+  case object IntBased extends EvaluationProperty
+
 }
-
-case object BoolBased extends EvaluationProperty
-
-case object IntBased extends EvaluationProperty

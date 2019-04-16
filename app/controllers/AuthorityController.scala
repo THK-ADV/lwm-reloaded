@@ -3,7 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
-import database.{AuthorityDb, AuthorityTable, TableFilter}
+import database.{AuthorityDb, AuthorityTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
@@ -11,13 +11,14 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object AuthorityController {
   lazy val userAttribute = "user"
   lazy val courseAttribute = "course"
   lazy val roleAttribute = "role"
   lazy val roleLabelAttribute = "roleLabel"
+  lazy val systemIdAttribute = "systemId"
 }
 
 @Singleton
@@ -33,7 +34,9 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
   override implicit val authorityDao: AuthorityDao = abstractDao
 
   override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
-    import utils.LwmDateTime.{SqlTimestampConverter, writeDateTime}
+    import utils.date.DateTimeOps.SqlTimestampConverter
+    import utils.date.DateTimeJsonFormatter.writeDateTime
+
     abstractDao.deleteAuthorityIfNotBasic(UUID.fromString(id)).map(_.lastModified.dateTime).deleted
   }
 
@@ -45,15 +48,18 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AuthorityTable]]]): Try[List[TableFilter[AuthorityTable]]] = {
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import controllers.AuthorityController._
+    import dao.AuthorityDao._
+    import dao.helper.TableFilter.{systemIdFilter, userFilter}
 
-    (appendTo, (attribute, value)) match {
-      case (list, (`userAttribute`, user)) => list.map(_.+:(AuthorityUserFilter(user)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(AuthorityCourseFilter(course)))
-      case (list, (`roleAttribute`, role)) => list.map(_.+:(AuthorityRoleFilter(role)))
-      case (list, (`roleLabelAttribute`, role)) => list.map(_.+:(AuthorityRoleLabelFilter(role)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`userAttribute`, user) => user.uuid map userFilter
+      case (`courseAttribute`, course) => course.uuid map courseFilter
+      case (`roleAttribute`, role) => role.uuid map roleFilter
+      case (`roleLabelAttribute`, roleLabel) => Success(roleLabelFilter(roleLabel))
+      case (`systemIdAttribute`, systemId) => Success(systemIdFilter(systemId))
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 

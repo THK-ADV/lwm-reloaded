@@ -3,14 +3,15 @@ package controllers
 import java.util.UUID
 
 import dao._
+import dao.helper.TableFilter
+import database.{ReportCardEvaluationDb, ReportCardEvaluationTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models.{ReportCardEvaluationLike, ReportCardEvaluationProtocol}
 import play.api.libs.json._
-import play.api.mvc.{AnyContent, ControllerComponents, Request}
-import services.ReportCardService
-import database.{ReportCardEvaluationDb, ReportCardEvaluationTable, TableFilter}
+import play.api.mvc.{AnyContent, ControllerComponents, Request, Result}
 import security.SecurityActionChain
+import service.ReportCardService
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -20,18 +21,19 @@ object ReportCardEvaluationController {
   lazy val labworkAttribute = "labwork"
   lazy val studentAttribute = "student"
 
-  lazy val labelAttribute = "label"
+  /*lazy val labelAttribute = "label" // TODO
   lazy val boolAttribute = "bool"
   lazy val intAttribute = "int"
   lazy val minIntAttribute = "minInt"
   lazy val maxIntAttribute = "maxInt"
-  lazy val explicitAttribute = "explicit"
+  lazy val explicitAttribute = "explicit"*/
 }
 
 @Singleton
 final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
 
+  import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,7 +48,9 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
 
   def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) asyncAction { _ =>
     for {
-      existing <- abstractDao.get(List(LabworkFilter(labwork), StudentFilter(student)), atomic = false)
+      labworkId <- labwork.uuidF
+      studentId <- student.uuidF
+      existing <- abstractDao.get(List(labworkFilter(labworkId), userFilter(studentId)), atomic = false)
       result <- if (existing.isEmpty)
         abstractDao.createMany(ReportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).map(_.map(_.toUniqueEntity)).jsonResult
       else
@@ -63,18 +67,25 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   }
 
   def deleteFromStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>
-    delete(List(LabworkFilter(labwork), StudentFilter(student)))
+    for {
+      labworkId <- labwork.uuidF
+      studentId <- student.uuidF
+      result <- delete(List(labworkFilter(labworkId), userFilter(studentId)))
+    } yield result
   }
 
   def deleteFromLabwork(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
-    delete(List(LabworkFilter(labwork)))
+    for {
+      labworkId <- labwork.uuidF
+      result <- delete(List(labworkFilter(labworkId)))
+    } yield result
   }
 
   def updateFrom(course: String, labwork: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
     update(id, NonSecureBlock)(request)
   }
 
-  private def delete(list: List[TableFilter[ReportCardEvaluationTable]]) = {
+  private def delete(list: List[TableFilterPredicate]): Future[Result] = {
     (for {
       existing <- abstractDao.get(list, atomic = false)
       deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
@@ -83,9 +94,10 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
 
   private def evaluate(labwork: String, persistence: Boolean)(implicit request: Request[AnyContent]) = {
     (for {
-      patterns <- reportCardEvaluationPatternDao.get(List(EvaluationPatternLabworkFilter(labwork)), atomic = false) if patterns.nonEmpty
-      cards <- reportCardEntryDao.get(List(ReportCardEntryLabworkFilter(labwork)), atomic = false)
-      existing <- abstractDao.get(List(LabworkFilter(labwork)), atomic = false)
+      labworkId <- labwork.uuidF
+      patterns <- reportCardEvaluationPatternDao.get(List(labworkFilter(labworkId)), atomic = false) if patterns.nonEmpty
+      cards <- reportCardEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
+      existing <- abstractDao.get(List(labworkFilter(labworkId)), atomic = false)
 
       evaluated = ReportCardService.evaluateDeltas(cards.toList, patterns.toList, existing.toList)
       _ <- if (persistence) abstractDao.createOrUpdateMany(evaluated) else Future.successful(Seq.empty)
@@ -99,24 +111,19 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
 
   override protected implicit val reads: Reads[ReportCardEvaluationProtocol] = ReportCardEvaluationProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEvaluationTable]]]): Try[List[TableFilter[ReportCardEvaluationTable]]] = {
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(CourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(LabworkFilter(labwork)))
-      case (list, (`studentAttribute`, student)) => list.map(_.+:(StudentFilter(student)))
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(LabelFilter(label)))
-      case (list, (`boolAttribute`, bool)) => list.map(_.+:(BoolFilter(bool)))
-      case (list, (`intAttribute`, int)) => list.map(_.+:(IntFilter(int)))
-      case (list, (`minIntAttribute`, minInt)) => list.map(_.+:(MinIntFilter(minInt)))
-      case (list, (`maxIntAttribute`, maxInt)) => list.map(_.+:(MaxIntFilter(maxInt)))
-      case (list, (`explicitAttribute`, explicit)) if explicit == true.toString => list.map(_.+:(IntFilter(ReportCardService.EvaluatedExplicit.toString)))
-      case (_, (`explicitAttribute`, other)) => Failure(new Throwable(s"Value of $explicitAttribute can only be true, but was $other"))
-      case _ => Failure(new Throwable("Unknown attribute"))
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ReportCardEvaluationController._
+
+    (attribute, value) match {
+      case (`courseAttribute`, c) => c.makeCourseFilter
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`studentAttribute`, s) => s.makeUserFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
   override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb = {
-    ReportCardEvaluationDb.from(protocol, existingId)
+    ReportCardEvaluationDb(protocol.student, protocol.labwork, protocol.label, protocol.bool, protocol.int, id = existingId getOrElse UUID.randomUUID)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

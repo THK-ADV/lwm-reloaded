@@ -1,25 +1,10 @@
 package base
 
 import database._
-import org.scalatest._
-import org.scalatest.time.{Seconds, Span}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import slick.jdbc.JdbcProfile
-import slick.jdbc.JdbcBackend.Database
 
-import scala.concurrent.Future
+abstract class PostgresDbSpec extends DatabaseSpec {
 
-abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite with LwmFakeApplication {
-  val db = app.injector.instanceOf(classOf[Database])
-
-  val profile: JdbcProfile = _root_.slick.jdbc.PostgresProfile
   import profile.api._
-
-  protected final def async[R](future: Future[R])(assert: R => Unit): Unit = whenReady(future, timeout(Span(5, Seconds)))(assert)
-
-  protected final def runAsync[R](action: DBIOAction[R, NoStream, Nothing])(assert: R => Unit): Unit = async(db.run(action))(assert)
-
-  protected final def runAsyncSequence[R](args: DBIO[R]*): Unit = async(db.run(DBIO.seq(args: _*).transactionally))(_ => Unit)
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
 
@@ -57,13 +42,17 @@ abstract class PostgresDbSpec extends WordSpec with TestBaseDefinition with Guic
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    runAsyncSequence(schema.map(_.create) :+ dependencies: _*)
+    createSchemas()
   }
+
+  protected def createSchemas(): Unit = runAsyncSequence(schema.map(_.create) :+ dependencies: _*)
 
   override protected def afterAll(): Unit = {
     super.afterAll()
 
-    runAsyncSequence(schema.reverseMap(_.drop): _*)
+    dropSchemas()
     db.close()
   }
+
+  protected def dropSchemas(): Unit = runAsyncSequence(schema.reverseMap(_.drop): _*)
 }

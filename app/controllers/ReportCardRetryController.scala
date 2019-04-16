@@ -2,36 +2,31 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.TimeRangeTableFilter
 import dao._
+import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable, TableFilter}
 import security.SecurityActionChain
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 object ReportCardRetryController {
   lazy val reportCardEntryAttribute = "reportCardEntry"
-
   lazy val studentAttribute = "student"
   lazy val labworkAttribute = "labwork"
   lazy val courseAttribute = "course"
   lazy val roomAttribute = "room"
-
-  lazy val dateAttribute = "date"
-  lazy val startAttribute = "start"
-  lazy val endAttribute = "end"
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 }
 
 @Singleton
 final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc) {
+  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc)
+    with TimeRangeTableFilter[ReportCardRetryTable] {
 
   import controllers.ReportCardRetryController._
 
@@ -39,12 +34,16 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
 
   override protected implicit val reads: Reads[ReportCardRetryProtocol] = ReportCardRetryProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRetryTable]]]): Try[List[TableFilter[ReportCardRetryTable]]] = {
-    (appendTo, (attribute, value)) match { // TODO more attributes
-      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRetryEntryFilter(reportCardEntry)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRetryLabworkFilter(labwork)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRetryCourseFilter(course)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ReportCardRetryController._
+
+    (attribute, value) match {
+      case (`reportCardEntryAttribute`, e) => e.makeReportCardEntryFilter
+      case (`studentAttribute`, s) => s.makeUserByReportCardEntryFilter
+      case (`labworkAttribute`, l) => l.makeLabworkByReportCardEntryFilter
+      case (`courseAttribute`, c) => c.makeCourseByReportCardEntryFilter
+      case (`roomAttribute`, r) => r.makeRoomByReportCardEntryFilter
+      case _ => makeTimeRangeFilter(attribute, value)
     }
   }
 

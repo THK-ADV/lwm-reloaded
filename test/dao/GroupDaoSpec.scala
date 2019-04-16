@@ -3,15 +3,17 @@ package dao
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
-import services.GroupService._
+import service.GroupService._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 import slick.jdbc.PostgresProfile.api._
 
 final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, GroupLike] {
 
   import AbstractDaoSpec._
-  import scala.util.Random.{nextBoolean, nextInt, shuffle}
+  import GroupDao.studentFilter
+
   import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.util.Random.{nextBoolean, nextInt, shuffle}
 
   private lazy val privateStudents = populateStudents(20 * 8 * 2)
   private lazy val privateLabs = populateLabworks(10)(semesters, courses, degrees)
@@ -37,15 +39,15 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
       runAsync(TableQuery[UserTable].forceInsertAll(superPrivateStudents))(_ => Unit)
       async(dao.createMany(groups))(_ should contain theSameElementsAs groups)
 
-      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent1.id.toString)), atomic = false)) { g =>
+      async(dao.get(List(studentFilter(superPrivateStudent1.id)), atomic = false)) { g =>
         g.map(_.asInstanceOf[Group]) should contain theSameElementsAs groups.filter(_.members.contains(superPrivateStudent1.id)).map(_.toUniqueEntity)
       }
 
-      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent2.id.toString)), atomic = false)) { g =>
+      async(dao.get(List(studentFilter(superPrivateStudent2.id)), atomic = false)) { g =>
         g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups(3).toUniqueEntity)
       }
 
-      async(dao.get(List(GroupStudentTableFilter(superPrivateStudent3.id.toString)), atomic = false)) { g =>
+      async(dao.get(List(studentFilter(superPrivateStudent3.id)), atomic = false)) { g =>
         g.map(_.asInstanceOf[Group]) should contain theSameElementsAs List(groups.last.toUniqueEntity)
       }
     }

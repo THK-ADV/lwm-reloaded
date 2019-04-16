@@ -32,7 +32,7 @@
 
     <logger name="akka" level="INFO"/>
     <!--<logger name="services.ldap.LdapSyncServiceActor" level="INFO"/>-->
-    <logger name="services.backup.BackupServiceActor" level="INFO"/>
+    <logger name="service.backup.BackupServiceActor" level="INFO"/>
     <!--<logger name="services.blacklist.BlacklistServiceActor" level="INFO"/>-->
     <!--<logger name="services.SemesterCreationActor" level="INFO"/>-->
 

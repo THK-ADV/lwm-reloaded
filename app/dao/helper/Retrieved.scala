@@ -3,7 +3,7 @@ package dao.helper
 import java.sql.Timestamp
 import java.util.UUID
 
-import database.{TableFilter, UniqueTable}
+import database.{LabworkIdTable, UniqueTable}
 import models.{UniqueDbEntity, UniqueEntity}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
@@ -18,11 +18,11 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
 
   protected def toUniqueEntity(query: Query[T, DbModel, Seq]): Future[Seq[LwmModel]]
 
-  final def filterBy(tableFilter: List[TableFilter[T]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
+  final def filterBy(tableFilter: List[T => Rep[Boolean]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Query[T, DbModel, Seq] = {
     val query = tableFilter match {
       case h :: t =>
-        t.foldLeft(tableQuery.filter(h.predicate)) { (query, nextFilter) =>
-          query.filter(nextFilter.predicate)
+        t.foldLeft(tableQuery.filter(h.apply)) { (query, nextFilter) =>
+          query.filter(nextFilter.apply)
         }
       case _ => tableQuery
     }
@@ -30,8 +30,8 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
     query.filterBy(validOnly, sinceLastModified)
   }
 
-  final def get(tableFilter: List[TableFilter[T]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
-    filterBy(tableFilter, validOnly, sinceLastModified)
+  final def get(filter: List[T => Rep[Boolean]] = List.empty, atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
+    filterBy(filter, validOnly, sinceLastModified)
       .retrieve(atomic)
 
   final def getByQuery(query: Query[T, DbModel, Seq], atomic: Boolean = true, validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Seq[LwmModel]] =
@@ -86,5 +86,4 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
     }
   }
-
 }

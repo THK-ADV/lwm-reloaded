@@ -1,5 +1,6 @@
 package dao
 
+import dao.helper.TableFilter
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
@@ -42,7 +43,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
         TableQuery[CourseTable].forceInsertAll(courses),
         TableQuery[LabworkTable].forceInsertAll(labworks),
         dao.tableQuery.forceInsertAll(plans),
-        dao.filterBy(List(AssignmentPlanCourseFilter(chosenCourse.id.toString))).result.map { dbPlans =>
+        dao.filterBy(List(TableFilter.courseFilter(chosenCourse.id))).result.map { dbPlans =>
           dbPlans.size shouldBe maxLabworksInCourse
           dbPlans.map(_.labwork) should contain theSameElementsAs labworks.filter(_.course == chosenCourse.id).map(_.id)
         }

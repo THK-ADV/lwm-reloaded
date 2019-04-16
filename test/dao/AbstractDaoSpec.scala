@@ -6,19 +6,18 @@ import java.util.UUID
 import base.PostgresDbSpec
 import dao.helper.ModelAlreadyExists
 import database._
-import database.helper.{EmployeeStatus, StudentStatus}
+import database.helper.LdapUserStatus._
 import models._
-import models.helper.{BoolBased, IntBased}
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 object AbstractDaoSpec {
 
   import scala.util.Random.{nextBoolean, nextInt, shuffle}
 
-  // NOTE almost each population ignores business rules and can crash on abstractDao.exsistsQueryø
+  // NOTE almost each population ignores business rules and can crash on abstractDao.exsistsQuery
 
   lazy val maxDegrees = 10
   lazy val maxLabworks = 20
@@ -99,7 +98,7 @@ object AbstractDaoSpec {
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
     val entries = (0 until numberOfEntries).map { j =>
-      TimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j), LocalTime.now.plusHours(j + 1))
+      TimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j).withMillisOfSecond(0), LocalTime.now.plusHours(j + 1).withMillisOfSecond(0))
     }
 
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
@@ -212,6 +211,7 @@ object AbstractDaoSpec {
   }.toList
 
   def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>
+    import models.helper.EvaluationProperty._
     ReportCardEvaluationPatternDb(takeOneOf(labworks).id, i.toString, nextInt(10) + 1, (if (nextBoolean) BoolBased else IntBased).toString)
   }.toList
 
@@ -261,7 +261,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
 
   protected val lastModified: Timestamp = {
     import org.joda.time.DateTime
-    import utils.LwmDateTime.DateTimeConverter
+    import utils.date.DateTimeOps.DateTimeConverter
 
     DateTime.now.timestamp
   }

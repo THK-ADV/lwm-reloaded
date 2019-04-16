@@ -6,7 +6,7 @@ import java.util.UUID
 import models.{ReportCardEntryType, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](tag, "REPORT_CARD_ENTRY_TYPE") with UniqueTable with EntryTypeTable {
   def bool = column[Option[Boolean]]("BOOL")
@@ -35,6 +35,7 @@ case class ReportCardEntryTypeDb(
   invalidated: Option[Timestamp] = None,
   id: UUID = UUID.randomUUID
 ) extends UniqueDbEntity {
+
   override def toUniqueEntity = ReportCardEntryType(entryType, bool, int, id)
 
   override def equals(obj: Any) = obj match {

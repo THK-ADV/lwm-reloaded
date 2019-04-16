@@ -2,42 +2,33 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DBResult
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
-import database.{TableFilter, UserDb, UserTable}
+import dao.helper.{DBResult, TableFilter}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
+import database.{UserDb, UserTable}
 import javax.inject.Inject
 import models._
 import models.helper._
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.Rep
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class UserStatusFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.status.toLowerCase === value.toLowerCase
-}
+object UserDao extends TableFilter[UserTable] {
+  def enrollmentFilter(enrollment: UUID): TableFilterPredicate = _.enrollment.map(_ === enrollment).getOrElse(false)
 
-case class UserSystemIdFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.systemId.toLowerCase === value.toLowerCase
-}
+  def firstnameFilter(firstname: String): TableFilterPredicate = _.firstname.toLowerCase like s"%${firstname.toLowerCase}%"
 
-case class UserLastnameFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.lastname.toLowerCase like s"%${value.toLowerCase}%"
-}
+  def lastnameFilter(lastname: String): TableFilterPredicate = _.lastname.toLowerCase like s"%${lastname.toLowerCase}%"
 
-case class UserFirstnameFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.firstname.toLowerCase like s"%${value.toLowerCase}%"
-}
+  def systemIdFilter(systemId: String): TableFilterPredicate = _.systemId.toLowerCase === systemId.toLowerCase
 
-case class UserDegreeFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.enrollment.map(_ === UUID.fromString(value)).getOrElse(false)
-}
-
-case class UserIdFilter(value: String) extends TableFilter[UserTable] {
-  override def predicate: UserTable => Rep[Boolean] = _.id === UUID.fromString(value)
+  def statusFilter(status: LdapUserStatus): TableFilterPredicate = _.status.toLowerCase === status.label.toLowerCase
 }
 
 trait UserDao extends AbstractDao[UserTable, UserDb, User] {
+
+  import TableFilter.{abbreviationFilter, idFilter}
+  import UserDao.systemIdFilter
 
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
@@ -54,7 +45,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
       status <- DBIO.from(Future.fromTry(LdapUserStatus(status)))
       maybeDegree <- status match {
         case StudentStatus if enrollment.isDefined && registrationId.isDefined =>
-          degreeDao.filterBy(List(DegreeAbbreviationFilter(enrollment.get))).result.flatMap { degrees =>
+          degreeDao.filterBy(List(abbreviationFilter(enrollment.get))).result.flatMap { degrees =>
             degrees.headOption
               .map(d => DBIO.successful(Some(d.id)))
               .getOrElse(DBIO.failed(new Throwable(s"degree with label '${enrollment.get}' not found")))
@@ -106,9 +97,9 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     } yield (createdUser, baseAuth)).transactionally
   }
 
-  final def buddyResult(requesterId: String, requesteeSystemId: String, labwork: String): Future[BuddyResult] = {
-    val requesteeSystemIdFilter = UserSystemIdFilter(requesteeSystemId)
-    val requesterIdFilter = UserIdFilter(requesterId)
+  final def buddyResult(requesterId: UUID, requesteeSystemId: String, labwork: UUID): Future[BuddyResult] = {
+    val requesteeSystemIdFilter = systemIdFilter(requesteeSystemId)
+    val requesterIdFilter = idFilter(requesterId)
 
     val buddy = for {
       requestee <- filterBy(List(requesteeSystemIdFilter))
@@ -118,7 +109,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
     val friends = for {
       b <- buddy
-      friends <- labworkApplicationDao.friendsOf(b._1.id, UUID.fromString(labwork))
+      friends <- labworkApplicationDao.friendsOf(b._1.id, labwork)
     } yield friends
 
     val action = for {
@@ -127,7 +118,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     } yield {
       val optRequestee = b.headOption.map(_._1.toUniqueEntity)
       val optSameDegree = b.map(_._2).reduceOption(_ && _)
-      val friends = f.exists(_.id == UUID.fromString(requesterId))
+      val friends = f.exists(_.id == requesterId)
 
       (optRequestee, optSameDegree) match {
         case (Some(requestee), Some(sameDegree)) =>
@@ -151,7 +142,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
   }
 
   override protected def existsQuery(entity: UserDb): Query[UserTable, UserDb, Seq] = {
-    filterBy(List(UserSystemIdFilter(entity.systemId)))
+    filterBy(List(systemIdFilter(entity.systemId)))
   }
 
   override protected def toUniqueEntity(query: Query[UserTable, UserDb, Seq]): Future[Seq[User]] = {

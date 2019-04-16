@@ -11,7 +11,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
 
   import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
-  import utils.LwmDateTime._
+  import utils.date.DateTimeOps._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -95,7 +95,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     TableQuery[RoomTable].forceInsertAll(rooms)
   )
 
-  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(100, 8, withRescheduledAndRetry = true)(privateLabs, privateStudents)
+  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8, withRescheduledAndRetry = true)(privateLabs, privateStudents)
 
   override protected val numberOfUpdates: Int = 10
 

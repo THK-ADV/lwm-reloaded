@@ -10,7 +10,7 @@ import play.api.inject.guice.GuiceableModule
 import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
 

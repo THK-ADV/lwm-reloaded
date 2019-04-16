@@ -6,11 +6,12 @@ import java.util.UUID
 import models._
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
-class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable with StudentIdTable {
+class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable with UserIdTable {
+  override protected def userColumnName: String = "STUDENT"
 
-  override def * = (student, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
+  override def * = (user, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
   def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
     case (student, labwork, label, date, start, end, room, lastModified, invalidated, id) =>

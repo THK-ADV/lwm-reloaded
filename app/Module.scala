@@ -7,9 +7,9 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
-import services.backup.{BackupService, BackupServiceActor, PSQLBackupService}
-import services.blacklist.{BlacklistService, BlacklistServiceImpl}
-import services.{ActorScheduler, ScheduleService, Webservice}
+import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
+import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
+import service.{ActorScheduler, ScheduleService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, config: Configuration) extends AbstractModule {
@@ -23,7 +23,7 @@ class Module(environment: Environment, config: Configuration) extends AbstractMo
 
   private def bindServices(): Unit = {
     bind(classOf[Webservice]).in(classOf[Singleton])
-    bind(classOf[BlacklistService]).to(classOf[BlacklistServiceImpl]).in(classOf[Singleton])
+    bind(classOf[BlacklistApiService]).to(classOf[BlacklistApiServiceImpl]).in(classOf[Singleton])
     bind(classOf[OAuthAuthorization]).to(classOf[KeycloakAuthorization]).in(classOf[Singleton])
     bind(classOf[BackupService]).to(classOf[PSQLBackupService]).in(classOf[Singleton])
 

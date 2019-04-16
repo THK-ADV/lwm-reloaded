@@ -1,29 +1,17 @@
 package dao
 
-import java.util.UUID
-
-import database.{ReportCardRescheduledDb, ReportCardRescheduledTable, TableFilter}
+import dao.helper.TableFilter
+import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ReportCardRescheduledEntryFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
-  override def predicate = _.reportCardEntry === UUID.fromString(value)
-}
-
-case class ReportCardRescheduledLabworkFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
-  override def predicate = _.reportCardEntryFk.filter(_.labwork === UUID.fromString(value)).exists
-}
-
-case class ReportCardRescheduledCourseFilter(value: String) extends TableFilter[ReportCardRescheduledTable] {
-  override def predicate = _.reportCardEntryFk.map(_.memberOfCourse(value)).exists
-}
-
 trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike] {
 
-  import utils.LwmDateTime._
+  import TableFilter.reportCardEntryFilter
+  import utils.date.DateTimeOps._
 
   override val tableQuery = TableQuery[ReportCardRescheduledTable]
 
@@ -43,11 +31,11 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   }
 
   override protected def existsQuery(entity: ReportCardRescheduledDb): Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq] = {
-    filterBy(List(ReportCardRescheduledEntryFilter(entity.reportCardEntry.toString)))
+    filterBy(List(reportCardEntryFilter(entity.reportCardEntry)))
   }
 
   override protected def shouldUpdate(existing: ReportCardRescheduledDb, toUpdate: ReportCardRescheduledDb): Boolean = {
-    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     (existing.date.localDate != toUpdate.date.localDate ||
       existing.start.localTime != toUpdate.start.localTime ||

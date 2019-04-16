@@ -2,8 +2,8 @@ package controllers
 
 import java.util.UUID
 
-import dao.{AuthorityDao, RoleDao, RoleLabelFilter}
-import database.{RoleDb, RoleTable, TableFilter}
+import dao.{AuthorityDao, RoleDao}
+import database.{RoleDb, RoleTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{God, RightsManager}
 import models._
@@ -25,12 +25,12 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
 
   override protected implicit val reads: Reads[Role] = Role.reads
 
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[RoleTable]]]): Try[List[TableFilter[RoleTable]]] = {
-    import controllers.RoleController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import RoleController._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoleLabelFilter(label)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 

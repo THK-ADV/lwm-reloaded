@@ -3,12 +3,12 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{TimetableDb, TimetableTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
 import models.{TimetableLike, TimetableProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{TableFilter, TimetableDb, TimetableTable}
 import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
@@ -56,17 +56,20 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
     get(id, NonSecureBlock)(request)
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[TimetableTable]]]): Try[List[TableFilter[TimetableTable]]] = {
-    import controllers.TimetableController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import TimetableController._
 
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(TimetableCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(TimetableLabworkFilter(labwork)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`courseAttribute`, c) => c.makeCourseFilter
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
-  override protected def toDbModel(protocol: TimetableProtocol, existingId: Option[UUID]): TimetableDb = TimetableDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: TimetableProtocol, existingId: Option[UUID]): TimetableDb = {
+    import utils.date.DateTimeOps.LocalDateConverter
+    TimetableDb(protocol.labwork, protocol.entries, protocol.start.sqlDate, protocol.localBlacklist, id = existingId getOrElse UUID.randomUUID)
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
 }

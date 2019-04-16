@@ -5,7 +5,7 @@ import java.util.UUID
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 trait UniqueTable {
   self: Table[_] =>
@@ -20,13 +20,23 @@ trait UniqueTable {
   final def lastModifiedSince(timestamp: Timestamp): Rep[Boolean] = lastModified >= timestamp
 }
 
+trait UserIdTable {
+  self: Table[_] =>
+
+  protected def userColumnName: String
+
+  def user = column[UUID](userColumnName)
+
+  def userFk = foreignKey("USERS_fkey", user, TableQuery[UserTable])(_.id)
+}
+
 trait LabworkIdTable {
   self: Table[_] =>
   def labwork = column[UUID]("LABWORK")
 
   def labworkFk = foreignKey("LABWORKS_fkey", labwork, TableQuery[LabworkTable])(_.id)
 
-  def memberOfCourse(course: String) = memberOfCourses(List(UUID.fromString(course)))
+  def memberOfCourse(course: UUID) = memberOfCourses(List(course))
 
   def memberOfCourses(course: Traversable[UUID]) = labworkFk.filter(_.course.inSet(course)).exists
 }
@@ -86,16 +96,6 @@ trait DateStartEndTable {
   def start = column[Time]("START")
 
   def end = column[Time]("END")
-
-  def onDate(millis: String) = date === millis.sqlDateFromMillis
-
-  def onStart(millis: String) = start === millis.sqlTimeFromMillis
-
-  def onEnd(millis: String) = end === millis.sqlTimeFromMillis
-
-  def since(millis: String) = date >= millis.sqlDateFromMillis
-
-  def until(millis: String) = date <= millis.sqlDateFromMillis
 }
 
 trait GroupIdTable {
@@ -103,17 +103,4 @@ trait GroupIdTable {
   def group = column[UUID]("GROUP")
 
   def groupFk = foreignKey("GROUP_fkey", group, TableQuery[GroupTable])(_.id)
-}
-
-trait StudentIdTable {
-  self: Table[_] =>
-  def student = column[UUID]("STUDENT")
-
-  def studentFk = foreignKey("STUDENTS_fkey", student, TableQuery[UserTable])(_.id)
-}
-
-trait TableFilter[T <: Table[_]] {
-  def value: String
-
-  def predicate: T => Rep[Boolean]
 }

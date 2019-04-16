@@ -2,7 +2,8 @@ package dao
 
 import java.util.UUID
 
-import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
+import dao.helper.TableFilter
+import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
 import javax.inject.Inject
 import models.ReportCardEntryType
 import org.joda.time.DateTime
@@ -11,21 +12,16 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ReportCardEntryTypeLabelFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
-  override def predicate = _.entryType === value
-}
+object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
+  def reportCardEntryFilter(reportCardEntry: UUID): TableFilterPredicate = _.reportCardEntryFk.filter(_.id === reportCardEntry).exists
 
-case class ReportCardEntryTypeEntryFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
-  override def predicate = _.reportCardEntryFk.filter(_.id === UUID.fromString(value)).exists
-}
-
-case class ReportCardEntryTypeRetryFilter(value: String) extends TableFilter[ReportCardEntryTypeTable] {
-  override def predicate = _.reportCardRetryFk.filter(_.id === UUID.fromString(value)).exists
+  def reportCardRetryFilter(reportCardRetry: UUID): TableFilterPredicate = _.reportCardRetryFk.filter(_.id === reportCardRetry).exists
 }
 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
-
-  import utils.LwmDateTime._
+  import ReportCardEntryTypeDao._
+  import TableFilter.entryTypeFilter
+  import utils.date.DateTimeOps._
 
   override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 
@@ -36,11 +32,11 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
   }
 
   override protected def existsQuery(entity: ReportCardEntryTypeDb): Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq] = {
-    val min: List[TableFilter[ReportCardEntryTypeTable]] = List(ReportCardEntryTypeLabelFilter(entity.entryType))
-    val max = entity.reportCardEntry.fold(min)(id => min :+ ReportCardEntryTypeEntryFilter(id.toString))
-    val max2 = entity.reportCardRetry.fold(max)(id => max :+ ReportCardEntryTypeRetryFilter(id.toString))
+    val labelFilter: List[TableFilterPredicate] = List(entryTypeFilter(entity.entryType))
+    val withEntryFilter = entity.reportCardEntry.map(id => labelFilter.+:(reportCardEntryFilter(id)))
+    val withRetryFilter = entity.reportCardRetry.map(id => labelFilter.+:(reportCardRetryFilter(id)))
 
-    filterBy(max2)
+    filterBy((withEntryFilter orElse withRetryFilter) getOrElse labelFilter)
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryTypeDb, toUpdate: ReportCardEntryTypeDb): Boolean = {

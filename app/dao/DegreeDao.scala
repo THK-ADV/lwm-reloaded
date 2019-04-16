@@ -2,26 +2,25 @@ package dao
 
 import java.util.UUID
 
-import database.{DegreeDb, DegreeTable, TableFilter}
+import dao.helper.TableFilter
+import database.{DegreeDb, DegreeTable}
 import javax.inject.Inject
 import models.Degree
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class DegreeAbbreviationFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate = _.abbreviation.toLowerCase === value.toLowerCase
-}
+object DegreeDao extends TableFilter[DegreeTable] {
+  def idFilter(id: UUID): TableFilterPredicate = TableFilter.idFilter(id)
 
-case class DegreeLabelFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
-}
+  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterLike(label)
 
-case class DegreeIdFilter(value: String) extends TableFilter[DegreeTable] {
-  override def predicate = _.id === UUID.fromString(value)
+  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilter.abbreviationFilter(abbreviation)
 }
 
 trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
+
+  import DegreeDao.abbreviationFilter
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
@@ -30,7 +29,7 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
   }
 
   override protected def existsQuery(entity: DegreeDb): Query[DegreeTable, DegreeDb, Seq] = {
-    filterBy(List(DegreeAbbreviationFilter(entity.abbreviation)))
+    filterBy(List(abbreviationFilter(entity.abbreviation)))
   }
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = toUniqueEntity(query)

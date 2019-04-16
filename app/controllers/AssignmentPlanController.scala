@@ -3,11 +3,12 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{AssignmentPlanDb, AssignmentPlanTable}
 import javax.inject.{Inject, Singleton}
 import models._
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{AssignmentPlanDb, AssignmentPlanTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
@@ -25,17 +26,10 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
 
   override protected implicit val reads: Reads[AssignmentPlanProtocol] = AssignmentPlanProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[AssignmentPlanTable]]]): Try[List[TableFilter[AssignmentPlanTable]]] = {
-    import controllers.AssignmentPlanController._
-
-    (appendTo, (attribute, value)) match {
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(AssignmentPlanCourseFilter(course)))
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(AssignmentPlanLabworkFilter(labwork)))
-      case _ => Failure(new Throwable("Unknown attribute"))
-    }
+  override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    AssignmentPlanDb(protocol.labwork, protocol.attendance, protocol.mandatory, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
-
-  override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = AssignmentPlanDb.from(protocol, existingId)
 
   import models.Role._
 
@@ -70,4 +64,14 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import AssignmentPlanController._
+
+    (attribute, value) match {
+      case (`courseAttribute`, course) => course.makeCourseFilter
+      case (`labworkAttribute`, labwork) => labwork.makeLabworkFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 }

@@ -4,11 +4,11 @@ import java.util.UUID
 
 import base.PostgresDbSpec
 import database.RoleDb
-import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models.{Authority, Role}
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
+import database.helper.LdapUserStatus._
 
 import scala.concurrent.Future
 

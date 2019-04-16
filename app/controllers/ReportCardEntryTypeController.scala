@@ -3,16 +3,16 @@ package controllers
 import java.util.UUID
 
 import dao.{AuthorityDao, ReportCardEntryTypeDao}
+import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager, God}
 import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.{Failure, Try}
 
 @Singleton
 class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryTypeDao, val securedAction: SecurityActionChain)
@@ -38,7 +38,7 @@ class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val auth
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTypeTable]]]): Try[List[TableFilter[ReportCardEntryTypeTable]]] = Success(List.empty)
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = Failure(new Throwable("no filter attributes allowed"))
 
   override protected def toDbModel(protocol: ReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
 

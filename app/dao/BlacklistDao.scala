@@ -1,42 +1,22 @@
 package dao
 
-import database.{BlacklistDb, BlacklistTable, TableFilter}
+import dao.helper.TableFilter
+import database.{BlacklistDb, BlacklistTable}
 import javax.inject.Inject
 import models.Blacklist
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class BlacklistGlobalFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.global === value.toBoolean
-}
-
-case class BlacklistLabelFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.label === value
-}
-
-case class BlacklistDateFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.onDate(value)
-}
-
-case class BlacklistStartFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.onStart(value)
-}
-
-case class BlacklistEndFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.onEnd(value)
-}
-
-case class BlacklistSinceFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.since(value)
-}
-
-case class BlacklistUntilFilter(value: String) extends TableFilter[BlacklistTable] {
-  override def predicate = _.until(value)
+object BlacklistDao extends TableFilter[BlacklistTable] {
+  def globalFilter(global: Boolean): TableFilterPredicate = _.global === global
 }
 
 trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
+
+  import BlacklistDao.globalFilter
+  import TableFilter.{labelFilterEquals, onDateFilter, onEndFilter, onStartFilter}
 
   override val tableQuery = TableQuery[BlacklistTable]
 
@@ -48,11 +28,11 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {
     filterBy(List(
-      BlacklistLabelFilter(entity.label),
-      BlacklistDateFilter(entity.date.stringMillis),
-      BlacklistStartFilter(entity.start.stringMillis),
-      BlacklistEndFilter(entity.end.stringMillis),
-      BlacklistGlobalFilter(entity.global.toString)
+      labelFilterEquals(entity.label),
+      onDateFilter(entity.date),
+      onStartFilter(entity.start),
+      onEndFilter(entity.end),
+      globalFilter(entity.global)
     ))
   }
 

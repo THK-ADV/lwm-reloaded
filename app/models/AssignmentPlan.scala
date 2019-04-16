@@ -6,9 +6,15 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
 
-sealed trait AssignmentPlanLike extends UniqueEntity
+sealed trait AssignmentPlanLike extends UniqueEntity {
+  def entries: Set[AssignmentEntry]
 
-case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlanLike
+  def labworkId: UUID
+}
+
+case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlanLike {
+  override def labworkId = labwork
+}
 
 case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry])
 
@@ -16,7 +22,9 @@ case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntry
 
 case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
 
-case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID) extends AssignmentPlanLike
+case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID) extends AssignmentPlanLike {
+  override def labworkId = labwork.id
+}
 
 object AssignmentPlan {
   implicit val writes: Writes[AssignmentPlan] = Json.writes[AssignmentPlan]

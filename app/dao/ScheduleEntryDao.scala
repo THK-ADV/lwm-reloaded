@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
@@ -10,47 +10,17 @@ import models.{genesis, _}
 import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ScheduleEntryLabworkFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class ScheduleEntryCourseFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.memberOfCourse(value)
-}
-
-case class ScheduleEntryGroupFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.group === UUID.fromString(value)
-}
-
-case class ScheduleEntrySupervisorFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.supervisor === UUID.fromString(value)).exists
-}
-
-case class ScheduleEntryDateFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.onDate(value)
-}
-
-case class ScheduleEntryStartFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.onStart(value)
-}
-
-case class ScheduleEntryEndFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.onEnd(value)
-}
-
-case class ScheduleEntrySinceFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.since(value)
-}
-
-case class ScheduleEntryUntilFilter(value: String) extends TableFilter[ScheduleEntryTable] {
-  override def predicate = _.until(value)
+object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
+  def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.user === supervisor).exists
 }
 
 trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
+
+  import dao.helper.TableFilter.{groupFilter, labworkFilter}
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
 
@@ -73,14 +43,11 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def existsQuery(entity: ScheduleEntryDb): Query[ScheduleEntryTable, ScheduleEntryDb, Seq] = {
-    filterBy(List(
-      ScheduleEntryLabworkFilter(entity.labwork.toString),
-      ScheduleEntryGroupFilter(entity.group.toString)
-    ))
+    filterBy(List(labworkFilter(entity.labwork), groupFilter(entity.group)))
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
-    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     (existing.supervisor != toUpdate.supervisor ||
       existing.date.localDate != toUpdate.date.localDate ||
@@ -100,12 +67,12 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
       c <- l.courseFk
       d <- l.degreeFk
       s <- l.semesterFk
-      lec <- c.lecturerFk
+      lec <- c.userFk
     } yield (q, r, g, l, c, d, s, lec)
 
     val supervisors = for {
       s <- scheduleEntrySupervisorQuery
-      u <- s.supervisorFk
+      u <- s.userFk
     } yield (s, u)
 
     val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)
@@ -132,7 +99,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
 
     val supervisors = for {
       s <- scheduleEntrySupervisorQuery
-      u <- s.supervisorFk
+      u <- s.userFk
     } yield (s, u)
 
     val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)

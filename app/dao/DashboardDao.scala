@@ -3,12 +3,9 @@ package dao
 import java.util.UUID
 
 import dao.helper.Core
-import database.helper.{EmployeeStatus, StudentStatus}
 import javax.inject.Inject
-import models.{AuthorityAtom, Dashboard, EmployeeDashboard, ReportCardEntryType, ReportCardEvaluationAtom, Semester, StudentDashboard, StudentLike, User}
-import org.joda.time.LocalDate
+import models.{Dashboard, Semester, StudentLike, User}
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,54 +28,57 @@ trait DashboardDao extends Core {
   }
 
   private def studentDashboard(student: StudentLike, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {
-    for {
-      labworks <- labworkDao get(List(LabworkSemesterFilter(semester.id.toString), LabworkDegreeFilter(student.enrollmentId.toString)), atomic = atomic)
-      labworkIds = labworks map (_.id)
+//    for {
+//      labworks <- labworkDao get(List(LabworkSemesterFilter(semester.id.toString), LabworkDegreeFilter(student.enrollmentId.toString)), atomic = atomic)
+//      labworkIds = labworks map (_.id)
+//
+//      lappQuery = labworkApplicationDao filterValidOnly (app => app.labwork.inSet(labworkIds) && app.applicant === student.id)
+//      lapps <- labworkApplicationDao getByQuery(lappQuery, atomic = atomic)
+//
+//      allCardsQuery = reportCardEntryDao filterValidOnly (e => e.labwork.inSet(labworkIds) && e.student === student.id)
+//      sinceNowFilter = if (entriesSinceNow) Option apply ReportCardEntrySinceFilter(LocalDate.now.stringMillis).predicate else Option.empty
+//      cardsSinceNowQuery = sinceNowFilter.fold(allCardsQuery)(f => allCardsQuery.filter(f.apply))
+//      cards <- reportCardEntryDao getByQuery(cardsSinceNowQuery, atomic = atomic)
+//      upcomingCards = numberOfUpcomingElements.fold(cards)(n => cards.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
+//      sortedUpcomingCards = if (sortedByDate) upcomingCards sortBy (s => (s.date, s.start)) else upcomingCards
+//
+//      allEvals <- reportCardEvaluationDao get(List(StudentFilter(student.id.toString)), atomic = true) // must be atomic
+//      passedEvals = allEvals map (_.asInstanceOf[ReportCardEvaluationAtom]) groupBy (_.labwork) map {
+//        case (labwork, evals) =>
+//          val boolBased = evals filter (e => ReportCardEntryType.BooleanBasedTypes.exists(_.entryType == e.label))
+//          val intBased = evals filter (e => ReportCardEntryType.IntBasedTypes.exists(_.entryType == e.label))
+//
+//          val passed = boolBased map (_.bool) reduceOption (_ && _) getOrElse false
+//          val bonus = intBased map (_.int) sum
+//
+//          (labwork.course.abbreviation, labwork.semester.abbreviation, passed, bonus)
+//      }
+//
+//      groupsQuery = groupDao filterValidOnly (g => g.labwork.inSet(labworkIds) && g.contains(student.id)) map (g => (g.label, g.labwork))
+//      groupLabels <- db run groupsQuery.result
+//      groups = groupLabels.map(g => (g._1, labworks.find(_.id == g._2).get))
+//
+//    } yield StudentDashboard(student, StudentStatus, semester, labworks, lapps, groups, sortedUpcomingCards, allEvals, passedEvals toSeq)
 
-      lappQuery = labworkApplicationDao filterValidOnly (app => app.labwork.inSet(labworkIds) && app.applicant === student.id)
-      lapps <- labworkApplicationDao getByQuery(lappQuery, atomic = atomic)
-
-      allCardsQuery = reportCardEntryDao filterValidOnly (e => e.labwork.inSet(labworkIds) && e.student === student.id)
-      sinceNowFilter = if (entriesSinceNow) Option apply ReportCardEntrySinceFilter(LocalDate.now.stringMillis).predicate else Option.empty
-      cardsSinceNowQuery = sinceNowFilter.fold(allCardsQuery)(f => allCardsQuery.filter(f.apply))
-      cards <- reportCardEntryDao getByQuery(cardsSinceNowQuery, atomic = atomic)
-      upcomingCards = numberOfUpcomingElements.fold(cards)(n => cards.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
-      sortedUpcomingCards = if (sortedByDate) upcomingCards sortBy (s => (s.date, s.start)) else upcomingCards
-
-      allEvals <- reportCardEvaluationDao get(List(StudentFilter(student.id.toString)), atomic = true) // must be atomic
-      passedEvals = allEvals map (_.asInstanceOf[ReportCardEvaluationAtom]) groupBy (_.labwork) map {
-        case (labwork, evals) =>
-          val boolBased = evals filter (e => ReportCardEntryType.BooleanBasedTypes.exists(_.entryType == e.label))
-          val intBased = evals filter (e => ReportCardEntryType.IntBasedTypes.exists(_.entryType == e.label))
-
-          val passed = boolBased map (_.bool) reduceOption (_ && _) getOrElse false
-          val bonus = intBased map (_.int) sum
-
-          (labwork.course.abbreviation, labwork.semester.abbreviation, passed, bonus)
-      }
-
-      groupsQuery = groupDao filterValidOnly (g => g.labwork.inSet(labworkIds) && g.contains(student.id)) map (g => (g.label, g.labwork))
-      groupLabels <- db run groupsQuery.result
-      groups = groupLabels.map(g => (g._1, labworks.find(_.id == g._2).get))
-
-    } yield StudentDashboard(student, StudentStatus, semester, labworks, lapps, groups, sortedUpcomingCards, allEvals, passedEvals toSeq)
+    Future.failed(new Throwable(""))
   }
 
   private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {
-    for {
-      authorities <- authorityDao get List(AuthorityUserFilter(employee.id.toString)) // must be atomic ...
-      courses = authorities flatMap (_.asInstanceOf[AuthorityAtom].course) // in order to get his/her courses
-      courseIds = courses map (_.id)
-
-      inSemesterAndCourse = scheduleEntryDao filterValidOnly (q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds))
-      sinceNowFilter = if (entriesSinceNow) Option apply ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate else Option.empty
-      isSemesterAndCourseAndSinceNow = sinceNowFilter.fold(inSemesterAndCourse)(f => inSemesterAndCourse.filter(f.apply))
-
-      scheduleEntries <- scheduleEntryDao getByQuery(isSemesterAndCourseAndSinceNow, atomic = atomic)
-      upcomingEntries = numberOfUpcomingElements.fold(scheduleEntries)(n => scheduleEntries.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
-      sortedUpcomingEntries = if (sortedByDate) upcomingEntries sortBy (s => (s.date, s.start)) else upcomingEntries
-
-    } yield EmployeeDashboard(employee, EmployeeStatus, semester, courses, sortedUpcomingEntries)
+//    for {
+//      authorities <- authorityDao get List(AuthorityDao.userFilter(employee.id)) // must be atomic ...
+//      courses = authorities flatMap (_.asInstanceOf[AuthorityAtom].course) // in order to get his/her courses
+//      courseIds = courses map (_.id)
+//
+//      inSemesterAndCourse = scheduleEntryDao filterValidOnly (q => q.labworkFk.filter(_.semester === semester.id).exists && q.memberOfCourses(courseIds))
+//      sinceNowFilter = if (entriesSinceNow) Option apply ScheduleEntrySinceFilter(LocalDate.now.stringMillis).predicate else Option.empty
+//      isSemesterAndCourseAndSinceNow = sinceNowFilter.fold(inSemesterAndCourse)(f => inSemesterAndCourse.filter(f.apply))
+//
+//      scheduleEntries <- scheduleEntryDao getByQuery(isSemesterAndCourseAndSinceNow, atomic = atomic)
+//      upcomingEntries = numberOfUpcomingElements.fold(scheduleEntries)(n => scheduleEntries.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
+//      sortedUpcomingEntries = if (sortedByDate) upcomingEntries sortBy (s => (s.date, s.start)) else upcomingEntries
+//
+//    } yield EmployeeDashboard(employee, EmployeeStatus, semester, courses, sortedUpcomingEntries)
+    Future.failed(new Throwable(""))
   }
 
   protected def userDao: UserDao

@@ -11,7 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike] {
 
   import AbstractDaoSpec._
-  import utils.LwmDateTime.SqlTimestampConverter
+  import utils.date.DateTimeOps.SqlTimestampConverter
 
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.util.Random.{nextInt, shuffle}

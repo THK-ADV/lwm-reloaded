@@ -2,7 +2,6 @@ package models
 
 import java.util.UUID
 
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
 import play.api.libs.json.{Json, Reads, Writes}
 
 sealed trait LWMRole {

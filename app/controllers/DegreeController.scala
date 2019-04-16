@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{DegreeDb, DegreeTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Degree, DegreeProtocol}
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{DegreeDb, DegreeTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
@@ -33,17 +34,20 @@ final class DegreeController @Inject()(cc: ControllerComponents, val authorityDa
 
   override protected implicit val reads: Reads[DegreeProtocol] = DegreeProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
-    import controllers.DegreeController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import DegreeController._
 
-    (appendTo, (attribute, value)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`abbreviationAttribute`, a) => a.makeAbbrevFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
-  override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = DegreeDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    DegreeDb(protocol.label, protocol.abbreviation, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
 }

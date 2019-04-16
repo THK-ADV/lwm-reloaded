@@ -1,6 +1,6 @@
 package controllers.helper
 
-import services.{CountGrouping, GroupingStrategy, RangeGrouping}
+import service.{CountGrouping, GroupingStrategy, RangeGrouping}
 
 import scala.collection.Map
 import scala.util.{Failure, Try}

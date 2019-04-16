@@ -1,30 +1,26 @@
 package dao
 
-import database.{CourseDb, CourseTable, TableFilter}
+import dao.helper.TableFilter
+import database.{CourseDb, CourseTable}
 import javax.inject.Inject
 import models.{CourseAtom, CourseLike}
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CourseLabelFilter(value: String) extends TableFilter[CourseTable] {
-  override def predicate = _.label.toLowerCase like s"%${value.toLowerCase}%"
-}
-
-case class CourseSemesterIndexFilter(value: String) extends TableFilter[CourseTable] {
-  override def predicate = _.semesterIndex === value.toInt
-}
-
-case class CourseAbbreviationFilter(value: String) extends TableFilter[CourseTable] {
-  override def predicate = _.abbreviation.toLowerCase === value.toLowerCase
+object CourseDao extends TableFilter[CourseTable] {
+  def semesterIndexFilter(index: Int): TableFilterPredicate = _.semesterIndex === index
 }
 
 trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
 
+  import CourseDao._
+  import dao.helper.TableFilter.labelFilterEquals
+
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
-    filterBy(List(CourseLabelFilter(entity.label), CourseSemesterIndexFilter(entity.semesterIndex.toString)))
+    filterBy(List(labelFilterEquals(entity.label), semesterIndexFilter(entity.semesterIndex)))
   }
 
   override protected def shouldUpdate(existing: CourseDb, toUpdate: CourseDb): Boolean = {
@@ -37,7 +33,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {
     val joinedQuery = for {
       q <- query
-      l <- q.lecturerFk
+      l <- q.userFk
     } yield (q, l)
 
     db.run(joinedQuery.result.map(_.map {

@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -10,53 +10,13 @@ import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ReportCardEntryStudentFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.student === UUID.fromString(value)
-}
-
-case class ReportCardEntryLabworkFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class ReportCardEntryCourseFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.memberOfCourse(value)
-}
-
-case class ReportCardEntryRoomFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.room === UUID.fromString(value)
-}
-
-case class ReportCardEntryLabelFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.label === value
-}
-
-case class ReportCardEntryDateFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.onDate(value)
-}
-
-case class ReportCardEntryStartFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.onStart(value)
-}
-
-case class ReportCardEntryEndFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.onEnd(value)
-}
-
-case class ReportCardEntrySinceFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.since(value)
-}
-
-case class ReportCardEntryUntilFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = _.until(value)
-}
-
-case class ReportCardEntryScheduleEntryFilter(value: String) extends TableFilter[ReportCardEntryTable] {
-  override def predicate = r => TableQuery[ScheduleEntryTable].filter { s =>
-    val schedule = s.id === UUID.fromString(value)
+object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
+  def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s => // TODO test
+    val schedule = s.id === scheduleEntry
     val ordinary = s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
     val rescheduled = TableQuery[ReportCardRescheduledTable].filter(rs => rs.reportCardEntry === r.id && rs.room === s.room && rs.start === s.start && rs.end === s.end && rs.date === s.date).exists
     val retry = TableQuery[ReportCardRetryTable].filter(rt => rt.reportCardEntry === r.id && rt.room === s.room && rt.start === s.start && rt.end === s.end && rt.date === s.date).exists
@@ -98,7 +58,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     val mandatory = for {
       q <- query
       l <- q.labworkFk
-      s <- q.studentFk
+      s <- q.userFk
       r <- q.roomFk
     } yield (q, l, s, r)
 
@@ -115,9 +75,9 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
       case (id, dependencies) =>
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
-        val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
-        val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
+      val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
+      val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
+      val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
 
         build(entry, rescheduled, retryWithEntryTypes, entryTypes)
     }.toSeq)
@@ -126,11 +86,11 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(IdFilter(entity.id.toString)))
+    filterBy(List(TableFilter.idFilter(entity.id)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     (existing.date.localDate != toUpdate.date.localDate ||
       existing.start.localTime != toUpdate.start.localTime ||

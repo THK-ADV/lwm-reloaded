@@ -2,9 +2,12 @@ package dao
 
 import java.util.UUID
 
+import dao.UserDao._
 import dao.helper.DBResult
+import dao.helper.TableFilter.idFilter
 import database._
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.inject.guice.GuiceableModule
@@ -66,10 +69,10 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val employee = dbUser.find(_.status == EmployeeStatus)
       val employeeAtom = employee.map(e => Employee(e.systemId, e.lastname, e.firstname, e.email, e.id))
 
-      async(dao.get(List(UserIdFilter(student.get.id.toString)), atomic = false))(_.headOption shouldBe student.map(_.toUniqueEntity))
-      async(dao.get(List(UserIdFilter(employee.get.id.toString)), atomic = false))(_.headOption shouldBe employee.map(_.toUniqueEntity))
-      async(dao.get(List(UserIdFilter(studentAtom.get.id.toString))))(_.headOption shouldBe studentAtom)
-      async(dao.get(List(UserIdFilter(employeeAtom.get.id.toString))))(_.headOption shouldBe employeeAtom)
+      async(dao.get(List(idFilter(student.get.id)), atomic = false))(_.headOption shouldBe student.map(_.toUniqueEntity))
+      async(dao.get(List(idFilter(employee.get.id)), atomic = false))(_.headOption shouldBe employee.map(_.toUniqueEntity))
+      async(dao.get(List(idFilter(studentAtom.get.id))))(_.headOption shouldBe studentAtom)
+      async(dao.get(List(idFilter(employeeAtom.get.id))))(_.headOption shouldBe employeeAtom)
     }
 
     "filter users by certain attributes" in {
@@ -79,23 +82,23 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val possibleUsers3 = dbUser.filter(_.systemId == "10").map(_.toUniqueEntity)
 
       async(dao.get(List(
-        UserStatusFilter(StudentStatus.label),
-        UserDegreeFilter(degree.id.toString)
+        statusFilter(StudentStatus),
+        enrollmentFilter(degree.id)
       ), atomic = false))(_ should contain theSameElementsAs possibleUsers1)
 
       async(dao.get(List(
-        UserFirstnameFilter("5"),
-        UserLastnameFilter("5")
+        firstnameFilter("5"),
+        lastnameFilter("5")
       ), atomic = false))(_ should contain theSameElementsAs possibleUsers2)
 
       async(dao.get(List(
-        UserSystemIdFilter("10")
+        systemIdFilter("10")
       ), atomic = false))(_ should contain theSameElementsAs possibleUsers3)
 
       async(dao.get(List(
-        UserFirstnameFilter("3"),
-        UserLastnameFilter("3"),
-        UserSystemIdFilter("4")
+        firstnameFilter("3"),
+        lastnameFilter("3"),
+        systemIdFilter("4")
       ), atomic = false))(_ shouldBe empty)
     }
 
@@ -234,8 +237,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val buddy = dbUser.find(u => u.status == StudentStatus && !u.enrollment.contains(chosenDegree.id)).get
       val invalidBuddy = "not in system"
 
-      async(dao.buddyResult(student.id.toString, invalidBuddy, labwork.id.toString))(_ shouldBe NotExisting(invalidBuddy))
-      async(dao.buddyResult(student.id.toString, buddy.systemId, labwork.id.toString))(_ shouldBe Denied(buddy.toUniqueEntity))
+      async(dao.buddyResult(student.id, invalidBuddy, labwork.id))(_ shouldBe NotExisting(invalidBuddy))
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Denied(buddy.toUniqueEntity))
     }
 
     "allow a buddy request" in {
@@ -251,7 +254,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       )
 
       async(dao.labworkApplicationDao.createMany(lapps))(_ should not be empty)
-      async(dao.buddyResult(student.id.toString, buddy.systemId, labwork.id.toString))(_ shouldBe Allowed(buddy.toUniqueEntity))
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Allowed(buddy.toUniqueEntity))
       async(dao.labworkApplicationDao.deleteMany(lapps.map(_.id)))(_.size shouldBe lapps.size)
     }
 
@@ -268,7 +271,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       )
 
       async(dao.labworkApplicationDao.createMany(lapps))(_ should not be empty)
-      async(dao.buddyResult(student.id.toString, buddy.systemId, labwork.id.toString))(_ shouldBe Almost(buddy.toUniqueEntity))
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Almost(buddy.toUniqueEntity))
     }
   }
 

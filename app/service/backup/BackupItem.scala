@@ -1,4 +1,4 @@
-package services.backup
+package service.backup
 
 import play.api.libs.json.JsValue
 

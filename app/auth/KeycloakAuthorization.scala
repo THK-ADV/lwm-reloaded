@@ -14,7 +14,7 @@ import org.keycloak.representations.AccessToken
 import play.api.libs.json
 import play.api.libs.json.Reads
 import play.api.mvc.Request
-import services.Webservice
+import service.Webservice
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global

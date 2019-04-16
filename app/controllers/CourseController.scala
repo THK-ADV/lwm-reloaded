@@ -3,10 +3,11 @@ package controllers
 import java.util.UUID
 
 import dao._
-import database.{CourseDb, CourseTable, TableFilter}
+import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
@@ -62,7 +63,10 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     } yield lwmModel).updated
   }
 
-  override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = CourseDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+  }
 
   override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
     val uuid = UUID.fromString(id)
@@ -74,14 +78,16 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     } yield course).deleted
   }
 
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
-    import controllers.CourseController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import CourseController._
+    import dao.CourseDao._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
-      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
-      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`abbreviationAttribute`, a) => a.makeAbbrevFilter
+      case (`semesterIndexAttribute`, s) => s.int map semesterIndexFilter
+      case (`lecturerAttribute`, l) => l.makeUserFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 

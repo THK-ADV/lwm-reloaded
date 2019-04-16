@@ -3,12 +3,12 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{LabworkApplicationDb, LabworkApplicationTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{EmployeeRole, StudentRole}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{LabworkApplicationDb, LabworkApplicationTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
@@ -16,9 +16,6 @@ import scala.util.{Failure, Try}
 object LabworkApplicationController {
   lazy val labworkAttribute = "labwork"
   lazy val applicantAttribute = "applicant"
-
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 }
 
 @Singleton
@@ -29,19 +26,19 @@ final class LabworkApplicationController @Inject()(cc: ControllerComponents, val
 
   override protected implicit val reads: Reads[LabworkApplicationProtocol] = LabworkApplicationProtocol.reads
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[LabworkApplicationTable]]]): Try[List[TableFilter[LabworkApplicationTable]]] = {
-    import controllers.LabworkApplicationController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import LabworkApplicationController._
 
-    (appendTo, (attribute, value)) match {
-      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(LabworkApplicationLabworkFilter(labwork)))
-      case (list, (`applicantAttribute`, applicant)) => list.map(_.+:(LabworkApplicationApplicantFilter(applicant)))
-      case (list, (`sinceAttribute`, since)) => Try(since.toLong).flatMap(l => list.map(_.+:(LabworkApplicationSinceFilter(l.toString))))
-      case (list, (`untilAttribute`, until)) => Try(until.toLong).flatMap(l => list.map(_.+:(LabworkApplicationUntilFilter(l.toString))))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`applicantAttribute`, a) => a.makeUserFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
-  override protected def toDbModel(protocol: LabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = LabworkApplicationDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: LabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = {
+    LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends, id = existingId getOrElse UUID.randomUUID)
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(List(StudentRole))

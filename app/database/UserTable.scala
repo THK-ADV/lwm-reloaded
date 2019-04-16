@@ -3,11 +3,12 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
 import models.{Employee, Lecturer, Student, UniqueDbEntity, User}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime.DateTimeConverter
+import utils.date.DateTimeOps.DateTimeConverter
 
 class UserTable(tag: Tag) extends Table[UserDb](tag, "USERS") with UniqueTable {
   def systemId = column[String]("SYSTEM_ID")
@@ -25,8 +26,6 @@ class UserTable(tag: Tag) extends Table[UserDb](tag, "USERS") with UniqueTable {
   def status = column[String]("STATUS")
 
   def degreeFk = foreignKey("DEGREES_fkey", enrollment, TableQuery[DegreeTable])(_.id.?)
-
-  //def labworkApplication(labwork: UUID) = TableQuery[LabworkApplicationTable].filter(lapp => lapp.applicant === id && lapp.labwork === labwork)
 
   override def * = (systemId, lastname, firstname, email, status, registrationId, enrollment, lastModified, invalidated, id) <> (mapRow, unmapRow)
 

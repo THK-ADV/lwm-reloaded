@@ -1,7 +1,5 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.DatabaseExpander
 import database._
 import javax.inject.Inject
@@ -9,23 +7,13 @@ import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ReportCardRetryEntryFilter(value: String) extends TableFilter[ReportCardRetryTable] {
-  override def predicate = _.reportCardEntry === UUID.fromString(value)
-}
-
-case class ReportCardRetryLabworkFilter(value: String) extends TableFilter[ReportCardRetryTable] {
-  override def predicate = _.reportCardEntryFk.filter(_.labwork === UUID.fromString(value)).exists
-}
-
-case class ReportCardRetryCourseFilter(value: String) extends TableFilter[ReportCardRetryTable] {
-  override def predicate = _.reportCardEntryFk.map(_.memberOfCourse(value)).exists
-}
-
 trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike] {
+
+  import dao.helper.TableFilter.reportCardEntryFilter
 
   override val tableQuery = TableQuery[ReportCardRetryTable]
   val entryTypeQuery: TableQuery[ReportCardEntryTypeTable] = TableQuery[ReportCardEntryTypeTable]
@@ -65,11 +53,11 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   }
 
   override protected def existsQuery(entity: ReportCardRetryDb): Query[ReportCardRetryTable, ReportCardRetryDb, Seq] = {
-    filterBy(List(ReportCardRetryEntryFilter(entity.reportCardEntry.toString)))
+    filterBy(List(reportCardEntryFilter(entity.reportCardEntry)))
   }
 
   override protected def shouldUpdate(existing: ReportCardRetryDb, toUpdate: ReportCardRetryDb): Boolean = {
-    import utils.LwmDateTime.{SqlDateConverter, TimeConverter}
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     (existing.date.localDate != toUpdate.date.localDate ||
       existing.start.localTime != toUpdate.start.localTime ||

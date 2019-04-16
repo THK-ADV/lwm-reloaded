@@ -1,9 +1,9 @@
-package services
+package service
 
 import models.{helper, _}
 import models.helper.{TimetableDateEntry, Weekday}
 import org.joda.time.{Interval, Weeks}
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 object TimetableService { // TODO DI
 

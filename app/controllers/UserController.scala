@@ -3,16 +3,17 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.helper.LdapUserStatus
+import database.{UserDb, UserTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
-import database.{TableFilter, UserDb, UserTable}
 import security.SecurityActionChain
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object UserController {
   lazy val statusAttribute = "status"
@@ -39,16 +40,17 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
-    import controllers.UserController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import UserController._
+    import dao.UserDao._
 
-    (appendTo, (attribute, value)) match {
-      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status)))
-      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId)))
-      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname)))
-      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname)))
-      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`statusAttribute`, s) => LdapUserStatus(s) map statusFilter
+      case (`degreeAttribute`, d) => d.uuid map enrollmentFilter
+      case (`systemIdAttribute`, s) => Success(systemIdFilter(s))
+      case (`firstnameAttribute`, f) => Success(firstnameFilter(f))
+      case (`lastnameAttribute`, l) => Success(lastnameFilter(l))
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
@@ -77,33 +79,37 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
   //  }
 
   def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
-    abstractDao.buddyResult(student, buddy, labwork).jsonResult { buddyResult =>
-      buddyResult match {
-        case Allowed(b) => Ok(Json.obj(
-          "status" -> "OK",
-          "type" -> buddyResult.toString,
-          "buddy" -> Json.toJson(b),
-          "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
-        ))
-        case Almost(b) => Ok(Json.obj(
-          "status" -> "OK",
-          "type" -> buddyResult.toString,
-          "buddy" -> Json.toJson(b),
-          "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
-        ))
-        case Denied(b) => Ok(Json.obj(
-          "status" -> "KO",
-          "type" -> buddyResult.toString,
-          "buddy" -> Json.toJson(b),
-          "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
-        ))
-        case NotExisting(b) => Ok(Json.obj(
-          "status" -> "KO",
-          "type" -> buddyResult.toString,
-          "buddy" -> None,
-          "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
-        ))
-      }
+    val buddyResult = for {
+      labworkId <- labwork.uuidF
+      studentId <- student.uuidF
+      result <- abstractDao.buddyResult(studentId, buddy, labworkId)
+    } yield result
+
+    buddyResult.jsonResult {
+      case Allowed(b) => Ok(Json.obj(
+        "status" -> "OK",
+        "type" -> buddyResult.toString,
+        "buddy" -> Json.toJson(b),
+        "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
+      ))
+      case Almost(b) => Ok(Json.obj(
+        "status" -> "OK",
+        "type" -> buddyResult.toString,
+        "buddy" -> Json.toJson(b),
+        "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
+      ))
+      case Denied(b) => Ok(Json.obj(
+        "status" -> "KO",
+        "type" -> buddyResult.toString,
+        "buddy" -> Json.toJson(b),
+        "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
+      ))
+      case NotExisting(b) => Ok(Json.obj(
+        "status" -> "KO",
+        "type" -> buddyResult.toString,
+        "buddy" -> None,
+        "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
+      ))
     }
   }
 

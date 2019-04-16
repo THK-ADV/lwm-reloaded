@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -12,16 +12,8 @@ import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class GroupLabworkTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
-
-case class GroupStudentTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.contains(UUID.fromString(value))
-}
-
-case class GroupLabelTableFilter(value: String) extends TableFilter[GroupTable] {
-  override def predicate = _.label.toLowerCase === value.toLowerCase
+object GroupDao extends TableFilter[GroupTable] {
+  def studentFilter(student: UUID): TableFilterPredicate = _.contains(student)
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
@@ -47,7 +39,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
 
     db.run(mandatory
       .joinLeft(groupMembershipQuery).on(_._1.id === _.group)
-      .joinLeft(TableQuery[UserTable]).on((l, r) => l._2.map(_.student === r.id).getOrElse(false))
+      .joinLeft(TableQuery[UserTable]).on((l, r) => l._2.map(_.user === r.id).getOrElse(false))
       .result.map(_.groupBy(_._1._1._1).map {
       case (group, dependencies) =>
         val members = dependencies.flatMap(_._2)
@@ -58,7 +50,7 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {
-    filterBy(List(IdFilter(entity.id.toString)))
+    filterBy(List(TableFilter.idFilter(entity.id)))
   }
 
   override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean = {

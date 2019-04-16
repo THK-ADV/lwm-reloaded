@@ -1,27 +1,19 @@
 package dao
 
-import java.util.UUID
-
-import dao.helper.DatabaseExpander
+import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import utils.LwmDateTime._
+import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class TimetableLabworkFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.labwork === UUID.fromString(value)
-}
+trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] with TableFilter[TimetableTable] {
 
-case class TimetableCourseFilter(value: String) extends TableFilter[TimetableTable] {
-  override def predicate = _.memberOfCourse(value)
-}
-
-trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLike] {
+  import TableFilter.labworkFilter
 
   override val tableQuery = TableQuery[TimetableTable]
 
@@ -42,7 +34,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  def withBlacklists(tableFilter: List[TableFilter[TimetableTable]]) = collectDependencies(filterBy(tableFilter)) {
+  def withBlacklists(tableFilter: List[TableFilterPredicate]) = collectDependencies(filterBy(tableFilter)) {
     case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
   }
 
@@ -62,7 +54,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     } yield (q, l)
 
     val innerBlacklist = timetableBlacklistQuery.join(TableQuery[BlacklistTable]).on(_.blacklist === _.id)
-    val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.supervisor === _.id)
+    val innerSupervisor = timetableEntrySupervisorQuery.join(TableQuery[UserTable]).on(_.user === _.id)
     val innerTimetableEntry = timetableEntryQuery.join(TableQuery[RoomTable]).on(_.room === _.id).joinLeft(innerSupervisor).on(_._1.id === _._1.timetableEntry)
 
     val action = mandatory.joinLeft(innerBlacklist).on(_._1.id === _._1.timetable).joinLeft(innerTimetableEntry).on(_._1._1.id === _._1._1.timetable).map {
@@ -79,11 +71,11 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def existsQuery(entity: TimetableDb): Query[TimetableTable, TimetableDb, Seq] = {
-    filterBy(List(TimetableLabworkFilter(entity.labwork.toString)))
+    filterBy(List(labworkFilter(entity.labwork)))
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    import utils.LwmDateTime.SqlDateConverter
+    import utils.date.DateTimeOps.SqlDateConverter
 
     (existing.start.localDate != toUpdate.start.localDate ||
       existing.entries != toUpdate.entries ||

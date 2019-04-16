@@ -1,7 +1,5 @@
 package database.helper
 
-import play.api.libs.json.Writes
-
 import scala.util.{Failure, Success, Try}
 
 sealed trait LdapUserStatus {
@@ -16,16 +14,17 @@ object LdapUserStatus {
     case StudentStatus.label => Success(StudentStatus)
     case _ => Failure(new Throwable(s"status must be either ${EmployeeStatus.label}, ${LecturerStatus.label} or ${StudentStatus.label}, but was $label"))
   }
+
+  case object EmployeeStatus extends LdapUserStatus {
+    override val label = "employee"
+  }
+
+  case object LecturerStatus extends LdapUserStatus {
+    override val label = "lecturer"
+  }
+
+  case object StudentStatus extends LdapUserStatus {
+    override val label = "student"
+  }
 }
 
-case object EmployeeStatus extends LdapUserStatus {
-  override val label = "employee"
-}
-
-case object LecturerStatus extends LdapUserStatus {
-  override val label = "lecturer"
-}
-
-case object StudentStatus extends LdapUserStatus {
-  override val label = "student"
-}

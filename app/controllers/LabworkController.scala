@@ -3,12 +3,13 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.{LabworkDb, LabworkTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
+import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import database.{LabworkDb, LabworkTable, TableFilter}
 import security.SecurityActionChain
 
 import scala.util.{Failure, Try}
@@ -18,7 +19,6 @@ object LabworkController {
   lazy val degreeAttribute = "degree"
   lazy val semesterAttribute = "semester"
   lazy val courseAttribute = "course"
-
   lazy val subscribableAttribute = "subscribable"
   lazy val publishedAttribute = "published"
 }
@@ -71,19 +71,23 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
     delete(id, NonSecureBlock)(request)
   }
 
-  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[LabworkTable]]]): Try[List[TableFilter[LabworkTable]]] = {
-    import controllers.LabworkController._
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import LabworkController._
+    import dao.LabworkDao._
 
-    (appendTo, (attribute, values)) match {
-      case (list, (`labelAttribute`, label)) => list.map(_.+:(LabworkLabelFilter(label)))
-      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(LabworkDegreeFilter(degree)))
-      case (list, (`semesterAttribute`, semester)) => list.map(_.+:(LabworkSemesterFilter(semester)))
-      case (list, (`courseAttribute`, course)) => list.map(_.+:(LabworkCourseFilter(course)))
-      case (list, (`subscribableAttribute`, subscribable)) => list.map(_.+:(LabworkSubscribableFilter(subscribable)))
-      case (list, (`publishedAttribute`, published)) => list.map(_.+:(LabworkPublishedFilter(published)))
-      case _ => Failure(new Throwable("Unknown attribute"))
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`degreeAttribute`, d) => d.uuid map degreeFilter
+      case (`semesterAttribute`, s) => s.uuid map semesterFilter
+      case (`courseAttribute`, c) => c.uuid map courseFilter
+      case (`subscribableAttribute`, s) => s.boolean map subscribableFilter
+      case (`publishedAttribute`, p) => p.boolean map publishedFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
-  override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = LabworkDb.from(protocol, existingId)
+  override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = {
+    import utils.date.DateTimeOps.DateTimeConverter
+    LabworkDb(protocol.label, protocol.description, protocol.semester, protocol.course, protocol.degree, protocol.subscribable, protocol.published, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
+  }
 }
