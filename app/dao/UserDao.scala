@@ -3,7 +3,8 @@ package dao
 import java.util.UUID
 
 import dao.helper.{DBResult, TableFilter}
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
 import database.{UserDb, UserTable}
 import javax.inject.Inject
 import models._

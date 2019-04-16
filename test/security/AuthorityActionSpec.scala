@@ -8,7 +8,6 @@ import controllers.helper.RequestOps
 import dao.helper.DBResult.Created
 import dao.{AuthorityDao, UserDao}
 import database.UserDb
-import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models.Authority
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -21,6 +20,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import database.helper.LdapUserStatus._
 
 import scala.concurrent.Future
 

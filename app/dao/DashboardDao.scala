@@ -3,12 +3,9 @@ package dao
 import java.util.UUID
 
 import dao.helper.Core
-import database.helper.{EmployeeStatus, StudentStatus}
 import javax.inject.Inject
-import models.{AuthorityAtom, Dashboard, EmployeeDashboard, ReportCardEntryType, ReportCardEvaluationAtom, Semester, StudentDashboard, StudentLike, User}
-import org.joda.time.LocalDate
+import models.{Dashboard, Semester, StudentLike, User}
 import slick.jdbc.PostgresProfile.api._
-import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
 

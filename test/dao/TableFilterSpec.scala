@@ -5,7 +5,7 @@ import java.util.UUID
 
 import base.{DateGenerator, PostgresDbSpec}
 import database._
-import database.helper.EmployeeStatus
+import database.helper.LdapUserStatus.EmployeeStatus
 import play.api.inject.guice.GuiceableModule
 import slick.jdbc.PostgresProfile.api._
 

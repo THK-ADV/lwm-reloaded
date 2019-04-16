@@ -6,7 +6,8 @@ import dao.UserDao._
 import dao.helper.DBResult
 import dao.helper.TableFilter.idFilter
 import database._
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.inject.guice.GuiceableModule

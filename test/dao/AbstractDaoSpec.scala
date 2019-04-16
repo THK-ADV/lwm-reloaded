@@ -6,7 +6,7 @@ import java.util.UUID
 import base.PostgresDbSpec
 import dao.helper.ModelAlreadyExists
 import database._
-import database.helper.{EmployeeStatus, StudentStatus}
+import database.helper.LdapUserStatus._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.dbio.Effect.Write

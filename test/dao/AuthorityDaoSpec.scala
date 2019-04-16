@@ -4,11 +4,11 @@ import java.util.UUID
 
 import dao.helper.TableFilter
 import database._
-import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models._
 import org.joda.time.DateTime
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
+import database.helper.LdapUserStatus._
 
 class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
 

@@ -3,7 +3,8 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import database.helper.{EmployeeStatus, LdapUserStatus, LecturerStatus, StudentStatus}
+import database.helper.LdapUserStatus
+import database.helper.LdapUserStatus._
 import models.{Employee, Lecturer, Student, UniqueDbEntity, User}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
