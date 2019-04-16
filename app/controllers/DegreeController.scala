@@ -12,10 +12,12 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-//object DegreeController {
-//  lazy val labelAttribute = "label"
-//  lazy val abbreviationAttribute = "abbreviation"
-//}
+import scala.util.{Failure, Try}
+
+object DegreeController {
+  lazy val labelAttribute = "label"
+  lazy val abbreviationAttribute = "abbreviation"
+}
 
 @Singleton
 final class DegreeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: DegreeDao, val securedAction: SecurityActionChain)
@@ -32,15 +34,15 @@ final class DegreeController @Inject()(cc: ControllerComponents, val authorityDa
 
   override protected implicit val reads: Reads[DegreeProtocol] = DegreeProtocol.reads
 
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[DegreeTable]]]): Try[List[TableFilter[DegreeTable]]] = {
-//    import controllers.DegreeController._
-//
-//    (appendTo, (attribute, value)) match {
-//      case (list, (`labelAttribute`, label)) => list.map(_.+:(DegreeLabelFilter(label)))
-//      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(DegreeAbbreviationFilter(abbreviation)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import DegreeController._
+
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`abbreviationAttribute`, a) => a.makeAbbrevFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: DegreeProtocol, existingId: Option[UUID]): DegreeDb = {
     import utils.date.DateTimeOps.DateTimeConverter

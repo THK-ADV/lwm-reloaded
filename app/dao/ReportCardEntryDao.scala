@@ -15,16 +15,6 @@ import utils.date.DateTimeOps._
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
-  def studentFilter(student: UUID): TableFilterPredicate = TableFilter.userFilter(student)
-
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
-
-  def courseFilter(course: UUID): TableFilterPredicate = TableFilter.courseFilter(course)
-
-  def roomFilter(room: UUID): TableFilterPredicate = TableFilter.roomFilter(room)
-
-  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterEquals(label)
-
   def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s => // TODO test
     val schedule = s.id === scheduleEntry
     val ordinary = s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date

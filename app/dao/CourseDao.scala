@@ -9,21 +9,18 @@ import slick.jdbc.PostgresProfile.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 object CourseDao extends TableFilter[CourseTable] {
-  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterEquals(label)
-
-  def abbreviationFilter(abbreviation: String): TableFilterPredicate = TableFilter.abbreviationFilter(abbreviation)
-
   def semesterIndexFilter(index: Int): TableFilterPredicate = _.semesterIndex === index
 }
 
 trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
 
   import CourseDao._
+  import dao.helper.TableFilter.labelFilterEquals
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
-    filterBy(List(labelFilter(entity.label), semesterIndexFilter(entity.semesterIndex)))
+    filterBy(List(labelFilterEquals(entity.label), semesterIndexFilter(entity.semesterIndex)))
   }
 
   override protected def shouldUpdate(existing: CourseDb, toUpdate: CourseDb): Boolean = {

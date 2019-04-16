@@ -62,7 +62,7 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
 
     (attribute, value) match {
       case (`globalAttribute`, g) => g.boolean map globalFilter
-      case (`labelAttribute`, l) => l.labelEqualsFilter
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
       case _ => makeTimeRangeFilter(attribute, value)
     }
   }

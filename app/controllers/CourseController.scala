@@ -13,11 +13,12 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
 
 import scala.concurrent.Future
+import scala.util.{Failure, Try}
 
 object CourseController {
   lazy val labelAttribute = "label"
   lazy val abbreviationAttribute = "abbreviation"
-//  lazy val lecturerAttribute = "lecturer"
+  lazy val lecturerAttribute = "lecturer"
   lazy val semesterIndexAttribute = "semesterIndex"
 }
 
@@ -77,16 +78,18 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     } yield course).deleted
   }
 
-//  override protected def tableFilter(attribute: String, values: String)(appendTo: Try[List[TableFilter[CourseTable]]]): Try[List[TableFilter[CourseTable]]] = {
-//    import controllers.CourseController._
-//
-//    (appendTo, (attribute, values)) match {
-//      case (list, (`labelAttribute`, label)) => list.map(_.+:(CourseLabelFilter(label)))
-//      case (list, (`abbreviationAttribute`, abbreviation)) => list.map(_.+:(CourseAbbreviationFilter(abbreviation)))
-//      case (list, (`semesterIndexAttribute`, semesterIndex)) => list.map(_.+:(CourseSemesterIndexFilter(semesterIndex)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import CourseController._
+    import dao.CourseDao._
+
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`abbreviationAttribute`, a) => a.makeAbbrevFilter
+      case (`semesterIndexAttribute`, s) => s.int map semesterIndexFilter
+      case (`lecturerAttribute`, l) => l.makeUserFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(EmployeeRole, StudentRole))

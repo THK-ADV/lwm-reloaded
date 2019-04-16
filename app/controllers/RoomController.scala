@@ -12,6 +12,8 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.util.{Failure, Try}
+
 object RoomController {
   lazy val labelAttribute = "label"
 }
@@ -30,15 +32,14 @@ final class RoomController @Inject()(cc: ControllerComponents, val authorityDao:
     case _ => PartialSecureBlock(List(Admin))
   }
 
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import RoomController._
 
-  //  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[RoomTable]]]): Try[List[TableFilter[RoomTable]]] = {
-  //    import controllers.RoomController._
-  //
-  //    (appendTo, (attribute, value)) match {
-  //      case (list, (`labelAttribute`, label)) => list.map(_.+:(RoomLabelFilter(label)))
-  //      case _ => Failure(new Throwable("Unknown attribute"))
-  //    }
-  //  }
+    (attribute, value) match {
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: RoomProtocol, existingId: Option[UUID]): RoomDb = {
     import utils.date.DateTimeOps.DateTimeConverter

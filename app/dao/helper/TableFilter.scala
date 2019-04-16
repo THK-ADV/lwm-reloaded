@@ -37,6 +37,10 @@ object TableFilter {
 
   def courseByReportCardEntryFilter[T <: ReportCardEntryIdTable](course: UUID): T => Rep[Boolean] = _.reportCardEntryFk.map(_.memberOfCourse(course)).exists
 
+  def userByReportCardEntryFilter[T <: ReportCardEntryIdTable](user: UUID): T => Rep[Boolean] = _.reportCardEntryFk.filter(_.user === user).exists
+
+  def roomByReportCardEntryFilter[T <: ReportCardEntryIdTable](room: UUID): T => Rep[Boolean] = _.reportCardEntryFk.filter(_.room === room).exists
+
   def groupFilter[T <: GroupIdTable](group: UUID): T => Rep[Boolean] = _.group === group
 
   def onDateFilter[T <: DateStartEndTable](date: Date): T => Rep[Boolean] = _.date === date

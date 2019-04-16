@@ -95,7 +95,7 @@ final class ReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[ReportCardE
     TableQuery[RoomTable].forceInsertAll(rooms)
   )
 
-  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(100, 8, withRescheduledAndRetry = true)(privateLabs, privateStudents)
+  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8, withRescheduledAndRetry = true)(privateLabs, privateStudents)
 
   override protected val numberOfUpdates: Int = 10
 

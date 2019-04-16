@@ -6,6 +6,7 @@ import database.{CourseDb, CourseTable, UserTable}
 import models._
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
+import dao.helper.TableFilter
 
 class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
 
@@ -17,7 +18,7 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
   "A CourseServiceSpec " should {
 
     "filter courses by label" in {
-      val labelFilter = List(CourseDao.labelFilter("3"))
+      val labelFilter = List(TableFilter.labelFilterEquals("3"))
       async(dao.get(labelFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.label == "3").map(_.toUniqueEntity))
     }
 
@@ -27,13 +28,13 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
     }
 
     "filter courses by abbreviation" in {
-      val abbreviationFilter = List(CourseDao.abbreviationFilter("4"))
+      val abbreviationFilter = List(TableFilter.abbreviationFilter("4"))
       async(dao.get(abbreviationFilter, atomic = false))(_ should contain theSameElementsAs dbEntities.filter(_.abbreviation == "4").map(_.toUniqueEntity))
     }
 
     "filter courses by abbreviation and semester index" in {
       val abbreviationAndSemesterIndexFilter = List(
-        CourseDao.abbreviationFilter("5"),
+        TableFilter.abbreviationFilter("5"),
         CourseDao.semesterIndexFilter(2)
       )
 
@@ -46,7 +47,7 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
 
     "filter courses by label and semester" in {
       val labelAndSemesterIndexFilter = List(
-        CourseDao.labelFilter("six"),
+        TableFilter.labelFilterEquals("six"),
         CourseDao.semesterIndexFilter(6)
       )
 

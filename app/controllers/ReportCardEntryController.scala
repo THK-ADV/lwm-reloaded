@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryDb, ReportCardEntryTable}
 import javax.inject.{Inject, Singleton}
@@ -13,6 +14,7 @@ import security.SecurityActionChain
 import service._
 
 import scala.concurrent.Future
+import scala.util.Try
 
 object ReportCardEntryController {
   lazy val studentAttribute = "student"
@@ -20,17 +22,12 @@ object ReportCardEntryController {
   lazy val labworkAttribute = "labwork"
   lazy val roomAttribute = "room"
   lazy val scheduleEntryAttribute = "scheduleEntry"
-
-  lazy val dateAttribute = "date"
-  lazy val startAttribute = "start"
-  lazy val endAttribute = "end"
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 }
 
 @Singleton
 final class ReportCardEntryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryDao, val scheduleEntryDao: ScheduleEntryDao, val assignmentPlanService: AssignmentPlanDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc) {
+  extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
+    with TimeRangeTableFilter[ReportCardEntryTable] {
 
   import controllers.ReportCardEntryController._
 
@@ -39,22 +36,6 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
   override protected implicit val writes: Writes[ReportCardEntryLike] = ReportCardEntryLike.writes
 
   override protected implicit val reads: Reads[ReportCardEntryProtocol] = ReportCardEntryProtocol.reads
-
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEntryTable]]]): Try[List[TableFilter[ReportCardEntryTable]]] = {
-//    (appendTo, (attribute, value)) match {
-//      case (list, (`studentAttribute`, student)) => list.map(_.+:(ReportCardEntryStudentFilter(student)))
-//      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardEntryCourseFilter(course)))
-//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardEntryLabworkFilter(labwork)))
-//      case (list, (`roomAttribute`, room)) => list.map(_.+:(ReportCardEntryRoomFilter(room)))
-//      case (list, (`scheduleEntryAttribute`, sEntry)) => list.map(_.+:(ReportCardEntryScheduleEntryFilter(sEntry)))
-//      case (list, (`dateAttribute`, date)) => list.map(_.+:(ReportCardEntryDateFilter(date)))
-//      case (list, (`startAttribute`, start)) => list.map(_.+:(ReportCardEntryStartFilter(start)))
-//      case (list, (`endAttribute`, end)) => list.map(_.+:(ReportCardEntryEndFilter(end)))
-//      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ReportCardEntrySinceFilter(since)))
-//      case (list, (`untilAttribute`, until)) => list.map(_.+:(ReportCardEntryUntilFilter(until)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
 
   override protected def toDbModel(protocol: ReportCardEntryProtocol, existingId: Option[UUID]): ReportCardEntryDb = ???
 
@@ -90,6 +71,20 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
       reportCardEntries = ReportCardService.reportCards(schedules.head, maybePlan.head)
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
+  }
+
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ReportCardEntryController._
+    import ReportCardEntryDao._
+
+    (attribute, value) match {
+      case (`studentAttribute`, s) => s.makeUserFilter
+      case (`courseAttribute`, c) => c.makeCourseFilter
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`roomAttribute`, r) => r.makeRoomFilter
+      case (`scheduleEntryAttribute`, s) => s.uuid map scheduleEntryFilter
+      case _ => makeTimeRangeFilter(attribute, value)
+    }
   }
 
   def createByCopy(course: String) = restrictedContext(course)(Create) asyncAction { _ =>

@@ -3,6 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
+import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
@@ -11,6 +12,8 @@ import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
+
+import scala.util.{Failure, Success, Try}
 
 object UserController {
   lazy val statusAttribute = "status"
@@ -37,18 +40,19 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
     case _ => PartialSecureBlock(List(God))
   }
 
-  //  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[UserTable]]]): Try[List[TableFilter[UserTable]]] = {
-  //    import controllers.UserController._
-  //
-  //    (appendTo, (attribute, value)) match {
-  //      case (list, (`statusAttribute`, status)) => list.map(_.+:(UserStatusFilter(status)))
-  //      case (list, (`systemIdAttribute`, systemId)) => list.map(_.+:(UserSystemIdFilter(systemId)))
-  //      case (list, (`lastnameAttribute`, lastname)) => list.map(_.+:(UserLastnameFilter(lastname)))
-  //      case (list, (`firstnameAttribute`, firstname)) => list.map(_.+:(UserFirstnameFilter(firstname)))
-  //      case (list, (`degreeAttribute`, degree)) => list.map(_.+:(UserDegreeFilter(degree)))
-  //      case _ => Failure(new Throwable("Unknown attribute"))
-  //    }
-  //  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import UserController._
+    import dao.UserDao._
+
+    (attribute, value) match {
+      case (`statusAttribute`, s) => LdapUserStatus(s) map statusFilter
+      case (`degreeAttribute`, d) => d.uuid map enrollmentFilter
+      case (`systemIdAttribute`, s) => Success(systemIdFilter(s))
+      case (`firstnameAttribute`, f) => Success(firstnameFilter(f))
+      case (`lastnameAttribute`, l) => Success(lastnameFilter(l))
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): UserDb = ???
 

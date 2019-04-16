@@ -15,15 +15,11 @@ object LabworkDao extends TableFilter[LabworkTable] {
 
   def subscribableFilter(subscribable: Boolean): TableFilterPredicate = _.subscribable === subscribable
 
-  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterLike(label)
-
   def courseFilter(course: UUID): TableFilterPredicate = _.course === course
 
   def semesterFilter(semester: UUID): TableFilterPredicate = _.semester === semester
 
   def degreeFilter(degree: UUID): TableFilterPredicate = _.degree === degree
-
-  def idFilter(id: UUID): TableFilterPredicate = TableFilter.idFilter(id)
 }
 
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {

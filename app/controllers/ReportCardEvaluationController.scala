@@ -14,18 +14,19 @@ import security.SecurityActionChain
 import service.ReportCardService
 
 import scala.concurrent.Future
+import scala.util.{Failure, Try}
 
 object ReportCardEvaluationController {
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
   lazy val studentAttribute = "student"
 
-  lazy val labelAttribute = "label"
+  /*lazy val labelAttribute = "label" // TODO
   lazy val boolAttribute = "bool"
   lazy val intAttribute = "int"
   lazy val minIntAttribute = "minInt"
   lazy val maxIntAttribute = "maxInt"
-  lazy val explicitAttribute = "explicit"
+  lazy val explicitAttribute = "explicit"*/
 }
 
 @Singleton
@@ -110,21 +111,16 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
 
   override protected implicit val reads: Reads[ReportCardEvaluationProtocol] = ReportCardEvaluationProtocol.reads
 
-  //  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardEvaluationTable]]]): Try[List[TableFilter[ReportCardEvaluationTable]]] = {
-  //    (appendTo, (attribute, value)) match {
-  //      case (list, (`courseAttribute`, course)) => list.map(_.+:(CourseFilter(course)))
-  //      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(LabworkFilter(labwork)))
-  //      case (list, (`studentAttribute`, student)) => list.map(_.+:(StudentFilter(student)))
-  //      case (list, (`labelAttribute`, label)) => list.map(_.+:(LabelFilter(label)))
-  //      case (list, (`boolAttribute`, bool)) => list.map(_.+:(BoolFilter(bool)))
-  //      case (list, (`intAttribute`, int)) => list.map(_.+:(IntFilter(int)))
-  //      case (list, (`minIntAttribute`, minInt)) => list.map(_.+:(MinIntFilter(minInt)))
-  //      case (list, (`maxIntAttribute`, maxInt)) => list.map(_.+:(MaxIntFilter(maxInt)))
-  //      case (list, (`explicitAttribute`, explicit)) if explicit == true.toString => list.map(_.+:(IntFilter(ReportCardService.EvaluatedExplicit.toString)))
-  //      case (_, (`explicitAttribute`, other)) => Failure(new Throwable(s"Value of $explicitAttribute can only be true, but was $other"))
-  //      case _ => Failure(new Throwable("Unknown attribute"))
-  //    }
-  //  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ReportCardEvaluationController._
+
+    (attribute, value) match {
+      case (`courseAttribute`, c) => c.makeCourseFilter
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`studentAttribute`, s) => s.makeUserFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb = {
     ReportCardEvaluationDb(protocol.student, protocol.labwork, protocol.label, protocol.bool, protocol.int, id = existingId getOrElse UUID.randomUUID)

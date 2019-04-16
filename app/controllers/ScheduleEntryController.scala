@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.GroupingStrategyAttributeFilter
+import controllers.helper.{GroupingStrategyAttributeFilter, TimeRangeTableFilter}
 import dao._
 import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
 import javax.inject.{Inject, Singleton}
@@ -16,18 +16,13 @@ import service._
 import utils.Gen
 
 import scala.concurrent.Future
+import scala.util.Try
 
 object ScheduleEntryController {
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
   lazy val groupAttribute = "group"
   lazy val supervisorAttribute = "supervisor"
-
-  lazy val dateAttribute = "date"
-  lazy val startAttribute = "start"
-  lazy val endAttribute = "end"
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 
   lazy val popAttribute = "pops"
   lazy val genAttribute = "gens"
@@ -48,7 +43,8 @@ final class ScheduleEntryController @Inject()(
   val labworkApplicationService2: LabworkApplicationDao,
   val groupDao: GroupDao,
   val securedAction: SecurityActionChain
-) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter {
+) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter
+  with TimeRangeTableFilter[ScheduleEntryTable] {
 
   import controllers.ScheduleEntryController._
   import dao.helper.TableFilter.labworkFilter
@@ -149,20 +145,18 @@ final class ScheduleEntryController @Inject()(
     ???
   }
 
-  //  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ScheduleEntryTable]]]): Try[List[TableFilter[ScheduleEntryTable]]] = {
-  //    (appendTo, (attribute, value)) match {
-  //      case (list, (`courseAttribute`, course)) => list.map(_.+:(ScheduleEntryCourseFilter(course)))
-  //      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ScheduleEntryLabworkFilter(labwork)))
-  //      case (list, (`groupAttribute`, group)) => list.map(_.+:(ScheduleEntryGroupFilter(group)))
-  //      case (list, (`supervisorAttribute`, supervisor)) => list.map(_.+:(ScheduleEntrySupervisorFilter(supervisor)))
-  //      case (list, (`dateAttribute`, date)) => list.map(_.+:(ScheduleEntryDateFilter(date)))
-  //      case (list, (`startAttribute`, start)) => list.map(_.+:(ScheduleEntryStartFilter(start)))
-  //      case (list, (`endAttribute`, end)) => list.map(_.+:(ScheduleEntryEndFilter(end)))
-  //      case (list, (`sinceAttribute`, since)) => list.map(_.+:(ScheduleEntrySinceFilter(since)))
-  //      case (list, (`untilAttribute`, until)) => list.map(_.+:(ScheduleEntryUntilFilter(until)))
-  //      case _ => Failure(new Throwable("Unknown attribute"))
-  //    }
-  //  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ScheduleEntryController._
+    import dao.ScheduleEntryDao.supervisorFilter
+
+    (attribute, value) match {
+      case (`courseAttribute`, c) => c.makeCourseFilter
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`groupAttribute`, g) => g.makeGroupFilter
+      case (`supervisorAttribute`, s) => s.uuid map supervisorFilter
+      case _ => makeTimeRangeFilter(attribute, value)
+    }
+  }
 
   override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
 

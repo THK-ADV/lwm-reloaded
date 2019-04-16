@@ -15,6 +15,7 @@ import security.SecurityActionChain
 import service._
 
 import scala.concurrent.Future
+import scala.util.{Failure, Try}
 
 object GroupController {
   lazy val labworkAttribute = "labwork"
@@ -55,14 +56,17 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
     case _ => PartialSecureBlock(List(God))
   }
 
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[GroupTable]]]): Try[List[TableFilter[GroupTable]]] = {
-//    (appendTo, (attribute, value)) match {
-//      case (list, (`studentAttribute`, student)) => list.map(_.+:(GroupStudentTableFilter(student)))
-//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(GroupLabworkTableFilter(labwork)))
-//      case (list, (`labelAttribute`, label)) => list.map(_.+:(GroupLabelTableFilter(label)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import GroupController._
+    import dao.GroupDao._
+
+    (attribute, value) match {
+      case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`studentAttribute`, s) => s.uuid map studentFilter
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: GroupProtocol, existingId: Option[UUID]): GroupDb = ???
 

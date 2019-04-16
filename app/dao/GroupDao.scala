@@ -13,11 +13,7 @@ import slick.jdbc.PostgresProfile.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 object GroupDao extends TableFilter[GroupTable] {
-  def labelFilter(label: String): TableFilterPredicate = TableFilter.labelFilterEquals(label)
-
   def studentFilter(student: UUID): TableFilterPredicate = _.contains(student)
-
-  def labworkFilter(labwork: UUID): TableFilterPredicate = TableFilter.labworkFilter(labwork)
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {

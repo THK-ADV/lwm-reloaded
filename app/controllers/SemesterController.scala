@@ -12,6 +12,8 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.util.{Failure, Success, Try}
+
 object SemesterController {
   lazy val startAttribute = "start"
   lazy val endAttribute = "end"
@@ -24,7 +26,7 @@ object SemesterController {
 }
 
 @Singleton
-final class SemesterController @Inject() (cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecurityActionChain)
+final class SemesterController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[SemesterProtocol, SemesterTable, SemesterDb, Semester](cc) {
 
   override protected implicit val writes: Writes[Semester] = Semester.writes
@@ -37,21 +39,23 @@ final class SemesterController @Inject() (cc: ControllerComponents, val authorit
     case _ => PartialSecureBlock(List(Admin))
   }
 
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[SemesterTable]]]): Try[List[TableFilter[SemesterTable]]] = {
-//    import controllers.SemesterController._
-//
-//    (appendTo, (attribute, value)) match {
-//      case (list, (`labelAttribute`, label)) => list.map(_.+:(SemesterLabelFilter(label)))
-//      case (list, (`abbreviationAttribute`, abbrev)) => list.map(_.+:(SemesterAbbreviationFilter(abbrev)))
-//      case (list, (`startAttribute`, end)) => list.map(_.+:(SemesterStartFilter(end)))
-//      case (list, (`endAttribute`, start)) => list.map(_.+:(SemesterEndFilter(start)))
-//      case (list, (`sinceAttribute`, since)) => list.map(_.+:(SemesterSinceFilter(since)))
-//      case (list, (`untilAttribute`, until)) => list.map(_.+:(SemesterUntilFilter(until)))
-//      case (list, (`selectAttribute`, current)) if current == currentValue => list.map(_.+:(SemesterCurrentFilter))
-//      case (_, (`selectAttribute`, other)) => Failure(new Throwable(s"Value of $selectAttribute should be $currentValue, but was $other"))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import SemesterController._
+    import dao.SemesterDao._
+    import utils.date.DateTimeOps.StringConverter
+
+    (attribute, value) match {
+      case (`startAttribute`, s) => s.localDate map startFilter
+      case (`endAttribute`, e) => e.localDate map endFilter
+      case (`sinceAttribute`, s) => s.localDate map sinceFilter
+      case (`untilAttribute`, u) => u.localDate map untilFilter
+      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
+      case (`abbreviationAttribute`, a) => a.makeAbbrevFilter
+      case (`selectAttribute`, `currentValue`) => Success(currentFilter())
+      case (`selectAttribute`, other) => Failure(new Throwable(s"Value of $selectAttribute must be $currentValue, but was $other"))
+      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+    }
+  }
 
   override protected def toDbModel(protocol: SemesterProtocol, existingId: Option[UUID]): SemesterDb = {
     import utils.date.DateTimeOps.{DateTimeConverter, LocalDateConverter}

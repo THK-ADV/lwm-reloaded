@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.helper._
 import dao.AbstractDao
 import dao.helper.{Retrieved, TableFilter}
-import database.{LabelTable, LabworkIdTable, UniqueTable}
+import database.{AbbreviationTable, EntryTypeTable, GroupIdTable, LabelTable, LabworkIdTable, ReportCardEntryIdTable, RoomIdTable, UniqueTable, UserIdTable}
 import javax.inject.Inject
 import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
@@ -134,13 +134,35 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
     def boolean: Try[Boolean] = Try(string.toBoolean)
 
+    def int: Try[Int] = Try(string.toInt)
+
     def makeCourseFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map courseFilter
 
     def makeLabworkFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map labworkFilter
 
-    def labelLikeFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterLike(string))
+    def makeLabelLikeFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterLike(string))
 
-    def labelEqualsFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterEquals(string))
+    def makeLabelEqualsFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterEquals(string))
+
+    def makeAbbrevFilter[A <: AbbreviationTable]: Try[A => Rep[Boolean]] = Success(abbreviationFilter(string))
+
+    def makeUserFilter[A <: UserIdTable]: Try[A => Rep[Boolean]] = string.uuid map userFilter
+
+    def makeRoomFilter[A <: RoomIdTable]: Try[A => Rep[Boolean]] = string.uuid map roomFilter
+
+    def makeEntryTypeFilter[A <: EntryTypeTable]: Try[A => Rep[Boolean]] = Success(entryTypeFilter(string))
+
+    def makeReportCardEntryFilter[A <: ReportCardEntryIdTable]: Try[A => Rep[Boolean]] = string.uuid map reportCardEntryFilter
+
+    def makeUserByReportCardEntryFilter[A <: ReportCardEntryIdTable]: Try[A => Rep[Boolean]] = string.uuid map userByReportCardEntryFilter
+
+    def makeLabworkByReportCardEntryFilter[A <: ReportCardEntryIdTable]: Try[A => Rep[Boolean]] = string.uuid map labworkByReportCardEntryFilter
+
+    def makeCourseByReportCardEntryFilter[A <: ReportCardEntryIdTable]: Try[A => Rep[Boolean]] = string.uuid map courseByReportCardEntryFilter
+
+    def makeRoomByReportCardEntryFilter[A <: ReportCardEntryIdTable]: Try[A => Rep[Boolean]] = string.uuid map roomByReportCardEntryFilter
+
+    def makeGroupFilter[A <: GroupIdTable]: Try[A => Rep[Boolean]] = string.uuid map groupFilter
   }
 
 }

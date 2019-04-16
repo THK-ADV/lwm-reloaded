@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
 import javax.inject.{Inject, Singleton}
@@ -12,24 +13,20 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
+import scala.util.Try
+
 object ReportCardRescheduledController {
   lazy val reportCardEntryAttribute = "reportCardEntry"
-
   lazy val studentAttribute = "student"
   lazy val labworkAttribute = "labwork"
   lazy val courseAttribute = "course"
   lazy val roomAttribute = "room"
-
-  lazy val dateAttribute = "date"
-  lazy val startAttribute = "start"
-  lazy val endAttribute = "end"
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 }
 
 @Singleton
 final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc) {
+  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
+    with TimeRangeTableFilter[ReportCardRescheduledTable] {
 
   import controllers.ReportCardRescheduledController._
 
@@ -37,14 +34,18 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
 
   override protected implicit val reads: Reads[ReportCardRescheduledProtocol] = ReportCardRescheduledProtocol.reads
 
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[ReportCardRescheduledTable]]]): Try[List[TableFilter[ReportCardRescheduledTable]]] = {
-//    (appendTo, (attribute, value)) match { // TODO more attributes
-//      case (list, (`reportCardEntryAttribute`, reportCardEntry)) => list.map(_.+:(ReportCardRescheduledEntryFilter(reportCardEntry)))
-//      case (list, (`labworkAttribute`, labwork)) => list.map(_.+:(ReportCardRescheduledLabworkFilter(labwork)))
-//      case (list, (`courseAttribute`, course)) => list.map(_.+:(ReportCardRescheduledCourseFilter(course)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import ReportCardRescheduledController._
+
+    (attribute, value) match {
+      case (`reportCardEntryAttribute`, e) => e.makeReportCardEntryFilter
+      case (`studentAttribute`, s) => s.makeUserByReportCardEntryFilter
+      case (`labworkAttribute`, l) => l.makeLabworkByReportCardEntryFilter
+      case (`courseAttribute`, c) => c.makeCourseByReportCardEntryFilter
+      case (`roomAttribute`, r) => r.makeRoomByReportCardEntryFilter
+      case _ => makeTimeRangeFilter(attribute, value)
+    }
+  }
 
   override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
     ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)
