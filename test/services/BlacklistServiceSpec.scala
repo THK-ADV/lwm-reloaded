@@ -1,37 +1,39 @@
 package services
 
-/*import akka.util.Timeout
-import base.TestBaseDefinition
+import base.{LwmFakeApplication, TestBaseDefinition}
 import models.Blacklist
-import org.joda.time.{DateTime, LocalDate}
+import org.joda.time.DateTime
 import org.scalatest.WordSpec
-import services.blacklist.BlacklistServiceImpl
+import org.scalatest.time.{Seconds, Span}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.inject.guice.GuiceableModule
+import services.blacklist.BlacklistApiService
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with LwmFakeApplication with GuiceOneAppPerSuite {
 
-final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition {
-  import utils.LwmDateTime._
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val blacklistService = app.injector.instanceOf(classOf[BlacklistApiService])
 
   "A BlacklistServiceSpec" should {
 
     "fetch blacklists from an external api" in {
-      val blacklistService = new BlacklistServiceImpl()
-      val timeout = Timeout(5.seconds)
+      import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
       val year = DateTime.now.getYear
 
-      val result = Await.result(blacklistService.fetchLegalHolidays(year), timeout.duration)
+      val future = blacklistService.fetchLegalHolidays(year)
+      whenReady(future, timeout(Span(5, Seconds))) { result =>
+        result should not be empty
 
-      result should not be empty
-
-      result.foreach { bl =>
-        bl.date.localDate.getYear shouldBe year.toInt
-        bl.start.localTime shouldBe Blacklist.startOfDay
-        bl.end.localTime shouldBe Blacklist.endOfDay
-        bl.global shouldBe true
+        result.foreach { bl =>
+          bl.date.localDate.getYear shouldBe year.toInt
+          bl.start.localTime shouldBe Blacklist.startOfDay
+          bl.end.localTime shouldBe Blacklist.endOfDay
+          bl.global shouldBe true
+        }
       }
-
-      result.map(_.date.localDate) should contain(LocalDate.now.withDayOfYear(1))
     }
   }
-}*/
+
+  override protected def bindings: Seq[GuiceableModule] = Seq.empty
+}

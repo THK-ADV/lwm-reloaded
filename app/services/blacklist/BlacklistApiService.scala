@@ -2,12 +2,14 @@ package services.blacklist
 
 import database.BlacklistDb
 import javax.inject.Inject
+import org.joda.time.LocalDate
 import play.api.libs.json.{JsObject, JsValue}
 import services.Webservice
+import utils.date.DateTimeFormatterPattern
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait BlacklistService {
+trait BlacklistApiService {
   def fetchLegalHolidays(year: Int)(implicit executor: ExecutionContext): Future[List[BlacklistDb]]
 
   protected def shortLegalHolidayLabel(year: Int) = s"NRW $year"
@@ -17,19 +19,19 @@ trait BlacklistService {
   protected def uri(year: Int) = s"http://feiertage.jarmedia.de/api/?jahr=$year&nur_land=NW"
 }
 
-final class BlacklistServiceImpl @Inject()(ws: Webservice) extends BlacklistService {
+final class BlacklistApiServiceImpl @Inject()(ws: Webservice) extends BlacklistApiService with DateTimeFormatterPattern {
 
   def fetchLegalHolidays(year: Int)(implicit executor: ExecutionContext): Future[List[BlacklistDb]] = {
-    Future.successful(List.empty)
-/*    import utils.date.DateTimeOps.StringDateConverter TODO
+    ws.get(uri(year))(j => parse(j, year))
+  }
 
-    ws.get(uri(year)) { json =>
-      val blacklists = for {
-        (key, value) <- json.asOpt[JsObject].fold(Seq.empty[(String, JsValue)])(_.fields) if (value \ "datum").isDefined
-        date = (value \ "datum").as[String]
-      } yield BlacklistDb.entireDay(legalHolidayLabel(year, key), date.localDate, global = true)
+  def parse(json: JsValue, year: Int): List[BlacklistDb] = {
+    val blacklists = for {
+      (key, value) <- json.asOpt[JsObject].fold(Seq.empty[(String, JsValue)])(_.fields) if (value \ "datum").isDefined
+      dateString = (value \ "datum").as[String]
+      date = LocalDate.parse(dateString, dateFormatter)
+    } yield BlacklistDb.entireDay(legalHolidayLabel(year, key), date, global = true)
 
-      blacklists.toList
-    }*/
+    blacklists.toList
   }
 }
