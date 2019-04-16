@@ -6,6 +6,8 @@ import models.genesis.ScheduleEntryGen
 import models.helper.TimetableDateEntry
 import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 
+import scala.util.Try
+
 object DateTimeOps extends DateTimeFormatterPattern {
 
   implicit class LocalDateConverter(val date: LocalDate) {
@@ -30,6 +32,12 @@ object DateTimeOps extends DateTimeFormatterPattern {
 
   implicit class SqlTimestampConverter(val timestamp: Timestamp) {
     def dateTime: DateTime = new DateTime(timestamp.getTime)
+  }
+
+  implicit class StringConverter(val string: String) {
+    def localDate: Try[LocalDate] = Try(LocalDate.parse(string, dateFormatter))
+
+    def localTime: Try[LocalTime] = Try(LocalTime.parse(string, timeFormatter))
   }
 
   def toLocalDateTime(entry: TimetableDateEntry): LocalDateTime = {

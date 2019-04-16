@@ -12,7 +12,7 @@ import models.genesis.{Conflict, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import security.SecurityActionChain
-import services._
+import service._
 import utils.Gen
 
 import scala.concurrent.Future

@@ -5,7 +5,7 @@ import java.util.UUID
 import controllers.helper._
 import dao.AbstractDao
 import dao.helper.{Retrieved, TableFilter}
-import database.{LabworkIdTable, UniqueTable}
+import database.{LabelTable, LabworkIdTable, UniqueTable}
 import javax.inject.Inject
 import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
@@ -132,9 +132,15 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
     def uuidF: Future[UUID] = Future.fromTry(string.uuid)
 
+    def boolean: Try[Boolean] = Try(string.toBoolean)
+
     def makeCourseFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map courseFilter
 
     def makeLabworkFilter[A <: LabworkIdTable]: Try[A => Rep[Boolean]] = string.uuid map labworkFilter
+
+    def labelLikeFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterLike(string))
+
+    def labelEqualsFilter[A <: LabelTable]: Try[A => Rep[Boolean]] = Success(labelFilterEquals(string))
   }
 
 }

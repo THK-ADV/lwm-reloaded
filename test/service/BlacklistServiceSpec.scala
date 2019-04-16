@@ -1,15 +1,14 @@
-package services
+package service
 
-import base.{LwmFakeApplication, TestBaseDefinition}
+import base.TestBaseDefinition
 import models.Blacklist
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
 import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.inject.guice.GuiceableModule
-import services.blacklist.BlacklistApiService
+import service.blacklist.BlacklistApiService
 
-final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with LwmFakeApplication with GuiceOneAppPerSuite {
+final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,6 +33,4 @@ final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with L
       }
     }
   }
-
-  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

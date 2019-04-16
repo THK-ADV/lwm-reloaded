@@ -1,4 +1,4 @@
-package services
+package service
 
 import models.{helper, _}
 import models.helper.{TimetableDateEntry, Weekday}

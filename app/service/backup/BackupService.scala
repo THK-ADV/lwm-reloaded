@@ -1,4 +1,4 @@
-package services.backup
+package service.backup
 
 import java.io.File
 
@@ -8,7 +8,7 @@ import scala.util.Try
 
 trait BackupService {
 
-  import services.backup.BackupService._
+  import service.backup.BackupService._
 
   def backupItems: Future[Vector[BackupItem]]
 

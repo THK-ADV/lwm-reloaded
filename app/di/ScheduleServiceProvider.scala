@@ -2,7 +2,7 @@ package di
 
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import services.{ScheduleService, ScheduleServiceImpl}
+import service.{ScheduleService, ScheduleServiceImpl}
 
 @Singleton
 class ScheduleServiceProvider @Inject()(config: Configuration) extends Provider[ScheduleService] {

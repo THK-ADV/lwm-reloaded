@@ -7,9 +7,9 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
-import services.backup.{BackupService, BackupServiceActor, PSQLBackupService}
-import services.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
-import services.{ActorScheduler, ScheduleService, Webservice}
+import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
+import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
+import service.{ActorScheduler, ScheduleService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, config: Configuration) extends AbstractModule {

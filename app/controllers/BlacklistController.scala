@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{BlacklistDb, BlacklistTable}
 import javax.inject.{Inject, Singleton}
@@ -10,7 +11,7 @@ import models.{Blacklist, BlacklistProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
-import services.blacklist.BlacklistApiService
+import service.blacklist.BlacklistApiService
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -18,17 +19,12 @@ import scala.util.Try
 object BlacklistController {
   lazy val globalAttribute = "global"
   lazy val labelAttribute = "label"
-
-  lazy val dateAttribute = "date"
-  lazy val startAttribute = "start"
-  lazy val endAttribute = "end"
-  lazy val sinceAttribute = "since"
-  lazy val untilAttribute = "until"
 }
 
 @Singleton
 final class BlacklistController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: BlacklistDao, val blacklistService: BlacklistApiService, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[BlacklistProtocol, BlacklistTable, BlacklistDb, Blacklist](cc) {
+  extends AbstractCRUDController[BlacklistProtocol, BlacklistTable, BlacklistDb, Blacklist](cc)
+    with TimeRangeTableFilter[BlacklistTable] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,20 +56,16 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
     case _ => PartialSecureBlock(List(Admin))
   }
 
-//  override protected def tableFilter(attribute: String, value: String)(appendTo: Try[List[TableFilter[BlacklistTable]]]): Try[List[TableFilter[BlacklistTable]]] = {
-//    import controllers.BlacklistController._
-//
-//    (appendTo, (attribute, value)) match {
-//      case (list, (`globalAttribute`, global)) => list.map(_.+:(BlacklistGlobalFilter(global)))
-//      case (list, (`labelAttribute`, label)) => list.map(_.+:(BlacklistLabelFilter(label)))
-//      case (list, (`dateAttribute`, date)) => list.map(_.+:(BlacklistDateFilter(date)))
-//      case (list, (`startAttribute`, start)) => list.map(_.+:(BlacklistStartFilter(start)))
-//      case (list, (`endAttribute`, end)) => list.map(_.+:(BlacklistEndFilter(end)))
-//      case (list, (`sinceAttribute`, since)) => list.map(_.+:(BlacklistSinceFilter(since)))
-//      case (list, (`untilAttribute`, until)) => list.map(_.+:(BlacklistUntilFilter(until)))
-//      case _ => Failure(new Throwable("Unknown attribute"))
-//    }
-//  }
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    import BlacklistController._
+    import dao.BlacklistDao._
+
+    (attribute, value) match {
+      case (`globalAttribute`, g) => g.boolean map globalFilter
+      case (`labelAttribute`, l) => l.labelEqualsFilter
+      case _ => makeTimeRangeFilter(attribute, value)
+    }
+  }
 
   override protected def toDbModel(protocol: BlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
     import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}

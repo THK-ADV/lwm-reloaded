@@ -2,7 +2,7 @@ package controllers.helper
 
 import base.TestBaseDefinition
 import org.scalatest.WordSpec
-import services.{CountGrouping, RangeGrouping}
+import service.{CountGrouping, RangeGrouping}
 
 class GroupingStrategyAttributeFilterSpec extends WordSpec with TestBaseDefinition with AttributeFilter with GroupingStrategyAttributeFilter {
 

@@ -1,10 +1,10 @@
-package services.backup
+package service.backup
 
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging}
 import javax.inject.Inject
-import services.backup.BackupServiceActor.{BackupRequestAsync, BackupRequestSync, Failed, Succeeded}
+import service.backup.BackupServiceActor.{BackupRequestAsync, BackupRequestSync, Failed, Succeeded}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}

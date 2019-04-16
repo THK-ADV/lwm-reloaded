@@ -3,7 +3,7 @@ package dao
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
-import services.GroupService._
+import service.GroupService._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 import slick.jdbc.PostgresProfile.api._
 

@@ -43,5 +43,23 @@ final class DateTimeOpsSpec extends WordSpec with TestBaseDefinition with DateGe
         timestamp.dateTime shouldEqual this.dateTime(dateTime.getYear, dateTime.getMonthOfYear, dateTime.getDayOfMonth, dateTime.getHourOfDay, dateTime.getMinuteOfHour, dateTime.getSecondOfMinute, dateTime.getMillisOfSecond)
       }
     }
+
+    "test String to LocalDate conversions" in {
+      import utils.date.DateTimeOps.StringConverter
+
+      "1990-02-05".localDate.success.value shouldEqual localDate(1990, 2, 5)
+      "2008-12-31".localDate.success.value shouldEqual localDate(2008, 12, 31)
+      "2010-10-17".localDate.success.value shouldEqual localDate(2010, 10, 17)
+      "2010:10-17".localDate.failure.exception shouldBe a[IllegalArgumentException]
+    }
+
+    "test String to LocalTime conversions" in {
+      import utils.date.DateTimeOps.StringConverter
+
+      "13:37:00".localTime.success.value shouldEqual localTime(13, 37, 0, 0)
+      "18:15:38".localTime.success.value shouldEqual localTime(18, 15, 38, 0)
+      "17:01:08".localTime.success.value shouldEqual localTime(17, 1, 8, 0)
+      "14:05".localTime.failure.exception shouldBe a[IllegalArgumentException]
+    }
   }
 }

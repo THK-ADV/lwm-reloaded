@@ -1,4 +1,4 @@
-package services.blacklist
+package service.blacklist
 
 //import akka.actor.{Actor, ActorLogging, Props}
 //import dao.BlacklistDao

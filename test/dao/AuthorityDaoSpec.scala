@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.TableFilter
 import database._
 import database.helper.{EmployeeStatus, LecturerStatus, StudentStatus}
 import models._
@@ -81,7 +82,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       async(dao.deleteAuthorityIfNotBasic(auths.head.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
       async(dao.deleteAuthorityIfNotBasic(auths.last.id))(a => nonBasicRoles.map(_.id).contains(a.role) shouldBe true)
 
-      async(dao.get(List(AuthorityDao.userFilter(student.id)), atomic = false)) { as =>
+      async(dao.get(List(TableFilter.userFilter(student.id)), atomic = false)) { as =>
         as.map(_.asInstanceOf[Authority]).forall { a =>
           !auths.map(_.id).contains(a.id) &&
             a.role == roles.find(_.label == studentRole.label).get.id
@@ -102,7 +103,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
       async(dao.deleteAuthorityIfNotBasic(nonBasicAuth.id))(_.role shouldBe nonBasicAuth.role)
       async(dao.deleteAuthorityIfNotBasic(basicAuth.id).failed)(_.getMessage.containsSlice(studentRole.label) shouldBe true)
-      async(dao.get(List(AuthorityDao.userFilter(student.id)), atomic = false))(_.size == 1)
+      async(dao.get(List(TableFilter.userFilter(student.id)), atomic = false))(_.size == 1)
     }
 
     "create course and rights manager authorities for a given course" in {
@@ -197,7 +198,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         dao.createManyQuery(auths),
         dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 1),
         dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 0),
-        dao.filterBy(List(AuthorityDao.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
+        dao.filterBy(List(TableFilter.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
       )
     }
 
@@ -218,7 +219,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         dao.createManyQuery(auths),
         dao.deleteAssociatedAuthorities(course1) map (_ shouldBe 1),
         dao.deleteAssociatedAuthorities(course2) map (_ shouldBe 2), // TODO counting affected rows actually work. maybe this should be applied to each deletion in order to test it properly
-        dao.filterBy(List(AuthorityDao.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
+        dao.filterBy(List(TableFilter.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
       )
     }
 

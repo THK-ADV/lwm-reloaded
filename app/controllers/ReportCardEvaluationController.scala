@@ -11,7 +11,7 @@ import models.{ReportCardEvaluationLike, ReportCardEvaluationProtocol}
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, ControllerComponents, Request, Result}
 import security.SecurityActionChain
-import services.ReportCardService
+import service.ReportCardService
 
 import scala.concurrent.Future
 

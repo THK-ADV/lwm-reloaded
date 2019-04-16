@@ -5,7 +5,7 @@ import java.io.File
 import akka.actor.{ActorRef, ActorSystem, Props}
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import services.backup.{BackupService, BackupServiceActor}
+import service.backup.{BackupService, BackupServiceActor}
 
 import scala.util.Try
 

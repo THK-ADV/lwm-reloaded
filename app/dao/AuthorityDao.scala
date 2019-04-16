@@ -14,8 +14,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AuthorityDao extends TableFilter[AuthorityTable] {
 
-  def userFilter(user: UUID): TableFilterPredicate = _.user === user
-
   def courseFilter(course: UUID): TableFilterPredicate = _.course.map(_ === course).getOrElse(false)
 
   def roleFilter(role: UUID): TableFilterPredicate = _.role === role
@@ -26,7 +24,7 @@ object AuthorityDao extends TableFilter[AuthorityTable] {
 trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLike] {
 
   import AuthorityDao._
-  import dao.helper.TableFilter.systemIdFilter
+  import dao.helper.TableFilter.{systemIdFilter, userFilter}
 
   override val tableQuery: TableQuery[AuthorityTable] = TableQuery[AuthorityTable]
 

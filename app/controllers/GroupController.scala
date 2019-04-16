@@ -12,7 +12,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
-import services._
+import service._
 
 import scala.concurrent.Future
 
