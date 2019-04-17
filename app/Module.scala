@@ -9,7 +9,7 @@ import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
 import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
-import service.{ActorScheduler, ScheduleService, Webservice}
+import service.{ActorScheduler, MailerService, ScheduleService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, config: Configuration) extends AbstractModule {
@@ -29,6 +29,7 @@ class Module(environment: Environment, config: Configuration) extends AbstractMo
 
     bind(classOf[ScheduleService]).toProvider(classOf[ScheduleServiceProvider])
     bind(classOf[KeycloakDeployment]).toProvider(classOf[KeycloakDeploymentProvider])
+    bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
   }
 
   private def bindDaos(): Unit = {
