@@ -21,8 +21,6 @@ trait ResultOps {
 
   protected def ok[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.toJson(entity))
 
-  protected def ok(message: String): Result = Ok(Json.obj("status" -> "ok", "message" -> message))
-
   protected def delete[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.obj("deleted" -> Json.toJson(entity)))
 
   protected def update[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.obj("updated" -> Json.toJson(entity)))
