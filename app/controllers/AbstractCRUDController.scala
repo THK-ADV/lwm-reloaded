@@ -45,10 +45,6 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Traversable[LwmModel] = dbModels.map(_.toUniqueEntity.asInstanceOf[LwmModel]).toTraversable
 
-  final protected def forbidden(): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(List(God))
-  }
-
   def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 

@@ -62,5 +62,5 @@ final class SemesterController @Inject()(cc: ControllerComponents, val authority
     SemesterDb(protocol.label, protocol.abbreviation, protocol.start.sqlDate, protocol.end.sqlDate, protocol.examStart.sqlDate, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

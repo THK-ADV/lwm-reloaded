@@ -63,7 +63,7 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
     get(id, NonSecureBlock)(request)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import AssignmentPlanController._

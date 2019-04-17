@@ -67,5 +67,5 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
     protocol.user, protocol.role, protocol.course, id = existingId.getOrElse(UUID.randomUUID)
   )
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

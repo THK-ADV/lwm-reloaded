@@ -113,5 +113,5 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
     }
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

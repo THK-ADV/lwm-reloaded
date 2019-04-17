@@ -42,5 +42,5 @@ class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val auth
 
   override protected def toDbModel(protocol: ReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }
