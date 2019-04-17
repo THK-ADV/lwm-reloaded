@@ -28,9 +28,9 @@ class MailController @Inject()(
   with JsonParser
   with ResultOps {
 
-  case class MailProtocol(subject: String, body: String, recipients: Seq[String], replyTo: Option[String])
+  private case class MailProtocol(subject: String, body: String, recipients: Seq[String], replyTo: Option[String])
 
-  implicit val reads: Reads[MailProtocol] = Json.reads[MailProtocol]
+  private implicit val reads: Reads[MailProtocol] = Json.reads[MailProtocol]
 
   def sendMailWithBody(course: String) = restrictedContext(course)(Create) action { request =>
     val result = for {
