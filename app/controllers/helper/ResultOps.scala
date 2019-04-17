@@ -21,6 +21,8 @@ trait ResultOps {
 
   protected def ok[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.toJson(entity))
 
+  protected def ok(message: String): Result = Ok(Json.obj("status" -> "ok", "message" -> message))
+
   protected def delete[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.obj("deleted" -> Json.toJson(entity)))
 
   protected def update[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.obj("updated" -> Json.toJson(entity)))
@@ -39,7 +41,7 @@ trait ResultOps {
 
   implicit class OptionResult[A](val future: Future[Option[A]]) {
     def jsonResult(idForMessage: String)(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future.map { maybeA =>
-      maybeA.fold(notFound(idForMessage))(ok)
+      maybeA.fold(notFound(idForMessage))(a => ok(a))
     }.recover {
       case NonFatal(e) => internalServerError(e)
     }

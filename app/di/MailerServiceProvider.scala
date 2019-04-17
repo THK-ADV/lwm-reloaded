@@ -1,11 +1,10 @@
 package di
 
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Provider}
 import play.api.Configuration
 import play.api.libs.mailer.MailerClient
 import service.MailerService
 
-@Singleton
 class MailerServiceProvider @Inject()(config: Configuration, mailerClient: MailerClient) extends Provider[MailerService] {
 
   lazy val get = {
