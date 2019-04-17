@@ -7,6 +7,7 @@ resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositori
 lazy val scalazVersion = "7.1.12"
 lazy val scalatestVersion = "3.0.5"
 lazy val slickVersion = "3.3.0"
+lazy val mailVersion = "6.0.1"
 
 lazy val commonSettings = Seq(
   name := "lwm-reloaded",
@@ -24,7 +25,8 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= scalazDependencies,
     libraryDependencies ++= testDependencies,
     libraryDependencies ++= postgresDependencies,
-    libraryDependencies ++= keycloakDepencencies
+    libraryDependencies ++= keycloakDepencencies,
+    libraryDependencies ++= mailDependencies,
   ).enablePlugins(PlayScala)
 
 
@@ -58,6 +60,11 @@ val keycloakDepencencies = Seq(
   "org.keycloak" % "keycloak-adapter-core" % "4.7.0.Final",
   "org.jboss.logging" % "jboss-logging" % "3.3.0.Final",
   "org.apache.httpcomponents" % "httpclient" % "4.5.1"
+)
+
+val mailDependencies = Seq(
+  "com.typesafe.play" %% "play-mailer" % mailVersion,
+  "com.typesafe.play" %% "play-mailer-guice" % mailVersion
 )
 
 libraryDependencies ++= Seq(ws, guice)
