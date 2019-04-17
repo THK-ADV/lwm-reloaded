@@ -33,7 +33,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
   val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
-  def attendeeEmailAddressesOf(labwork: UUID) = { // TODO test
+  def attendeeEmailAddressesOf(labwork: UUID) = {
     val query = for {
       q <- filterValidOnly(e => TableFilter.labworkFilter(labwork).apply(e))
       u <- q.userFk
