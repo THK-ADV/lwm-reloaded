@@ -38,6 +38,10 @@ trait DateGenerator {
     } yield dateTime(year, month, day, hour, minute, second, 0)
   }
 
+  def randomLocalDate = dates.sample.get.toLocalDate
+
+  def randomLocalTime = dates.sample.get.toLocalTime
+
   implicit val arbitraryDateTime: Arbitrary[DateTime] = Arbitrary(dates)
 
   implicit val arbitraryLocalTime: Arbitrary[LocalTime] = Arbitrary(dates.map(_.toLocalTime))

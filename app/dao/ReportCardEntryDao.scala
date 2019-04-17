@@ -33,6 +33,15 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   val retryQuery: TableQuery[ReportCardRetryTable] = TableQuery[ReportCardRetryTable]
   val rescheduledQuery: TableQuery[ReportCardRescheduledTable] = TableQuery[ReportCardRescheduledTable]
 
+  def attendeeEmailAddressesOf(labwork: UUID) = { // TODO test
+    val query = for {
+      q <- filterValidOnly(e => TableFilter.labworkFilter(labwork).apply(e))
+      u <- q.userFk
+    } yield u.email
+
+    db run query.result
+  }
+
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
     case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
       student.toUniqueEntity,

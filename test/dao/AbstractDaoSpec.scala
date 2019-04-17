@@ -93,7 +93,7 @@ object AbstractDaoSpec {
   }.toList
 
   final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, i.toString, StudentStatus, Some(i.toString), Some(randomDegree.id))
+    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(randomDegree.id))
   }.toList
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
