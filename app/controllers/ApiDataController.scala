@@ -3,15 +3,12 @@ package controllers
 import java.util.UUID
 
 import models._
-import org.joda.time.{Interval, LocalDate, LocalDateTime}
-import org.openrdf.model.Value
+import org.joda.time.{Interval, LocalDateTime}
 import org.openrdf.model.impl.ValueFactoryImpl
 import org.specs2.json.JSONObject
-import org.w3.banana.RDFPrefix
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Controller, Request}
 import services.{RoleService, SessionHandlingService}
-import store.Prefixes.LWMPrefix
 import store.SesameRepository
 import store.bind.Bindings
 import utils.LwmMimeType
@@ -54,30 +51,30 @@ class ApiDataController(
 
     result match {
       case Success(s) =>
-        val entries = s.mapValues { reportCards =>
-          val (collision, cards) = reportCards.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // by this way, Pair(A, B) and Pair(B, A) are both in set
-            case ((outerCollision, outerCards), r) =>
-              val sameDateAs = reportCards.filter(r2 => r2.date.isEqual(r.date) && r2.id != r.id)
+          val entries = s.mapValues { reportCards =>
+            val (collision, cards) = reportCards.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // by this way, Pair(A, B) and Pair(B, A) are both in set
+              case ((outerCollision, outerCards), r) =>
+                val sameDateAs = reportCards.filter(r2 => r2.date.isEqual(r.date) && r2.id != r.id)
 
-              val (innerCollision, cards) = sameDateAs.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // false means collision
-                case ((bool, set), next) =>
-                  val baseInterval = new Interval(r.date.toDateTime(r.start), r.date.toDateTime(r.end))
-                  val nextInterval = new Interval(next.date.toDateTime(next.start), next.date.toDateTime(next.end))
+                val (innerCollision, cards) = sameDateAs.foldLeft((true, Set.empty[(ReportCardEntry, ReportCardEntry)])) { // false means collision
+                  case ((bool, set), next) =>
+                    val baseInterval = new Interval(r.date.toDateTime(r.start), r.date.toDateTime(r.end))
+                    val nextInterval = new Interval(next.date.toDateTime(next.start), next.date.toDateTime(next.end))
 
-                  val overlaps = baseInterval overlaps nextInterval
-                  val acc = bool && !overlaps
-                  val appended = if (overlaps) set.+((r, next)) else set
+                    val overlaps = baseInterval overlaps nextInterval
+                    val acc = bool && !overlaps
+                    val appended = if (overlaps) set.+((r, next)) else set
 
-                  (acc, appended)
-              }
+                    (acc, appended)
+                }
 
-              (innerCollision && outerCollision, outerCards ++ cards)
+                (innerCollision && outerCollision, outerCards ++ cards)
+            }
+
+            (!collision, cards)
           }
 
-          (!collision, cards)
-        }
-
-        val collisions = entries.filter(_._2._1)
+          val collisions = entries.filter(_._2._1)
 
         Ok(Json.obj(
           "status" -> "OK",
@@ -109,9 +106,9 @@ class ApiDataController(
         ))
       case Failure(e) =>
         InternalServerError(Json.obj(
-          "status" -> "KO",
-          "message" -> e.getMessage
-        ))
+        "status" -> "KO",
+        "message" -> e.getMessage
+      ))
     }
   }
 
@@ -237,20 +234,19 @@ class ApiDataController(
         errors => Failure(new Throwable(JsError.toJson(errors).toString)),
         swapRequest => Success(swapRequest)
       )
-      groups <- groups(swapRequest.srcLabwork) //repository.getAll[Group].map(_.filter(_.labwork == swapRequest.srcLabwork))
-      srcStudent <- student(swapRequest.srcStudent) if srcStudent.isDefined //repository.getAll[Student].map(_.find(_.systemId == swapRequest.srcStudent).head).map(_.id)
-      srcStudentId = srcStudent.get.id
-      currentGroup = groups.find(_.members.contains(srcStudentId)).get
+      groups <- repository.getAll[Group].map(_.filter(_.labwork == swapRequest.srcLabwork))
+      srcStudent <- repository.getAll[Student].map(_.find(_.systemId == swapRequest.srcStudent).head).map(_.id)
+      currentGroup = groups.find(_.members.contains(srcStudent)).get
       destinationGroup = groups.find(_.label == swapRequest.destGroup).get
       destinationStudent = destinationGroup.members.head
-      updatedCurrentGroup = replaceMembersIn(currentGroup)(_ - srcStudentId)
-      updatedDestinationGroup = replaceMembersIn(destinationGroup)(_ + srcStudentId)
+      updatedCurrentGroup = replaceMembersIn(currentGroup)(_ - srcStudent)
+      updatedDestinationGroup = replaceMembersIn(destinationGroup)(_ + srcStudent)
       _ <- if (preview.toBoolean)
         fakeSuccessGraph
       else
         List(updatedCurrentGroup, updatedDestinationGroup).map(g => repository.update(g)(GroupDescriptor, Group)).sequence
-      reportCardEntries <- reportCards(swapRequest.srcLabwork) // repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == swapRequest.srcLabwork))
-      studentEntries = reportCardEntries.filter(_.student == srcStudentId).toList.sortBy(r => r.date.toLocalDateTime(r.start))
+      reportCardEntries <- repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == swapRequest.srcLabwork))
+      studentEntries = reportCardEntries.filter(_.student == srcStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
       templateEntries = reportCardEntries.filter(_.student == destinationStudent).toList.sortBy(r => r.date.toLocalDateTime(r.start))
       updatedStudentEntries = for {
         (origin, template) <- studentEntries.zip(templateEntries) if /*origin.date.getWeekOfWeekyear == template.date.getWeekOfWeekyear &&*/ origin.label == template.label
@@ -278,146 +274,11 @@ class ApiDataController(
 
   case class GroupInsertionRequest(labwork: UUID, studentSystemId: String, groupLabel: String)
 
-  private def reportCards(labwork: UUID, student: UUID) = {
-    import bindings.ReportCardEntryDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("cards") where {
-      **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labwork))).
-        **(v("cards"), p(lwm.student), s(User.generateUri(student)))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("cards")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue).
-      requestAll(repository.getMany[ReportCardEntry](_)).
-      run
-  }
-
-  private def reportCards(labwork: UUID) = {
-    import bindings.ReportCardEntryDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("cards") where {
-      **(v("cards"), p(rdf.`type`), s(lwm.ReportCardEntry)).
-        **(v("cards"), p(lwm.labwork), s(Labwork.generateUri(labwork)))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("cards")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue).
-      requestAll(repository.getMany[ReportCardEntry](_)).
-      run
-  }
-
-  private def group(labwork: UUID, label: String) = {
-    import bindings.GroupDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.optM
-    import utils.Ops.NaturalTrasformations._
-    import utils.Ops.TraverseInstances.travO
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("groups") where {
-      **(v("groups"), p(rdf.`type`), s(lwm.Group)).
-        **(v("groups"), p(lwm.labwork), s(Labwork.generateUri(labwork))).
-        **(v("groups"), p(lwm.label), o(label))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("groups")).
-      changeTo(_.headOption).
-      map(_.stringValue)(optM).
-      request(repository.get[Group](_)).
-      run
-  }
-
-  private def groups(labwork: UUID) = {
-    import bindings.GroupDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("groups") where {
-      **(v("groups"), p(rdf.`type`), s(lwm.Group)).
-        **(v("groups"), p(lwm.labwork), s(Labwork.generateUri(labwork)))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("groups")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue).
-      requestAll(repository.getMany[Group](_)).
-      run
-  }
-
-  private def scheduleEntries(labwork: UUID) = {
-    import bindings.ScheduleEntryDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.listM
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("entries") where {
-      **(v("entries"), p(rdf.`type`), s(lwm.ScheduleEntry)).
-        **(v("entries"), p(lwm.labwork), s(Labwork.generateUri(labwork)))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("entries")).
-      transform(_.fold(List.empty[Value])(identity)).
-      map(_.stringValue).
-      requestAll(repository.getMany[ScheduleEntry](_)).
-      run
-  }
-
-  private def student(systemId: String) = {
-    import bindings.StudentDescriptor
-    import store.sparql.select
-    import store.sparql.select._
-    import utils.Ops.MonadInstances.optM
-    import utils.Ops.NaturalTrasformations._
-    import utils.Ops.TraverseInstances.travO
-
-    val lwm = LWMPrefix[repository.Rdf]
-    val rdf = RDFPrefix[repository.Rdf]
-
-    val cardsQuery = select("students") where {
-      **(v("students"), p(rdf.`type`), s(lwm.User)).
-        **(v("students"), p(lwm.systemId), o(systemId))
-    }
-
-    repository.prepareQuery(cardsQuery).
-      select(_.get("students")).
-      changeTo(_.headOption).
-      map(_.stringValue)(optM).
-      request(repository.get[Student](_)).
-      run
-  }
-
   def insertIntoGroup(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
-    import bindings.{GroupDescriptor, ReportCardEntryDescriptor}
+    import bindings.{GroupDescriptor, ReportCardEntryDescriptor, StudentDescriptor}
+    import utils.Ops._
+    import utils.Ops.MonadInstances.tryM
+    import models.LwmDateTime._
     import models.Group._
     import models.ReportCardEntry._
 
@@ -428,8 +289,8 @@ class ApiDataController(
         errors => Failure(new Throwable(JsError.toJson(errors).toString)),
         swapRequest => Success(swapRequest)
       )
-      optDestGroup <- group(body.labwork, body.groupLabel) if optDestGroup.isDefined
-      optSrcStudent <- student(body.studentSystemId) if optSrcStudent.isDefined
+      optDestGroup <- repository.getAll[Group].map(_.find(g => g.labwork == body.labwork && g.label == body.groupLabel)) if optDestGroup.isDefined
+      optSrcStudent <- repository.getAll[Student].map(_.find(_.systemId == body.studentSystemId)) if optSrcStudent.isDefined
       srcStudent = optSrcStudent.get
       destGroup = optDestGroup.get
       destStudent = destGroup.members.head
@@ -438,7 +299,7 @@ class ApiDataController(
         fakeSuccessGraph
       else
         repository.update(updatedDestGroup)(GroupDescriptor, Group)
-      destCards <- reportCards(destGroup.labwork, destStudent)
+      destCards <- repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == destGroup.labwork && e.student == destStudent))
       copiedCards = destCards.map(e =>
         ReportCardEntry(srcStudent.id, body.labwork, e.label, e.date, e.start, e.end, e.room, e.entryTypes.map(t => ReportCardEntryType(t.entryType)))
       )
@@ -488,76 +349,6 @@ class ApiDataController(
     } yield scheduleEntries
 
     scheduleEntries match {
-      case Success(s) => Ok(Json.obj(
-        "status" -> "OK",
-        "entries" -> Json.toJson(s)
-      ))
-      case Failure(e) => InternalServerError(Json.obj(
-        "status" -> "KO",
-        "message" -> e.getMessage
-      ))
-    }
-  }
-
-  case class LabworkSupervisorInsertion(labwork: String, groupLabel: String, supervisor: String)
-
-  def insertSupervisor(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
-    import bindings.ScheduleEntryDescriptor
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    implicit val reads: Reads[LabworkSupervisorInsertion] = Json.reads[LabworkSupervisorInsertion]
-
-    val result = for {
-      swapRequest <- request.body.validate[LabworkSupervisorInsertion].fold(
-        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
-        swapRequest => Success(swapRequest)
-      )
-      labworkId <- Try(UUID.fromString(swapRequest.labwork))
-      supervisorId <- Try(UUID.fromString(swapRequest.supervisor))
-      scheduleEntries <- scheduleEntries(labworkId)
-      group <- group(labworkId, swapRequest.groupLabel) if group.isDefined
-      appendedEntries = scheduleEntries.filter(_.group == group.get.id).map { entry =>
-        entry.copy(supervisor = entry.supervisor + supervisorId)
-      }
-      _ <- if (preview.toBoolean) fakeSuccessGraph else appendedEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
-    } yield appendedEntries
-
-    result match {
-      case Success(s) => Ok(Json.obj(
-        "status" -> "OK",
-        "entries" -> Json.toJson(s)
-      ))
-      case Failure(e) => InternalServerError(Json.obj(
-        "status" -> "KO",
-        "message" -> e.getMessage
-      ))
-    }
-  }
-
-  def removeSupervisor(preview: String) = contextFrom(Update) contentTypedAction { implicit request =>
-    import bindings.ScheduleEntryDescriptor
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-
-    implicit val reads: Reads[LabworkSupervisorInsertion] = Json.reads[LabworkSupervisorInsertion]
-
-    val result = for {
-      swapRequest <- request.body.validate[LabworkSupervisorInsertion].fold(
-        errors => Failure(new Throwable(JsError.toJson(errors).toString)),
-        swapRequest => Success(swapRequest)
-      )
-      labworkId <- Try(UUID.fromString(swapRequest.labwork))
-      supervisorId <- Try(UUID.fromString(swapRequest.supervisor))
-      scheduleEntries <- scheduleEntries(labworkId)
-      group <- group(labworkId, swapRequest.groupLabel) if group.isDefined
-      appendedEntries = scheduleEntries.filter(_.group == group.get.id).map { entry =>
-        entry.copy(supervisor = entry.supervisor - supervisorId)
-      }
-      _ <- if (preview.toBoolean) fakeSuccessGraph else appendedEntries.map(e => repository.update(e)(ScheduleEntryDescriptor, ScheduleEntry)).sequence
-    } yield appendedEntries
-
-    result match {
       case Success(s) => Ok(Json.obj(
         "status" -> "OK",
         "entries" -> Json.toJson(s)
@@ -685,7 +476,7 @@ class ApiDataController(
       case Success(s) => Ok(Json.obj(
         "status" -> "OK",
         "bumped" -> Json.toJson(s)
-      ))
+        ))
       case Failure(e) => InternalServerError(Json.obj(
         "status" -> "KO",
         "message" -> e.getMessage
@@ -716,7 +507,7 @@ class ApiDataController(
         "statistic" -> grouping.map {
           case (labwork, reportCards) =>
             val assignments = reportCards.groupBy(_.label).mapValues(_.flatMap(_.entryTypes)) // TODO ordering
-          val students = reportCards.groupBy(_.student).size
+            val students = reportCards.groupBy(_.student).size
 
             Json.obj(
               "labwork" -> labworks.find(_.id == labwork).get.label,
@@ -732,9 +523,9 @@ class ApiDataController(
                     "attendance" -> entryTypeJson(attendance, students),
                     "testat" -> entryTypeJson(testat, students),
                     "points" -> entryTypeJson(points, students)
-                  )
+                )
               }
-            )
+          )
         }
       ))
       case Failure(e) => InternalServerError(Json.obj(
@@ -871,36 +662,6 @@ class ApiDataController(
         "status" -> "KO",
         "message" -> e.getMessage
       ))
-    }
-  }
-
-  def bsAiEntries(ai: String, preview: String) = contextFrom(Get) action { implicit request =>
-    import bindings.ReportCardEntryDescriptor
-    import utils.Ops._
-    import utils.Ops.MonadInstances.tryM
-    import models.ReportCardEntry._
-
-    val res = for {
-      aiEntries <- repository.getAll[ReportCardEntry].map(_.filter(e => e.labwork == UUID.fromString(ai) && e.date.isEqual(LocalDate.parse("2018-05-28"))))
-      newAiEntries = aiEntries.map { entry =>
-        val types = entry.entryTypes ++ Set(ReportCardEntryType.Bonus, ReportCardEntryType.Certificate)
-        entry.copy(label = "Deadline - Pflichtteil 1 (Sensor-Server)", entryTypes = types)
-      }
-      _ = newAiEntries.foreach(println)
-      _ <- if (preview.toBoolean)
-        fakeSuccessGraph
-      else
-        newAiEntries.map(e => repository.update(e)(ReportCardEntryDescriptor, ReportCardEntry)).sequence
-    } yield newAiEntries
-
-    res match {
-      case Success(s) =>
-        Ok(Json.toJson(s))
-      case Failure(e) =>
-        InternalServerError(Json.obj(
-          "status" -> "KO",
-          "message" -> e.getMessage
-        ))
     }
   }
 }
