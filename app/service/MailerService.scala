@@ -9,15 +9,16 @@ class MailerService @Inject()(
   private val sender: Option[String],
   private val chunkSize: Option[Int],
   mailerClient: MailerClient,
-  executionContext: ExecutionContext
+  implicit val executionContext: ExecutionContext
 ) {
 
   def sendEmail(subject: String, body: String, bcc: Seq[String]): Future[Seq[String]] = (sender, chunkSize) match {
     case (Some(from), Some(chunk)) =>
       val template = makeEmail(subject, body, from) _
-      val mails = bcc.grouped(chunk).map(template andThen mailerClient.send)
 
-      Future(mails.toList)(executionContext)
+      Future {
+        bcc.grouped(chunk).map(template andThen mailerClient.send).toList
+      }
     case _ =>
       Future.failed(new Throwable("need to provide a sender and chunkSize in order to send emails"))
   }
