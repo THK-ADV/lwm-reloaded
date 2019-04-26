@@ -5,10 +5,14 @@ import play.api.Configuration
 import play.api.libs.mailer.MailerClient
 import service.MailerService
 
-class MailerServiceProvider @Inject()(config: Configuration, mailerClient: MailerClient) extends Provider[MailerService] {
+import scala.concurrent.ExecutionContext
+
+class MailerServiceProvider @Inject()(config: Configuration, mailerClient: MailerClient, executionContext: ExecutionContext) extends Provider[MailerService] {
 
   lazy val get = {
     val sender = config getOptional[String] "lwm.mail.sender"
-    new MailerService(sender, mailerClient)
+    val chunkSize = config getOptional[Int] "lwm.mail.chunkSize"
+
+    new MailerService(sender, chunkSize, mailerClient, executionContext)
   }
 }

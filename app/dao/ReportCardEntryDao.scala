@@ -39,7 +39,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       u <- q.userFk
     } yield u.email
 
-    db run query.result
+    db run query.distinct.result
   }
 
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
