@@ -39,7 +39,7 @@ trait ResultOps {
 
   implicit class OptionResult[A](val future: Future[Option[A]]) {
     def jsonResult(idForMessage: String)(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future.map { maybeA =>
-      maybeA.fold(notFound(idForMessage))(ok)
+      maybeA.fold(notFound(idForMessage))(a => ok(a))
     }.recover {
       case NonFatal(e) => internalServerError(e)
     }

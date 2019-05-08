@@ -2,7 +2,8 @@ package controllers.helper
 
 import java.util.UUID
 
-import models.{LWMRole, Role}
+import models.LWMRole
+import models.Role.God
 import play.api.mvc._
 import security.SecurityActionChain
 
@@ -10,6 +11,10 @@ import scala.concurrent.Future
 
 trait SecureControllerContext {
   self: BaseController =>
+
+  final protected def forbiddenAction(): PartialFunction[Rule, SecureContext] = {
+    case _ => PartialSecureBlock(List(God))
+  }
 
   protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext]
 

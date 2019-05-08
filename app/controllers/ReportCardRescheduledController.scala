@@ -79,5 +79,5 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
     delete(id, NonSecureBlock)(request)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

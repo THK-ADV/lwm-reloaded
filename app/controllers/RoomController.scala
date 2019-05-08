@@ -46,5 +46,5 @@ final class RoomController @Inject()(cc: ControllerComponents, val authorityDao:
     RoomDb(protocol.label, protocol.description, protocol.capacity, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

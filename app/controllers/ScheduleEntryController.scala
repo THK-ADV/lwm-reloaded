@@ -160,5 +160,5 @@ final class ScheduleEntryController @Inject()(
 
   override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

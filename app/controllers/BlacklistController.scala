@@ -72,5 +72,5 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
     BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

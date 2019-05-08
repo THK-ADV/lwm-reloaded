@@ -42,5 +42,5 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

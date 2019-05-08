@@ -70,5 +70,5 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
 
   override protected def toDbModel(protocol: GroupProtocol, existingId: Option[UUID]): GroupDb = ???
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

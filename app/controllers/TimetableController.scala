@@ -71,5 +71,5 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
     TimetableDb(protocol.labwork, protocol.entries, protocol.start.sqlDate, protocol.localBlacklist, id = existingId getOrElse UUID.randomUUID)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

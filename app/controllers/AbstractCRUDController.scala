@@ -4,8 +4,8 @@ import java.util.UUID
 
 import controllers.helper._
 import dao.AbstractDao
-import dao.helper.{Retrieved, TableFilter}
-import database.{AbbreviationTable, EntryTypeTable, GroupIdTable, LabelTable, LabworkIdTable, ReportCardEntryIdTable, RoomIdTable, UniqueTable, UserIdTable}
+import dao.helper.TableFilter
+import database._
 import javax.inject.Inject
 import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
@@ -24,7 +24,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with ResultOps
     with AttributeFilter
     with RequestOps
-    with TableFilter[T] {
+    with TableFilter[T]
+    with JsonParser {
 
   import utils.Ops.unwrapTrys
 
@@ -43,24 +44,6 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
   protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Traversable[LwmModel] = dbModels.map(_.toUniqueEntity.asInstanceOf[LwmModel]).toTraversable
-
-  final protected def parseJson[R](request: Request[AnyContent])(implicit reads: Reads[R]): Try[R] = unwrap(request).flatMap(js => validate(js)(reads))
-
-  final protected def parseJsonArray[R](request: Request[AnyContent])(implicit reads: Reads[List[R]]): Try[List[R]] = unwrap(request).flatMap(js => validate(js)(reads))
-
-  final protected def forbidden(): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(List(God))
-  }
-
-  private def validate[A](json: JsValue)(implicit reads: Reads[A]) = json.validate[A].fold[Try[A]](
-    errors => Failure(new Throwable(JsError.toJson(errors).toString)),
-    success => Success(success)
-  )
-
-  private def unwrap(request: Request[AnyContent]) = request.body.asJson match {
-    case Some(json) => Success(json)
-    case None => Failure(new Throwable("no json body"))
-  }
 
   def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
@@ -126,6 +109,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   }
 
   protected implicit class AbstractTableFilter(string: String) {
+
     import dao.helper.TableFilter._
 
     def uuid: Try[UUID] = Try(UUID.fromString(string))

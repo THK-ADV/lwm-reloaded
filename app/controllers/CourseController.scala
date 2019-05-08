@@ -97,7 +97,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     case _ => PartialSecureBlock(List(Admin))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 
   private def toCourseDb(c: Course) = CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, id = c.id)
 }

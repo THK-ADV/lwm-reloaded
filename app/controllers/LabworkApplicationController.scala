@@ -48,5 +48,5 @@ final class LabworkApplicationController @Inject()(cc: ControllerComponents, val
     case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

@@ -82,5 +82,5 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
     delete(id, NonSecureBlock)(request)
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbidden()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }
