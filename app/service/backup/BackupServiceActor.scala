@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging}
 import javax.inject.Inject
 import service.backup.BackupServiceActor.{BackupRequestAsync, BackupRequestSync, Failed, Succeeded}
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object BackupServiceActor {
@@ -33,29 +33,24 @@ final class BackupServiceActor @Inject()(backupService: BackupService, destFolde
 
       val requester = sender()
 
-      backup(
-        files => requester ! Succeeded(files),
-        error => requester ! Failed(error)
-      )
+      backup onComplete {
+        case Success(files) =>
+          log.info(s"successfully backup'ed ${files.size} files")
+          requester ! Succeeded(files)
+        case Failure(e) =>
+          log.error(e.getLocalizedMessage)
+          requester ! Failed(e)
+      }
     case BackupRequestAsync =>
       log.info("beginning backup request")
 
-      backup(_ => Unit, _ => Unit)
+      backup()
   }
 
-  private def backup(success: Vector[File] => Unit, failure: Throwable => Unit): Unit = {
-    destFolder match {
-      case Some(f) =>
-        backupService.backup(f, shouldOverride = false).onComplete {
-          case Success(files) =>
-            log.info(s"successfully backup'ed ${files.size} files")
-            success(files)
-          case Failure(error) =>
-            log.error(s"failed backup request with exception: ${error.getLocalizedMessage}")
-            failure(error)
-        }
-      case None =>
-        log.error(s"no folder to back up")
-    }
+  private def backup(): Future[Vector[File]] = destFolder match {
+    case Some(f) =>
+      backupService.backup(f, shouldOverride = false)
+    case None =>
+      Future.failed(new Throwable("no folder to back up"))
   }
 }
