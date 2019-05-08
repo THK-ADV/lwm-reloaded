@@ -49,7 +49,7 @@ class MailController @Inject()(
       labworkId <- Future.fromTry(Try(UUID.fromString(labwork)))
       maybeLabwork <- labworkDao.getSingle(labworkId) if maybeLabwork.isDefined
       lab = maybeLabwork.get.asInstanceOf[LabworkAtom]
-      studentMails <- reportCardEntryDao.attendeeEmailAddressesOf(labworkId) // TODO should be based on labworkApplications
+      studentMails <- reportCardEntryDao.attendeeEmailAddressesOf(labworkId)
       recipients = studentMails ++ protocol.bcc
       ids <- mailerService.sendEmail(s"[${lab.label} ${lab.semester.abbreviation}] ${protocol.subject}", protocol.body, recipients)
     } yield (recipients, ids)

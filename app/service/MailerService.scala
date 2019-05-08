@@ -8,8 +8,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class MailerService @Inject()(
   private val sender: Option[String],
   private val chunkSize: Option[Int],
-  mailerClient: MailerClient,
-  implicit val executionContext: ExecutionContext
+  private val mailerClient: MailerClient,
+  private implicit val executionContext: ExecutionContext
 ) {
 
   def sendEmail(subject: String, body: String, bcc: Seq[String]): Future[Seq[String]] = (sender, chunkSize) match {
