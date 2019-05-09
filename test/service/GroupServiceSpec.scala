@@ -7,11 +7,9 @@ import models.LabworkApplication
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
 
-class GroupServiceSpec extends WordSpec with TestBaseDefinition {
+import scala.util.Random
 
-  val labwork = UUID.randomUUID
-  val users = ((0 until 100) map (_ => UUID.randomUUID)).toVector
-  val apps = users.map(id => LabworkApplication(labwork, id, Set.empty, DateTime.now))
+class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
   "A GroupServiceSpec" should {
     "generate no alphabetical sequence if amount of chars is less than zero" in {
@@ -50,15 +48,19 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       alph ++ suffixed1 ++ suffixed2 should contain theSameElementsAs alphabetically
     }
 
-    /*"sort a list of applicants for a given labwork" in {
+    "sort a list of applicants for a given labwork" in {
+      import utils.PreferenceSort._
+
+      val labwork = UUID.randomUUID
+
       val users = Vector(
-        User.randomUUID,
-        User.randomUUID,
-        User.randomUUID,
-        User.randomUUID,
-        User.randomUUID,
-        User.randomUUID,
-        User.randomUUID
+        UUID.randomUUID,
+        UUID.randomUUID,
+        UUID.randomUUID,
+        UUID.randomUUID,
+        UUID.randomUUID,
+        UUID.randomUUID,
+        UUID.randomUUID
       )
 
       val applications = Vector(
@@ -74,21 +76,40 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       val sorted = GroupService.sort(applications)
       val directlySorted = sort(Random.shuffle(applications).map(z => (z.applicant, z.friends)))
 
-      sorted.last shouldBe directlySorted.last
+      sorted should contain theSameElementsAs directlySorted // hopefully, this is always true
     }
 
-    "generate groups by given strategy" in {
-      val count = CountGrouping("8")
-      val range = RangeGrouping("13", "15")
+    "generate groups by both strategies" in {
+      import service.GroupingStrategy._
 
-      val groups = GroupService.groupApplicantsBy(count, apps, labwork)
-      groups.size shouldBe count.value.toInt
-      groups.flatMap(_.members).sorted shouldBe users.sorted
+      val labwork = UUID.randomUUID
+      val users = ((0 until 100) map (_ => UUID.randomUUID)).toVector
+      val apps = users.map(id => LabworkApplication(labwork, id, Set.empty, DateTime.now))
 
-      val groups2 = GroupService.groupApplicantsBy(range, apps, labwork)
-      groups2.size shouldBe Math.round(users.size.toFloat / range.max.toFloat)
-      groups2.flatMap(_.members).sorted shouldBe users.sorted
+      def testCount(value: Int): Unit = {
+        val count = Count(value)
+        val groups = GroupService.groupApplicantsBy(count)(apps, labwork)
+        groups.size shouldBe count.value
+        groups.map(_.label) shouldBe ('A' to 'Z').take(count.value).map(_.toString)
+        groups.flatMap(_.members) should contain theSameElementsAs users
+      }
+
+      def testRange(min: Int, max: Int): Unit = {
+        val range = Range(min, max)
+        val groups2 = GroupService.groupApplicantsBy(range)(apps, labwork)
+        val size = Math.round(users.size.toFloat / range.max.toFloat)
+        groups2.size shouldBe size
+        groups2.map(_.label) shouldBe ('A' to 'Z').take(size).map(_.toString)
+        groups2.flatMap(_.members) should contain theSameElementsAs users
+      }
+
+      testCount(8)
+      testCount(10)
+      testCount(20)
+      testRange(13, 15)
+      testRange(18, 19)
     }
+    /*
 
     "apply grouping strategies properly" in {
       val twentyfour = users.take(24)

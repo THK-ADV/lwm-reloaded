@@ -11,6 +11,8 @@ object GroupService {
 
   private def alphabet: List[String] = 'A' to 'Z' map (_.toString) toList
 
+  private def zipWithAlphabet(people: List[Vector[UUID]]) = alphabeticalOrdering(people.size) zip people
+
   def alphabeticalOrdering(amount: Int): List[String] = {
     def go(amount: Int, suffixLevel: Int): List[String] = {
       val letters = alphabet take amount
@@ -30,10 +32,7 @@ object GroupService {
   }
 
   def groupApplicantsBy(strategy: GroupingStrategy)(applicants: Vector[LabworkApplication], labwork: UUID): Vector[Group] = {
-    val people = sort(applicants)
-    val grouped = strategy.group(people)
-    val groups = alphabeticalOrdering(grouped.size) zip grouped
-
-    groups.map(t => Group(t._1, labwork, t._2.toSet)).toVector
+    (sort _ andThen strategy.group andThen zipWithAlphabet) (applicants)
+      .map(t => Group(t._1, labwork, t._2.toSet)).toVector
   }
 }
