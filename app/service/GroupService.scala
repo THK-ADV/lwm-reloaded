@@ -11,15 +11,16 @@ object GroupService {
 
   private def alphabet: List[String] = 'A' to 'Z' map (_.toString) toList
 
-  def alphabeticalOrdering(amount: Int): List[String] = amount match {
-    case letters if (1 to alphabetLetters) contains letters => alphabet take letters
-    case lettersSuffixed =>
-      val suffixed = for {
-        (seq, i) <- (0 until lettersSuffixed).toList.grouped(alphabetLetters).zipWithIndex
-        letter <- if (i == 0) alphabet else seq.zip(alphabet).map(t => s"${t._2}-$i")
-      } yield letter
+  def alphabeticalOrdering(amount: Int): List[String] = {
+    def go(amount: Int, suffixLevel: Int): List[String] = {
+      val letters = alphabet take amount
+      val maybeSuffixed = if (suffixLevel == 0) letters else letters map (c => s"$c-$suffixLevel")
+      val remaining = amount - alphabetLetters
 
-      suffixed toList
+      if (remaining > 0) maybeSuffixed ++ go(remaining, suffixLevel + 1) else maybeSuffixed
+    }
+
+    go(amount, 0)
   }
 
   // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!

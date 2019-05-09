@@ -33,7 +33,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       checkAgainst.take(20).map(_.toString) should contain theSameElementsAs alphabetically
     }
 
-    "generate an alphabetical sequence of letters for more than 26 chars by using numbers as a suffix" in {
+    "generate an alphabetical sequence of letters for more than 26 chars by using numbers as a suffix (level 1)" in {
       val alph = 'A' to 'Z' map (_.toString)
       val suffixed = alph take 4 map (a => s"$a-1")
       val alphabetically = GroupService.alphabeticalOrdering(30)
@@ -41,7 +41,7 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
       alph ++ suffixed should contain theSameElementsAs alphabetically
     }
 
-    "generate an alphabetical sequence of letters for more than 52 chars by using numbers as a suffix" in {
+    "generate an alphabetical sequence of letters for more than 52 chars by using numbers as a suffix (level 2)" in {
       val alph = 'A' to 'Z' map (_.toString)
       val suffixed1 = alph map (a => s"$a-1")
       val suffixed2 = alph take 5 map (a => s"$a-2")
