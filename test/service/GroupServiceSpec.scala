@@ -1,14 +1,11 @@
 package service
 
-/*import java.util.UUID
+import java.util.UUID
 
 import base.TestBaseDefinition
-import models.{LabworkApplication, User}
+import models.LabworkApplication
 import org.joda.time.DateTime
 import org.scalatest.WordSpec
-import utils.PreferenceSort._
-
-import scala.util.Random
 
 class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
@@ -17,14 +14,43 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
   val apps = users.map(id => LabworkApplication(labwork, id, Set.empty, DateTime.now))
 
   "A GroupServiceSpec" should {
-    "generate an alphabetical sequence of letters" in {
+    "generate no alphabetical sequence if amount of chars is less than zero" in {
+      GroupService.alphabeticalOrdering(0) shouldBe empty
+      GroupService.alphabeticalOrdering(-1) shouldBe empty
+    }
+
+    "generate an alphabetical sequence of letters for our entire alphabet (26 chars)" in {
       val checkAgainst = 'A' to 'Z'
       val alphabetically = GroupService.alphabeticalOrdering(26)
 
-      checkAgainst.forall(c => alphabetically.contains(c.toString)) shouldBe true
+      checkAgainst.map(_.toString) should contain theSameElementsAs alphabetically
     }
 
-    "sort a list of applicants for a given labwork" in {
+    "generate an alphabetical sequence of letters for less than 26 chars" in {
+      val checkAgainst = 'A' to 'Z'
+      val alphabetically = GroupService.alphabeticalOrdering(20)
+
+      checkAgainst.take(20).map(_.toString) should contain theSameElementsAs alphabetically
+    }
+
+    "generate an alphabetical sequence of letters for more than 26 chars by using numbers as a suffix" in {
+      val alph = 'A' to 'Z' map (_.toString)
+      val suffixed = alph take 4 map (a => s"$a-1")
+      val alphabetically = GroupService.alphabeticalOrdering(30)
+
+      alph ++ suffixed should contain theSameElementsAs alphabetically
+    }
+
+    "generate an alphabetical sequence of letters for more than 52 chars by using numbers as a suffix" in {
+      val alph = 'A' to 'Z' map (_.toString)
+      val suffixed1 = alph map (a => s"$a-1")
+      val suffixed2 = alph take 5 map (a => s"$a-2")
+      val alphabetically = GroupService.alphabeticalOrdering(26 * 2 + 5)
+
+      alph ++ suffixed1 ++ suffixed2 should contain theSameElementsAs alphabetically
+    }
+
+    /*"sort a list of applicants for a given labwork" in {
       val users = Vector(
         User.randomUUID,
         User.randomUUID,
@@ -130,6 +156,6 @@ class GroupServiceSpec extends WordSpec with TestBaseDefinition {
 
       r4.take(2).forall(_.size == minEight + 1 + 1) shouldBe true
       r4.last.size shouldBe minEight + 1
-    }
+    }*/
   }
-}*/
+}

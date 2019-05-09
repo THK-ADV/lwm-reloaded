@@ -5,13 +5,22 @@ import java.util.UUID
 import models.{Group, LabworkApplication}
 import utils.PreferenceSort
 
-import scalaz.StreamT._
+object GroupService {
 
-object GroupService { // TODO DI
+  private val alphabetLetters = 26
 
-  def alphabeticalOrdering(amount: Int): List[String] = orderingWith('A')(char => Some((char.toString, (char + 1).toChar)))(amount % 27)
+  private def alphabet: List[String] = 'A' to 'Z' map (_.toString) toList
 
-  def orderingWith[A, B](a: A)(v: A => Option[(B, A)]): Int => List[B] = amount => unfold(a)(v).take(amount).toStream.toList
+  def alphabeticalOrdering(amount: Int): List[String] = amount match {
+    case letters if (1 to alphabetLetters) contains letters => alphabet take letters
+    case lettersSuffixed =>
+      val suffixed = for {
+        (seq, i) <- (0 until lettersSuffixed).toList.grouped(alphabetLetters).zipWithIndex
+        letter <- if (i == 0) alphabet else seq.zip(alphabet).map(t => s"${t._2}-$i")
+      } yield letter
+
+      suffixed toList
+  }
 
   // THIS RESULT FROM THIS SHOULD `NEVER` BE TRANSFORMED INTO A SET. ORDERING IS CRUCIAL!
   def sort(applicants: Vector[LabworkApplication]): Vector[UUID] = {
@@ -19,11 +28,11 @@ object GroupService { // TODO DI
     PreferenceSort.sort(nodes)
   }
 
-  def groupApplicantsBy(strategy: GroupingStrategy, applicants: Vector[LabworkApplication], labwork: UUID): Vector[Group] = {
+  def groupApplicantsBy(strategy: GroupingStrategy)(applicants: Vector[LabworkApplication], labwork: UUID): Vector[Group] = {
     val people = sort(applicants)
-    val grouped = strategy.apply(people)
-    val zipped = alphabeticalOrdering(grouped.size) zip grouped
+    val grouped = strategy.group(people)
+    val groups = alphabeticalOrdering(grouped.size) zip grouped
 
-    zipped.map(t => Group(t._1, labwork, t._2.toSet)).toVector
+    groups.map(t => Group(t._1, labwork, t._2.toSet)).toVector
   }
 }
