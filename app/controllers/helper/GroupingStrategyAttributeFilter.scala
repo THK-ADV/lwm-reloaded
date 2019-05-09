@@ -1,11 +1,12 @@
 package controllers.helper
 
-import service.{CountGrouping, GroupingStrategy, RangeGrouping}
+import service.GroupingStrategy
 
 import scala.collection.Map
 import scala.util.{Failure, Try}
 
-trait GroupingStrategyAttributeFilter { self: AttributeFilter =>
+trait GroupingStrategyAttributeFilter {
+  self: AttributeFilter =>
 
   protected lazy val countAttribute = "count"
   protected lazy val minAttribute = "min"
@@ -18,12 +19,12 @@ trait GroupingStrategyAttributeFilter { self: AttributeFilter =>
       case (Some(count), None, None) =>
         for {
           c <- Try(count.toInt) if c > 0
-        } yield CountGrouping(c)
+        } yield GroupingStrategy.Count(c)
       case (None, Some(min), Some(max)) =>
         for {
           a <- Try(min.toInt)
           b <- Try(max.toInt) if a < b
-        } yield RangeGrouping(a, b)
+        } yield GroupingStrategy.Range(a, b)
       case _ =>
         Failure(new Exception(s"grouping strategy should be either $countAttribute or $minAttribute and $maxAttribute"))
     }
