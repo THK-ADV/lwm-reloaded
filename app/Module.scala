@@ -9,7 +9,7 @@ import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import service.actor.{ActorScheduler, BackupServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
-import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
+import service.blacklist.{BlacklistApiService, BlacklistApiServiceActor, BlacklistApiServiceImpl}
 import service.{MailerService, ScheduleService, SemesterService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
@@ -82,6 +82,16 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bindConstant()
       .annotatedWith(Names.named("semesterCreationFireTime"))
       .to(config("lwm.semester.localTime") getOrElse "")
+
+    bind(classOf[ActorRef])
+      .annotatedWith(classOf[BlacklistApiServiceActorAnnotation])
+      .toProvider(classOf[BlacklistApiServiceActorProvider])
+    bind(classOf[Any])
+      .annotatedWith(Names.named("blacklistDownloadMessage"))
+      .toInstance(BlacklistApiServiceActor.BlacklistDownloadRequestSync)
+    bindConstant()
+      .annotatedWith(Names.named("blacklistDownloadFireTime"))
+      .to(config("lwm.blacklist.localTime") getOrElse "")
   }
 
   private def bindDatabase(): Unit = {

@@ -3,7 +3,7 @@ package service.actor
 import java.time.LocalTime
 
 import akka.actor.{ActorRef, ActorSystem}
-import di.{BackupServiceActorAnnotation, SemesterCreationActorAnnotation}
+import di.{BackupServiceActorAnnotation, BlacklistApiServiceActorAnnotation, SemesterCreationActorAnnotation}
 import javax.inject.{Inject, Named}
 
 import scala.util.{Success, Try}
@@ -15,7 +15,10 @@ final class ActorScheduler @Inject()(
   @Named("backupFireTime") backupFireTime: String,
   @SemesterCreationActorAnnotation semesterCreationActor: ActorRef,
   @Named("semesterCreationMessage") semesterCreationMessage: Any,
-  @Named("semesterCreationFireTime") semesterCreationFireTime: String
+  @Named("semesterCreationFireTime") semesterCreationFireTime: String,
+  @BlacklistApiServiceActorAnnotation blacklistApiDownloadActor: ActorRef,
+  @Named("blacklistDownloadMessage") blacklistDownloadMessage: Any,
+  @Named("blacklistDownloadFireTime") blacklistDownloadFireTime: String
 ) {
 
   import ActorScheduler._
@@ -23,6 +26,7 @@ final class ActorScheduler @Inject()(
   private def actors: List[Try[ScheduledActor]] = List(
     ScheduledActor(backupServiceActor, backupMessage, backupFireTime),
     ScheduledActor(semesterCreationActor, semesterCreationMessage, semesterCreationFireTime),
+    ScheduledActor(blacklistApiDownloadActor, blacklistDownloadMessage, blacklistDownloadFireTime)
   )
 
   actors
