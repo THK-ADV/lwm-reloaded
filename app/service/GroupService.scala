@@ -16,10 +16,10 @@ object GroupService {
   def alphabeticalOrdering(amount: Int): List[String] = {
     def go(amount: Int, suffixLevel: Int): List[String] = {
       val letters = alphabet take amount
-      val maybeSuffixed = if (suffixLevel == 0) letters else letters map (c => s"$c-$suffixLevel")
+      val suffixed = if (suffixLevel == 0) letters else letters map (c => s"$c-$suffixLevel")
       val remaining = amount - alphabetLetters
 
-      if (remaining > 0) maybeSuffixed ++ go(remaining, suffixLevel + 1) else maybeSuffixed
+      if (remaining > 0) suffixed ++ go(remaining, suffixLevel + 1) else suffixed
     }
 
     go(amount, 0)
