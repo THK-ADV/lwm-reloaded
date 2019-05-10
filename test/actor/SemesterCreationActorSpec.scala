@@ -1,4 +1,4 @@
-package actors
+package actor
 
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
