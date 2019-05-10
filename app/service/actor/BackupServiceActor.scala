@@ -3,7 +3,7 @@ package service.actor
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import service.backup.BackupService
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -20,6 +20,7 @@ object BackupServiceActor {
 
 }
 
+@Singleton
 final class BackupServiceActor @Inject()(
   private val backupService: BackupService,
   private val destFolder: Option[File]

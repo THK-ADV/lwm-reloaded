@@ -1,10 +1,9 @@
-package service.blacklist
+package service
 
 import database.BlacklistDb
 import javax.inject.Inject
 import org.joda.time.LocalDate
 import play.api.libs.json.{JsObject, JsValue}
-import service.Webservice
 import utils.date.DateTimeFormatterPattern
 
 import scala.concurrent.{ExecutionContext, Future}

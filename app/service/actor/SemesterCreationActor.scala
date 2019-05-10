@@ -1,7 +1,7 @@
 package service.actor
 
 import akka.actor.{Actor, ActorLogging, Props}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import service.SemesterService
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -18,6 +18,7 @@ object SemesterCreationActor {
 
 }
 
+@Singleton
 final class SemesterCreationActor @Inject()(
   private val semesterService: SemesterService,
   private val year: Option[NaturalDescribableYear]

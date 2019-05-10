@@ -6,7 +6,6 @@ import org.joda.time.DateTime
 import org.scalatest.WordSpec
 import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import service.blacklist.BlacklistApiService
 
 final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite {
 

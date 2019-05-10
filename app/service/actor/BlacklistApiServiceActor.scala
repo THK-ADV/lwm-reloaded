@@ -1,9 +1,9 @@
-package service.blacklist
+package service.actor
 
 import akka.actor.{Actor, ActorLogging, Props}
 import dao.BlacklistDao
-import javax.inject.Inject
-import service.actor.NaturalDescribableYear
+import javax.inject.{Inject, Singleton}
+import service.BlacklistApiService
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -18,6 +18,7 @@ object BlacklistApiServiceActor {
 
 }
 
+@Singleton
 final class BlacklistApiServiceActor @Inject()(
   private val blacklistApiService: BlacklistApiService,
   private val blacklistDao: BlacklistDao,

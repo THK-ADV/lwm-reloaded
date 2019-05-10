@@ -8,8 +8,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike
 import org.scalatest.mockito.MockitoSugar.mock
-import service.actor.NaturalDescribableYear
-import service.blacklist.{BlacklistApiService, BlacklistApiServiceActor}
+import service.BlacklistApiService
+import service.actor.{BlacklistApiServiceActor, NaturalDescribableYear}
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -20,7 +20,7 @@ class BlacklistApiServiceActorSpec
     with TestBaseDefinition
     with ImplicitSender {
 
-  import BlacklistApiServiceActor._
+  import service.actor.BlacklistApiServiceActor._
 
   val blackListDao = mock[BlacklistDao]
   val blacklistApiService = mock[BlacklistApiService]

@@ -7,10 +7,9 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
-import service.actor.{ActorScheduler, BackupServiceActor, SemesterCreationActor}
+import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
-import service.blacklist.{BlacklistApiService, BlacklistApiServiceActor, BlacklistApiServiceImpl}
-import service.{MailerService, ScheduleService, SemesterService, Webservice}
+import service._
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {

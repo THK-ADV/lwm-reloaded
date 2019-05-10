@@ -4,8 +4,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import dao.BlacklistDao
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import service.actor.NaturalDescribableYear
-import service.blacklist.{BlacklistApiService, BlacklistApiServiceActor}
+import service.BlacklistApiService
+import service.actor.{BlacklistApiServiceActor, NaturalDescribableYear}
 
 @Singleton
 class BlacklistApiServiceActorProvider @Inject()(
