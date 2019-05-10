@@ -10,11 +10,13 @@ import service.backup.{BackupService, BackupServiceActor}
 import scala.util.Try
 
 @Singleton
-class BackupServiceProvider @Inject()(system: ActorSystem, backupService: BackupService, config: Configuration) extends Provider[ActorRef] {
+class BackupServiceProvider @Inject()(
+  private val system: ActorSystem,
+  private val backupService: BackupService,
+  private implicit val config: Configuration
+) extends Provider[ActorRef] with ConfigReader {
 
   lazy val get = {
-    def nonEmptyConfig(name: String): Option[String] = (config getOptional[String] name) filter (_.nonEmpty)
-
     val file = for {
       filePath <- nonEmptyConfig("lwm.backup.path")
       file <- Try(new File(filePath)).toOption

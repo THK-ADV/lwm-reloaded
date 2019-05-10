@@ -12,7 +12,7 @@ import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
 import service.{ActorScheduler, MailerService, ScheduleService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
-class Module(environment: Environment, config: Configuration) extends AbstractModule {
+class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
 
   override def configure(): Unit = {
     bindDatabase()
@@ -75,6 +75,4 @@ class Module(environment: Environment, config: Configuration) extends AbstractMo
     bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
     bind(classOf[DatabaseCloseHook]).asEagerSingleton()
   }
-
-  private def config(name: String): Option[String] = config getOptional[String] name
 }

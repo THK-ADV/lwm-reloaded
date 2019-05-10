@@ -23,7 +23,10 @@ object BackupServiceActor {
 
 }
 
-final class BackupServiceActor @Inject()(backupService: BackupService, destFolder: Option[File]) extends Actor with ActorLogging {
+final class BackupServiceActor @Inject()(
+  private val backupService: BackupService,
+  private val destFolder: Option[File]
+) extends Actor with ActorLogging {
 
   private implicit val dispatcher: ExecutionContextExecutor = context.system.dispatcher
 
