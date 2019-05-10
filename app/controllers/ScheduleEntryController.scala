@@ -99,7 +99,7 @@ final class ScheduleEntryController @Inject()(
     apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
 
     groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
-    groups = GroupService.groupApplicantsBy(groupingStrategy, apps, labwork)
+    groups = GroupService.groupApplicantsBy(groupingStrategy)(apps, labwork)
 
     assignmentPlans <- assignmentPlanService.get(List(labworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
     ap = assignmentPlans.head.asInstanceOf[AssignmentPlan]

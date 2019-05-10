@@ -2,9 +2,10 @@ package controllers.helper
 
 import base.TestBaseDefinition
 import org.scalatest.WordSpec
-import service.{CountGrouping, RangeGrouping}
 
 class GroupingStrategyAttributeFilterSpec extends WordSpec with TestBaseDefinition with AttributeFilter with GroupingStrategyAttributeFilter {
+
+  import service.GroupingStrategy._
 
   private val randoms = Map(
     "firstAttribute" -> Seq("firstValue"),
@@ -15,7 +16,7 @@ class GroupingStrategyAttributeFilterSpec extends WordSpec with TestBaseDefiniti
   "A GroupingStrategyAttributeFilterSpec" should {
     "extract count strategy" in {
       val strategy = extractGroupingStrategy(Map(countAttribute -> Seq("5")) ++ randoms)
-      strategy.success.value shouldBe CountGrouping(5)
+      strategy.success.value shouldBe Count(5)
     }
 
     "fail extracting count strategy when input is not a number" in {
@@ -30,7 +31,7 @@ class GroupingStrategyAttributeFilterSpec extends WordSpec with TestBaseDefiniti
 
     "extract min/max strategy" in {
       val strategy = extractGroupingStrategy(Map(minAttribute -> Seq("2"), maxAttribute -> Seq("5")) ++ randoms)
-      strategy.success.value shouldBe RangeGrouping(2, 5)
+      strategy.success.value shouldBe Range(2, 5)
     }
 
     "fail extracting min/max strategy when inputs are not numbers" in {

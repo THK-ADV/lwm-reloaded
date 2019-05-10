@@ -4,6 +4,8 @@ import java.util.UUID
 
 sealed trait GroupingStrategy {
 
+  import GroupingStrategy._
+
   @scala.annotation.tailrec
   private def go(min: Int, max: Int, limit: Option[Int], p: Vector[UUID]): List[Vector[UUID]] = {
     (p.size % min, p.size / min) match {
@@ -27,18 +29,24 @@ sealed trait GroupingStrategy {
     }
   }
 
-  def apply(people: Vector[UUID]): List[Vector[UUID]] = this match {
-    case CountGrouping(value) =>
+  def group(people: Vector[UUID]): List[Vector[UUID]] = this match {
+    case Count(value) =>
       val count = value
       val min = people.size / count
       val max = min + 1
 
       go(min, max, Some(count), people)
 
-    case RangeGrouping(min, max) => go(min, max, None, people)
+    case Range(min, max) =>
+      go(min, max, None, people)
   }
 }
 
-case class CountGrouping(value: Int) extends GroupingStrategy
+object GroupingStrategy {
 
-case class RangeGrouping(min: Int, max: Int) extends GroupingStrategy
+  case class Count(value: Int) extends GroupingStrategy
+
+  case class Range(min: Int, max: Int) extends GroupingStrategy
+
+}
+
