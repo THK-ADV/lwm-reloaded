@@ -9,7 +9,7 @@ import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
 import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
-import service.{ActorScheduler, MailerService, ScheduleService, Webservice}
+import service.{ActorScheduler, MailerService, ScheduleService, SemesterService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
@@ -30,6 +30,8 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[ScheduleService]).toProvider(classOf[ScheduleServiceProvider])
     bind(classOf[KeycloakDeployment]).toProvider(classOf[KeycloakDeploymentProvider])
     bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
+
+    bind(classOf[SemesterService]).in(classOf[Singleton])
   }
 
   private def bindDaos(): Unit = {

@@ -28,5 +28,16 @@ class NaturalDescribableYearSpec extends WordSpec with TestBaseDefinition with O
       next.value shouldBe Next
       next.value.year shouldBe LocalDate.now.getYear + 1
     }
+
+    "format years" in {
+      val year = NaturalDescribableYear(2018)
+      year.short shouldBe "18"
+      year.long shouldBe "2018"
+
+      val next = NaturalDescribableYear.parse("next")
+      val jodaNext = LocalDate.now.plusYears(1)
+      next.value.short shouldBe jodaNext.toString("yy")
+      next.value.long shouldBe jodaNext.toString("yyyy")
+    }
   }
 }

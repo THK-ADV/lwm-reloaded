@@ -13,6 +13,12 @@ sealed trait NaturalDescribableYear {
     case Next => nextYear
     case Year(y) => y
   }
+
+  private def date: LocalDate = new LocalDate(year, 1, 1)
+
+  def short = date.toString("yy")
+
+  def long = date.toString("yyyy")
 }
 
 object NaturalDescribableYear {
