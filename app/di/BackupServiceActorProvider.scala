@@ -2,15 +2,16 @@ package di
 
 import java.io.File
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import service.backup.{BackupService, BackupServiceActor}
+import service.actor.BackupServiceActor
+import service.backup.BackupService
 
 import scala.util.Try
 
 @Singleton
-class BackupServiceProvider @Inject()(
+class BackupServiceActorProvider @Inject()(
   private val system: ActorSystem,
   private val backupService: BackupService,
   private implicit val config: Configuration
@@ -27,6 +28,6 @@ class BackupServiceProvider @Inject()(
     thus, optionality has to be handled internally.
     see https://github.com/google/guice/wiki/ThrowingProviders */
 
-    system.actorOf(Props(new BackupServiceActor(backupService, file)))
+    system.actorOf(BackupServiceActor.props(backupService, file))
   }
 }

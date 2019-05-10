@@ -6,6 +6,7 @@ import dao.SemesterDao
 import database.SemesterDb
 import javax.inject.Inject
 import org.joda.time.LocalDate
+import service.actor.NaturalDescribableYear
 
 final class SemesterService @Inject()(private val semesterDao: SemesterDao) {
 

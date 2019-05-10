@@ -7,9 +7,10 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
-import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
+import service.actor.{ActorScheduler, BackupServiceActor, SemesterCreationActor}
+import service.backup.{BackupService, PSQLBackupService}
 import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
-import service.{ActorScheduler, MailerService, ScheduleService, SemesterService, Webservice}
+import service.{MailerService, ScheduleService, SemesterService, Webservice}
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
@@ -64,13 +65,23 @@ class Module(environment: Environment, implicit val config: Configuration) exten
 
     bind(classOf[ActorRef])
       .annotatedWith(classOf[BackupServiceActorAnnotation])
-      .toProvider(classOf[BackupServiceProvider])
+      .toProvider(classOf[BackupServiceActorProvider])
     bind(classOf[Any])
       .annotatedWith(Names.named("backupMessage"))
       .toInstance(BackupServiceActor.BackupRequestAsync)
     bindConstant()
       .annotatedWith(Names.named("backupFireTime"))
       .to(config("lwm.backup.localTime") getOrElse "")
+
+    bind(classOf[ActorRef])
+      .annotatedWith(classOf[SemesterCreationActorAnnotation])
+      .toProvider(classOf[SemesterCreationActorProvider])
+    bind(classOf[Any])
+      .annotatedWith(Names.named("semesterCreationMessage"))
+      .toInstance(SemesterCreationActor.CreationRequestAsync)
+    bindConstant()
+      .annotatedWith(Names.named("semesterCreationFireTime"))
+      .to(config("lwm.semester.localTime") getOrElse "")
   }
 
   private def bindDatabase(): Unit = {

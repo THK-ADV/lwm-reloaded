@@ -3,10 +3,11 @@ package service
 import base.TestBaseDefinition
 import org.joda.time.LocalDate
 import org.scalatest.{OptionValues, WordSpec}
+import service.actor.NaturalDescribableYear
 
 class NaturalDescribableYearSpec extends WordSpec with TestBaseDefinition with OptionValues {
 
-  import service.NaturalDescribableYear._
+  import service.actor.NaturalDescribableYear._
 
   "A NaturalDescribableYearSpec" should {
     "build a year with int value" in {

@@ -1,4 +1,4 @@
-package service
+package service.actor
 
 import org.joda.time.LocalDate
 
@@ -6,7 +6,7 @@ import scala.util.Try
 
 sealed trait NaturalDescribableYear {
 
-  import service.NaturalDescribableYear._
+  import NaturalDescribableYear._
 
   def year: Int = this match {
     case Current => currentYear

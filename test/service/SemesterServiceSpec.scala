@@ -2,6 +2,7 @@ package service
 
 import base.DatabaseSpec
 import play.api.inject.guice.GuiceableModule
+import service.actor.NaturalDescribableYear
 
 class SemesterServiceSpec extends DatabaseSpec {
 
