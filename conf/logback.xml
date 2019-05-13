@@ -31,10 +31,9 @@
     <!--<logger name="slick.jdbc" level="DEBUG"/>-->
 
     <logger name="akka" level="INFO"/>
-    <!--<logger name="services.ldap.LdapSyncServiceActor" level="INFO"/>-->
-    <logger name="service.backup.BackupServiceActor" level="INFO"/>
+    <logger name="service.actor.BackupServiceActor" level="INFO"/>
     <!--<logger name="services.blacklist.BlacklistServiceActor" level="INFO"/>-->
-    <!--<logger name="services.SemesterCreationActor" level="INFO"/>-->
+    <logger name="services.actor.SemesterCreationActor" level="INFO"/>
 
     <root level="WARN">
         <appender-ref ref="ASYNCFILE" />

@@ -2,19 +2,22 @@ package di
 
 import java.io.File
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import service.backup.{BackupService, BackupServiceActor}
+import service.actor.BackupServiceActor
+import service.backup.BackupService
 
 import scala.util.Try
 
 @Singleton
-class BackupServiceProvider @Inject()(system: ActorSystem, backupService: BackupService, config: Configuration) extends Provider[ActorRef] {
+class BackupServiceActorProvider @Inject()(
+  private val system: ActorSystem,
+  private val backupService: BackupService,
+  private implicit val config: Configuration
+) extends Provider[ActorRef] with ConfigReader {
 
   lazy val get = {
-    def nonEmptyConfig(name: String): Option[String] = (config getOptional[String] name) filter (_.nonEmpty)
-
     val file = for {
       filePath <- nonEmptyConfig("lwm.backup.path")
       file <- Try(new File(filePath)).toOption
@@ -25,6 +28,6 @@ class BackupServiceProvider @Inject()(system: ActorSystem, backupService: Backup
     thus, optionality has to be handled internally.
     see https://github.com/google/guice/wiki/ThrowingProviders */
 
-    system.actorOf(Props(new BackupServiceActor(backupService, file)))
+    system.actorOf(BackupServiceActor.props(backupService, file))
   }
 }

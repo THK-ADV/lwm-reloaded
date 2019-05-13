@@ -7,12 +7,12 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
-import service.backup.{BackupService, BackupServiceActor, PSQLBackupService}
-import service.blacklist.{BlacklistApiService, BlacklistApiServiceImpl}
-import service.{ActorScheduler, MailerService, ScheduleService, Webservice}
+import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
+import service.backup.{BackupService, PSQLBackupService}
+import service._
 import slick.jdbc.PostgresProfile.api._
 
-class Module(environment: Environment, config: Configuration) extends AbstractModule {
+class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
 
   override def configure(): Unit = {
     bindDatabase()
@@ -30,6 +30,8 @@ class Module(environment: Environment, config: Configuration) extends AbstractMo
     bind(classOf[ScheduleService]).toProvider(classOf[ScheduleServiceProvider])
     bind(classOf[KeycloakDeployment]).toProvider(classOf[KeycloakDeploymentProvider])
     bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
+
+    bind(classOf[SemesterService]).in(classOf[Singleton])
   }
 
   private def bindDaos(): Unit = {
@@ -62,19 +64,37 @@ class Module(environment: Environment, config: Configuration) extends AbstractMo
 
     bind(classOf[ActorRef])
       .annotatedWith(classOf[BackupServiceActorAnnotation])
-      .toProvider(classOf[BackupServiceProvider])
+      .toProvider(classOf[BackupServiceActorProvider])
     bind(classOf[Any])
       .annotatedWith(Names.named("backupMessage"))
       .toInstance(BackupServiceActor.BackupRequestAsync)
     bindConstant()
       .annotatedWith(Names.named("backupFireTime"))
       .to(config("lwm.backup.localTime") getOrElse "")
+
+    bind(classOf[ActorRef])
+      .annotatedWith(classOf[SemesterCreationActorAnnotation])
+      .toProvider(classOf[SemesterCreationActorProvider])
+    bind(classOf[Any])
+      .annotatedWith(Names.named("semesterCreationMessage"))
+      .toInstance(SemesterCreationActor.CreationRequestAsync)
+    bindConstant()
+      .annotatedWith(Names.named("semesterCreationFireTime"))
+      .to(config("lwm.semester.localTime") getOrElse "")
+
+    bind(classOf[ActorRef])
+      .annotatedWith(classOf[BlacklistApiServiceActorAnnotation])
+      .toProvider(classOf[BlacklistApiServiceActorProvider])
+    bind(classOf[Any])
+      .annotatedWith(Names.named("blacklistDownloadMessage"))
+      .toInstance(BlacklistApiServiceActor.BlacklistDownloadRequestSync)
+    bindConstant()
+      .annotatedWith(Names.named("blacklistDownloadFireTime"))
+      .to(config("lwm.blacklist.localTime") getOrElse "")
   }
 
   private def bindDatabase(): Unit = {
     bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
     bind(classOf[DatabaseCloseHook]).asEagerSingleton()
   }
-
-  private def config(name: String): Option[String] = config getOptional[String] name
 }

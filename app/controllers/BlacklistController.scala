@@ -11,7 +11,7 @@ import models.{Blacklist, BlacklistProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
-import service.blacklist.BlacklistApiService
+import service.BlacklistApiService
 
 import scala.concurrent.Future
 import scala.util.Try
