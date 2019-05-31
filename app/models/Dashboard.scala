@@ -10,22 +10,27 @@ sealed trait Dashboard {
   def status: LdapUserStatus
 }
 
-case class StudentDashboard(
-  user: User,
-  status: LdapUserStatus,
-  semester: Semester,
-  labworks: Seq[LabworkLike],
-  labworkApplications: Seq[LabworkApplicationLike],
-  groups: Seq[(String, LabworkLike)],
-  reportCardEntries: Seq[ReportCardEntryLike],
-  allEvaluations: Seq[ReportCardEvaluationLike],
-  passedEvaluations: Seq[(String, String, Boolean, Int)]
-) extends Dashboard
+object Dashboard {
 
-case class EmployeeDashboard(
-  user: User,
-  status: LdapUserStatus,
-  semester: Semester,
-  courses: Seq[CourseAtom],
-  scheduleEntries: Seq[ScheduleEntryLike]
-) extends Dashboard
+  case class Student(
+    user: User,
+    status: LdapUserStatus,
+    semester: Semester,
+    labworks: Seq[LabworkLike],
+    labworkApplications: Seq[LabworkApplicationLike],
+    groups: Seq[(String, LabworkLike)],
+    reportCardEntries: Seq[ReportCardEntryLike],
+    allEvaluations: Seq[ReportCardEvaluationLike],
+    passedEvaluations: Seq[(String, String, Boolean, Int)]
+  ) extends Dashboard
+
+  case class Employee(
+    user: User,
+    status: LdapUserStatus,
+    semester: Semester,
+    courses: Seq[CourseAtom],
+    scheduleEntries: Seq[ScheduleEntryLike]
+  ) extends Dashboard
+
+}
+

@@ -5,7 +5,7 @@ import dao._
 import database.helper.LdapUserStatus
 import javax.inject.{Inject, Singleton}
 import models.Role.{EmployeeRole, God, StudentRole}
-import models.{Dashboard, EmployeeDashboard, LabworkApplicationLike, LabworkLike, ReportCardEntryLike, ReportCardEvaluationLike, Semester, StudentDashboard, User}
+import models.{Dashboard, LabworkApplicationLike, LabworkLike, ReportCardEntryLike, ReportCardEvaluationLike, Semester, User}
 import play.api.libs.json.{JsString, Json, Writes}
 import play.api.mvc._
 import security.SecurityActionChain
@@ -36,7 +36,7 @@ final class DashboardController @Inject()(
     implicit val ldapStatusWrites: Writes[LdapUserStatus] = (o: LdapUserStatus) => JsString(o.label)
 
     {
-      case s: StudentDashboard => Json.obj(
+      case s: Dashboard.Student => Json.obj(
         "user" -> User.writes.writes(s.user),
         "status" -> s.status,
         "semester" -> Semester.writes.writes(s.semester),
@@ -59,7 +59,7 @@ final class DashboardController @Inject()(
           )
         }
       )
-      case e: EmployeeDashboard => Json.writes[EmployeeDashboard].writes(e)
+      case e: Dashboard.Employee => Json.writes[Dashboard.Employee].writes(e)
     }
   }
 
