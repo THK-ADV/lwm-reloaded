@@ -26,3 +26,7 @@ project/plugins/project/
 
 # idea
 /.idea
+.gitsecret/keys/random_seed
+!*.secret
+
+.env
