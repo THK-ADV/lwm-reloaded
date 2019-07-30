@@ -1,5 +1,7 @@
 name := """lwm-reloaded"""
 
+maintainer := "Alexander Dobrynin <alexander.dobrynin@th-koeln.de>"
+
 version := "1.0-SNAPSHOT"
 
 resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
