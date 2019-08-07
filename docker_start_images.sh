@@ -1,6 +1,7 @@
 #!/bin/sh
 
 docker load -i lwm-backend-images.tar
+docker-compose stop
 docker-compose down
 docker-compose up -d
 
