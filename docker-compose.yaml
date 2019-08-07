@@ -1,0 +1,32 @@
+version: '3.3'
+
+services:
+  psql:
+    container_name: lwm-db
+    image: postgres:11.4
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${USERNAME}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${USERNAME}
+    volumes:
+      - psql_vol:/var/lib/postgresql/data
+
+  backend:
+    container_name: lwm-backend
+    image: lwm-backend
+    restart: always
+    ports:
+      - 9000:9000
+    environment:
+      LWM_DB_URL: jdbc:postgresql://psql:5432/${USERNAME}
+      LWM_DB_USER: ${USERNAME}
+      LWM_DB_NAME: ${USERNAME}
+      LWM_DB_PASSWORD: ${PASSWORD}
+    depends_on:
+      - psql
+
+volumes:
+  psql_vol:
