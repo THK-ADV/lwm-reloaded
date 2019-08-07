@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${PASSWORD}
       POSTGRES_DB: ${USERNAME}
     volumes:
-      - /Users/alexanderdobrynin/Developer/docker/lwm-db:/var/lib/postgresql/data
+      - psql_vol:/var/lib/postgresql/data
 
   backend:
     container_name: lwm-backend
@@ -27,3 +27,6 @@ services:
       LWM_DB_PASSWORD: ${PASSWORD}
     depends_on:
       - psql
+
+volumes:
+  psql_vol:

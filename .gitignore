@@ -29,4 +29,6 @@ project/plugins/project/
 .gitsecret/keys/random_seed
 !*.secret
 
+# docker
 .env
+lwm-backend-images.tar

@@ -16,6 +16,7 @@ if [ $? -eq 0 ]; then
     docker image rm ${img_name}
     docker build -t ${img_name} .
     if [ $? -eq 0 ]; then
+        docker-compose stop
         docker-compose down
         docker-compose up -d
         if [ $? -eq 0 ]; then
