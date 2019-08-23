@@ -10,7 +10,7 @@ trait LwmFakeApplication {
 
   val fakeDbConfig = Configuration(
     "database.properties.url" -> "jdbc:postgresql://localhost:5432/postgres",
-    "database.properties.user" -> "alex",
+    "database.properties.user" -> "alexanderdobrynin",
     "database.properties.databaseName" -> "postgres",
     "database.properties.password" -> ""
   )

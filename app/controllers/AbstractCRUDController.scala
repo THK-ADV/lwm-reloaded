@@ -7,7 +7,6 @@ import dao.AbstractDao
 import dao.helper.TableFilter
 import database._
 import javax.inject.Inject
-import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
@@ -39,7 +38,9 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
 
-  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = Failure(new Throwable(""))
+  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    Failure(new Throwable(s"no filter for $attribute and $value"))
+  }
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
@@ -61,10 +62,10 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   }
 
   def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { request =>
-    val uuid = UUID.fromString(id)
     val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
     (for {
+      uuid <- id.uuidF
       protocol <- Future.fromTry(parseJson(request)(reads))
       dbModel = toDbModel(protocol, Some(uuid))
       updated <- abstractDao.update(dbModel)
@@ -76,11 +77,11 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
-    delete0(UUID.fromString(id))
+    id.uuidF.flatMap(delete0).deleted
   }
 
-  protected def delete0(uuid: UUID): Future[Result] = {
-    abstractDao.delete(uuid).deleted
+  protected def delete0(uuid: UUID): Future[LwmModel] = {
+    abstractDao.delete(uuid).map(_.toUniqueEntity.asInstanceOf[LwmModel])
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>
@@ -104,8 +105,11 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
-    val uuid = UUID.fromString(id)
-    abstractDao.getSingle(uuid, atomic).jsonResult(id)
+
+    (for {
+      uuid <- id.uuidF
+      model <- abstractDao.getSingle(uuid, atomic)
+    } yield model).jsonResult(id)
   }
 
   protected implicit class AbstractTableFilter(string: String) {
