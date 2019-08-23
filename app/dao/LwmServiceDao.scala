@@ -18,7 +18,7 @@ trait LwmServiceDao extends Core {
 
   protected def reportCardEntryDao: ReportCardEntryDao
 
-  def addStudentToGroup(student: UUID, labwork: UUID, destGroup: UUID): Future[(LabworkApplicationDb, GroupMembership, Option[UUID], Seq[ReportCardEntryDb])] = {
+  def insertStudentToGroup(student: UUID, labwork: UUID, destGroup: UUID): Future[(LabworkApplicationDb, GroupMembership, Option[UUID], Seq[ReportCardEntryDb])] = {
     val result = for {
       membership <- groupDao.add(student, destGroup)
       maybeApp <- labworkApplicationDao.filterBy(List(labworkFilter(labwork), userFilter(student))).result.headOption

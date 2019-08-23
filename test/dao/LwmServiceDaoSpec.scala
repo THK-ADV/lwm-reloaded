@@ -45,7 +45,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
   "A LwmServiceDao" should {
 
-    "add a student into an existing group even if an application exists" in {
+    "insert a student into an existing group even if an application exists" in {
       val labwork = labworks.head
       val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
       val groups = createGroups
@@ -59,7 +59,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
       val destGrp = groups.find(_.labwork == labwork.id).get
 
-      async(dao.addStudentToGroup(student.id, labwork.id, destGrp.id)) {
+      async(dao.insertStudentToGroup(student.id, labwork.id, destGrp.id)) {
         case (lapp, membership, srcStudent, cards) =>
           lapp shouldBe application
 
@@ -71,7 +71,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       }
     }
 
-    "add a student into an existing group by creating a new application" in {
+    "insert a student into an existing group by creating a new application" in {
       val labwork = labworks.head
       val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
       val added = GroupDb("foo", labworks.find(_.id != labwork.id).get.id, Set(student.id))
@@ -84,7 +84,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
       val destGrp = groups.find(_.labwork == labwork.id).get
 
-      async(dao.addStudentToGroup(student.id, labwork.id, destGrp.id)) {
+      async(dao.insertStudentToGroup(student.id, labwork.id, destGrp.id)) {
         case (lapp, membership, srcStudent, cards) =>
           lapp.labwork shouldBe labwork.id
           lapp.applicant shouldBe student.id
@@ -98,7 +98,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       }
     }
 
-    "add a student into an existing group by creating a new application and coping reportCardEntries" in {
+    "insert a student into an existing group by creating a new application and coping reportCardEntries" in {
       val labwork = labworks.head
       val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
       val groups = createGroups
@@ -110,7 +110,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
       val destGrp = groups.find(_.labwork == labwork.id).get
 
-      async(dao.addStudentToGroup(student.id, labwork.id, destGrp.id)) {
+      async(dao.insertStudentToGroup(student.id, labwork.id, destGrp.id)) {
         case (lapp, membership, srcStudent, cards) =>
           lapp.labwork shouldBe labwork.id
           lapp.applicant shouldBe student.id
@@ -145,7 +145,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       }
     }
 
-    "fail adding a student into an existing group if he has already one" in {
+    "fail inserting a student into an existing group if he has already one" in {
       val labwork = labworks.head
       val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
       val groups = createGroups
@@ -159,7 +159,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       async(reportCardEntryDao.createMany(reportCardEntries))(_ => Unit)
       async(groupDap.update(added))(_ => Unit)
 
-      async(dao.addStudentToGroup(student.id, labwork.id, destGrp.id).failed)(_.getMessage shouldBe s"student ${student.id} is already in group ${destGrp.id}")
+      async(dao.insertStudentToGroup(student.id, labwork.id, destGrp.id).failed)(_.getMessage shouldBe s"student ${student.id} is already in group ${destGrp.id}")
     }
   }
 

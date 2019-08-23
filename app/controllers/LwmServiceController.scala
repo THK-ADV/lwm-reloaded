@@ -29,7 +29,7 @@ final class LwmServiceController @Inject()(
 
   private implicit def membershipWrites: OWrites[GroupMembership] = Json.writes[GroupMembership]
 
-  def addStudentToGroup(course: String, labwork: String, group: String, student: String) = restrictedContext(course)(Create) asyncAction { _ =>
+  def insertStudentToGroup(course: String, labwork: String, group: String, student: String) = restrictedContext(course)(Create) asyncAction { _ =>
     val ids = for {
       lid <- Try(UUID.fromString(labwork))
       gid <- Try(UUID.fromString(group))
@@ -38,7 +38,7 @@ final class LwmServiceController @Inject()(
 
     ids match {
       case Success((lid, gid, sid)) =>
-        serviceDao.addStudentToGroup(sid, lid, gid).map {
+        serviceDao.insertStudentToGroup(sid, lid, gid).map {
           case (app, membership, _, cards) => ok(
             "labworkApplication" -> Json.toJson(app.toUniqueEntity),
             "membership" -> Json.toJson(membership),
