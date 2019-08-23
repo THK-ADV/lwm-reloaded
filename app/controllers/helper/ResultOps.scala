@@ -1,5 +1,6 @@
 package controllers.helper
 
+import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{BaseController, Result}
 
@@ -19,7 +20,15 @@ trait ResultOps {
     )
   )
 
+
+  protected def badRequest(throwable: Throwable): Result = BadRequest(Json.obj(
+    "message" -> throwable.getMessage,
+    "stackTrace" -> throwable.getStackTrace.map(_.toString)
+  ))
+
   protected def ok[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.toJson(entity))
+
+  protected def ok(fields: (String, JsValueWrapper)*): Result = Ok(Json.obj(fields: _*))
 
   protected def delete[A](entity: A)(implicit writes: Writes[A]): Result = Ok(Json.obj("deleted" -> Json.toJson(entity)))
 

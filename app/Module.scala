@@ -7,6 +7,7 @@ import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
+import security.{SecurityActionChain, SecurityActionChainImpl}
 import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
 import service._
@@ -32,6 +33,8 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
 
     bind(classOf[SemesterService]).in(classOf[Singleton])
+
+    bind(classOf[SecurityActionChain]).to(classOf[SecurityActionChainImpl]).in(classOf[Singleton])
   }
 
   private def bindDaos(): Unit = {
@@ -57,6 +60,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[TimetableDao]).to(classOf[TimetableDaoImpl]).in(classOf[Singleton])
     bind(classOf[UserDao]).to(classOf[UserDaoImpl]).in(classOf[Singleton])
     bind(classOf[DashboardDao]).to(classOf[DashboardDaoImpl]).in(classOf[Singleton])
+    bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {

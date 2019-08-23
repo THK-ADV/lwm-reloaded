@@ -154,5 +154,9 @@ POST          /courses/:c/labworks/:l/mails                                    c
 # Dashboard
 GET           /dashboard                                                       controllers.DashboardController.dashboard(systemId: Option[String])
 
+# Service
+PUT           /courses/:c/labworks/:l/groups/:g/insert/:s                      controllers.LwmServiceController.addStudentToGroup(c, l, g, s)
+PUT           /courses/:c/labworks/:l/groups/:g/student/:s/move/:g2            controllers.LwmServiceController.moveStudentToGroup(c, l, g, s, g2)
+
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)

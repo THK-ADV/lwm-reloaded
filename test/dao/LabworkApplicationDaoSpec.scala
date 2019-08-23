@@ -45,7 +45,7 @@ class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplica
 
   private val expandedLabworks = labworks drop 5
 
-  private val expandedStudents = populateStudents(100)
+  private val expandedStudents = populateStudents(100)(degrees)
 
   private def randomAvoiding(element: UUID, source: List[UUID], atLeastOne: Boolean): Set[UUID] = {
     random(source.filterNot(_ == element), atLeastOne)

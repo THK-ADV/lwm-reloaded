@@ -92,8 +92,8 @@ object AbstractDaoSpec {
     UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None)
   }.toList
 
-  final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(randomDegree.id))
+  final def populateStudents(amount: Int)(degrees: List[DegreeDb]) = (0 until amount).map { i =>
+    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(takeOneOf(degrees).id))
   }.toList
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
@@ -239,7 +239,7 @@ object AbstractDaoSpec {
 
   lazy val timetables = populateTimetables(maxTimetables, 6)(employees, labworks.drop(1), blacklists)
 
-  lazy val students = populateStudents(maxStudents)
+  lazy val students = populateStudents(maxStudents)(degrees)
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 

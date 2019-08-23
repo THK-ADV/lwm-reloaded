@@ -16,7 +16,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
   import scala.concurrent.ExecutionContext.Implicits.global
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
-  private lazy val privateStudents = populateStudents(100)
+  private lazy val privateStudents = populateStudents(100)(degrees)
 
   def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[UserDb], rooms: List[RoomDb]) = ReportCardEntryAtom(
     students.find(_.id == entry.student).get.toUniqueEntity,
