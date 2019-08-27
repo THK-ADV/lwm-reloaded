@@ -19,6 +19,7 @@ object GroupDao extends TableFilter[GroupTable] {
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
+  import TableFilter.{groupFilter, userFilter}
 
   override val tableQuery = TableQuery[GroupTable]
 
@@ -28,17 +29,32 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
     groupMembershipQuery.filter(_.group === group).map(_.user).result.headOption
   }
 
-  def add(student: UUID, group: UUID): DBIOAction[GroupMembership, NoStream, Effect.Read with Effect.Write] = {
-    import TableFilter.{groupFilter, userFilter}
+  def groupHasAtLeastTwoMembers(group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    (groupMembershipQuery.filter(groupFilter(group)).size > 1).result
+  }
 
+  def add(student: UUID, group: UUID): DBIOAction[GroupMembership, NoStream, Effect.Read with Effect.Write] = {
     for {
-      exists <- groupMembershipQuery.filter(t => groupFilter(group).apply(t) && userFilter(student).apply(t)).exists.result
-      membership <- if (exists) DBIO.failed(new Throwable(s"student $student is already in group $group")) else (groupMembershipQuery returning groupMembershipQuery) += GroupMembership(group, student)
+      exists <- isInGroup(student, group)
+      membership <- if (exists)
+        DBIO.failed(new Throwable(s"student $student is already in group $group"))
+      else
+        (groupMembershipQuery returning groupMembershipQuery) += GroupMembership(group, student)
     } yield membership
   }
 
-  def remove(student: UUID, group: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    groupMembershipQuery.filter(g => g.group === group && g.user === student).delete
+  def remove(student: UUID, group: UUID): DBIOAction[Int, NoStream, Effect.Read with Effect.Write] = {
+    for {
+      exists <- isInGroup(student, group)
+      membership <- if (exists)
+        groupMembershipQuery.filter(g => g.group === group && g.user === student).delete
+      else
+        DBIO.failed(new Throwable(s"student $student is not a member of group $group"))
+    } yield membership
+  }
+
+  def isInGroup(student: UUID, group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    groupMembershipQuery.filter(t => groupFilter(group).apply(t) && userFilter(student).apply(t)).exists.result
   }
 
   override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {

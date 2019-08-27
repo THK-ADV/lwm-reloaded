@@ -3,14 +3,16 @@ package dao
 import java.util.UUID
 
 import dao.helper.{Core, TableFilter}
-import database.{GroupMembership, LabworkApplicationDb, ReportCardEntryDb, ReportCardEntryTypeDb}
+import database._
 import javax.inject.Inject
+import models.{LabworkApplication, ReportCardEntry}
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LwmServiceDao extends Core {
-  import TableFilter.{userFilter, labworkFilter}
+
+  import TableFilter.{labworkFilter, userFilter}
 
   protected def labworkApplicationDao: LabworkApplicationDao
 
@@ -18,23 +20,73 @@ trait LwmServiceDao extends Core {
 
   protected def reportCardEntryDao: ReportCardEntryDao
 
-  def insertStudentToGroup(student: UUID, labwork: UUID, destGroup: UUID): Future[(LabworkApplicationDb, GroupMembership, Option[UUID], Seq[ReportCardEntryDb])] = {
+  def insertStudentToGroup(student: UUID, labwork: UUID, group: UUID): Future[(GroupMembership, LabworkApplication, Seq[ReportCardEntry], Option[UUID])] = {
     val result = for {
-      membership <- groupDao.add(student, destGroup)
+      membership <- groupDao.add(student, group)
       maybeApp <- labworkApplicationDao.filterBy(List(labworkFilter(labwork), userFilter(student))).result.headOption
       app <- maybeApp.fold(labworkApplicationDao.createQuery(LabworkApplicationDb(labwork, student, Set.empty)))(DBIO.successful)
-      srcStudent <- groupDao.firstStudentIn(destGroup)
-      srcCards <- DBIO.sequenceOption(srcStudent.map(s => reportCardEntryDao.filterBy(List(labworkFilter(labwork), userFilter(s))).result))
+      srcStudent <- groupDao.firstStudentIn(group)
+      srcCards <- DBIO.sequenceOption(srcStudent.map(s => reportCards(labwork)(s).result))
       copied = srcCards.getOrElse(Seq.empty).map { card =>
         val newId = UUID.randomUUID
         val newEntryTypes = card.entryTypes.map(t => ReportCardEntryTypeDb(Some(newId), None, t.entryType))
 
-        ReportCardEntryDb(student, labwork, card.label, card.date, card.start, card.end, card.room, newEntryTypes, id = newId)
+        ReportCardEntryDb(student, labwork, card.label, card.date, card.start, card.end, card.room, newEntryTypes, card.assignmentIndex, id = newId)
       }
       destCards <- reportCardEntryDao.createManyQuery(copied)
-    } yield (app, membership, srcStudent, destCards)
+    } yield (membership, app.toUniqueEntity, destCards.map(_.toUniqueEntity), srcStudent)
 
     db.run(result.transactionally)
+  }
+
+  def removeStudentFromGroup(student: UUID, labwork: UUID, group: UUID): Future[(Boolean, LabworkApplication, Seq[ReportCardEntry])] = {
+    val result = for {
+      shouldContinue <- groupDao.groupHasAtLeastTwoMembers(group)
+      _ <- ensure(shouldContinue, () => "there must be at least one member left after removal")
+
+      removedMembership <- groupDao.remove(student, group)
+      application = labworkApplicationDao.filterBy(List(labworkFilter(labwork), userFilter(student)))
+      removedApplication <- labworkApplicationDao.deleteSingleQuery(application)
+      cards <- reportCards(labwork)(student).result
+      removedCards <- DBIO.sequence(cards.map(c => reportCardEntryDao.deleteSingle(c.id)))
+    } yield (removedMembership > 0, removedApplication.toUniqueEntity, removedCards.map(_.toUniqueEntity))
+
+    db.run(result.transactionally)
+  }
+
+  def moveStudentToGroup(student: UUID, labwork: UUID, srcGroup: UUID, destGroup: UUID): Future[(Boolean, GroupMembership, Seq[ReportCardEntry], Seq[ReportCardEntry], Seq[ReportCardEntry])] = {
+    val reportCardFromLabwork = reportCards(labwork) _
+    val validCards = (cards: Seq[ReportCardEntryDb]) => cards.forall(_.assignmentIndex >= 0)
+
+    val result = for {
+      shouldContinue <- groupDao.groupHasAtLeastTwoMembers(srcGroup)
+      _ <- ensure(shouldContinue, () => "there must be at least one member left after moving")
+
+      maybeDestStudent <- groupDao.firstStudentIn(destGroup)
+      destStudent = maybeDestStudent.get
+      srcStudentCards <- reportCardFromLabwork(student).sortBy(_.assignmentIndex).result
+      destStudentCards <- reportCardFromLabwork(destStudent).sortBy(_.assignmentIndex).result
+      _ <- ensure(srcStudentCards.size == destStudentCards.size, () => "both src- and dest- reportCardEntries must have the same size")
+
+      removedMembership <- groupDao.remove(student, srcGroup)
+      newMembership <- groupDao.add(student, destGroup)
+
+      updatedSrcCards <- if (validCards(destStudentCards) && validCards(srcStudentCards)) {
+        val copiedCards = destStudentCards.zip(srcStudentCards)
+          .map { case (dest, src) => src.copy(date = dest.date, start = dest.start, end = dest.end, room = dest.room) }
+
+        DBIO.sequence(copiedCards.map(reportCardEntryDao.updateQuery))
+      } else
+        DBIO.failed(new Throwable("could not copy reportCardEntries because this operation is only supported on cards with a valid assignmentIndex"))
+    } yield (removedMembership > 0, newMembership, srcStudentCards.map(_.toUniqueEntity), destStudentCards.map(_.toUniqueEntity), updatedSrcCards.map(_.toUniqueEntity))
+
+    db.run(result.transactionally)
+  }
+
+  private def ensure(predicate: Boolean, orMsg: () => String): DBIOAction[Unit, NoStream, Effect] = if (predicate) DBIO.successful(()) else DBIO.failed(new Throwable(orMsg()))
+
+  private def reportCards(labwork: UUID)(student: UUID): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
+    reportCardEntryDao.filterBy(List(labworkFilter(labwork), userFilter(student)))
   }
 }
 

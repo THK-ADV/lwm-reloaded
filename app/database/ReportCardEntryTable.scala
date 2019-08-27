@@ -11,15 +11,17 @@ import utils.date.DateTimeOps._
 class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPORT_CARD_ENTRY") with UniqueTable with LabworkIdTable with LabelTable with DateStartEndTable with RoomIdTable with UserIdTable {
   override protected def userColumnName: String = "STUDENT"
 
-  override def * = (user, labwork, label, date, start, end, room, lastModified, invalidated, id) <> (mapRow, unmapRow)
+  def assignmentIndex = column[Int]("ASSIGNMENT_INDEX")
 
-  def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
-    case (student, labwork, label, date, start, end, room, lastModified, invalidated, id) =>
-      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, None, None, lastModified, invalidated, id)
+  override def * = (user, labwork, label, date, start, end, room, assignmentIndex, lastModified, invalidated, id) <> (mapRow, unmapRow)
+
+  def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Int, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
+    case (student, labwork, label, date, start, end, room, index, lastModified, invalidated, id) =>
+      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, index, None, None, lastModified, invalidated, id)
   }
 
-  def unmapRow: ReportCardEntryDb => Option[(UUID, UUID, String, Date, Time, Time, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
-    Option((entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.lastModified, entry.invalidated, entry.id))
+  def unmapRow: ReportCardEntryDb => Option[(UUID, UUID, String, Date, Time, Time, UUID, Int, Timestamp, Option[Timestamp], UUID)] = { entry =>
+    Option((entry.student, entry.labwork, entry.label, entry.date, entry.start, entry.end, entry.room, entry.assignmentIndex, entry.lastModified, entry.invalidated, entry.id))
   }
 }
 
@@ -32,6 +34,7 @@ case class ReportCardEntryDb(
   end: Time,
   room: UUID,
   entryTypes: Set[ReportCardEntryTypeDb],
+  assignmentIndex: Int = -1,
   rescheduled: Option[ReportCardRescheduledDb] = None,
   retry: Option[ReportCardRetryDb] = None,
   lastModified: Timestamp = DateTime.now.timestamp,
@@ -54,7 +57,7 @@ case class ReportCardEntryDb(
   )
 
   override def equals(that: scala.Any) = that match {
-    case ReportCardEntryDb(s, l, lb, dt, st, et, r, ts, rs, rt, _, _, i) =>
+    case ReportCardEntryDb(s, l, lb, dt, st, et, r, ts, idx, rs, rt, _, _, i) =>
       s == student &&
         l == labwork &&
         lb == label &&
@@ -62,6 +65,7 @@ case class ReportCardEntryDb(
         st.localTime == start.localTime &&
         et.localTime == end.localTime &&
         r == room &&
+        idx == assignmentIndex &&
         ts == entryTypes &&
         rs == rescheduled &&
         rt == retry &&
