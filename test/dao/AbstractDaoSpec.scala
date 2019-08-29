@@ -92,8 +92,8 @@ object AbstractDaoSpec {
     UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None)
   }.toList
 
-  final def populateStudents(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(randomDegree.id))
+  final def populateStudents(amount: Int)(degrees: List[DegreeDb]) = (0 until amount).map { i =>
+    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(takeOneOf(degrees).id))
   }.toList
 
   final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
@@ -140,58 +140,63 @@ object AbstractDaoSpec {
     }
   }.toList
 
-  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = (0 until amount).flatMap { _ =>
-    def reportCardRescheduled(e: ReportCardEntryDb) = {
-      val rDate = e.date.localDate.plusDays(1)
-      val rStart = e.start.localTime.plusHours(1)
-      val rEnd = e.end.localTime.plusHours(1)
+  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = {
+    var index = 0 // in order to satisfy uniqueness
 
-      ReportCardRescheduledDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, Some("some reason"))
-    }
+    (0 until amount).flatMap { _ =>
+      def reportCardRescheduled(e: ReportCardEntryDb) = {
+        val rDate = e.date.localDate.plusDays(1)
+        val rStart = e.start.localTime.plusHours(1)
+        val rEnd = e.end.localTime.plusHours(1)
 
-    def reportCardRetry(e: ReportCardEntryDb) = {
-      val rDate = e.date.localDate.plusDays(1)
-      val rStart = e.start.localTime.plusHours(1)
-      val rEnd = e.end.localTime.plusHours(1)
-
-      val id = UUID.randomUUID
-      val entryTypes = randomReportCardEntryTypes(None, Some(id))
-
-      ReportCardRetryDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, entryTypes, Some("some reason"), id = id)
-    }
-
-    val student = takeOneOf(students).id
-    val labwork = takeOneOf(labworks).id
-    val room = randomRoom.id
-
-    val entries = (0 until numberOfEntries).map { i =>
-      val date = LocalDate.now.plusDays(i)
-      val start = LocalTime.now.plusHours(i)
-      val end = start.plusHours(1)
-
-      val id = UUID.randomUUID
-      val types = randomReportCardEntryTypes(Some(id), None)
-
-      ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, id = id)
-    }
-
-    if (nextBoolean && withRescheduledAndRetry) {
-      val rs = nextBoolean
-      val rt = nextBoolean
-
-      entries.map {
-        case rescheduled if rs && !rt =>
-          rescheduled.copy(rescheduled = Some(reportCardRescheduled(rescheduled)))
-        case retry if !rs && rt =>
-          retry.copy(retry = Some(reportCardRetry(retry)))
-        case both if rs && rt =>
-          both.copy(rescheduled = Some(reportCardRescheduled(both)), retry = Some(reportCardRetry(both)))
-        case nothing => nothing
+        ReportCardRescheduledDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, Some("some reason"))
       }
-    } else {
-      entries
-    }
-  }.toList
+
+      def reportCardRetry(e: ReportCardEntryDb) = {
+        val rDate = e.date.localDate.plusDays(1)
+        val rStart = e.start.localTime.plusHours(1)
+        val rEnd = e.end.localTime.plusHours(1)
+
+        val id = UUID.randomUUID
+        val entryTypes = randomReportCardEntryTypes(None, Some(id))
+
+        ReportCardRetryDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, entryTypes, Some("some reason"), id = id)
+      }
+
+      val student = takeOneOf(students).id
+      val labwork = takeOneOf(labworks).id
+      val room = randomRoom.id
+
+      val entries = (0 until numberOfEntries).map { i =>
+        val date = LocalDate.now.plusDays(i)
+        val start = LocalTime.now.plusHours(i)
+        val end = start.plusHours(1)
+
+        val id = UUID.randomUUID
+        val types = randomReportCardEntryTypes(Some(id), None)
+
+        index += 1
+        ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, index, id = id)
+      }
+
+      if (nextBoolean && withRescheduledAndRetry) {
+        val rs = nextBoolean
+        val rt = nextBoolean
+
+        entries.map {
+          case rescheduled if rs && !rt =>
+            rescheduled.copy(rescheduled = Some(reportCardRescheduled(rescheduled)))
+          case retry if !rs && rt =>
+            retry.copy(retry = Some(reportCardRetry(retry)))
+          case both if rs && rt =>
+            both.copy(rescheduled = Some(reportCardRescheduled(both)), retry = Some(reportCardRetry(both)))
+          case nothing => nothing
+        }
+      } else {
+        entries
+      }
+    }.toList
+  }
 
   @scala.annotation.tailrec
   def randomStudent(avoiding: UUID, applicants: List[UserDb]): UUID = {
@@ -239,7 +244,7 @@ object AbstractDaoSpec {
 
   lazy val timetables = populateTimetables(maxTimetables, 6)(employees, labworks.drop(1), blacklists)
 
-  lazy val students = populateStudents(maxStudents)
+  lazy val students = populateStudents(maxStudents)(degrees)
 
   lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
 

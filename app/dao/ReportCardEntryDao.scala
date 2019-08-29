@@ -23,6 +23,8 @@ object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
 
     schedule && (ordinary || rescheduled || retry)
   }.exists
+
+  def indexFilter(index: Int): TableFilterPredicate = _.assignmentIndex === index
 }
 
 trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
@@ -59,7 +61,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, retry = optRt.map(_._1), rescheduled = optRs.map(_._1)).toUniqueEntity
+    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, rescheduled = optRs.map(_._1), retry = optRt.map(_._1)).toUniqueEntity
   }
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
@@ -84,9 +86,9 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
       case (id, dependencies) =>
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
-      val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
-      val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-      val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
+        val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
+        val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
+        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
 
         build(entry, rescheduled, retryWithEntryTypes, entryTypes)
     }.toSeq)
@@ -95,7 +97,11 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
-    filterBy(List(TableFilter.idFilter(entity.id)))
+    filterBy(List(
+      TableFilter.labworkFilter(entity.labwork),
+      TableFilter.userFilter(entity.student),
+      ReportCardEntryDao.indexFilter(entity.assignmentIndex)
+    ))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
@@ -108,10 +114,11 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       existing.entryTypes != toUpdate.entryTypes ||
       existing.rescheduled != toUpdate.rescheduled ||
       existing.retry != toUpdate.retry ||
-      existing.labwork != toUpdate.labwork ||
-      existing.student != toUpdate.student ||
       existing.label != toUpdate.label) &&
-      existing.id == toUpdate.id
+      (existing.assignmentIndex == toUpdate.assignmentIndex &&
+        existing.labwork == toUpdate.labwork &&
+        existing.student == toUpdate.student
+        )
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {

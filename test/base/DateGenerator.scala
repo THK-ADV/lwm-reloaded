@@ -1,6 +1,6 @@
 package base
 
-import org.joda.time.{DateTime, LocalDate, LocalTime}
+import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalTime}
 import org.scalatest.Suite
 import org.scalacheck.{Arbitrary, Gen}
 

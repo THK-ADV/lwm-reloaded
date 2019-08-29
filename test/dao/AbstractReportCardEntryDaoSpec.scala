@@ -16,7 +16,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
   import scala.concurrent.ExecutionContext.Implicits.global
 
   private lazy val privateLabs = populateLabworks(20)(semesters, courses, degrees)
-  private lazy val privateStudents = populateStudents(100)
+  private lazy val privateStudents = populateStudents(100)(degrees)
 
   def reportCardEntryAtom(entry: ReportCardEntryDb)(labworks: List[LabworkDb], students: List[UserDb], rooms: List[RoomDb]) = ReportCardEntryAtom(
     students.find(_.id == entry.student).get.toUniqueEntity,
@@ -38,7 +38,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
 
   override protected def name: String = "reportCardEntry"
 
-  override protected val dbEntity: ReportCardEntryDb = ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty)
+  override protected val dbEntity: ReportCardEntryDb = ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty, 1)
 
   override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity
 

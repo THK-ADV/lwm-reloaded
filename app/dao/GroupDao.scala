@@ -6,9 +6,11 @@ import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
+import slick.dbio.Effect
 import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
+import slick.sql.{FixedSqlAction, SqlAction}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -17,10 +19,43 @@ object GroupDao extends TableFilter[GroupTable] {
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
+  import TableFilter.{groupFilter, userFilter}
 
   override val tableQuery = TableQuery[GroupTable]
 
   val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
+
+  def firstStudentIn(group: UUID): SqlAction[Option[UUID], NoStream, Effect.Read] = {
+    groupMembershipQuery.filter(_.group === group).map(_.user).result.headOption
+  }
+
+  def groupHasAtLeastTwoMembers(group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    (groupMembershipQuery.filter(groupFilter(group)).size > 1).result
+  }
+
+  def add(student: UUID, group: UUID): DBIOAction[GroupMembership, NoStream, Effect.Read with Effect.Write] = {
+    for {
+      exists <- isInGroup(student, group)
+      membership <- if (exists)
+        DBIO.failed(new Throwable(s"student $student is already in group $group"))
+      else
+        (groupMembershipQuery returning groupMembershipQuery) += GroupMembership(group, student)
+    } yield membership
+  }
+
+  def remove(student: UUID, group: UUID): DBIOAction[Int, NoStream, Effect.Read with Effect.Write] = {
+    for {
+      exists <- isInGroup(student, group)
+      membership <- if (exists)
+        groupMembershipQuery.filter(g => g.group === group && g.user === student).delete
+      else
+        DBIO.failed(new Throwable(s"student $student is not a member of group $group"))
+    } yield membership
+  }
+
+  def isInGroup(student: UUID, group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+    groupMembershipQuery.filter(t => groupFilter(group).apply(t) && userFilter(student).apply(t)).exists.result
+  }
 
   override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
     case (g, l, m) => GroupAtom(g.label, l.toUniqueEntity, m.map(_.toUniqueEntity).toSet, g.id)

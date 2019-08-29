@@ -8,6 +8,7 @@ import models.UniqueDbEntity
 import org.joda.time.DateTime
 import slick.dbio.Effect
 import slick.dbio.Effect.Write
+import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
 
@@ -18,21 +19,31 @@ trait Removed[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
 
   final def delete(entity: DbModel): Future[DbModel] = delete(entity.id)
 
-  final def delete(id: UUID): Future[DbModel] = db.run(deleteQuery(id))
+  final def delete(id: UUID): Future[DbModel] = db.run(deleteSingle(id))
 
   final def deleteManyEntities(entities: List[DbModel]): Future[List[DbModel]] = deleteMany(entities.map(_.id))
 
   final def deleteMany(ids: List[UUID]): Future[List[DbModel]] = {
-    val query = ids.map(id => deleteQuery(id))
+    val query = ids.map(id => deleteSingle(id))
     db.run(DBIO.sequence(query))
   }
 
-  final def deleteQuery(id: UUID, now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
-    val found = tableQuery.filter(_.id === id)
+  final def deleteSingle(id: UUID, now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+    deleteSingle0(tableQuery.filter(_.id === id), now)
+  }
 
+  final def deleteSingleWhere(where: T => Rep[Boolean], now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+    deleteSingle0(tableQuery.filter(where), now)
+  }
+
+  final def deleteSingleQuery(query: PostgresProfile.api.Query[T, DbModel, Seq], now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+    deleteSingle0(query, now)
+  }
+
+  private def deleteSingle0(query: PostgresProfile.api.Query[T, DbModel, Seq], now: Timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
     val singleQuery = for {
-      existing <- found.result if existing.nonEmpty
-      _ <- found.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
+      existing <- query.result if existing.nonEmpty
+      _ <- query.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
     } yield existing.head
 
     val expandableQuery = databaseExpander.fold {

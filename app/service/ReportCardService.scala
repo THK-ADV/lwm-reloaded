@@ -70,7 +70,7 @@ object ReportCardService { // TODO DI
           val entryId = UUID.randomUUID
           val types = ap.types.map(t => ReportCardEntryTypeDb(Some(entryId), None, t.entryType))
 
-          ReportCardEntryDb(student, assignmentPlan.labworkId, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, id = entryId)
+          ReportCardEntryDb(student, assignmentPlan.labworkId, ap.label, se.date.sqlDate, se.start.sqlTime, se.end.sqlTime, se.room, types, ap.index, id = entryId)
       } ++ vec
     }
   }

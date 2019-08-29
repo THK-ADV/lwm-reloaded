@@ -74,7 +74,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     (for {
       course <- abstractDao.getSingle(uuid) if course.isDefined
       courseDb = course.map(_.asInstanceOf[Course]).map(toCourseDb).get
-      _ <- abstractDao.transaction(abstractDao.deleteQuery(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
+      _ <- abstractDao.transaction(abstractDao.deleteSingle(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
     } yield course).deleted
   }
 
