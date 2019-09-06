@@ -1,4 +1,4 @@
-package controllers.service
+package controllers.serviceResource
 
 import java.util.UUID
 

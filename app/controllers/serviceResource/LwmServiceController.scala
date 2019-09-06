@@ -1,4 +1,4 @@
-package controllers.service
+package controllers.serviceResource
 
 import controllers.helper.{JsonParser, ResultOps, SecureControllerContext, Secured}
 import dao.{AuthorityDao, LwmServiceDao}
@@ -46,7 +46,7 @@ final class LwmServiceController @Inject()(
         "membership" -> Json.toJson(membership),
         "reportCardEntries" -> Json.toJson(cards)
       )
-    }(executionContext)
+    }
   }
 
   private def removeFromGroup(request: GroupChangeRequest): Future[Result] = {
@@ -56,7 +56,7 @@ final class LwmServiceController @Inject()(
         "labworkApplication" -> Json.toJson(deleteApp),
         "reportCardEntries" -> Json.toJson(deletedCards)
       )
-    }(executionContext)
+    }
   }
 
   private def moveToGroup(request: GroupMovingRequest): Future[Result] = {
@@ -66,7 +66,7 @@ final class LwmServiceController @Inject()(
         "newMembership" -> Json.toJson(newMembership),
         "updatedReportCardEntries" -> Json.toJson(updatedCards)
       )
-    }(executionContext)
+    }
   }
 
   private def mapJson[A](json: Try[A])(f: A => Future[Result]): Future[Result] = {

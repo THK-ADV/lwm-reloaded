@@ -27,6 +27,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
     entry.end.localTime,
     rooms.find(_.id == entry.room).get.toUniqueEntity,
     entry.entryTypes.map(_.toUniqueEntity),
+    entry.assignmentIndex,
     entry.rescheduled.map(r =>
       ReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.reason, r.id)
     ),

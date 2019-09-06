@@ -10,8 +10,11 @@ import utils.date.DateTimeJsonFormatter._
 
 sealed trait ReportCardEntryLike extends UniqueEntity {
   def labworkId: UUID
+
   def date: LocalDate
+
   def start: LocalTime
+
   def end: LocalTime
 }
 
@@ -24,6 +27,7 @@ case class ReportCardEntry(
   end: LocalTime,
   room: UUID,
   entryTypes: Set[ReportCardEntryType],
+  assignmentIndex: Int,
   rescheduled: Option[ReportCardRescheduled] = None,
   retry: Option[ReportCardRetry] = None,
   id: UUID = UUID.randomUUID
@@ -50,6 +54,7 @@ case class ReportCardEntryAtom(
   end: LocalTime,
   room: Room,
   entryTypes: Set[ReportCardEntryType],
+  assignmentIndex: Int,
   rescheduled: Option[ReportCardRescheduledAtom],
   retry: Option[ReportCardRetryAtom],
   id: UUID
@@ -68,6 +73,7 @@ object ReportCardEntry {
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[UUID] and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType](ReportCardEntryType.writes) and
+      (JsPath \ "assignmentIndex").write[Int] and
       (JsPath \ "rescheduled").writeNullable[ReportCardRescheduled](ReportCardRescheduled.writes) and
       (JsPath \ "retry").writeNullable[ReportCardRetry](ReportCardRetry.writes) and
       (JsPath \ "id").write[UUID]
@@ -89,6 +95,7 @@ object ReportCardEntryAtom {
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[Room](Room.writes) and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType](ReportCardEntryType.writes) and
+      (JsPath \ "assignmentIndex").write[Int] and
       (JsPath \ "rescheduled").writeNullable[ReportCardRescheduledAtom](ReportCardRescheduledAtom.writes) and
       (JsPath \ "retry").writeNullable[ReportCardRetryAtom](ReportCardRetryAtom.writes) and
       (JsPath \ "id").write[UUID]

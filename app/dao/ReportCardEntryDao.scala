@@ -54,6 +54,7 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       entry.end.localTime,
       room.toUniqueEntity,
       entryTypes.map(_.toUniqueEntity).toSet,
+      entry.assignmentIndex,
       optRs.map { case (rs, r) => ReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toUniqueEntity, rs.reason, rs.id) },
       optRt.map { case (rt, r) => ReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toUniqueEntity, rt.entryTypes.map(_.toUniqueEntity), rt.reason, rt.id) },
       entry.id
