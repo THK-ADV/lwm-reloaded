@@ -51,6 +51,7 @@ case class ReportCardEntryDb(
     end.localTime,
     room,
     entryTypes.map(_.toUniqueEntity),
+    assignmentIndex,
     rescheduled.map(_.toUniqueEntity),
     retry.map(_.toUniqueEntity),
     id
