@@ -6,16 +6,16 @@ import java.util.UUID
 import database.UniqueTable
 import models.UniqueDbEntity
 import org.joda.time.DateTime
-import slick.dbio.Effect
-import slick.dbio.Effect.Write
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
 
 import scala.concurrent.Future
 
 trait Removed[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
-  self: Core with Expandable[DbModel] with Accessible[T, DbModel] =>
+  self: Core
+    with Expandable[DbModel]
+    with Accessible[T, DbModel]
+    with Retrieved[T, DbModel, _] =>
 
   final def delete(entity: DbModel): Future[DbModel] = delete(entity.id)
 
@@ -28,23 +28,24 @@ trait Removed[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     db.run(DBIO.sequence(query))
   }
 
-  final def deleteSingle(id: UUID, now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
-    deleteSingle0(tableQuery.filter(_.id === id), now)
+  final def deleteSingle(id: UUID, now: Timestamp = DateTime.now.timestamp) = {
+    deleteSingle0(filterValidOnly(_.id === id), now)
   }
 
-  final def deleteSingleWhere(where: T => Rep[Boolean], now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
-    deleteSingle0(tableQuery.filter(where), now)
+  final def deleteSingleWhere(where: T => Rep[Boolean], now: Timestamp = DateTime.now.timestamp) = {
+    deleteSingle0(filterValidOnly(where), now)
   }
 
-  final def deleteSingleQuery(query: PostgresProfile.api.Query[T, DbModel, Seq], now: Timestamp = DateTime.now.timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
+  final def deleteSingleQuery(query: Query[T, DbModel, Seq], now: Timestamp = DateTime.now.timestamp) = {
     deleteSingle0(query, now)
   }
 
-  private def deleteSingle0(query: PostgresProfile.api.Query[T, DbModel, Seq], now: Timestamp): DBIOAction[DbModel, NoStream, Effect.Read with Write with Effect.Transactional] = {
-    val singleQuery = for {
-      existing <- query.result if existing.nonEmpty
-      _ <- query.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
-    } yield existing.head
+  private def deleteSingle0(query: Query[T, DbModel, Seq], now: Timestamp) = {
+    val singleQuery = query.exactlyOne { toDelete =>
+      for {
+        _ <- query.map(f => (f.lastModified, f.invalidated)).update((now, Some(now)))
+      } yield toDelete
+    }
 
     val expandableQuery = databaseExpander.fold {
       singleQuery

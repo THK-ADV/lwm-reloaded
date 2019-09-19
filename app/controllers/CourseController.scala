@@ -60,7 +60,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
         abstractDao.getSingle(uuid, atomic).map(_.get)
       else
         Future.successful(newCourse.toUniqueEntity)
-    } yield lwmModel).updated
+    } yield lwmModel).jsonResult
   }
 
   override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = {
@@ -68,14 +68,15 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 
-  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ =>
+  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ => // TODO test if ALL associated course authorities are removed
     val uuid = UUID.fromString(id)
 
     (for {
-      course <- abstractDao.getSingle(uuid) if course.isDefined
-      courseDb = course.map(_.asInstanceOf[Course]).map(toCourseDb).get
+      maybeCourse <- abstractDao.getSingle(uuid) if maybeCourse.isDefined
+      course = maybeCourse.get
+      courseDb = toCourseDb(course.asInstanceOf[Course])
       _ <- abstractDao.transaction(abstractDao.deleteSingle(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
-    } yield course).deleted
+    } yield course).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

@@ -89,7 +89,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     (for {
       existing <- abstractDao.get(list, atomic = false)
       deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
-    } yield deleted).deleted
+    } yield deleted.map(_.toUniqueEntity)).jsonResult
   }
 
   private def evaluate(labwork: String, persistence: Boolean)(implicit request: Request[AnyContent]) = {
@@ -100,10 +100,16 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
       existing <- abstractDao.get(List(labworkFilter(labworkId)), atomic = false)
 
       evaluated = ReportCardService.evaluateDeltas(cards.toList, patterns.toList, existing.toList)
-      _ <- if (persistence) abstractDao.createOrUpdateMany(evaluated) else Future.successful(Seq.empty)
+      _ <- if (persistence)
+        abstractDao.createOrUpdateMany(evaluated)
+      else
+        Future.successful(Seq.empty)
 
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
-      evaluations <- if (atomic) abstractDao.getMany(evaluated.map(_.id), atomic) else Future.successful(evaluated.map(_.toUniqueEntity))
+      evaluations <- if (atomic)
+        abstractDao.getMany(evaluated.map(_.id), atomic)
+      else
+        Future.successful(evaluated.map(_.toUniqueEntity))
     } yield evaluations).jsonResult
   }
 

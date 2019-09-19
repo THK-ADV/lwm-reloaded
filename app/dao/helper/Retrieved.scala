@@ -3,7 +3,7 @@ package dao.helper
 import java.sql.Timestamp
 import java.util.UUID
 
-import database.{LabworkIdTable, UniqueTable}
+import database.UniqueTable
 import models.{UniqueDbEntity, UniqueEntity}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
@@ -84,6 +84,19 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
 
     protected def filterLastModified(sinceLastModified: Option[String]): Query[T, DbModel, Seq] = {
       sinceLastModified.fold(query)(t => query.filter(_.lastModifiedSince(new Timestamp(t.toLong))))
+    }
+
+    def exactlyOne(action: DbModel => DBIOAction[DbModel, NoStream, Effect.All]): DBIOAction[DbModel, NoStream, Effect.Read with Effect.All] = {
+      query.result.flatMap { entities =>
+        entities.size match {
+          case 1 =>
+            action(entities.head)
+          case 0 =>
+            DBIO.failed(NoEntityFound)
+          case _ =>
+            DBIO.failed(MultipleEntitiesFound(entities))
+        }
+      }
     }
   }
 }

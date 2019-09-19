@@ -4,6 +4,7 @@ import java.io.File
 
 import base.DatabaseSpec
 import dao._
+import models.UniqueEntity
 import org.apache.commons.io.FileUtils
 import org.mockito.Mockito._
 import org.scalatest.TryValues
@@ -18,7 +19,6 @@ import scala.util.Try
 final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryValues {
 
   import dao.AbstractDaoSpec._
-  import models.UniqueEntity.toJson
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -38,7 +38,6 @@ final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryVal
   val schedules = scheduleEntries.map(_.toUniqueEntity)
   val grps = groups.map(_.toUniqueEntity)
 
-  val jsonSeq = toJson(usr, crs, deg, lapps, labs, rms, sems, cards, auths, schedules, grps)
 
   private val userDao = mock[UserDao]
   private val assignmentPlanDao = mock[AssignmentPlanDao]
@@ -60,6 +59,22 @@ final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryVal
   private val backupService = new PSQLBackupService(userDao, assignmentPlanDao, courseDao, degreeDao, labworkApplicationDao,
     labworkDao, roleDao, roomDao, semesterDao, timetableDao, blacklistDao, reportCardEntryDao,
     authorityDao, scheduleEntryDao, groupDao, reportCardEvaluationDao)
+
+  lazy val jsonSeq = Seq(
+    toJson(usr),
+    toJson(crs),
+    toJson(deg),
+    toJson(lapps),
+    toJson(labs),
+    toJson(rms),
+    toJson(sems),
+    toJson(cards),
+    toJson(auths),
+    toJson(schedules),
+    toJson(grps)
+  )
+
+  def toJson(seq: Seq[UniqueEntity]) = backupService.toJson(seq)
 
   private val destFolder = {
     val file = new File("test", "test_dir")
