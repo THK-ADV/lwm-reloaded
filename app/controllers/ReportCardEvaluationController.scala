@@ -89,7 +89,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     (for {
       existing <- abstractDao.get(list, atomic = false)
       deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
-    } yield deleted).deleted
+    } yield deleted).jsonResult
   }
 
   private def evaluate(labwork: String, persistence: Boolean)(implicit request: Request[AnyContent]) = {

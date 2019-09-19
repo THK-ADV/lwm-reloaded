@@ -3,15 +3,16 @@ package dao.helper
 import database.UniqueTable
 import models.UniqueDbEntity
 import org.joda.time.DateTime
-import slick.dbio.Effect
-import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
 
 import scala.concurrent.Future
 
 trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
-  self: Core with Expandable[DbModel] with Accessible[T, DbModel] =>
+  self: Core
+    with Expandable[DbModel]
+    with Accessible[T, DbModel]
+    with Retrieved[T, DbModel, _] =>
 
   protected def shouldUpdate(existing: DbModel, toUpdate: DbModel): Boolean
 
@@ -22,14 +23,14 @@ trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     db.run(DBIO.sequence(query))
   }
 
-  final def updateQuery(entity: DbModel): DBIOAction[DbModel, NoStream, Effect.Read with Write with Write with Effect.Transactional] = {
-    val found = tableQuery.filter(_.id === entity.id)
+  final def updateQuery(entity: DbModel) = {
+    val query = filterValidOnly(_.id === entity.id)
 
-    val singleQuery = found.result.head.flatMap { existing =>
+    val singleQuery = query.exactlyOne { existing =>
       if (shouldUpdate(existing, entity))
         (for {
-          u1 <- found.update(entity)
-          u2 <- found.map(_.lastModified).update(DateTime.now.timestamp)
+          u1 <- query.update(entity)
+          u2 <- query.map(_.lastModified).update(DateTime.now.timestamp)
         } yield u1 + u2).transactionally.map(_ => entity)
       else
         DBIO.failed(ModelAlreadyExists(existing))

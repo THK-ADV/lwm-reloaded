@@ -77,7 +77,7 @@ final class DashboardController @Inject()(
       entriesSinceNow = boolOf(request.queryString)(entriesSinceNowAttribute) getOrElse true
       sortedByDate = boolOf(request.queryString)(sortedByDateAttribute) getOrElse true
       board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
-    } yield board).jsonResult(d => Ok(Json.toJson(d)))
+    } yield board).jsonResult
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
