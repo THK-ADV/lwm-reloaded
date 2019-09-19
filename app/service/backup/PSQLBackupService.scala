@@ -5,9 +5,10 @@ import java.util.UUID
 
 import dao._
 import javax.inject.Inject
+import models._
 import org.apache.commons.io.FileUtils
 import org.joda.time.LocalDateTime
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json, Writes}
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -33,6 +34,26 @@ final class PSQLBackupService @Inject()(
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  private implicit val uniqueEntityWrites: Writes[UniqueEntity] = {
+    case u: User => User.writes.writes(u)
+    case a: AssignmentPlanLike => AssignmentPlanLike.writes.writes(a)
+    case c: CourseLike => CourseLike.writes.writes(c)
+    case d: Degree => Degree.writes.writes(d)
+    case l: LabworkApplicationLike => LabworkApplicationLike.writes.writes(l)
+    case l: LabworkLike => LabworkLike.writes.writes(l)
+    case r: Role => Role.writes.writes(r)
+    case r: Room => Room.writes.writes(r)
+    case s: Semester => Semester.writes.writes(s)
+    case t: TimetableLike => TimetableLike.writes.writes(t)
+    case b: Blacklist => Blacklist.writes.writes(b)
+    case r: ReportCardEntry => ReportCardEntry.writes.writes(r)
+    case a: AuthorityLike => AuthorityLike.writes.writes(a)
+    case s: ScheduleEntryLike => ScheduleEntryLike.writes.writes(s)
+    case g: GroupLike => GroupLike.writes.writes(g)
+    case r: ReportCardEvaluationLike => ReportCardEvaluationLike.writes.writes(r)
+    //      case p: ReportCardEvaluationPattern => ReportCardEvaluationPattern.writes.writes(p) // TODO
+  }
+
   override def backupItems: Future[Vector[BackupItem]] = {
     for {
       users <- userDao.get(atomic = false, validOnly = false)
@@ -54,9 +75,11 @@ final class PSQLBackupService @Inject()(
     } yield List(users, assignmentPlans, courses, degrees, labworkApplications, labworks, roles, rooms,
       semesters, timetables, blacklists, reportCardEntries, authorities, scheduleEntries, groups, reportCardEvaluations)
       .filter(_.nonEmpty)
-      .map(seq => BackupItem(seq.head.getClass.getSimpleName, Json.toJson(seq)))
+      .map(seq => BackupItem(seq.head.getClass.getSimpleName, toJson(seq)))
       .toVector
   }
+
+  def toJson(seq: Seq[UniqueEntity]): JsValue = Json.toJson(seq)
 
   override def persist(items: Vector[BackupItem], rootFolder: File, shouldOverride: Boolean)(implicit encoding: String): Try[Vector[File]] = {
     import utils.Ops.MonadInstances.tryM

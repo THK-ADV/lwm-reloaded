@@ -59,7 +59,10 @@ final class DashboardController @Inject()(
           )
         }
       )
-      case e: EmployeeDashboard => Json.writes[EmployeeDashboard].writes(e)
+      case e: EmployeeDashboard => {
+        import models.CourseAtom.writes
+        Json.writes[EmployeeDashboard].writes(e)
+      }
     }
   }
 
