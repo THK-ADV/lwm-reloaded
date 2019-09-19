@@ -32,9 +32,9 @@ trait DateGenerator {
       year <- Gen.choose(1970, 2019)
       month <- Gen.choose(1, 12)
       day <- Gen.choose(1, 28)
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
+      hour <- Gen.choose(1, 23)
+      minute <- Gen.choose(1, 59)
+      second <- Gen.choose(1, 59)
     } yield dateTime(year, month, day, hour, minute, second, 0)
   }
 

@@ -27,6 +27,9 @@ final class LwmServiceController @Inject()(
 
   private implicit def membershipWrites: OWrites[GroupMembership] = Json.writes[GroupMembership]
 
+  import models.ReportCardEntry.{writes => cardWrites}
+  import models.LabworkApplication.{writes => lappWrites}
+
   def insertStudentToGroup(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     (parseJson[GroupChangeRequest] _ andThen mapJson andThen (r => r(insertIntoGroup))) (request)
   }

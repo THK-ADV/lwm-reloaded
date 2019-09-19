@@ -7,7 +7,6 @@ import dao.AbstractDao
 import dao.helper.TableFilter
 import database._
 import javax.inject.Inject
-import models.Role.God
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
@@ -27,60 +26,55 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with TableFilter[T]
     with JsonParser {
 
-  import utils.Ops.unwrapTrys
-
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected implicit def writes: Writes[LwmModel]
 
   protected implicit def reads: Reads[Protocol]
 
-  implicit def listReads[R](implicit r: Reads[R]): Reads[List[R]] = Reads.list[R]
+  //  implicit def listReads[R](implicit r: Reads[R]): Reads[List[R]] = Reads.list[R]
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
 
-  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = Failure(new Throwable(""))
+  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+    Failure(new Throwable(s"no filter for $attribute and $value"))
+  }
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
-  protected def toLwmModel(dbModels: TraversableOnce[DbModel]): Traversable[LwmModel] = dbModels.map(_.toUniqueEntity.asInstanceOf[LwmModel]).toTraversable
+  protected def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toUniqueEntity.asInstanceOf[LwmModel]
 
-  def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { request =>
-    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
-
-    (for {
-      protocols <- Future.fromTry(parseJsonArray(request)(listReads))
-      dbModels = protocols.map(p => toDbModel(p, None))
-      partialCreated <- abstractDao.createManyPartial(dbModels)
-      (succeeded, failed) = unwrapTrys(partialCreated)
+  private def parsed(id: Option[UUID], action: DbModel => Future[DbModel])(implicit request: Request[AnyContent]): Future[LwmModel] = {
+    for {
+      protocol <- Future.fromTry(parseJson(request)(reads))
+      dbModel = toDbModel(protocol, id)
+      result <- action(dbModel)
+      atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
       lwmModel <- if (atomic)
-        abstractDao.getMany(succeeded.map(_.id), atomic)
+        abstractDao.getSingle(result.id, atomic)
       else
-        Future.successful(toLwmModel(succeeded))
-    } yield (toLwmModel(dbModels), lwmModel, failed)).jsonResult
+        Future.successful(Some(toLwmModel(result)))
+      if lwmModel.isDefined
+    } yield lwmModel.get
   }
 
-  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { request =>
-    val uuid = UUID.fromString(id)
-    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+  def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { implicit request =>
+    parsed(None, abstractDao.create)
+      .created
+  }
 
-    (for {
-      protocol <- Future.fromTry(parseJson(request)(reads))
-      dbModel = toDbModel(protocol, Some(uuid))
-      updated <- abstractDao.update(dbModel)
-      lwmModel <- if (atomic)
-        abstractDao.getSingle(uuid, atomic).map(_.get)
-      else
-        Future.successful(updated.toUniqueEntity.asInstanceOf[LwmModel])
-    } yield lwmModel).updated
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { implicit request =>
+    id.uuidF
+      .flatMap(uuid => parsed(Some(uuid), abstractDao.update))
+      .jsonResult
   }
 
   def delete(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
-    delete0(UUID.fromString(id))
+    id.uuidF.flatMap(delete0).jsonResult
   }
 
-  protected def delete0(uuid: UUID): Future[Result] = {
-    abstractDao.delete(uuid).deleted
+  protected def delete0(uuid: UUID): Future[LwmModel] = {
+    abstractDao.delete(uuid).map(toLwmModel)
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>
@@ -104,8 +98,11 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
     val atomic = extractAttributes(request.queryString)._2.atomic
-    val uuid = UUID.fromString(id)
-    abstractDao.getSingle(uuid, atomic).jsonResult(id)
+
+    (for {
+      uuid <- id.uuidF
+      model <- abstractDao.getSingle(uuid, atomic)
+    } yield model).jsonResult(id)
   }
 
   protected implicit class AbstractTableFilter(string: String) {

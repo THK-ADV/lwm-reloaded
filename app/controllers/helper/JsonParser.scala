@@ -17,6 +17,6 @@ trait JsonParser {
 
   private def unwrap(request: Request[AnyContent]): Try[JsValue] = request.body.asJson match {
     case Some(json) => Success(json)
-    case None => Failure(new Throwable("no json body"))
+    case None => Failure(new Throwable("json body is required"))
   }
 }

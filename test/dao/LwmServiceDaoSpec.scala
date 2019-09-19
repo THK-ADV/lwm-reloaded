@@ -3,7 +3,8 @@ package dao
 import java.util.UUID
 
 import base.{DateGenerator, PostgresDbSpec}
-import dao.helper.TableFilter.{userFilter, labworkFilter}
+import dao.helper.NoEntityFound
+import dao.helper.TableFilter.{labworkFilter, userFilter}
 import database._
 import database.helper.LdapUserStatus.StudentStatus
 import play.api.inject.guice.GuiceableModule
@@ -27,7 +28,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
   private val semesters = AbstractDaoSpec.populateSemester(1)
   private val courses = AbstractDaoSpec.populateCourses(1)(_ => 1)
   private val labworks = AbstractDaoSpec.populateLabworks(3)(semesters, courses, degrees)
-  private val applications = AbstractDaoSpec.populateLabworkApplications(students.size, true)(labworks, students)
+  private val applications = AbstractDaoSpec.populateLabworkApplications(students.size, withFriends = true)(labworks, students)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -252,7 +253,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       async(groupDap.createMany(groups))(_ => Unit)
 
       async(dao.removeStudentFromGroup(student.id, labwork.id, group.id).failed) { error =>
-        error.getMessage shouldBe "Action.withFilter failed" // TODO bad message
+        error.getMessage shouldBe NoEntityFound.getMessage
       }
     }
 

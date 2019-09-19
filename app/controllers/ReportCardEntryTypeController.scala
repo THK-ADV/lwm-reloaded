@@ -25,12 +25,16 @@ class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val auth
   override protected implicit val reads: Reads[ReportCardEntryTypeProtocol] = ReportCardEntryTypeProtocol.reads
 
   def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
-    val uuid = UUID.fromString(id)
-
     (for {
+      uuid <- id.uuidF
       protocol <- Future.fromTry(parseJson(request))
       _ <- abstractDao.updateFields(uuid, protocol.bool, protocol.int)
-    } yield protocol).updated
+    } yield ReportCardEntryType(
+      protocol.entryType,
+      protocol.bool,
+      protocol.int,
+      uuid
+    )).jsonResult
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
