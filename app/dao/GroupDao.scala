@@ -19,7 +19,8 @@ object GroupDao extends TableFilter[GroupTable] {
 }
 
 trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
-  import TableFilter.{groupFilter, userFilter}
+
+  import TableFilter.{groupFilter, labelFilterEquals, labworkFilter, userFilter}
 
   override val tableQuery = TableQuery[GroupTable]
 
@@ -85,14 +86,11 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {
-    filterBy(List(TableFilter.idFilter(entity.id)))
+    filterBy(List(labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
   }
 
   override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean = {
-    existing.members != toUpdate.members ||
-      existing.label != toUpdate.label ||
-      existing.labwork != toUpdate.labwork &&
-        (existing.id == toUpdate.id)
+    existing.labwork == toUpdate.labwork && existing.label == toUpdate.label
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {

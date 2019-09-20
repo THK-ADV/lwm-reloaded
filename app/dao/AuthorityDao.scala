@@ -124,9 +124,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
-    (existing.invalidated != toUpdate.invalidated ||
-      existing.lastModified != toUpdate.lastModified) &&
-      (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
+    existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
@@ -142,7 +140,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
         .joinLeft(TableQuery[UserTable]).on(_._2.map(_.user) === _.id)
       u <- a.userFk
       r <- a.roleFk
-    } yield (a, u, r, c, l)
+                            } yield (a, u, r, c, l)
 
     val action = joinedQuery.result.map(_.groupBy(_._1.id).map {
       case (id, dependencies) =>

@@ -74,9 +74,6 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   }
 
   override protected def shouldUpdate(existing: AssignmentPlanDb, toUpdate: AssignmentPlanDb): Boolean = {
-    (existing.attendance != toUpdate.attendance ||
-      existing.mandatory != toUpdate.mandatory ||
-      existing.entries != toUpdate.entries) &&
       existing.labwork == toUpdate.labwork
   }
 

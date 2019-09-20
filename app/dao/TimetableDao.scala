@@ -75,12 +75,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    import utils.date.DateTimeOps.SqlDateConverter
-
-    (existing.start.localDate != toUpdate.start.localDate ||
-      existing.entries != toUpdate.entries ||
-      existing.localBlacklist != toUpdate.localBlacklist) &&
-      existing.labwork == toUpdate.labwork
+    existing.labwork == toUpdate.labwork
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {

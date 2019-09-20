@@ -1,7 +1,5 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.TableFilter
 import database._
 import javax.inject.Inject
@@ -11,7 +9,6 @@ import slick.lifted.TableQuery
 import utils.date.DateTimeOps.SqlTimestampConverter
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 //case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] { // TODO rethink
 //  override def predicate = _.student === UUID.fromString(value)
@@ -46,7 +43,8 @@ import scala.util.Try
 //}
 
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
-  import TableFilter.{userFilter, labelFilterEquals, labworkFilter}
+
+  import TableFilter.{labelFilterEquals, labworkFilter, userFilter}
 
   override val tableQuery = TableQuery[ReportCardEvaluationTable]
 
@@ -81,8 +79,9 @@ trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, Rep
   }
 
   override protected def shouldUpdate(existing: ReportCardEvaluationDb, toUpdate: ReportCardEvaluationDb): Boolean = {
-    (existing.int != toUpdate.int || existing.bool != toUpdate.bool) &&
-      (existing.student == toUpdate.student && existing.labwork == toUpdate.labwork && existing.label == toUpdate.label)
+    existing.student == toUpdate.student &&
+      existing.labwork == toUpdate.labwork &&
+      existing.label == toUpdate.label
   }
 }
 

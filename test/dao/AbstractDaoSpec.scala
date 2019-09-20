@@ -31,7 +31,7 @@ object AbstractDaoSpec {
   lazy val maxReportCardEntries = 100
   lazy val maxAuthorities = 10
   lazy val maxScheduleEntries = 100
-  lazy val maxGroups = 20
+  lazy val maxGroups = 4
   lazy val maxEvaluations = 100
   lazy val maxLabworkApplications = 20
   lazy val maxEvaluationPatterns = 4 * 5
@@ -104,9 +104,12 @@ object AbstractDaoSpec {
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
   }.toList
 
-  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[UserDb]) = (0 until amount).map { i =>
-    GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
-  }.toList
+  final def populateGroups(amountForEachLabwork: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
+    (for {
+      i <- 0 until amountForEachLabwork
+      l <- labworks
+    } yield GroupDb(i.toString + l.label, l.id, takeSomeOf(students).map(_.id).toSet)).toList
+  }
 
   final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
 

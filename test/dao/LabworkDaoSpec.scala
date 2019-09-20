@@ -8,6 +8,7 @@ import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
 
 final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, LabworkLike] { // TODO create many fails from time to time
+
   import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
 
@@ -19,11 +20,11 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected val dbEntity: LabworkDb = LabworkDb("label", "desc", semesters.head.id, courses.head.id, degrees.head.id)
 
-  override protected val invalidDuplicateOfDbEntity: LabworkDb = LabworkDb(dbEntity.label, dbEntity.description, dbEntity.semester, dbEntity.course, dbEntity.degree, dbEntity.subscribable, dbEntity.published)
+  override protected val invalidDuplicateOfDbEntity: LabworkDb = dbEntity.copy(label = "updated", id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: LabworkDb = dbEntity.copy(dbEntity.label, dbEntity.description, semesters(1).id, courses(1).id, degrees(1).id, dbEntity.subscribable, dbEntity.published)
+  override protected val invalidUpdateOfDbEntity: LabworkDb = dbEntity.copy(course = UUID.randomUUID, degree = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", dbEntity.semester, dbEntity.course, dbEntity.degree)
+  override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", published = !dbEntity.published)
 
   override protected val dbEntities: List[LabworkDb] = (semesters.tail, courses.tail, degrees.tail).zipped.toList.map {
     case (s, c, d) =>

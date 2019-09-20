@@ -106,20 +106,9 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-
-    (existing.date.localDate != toUpdate.date.localDate ||
-      existing.start.localTime != toUpdate.start.localTime ||
-      existing.end.localTime != toUpdate.end.localTime ||
-      existing.room != toUpdate.room ||
-      existing.entryTypes != toUpdate.entryTypes ||
-      existing.rescheduled != toUpdate.rescheduled ||
-      existing.retry != toUpdate.retry ||
-      existing.label != toUpdate.label) &&
-      (existing.assignmentIndex == toUpdate.assignmentIndex &&
-        existing.labwork == toUpdate.labwork &&
-        existing.student == toUpdate.student
-        )
+    existing.assignmentIndex == toUpdate.assignmentIndex &&
+      existing.labwork == toUpdate.labwork &&
+      existing.student == toUpdate.student
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {

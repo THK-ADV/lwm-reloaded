@@ -119,7 +119,7 @@ class LabworkApplicationDaoSpec extends AbstractExpandableDaoSpec[LabworkApplica
 
   override protected val invalidDuplicateOfDbEntity: LabworkApplicationDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = dbEntity
+  override protected val invalidUpdateOfDbEntity: LabworkApplicationDb = dbEntity.copy(labwork = UUID.randomUUID)
 
   override protected val validUpdateOnDbEntity: LabworkApplicationDb = dbEntity.copy(friends = students.slice(1, 3).map(_.id).toSet)
 

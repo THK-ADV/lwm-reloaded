@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
@@ -11,19 +13,22 @@ final class ReportCardEvaluationDaoSpec extends AbstractDaoSpec[ReportCardEvalua
 
   import AbstractDaoSpec._
   import utils.date.DateTimeOps.SqlTimestampConverter
+
   import scala.util.Random.{nextBoolean, nextInt}
 
   override protected def name = "reportCardEvaluation"
 
-  override protected val dbEntity: ReportCardEvaluationDb = ReportCardEvaluationDb(
-    randomStudent.id, randomLabwork.id, "label", bool = true, 10
-  )
+  override protected val dbEntity: ReportCardEvaluationDb =
+    ReportCardEvaluationDb(randomStudent.id, randomLabwork.id, "label", bool = true, 10)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardEvaluationDb = dbEntity.copy(bool = !dbEntity.bool)
+  override protected val invalidDuplicateOfDbEntity: ReportCardEvaluationDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEvaluationDb = dbEntity.copy(label = "")
+  override protected val invalidUpdateOfDbEntity: ReportCardEvaluationDb =
+    dbEntity.copy(student = UUID.randomUUID, label = "updated label")
 
-  override protected val validUpdateOnDbEntity: ReportCardEvaluationDb = dbEntity.copy(bool = !dbEntity.bool)
+  override protected val validUpdateOnDbEntity: ReportCardEvaluationDb =
+    dbEntity.copy(bool = !dbEntity.bool, int = dbEntity.int + 1)
 
   override protected val dbEntities: List[ReportCardEvaluationDb] = labworks take 4 flatMap { l =>
     students take 10 flatMap { s =>

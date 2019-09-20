@@ -1,9 +1,10 @@
 package dao
 
+import java.util.UUID
+
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
-import service.GroupService._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 import slick.jdbc.PostgresProfile.api._
 
@@ -53,14 +54,14 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
     }
   }
 
-  override protected val toAdd: List[GroupDb] = populateGroups(20)(privateLabs, privateStudents)
+  override protected val toAdd: List[GroupDb] = populateGroups(2)(privateLabs, privateStudents)
 
   override protected val numberOfUpdates: Int = 5
 
   override protected val numberOfDeletions: Int = 5
 
-  override protected def update(toUpdate: List[GroupDb]): List[GroupDb] = toUpdate.zip(alphabeticalOrdering(toUpdate.size)).map {
-    case (g, alpha) => g.copy(label = alpha, members = takeSomeStudents(g.members.size).map(_.id).toSet)
+  override protected def update(toUpdate: List[GroupDb]): List[GroupDb] = toUpdate.map { g =>
+    g.copy(members = takeSomeStudents(g.members.size).map(_.id).toSet)
   }
 
   override protected def atom(dbModel: GroupDb): GroupLike = GroupAtom(
@@ -72,15 +73,15 @@ final class GroupDaoSpec extends AbstractExpandableDaoSpec[GroupTable, GroupDb, 
 
   override protected def name: String = "groupDao"
 
-  override protected val dbEntity: GroupDb = populateGroups(maxGroups)(labworks, students).head.copy(members = Set.empty)
+  override protected val dbEntity: GroupDb = populateGroups(4)(labworks.take(1), students).head.copy(members = Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: GroupDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: GroupDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: GroupDb = dbEntity
+  override protected val invalidUpdateOfDbEntity: GroupDb = dbEntity.copy(label = "random")
 
-  override protected val validUpdateOnDbEntity: GroupDb = dbEntity.copy(label = "hello")
+  override protected val validUpdateOnDbEntity: GroupDb = dbEntity.copy(members = Set.empty)
 
-  override protected val dbEntities: List[GroupDb] = groups
+  override protected val dbEntities: List[GroupDb] = populateGroups(4)(labworks.drop(1), students)
 
   override protected def lwmAtom: GroupLike = atom(dbEntity)
 

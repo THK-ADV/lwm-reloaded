@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
@@ -79,14 +81,23 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
   override protected def name: String = "scheduleEntry"
 
   override protected val dbEntity: ScheduleEntryDb = ScheduleEntryDb(
-    labworks.head.id, LocalTime.now.sqlTime, LocalTime.now.plusHours(1).sqlTime, LocalDate.now.sqlDate, rooms.head.id, Set.empty, groups.head.id
+    labworks.head.id,
+    LocalTime.now.sqlTime,
+    LocalTime.now.plusHours(1).sqlTime,
+    LocalDate.now.sqlDate,
+    rooms.head.id,
+    Set.empty,
+    groups.head.id
   )
 
-  override protected val invalidDuplicateOfDbEntity: ScheduleEntryDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: ScheduleEntryDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ScheduleEntryDb = dbEntity.copy(labwork = randomLabwork.id, group = randomGroup.id)
+  override protected val invalidUpdateOfDbEntity: ScheduleEntryDb =
+    dbEntity.copy(labwork = UUID.randomUUID, group = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: ScheduleEntryDb = dbEntity.copy(room = rooms.last.id, start = dbEntity.start.localTime.plusHours(1).sqlTime)
+  override protected val validUpdateOnDbEntity: ScheduleEntryDb =
+    dbEntity.copy(room = rooms.last.id, start = dbEntity.start.localTime.plusHours(1).sqlTime)
 
   override protected val dbEntities: List[ScheduleEntryDb] = {
     for {

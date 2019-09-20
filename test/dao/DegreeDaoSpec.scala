@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database.{DegreeDb, DegreeTable}
 import models.Degree
 import play.api.inject.guice.GuiceableModule
@@ -15,7 +17,7 @@ final class DegreeDaoSpec extends AbstractDaoSpec[DegreeTable, DegreeDb, Degree]
 
   override protected val dbEntity: DegreeDb = DegreeDb("label", "abbrev")
 
-  override protected val invalidDuplicateOfDbEntity: DegreeDb = DegreeDb(dbEntity.label, dbEntity.abbreviation)
+  override protected val invalidDuplicateOfDbEntity: DegreeDb = dbEntity.copy(id = UUID.randomUUID)
 
   override protected val invalidUpdateOfDbEntity: DegreeDb = dbEntity.copy("new label", "new abbrev")
 

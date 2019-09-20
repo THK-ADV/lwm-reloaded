@@ -286,15 +286,19 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
   override protected def name: String = "user"
 
-  override protected val dbEntity: UserDb = UserDb("delete", "delete", "delete", "delete", StudentStatus, Some("regId"), Some(degrees.head.id))
+  override protected val dbEntity: UserDb =
+    UserDb("delete", "delete", "delete", "delete", StudentStatus, Some("regId"), Some(degrees.head.id))
+
+  override protected val invalidDuplicateOfDbEntity: UserDb =
+    dbEntity.copy(id = UUID.randomUUID)
+
+  override protected val invalidUpdateOfDbEntity: UserDb =
+    dbEntity.copy(systemId = "new SystemId")
+
+  override protected val validUpdateOnDbEntity: UserDb =
+    dbEntity.copy(lastname = "married", enrollment = Some(degrees.last.id))
 
   override protected val dbEntities: List[UserDb] = dbUser
-
-  override protected val invalidDuplicateOfDbEntity: UserDb = dbEntity.copy(lastname = "other", firstname = "other", email = "other")
-
-  override protected val invalidUpdateOfDbEntity: UserDb = dbEntity.copy(systemId = "new SystemId")
-
-  override protected val validUpdateOnDbEntity: UserDb = dbEntity.copy(lastname = "married", enrollment = Some(degrees.last.id))
 
   override protected val lwmAtom: User = StudentAtom(
     dbEntity.systemId,

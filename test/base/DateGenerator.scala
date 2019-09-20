@@ -18,8 +18,7 @@ trait DateGenerator {
     .withSecondOfMinute(second)
     .withMillisOfSecond(milliSeconds)
 
-  protected def dateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, milliSeconds: Int): DateTime = DateTime
-    .now(DateTimeZone.UTC)
+  protected def dateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, milliSeconds: Int): DateTime = DateTime.now
     .withYear(year)
     .withMonthOfYear(month)
     .withDayOfMonth(day)

@@ -25,7 +25,7 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
   override protected def shouldUpdate(existing: DegreeDb, toUpdate: DegreeDb): Boolean = {
-    existing.label != toUpdate.label && existing.abbreviation == toUpdate.abbreviation
+    existing.abbreviation == toUpdate.abbreviation
   }
 
   override protected def existsQuery(entity: DegreeDb): Query[DegreeTable, DegreeDb, Seq] = {

@@ -411,7 +411,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
   private def createGroups = {
     students.grouped(labworks.size).grouped(labworks.size).toList.zip(labworks).zipWithIndex.flatMap {
-      case ((ss, l), i) => ss.map(s => GroupDb(i.toString, l.id, s.map(_.id).toSet))
+      case ((ss, l), i) => ss.map(s => GroupDb(UUID.randomUUID.toString, l.id, s.map(_.id).toSet))
     }
   }
 

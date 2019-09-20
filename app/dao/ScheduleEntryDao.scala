@@ -47,14 +47,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-
-    (existing.supervisor != toUpdate.supervisor ||
-      existing.date.localDate != toUpdate.date.localDate ||
-      existing.start.localTime != toUpdate.start.localTime ||
-      existing.end.localTime != toUpdate.end.localTime ||
-      existing.room != toUpdate.room) &&
-      (existing.labwork == toUpdate.labwork && existing.group == toUpdate.group)
+    existing.labwork == toUpdate.labwork && existing.group == toUpdate.group
   }
 
   private def collectDependencies(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])

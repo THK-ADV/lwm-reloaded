@@ -74,13 +74,17 @@ final class ReportCardRetryDaoSpec extends AbstractExpandableDaoSpec[ReportCardR
 
   override protected def name = "reportCardRetryDaoSpec"
 
-  override protected val dbEntity: ReportCardRetryDb = retry(reportCardEntries.head.id, 0).copy(entryTypes = Set.empty)
+  override protected val dbEntity: ReportCardRetryDb =
+    retry(reportCardEntries.head.id, 0).copy(entryTypes = Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardRetryDb = dbEntity.copy(reportCardEntry = reportCardEntries.head.id)
+  override protected val invalidDuplicateOfDbEntity: ReportCardRetryDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardRetryDb = invalidDuplicateOfDbEntity
+  override protected val invalidUpdateOfDbEntity: ReportCardRetryDb =
+    dbEntity.copy(reportCardEntry = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: ReportCardRetryDb = dbEntity.copy(room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate)
+  override protected val validUpdateOnDbEntity: ReportCardRetryDb =
+    dbEntity.copy(room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate)
 
   override protected val dbEntities: List[ReportCardRetryDb] = retries(reportCardEntries.tail.take(60))
 

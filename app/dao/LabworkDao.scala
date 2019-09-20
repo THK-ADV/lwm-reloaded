@@ -29,11 +29,7 @@ trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
   override protected def shouldUpdate(existing: LabworkDb, toUpdate: LabworkDb): Boolean = {
-    (existing.label != toUpdate.label ||
-      existing.description != toUpdate.description ||
-      existing.subscribable != toUpdate.subscribable ||
-      existing.published != toUpdate.published) &&
-      (existing.semester == toUpdate.semester && existing.course == toUpdate.course && existing.degree == toUpdate.degree)
+    existing.semester == toUpdate.semester && existing.course == toUpdate.course && existing.degree == toUpdate.degree
   }
 
   override protected def existsQuery(entity: LabworkDb): Query[LabworkTable, LabworkDb, Seq] = {
