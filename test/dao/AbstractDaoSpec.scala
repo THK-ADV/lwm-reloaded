@@ -110,9 +110,10 @@ object AbstractDaoSpec {
 
   final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
 
-  final def populateCourses(amount: Int)(semesterIndex: (Int) => Int) = (0 until amount).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, semesterIndex(i))
-  }.toList
+  final def populateCourses(amount: Int)(employees: List[UserDb])(semesterIndex: (Int) => Int) =
+    (0 until amount).zip(employees).map {
+      case (i, e) => CourseDb(i.toString, i.toString, i.toString, e.id, semesterIndex(i))
+    }.toList
 
   final def populateSemester(amount: Int) = {
     val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
@@ -138,7 +139,7 @@ object AbstractDaoSpec {
 
       ScheduleEntryDb(labwork, start.sqlTime, end.sqlTime, date.sqlDate, takeOneOf(rooms).id, takeSomeOf(employees).map(_.id).toSet, takeOneOf(groups).id)
     }
-  }.toList
+    }.toList
 
   def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = {
     var index = 0 // in order to satisfy uniqueness
@@ -224,7 +225,7 @@ object AbstractDaoSpec {
 
   lazy val employees = populateEmployees(maxEmployees)
 
-  lazy val courses = populateCourses(maxCourses)(_ % 6)
+  lazy val courses = populateCourses(maxCourses)(employees)(_ % 6)
 
   lazy val degrees = populateDegrees(maxDegrees)
 
@@ -297,11 +298,11 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"not create a $name because model already exists" in {
-      async(dao.create(invalidDuplicateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(Seq(dbEntity)))
+      async(dao.create(invalidDuplicateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidDuplicateOfDbEntity, Seq(dbEntity)))
     }
 
     s"not update a $name because model already exists" in {
-      async(dao.update(invalidUpdateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(dbEntity))
+      async(dao.update(invalidUpdateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidUpdateOfDbEntity, dbEntity))
     }
 
     s"update a $name properly" in {

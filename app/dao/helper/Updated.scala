@@ -27,13 +27,13 @@ trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     val query = filterValidOnly(_.id === entity.id)
 
     val singleQuery = query.exactlyOne { existing =>
-      if (shouldUpdate(existing, entity))
+      if (shouldUpdate(existing, entity) && existing.id == entity.id) // TODO separate error
         (for {
           u1 <- query.update(entity)
           u2 <- query.map(_.lastModified).update(DateTime.now.timestamp)
         } yield u1 + u2).transactionally.map(_ => entity)
       else
-        DBIO.failed(ModelAlreadyExists(existing))
+        DBIO.failed(ModelAlreadyExists(entity, existing))
     }
 
     databaseExpander.fold {

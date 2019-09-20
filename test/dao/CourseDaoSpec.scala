@@ -59,27 +59,33 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
     }
   }
 
+  private val privateEmployees = populateEmployees(2)
 
-  override protected val dbEntity: CourseDb = CourseDb("label", "description", "abbreviation", randomEmployee.id, 3)
+  override protected val dbEntity: CourseDb =
+    CourseDb("label", "description", "abbreviation", privateEmployees.head.id, 3)
 
-  override protected val invalidDuplicateOfDbEntity: CourseDb = CourseDb(dbEntity.label, "description2", "abbreviation2", UUID.randomUUID(), dbEntity.semesterIndex)
+  override protected val invalidDuplicateOfDbEntity: CourseDb =
+    dbEntity.copy(label = "new label", id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: CourseDb = dbEntity.copy("label2", dbEntity.description, dbEntity.abbreviation, dbEntity.lecturer, 2)
+  override protected val invalidUpdateOfDbEntity: CourseDb =
+    dbEntity.copy(label = "new label")
 
-  override protected val validUpdateOnDbEntity: CourseDb = dbEntity.copy(dbEntity.label, "updatedDescription", "updatedAbbreviation", randomEmployee.id, dbEntity.semesterIndex)
+  override protected val validUpdateOnDbEntity: CourseDb =
+    dbEntity.copy(label = "updated label", semesterIndex = 42, lecturer = privateEmployees.last.id)
 
   override protected val dbEntities: List[CourseDb] = courses
 
   override protected val dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[UserTable].forceInsertAll(employees)
+    TableQuery[UserTable].forceInsertAll(employees ++ privateEmployees)
   )
 
   override protected val lwmAtom: CourseLike = CourseAtom(
     dbEntity.label,
     dbEntity.description,
     dbEntity.abbreviation,
-    employees.find(_.id == dbEntity.lecturer).get.toUniqueEntity,
-    dbEntity.semesterIndex, dbEntity.id
+    privateEmployees.head.toUniqueEntity,
+    dbEntity.semesterIndex,
+    dbEntity.id
   )
 
   override protected def name: String = "course"

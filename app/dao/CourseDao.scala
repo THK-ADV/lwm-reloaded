@@ -14,20 +14,16 @@ object CourseDao extends TableFilter[CourseTable] {
 
 trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
 
-  import CourseDao._
-  import dao.helper.TableFilter.labelFilterEquals
+  import dao.helper.TableFilter.userFilter
 
   override val tableQuery: TableQuery[CourseTable] = TableQuery[CourseTable]
 
   override protected def existsQuery(entity: CourseDb): Query[CourseTable, CourseDb, Seq] = {
-    filterBy(List(labelFilterEquals(entity.label), semesterIndexFilter(entity.semesterIndex)))
+    filterBy(List(userFilter(entity.lecturer)))
   }
 
   override protected def shouldUpdate(existing: CourseDb, toUpdate: CourseDb): Boolean = {
-    (existing.description != toUpdate.description ||
-      existing.abbreviation != toUpdate.abbreviation ||
-      existing.lecturer != toUpdate.lecturer) &&
-      (existing.semesterIndex == toUpdate.semesterIndex && existing.label == toUpdate.label)
+    existing.lecturer != toUpdate.lecturer
   }
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {

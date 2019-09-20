@@ -34,7 +34,7 @@ trait Added[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     val singleQuery = for {
       existing <- existsQuery(entity).result
       created <- if (existing.nonEmpty)
-        DBIO.failed(ModelAlreadyExists(existing))
+        DBIO.failed(ModelAlreadyExists(entity, existing))
       else
         (tableQuery returning tableQuery) += entity
     } yield created

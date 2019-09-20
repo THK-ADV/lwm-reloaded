@@ -142,7 +142,7 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
       val result = controller.update(first.id.toString).apply(request)
 
       status(result) shouldBe BAD_REQUEST
-      contentAsJsonMessage(result).toString should include("model already exists")
+      contentAsJsonMessage(result).toString should include("already exists")
     }
 
     "fail update if json is bad" in {

@@ -19,7 +19,7 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
     "return competitive schedules based on given labwork" in {
       val degrees = populateDegrees(4)
       val semesters = populateSemester(4)
-      val courses = populateCourses(degrees.size * 4)(_ % 4)
+      val courses = populateCourses(degrees.size * 4)(employees)(_ % 4)
       val labworks = populateLabworks(courses.size * degrees.size)(semesters, courses, degrees)
 
       val entries = labworks.tail.flatMap { lab =>

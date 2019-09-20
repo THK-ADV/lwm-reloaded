@@ -26,7 +26,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
   private val employees = AbstractDaoSpec.employees
   private val users = employees ++ students
   private val semesters = AbstractDaoSpec.populateSemester(1)
-  private val courses = AbstractDaoSpec.populateCourses(1)(_ => 1)
+  private val courses = AbstractDaoSpec.populateCourses(1)(employees)(_ => 1)
   private val labworks = AbstractDaoSpec.populateLabworks(3)(semesters, courses, degrees)
   private val applications = AbstractDaoSpec.populateLabworkApplications(students.size, withFriends = true)(labworks, students)
 
