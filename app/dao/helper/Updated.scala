@@ -27,7 +27,7 @@ trait Updated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
     val query = filterValidOnly(_.id === entity.id)
 
     val singleQuery = query.exactlyOne { existing =>
-      if (shouldUpdate(existing, entity) && existing.id == entity.id) // TODO separate error
+      if (existing.id == entity.id && shouldUpdate(existing, entity))
         (for {
           u1 <- query.update(entity)
           u2 <- query.map(_.lastModified).update(DateTime.now.timestamp)

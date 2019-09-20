@@ -27,21 +27,11 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
   }
 
   override protected def existsQuery(entity: BlacklistDb): Query[BlacklistTable, BlacklistDb, Seq] = {
-    filterBy(List(
-      labelFilterEquals(entity.label),
-      onDateFilter(entity.date),
-      onStartFilter(entity.start),
-      onEndFilter(entity.end),
-      globalFilter(entity.global)
-    ))
+    filterBy(List(onDateFilter(entity.date), globalFilter(entity.global)))
   }
 
   override protected def shouldUpdate(existing: BlacklistDb, toUpdate: BlacklistDb): Boolean = {
-    existing.label != toUpdate.label &&
-      (existing.date.localDate == toUpdate.date.localDate &&
-        existing.start.localTime == toUpdate.start.localTime &&
-        existing.end.localTime == toUpdate.end.localTime &&
-        existing.global == toUpdate.global)
+    existing.date == toUpdate.date && existing.global == toUpdate.global
   }
 }
 

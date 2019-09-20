@@ -1,8 +1,8 @@
 package base
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalTime}
-import org.scalatest.Suite
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.Suite
 
 trait DateGenerator {
   self: Suite =>
@@ -18,7 +18,8 @@ trait DateGenerator {
     .withSecondOfMinute(second)
     .withMillisOfSecond(milliSeconds)
 
-  protected def dateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, milliSeconds: Int): DateTime = DateTime.now
+  protected def dateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, milliSeconds: Int): DateTime = DateTime
+    .now(DateTimeZone.UTC)
     .withYear(year)
     .withMonthOfYear(month)
     .withDayOfMonth(day)

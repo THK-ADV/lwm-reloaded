@@ -23,7 +23,7 @@ trait CourseDao extends AbstractDao[CourseTable, CourseDb, CourseLike] {
   }
 
   override protected def shouldUpdate(existing: CourseDb, toUpdate: CourseDb): Boolean = {
-    existing.lecturer != toUpdate.lecturer
+    existing.lecturer == toUpdate.lecturer
   }
 
   override protected def toAtomic(query: Query[CourseTable, CourseDb, Seq]): Future[Seq[CourseLike]] = {

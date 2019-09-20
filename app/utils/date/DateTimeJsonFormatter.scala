@@ -1,6 +1,6 @@
 package utils.date
 
-import org.joda.time.{DateTime, LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
 import play.api.libs.json._
 
 import scala.util.{Failure, Success, Try}
@@ -8,6 +8,8 @@ import scala.util.{Failure, Success, Try}
 object DateTimeJsonFormatter extends DateTimeFormatterPattern {
 
   implicit val writeDateTime: Writes[DateTime] = Writes(a => JsString(a.toString(dateTimeFormatter)))
+
+  implicit val writeLocalDateTime: Writes[LocalDateTime] = Writes(a => JsString(a.toString(dateTimeFormatter)))
 
   implicit val writeLocalDate: Writes[LocalDate] = Writes(a => JsString(a.toString(dateFormatter)))
 
