@@ -61,5 +61,64 @@ final class DateTimeOpsSpec extends WordSpec with TestBaseDefinition with DateGe
       "17:01:08".localTime.success.value shouldEqual localTime(17, 1, 8, 0)
       "14:05".localTime.failure.exception shouldBe a[IllegalArgumentException]
     }
+
+    "create a range from start until end" in {
+      import utils.date.DateTimeOps.mapUntil
+
+      mapUntil(
+        localDate(2019, 1, 1),
+        localDate(2019, 1, 31),
+        identity
+      ).size shouldBe 30
+    }
+
+    "create a range from start to end" in {
+      import utils.date.DateTimeOps.mapTo
+
+      mapTo(
+        localDate(2019, 1, 1),
+        localDate(2019, 1, 31),
+        identity
+      ).size shouldBe 31
+    }
+
+    "not create a range if start until end are the same" in {
+      import utils.date.DateTimeOps.mapUntil
+
+      mapUntil(
+        localDate(2019, 1, 1),
+        localDate(2019, 1, 1),
+        identity
+      ).size shouldBe 0
+    }
+
+    "create a range of 1 if start to end are the same" in {
+      import utils.date.DateTimeOps.mapTo
+
+      mapTo(
+        localDate(2019, 1, 1),
+        localDate(2019, 1, 1),
+        identity
+      ).size shouldBe 1
+    }
+
+    "fail creating a range if start is after end" in {
+      import utils.date.DateTimeOps.{mapTo, mapUntil}
+
+      val until = mapUntil(
+        localDate(2019, 1, 5),
+        localDate(2019, 1, 1),
+        identity
+      )
+
+      val to = mapTo(
+        localDate(2019, 1, 5),
+        localDate(2019, 1, 1),
+        identity
+      )
+
+      until.size shouldBe 0
+      to.size shouldBe 0
+    }
   }
 }

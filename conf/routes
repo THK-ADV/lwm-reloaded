@@ -82,6 +82,7 @@ DELETE        /courses/:c/timetables/:id                                       c
 
 # Blacklist 
 POST          /blacklists                                                      controllers.BlacklistController.create()
+POST          /blacklists/range                                                controllers.BlacklistController.createFromRange()
 POST          /blacklists/year/:year                                           controllers.BlacklistController.createFor(year)
 PUT           /blacklists/:id                                                  controllers.BlacklistController.update(id)
 GET           /blacklists                                                      controllers.BlacklistController.all()
