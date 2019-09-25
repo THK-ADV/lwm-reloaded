@@ -12,7 +12,7 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     with Accessible[T, DbModel]
     with Expandable[DbModel]
     with Added[T, DbModel]
-    with Removed[T, DbModel]
+    with Invalidated[T, DbModel]
     with Updated[T, DbModel]
     with Retrieved[T, DbModel, LwmModel] {
 

@@ -141,7 +141,7 @@ final class ScheduleEntryController @Inject()(
     update(id, NonSecureBlock)(request)
   }
 
-  def deleteFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
+  def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
     ???
   }
 

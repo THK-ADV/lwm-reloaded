@@ -33,7 +33,7 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
 
   override implicit val authorityDao: AuthorityDao = abstractDao
 
-  override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
+  override def invalidate(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
     (for {
       uuid <- id.uuidF
       deleted <- abstractDao.deleteAuthorityIfNotBasic(uuid)

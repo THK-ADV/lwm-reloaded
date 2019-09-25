@@ -68,14 +68,14 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 
-  override def delete(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ => // TODO test if ALL associated course authorities are removed
+  override def invalidate(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ => // TODO test if ALL associated course authorities are removed
     val uuid = UUID.fromString(id)
 
     (for {
       maybeCourse <- abstractDao.getSingle(uuid) if maybeCourse.isDefined
       course = maybeCourse.get
       courseDb = toCourseDb(course.asInstanceOf[Course])
-      _ <- abstractDao.transaction(abstractDao.deleteSingle(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
+      _ <- abstractDao.transaction(abstractDao.invalidateSingle(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
     } yield course).jsonResult
   }
 

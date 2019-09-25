@@ -85,7 +85,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     val action = for {
       nonBasic <- query.exists.result
       d <- if (nonBasic)
-        deleteSingle(id)
+        invalidateSingle(id)
       else
         DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${studentRole.label} or ${employeeRole.label}"))
     } yield d

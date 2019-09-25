@@ -46,9 +46,9 @@ trait LwmServiceDao extends Core {
 
       removedMembership <- groupDao.remove(student, group)
       application = labworkApplicationDao.filterBy(List(labworkFilter(labwork), userFilter(student)))
-      removedApplication <- labworkApplicationDao.deleteSingleQuery(application)
+      removedApplication <- labworkApplicationDao.invalidateSingleQuery(application)
       cards <- reportCards(labwork)(student).result
-      removedCards <- DBIO.sequence(cards.map(c => reportCardEntryDao.deleteSingle(c.id)))
+      removedCards <- DBIO.sequence(cards.map(c => reportCardEntryDao.invalidateSingle(c.id)))
     } yield (removedMembership > 0, removedApplication.toUniqueEntity, removedCards.map(_.toUniqueEntity))
 
     db.run(result.transactionally)

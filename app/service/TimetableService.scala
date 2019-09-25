@@ -97,7 +97,7 @@ object TimetableService { // TODO DI
       else
         for {
           r <- removeRelationShip()
-          b <- blacklistDao.delete(blacklistId)
+          b <- blacklistDao.invalidate(blacklistId)
         } yield (r, Some(b))
     }
 

@@ -79,7 +79,7 @@ class TimetableServiceSpec extends WordSpec with TestBaseDefinition with Mockito
       when(blacklistDao.getSingle(bl5.id)).thenReturn(Future.successful(Some(bl5.toUniqueEntity)))
       when(timetableDao.getSingle(tt1.id)).thenReturn(Future.successful(Some(tt1.toUniqueEntity)))
       when(timetableDao.update(any())).thenReturn(Future.successful(tt1.copy(localBlacklist = tt1.localBlacklist - bl5.id)))
-      when(blacklistDao.delete(bl5.id)).thenReturn(Future.successful(bl5))
+      when(blacklistDao.invalidate(bl5.id)).thenReturn(Future.successful(bl5))
 
       val (timetable, maybeBlacklist) = removeBlacklistFromTimetable(blacklistDao, timetableDao)(bl5.id, tt1.id).futureValue
       timetable.id shouldBe tt1.id

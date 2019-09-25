@@ -255,7 +255,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
       async(dao.labworkApplicationDao.createMany(lapps))(_ should not be empty)
       async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Allowed(buddy.toUniqueEntity))
-      async(dao.labworkApplicationDao.deleteMany(lapps.map(_.id)))(_.size shouldBe lapps.size)
+      async(dao.labworkApplicationDao.invalidateMany(lapps.map(_.id)))(_.size shouldBe lapps.size)
     }
 
     "almost allow a buddy request" in {

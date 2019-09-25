@@ -67,8 +67,8 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
     get(id, NonSecureBlock)(request)
   }
 
-  def deleteFrom(course: String, id: String): Action[AnyContent] = restrictedContext(course)(Delete) asyncAction { request =>
-    delete(id, NonSecureBlock)(request)
+  def invalidateFrom(course: String, id: String): Action[AnyContent] = restrictedContext(course)(Delete) asyncAction { request =>
+    invalidate(id, NonSecureBlock)(request)
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

@@ -35,9 +35,9 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     val clear = for {
       gs <- groupDap.get()
-      _ <- groupDap.deleteMany(gs.map(_.id).toList)
+      _ <- groupDap.invalidateMany(gs.map(_.id).toList)
       crds <- reportCardEntryDao.get()
-      _ <- reportCardEntryDao.deleteMany(crds.map(_.id).toList)
+      _ <- reportCardEntryDao.invalidateMany(crds.map(_.id).toList)
     } yield Unit
 
 

@@ -319,7 +319,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
 
     s"delete a $name by invalidating it" in {
       val deleted = for {
-        _ <- dao.delete(dbEntity)
+        _ <- dao.invalidate(dbEntity)
         e <- dao.getSingle(dbEntity.id)
       } yield e
 

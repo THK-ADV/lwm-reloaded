@@ -144,9 +144,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
         dao.createManyQuery(auths),
         dao.isCourseManager(lecturer.id) map (_ shouldBe true),
-        dao.deleteSingle(auths(1).id),
+        dao.invalidateSingle(auths(1).id),
         dao.isCourseManager(lecturer.id) map (_ shouldBe true),
-        dao.deleteSingle(auths(2).id),
+        dao.invalidateSingle(auths(2).id),
         dao.isCourseManager(lecturer.id) map (_ shouldBe false)
       )
     }

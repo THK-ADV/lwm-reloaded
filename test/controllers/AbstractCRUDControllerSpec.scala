@@ -186,7 +186,7 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
     "delete a value" in {
       val request = FakeRequest()
       val item = items(1)
-      val result = controller.delete(item.id.toString).apply(request)
+      val result = controller.invalidate(item.id.toString).apply(request)
 
       status(result) shouldBe OK
       contentAsJson(result) shouldBe Json.toJson(item.toUniqueEntity)
@@ -194,7 +194,7 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
 
     "fail delete if value is not found" in {
       val request = FakeRequest()
-      val result = controller.delete(UUID.randomUUID.toString).apply(request)
+      val result = controller.invalidate(UUID.randomUUID.toString).apply(request)
 
       status(result) shouldBe BAD_REQUEST
       contentAsJsonMessage(result) shouldBe JsString(NoEntityFound.getMessage)
@@ -202,7 +202,7 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
 
     "fail delete if id is bad" in {
       val request = FakeRequest()
-      val result = controller.delete("broken").apply(request)
+      val result = controller.invalidate("broken").apply(request)
 
       status(result) shouldBe BAD_REQUEST
       contentAsJsonMessage(result) shouldBe JsString("Invalid UUID string: broken")
