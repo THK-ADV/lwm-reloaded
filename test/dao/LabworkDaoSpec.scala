@@ -18,13 +18,17 @@ final class LabworkDaoSpec extends AbstractDaoSpec[LabworkTable, LabworkDb, Labw
 
   override protected def name: String = "labwork"
 
-  override protected val dbEntity: LabworkDb = LabworkDb("label", "desc", semesters.head.id, courses.head.id, degrees.head.id)
+  override protected val dbEntity: LabworkDb =
+    LabworkDb("label", "desc", semesters.head.id, courses.head.id, degrees.head.id)
 
-  override protected val invalidDuplicateOfDbEntity: LabworkDb = dbEntity.copy(label = "updated", id = UUID.randomUUID)
+  override protected val invalidDuplicateOfDbEntity: LabworkDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: LabworkDb = dbEntity.copy(course = UUID.randomUUID, degree = UUID.randomUUID)
+  override protected val invalidUpdateOfDbEntity: LabworkDb =
+    dbEntity.copy(label = "new label", course = UUID.randomUUID, degree = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: LabworkDb = dbEntity.copy("updateLabel", "updateDescription", published = !dbEntity.published)
+  override protected val validUpdateOnDbEntity: LabworkDb =
+    dbEntity.copy(description = "updateDescription", published = !dbEntity.published)
 
   override protected val dbEntities: List[LabworkDb] = (semesters.tail, courses.tail, degrees.tail).zipped.toList.map {
     case (s, c, d) =>

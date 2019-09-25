@@ -25,15 +25,24 @@ object LabworkDao extends TableFilter[LabworkTable] {
 trait LabworkDao extends AbstractDao[LabworkTable, LabworkDb, LabworkLike] {
 
   import LabworkDao.{courseFilter, degreeFilter, semesterFilter}
+  import TableFilter.labelFilterEquals
 
   override val tableQuery: TableQuery[LabworkTable] = TableQuery[LabworkTable]
 
   override protected def shouldUpdate(existing: LabworkDb, toUpdate: LabworkDb): Boolean = {
-    existing.semester == toUpdate.semester && existing.course == toUpdate.course && existing.degree == toUpdate.degree
+    existing.semester == toUpdate.semester &&
+      existing.course == toUpdate.course &&
+      existing.degree == toUpdate.degree &&
+      existing.label == toUpdate.label
   }
 
   override protected def existsQuery(entity: LabworkDb): Query[LabworkTable, LabworkDb, Seq] = {
-    filterBy(List(semesterFilter(entity.semester), courseFilter(entity.course), degreeFilter(entity.degree)))
+    filterBy(List(
+      semesterFilter(entity.semester),
+      courseFilter(entity.course),
+      degreeFilter(entity.degree),
+      labelFilterEquals(entity.label)
+    ))
   }
 
   override protected def toAtomic(query: Query[LabworkTable, LabworkDb, Seq]): Future[Seq[LabworkLike]] = {
