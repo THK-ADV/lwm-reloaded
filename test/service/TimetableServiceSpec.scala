@@ -1,5 +1,97 @@
 package service
 
+import java.util.UUID
+
+import base.TestBaseDefinition
+import dao.{BlacklistDao, TimetableDao}
+import database.{BlacklistDb, TimetableDb}
+import org.joda.time.LocalDate
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import org.scalatest.WordSpec
+import org.scalatest.mockito.MockitoSugar
+
+import scala.concurrent.Future
+
+class TimetableServiceSpec extends WordSpec with TestBaseDefinition with MockitoSugar {
+
+  import TimetableService._
+  import utils.date.DateTimeOps.{LocalDateConverter, SqlDateConverter}
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val blacklistDao = mock[BlacklistDao]
+  val timetableDao = mock[TimetableDao]
+
+  "A TimetableServiceSpec" should {
+
+    "remove a global blacklist from timetable by removing n:m relationship" in {
+      val bl1 = BlacklistDb.entireDay("global 1", LocalDate.now, global = true)
+      val bl2 = BlacklistDb.entireDay("global 2", LocalDate.now, global = true)
+      val bl3 = BlacklistDb.entireDay("global 3", LocalDate.now, global = true)
+      val bl4 = BlacklistDb.entireDay("global 4", LocalDate.now, global = true)
+      val bl5 = BlacklistDb.entireDay("local 1", LocalDate.now, global = false)
+      val bl6 = BlacklistDb.entireDay("local 2", LocalDate.now, global = false)
+      val bl7 = BlacklistDb.entireDay("local 3", LocalDate.now, global = false)
+      val all = Set(bl1.id, bl2.id, bl3.id, bl4.id, bl5.id, bl6.id, bl7.id)
+
+      val tt1 = TimetableDb(UUID.randomUUID, Set.empty, LocalDate.now.sqlDate, all)
+
+      when(blacklistDao.getSingle(bl1.id)).thenReturn(Future.successful(Some(bl1.toUniqueEntity)))
+      when(timetableDao.getSingle(tt1.id)).thenReturn(Future.successful(Some(tt1.toUniqueEntity)))
+      when(timetableDao.update(any())).thenReturn(Future.successful(tt1.copy(localBlacklist = tt1.localBlacklist - bl1.id)))
+
+      val (timetable, maybeBlacklist) = removeBlacklistFromTimetable(blacklistDao, timetableDao)(bl1.id, tt1.id).futureValue
+      timetable.id shouldBe tt1.id
+      timetable.labwork shouldBe tt1.labwork
+      timetable.start shouldBe tt1.start.localDate
+      timetable.entries shouldBe tt1.entries
+      timetable.localBlacklist shouldBe tt1.localBlacklist - bl1.id
+      maybeBlacklist shouldBe empty
+    }
+
+    "fail removing any blacklist if its not a local blacklist from" in {
+      val bl1 = BlacklistDb.entireDay("global 1", LocalDate.now, global = true)
+      val bl2 = BlacklistDb.entireDay("global 2", LocalDate.now, global = true)
+      val bl3 = BlacklistDb.entireDay("global 3", LocalDate.now, global = true)
+
+      val tt1 = TimetableDb(UUID.randomUUID, Set.empty, LocalDate.now.sqlDate, Set(bl1.id, bl2.id))
+
+      when(blacklistDao.getSingle(bl3.id)).thenReturn(Future.successful(Some(bl3.toUniqueEntity)))
+      when(timetableDao.getSingle(tt1.id)).thenReturn(Future.successful(Some(tt1.toUniqueEntity)))
+
+      val error = removeBlacklistFromTimetable(blacklistDao, timetableDao)(bl3.id, tt1.id).failed.futureValue
+      error.getMessage shouldBe s"blacklist ${bl3.toUniqueEntity} is not a local blacklist in ${tt1.toUniqueEntity}"
+    }
+
+    "remove a local blacklist from timetable by removing n:m relationship and removing blacklist entity" in {
+      val bl1 = BlacklistDb.entireDay("global 1", LocalDate.now, global = true)
+      val bl2 = BlacklistDb.entireDay("global 2", LocalDate.now, global = true)
+      val bl3 = BlacklistDb.entireDay("global 3", LocalDate.now, global = true)
+      val bl4 = BlacklistDb.entireDay("global 4", LocalDate.now, global = true)
+      val bl5 = BlacklistDb.entireDay("local 1", LocalDate.now, global = false)
+      val bl6 = BlacklistDb.entireDay("local 2", LocalDate.now, global = false)
+      val bl7 = BlacklistDb.entireDay("local 3", LocalDate.now, global = false)
+      val all = Set(bl1.id, bl2.id, bl3.id, bl4.id, bl5.id, bl6.id, bl7.id)
+
+      val tt1 = TimetableDb(UUID.randomUUID, Set.empty, LocalDate.now.sqlDate, all)
+
+      when(blacklistDao.getSingle(bl5.id)).thenReturn(Future.successful(Some(bl5.toUniqueEntity)))
+      when(timetableDao.getSingle(tt1.id)).thenReturn(Future.successful(Some(tt1.toUniqueEntity)))
+      when(timetableDao.update(any())).thenReturn(Future.successful(tt1.copy(localBlacklist = tt1.localBlacklist - bl5.id)))
+      when(blacklistDao.delete(bl5.id)).thenReturn(Future.successful(bl5))
+
+      val (timetable, maybeBlacklist) = removeBlacklistFromTimetable(blacklistDao, timetableDao)(bl5.id, tt1.id).futureValue
+      timetable.id shouldBe tt1.id
+      timetable.labwork shouldBe tt1.labwork
+      timetable.start shouldBe tt1.start.localDate
+      timetable.entries shouldBe tt1.entries
+      timetable.localBlacklist shouldBe tt1.localBlacklist - bl5.id
+      maybeBlacklist shouldBe Some(bl5.toUniqueEntity)
+    }
+  }
+}
+
 /*
 import java.util.UUID
 

@@ -79,6 +79,7 @@ PUT           /courses/:c/timetables/:id                                       c
 GET           /courses/:c/timetables                                           controllers.TimetableController.allFrom(c)
 GET           /courses/:c/timetables/:id                                       controllers.TimetableController.getFrom(c, id)
 DELETE        /courses/:c/timetables/:id                                       controllers.TimetableController.deleteFrom(c, id)
+DELETE        /courses/:c/timetables/:tid/blacklists/:bid                      controllers.TimetableController.removeBlacklistFrom(c, tid, bid)
 
 # Blacklist 
 POST          /blacklists                                                      controllers.BlacklistController.create()

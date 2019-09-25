@@ -1,9 +1,15 @@
 package service
 
-import models.{helper, _}
+import java.util.UUID
+
+import dao.{BlacklistDao, TimetableDao}
+import database.{BlacklistDb, TimetableDb}
 import models.helper.{TimetableDateEntry, Weekday}
+import models.{helper, _}
 import org.joda.time.{Interval, Weeks}
 import utils.date.DateTimeOps._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object TimetableService { // TODO DI
 
@@ -21,10 +27,10 @@ object TimetableService { // TODO DI
 
   @scala.annotation.tailrec
   def extrapolateTimetableByWeeks(timetable: Timetable,
-                                  weeks: Weeks,
-                                  blacklists: Vector[Blacklist],
-                                  assignmentPlan: AssignmentPlan,
-                                  groupSize: Int): Vector[TimetableDateEntry] = {
+    weeks: Weeks,
+    blacklists: Vector[Blacklist],
+    assignmentPlan: AssignmentPlan,
+    groupSize: Int): Vector[TimetableDateEntry] = {
     val appointments = assignmentPlan.entries.size * groupSize
     val schemaWeek = timetable.entries.toVector.map { entry =>
       val weekday = Weekday.toDay(entry.dayIndex)
@@ -57,5 +63,52 @@ object TimetableService { // TODO DI
 
         (remain.drop(groupSize), vec ++ remain.take(groupSize))
     }._2
+  }
+
+  def removeBlacklistFromTimetable(
+    blacklistDao: BlacklistDao,
+    timetableDao: TimetableDao
+  )(blacklistId: UUID, timetableId: UUID)(implicit executionContext: ExecutionContext): Future[(Timetable, Option[Blacklist])] = {
+    def isLocalBlacklist(blacklist: Blacklist, timetable: Timetable) =
+      if (timetable.localBlacklist.contains(blacklistId))
+        Future.unit
+      else
+        Future.failed(new Throwable(s"blacklist $blacklist is not a local blacklist in $timetable"))
+
+    def remove(blacklist: Blacklist, timetable: Timetable): Future[(TimetableDb, Option[BlacklistDb])] = {
+      def removeRelationShip() = {
+        import utils.date.DateTimeOps.LocalDateConverter
+
+        def toTimetableDb = TimetableDb(
+          timetable.labwork,
+          timetable.entries,
+          timetable.start.sqlDate,
+          timetable.localBlacklist - blacklist.id,
+          id = timetable.id
+        )
+
+        timetableDao update toTimetableDb
+      }
+
+      if (blacklist.global)
+        for {
+          r <- removeRelationShip()
+        } yield (r, None)
+      else
+        for {
+          r <- removeRelationShip()
+          b <- blacklistDao.delete(blacklistId)
+        } yield (r, Some(b))
+    }
+
+    for {
+      maybeBlacklist <- blacklistDao.getSingle(blacklistId, atomic = false) if maybeBlacklist.isDefined
+      maybeTimetable <- timetableDao.getSingle(timetableId, atomic = false) if maybeTimetable.isDefined
+      blacklist = maybeBlacklist.get
+      timetable = maybeTimetable.get.asInstanceOf[Timetable]
+
+      _ <- isLocalBlacklist(blacklist, timetable)
+      (t, b) <- remove(blacklist, timetable)
+    } yield (t.toUniqueEntity, b.map(_.toUniqueEntity))
   }
 }
