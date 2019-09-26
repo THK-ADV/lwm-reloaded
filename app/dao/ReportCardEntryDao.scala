@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -27,7 +27,9 @@ object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
   def indexFilter(index: Int): TableFilterPredicate = _.assignmentIndex === index
 }
 
-trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
+trait ReportCardEntryDao
+  extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike]
+    with CrossInvalidated[ReportCardEntryTable, ReportCardEntryDb] {
 
   override val tableQuery = TableQuery[ReportCardEntryTable]
 

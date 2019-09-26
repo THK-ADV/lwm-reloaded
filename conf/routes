@@ -99,6 +99,7 @@ POST          /courses/:c/reportCardEntries/copy                               c
 
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
+DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)
 
 # ReportCardEntryType 
 PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeController.updateFrom(c, id)
