@@ -34,8 +34,15 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  def withBlacklists(tableFilter: List[TableFilterPredicate]) = collectDependencies(filterBy(tableFilter)) {
-    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
+  def withBlacklists(tableFilter: List[TableFilterPredicate]) = {
+    for {
+      maybeTimetable <- collectDependencies(filterBy(tableFilter)) {
+        case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
+      }
+    } yield maybeTimetable.size match {
+      case 1 => maybeTimetable.head
+      case _ => throw new Throwable("more than one timetable found")
+    }
   }
 
   private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[UserDb]]) = {

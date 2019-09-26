@@ -38,7 +38,19 @@ trait ScheduleService {
 
   def elite: Int
 
-  def generate(t: Timetable, bs: Vector[Blacklist], gs: Vector[Group], a: AssignmentPlan, s: Semester, cs: Vector[ScheduleGen], p: Option[Int] = None, g: Option[Int] = None, e: Option[Int] = None): (Gen[ScheduleGen, Conflict, Int], Int)
+  def generate(
+    labwork: UUID,
+    ts: Vector[TimetableEntry],
+    start: LocalDate,
+    bs: Vector[Blacklist],
+    gs: Vector[Group],
+    a: AssignmentPlan,
+    s: Semester,
+    cs: Vector[ScheduleGen],
+    p: Option[Int] = None,
+    g: Option[Int] = None,
+    e: Option[Int] = None
+  ): (Gen[ScheduleGen, Conflict, Int], Int)
 }
 
 object ScheduleService {
@@ -101,9 +113,21 @@ final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elit
 
   import service.ScheduleService._
 
-  override def generate(t: Timetable, bs: Vector[Blacklist], gs: Vector[Group], a: AssignmentPlan, s: Semester, cs: Vector[ScheduleGen], p: Option[Int], g: Option[Int], e: Option[Int]) = {
-    val entries = TimetableService.extrapolateTimetableByWeeks(t, Weeks.weeksBetween(s.start, s.examStart), bs, a, gs.size)
-    val pop = population(p getOrElse pops, t.labwork, entries, gs)
+  override def generate(
+    labwork: UUID,
+    ts: Vector[TimetableEntry],
+    start: LocalDate,
+    bs: Vector[Blacklist],
+    gs: Vector[Group],
+    a: AssignmentPlan,
+    s: Semester,
+    cs: Vector[ScheduleGen],
+    p: Option[Int],
+    g: Option[Int],
+    e: Option[Int]
+  ) = {
+    val entries = TimetableService.extrapolateTimetableByWeeks(ts, start, Weeks.weeksBetween(s.start, s.examStart), bs, a, gs.size)
+    val pop = population(p getOrElse pops, labwork, entries, gs)
 
     implicit val evalF: Evaluator = evaluation(cs, a.entries.size)
     implicit val mutateF: (Mutator, Mutator) = (mutate, mutateDestructive)

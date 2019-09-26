@@ -4,11 +4,12 @@ import java.util.UUID
 
 import controllers.helper.{GroupingStrategyAttributeFilter, TimeRangeTableFilter}
 import dao._
+import dao.helper.TableFilter
 import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{CourseAssistant, CourseEmployee, CourseManager}
+import models.Role.{Admin, CourseAssistant, CourseEmployee, CourseManager}
 import models._
-import models.genesis.{Conflict, ScheduleGen}
+import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import security.SecurityActionChain
@@ -37,17 +38,17 @@ final class ScheduleEntryController @Inject()(
   val authorityDao: AuthorityDao,
   val abstractDao: ScheduleEntryDao,
   val scheduleService: ScheduleService,
-  val assignmentPlanService: AssignmentPlanDao,
-  val labworkService: LabworkDao,
-  val timetableService: TimetableDao,
-  val labworkApplicationService2: LabworkApplicationDao,
+  val assignmentPlanDao: AssignmentPlanDao,
+  val labworkDao: LabworkDao,
+  val timetableDao: TimetableDao,
+  val labworkApplicationDao: LabworkApplicationDao,
   val groupDao: GroupDao,
   val securedAction: SecurityActionChain
-) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc) with GroupingStrategyAttributeFilter
+) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
+  with GroupingStrategyAttributeFilter
   with TimeRangeTableFilter[ScheduleEntryTable] {
 
   import controllers.ScheduleEntryController._
-  import dao.helper.TableFilter.labworkFilter
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -65,57 +66,81 @@ final class ScheduleEntryController @Inject()(
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
+    def groups(entries: Vector[ScheduleEntryGen]) = entries
+      .map(_.group)
+      .distinct
+      .map(g => GroupDb(g.label, g.labwork, g.members, id = g.id))
+      .toList
+
+    def scheduleEntries(entries: Vector[ScheduleEntryGen], labwork: UUID) = {
+      import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
+
+      entries
+        .map(e => ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id))
+        .toList
+    }
 
     (for {
       s <- Future.fromTry(parseJson(request)(ScheduleGen.reads))
-      labwork = s.labwork
-      groups = s.entries.map(_.group).distinct.map(e => GroupDb(e.label, e.labwork, e.members, id = e.id)).toList
-      se = s.entries.map(e => database.ScheduleEntryDb(labwork, e.start.sqlTime, e.end.sqlTime, e.date.sqlDate, e.room, e.supervisor, e.group.id)).toList
-      _ <- groupDao.createMany(groups)
+      gs = groups(s.entries)
+      se = scheduleEntries(s.entries, s.labwork)
+      _ <- groupDao.createMany(gs)
       _ <- abstractDao.createMany(se)
-
-      atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+      atomic = extractAttributes(request.queryString)._2.atomic
       scheduleEntries <- if (atomic)
         abstractDao.getMany(se.map(_.id), atomic)
       else
         Future.successful(se.map(_.toUniqueEntity))
-
-    } yield scheduleEntries).jsonResult
+    } yield scheduleEntries).created
   }
 
   def preview(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    labwork.uuidF.flatMap(l => generate(l)).created
+    labwork.uuidF.flatMap(l => generate(l)).jsonResult
   }
 
-  private def generate(labwork: UUID)(implicit request: Request[AnyContent]) = for {
-    timetables <- timetableService.withBlacklists(List(labworkFilter(labwork))) if timetables.nonEmpty
-    (timetable, blacklists) = {
-      val h = timetables.head
-      (h._1, h._2.toVector)
-    }
+  private def generate(labwork: UUID)(implicit request: Request[AnyContent]) = {
+    val labworkFilter = List(TableFilter.labworkFilter(labwork))
 
-    applications <- labworkApplicationService2.get(List(labworkFilter(labwork)), atomic = false)
-    apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
+    for {
+      groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
 
-    groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
-    groups = GroupService.groupApplicantsBy(groupingStrategy)(apps, labwork)
+      (timetable, blacklists) <- timetableDao.withBlacklists(labworkFilter)
+      _ = if (timetable.entries.isEmpty) throw new Throwable("timetable entries must be set")
 
-    assignmentPlans <- assignmentPlanService.get(List(labworkFilter(labwork)), atomic = false) if assignmentPlans.nonEmpty
-    ap = assignmentPlans.head.asInstanceOf[AssignmentPlan]
+      applications <- labworkApplicationDao.get(labworkFilter, atomic = false)
+      _ = if (applications.isEmpty) throw new Throwable("labwork applications must be set")
+      apps = applications.map(_.asInstanceOf[LabworkApplication]).toVector
 
-    lab <- labworkService.getSingle(labwork) if lab.isDefined
-    labAtom = lab.get.asInstanceOf[LabworkAtom]
-    semester = labAtom.semester
+      groups = GroupService.groupApplicantsBy(groupingStrategy)(apps, labwork)
 
-    c = boolOf(request.queryString)(semesterIndexConsiderationAttribute).getOrElse(true)
-    comps <- abstractDao.competitive(labAtom, c)
+      maybePlan <- assignmentPlanDao.getSingleWhere(labworkFilter.head, atomic = false)
+      ap = maybePlan.fold(throw new Throwable("assignment plan must be set"))(_.asInstanceOf[AssignmentPlan])
 
-    i = intOf(request.queryString) _
-    pop = i(popAttribute)
-    gen = i(genAttribute)
-    elite = i(eliteAttribute)
-  } yield scheduleService.generate(timetable, blacklists, groups, ap, semester, comps, pop, gen, elite)
+      lab <- labworkDao.getSingle(labwork) if lab.isDefined
+      labAtom = lab.fold(throw new Throwable("labwork not found"))(_.asInstanceOf[LabworkAtom])
+      semester = labAtom.semester
+
+      considerSemesterIndex = boolOf(request.queryString)(semesterIndexConsiderationAttribute).getOrElse(true)
+      comps <- abstractDao.competitive(labAtom, considerSemesterIndex)
+
+      i = intOf(request.queryString) _
+      pop = i(popAttribute)
+      gen = i(genAttribute)
+      elite = i(eliteAttribute)
+    } yield scheduleService.generate(
+      labwork,
+      timetable.entries.toVector,
+      timetable.start,
+      blacklists.toVector,
+      groups,
+      ap,
+      semester,
+      comps,
+      pop,
+      gen,
+      elite
+    )
+  }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
@@ -126,7 +151,7 @@ final class ScheduleEntryController @Inject()(
     case Delete => SecureBlock(restrictionId, List(CourseManager))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case Update => PartialSecureBlock(List(Admin))
   }
 
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
@@ -142,7 +167,10 @@ final class ScheduleEntryController @Inject()(
   }
 
   def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    ???
+    (for {
+      labworkId <- labwork.uuidF
+      (_, ds) <- ScheduleCombinatorDao.invalidate(labworkId)(abstractDao, groupDao)
+    } yield ds).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

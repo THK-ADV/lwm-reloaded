@@ -23,10 +23,9 @@ trait Invalidated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def invalidateManyEntities(entities: List[DbModel]): Future[List[DbModel]] = invalidateMany(entities.map(_.id))
 
-  final def invalidateMany(ids: List[UUID]): Future[List[DbModel]] = {
-    val query = ids.map(id => invalidateSingle(id))
-    db.run(DBIO.sequence(query))
-  }
+  final def invalidateMany(ids: List[UUID]): Future[List[DbModel]] = db.run(invalidateManyQuery(ids))
+
+  final def invalidateManyQuery(ids: List[UUID]) = DBIO.sequence(ids.map(invalidateSingle(_)))
 
   final def invalidateSingle(id: UUID, now: Timestamp = DateTime.now.timestamp) = {
     invalidateSingle0(filterValidOnly(_.id === id), now)

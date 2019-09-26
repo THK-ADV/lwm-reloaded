@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
@@ -17,7 +17,9 @@ object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
   def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.user === supervisor).exists
 }
 
-trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
+trait ScheduleEntryDao
+  extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike]
+    with CrossInvalidated[ScheduleEntryTable, ScheduleEntryDb] {
 
   import dao.helper.TableFilter.{groupFilter, labworkFilter}
 

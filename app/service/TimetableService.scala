@@ -6,7 +6,7 @@ import dao.{BlacklistDao, TimetableDao}
 import database.{BlacklistDb, TimetableDb}
 import models.helper.{TimetableDateEntry, Weekday}
 import models.{helper, _}
-import org.joda.time.{Interval, Weeks}
+import org.joda.time.{Interval, LocalDate, Weeks}
 import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,15 +26,17 @@ object TimetableService { // TODO DI
   }
 
   @scala.annotation.tailrec
-  def extrapolateTimetableByWeeks(timetable: Timetable,
+  def extrapolateTimetableByWeeks(
+    entries: Vector[TimetableEntry],
+    start: LocalDate,
     weeks: Weeks,
     blacklists: Vector[Blacklist],
     assignmentPlan: AssignmentPlan,
     groupSize: Int): Vector[TimetableDateEntry] = {
     val appointments = assignmentPlan.entries.size * groupSize
-    val schemaWeek = timetable.entries.toVector.map { entry =>
+    val schemaWeek = entries.map { entry =>
       val weekday = Weekday.toDay(entry.dayIndex)
-      helper.TimetableDateEntry(weekday, weekday.sync(timetable.start), entry.start, entry.end, entry.room, entry.supervisor)
+      helper.TimetableDateEntry(weekday, weekday.sync(start), entry.start, entry.end, entry.room, entry.supervisor)
     }
 
     val extrapolated = (0 until weeks.getWeeks).foldLeft(Vector.empty[TimetableDateEntry]) {
@@ -47,7 +49,7 @@ object TimetableService { // TODO DI
 
     takeAppointments(filtered, assignmentPlan, groupSize) match {
       case enough if enough.size >= appointments => enough
-      case _ => extrapolateTimetableByWeeks(timetable, weeks plus Weeks.ONE, blacklists, assignmentPlan, groupSize)
+      case _ => extrapolateTimetableByWeeks(entries, start, weeks plus Weeks.ONE, blacklists, assignmentPlan, groupSize)
     }
   }
 

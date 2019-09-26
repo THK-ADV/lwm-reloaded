@@ -2,7 +2,8 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.TableFilter.labworkFilter
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -18,7 +19,7 @@ object GroupDao extends TableFilter[GroupTable] {
   def studentFilter(student: UUID): TableFilterPredicate = _.contains(student)
 }
 
-trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
+trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInvalidated[GroupTable, GroupDb] {
 
   import TableFilter.{groupFilter, labelFilterEquals, labworkFilter, userFilter}
 
