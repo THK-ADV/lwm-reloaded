@@ -11,17 +11,21 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object RoleController {
   lazy val labelAttribute = "label"
-  lazy val selectAttribute = "select"
+  lazy val filterAttribute = "filter"
   lazy val selectValue = "courseSensitive"
 }
 
 @Singleton
-final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
+final class RoleController @Inject()(
+  cc: ControllerComponents,
+  val abstractDao: RoleDao,
+  val authorityDao: AuthorityDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
 
   override protected implicit val writes: Writes[Role] = Role.writes
 
@@ -33,10 +37,10 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
     (attribute, value) match {
       case (`labelAttribute`, l) =>
         l.makeLabelEqualsFilter
-      case (`selectAttribute`, `selectValue`) =>
-        ??? // TODO
-      case (`selectAttribute`, other) =>
-        Failure(new Throwable(s"Value of $selectAttribute must be $selectValue, but was $other"))
+      case (`filterAttribute`, `selectValue`) =>
+        Success(RoleDao.courseSensitiveFilter)
+      case (`filterAttribute`, other) =>
+        Failure(new Throwable(s"Value of [$filterAttribute] must be [$selectValue], but was $other"))
       case _ =>
         Failure(new Throwable(s"Unknown attribute $attribute"))
     }

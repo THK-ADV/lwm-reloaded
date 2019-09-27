@@ -2,16 +2,23 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.TableFilter
 import database.helper.LdapUserStatus
 import database.helper.LdapUserStatus._
 import database.{RoleDb, RoleTable}
 import javax.inject.Inject
-import models.Role.{EmployeeRole, StudentRole}
+import models.Role.{CourseAssistant, CourseEmployee, CourseManager, EmployeeRole, StudentRole}
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
+
+object RoleDao extends TableFilter[RoleTable] {
+  def courseSensitiveRoles = List(CourseEmployee, CourseAssistant, CourseManager)
+
+  def courseSensitiveFilter: TableFilterPredicate = _.label.inSet(courseSensitiveRoles.map(_.label))
+}
 
 trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
 
