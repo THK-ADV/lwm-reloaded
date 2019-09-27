@@ -44,7 +44,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toUniqueEntity.asInstanceOf[LwmModel]
 
-  private def parsed(id: Option[UUID], action: DbModel => Future[DbModel])(implicit request: Request[AnyContent]): Future[LwmModel] = {
+  protected def parsed(id: Option[UUID], action: DbModel => Future[DbModel])(implicit request: Request[AnyContent]): Future[LwmModel] = {
     for {
       protocol <- Future.fromTry(parseJson(request)(reads))
       dbModel = toDbModel(protocol, id)

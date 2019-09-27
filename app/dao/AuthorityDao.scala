@@ -36,8 +36,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def courseManagerRole: LWMRole = Role.CourseManager
 
-  def rightsManagerRole: LWMRole = Role.RightsManager
-
   private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
     filterValidOnly(a => a.user === user && a.role === role).exists.result
   }
@@ -56,13 +54,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
       a.user === course.lecturer &&
         a.course.map(_ === course.id).getOrElse(false) &&
         a.roleFk.filter(_.label === courseManagerRole.label).exists
-    }.delete
-  }
-
-  def deleteRightsManagerQuery(user: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    filterValidOnly { a =>
-      a.user === user &&
-        a.roleFk.filter(_.label === rightsManagerRole.label).exists
     }.delete
   }
 
@@ -96,23 +87,13 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def createAssociatedAuthorities(course: CourseDb) = {
     (for {
       courseManager <- roleDao.byRoleLabelQuery(courseManagerRole.label) if courseManager.isDefined
-      rightsManager <- roleDao.byRoleLabelQuery(rightsManagerRole.label) if rightsManager.isDefined
-
       courseManagerAuth = AuthorityDb(course.lecturer, courseManager.head.id, Some(course.id))
-      rightsManagerAuth = AuthorityDb(course.lecturer, rightsManager.head.id)
-
-      isRightsManagerAlready <- hasAuthority(course.lecturer, rightsManager.head.id)
-      toCreate = if (isRightsManagerAlready) Seq(courseManagerAuth) else Seq(courseManagerAuth, rightsManagerAuth)
-      created <- createManyQuery(toCreate)
+      created <- createQuery(courseManagerAuth)
     } yield created).transactionally
   }
 
   def deleteAssociatedAuthorities(course: CourseDb) = {
-    for {
-      deletedCourseManager <- deleteCourseManagerQuery(course)
-      isCourseManager <- isCourseManager(course.lecturer)
-      deletedRightsManager <- if (isCourseManager) DBIO.successful(0) else deleteRightsManagerQuery(course.lecturer)
-    } yield deletedCourseManager + deletedRightsManager
+    deleteCourseManagerQuery(course)
   }
 
   def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = {

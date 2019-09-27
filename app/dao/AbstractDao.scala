@@ -18,6 +18,8 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
 
+  final def zip[A, B](a: DBIO[A], b: DBIO[B]): Future[(A, B)] = db.run(a.zip(b))
+
   final def createSchema: Future[Unit] = db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
 
   final def dropSchema: Future[Unit] = db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)

@@ -5,7 +5,7 @@ import java.util.UUID
 import dao.{AuthorityDao, RoleDao}
 import database.{RoleDb, RoleTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{God, RightsManager}
+import models.Role.{CourseManager, God}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
@@ -15,6 +15,8 @@ import scala.util.{Failure, Try}
 
 object RoleController {
   lazy val labelAttribute = "label"
+  lazy val selectAttribute = "select"
+  lazy val selectValue = "courseSensitive"
 }
 
 @Singleton
@@ -29,16 +31,22 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
     import RoleController._
 
     (attribute, value) match {
-      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
-      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+      case (`labelAttribute`, l) =>
+        l.makeLabelEqualsFilter
+      case (`selectAttribute`, `selectValue`) =>
+        ??? // TODO
+      case (`selectAttribute`, other) =>
+        Failure(new Throwable(s"Value of $selectAttribute must be $selectValue, but was $other"))
+      case _ =>
+        Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
   override protected def toDbModel(protocol: Role, existingId: Option[UUID]): RoleDb = ???
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(RightsManager))
-    case GetAll => PartialSecureBlock(List(RightsManager))
+    case Get => PartialSecureBlock(List(CourseManager))
+    case GetAll => PartialSecureBlock(List(CourseManager))
     case _ => PartialSecureBlock(List(God))
   }
 

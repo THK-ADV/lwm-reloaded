@@ -9,10 +9,9 @@ import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
 import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 object CourseController {
@@ -32,35 +31,29 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
 
   override protected implicit val reads: Reads[CourseProtocol] = CourseProtocol.reads
 
-  override def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { request =>
-    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
-
-    (for {
-      protocol <- Future.fromTry(parseJson(request))
-      dbModel = toDbModel(protocol, None)
-      _ <- abstractDao.transaction(abstractDao.createQuery(dbModel), authorityDao.createAssociatedAuthorities(dbModel))
-      lwmModel <- if (atomic)
-        abstractDao.getSingle(dbModel.id, atomic)
-      else
-        Future.successful(Some(dbModel.toUniqueEntity))
-    } yield lwmModel.get).created
+  override def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { implicit request =>
+    parsed(
+      None,
+      course => abstractDao.zip(
+        abstractDao.createQuery(course),
+        authorityDao.createAssociatedAuthorities(course)
+      ).map(_._1)
+    ).created
   }
 
-  override def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { request =>
+  override def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { implicit request =>
     val uuid = UUID.fromString(id)
-    val atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
 
-    (for {
-      protocol <- Future.fromTry(parseJson(request))
-      newCourse = toDbModel(protocol, Some(uuid))
-      maybeCourse <- abstractDao.getSingle(uuid, atomic = false) if maybeCourse.isDefined
-      oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
-      _ <- abstractDao.transaction(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
-      lwmModel <- if (atomic)
-        abstractDao.getSingle(uuid, atomic).map(_.get)
-      else
-        Future.successful(newCourse.toUniqueEntity)
-    } yield lwmModel).jsonResult
+    parsed(
+      Some(uuid),
+      newCourse => {
+        for {
+          maybeCourse <- abstractDao.getSingle(uuid, atomic = false) if maybeCourse.isDefined
+          oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
+          _ <- abstractDao.transaction(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
+        } yield newCourse
+      }
+    ).jsonResult
   }
 
   override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb = {

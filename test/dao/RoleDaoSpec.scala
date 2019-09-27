@@ -4,11 +4,11 @@ import java.util.UUID
 
 import base.PostgresDbSpec
 import database.RoleDb
+import database.helper.LdapUserStatus._
 import models.{Authority, Role}
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
-import database.helper.LdapUserStatus._
 
 import scala.concurrent.Future
 
@@ -85,7 +85,7 @@ class RoleDaoSpec extends PostgresDbSpec {
       async(dao.isAuthorized(Some(course2), List(Role.EmployeeRole, Role.CourseEmployee))(auths))(_ shouldBe false)
       async(dao.isAuthorized(Some(UUID.randomUUID), List(Role.CourseEmployee, Role.CourseAssistant))(auths))(_ shouldBe false)
       async(dao.isAuthorized(None, List(Role.StudentRole))(auths))(_ shouldBe false)
-      async(dao.isAuthorized(None, List(Role.RightsManager, Role.CourseManager))(auths))(_ shouldBe false)
+      async(dao.isAuthorized(None, List(Role.CourseManager))(auths))(_ shouldBe false)
       async(dao.isAuthorized(None, List(Role.Admin))(auths))(_ shouldBe false)
       async(dao.isAuthorized(Some(course1), List(Role.Admin))(auths))(_ shouldBe false)
       async(dao.isAuthorized(Some(UUID.randomUUID), List.empty)(auths))(_ shouldBe false)
