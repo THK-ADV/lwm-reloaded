@@ -14,7 +14,6 @@ POST          /courses                                                         c
 PUT           /courses/:id                                                     controllers.CourseController.update(id)
 GET           /courses                                                         controllers.CourseController.all()
 GET           /courses/:id                                                     controllers.CourseController.get(id)
-DELETE        /courses/:id                                                     controllers.CourseController.invalidate(id)
 
 # Group 2
 GET           /courses/:c/labworks/:l/groups                                   controllers.GroupController.allFrom(c, l)

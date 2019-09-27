@@ -5,7 +5,7 @@ import java.util.UUID
 import dao._
 import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{Admin, EmployeeRole, StudentRole}
+import models.Role.{Admin, EmployeeRole, God, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
 import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
@@ -68,17 +68,6 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     CourseDb(protocol.label, protocol.description, protocol.abbreviation, protocol.lecturer, protocol.semesterIndex, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 
-  override def invalidate(id: String, secureContext: SecureContext = contextFrom(Delete)): Action[AnyContent] = secureContext asyncAction { _ => // TODO test if ALL associated course authorities are removed
-    val uuid = UUID.fromString(id)
-
-    (for {
-      maybeCourse <- abstractDao.getSingle(uuid) if maybeCourse.isDefined
-      course = maybeCourse.get
-      courseDb = toCourseDb(course.asInstanceOf[Course])
-      _ <- abstractDao.transaction(abstractDao.invalidateSingle(uuid), authorityDao.deleteAssociatedAuthorities(courseDb))
-    } yield course).jsonResult
-  }
-
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import CourseController._
     import dao.CourseDao._
@@ -95,6 +84,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(EmployeeRole, StudentRole))
     case GetAll => PartialSecureBlock(List(EmployeeRole))
+    case Delete => PartialSecureBlock(List(God))
     case _ => PartialSecureBlock(List(Admin))
   }
 
