@@ -61,7 +61,9 @@ GET           /labworkApplications                                             c
 GET           /labworkApplications/:id                                         controllers.LabworkApplicationController.get(id)
 DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.invalidate(id)
 
-# Schedule / ScheduleEntries 
+GET           /courses/:c/labworks/:l/labworkApplications/count                controllers.LabworkApplicationController.countFrom(c, l)
+
+# Schedule / ScheduleEntries
 POST          /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.createFrom(c)
 GET           /courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryController.preview(c, l)
 

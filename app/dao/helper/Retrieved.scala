@@ -71,6 +71,11 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       .filterBy(validOnly, sinceLastModified)
       .retrieve(atomic)
 
+  final def count(filter: List[T => Rep[Boolean]], validOnly: Boolean = true, sinceLastModified: Option[String] = None): Future[Int] = {
+    val action = filterBy(filter, validOnly, sinceLastModified).length
+    db run action.result
+  }
+
   final def filterValidOnly(where: T => Rep[Boolean]): Query[T, DbModel, Seq] = filterValidOnly(tableQuery.filter(where))
 
   final def filterValidOnly(query: Query[T, DbModel, Seq]): Query[T, DbModel, Seq] = query.filterBy(validOnly = true, None)
@@ -99,4 +104,5 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
       }
     }
   }
+
 }

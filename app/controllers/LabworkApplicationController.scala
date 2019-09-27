@@ -11,6 +11,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object LabworkApplicationController {
@@ -19,12 +20,27 @@ object LabworkApplicationController {
 }
 
 @Singleton
-final class LabworkApplicationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc) {
+final class LabworkApplicationController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: LabworkApplicationDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc) {
 
   override protected implicit val writes: Writes[LabworkApplicationLike] = LabworkApplicationLike.writes
 
   override protected implicit val reads: Reads[LabworkApplicationProtocol] = LabworkApplicationProtocol.reads
+
+  def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    import dao.helper.TableFilter.{courseFilter, labworkFilter}
+
+    (for {
+      courseId <- course.uuidF
+      labworkId <- labwork.uuidF
+      count <- abstractDao.count(List(courseFilter(courseId), labworkFilter(labworkId)))
+    } yield count).jsonResult
+  }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import LabworkApplicationController._
