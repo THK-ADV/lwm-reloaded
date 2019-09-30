@@ -32,9 +32,8 @@ final class ReportCardEntryController @Inject()(
   val scheduleEntryDao: ScheduleEntryDao,
   val assignmentPlanService: AssignmentPlanDao,
   val securedAction: SecurityActionChain
-)
-  extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
-    with TimeRangeTableFilter[ReportCardEntryTable] {
+) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
+  with TimeRangeTableFilter[ReportCardEntryTable] {
 
   import controllers.ReportCardEntryController._
 
@@ -87,6 +86,14 @@ final class ReportCardEntryController @Inject()(
       reportCardEntries = ReportCardService.reportCards(schedules.head, maybePlan.head)
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
+  }
+
+  def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { _ =>
+    (for {
+      courseId <- course.uuidF
+      labworkId <- labwork.uuidF
+      count <- abstractDao.numberOfStudents(courseId, labworkId)
+    } yield count).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

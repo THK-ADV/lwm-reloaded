@@ -46,6 +46,15 @@ trait ReportCardEntryDao
     db run query.distinct.result
   }
 
+  def numberOfStudents(course: UUID, labwork: UUID) = {
+    val query = filterValidOnly(t => t.memberOfCourse(course) && t.labwork === labwork)
+      .groupBy(_.user)
+      .map(_._1)
+      .length
+
+    db run query.result
+  }
+
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
     case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
       student.toUniqueEntity,
