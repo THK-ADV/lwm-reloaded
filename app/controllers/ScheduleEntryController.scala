@@ -38,7 +38,7 @@ final class ScheduleEntryController @Inject()(
   val authorityDao: AuthorityDao,
   val abstractDao: ScheduleEntryDao,
   val scheduleService: ScheduleService,
-  val assignmentPlanDao: AssignmentPlanDao,
+  val assignmentEntryDao: AssignmentEntryDao,
   val labworkDao: LabworkDao,
   val timetableDao: TimetableDao,
   val labworkApplicationDao: LabworkApplicationDao,
@@ -113,8 +113,8 @@ final class ScheduleEntryController @Inject()(
 
       groups = GroupService.groupApplicantsBy(groupingStrategy)(apps, labwork)
 
-      maybePlan <- assignmentPlanDao.getSingleWhere(labworkFilter.head, atomic = false)
-      ap = maybePlan.fold(throw new Throwable("assignment plan must be set"))(_.asInstanceOf[AssignmentPlan])
+      maybeEntries <- assignmentEntryDao.get(labworkFilter, atomic = false)
+      aps = if (maybeEntries.isEmpty) throw new Throwable("assignment entries must be set") else maybeEntries.map(_.asInstanceOf[AssignmentEntry])
 
       lab <- labworkDao.getSingle(labwork) if lab.isDefined
       labAtom = lab.fold(throw new Throwable("labwork not found"))(_.asInstanceOf[LabworkAtom])
@@ -133,7 +133,7 @@ final class ScheduleEntryController @Inject()(
       timetable.start,
       blacklists.toVector,
       groups,
-      ap,
+      aps.toVector,
       semester,
       comps,
       pop,

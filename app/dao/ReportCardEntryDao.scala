@@ -95,7 +95,11 @@ trait ReportCardEntryDao
       r <- rs.roomFk
     } yield (rs, r)
 
-    val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
+    val action = mandatory
+      .joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry)
+      .joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry)
+      .joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry)
+      .result.map(_.groupBy(_._1._1._1._1.id).map {
       case (id, dependencies) =>
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
         val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship

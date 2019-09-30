@@ -3,10 +3,9 @@ package controllers
 import java.util.UUID
 
 import dao._
-import database.{AssignmentPlanDb, AssignmentPlanTable}
+import database.{AssignmentEntryDb, AssignmentEntryTable, AssignmentEntryTypeDb}
 import javax.inject.{Inject, Singleton}
-import models._
-import org.joda.time.DateTime
+import models.{AssignmentEntryLike, AssignmentEntryProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -19,19 +18,31 @@ object AssignmentPlanController {
 }
 
 @Singleton
-final class AssignmentPlanController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: AssignmentPlanDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[AssignmentPlanProtocol, AssignmentPlanTable, AssignmentPlanDb, AssignmentPlanLike](cc) {
-
-  override protected implicit val writes: Writes[AssignmentPlanLike] = AssignmentPlanLike.writes
-
-  override protected implicit val reads: Reads[AssignmentPlanProtocol] = AssignmentPlanProtocol.reads
-
-  override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = {
-    import utils.date.DateTimeOps.DateTimeConverter
-    AssignmentPlanDb(protocol.labwork, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
-  }
+final class AssignmentPlanController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: AssignmentEntryDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
   import models.Role._
+
+  override protected implicit val writes: Writes[AssignmentEntryLike] = AssignmentEntryLike.writes
+
+  override protected implicit val reads: Reads[AssignmentEntryProtocol] = AssignmentEntryProtocol.reads
+
+  override protected def toDbModel(protocol: AssignmentEntryProtocol, existingId: Option[UUID]): AssignmentEntryDb = {
+    val id = existingId.getOrElse(UUID.randomUUID)
+
+    AssignmentEntryDb(
+      protocol.labwork,
+      protocol.index,
+      protocol.label,
+      protocol.types.map(t => AssignmentEntryTypeDb(id, t.entryType)),
+      protocol.duration,
+      id = id
+    )
+  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, List(CourseManager))

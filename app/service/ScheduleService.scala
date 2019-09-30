@@ -44,7 +44,7 @@ trait ScheduleService {
     start: LocalDate,
     bs: Vector[Blacklist],
     gs: Vector[Group],
-    a: AssignmentPlan,
+    aps: Vector[AssignmentEntry],
     s: Semester,
     cs: Vector[ScheduleGen],
     p: Option[Int] = None,
@@ -119,17 +119,17 @@ final class ScheduleServiceImpl @Inject()(val pops: Int, val gens: Int, val elit
     start: LocalDate,
     bs: Vector[Blacklist],
     gs: Vector[Group],
-    a: AssignmentPlan,
+    aps: Vector[AssignmentEntry],
     s: Semester,
     cs: Vector[ScheduleGen],
     p: Option[Int],
     g: Option[Int],
     e: Option[Int]
   ) = {
-    val entries = TimetableService.extrapolateTimetableByWeeks(ts, start, Weeks.weeksBetween(s.start, s.examStart), bs, a, gs.size)
+    val entries = TimetableService.extrapolateTimetableByWeeks(ts, start, Weeks.weeksBetween(s.start, s.examStart), bs, aps, gs.size)
     val pop = population(p getOrElse pops, labwork, entries, gs)
 
-    implicit val evalF: Evaluator = evaluation(cs, a.entries.size)
+    implicit val evalF: Evaluator = evaluation(cs, aps.size)
     implicit val mutateF: (Mutator, Mutator) = (mutate, mutateDestructive)
     implicit val crossF: (Crossover, Crossover) = (crossover, crossoverDestructive)
     import utils.TypeClasses.instances._

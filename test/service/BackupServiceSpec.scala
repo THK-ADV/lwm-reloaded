@@ -40,7 +40,7 @@ final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryVal
 
 
   private val userDao = mock[UserDao]
-  private val assignmentPlanDao = mock[AssignmentPlanDao]
+  private val assignmentPlanDao = mock[AssignmentEntryDao]
   private val courseDao = mock[CourseDao]
   private val degreeDao = mock[DegreeDao]
   private val labworkApplicationDao = mock[LabworkApplicationDao]

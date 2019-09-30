@@ -30,7 +30,7 @@ final class ReportCardEntryController @Inject()(
   val authorityDao: AuthorityDao,
   val abstractDao: ReportCardEntryDao,
   val scheduleEntryDao: ScheduleEntryDao,
-  val assignmentPlanService: AssignmentPlanDao,
+  val assignmentEntryDao: AssignmentEntryDao,
   val securedAction: SecurityActionChain
 ) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
   with TimeRangeTableFilter[ReportCardEntryTable] {
@@ -79,11 +79,13 @@ final class ReportCardEntryController @Inject()(
   }
 
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
+    import dao.helper.TableFilter.labworkFilter
+
     (for {
       labworkId <- Future.fromTry(labwork.uuid)
       schedules <- scheduleEntryDao.scheduleGenBy(labworkId) if schedules.isDefined
-      maybePlan <- assignmentPlanService.getSingleWhere(AssignmentPlanDao.labworkFilter(labworkId).apply, atomic = false) if maybePlan.isDefined
-      reportCardEntries = ReportCardService.reportCards(schedules.head, maybePlan.head)
+      assignmentEntries <- assignmentEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
+      reportCardEntries = ReportCardService.reportCards(schedules.head, assignmentEntries.map(_.asInstanceOf[AssignmentEntry]))
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
   }
