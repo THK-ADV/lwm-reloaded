@@ -12,17 +12,17 @@ sealed trait AssignmentPlanLike extends UniqueEntity {
   def labworkId: UUID
 }
 
-case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlanLike {
+case class AssignmentPlan(labwork: UUID, entries: Set[AssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlanLike {
   override def labworkId = labwork
 }
 
-case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry])
+case class AssignmentPlanProtocol(labwork: UUID, entries: Set[AssignmentEntry])
 
 case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntryType], duration: Int = 1)
 
 case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
 
-case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID) extends AssignmentPlanLike {
+case class AssignmentPlanAtom(labwork: Labwork, entries: Set[AssignmentEntry], id: UUID) extends AssignmentPlanLike {
   override def labworkId = labwork.id
 }
 
@@ -46,8 +46,6 @@ object AssignmentPlanAtom {
 
   implicit val writes: Writes[AssignmentPlanAtom] = (
     (JsPath \ "labwork").write[Labwork](Labwork.writes) and
-      (JsPath \ "attendance").write[Int] and
-      (JsPath \ "mandatory").write[Int] and
       (JsPath \ "entries").writeSet[AssignmentEntry] and
       (JsPath \ "id").write[UUID]
     ) (unlift(AssignmentPlanAtom.unapply))

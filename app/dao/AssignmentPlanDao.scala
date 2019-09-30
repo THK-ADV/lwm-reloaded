@@ -29,7 +29,7 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
 
   override protected def toAtomic(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlanLike]] = collectDependencies(query) {
-    case (plan, labwork, entries) => AssignmentPlanAtom(labwork.toUniqueEntity, plan.attendance, plan.mandatory, entries, plan.id)
+    case (plan, labwork, entries) => AssignmentPlanAtom(labwork.toUniqueEntity, entries, plan.id)
   }
 
   private def collectDependencies(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq])
@@ -66,7 +66,7 @@ trait AssignmentPlanDao extends AbstractDao[AssignmentPlanTable, AssignmentPlanD
   }
 
   override protected def toUniqueEntity(query: Query[AssignmentPlanTable, AssignmentPlanDb, Seq]): Future[Seq[AssignmentPlanLike]] = collectDependencies(query) {
-    case (plan, labwork, entries) => AssignmentPlan(labwork.id, plan.attendance, plan.mandatory, entries, plan.id)
+    case (plan, labwork, entries) => AssignmentPlan(labwork.id, entries, plan.id)
   }
 
   override protected def existsQuery(entity: AssignmentPlanDb): Query[AssignmentPlanTable, AssignmentPlanDb, Seq] = {

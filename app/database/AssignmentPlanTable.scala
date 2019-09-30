@@ -3,25 +3,21 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.{AssignmentPlan, AssignmentEntry, AssignmentPlanProtocol, UniqueDbEntity, UniqueEntity}
+import models.{AssignmentEntry, AssignmentPlan, UniqueDbEntity, UniqueEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
 
 class AssignmentPlanTable(tag: Tag) extends Table[AssignmentPlanDb](tag, "ASSIGNMENT_PLAN") with UniqueTable with LabworkIdTable {
-  def attendance = column[Int]("ATTENDANCE")
+  override def * = (labwork, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
-  def mandatory = column[Int]("MANDATORY")
-
-  override def * = (labwork, attendance, mandatory, lastModified, invalidated, id) <> (mapRow, unmapRow)
-
-  def mapRow: ((UUID, Int, Int, Timestamp, Option[Timestamp], UUID)) => AssignmentPlanDb = {
-    case (labwork, attendance, mandatory, lastModified, invalidated, id) =>
-      AssignmentPlanDb(labwork, attendance, mandatory, Set.empty, lastModified, invalidated, id)
+  def mapRow: ((UUID, Timestamp, Option[Timestamp], UUID)) => AssignmentPlanDb = {
+    case (labwork, lastModified, invalidated, id) =>
+      AssignmentPlanDb(labwork, Set.empty, lastModified, invalidated, id)
   }
 
-  def unmapRow: AssignmentPlanDb => Option[(UUID, Int, Int, Timestamp, Option[Timestamp], UUID)] = { plan =>
-    Option((plan.labwork, plan.attendance, plan.mandatory, plan.lastModified, plan.invalidated, plan.id))
+  def unmapRow: AssignmentPlanDb => Option[(UUID, Timestamp, Option[Timestamp], UUID)] = { plan =>
+    Option((plan.labwork, plan.lastModified, plan.invalidated, plan.id))
   }
 }
 
@@ -53,8 +49,8 @@ class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](ta
   override def * = (assignmentEntry, entryType, bool, int, id) <> ((AssignmentEntryTypeDb.apply _).tupled, AssignmentEntryTypeDb.unapply)
 }
 
-case class AssignmentPlanDb(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toUniqueEntity = AssignmentPlan(labwork, attendance, mandatory, entries, id)
+case class AssignmentPlanDb(labwork: UUID, entries: Set[AssignmentEntry], lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toUniqueEntity = AssignmentPlan(labwork, entries, id)
 }
 
 case class AssignmentEntryDb(assignmentPlan: UUID, index: Int, label: String, types: Set[AssignmentEntryTypeDb], duration: Int = 1, id: UUID = UUID.randomUUID) extends UniqueEntity

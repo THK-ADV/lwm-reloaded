@@ -20,7 +20,7 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
       AssignmentEntry(i, i.toString, types.take(nextInt(types.size - 1) + 1), i)
     }.toSet
 
-    database.AssignmentPlanDb(labwork.id, number, number, entries)
+    database.AssignmentPlanDb(labwork.id, entries)
   }
 
   "A AssignmentPlanServiceSpec" should {
@@ -53,16 +53,16 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
 
   override protected def name: String = "assignmentPlan"
 
-  override protected val dbEntity: AssignmentPlanDb = AssignmentPlanDb(labworks.head.id, 5, 5, Set.empty)
+  override protected val dbEntity: AssignmentPlanDb = AssignmentPlanDb(labworks.head.id, Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: AssignmentPlanDb = AssignmentPlanDb(dbEntity.labwork, 10, 10, dbEntity.entries)
+  override protected val invalidDuplicateOfDbEntity: AssignmentPlanDb = AssignmentPlanDb(dbEntity.labwork, dbEntity.entries)
 
   override protected val invalidUpdateOfDbEntity: AssignmentPlanDb = dbEntity.copy(labworks.last.id)
 
-  override protected val validUpdateOnDbEntity: AssignmentPlanDb = dbEntity.copy(dbEntity.labwork, dbEntity.attendance + 1, dbEntity.mandatory + 1, Set(AssignmentEntry(2, "2", Set(AssignmentEntryType.Bonus))))
+  override protected val validUpdateOnDbEntity: AssignmentPlanDb = dbEntity.copy(dbEntity.labwork, Set(AssignmentEntry(2, "2", Set(AssignmentEntryType.Bonus))))
 
   override protected val dbEntities: List[AssignmentPlanDb] = labworks.slice(1, 6).tail.zipWithIndex map {
-    case (labwork, i) => AssignmentPlanDb(labwork.id, i, i, Set.empty)
+    case (labwork, i) => AssignmentPlanDb(labwork.id, Set.empty)
   }
 
   override protected val lwmAtom: AssignmentPlanLike = atom(dbEntity)
@@ -85,20 +85,14 @@ final class AssignmentPlanDaoSpec extends AbstractExpandableDaoSpec[AssignmentPl
 
   override protected def update(toUpdate: List[AssignmentPlanDb]): List[AssignmentPlanDb] = {
     toUpdate.map { chosen =>
-      chosen.copy(chosen.labwork, 1, 1, chosen.entries.drop(2) ++ Set(
+      chosen.copy(chosen.labwork, chosen.entries.drop(2) ++ Set(
         AssignmentEntry(10, 10.toString, AssignmentEntryType.all.take(1)),
         AssignmentEntry(11, 11.toString, Set.empty)
       ))
     }
   }
 
-  override protected def atom(dbModel: AssignmentPlanDb): AssignmentPlanLike = AssignmentPlanAtom(
-    labworks.find(_.id == dbModel.labwork).get.toUniqueEntity,
-    dbModel.attendance,
-    dbModel.mandatory,
-    dbModel.entries,
-    dbModel.id
-  )
+  override protected def atom(dbModel: AssignmentPlanDb): AssignmentPlanLike = AssignmentPlanAtom(labworks.find(_.id == dbModel.labwork).get.toUniqueEntity, dbModel.entries, dbModel.id)
 
   override protected def expanderSpecs(dbModel: AssignmentPlanDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
     dao.assignmentEntryQuery.filter(_.assignmentPlan === dbModel.id).joinLeft(dao.assignmentEntryTypeQuery).on(_.id === _.assignmentEntry).result.map(_.groupBy(_._1).map {

@@ -28,7 +28,7 @@ final class AssignmentPlanController @Inject()(cc: ControllerComponents, val aut
 
   override protected def toDbModel(protocol: AssignmentPlanProtocol, existingId: Option[UUID]): AssignmentPlanDb = {
     import utils.date.DateTimeOps.DateTimeConverter
-    AssignmentPlanDb(protocol.labwork, protocol.attendance, protocol.mandatory, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
+    AssignmentPlanDb(protocol.labwork, protocol.entries, DateTime.now.timestamp, None, existingId.getOrElse(UUID.randomUUID))
   }
 
   import models.Role._
