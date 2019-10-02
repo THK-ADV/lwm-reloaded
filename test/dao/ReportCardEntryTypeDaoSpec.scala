@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database._
 import models.ReportCardEntryType
 import play.api.inject.guice.GuiceableModule
@@ -84,9 +86,9 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
 
   override protected val dbEntity: ReportCardEntryTypeDb = ReportCardEntryTypeDb(Some(cards.head.id), None, "entryType", Some(true), 10)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardEntryTypeDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(entryType = "entryType")
+  override protected val invalidUpdateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(entryType = "new type", reportCardEntry = None)
 
   override protected val validUpdateOnDbEntity: ReportCardEntryTypeDb = dbEntity.copy(bool = Some(false), int = 3)
 

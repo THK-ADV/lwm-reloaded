@@ -19,7 +19,6 @@ abstract class PostgresDbSpec extends DatabaseSpec {
     TableQuery[LabworkApplicationTable].schema,
     TableQuery[LabworkApplicationFriendTable].schema,
     TableQuery[RoomTable].schema,
-    TableQuery[AssignmentPlanTable].schema,
     TableQuery[AssignmentEntryTable].schema,
     TableQuery[AssignmentEntryTypeTable].schema,
     TableQuery[BlacklistTable].schema,

@@ -31,8 +31,9 @@ trait ReportCardEvaluationPatternDao extends AbstractDao[ReportCardEvaluationPat
   }
 
   override protected def shouldUpdate(existing: ReportCardEvaluationPatternDb, toUpdate: ReportCardEvaluationPatternDb): Boolean = {
-    (existing.min != toUpdate.min) &&
-      (existing.property == toUpdate.property && existing.entryType == toUpdate.entryType && existing.labwork == toUpdate.labwork)
+    existing.property == toUpdate.property &&
+      existing.entryType == toUpdate.entryType &&
+      existing.labwork == toUpdate.labwork
   }
 }
 

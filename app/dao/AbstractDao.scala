@@ -12,11 +12,13 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     with Accessible[T, DbModel]
     with Expandable[DbModel]
     with Added[T, DbModel]
-    with Removed[T, DbModel]
+    with Invalidated[T, DbModel]
     with Updated[T, DbModel]
     with Retrieved[T, DbModel, LwmModel] {
 
   final def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
+
+  final def zip[A, B](a: DBIO[A], b: DBIO[B]): Future[(A, B)] = db.run(a.zip(b))
 
   final def createSchema: Future[Unit] = db.run(DBIO.seq(schemas.map(_.create): _*).transactionally)
 

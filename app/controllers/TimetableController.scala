@@ -10,7 +10,9 @@ import models.{TimetableLike, TimetableProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
+import service.TimetableService
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object TimetableController {
@@ -19,7 +21,14 @@ object TimetableController {
 }
 
 @Singleton
-final class TimetableController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: TimetableDao, val securedAction: SecurityActionChain)
+final class TimetableController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: TimetableDao,
+  val blacklistDao: BlacklistDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+)
   extends AbstractCRUDController[TimetableProtocol, TimetableTable, TimetableDb, TimetableLike](cc) {
 
   override protected implicit val writes: Writes[TimetableLike] = TimetableLike.writes
@@ -42,8 +51,8 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
     update(id, NonSecureBlock)(request)
   }
 
-  def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    delete(id, NonSecureBlock)(request)
+  def invalidateFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    invalidate(id, NonSecureBlock)(request)
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
@@ -54,6 +63,14 @@ final class TimetableController @Inject()(cc: ControllerComponents, val authorit
 
   def getFrom(course: String, id: String) = restrictedContext(course)(Get) asyncAction { request =>
     get(id, NonSecureBlock)(request)
+  }
+
+  def removeBlacklistFrom(course: String, timetableId: String, blacklistId: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+    (for {
+      tid <- timetableId.uuidF
+      bid <- blacklistId.uuidF
+      timetable <- TimetableService.removeBlacklistFromTimetable(blacklistDao, abstractDao)(bid, tid)
+    } yield timetable).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

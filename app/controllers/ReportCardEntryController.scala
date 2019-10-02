@@ -25,9 +25,15 @@ object ReportCardEntryController {
 }
 
 @Singleton
-final class ReportCardEntryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryDao, val scheduleEntryDao: ScheduleEntryDao, val assignmentPlanService: AssignmentPlanDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
-    with TimeRangeTableFilter[ReportCardEntryTable] {
+final class ReportCardEntryController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEntryDao,
+  val scheduleEntryDao: ScheduleEntryDao,
+  val assignmentEntryDao: AssignmentEntryDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
+  with TimeRangeTableFilter[ReportCardEntryTable] {
 
   import controllers.ReportCardEntryController._
 
@@ -46,6 +52,7 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create => SecureBlock(restrictionId, List(CourseManager))
+    case Delete => SecureBlock(restrictionId, List(CourseManager))
     case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case _ => PartialSecureBlock(List(God))
@@ -63,14 +70,32 @@ final class ReportCardEntryController @Inject()(cc: ControllerComponents, val au
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
+  def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+    labwork
+      .uuidF
+      .flatMap(abstractDao.invalidateByLabwork)
+      .map(_.map(_.toUniqueEntity))
+      .jsonResult
+  }
+
   def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
+    import dao.helper.TableFilter.labworkFilter
+
     (for {
       labworkId <- Future.fromTry(labwork.uuid)
-      schedules <- scheduleEntryDao.scheduleGenBy(labwork) if schedules.isDefined
-      maybePlan <- assignmentPlanService.getSingleWhere(AssignmentPlanDao.labworkFilter(labworkId).apply, atomic = false) if maybePlan.isDefined
-      reportCardEntries = ReportCardService.reportCards(schedules.head, maybePlan.head)
+      schedules <- scheduleEntryDao.scheduleGenBy(labworkId) if schedules.isDefined
+      assignmentEntries <- assignmentEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
+      reportCardEntries = ReportCardService.reportCards(schedules.head, assignmentEntries.map(_.asInstanceOf[AssignmentEntry]))
       _ <- abstractDao.createMany(reportCardEntries.toList)
     } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
+  }
+
+  def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { _ =>
+    (for {
+      courseId <- course.uuidF
+      labworkId <- labwork.uuidF
+      count <- abstractDao.numberOfStudents(courseId, labworkId)
+    } yield count).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

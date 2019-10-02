@@ -1,8 +1,8 @@
 package base
 
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalTime}
-import org.scalatest.Suite
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.Suite
 
 trait DateGenerator {
   self: Suite =>

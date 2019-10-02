@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import dao.AbstractDaoSpec._
 import database._
 import models._
@@ -36,13 +38,17 @@ final class TimetableDaoSpec extends AbstractExpandableDaoSpec[TimetableTable, T
 
   override protected def name: String = "timetable"
 
-  override protected val dbEntity: TimetableDb = TimetableDb(labworks.head.id, Set.empty, LocalDate.now.sqlDate, Set.empty)
+  override protected val dbEntity: TimetableDb =
+    TimetableDb(labworks.head.id, Set.empty, LocalDate.now.sqlDate, Set.empty)
 
-  override protected val invalidDuplicateOfDbEntity: TimetableDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: TimetableDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: TimetableDb = invalidDuplicateOfDbEntity
+  override protected val invalidUpdateOfDbEntity: TimetableDb =
+    dbEntity.copy(labwork = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: TimetableDb = dbEntity.copy(start = dbEntity.start.localDate.plusDays(1).sqlDate)
+  override protected val validUpdateOnDbEntity: TimetableDb =
+    dbEntity.copy(start = dbEntity.start.localDate.plusDays(1).sqlDate, entries = Set.empty)
 
   override protected val dbEntities: List[TimetableDb] = timetables
 

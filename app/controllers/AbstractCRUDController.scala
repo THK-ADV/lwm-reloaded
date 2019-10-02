@@ -44,7 +44,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def toLwmModel(dbModel: DbModel): LwmModel = dbModel.toUniqueEntity.asInstanceOf[LwmModel]
 
-  private def parsed(id: Option[UUID], action: DbModel => Future[DbModel])(implicit request: Request[AnyContent]): Future[LwmModel] = {
+  protected def parsed(id: Option[UUID], action: DbModel => Future[DbModel])(implicit request: Request[AnyContent]): Future[LwmModel] = {
     for {
       protocol <- Future.fromTry(parseJson(request)(reads))
       dbModel = toDbModel(protocol, id)
@@ -69,12 +69,12 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
       .jsonResult
   }
 
-  def delete(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
-    id.uuidF.flatMap(delete0).jsonResult
+  def invalidate(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
+    id.uuidF.flatMap(invalidate0).jsonResult
   }
 
-  protected def delete0(uuid: UUID): Future[LwmModel] = {
-    abstractDao.delete(uuid).map(toLwmModel)
+  protected def invalidate0(uuid: UUID): Future[LwmModel] = {
+    abstractDao.invalidate(uuid).map(toLwmModel)
   }
 
   def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>

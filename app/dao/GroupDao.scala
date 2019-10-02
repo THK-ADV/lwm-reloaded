@@ -2,7 +2,8 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.TableFilter.labworkFilter
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -18,8 +19,9 @@ object GroupDao extends TableFilter[GroupTable] {
   def studentFilter(student: UUID): TableFilterPredicate = _.contains(student)
 }
 
-trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
-  import TableFilter.{groupFilter, userFilter}
+trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInvalidated[GroupTable, GroupDb] {
+
+  import TableFilter.{groupFilter, labelFilterEquals, labworkFilter, userFilter}
 
   override val tableQuery = TableQuery[GroupTable]
 
@@ -85,14 +87,11 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] {
   }
 
   override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {
-    filterBy(List(TableFilter.idFilter(entity.id)))
+    filterBy(List(labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
   }
 
   override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean = {
-    existing.members != toUpdate.members ||
-      existing.label != toUpdate.label ||
-      existing.labwork != toUpdate.labwork &&
-        (existing.id == toUpdate.id)
+    existing.labwork == toUpdate.labwork && existing.label == toUpdate.label
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {

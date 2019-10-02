@@ -33,7 +33,7 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
 
   override implicit val authorityDao: AuthorityDao = abstractDao
 
-  override def delete(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
+  override def invalidate(id: String, secureContext: SecureContext): Action[AnyContent] = contextFrom(Delete) asyncAction { _ =>
     (for {
       uuid <- id.uuidF
       deleted <- abstractDao.deleteAuthorityIfNotBasic(uuid)
@@ -41,10 +41,10 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Create => PartialSecureBlock(List(RightsManager))
-    case Delete => PartialSecureBlock(List(RightsManager))
-    case GetAll => PartialSecureBlock(List(RightsManager, StudentRole, EmployeeRole))
-    case Get => PartialSecureBlock(List(RightsManager))
+    case Create => PartialSecureBlock(List(CourseManager))
+    case Delete => PartialSecureBlock(List(CourseManager))
+    case GetAll => PartialSecureBlock(List(CourseManager, StudentRole, EmployeeRole))
+    case Get => PartialSecureBlock(List(CourseManager))
     case _ => PartialSecureBlock(List(God))
   }
 

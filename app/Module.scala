@@ -41,7 +41,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[SemesterDao]).to(classOf[SemesterDaoImpl]).in(classOf[Singleton])
     bind(classOf[AuthorityDao]).to(classOf[AuthorityDaoImpl]).in(classOf[Singleton])
     bind(classOf[RoleDao]).to(classOf[RoleDaoImpl]).in(classOf[Singleton])
-    bind(classOf[AssignmentPlanDao]).to(classOf[AssignmentPlanDaoImpl]).in(classOf[Singleton])
+    bind(classOf[AssignmentEntryDao]).to(classOf[AssignmentEntryDaoImpl]).in(classOf[Singleton])
     bind(classOf[BlacklistDao]).to(classOf[BlacklistDaoImpl]).in(classOf[Singleton])
     bind(classOf[CourseDao]).to(classOf[CourseDaoImpl]).in(classOf[Singleton])
     bind(classOf[DegreeDao]).to(classOf[DegreeDaoImpl]).in(classOf[Singleton])

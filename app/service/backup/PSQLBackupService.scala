@@ -15,7 +15,7 @@ import scala.util.Try
 
 final class PSQLBackupService @Inject()(
   val userDao: UserDao,
-  val assignmentPlanDao: AssignmentPlanDao,
+  val assignmentPlanDao: AssignmentEntryDao,
   val courseDao: CourseDao,
   val degreeDao: DegreeDao,
   val labworkApplicationDao: LabworkApplicationDao,
@@ -36,7 +36,7 @@ final class PSQLBackupService @Inject()(
 
   private implicit val uniqueEntityWrites: Writes[UniqueEntity] = {
     case u: User => User.writes.writes(u)
-    case a: AssignmentPlanLike => AssignmentPlanLike.writes.writes(a)
+    case a: AssignmentEntryLike => AssignmentEntryLike.writes.writes(a)
     case c: CourseLike => CourseLike.writes.writes(c)
     case d: Degree => Degree.writes.writes(d)
     case l: LabworkApplicationLike => LabworkApplicationLike.writes.writes(l)

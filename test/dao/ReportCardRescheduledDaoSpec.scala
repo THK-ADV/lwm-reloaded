@@ -29,15 +29,17 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
 
   override protected def name = "reportCardRescheduleSpec"
 
-  override protected val dbEntity: ReportCardRescheduledDb = rescheduled(reportCardEntries.head.id, 0)
+  override protected val dbEntity: ReportCardRescheduledDb =
+    rescheduled(reportCardEntries.head.id, 0)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardRescheduledDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: ReportCardRescheduledDb =
+    dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardRescheduledDb = dbEntity.copy(reportCardEntry = reportCardEntries.last.id)
+  override protected val invalidUpdateOfDbEntity: ReportCardRescheduledDb =
+    dbEntity.copy(reportCardEntry = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: ReportCardRescheduledDb = dbEntity.copy(
-    room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate
-  )
+  override protected val validUpdateOnDbEntity: ReportCardRescheduledDb =
+    dbEntity.copy(room = randomRoom.id, reason = Some("reason"), date = dbEntity.date.localDate.plusWeeks(1).sqlDate)
 
   override protected val dbEntities: List[ReportCardRescheduledDb] = {
     val entries = reportCardEntries.drop(1)

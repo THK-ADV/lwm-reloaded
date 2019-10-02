@@ -2,12 +2,11 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models.genesis.{ScheduleEntryGen, ScheduleGen}
 import models.{genesis, _}
-import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
@@ -18,7 +17,9 @@ object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
   def supervisorFilter(supervisor: UUID): TableFilterPredicate = e => TableQuery[ScheduleEntrySupervisorTable].filter(s => s.scheduleEntry === e.id && s.user === supervisor).exists
 }
 
-trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
+trait ScheduleEntryDao
+  extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike]
+    with CrossInvalidated[ScheduleEntryTable, ScheduleEntryDb] {
 
   import dao.helper.TableFilter.{groupFilter, labworkFilter}
 
@@ -47,14 +48,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-
-    (existing.supervisor != toUpdate.supervisor ||
-      existing.date.localDate != toUpdate.date.localDate ||
-      existing.start.localTime != toUpdate.start.localTime ||
-      existing.end.localTime != toUpdate.end.localTime ||
-      existing.room != toUpdate.room) &&
-      (existing.labwork == toUpdate.labwork && existing.group == toUpdate.group)
+    existing.labwork == toUpdate.labwork && existing.group == toUpdate.group
   }
 
   private def collectDependencies(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
@@ -117,7 +111,7 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
-    override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ScheduleEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {
+    override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*) = for {
       _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
         e.supervisor.map(u => ScheduleEntrySupervisor(e.id, u))
       }
@@ -144,7 +138,8 @@ trait ScheduleEntryDao extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, 
     scheduleGen(filterValidOnly(comps))
   }
 
-  def scheduleGenBy(labworkId: String) = scheduleGen(filterValidOnly(_.labwork === UUID.fromString(labworkId)).take(1)).map(_.headOption)
+  def scheduleGenBy(labwork: UUID) =
+    scheduleGen(filterValidOnly(labworkFilter(labwork)).take(1)).map(_.headOption)
 
   private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
     collectDependenciesMin(query) {

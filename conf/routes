@@ -14,7 +14,6 @@ POST          /courses                                                         c
 PUT           /courses/:id                                                     controllers.CourseController.update(id)
 GET           /courses                                                         controllers.CourseController.all()
 GET           /courses/:id                                                     controllers.CourseController.get(id)
-DELETE        /courses/:id                                                     controllers.CourseController.delete(id)
 
 # Group 2
 GET           /courses/:c/labworks/:l/groups                                   controllers.GroupController.allFrom(c, l)
@@ -29,21 +28,21 @@ POST          /courses/:course/labworks                                        c
 PUT           /courses/:course/labworks/:id                                    controllers.LabworkController.updateFrom(course, id)
 GET           /courses/:course/labworks                                        controllers.LabworkController.allFrom(course)
 GET           /courses/:course/labworks/:id                                    controllers.LabworkController.getFrom(course, id)
-DELETE        /courses/:course/labworks/:id                                    controllers.LabworkController.deleteFrom(course, id)
+DELETE        /courses/:course/labworks/:id                                    controllers.LabworkController.invalidateFrom(course, id)
 
 # Room
 POST          /rooms                                                           controllers.RoomController.create()
 PUT           /rooms/:id                                                       controllers.RoomController.update(id)
 GET           /rooms                                                           controllers.RoomController.all()
 GET           /rooms/:id                                                       controllers.RoomController.get(id)
-DELETE        /rooms/:id                                                       controllers.RoomController.delete(id)
+DELETE        /rooms/:id                                                       controllers.RoomController.invalidate(id)
 
 # Semester 
 POST          /semesters                                                       controllers.SemesterController.create()
 PUT           /semesters/:id                                                   controllers.SemesterController.update(id)
 GET           /semesters                                                       controllers.SemesterController.all()
 GET           /semesters/:id                                                   controllers.SemesterController.get(id)
-DELETE        /semesters/:id                                                   controllers.SemesterController.delete(id)
+DELETE        /semesters/:id                                                   controllers.SemesterController.invalidate(id)
 
 # Role 
 GET           /roles/:id                                                       controllers.RoleController.get(id)
@@ -53,16 +52,18 @@ GET           /roles                                                           c
 POST          /authorities                                                     controllers.AuthorityController.create()
 GET           /authorities                                                     controllers.AuthorityController.all()
 GET           /authorities/:id                                                 controllers.AuthorityController.get(id)
-DELETE        /authorities/:id                                                 controllers.AuthorityController.delete(id)
+DELETE        /authorities/:id                                                 controllers.AuthorityController.invalidate(id)
 
 # LabworkApplications 
 POST          /labworkApplications                                             controllers.LabworkApplicationController.create()
 PUT           /labworkApplications/:id                                         controllers.LabworkApplicationController.update(id)
 GET           /labworkApplications                                             controllers.LabworkApplicationController.all()
 GET           /labworkApplications/:id                                         controllers.LabworkApplicationController.get(id)
-DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.delete(id)
+DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.invalidate(id)
 
-# Schedule / ScheduleEntries 
+GET           /courses/:c/labworks/:l/labworkApplications/count                controllers.LabworkApplicationController.countFrom(c, l)
+
+# Schedule / ScheduleEntries
 POST          /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.createFrom(c)
 GET           /courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryController.preview(c, l)
 
@@ -70,7 +71,7 @@ GET           /courses/:c/scheduleEntries                                      c
 GET           /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.allFromLabwork(c, l)
 GET           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.getFrom(c, id)
 PUT           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.updateFrom(c, id)
-DELETE        /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.deleteFrom(c, l)
+DELETE        /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.invalidateFrom(c, l)
 
 # Timetable restricted
 
@@ -78,16 +79,18 @@ POST          /courses/:c/timetables                                           c
 PUT           /courses/:c/timetables/:id                                       controllers.TimetableController.updateFrom(c, id)
 GET           /courses/:c/timetables                                           controllers.TimetableController.allFrom(c)
 GET           /courses/:c/timetables/:id                                       controllers.TimetableController.getFrom(c, id)
-DELETE        /courses/:c/timetables/:id                                       controllers.TimetableController.deleteFrom(c, id)
+DELETE        /courses/:c/timetables/:id                                       controllers.TimetableController.invalidateFrom(c, id)
+DELETE        /courses/:c/timetables/:tid/blacklists/:bid                      controllers.TimetableController.removeBlacklistFrom(c, tid, bid)
 
 # Blacklist 
 POST          /blacklists                                                      controllers.BlacklistController.create()
+POST          /blacklists/range                                                controllers.BlacklistController.createFromRange()
 POST          /blacklists/year/:year                                           controllers.BlacklistController.createFor(year)
 PUT           /blacklists/:id                                                  controllers.BlacklistController.update(id)
 GET           /blacklists                                                      controllers.BlacklistController.all()
 GET           /blacklists/year/:year                                           controllers.BlacklistController.preview(year)
 GET           /blacklists/:id                                                  controllers.BlacklistController.get(id)
-DELETE        /blacklists/:id                                                  controllers.BlacklistController.delete(id)
+DELETE        /blacklists/:id                                                  controllers.BlacklistController.invalidate(id)
 
 # ReportCardEntry 
 GET           /reportCardEntries/student/:s                                    controllers.ReportCardEntryController.getForStudent(s)
@@ -97,6 +100,8 @@ POST          /courses/:c/reportCardEntries/copy                               c
 
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
+GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)
+DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)
 
 # ReportCardEntryType 
 PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeController.updateFrom(c, id)
@@ -106,14 +111,14 @@ POST          /courses/:c/reportCardReschedules                                c
 GET           /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.allFrom(c)
 GET           /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.getFrom(c, id)
 PUT           /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.updateFrom(c, id)
-DELETE        /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.deleteFrom(c, id)
+DELETE        /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.invalidateFrom(c, id)
 
 # ReportCardRetry 
 POST          /courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.createFrom(c)
 GET           /courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.allFrom(c)
 GET           /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.getFrom(c, id)
 PUT           /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.updateFrom(c, id)
-DELETE        /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.deleteFrom(c, id)
+DELETE        /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.invalidateFrom(c, id)
 
 # ReportCardEvaluation 
 GET           /reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationController.get(s)
@@ -124,22 +129,22 @@ POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations        c
 GET           /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationController.preview(c, l)
 PUT           /courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationController.updateFrom(c, l, id)
-DELETE        /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.deleteFromLabwork(c, l)
-DELETE        /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.deleteFromStudent(c, l, s)
+DELETE        /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.invalidateFromLabwork(c, l)
+DELETE        /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.invalidateFromStudent(c, l, s)
 
 # ReportCardEvaluationPattern 
 POST          /courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.createFrom(c)
 GET           /courses/:c/reportCardEvaluationPatterns                         controllers.ReportCardEvaluationPatternController.allFrom(c)
 GET           /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.getFrom(c, id)
 PUT           /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.updateFrom(c, id)
-DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.deleteFrom(c, id)
+DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.invalidateFrom(c, id)
 
 # AssignmentPlan 
 POST          /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.createFrom(course)
 PUT           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.updateFrom(course, id)
 GET           /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.allFrom(course)
 GET           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.getFrom(course, id)
-DELETE        /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.deleteFrom(course, id)
+DELETE        /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.invalidateFrom(course, id)
 
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()

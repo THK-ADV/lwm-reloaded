@@ -2,13 +2,15 @@ package controllers
 
 import java.util.UUID
 
+import controllers.BlacklistController.BlacklistRangeCreationRequest
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{BlacklistDb, BlacklistTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, EmployeeRole}
 import models.{Blacklist, BlacklistProtocol}
-import play.api.libs.json.{Reads, Writes}
+import org.joda.time.LocalDate
+import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service.BlacklistApiService
@@ -19,6 +21,8 @@ import scala.util.Try
 object BlacklistController {
   lazy val globalAttribute = "global"
   lazy val labelAttribute = "label"
+
+  case class BlacklistRangeCreationRequest(label: String, start: LocalDate, end: LocalDate)
 }
 
 @Singleton
@@ -44,6 +48,18 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
 
   def preview(year: String) = contextFrom(Create) asyncAction { _ =>
     fetch(year).map(_.map(_.toUniqueEntity)).jsonResult
+  }
+
+  def createFromRange() = contextFrom(Create) asyncAction { request =>
+    import service.BlacklistService.fromRange
+    import utils.date.DateTimeJsonFormatter.readLocalDate
+    implicit val blrReads: Reads[BlacklistRangeCreationRequest] = Json.reads[BlacklistRangeCreationRequest]
+
+    (for {
+      json <- Future.fromTry(parseJson(request)(blrReads))
+      blacklists = fromRange(json.label, json.start, json.end)
+      created <- abstractDao.createMany(blacklists)
+    } yield created.map(_.toUniqueEntity)).jsonResult
   }
 
   private def fetch(year: String) = for {

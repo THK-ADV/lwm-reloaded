@@ -66,7 +66,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
-  def deleteFromStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+  def invalidateFromStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Delete) asyncAction { _ =>
     for {
       labworkId <- labwork.uuidF
       studentId <- student.uuidF
@@ -74,7 +74,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
     } yield result
   }
 
-  def deleteFromLabwork(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+  def invalidateFromLabwork(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
     for {
       labworkId <- labwork.uuidF
       result <- delete(List(labworkFilter(labworkId)))
@@ -88,7 +88,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
   private def delete(list: List[TableFilterPredicate]): Future[Result] = {
     (for {
       existing <- abstractDao.get(list, atomic = false)
-      deleted <- abstractDao.deleteMany(existing.map(_.id).toList)
+      deleted <- abstractDao.invalidateMany(existing.map(_.id).toList)
     } yield deleted.map(_.toUniqueEntity)).jsonResult
   }
 

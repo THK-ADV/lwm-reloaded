@@ -134,11 +134,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
   }
 
   override protected def shouldUpdate(existing: UserDb, toUpdate: UserDb): Boolean = {
-    (existing.enrollment != toUpdate.enrollment ||
-      existing.lastname != toUpdate.lastname ||
-      existing.firstname != toUpdate.firstname ||
-      existing.email != toUpdate.email) &&
-      existing.systemId == toUpdate.systemId
+    existing.systemId == toUpdate.systemId
   }
 
   override protected def existsQuery(entity: UserDb): Query[UserTable, UserDb, Seq] = {

@@ -43,17 +43,12 @@ object Role {
     override val label = "Modulverantwortlicher"
   }
 
-  case object RightsManager extends LWMRole {
-    override val label = "Rechteverantwortlicher"
-  }
-
   lazy val all: List[LWMRole] = List(
     Admin,
     EmployeeRole,
     StudentRole,
     CourseEmployee,
     CourseAssistant,
-    CourseManager,
-    RightsManager
+    CourseManager
   )
 }

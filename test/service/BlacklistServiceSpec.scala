@@ -1,35 +1,37 @@
 package service
 
-import base.TestBaseDefinition
-import models.Blacklist
-import org.joda.time.DateTime
+import base.{DateGenerator, TestBaseDefinition}
+import database.BlacklistDb
+import org.joda.time.LocalDate
 import org.scalatest.WordSpec
-import org.scalatest.time.{Seconds, Span}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
-final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite {
+final class BlacklistServiceSpec extends WordSpec with TestBaseDefinition with DateGenerator {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  val blacklistService = app.injector.instanceOf(classOf[BlacklistApiService])
+  import service.BlacklistService._
 
   "A BlacklistServiceSpec" should {
+    "create blacklists by a range of dates" in {
+      def create(d: LocalDate) = BlacklistDb.entireDay("test", d, global = true)
 
-    "fetch blacklists from an external api" in {
-      import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-      val year = DateTime.now.getYear
+      def normalize(b: BlacklistDb) = (b.label, b.date, b.start, b.end, b.global)
 
-      val future = blacklistService.fetchLegalHolidays(year)
-      whenReady(future, timeout(Span(5, Seconds))) { result =>
-        result should not be empty
+      val start = localDate(2019, 1, 28)
+      val end = localDate(2019, 2, 5)
 
-        result.foreach { bl =>
-          bl.date.localDate.getYear shouldBe year.toInt
-          bl.start.localTime shouldBe Blacklist.startOfDay
-          bl.end.localTime shouldBe Blacklist.endOfDay
-          bl.global shouldBe true
-        }
-      }
+      val result = fromRange("test", start, end)
+      val dest = List(
+        create(localDate(2019, 1, 28)),
+        create(localDate(2019, 1, 29)),
+        create(localDate(2019, 1, 30)),
+        create(localDate(2019, 1, 31)),
+        create(localDate(2019, 2, 1)),
+        create(localDate(2019, 2, 2)),
+        create(localDate(2019, 2, 3)),
+        create(localDate(2019, 2, 4)),
+        create(localDate(2019, 2, 5)),
+      )
+
+      result.map(normalize) shouldBe dest.map(normalize)
     }
   }
 }

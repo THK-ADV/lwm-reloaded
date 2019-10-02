@@ -4,7 +4,7 @@ import java.sql.{Date, Time, Timestamp}
 
 import models.genesis.ScheduleEntryGen
 import models.helper.TimetableDateEntry
-import org.joda.time.{DateTime, LocalDate, LocalDateTime, LocalTime}
+import org.joda.time._
 
 import scala.util.Try
 
@@ -46,6 +46,15 @@ object DateTimeOps extends DateTimeFormatterPattern {
 
   def toLocalDateTime(entry: ScheduleEntryGen): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
+  }
+
+  def mapUntil[A](start: LocalDate, end: LocalDate, f: (LocalDate) => A): Seq[A] = {
+    val days = Days.daysBetween(start, end).getDays
+    (0 until days).map(f compose start.plusDays)
+  }
+
+  def mapTo[A](start: LocalDate, end: LocalDate, f: (LocalDate) => A): Seq[A] = {
+    mapUntil(start, end.plusDays(1), f)
   }
 
   implicit val localTimeOrd: Ordering[LocalTime] = (x: LocalTime, y: LocalTime) => x.compareTo(y)

@@ -34,8 +34,15 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
     case (timetable, labwork, blacklists, entries) => buildLwmEntity(timetable, labwork, blacklists, entries)
   }
 
-  def withBlacklists(tableFilter: List[TableFilterPredicate]) = collectDependencies(filterBy(tableFilter)) {
-    case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
+  def withBlacklists(tableFilter: List[TableFilterPredicate]) = {
+    for {
+      maybeTimetable <- collectDependencies(filterBy(tableFilter)) {
+        case (timetable, labwork, blacklists, entries) => (buildLwmEntity(timetable, labwork, blacklists, entries), blacklists.map(_.toUniqueEntity))
+      }
+    } yield maybeTimetable.size match {
+      case 1 => maybeTimetable.head
+      case _ => throw new Throwable("more than one timetable found")
+    }
   }
 
   private def buildLwmEntity(timetable: TimetableDb, labwork: LabworkDb, blacklists: Seq[BlacklistDb], entries: Map[(TimetableEntryDb, RoomDb), Seq[UserDb]]) = {
@@ -75,12 +82,7 @@ trait TimetableDao extends AbstractDao[TimetableTable, TimetableDb, TimetableLik
   }
 
   override protected def shouldUpdate(existing: TimetableDb, toUpdate: TimetableDb): Boolean = {
-    import utils.date.DateTimeOps.SqlDateConverter
-
-    (existing.start.localDate != toUpdate.start.localDate ||
-      existing.entries != toUpdate.entries ||
-      existing.localBlacklist != toUpdate.localBlacklist) &&
-      existing.labwork == toUpdate.labwork
+    existing.labwork == toUpdate.labwork
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[TimetableDb]] = Some(new DatabaseExpander[TimetableDb] {

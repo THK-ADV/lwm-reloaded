@@ -19,9 +19,9 @@ final class ReportCardEvaluationPatternDaoSpec extends AbstractDaoSpec[ReportCar
 
   override protected val invalidDuplicateOfDbEntity: ReportCardEvaluationPatternDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEvaluationPatternDb = dbEntity.copy(entryType = "entryType")
+  override protected val invalidUpdateOfDbEntity: ReportCardEvaluationPatternDb = dbEntity.copy(entryType = "entryType", labwork = UUID.randomUUID)
 
-  override protected val validUpdateOnDbEntity: ReportCardEvaluationPatternDb = dbEntity.copy(min = 100)
+  override protected val validUpdateOnDbEntity: ReportCardEvaluationPatternDb = dbEntity.copy(min = dbEntity.min + 1)
 
   override protected val dbEntities: List[ReportCardEvaluationPatternDb] = reportCardEvaluationpatterns.tail
 

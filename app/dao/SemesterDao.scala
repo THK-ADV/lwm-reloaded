@@ -31,7 +31,7 @@ object SemesterDao extends TableFilter[SemesterTable] {
 trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
 
   import SemesterDao.{currentFilter, endFilter, startFilter}
-  import dao.helper.TableFilter.labelFilterLike
+  import dao.helper.TableFilter.labelFilterEquals
   import utils.date.DateTimeOps.SqlDateConverter
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
@@ -39,13 +39,13 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
   final def current(atomic: Boolean) = getSingleWhere(currentFilter().apply)
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
-    (existing.abbreviation != toUpdate.abbreviation ||
-      existing.examStart.localDate != toUpdate.examStart.localDate) &&
-      (existing.label == toUpdate.label && existing.start.localDate == toUpdate.start.localDate && existing.end.localDate == toUpdate.end.localDate)
+    existing.label == toUpdate.label &&
+      existing.start.localDate == toUpdate.start.localDate &&
+      existing.end.localDate == toUpdate.end.localDate
   }
 
   override protected def existsQuery(entity: SemesterDb): PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq] = {
-    filterBy(List(labelFilterLike(entity.label), startFilter(entity.start.localDate), endFilter(entity.end.localDate)))
+    filterBy(List(labelFilterEquals(entity.label), startFilter(entity.start.localDate), endFilter(entity.end.localDate)))
   }
 
   override protected def toAtomic(query: PostgresProfile.api.Query[SemesterTable, SemesterDb, Seq]): Future[Seq[Semester]] = toUniqueEntity(query)

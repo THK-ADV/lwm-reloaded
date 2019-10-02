@@ -78,8 +78,8 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
     update(id, NonSecureBlock)(request)
   }
 
-  def deleteFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
-    delete(id, NonSecureBlock)(request)
+  def invalidateFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
+    invalidate(id, NonSecureBlock)(request)
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()

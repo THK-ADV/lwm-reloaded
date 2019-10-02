@@ -18,9 +18,7 @@ trait RoomDao extends AbstractDao[RoomTable, RoomDb, Room] {
   }
 
   override protected def shouldUpdate(existing: RoomDb, toUpdate: RoomDb): Boolean = {
-    (existing.description != toUpdate.description ||
-      existing.capacity != toUpdate.capacity) &&
-      existing.label == toUpdate.label
+    existing.label == toUpdate.label
   }
 
   override protected def toAtomic(query: Query[RoomTable, RoomDb, Seq]): Future[Seq[Room]] = toUniqueEntity(query)

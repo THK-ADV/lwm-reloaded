@@ -36,8 +36,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def courseManagerRole: LWMRole = Role.CourseManager
 
-  def rightsManagerRole: LWMRole = Role.RightsManager
-
   private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
     filterValidOnly(a => a.user === user && a.role === role).exists.result
   }
@@ -56,13 +54,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
       a.user === course.lecturer &&
         a.course.map(_ === course.id).getOrElse(false) &&
         a.roleFk.filter(_.label === courseManagerRole.label).exists
-    }.delete
-  }
-
-  def deleteRightsManagerQuery(user: UUID): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    filterValidOnly { a =>
-      a.user === user &&
-        a.roleFk.filter(_.label === rightsManagerRole.label).exists
     }.delete
   }
 
@@ -85,7 +76,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     val action = for {
       nonBasic <- query.exists.result
       d <- if (nonBasic)
-        deleteSingle(id)
+        invalidateSingle(id)
       else
         DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${studentRole.label} or ${employeeRole.label}"))
     } yield d
@@ -96,23 +87,13 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   def createAssociatedAuthorities(course: CourseDb) = {
     (for {
       courseManager <- roleDao.byRoleLabelQuery(courseManagerRole.label) if courseManager.isDefined
-      rightsManager <- roleDao.byRoleLabelQuery(rightsManagerRole.label) if rightsManager.isDefined
-
       courseManagerAuth = AuthorityDb(course.lecturer, courseManager.head.id, Some(course.id))
-      rightsManagerAuth = AuthorityDb(course.lecturer, rightsManager.head.id)
-
-      isRightsManagerAlready <- hasAuthority(course.lecturer, rightsManager.head.id)
-      toCreate = if (isRightsManagerAlready) Seq(courseManagerAuth) else Seq(courseManagerAuth, rightsManagerAuth)
-      created <- createManyQuery(toCreate)
+      created <- createQuery(courseManagerAuth)
     } yield created).transactionally
   }
 
   def deleteAssociatedAuthorities(course: CourseDb) = {
-    for {
-      deletedCourseManager <- deleteCourseManagerQuery(course)
-      isCourseManager <- isCourseManager(course.lecturer)
-      deletedRightsManager <- if (isCourseManager) DBIO.successful(0) else deleteRightsManagerQuery(course.lecturer)
-    } yield deletedCourseManager + deletedRightsManager
+    deleteCourseManagerQuery(course)
   }
 
   def updateAssociatedAuthorities(oldCourse: CourseDb, newCourse: CourseDb) = {
@@ -124,9 +105,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   override protected def shouldUpdate(existing: AuthorityDb, toUpdate: AuthorityDb): Boolean = {
-    (existing.invalidated != toUpdate.invalidated ||
-      existing.lastModified != toUpdate.lastModified) &&
-      (existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role)
+    existing.user == toUpdate.user && existing.course == toUpdate.course && existing.role == toUpdate.role
   }
 
   override protected def existsQuery(entity: AuthorityDb): Query[AuthorityTable, AuthorityDb, Seq] = {
@@ -142,7 +121,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
         .joinLeft(TableQuery[UserTable]).on(_._2.map(_.user) === _.id)
       u <- a.userFk
       r <- a.roleFk
-    } yield (a, u, r, c, l)
+                            } yield (a, u, r, c, l)
 
     val action = joinedQuery.result.map(_.groupBy(_._1.id).map {
       case (id, dependencies) =>

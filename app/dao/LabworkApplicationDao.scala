@@ -30,8 +30,7 @@ trait LabworkApplicationDao extends AbstractDao[LabworkApplicationTable, Labwork
   }
 
   override protected def shouldUpdate(existing: LabworkApplicationDb, toUpdate: LabworkApplicationDb): Boolean = {
-    existing.friends != toUpdate.friends &&
-      (existing.applicant == toUpdate.applicant && existing.labwork == toUpdate.labwork)
+      existing.applicant == toUpdate.applicant && existing.labwork == toUpdate.labwork
   }
 
   override protected def existsQuery(entity: LabworkApplicationDb): Query[LabworkApplicationTable, LabworkApplicationDb, Seq] = {

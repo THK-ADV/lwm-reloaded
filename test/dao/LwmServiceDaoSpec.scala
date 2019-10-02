@@ -26,7 +26,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
   private val employees = AbstractDaoSpec.employees
   private val users = employees ++ students
   private val semesters = AbstractDaoSpec.populateSemester(1)
-  private val courses = AbstractDaoSpec.populateCourses(1)(_ => 1)
+  private val courses = AbstractDaoSpec.populateCourses(1)(employees)(_ => 1)
   private val labworks = AbstractDaoSpec.populateLabworks(3)(semesters, courses, degrees)
   private val applications = AbstractDaoSpec.populateLabworkApplications(students.size, withFriends = true)(labworks, students)
 
@@ -35,9 +35,9 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     val clear = for {
       gs <- groupDap.get()
-      _ <- groupDap.deleteMany(gs.map(_.id).toList)
+      _ <- groupDap.invalidateMany(gs.map(_.id).toList)
       crds <- reportCardEntryDao.get()
-      _ <- reportCardEntryDao.deleteMany(crds.map(_.id).toList)
+      _ <- reportCardEntryDao.invalidateMany(crds.map(_.id).toList)
     } yield Unit
 
 
@@ -411,7 +411,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
   private def createGroups = {
     students.grouped(labworks.size).grouped(labworks.size).toList.zip(labworks).zipWithIndex.flatMap {
-      case ((ss, l), i) => ss.map(s => GroupDb(i.toString, l.id, s.map(_.id).toSet))
+      case ((ss, l), i) => ss.map(s => GroupDb(UUID.randomUUID.toString, l.id, s.map(_.id).toSet))
     }
   }
 

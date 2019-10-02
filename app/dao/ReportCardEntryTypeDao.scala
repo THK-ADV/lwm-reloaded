@@ -19,6 +19,7 @@ object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
 }
 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
+
   import ReportCardEntryTypeDao._
   import TableFilter.entryTypeFilter
   import utils.date.DateTimeOps._
@@ -40,10 +41,9 @@ trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, Repor
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryTypeDb, toUpdate: ReportCardEntryTypeDb): Boolean = {
-    (existing.bool != toUpdate.bool ||
-      existing.int != toUpdate.int ||
-      existing.reportCardRetry != toUpdate.reportCardRetry) &&
-      (existing.reportCardEntry == existing.reportCardEntry && existing.entryType == toUpdate.entryType)
+    existing.entryType == toUpdate.entryType &&
+      existing.reportCardEntry == toUpdate.reportCardEntry &&
+      existing.reportCardRetry == toUpdate.reportCardRetry
   }
 
   def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Int] = db.run(

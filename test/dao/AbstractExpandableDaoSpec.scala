@@ -64,7 +64,7 @@ abstract class AbstractExpandableDaoSpec[T <: Table[DbModel] with UniqueTable, D
       val toDelete = toAdd.slice(numberOfUpdates, numberOfUpdates + numberOfDeletions)
       val remainingAfterDelete = toAdd.drop(numberOfUpdates + numberOfDeletions)
 
-      async(dao.deleteManyEntities(toDelete))(_.size shouldBe toDelete.size)
+      async(dao.invalidateManyEntities(toDelete))(_.size shouldBe toDelete.size)
       assertEverythingOf(toDelete, isDefined = false)
       assertEverythingOf(remainingAfterDelete, isDefined = true)
     }

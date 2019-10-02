@@ -1,9 +1,11 @@
 package dao
 
 import java.sql.{Date, Time}
+import java.util.UUID
 
 import database._
 import models._
+import org.joda.time.LocalDate
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
 
@@ -39,13 +41,17 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
 
   override protected def name: String = "reportCardEntry"
 
-  override protected val dbEntity: ReportCardEntryDb = ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty, 1)
+  override protected val dbEntity: ReportCardEntryDb =
+    ReportCardEntryDb(students.head.id, labworks.head.id, "label", Date.valueOf("1990-05-02"), Time.valueOf("17:00:00"), Time.valueOf("18:00:00"), rooms.head.id, Set.empty, 1)
 
-  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb = dbEntity
+  override protected val invalidDuplicateOfDbEntity: ReportCardEntryDb =
+    dbEntity.copy(date = LocalDate.now.minusDays(1).sqlDate, id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb = dbEntity
+  override protected val invalidUpdateOfDbEntity: ReportCardEntryDb =
+    dbEntity.copy(assignmentIndex = dbEntity.assignmentIndex + 1)
 
-  override protected val validUpdateOnDbEntity: ReportCardEntryDb = dbEntity.copy(date = Date.valueOf("1990-06-02"), start = Time.valueOf("16:00:00"))
+  override protected val validUpdateOnDbEntity: ReportCardEntryDb =
+    dbEntity.copy(date = Date.valueOf("1990-06-02"), start = Time.valueOf("16:00:00"))
 
   override protected val dbEntities: List[ReportCardEntryDb] = reportCardEntries
 

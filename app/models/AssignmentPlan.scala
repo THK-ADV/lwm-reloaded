@@ -6,58 +6,48 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.Ops.JsPathX
 
-sealed trait AssignmentPlanLike extends UniqueEntity {
-  def entries: Set[AssignmentEntry]
-
+sealed trait AssignmentEntryLike extends UniqueEntity {
   def labworkId: UUID
 }
 
-case class AssignmentPlan(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID = UUID.randomUUID) extends AssignmentPlanLike {
+case class AssignmentEntry(labwork: UUID, index: Int, label: String, types: Set[AssignmentEntryType], duration: Int, id: UUID) extends AssignmentEntryLike {
   override def labworkId = labwork
 }
 
-case class AssignmentPlanProtocol(labwork: UUID, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry])
+case class AssignmentEntryProtocol(labwork: UUID, index: Int, label: String, types: Set[AssignmentEntryType], duration: Int)
 
-case class AssignmentEntry(index: Int, label: String, types: Set[AssignmentEntryType], duration: Int = 1)
+case class AssignmentEntryType(entryType: String)
 
-case class AssignmentEntryType(entryType: String, bool: Boolean = false, int: Int = 0)
-
-case class AssignmentPlanAtom(labwork: Labwork, attendance: Int, mandatory: Int, entries: Set[AssignmentEntry], id: UUID) extends AssignmentPlanLike {
+case class AssignmentEntryAtom(labwork: Labwork, index: Int, label: String, types: Set[AssignmentEntryType], duration: Int, id: UUID) extends AssignmentEntryLike {
   override def labworkId = labwork.id
 }
 
-object AssignmentPlan {
-  implicit val writes: Writes[AssignmentPlan] = Json.writes[AssignmentPlan]
-}
-
-object AssignmentPlanProtocol {
-  implicit val reads: Reads[AssignmentPlanProtocol] = Json.reads[AssignmentPlanProtocol]
-}
-
-object AssignmentPlanLike {
-
-  implicit val writes: Writes[AssignmentPlanLike] = {
-    case normal: AssignmentPlan => Json.toJson(normal)(AssignmentPlan.writes)
-    case atom: AssignmentPlanAtom => Json.toJson(atom)(AssignmentPlanAtom.writes)
-  }
-}
-
-object AssignmentPlanAtom {
-
-  implicit val writes: Writes[AssignmentPlanAtom] = (
-    (JsPath \ "labwork").write[Labwork](Labwork.writes) and
-      (JsPath \ "attendance").write[Int] and
-      (JsPath \ "mandatory").write[Int] and
-      (JsPath \ "entries").writeSet[AssignmentEntry] and
-      (JsPath \ "id").write[UUID]
-    ) (unlift(AssignmentPlanAtom.unapply))
+object AssignmentEntryProtocol {
+  implicit val reads: Reads[AssignmentEntryProtocol] = Json.reads[AssignmentEntryProtocol]
 }
 
 object AssignmentEntry {
-
-  implicit val reads: Reads[AssignmentEntry] = Json.reads[AssignmentEntry]
-
   implicit val writes: Writes[AssignmentEntry] = Json.writes[AssignmentEntry]
+}
+
+object AssignmentEntryAtom {
+  implicit val writes: Writes[AssignmentEntryAtom] = (
+    (JsPath \ "labwork").write[Labwork](Labwork.writes) and
+      (JsPath \ "index").write[Int] and
+      (JsPath \ "label").write[String] and
+      (JsPath \ "types").writeSet[AssignmentEntryType] and
+      (JsPath \ "duration").write[Int] and
+      (JsPath \ "id").write[UUID]
+    ) (unlift(AssignmentEntryAtom.unapply))
+
+}
+
+object AssignmentEntryLike {
+
+  implicit val writes: Writes[AssignmentEntryLike] = {
+    case normal: AssignmentEntry => Json.toJson(normal)(AssignmentEntry.writes)
+    case atom: AssignmentEntryAtom => Json.toJson(atom)(AssignmentEntryAtom.writes)
+  }
 }
 
 object AssignmentEntryType {

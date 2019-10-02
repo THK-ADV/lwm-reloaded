@@ -44,7 +44,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
     val action = mandatory.joinLeft(entryTypeQuery).on(_._1.id === _.reportCardRetry).result.map(_.groupBy(_._1._1.id).map {
       case (id, dependencies) =>
         val ((retry, room), _) = dependencies.find(_._1._1.id == id).get // lhs
-      val entryTypes = dependencies.flatMap(_._2) // rhs
+        val entryTypes = dependencies.flatMap(_._2) // rhs
 
         build(retry, room, entryTypes)
     }.toSeq)
@@ -57,15 +57,7 @@ trait ReportCardRetryDao extends AbstractDao[ReportCardRetryTable, ReportCardRet
   }
 
   override protected def shouldUpdate(existing: ReportCardRetryDb, toUpdate: ReportCardRetryDb): Boolean = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-
-    (existing.date.localDate != toUpdate.date.localDate ||
-      existing.start.localTime != toUpdate.start.localTime ||
-      existing.end.localTime != toUpdate.end.localTime ||
-      existing.reason != toUpdate.reason ||
-      existing.room != toUpdate.room ||
-      existing.entryTypes != toUpdate.entryTypes) &&
-      existing.reportCardEntry == toUpdate.reportCardEntry
+    existing.reportCardEntry == toUpdate.reportCardEntry
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[ReportCardRetryDb]] = Some(new DatabaseExpander[ReportCardRetryDb] {

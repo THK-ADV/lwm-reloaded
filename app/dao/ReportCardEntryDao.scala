@@ -2,7 +2,7 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.{DatabaseExpander, TableFilter}
+import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
@@ -27,7 +27,9 @@ object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
   def indexFilter(index: Int): TableFilterPredicate = _.assignmentIndex === index
 }
 
-trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] {
+trait ReportCardEntryDao
+  extends AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike]
+    with CrossInvalidated[ReportCardEntryTable, ReportCardEntryDb] {
 
   override val tableQuery = TableQuery[ReportCardEntryTable]
 
@@ -42,6 +44,15 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
     } yield u.email
 
     db run query.distinct.result
+  }
+
+  def numberOfStudents(course: UUID, labwork: UUID) = {
+    val query = filterValidOnly(t => t.memberOfCourse(course) && t.labwork === labwork)
+      .groupBy(_.user)
+      .map(_._1)
+      .length
+
+    db run query.result
   }
 
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
@@ -84,7 +95,11 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
       r <- rs.roomFk
     } yield (rs, r)
 
-    val action = mandatory.joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry).joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry).joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry).result.map(_.groupBy(_._1._1._1._1.id).map {
+    val action = mandatory
+      .joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry)
+      .joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry)
+      .joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry)
+      .result.map(_.groupBy(_._1._1._1._1.id).map {
       case (id, dependencies) =>
         val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
         val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
@@ -106,20 +121,9 @@ trait ReportCardEntryDao extends AbstractDao[ReportCardEntryTable, ReportCardEnt
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryDb, toUpdate: ReportCardEntryDb): Boolean = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
-
-    (existing.date.localDate != toUpdate.date.localDate ||
-      existing.start.localTime != toUpdate.start.localTime ||
-      existing.end.localTime != toUpdate.end.localTime ||
-      existing.room != toUpdate.room ||
-      existing.entryTypes != toUpdate.entryTypes ||
-      existing.rescheduled != toUpdate.rescheduled ||
-      existing.retry != toUpdate.retry ||
-      existing.label != toUpdate.label) &&
-      (existing.assignmentIndex == toUpdate.assignmentIndex &&
-        existing.labwork == toUpdate.labwork &&
-        existing.student == toUpdate.student
-        )
+    existing.assignmentIndex == toUpdate.assignmentIndex &&
+      existing.labwork == toUpdate.labwork &&
+      existing.student == toUpdate.student
   }
 
   override protected val databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {

@@ -4,11 +4,11 @@ import java.util.UUID
 
 import dao.helper.TableFilter
 import database._
+import database.helper.LdapUserStatus._
 import models._
 import org.joda.time.DateTime
 import play.api.inject.guice.GuiceableModule
 import slick.dbio.Effect.Write
-import database.helper.LdapUserStatus._
 
 class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
 
@@ -18,13 +18,13 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private def rightsManager: RoleDb = roles.find(_.label == Role.RightsManager.label).get
-
   private def courseManager: RoleDb = roles.find(_.label == Role.CourseManager.label).get
 
   private def employeeRole: RoleDb = roles.find(_.label == Role.EmployeeRole.label).get
 
   private def studentRole: RoleDb = roles.find(_.label == Role.StudentRole.label).get
+
+  private def adminRole: RoleDb = roles.find(_.label == Role.Admin.label).get
 
   "A AuthorityDaoSpec" should {
 
@@ -106,7 +106,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       async(dao.get(List(TableFilter.userFilter(student.id)), atomic = false))(_.size == 1)
     }
 
-    "create course and rights manager authorities for a given course" in {
+    "create course manager authority for a given course" in {
       val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
@@ -114,16 +114,13 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       runAsyncSequence(
         TableQuery[UserTable].forceInsert(lecturer),
         TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
-        dao.createAssociatedAuthorities(course1) map { auths =>
-          auths.size shouldBe 2
-          auths.exists(_.role == rightsManager.id) shouldBe true
-          auths.exists(_.role == courseManager.id) shouldBe true
-          auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(course1.id)
+        dao.createAssociatedAuthorities(course1) map { auth =>
+          auth.role shouldBe courseManager.id
+          auth.course shouldBe Some(course1.id)
         },
-        dao.createAssociatedAuthorities(course2) map { auths =>
-          auths.size shouldBe 1
-          auths.exists(_.role == courseManager.id) shouldBe true
-          auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(course2.id)
+        dao.createAssociatedAuthorities(course2) map { auth =>
+          auth.role shouldBe courseManager.id
+          auth.course shouldBe Some(course2.id)
         }
       )
     }
@@ -136,7 +133,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         AuthorityDb(lecturer.id, employeeRole.id),
         AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
         AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
-        AuthorityDb(lecturer.id, rightsManager.id)
+        AuthorityDb(lecturer.id, adminRole.id)
       )
 
       runAsyncSequence(
@@ -144,9 +141,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
         dao.createManyQuery(auths),
         dao.isCourseManager(lecturer.id) map (_ shouldBe true),
-        dao.deleteSingle(auths(1).id),
+        dao.invalidateSingle(auths(1).id),
         dao.isCourseManager(lecturer.id) map (_ shouldBe true),
-        dao.deleteSingle(auths(2).id),
+        dao.invalidateSingle(auths(2).id),
         dao.isCourseManager(lecturer.id) map (_ shouldBe false)
       )
     }
@@ -155,7 +152,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val auths = List(
         AuthorityDb(lecturer.id, employeeRole.id),
-        AuthorityDb(lecturer.id, rightsManager.id)
+        AuthorityDb(lecturer.id, adminRole.id)
       )
 
       runAsyncSequence(
@@ -172,8 +169,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val auths = List(
         AuthorityDb(lecturer.id, employeeRole.id),
         AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
-        AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
-        AuthorityDb(lecturer.id, rightsManager.id)
+        AuthorityDb(lecturer.id, courseManager.id, Some(course2.id))
       )
 
       runAsyncSequence(
@@ -186,23 +182,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       )
     }
 
-    "delete rights manager authority from a given user" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
-      val auths = List(
-        AuthorityDb(lecturer.id, employeeRole.id),
-        AuthorityDb(lecturer.id, rightsManager.id)
-      )
-
-      runAsyncSequence(
-        TableQuery[UserTable].forceInsert(lecturer),
-        dao.createManyQuery(auths),
-        dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 1),
-        dao.deleteRightsManagerQuery(lecturer.id) map (_ shouldBe 0),
-        dao.filterBy(List(TableFilter.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
-      )
-    }
-
-    "delete course and rights manager authorities for a given course" in {
+    "delete associated authorities for a given course" in {
       val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
@@ -210,7 +190,6 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         AuthorityDb(lecturer.id, employeeRole.id),
         AuthorityDb(lecturer.id, courseManager.id, Some(course1.id)),
         AuthorityDb(lecturer.id, courseManager.id, Some(course2.id)),
-        AuthorityDb(lecturer.id, rightsManager.id)
       )
 
       runAsyncSequence(
@@ -218,12 +197,12 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         TableQuery[CourseTable].forceInsertAll(List(course1, course2)),
         dao.createManyQuery(auths),
         dao.deleteAssociatedAuthorities(course1) map (_ shouldBe 1),
-        dao.deleteAssociatedAuthorities(course2) map (_ shouldBe 2), // TODO counting affected rows actually work. maybe this should be applied to each deletion in order to test it properly
+        dao.deleteAssociatedAuthorities(course2) map (_ shouldBe 1),
         dao.filterBy(List(TableFilter.userFilter(lecturer.id))).result map (_ shouldBe auths.take(1))
       )
     }
 
-    "update course and rights manager authorities for a given course" in {
+    "update course manager authority for a given course" in {
       val oldLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val newLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val oldCourse1 = CourseDb("course1", "course1", "course1", oldLecturer.id, 1)
@@ -233,7 +212,6 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         AuthorityDb(oldLecturer.id, employeeRole.id),
         AuthorityDb(oldLecturer.id, courseManager.id, Some(oldCourse1.id)),
         AuthorityDb(oldLecturer.id, courseManager.id, Some(oldCourse2.id)),
-        AuthorityDb(oldLecturer.id, rightsManager.id)
       )
       val newLecturerAuths = List(
         AuthorityDb(newLecturer.id, employeeRole.id)
@@ -244,13 +222,11 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         TableQuery[CourseTable].forceInsertAll(List(oldCourse1, oldCourse2)),
         dao.createManyQuery(oldLecturerAuths ++ newLecturerAuths),
         dao.updateAssociatedAuthorities(oldCourse1, newCourse) map {
-          case (deletedRows, auths) =>
+          case (deletedRows, auth) =>
             deletedRows shouldBe 1
 
-            auths.size shouldBe 2
-            auths.exists(_.role == rightsManager.id) shouldBe true
-            auths.exists(_.role == courseManager.id) shouldBe true
-            auths.find(_.role == courseManager.id).flatMap(_.course) shouldBe Some(newCourse.id)
+            auth.role shouldBe courseManager.id
+            auth.course shouldBe Some(newCourse.id)
         }
       )
     }
@@ -261,10 +237,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val lecturer3 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
       val auths = List(
         AuthorityDb(lecturer1.id, employeeRole.id),
-        AuthorityDb(lecturer1.id, rightsManager.id),
+        AuthorityDb(lecturer1.id, adminRole.id),
         AuthorityDb(lecturer2.id, employeeRole.id),
         AuthorityDb(lecturer3.id, employeeRole.id),
-        AuthorityDb(lecturer3.id, rightsManager.id)
       )
 
       runAsyncSequence(
@@ -281,9 +256,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   override protected val dbEntity: AuthorityDb = authorities.head
 
-  override protected val invalidDuplicateOfDbEntity: AuthorityDb = AuthorityDb(dbEntity.user, dbEntity.role, dbEntity.course)
+  override protected val invalidDuplicateOfDbEntity: AuthorityDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: AuthorityDb = dbEntity
+  override protected val invalidUpdateOfDbEntity: AuthorityDb = dbEntity.copy(role = UUID.randomUUID)
 
   override protected val validUpdateOnDbEntity: AuthorityDb = dbEntity.copy(lastModified = DateTime.now.plusDays(1).timestamp)
 

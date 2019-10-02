@@ -1,5 +1,7 @@
 package dao
 
+import java.util.UUID
+
 import database.{SemesterDb, SemesterTable}
 import models.Semester
 import org.joda.time.LocalDate
@@ -23,15 +25,15 @@ final class AbstractSemesterDaoSpec extends AbstractDaoSpec[SemesterTable, Semes
   )
 
   override protected val invalidDuplicateOfDbEntity: SemesterDb = {
-    SemesterDb(dbEntity.label, "other abbrev", dbEntity.start, dbEntity.end, dbEntity.examStart)
+    dbEntity.copy(id = UUID.randomUUID)
   }
 
   override protected val invalidUpdateOfDbEntity: SemesterDb = {
-    SemesterDb(dbEntity.label, "abbrev update", dbEntity.end, dbEntity.start, dbEntity.examStart, lastModified, dbEntity.invalidated, dbEntity.id)
+    dbEntity.copy(label = "updated", start = LocalDate.now.sqlDate)
   }
 
   override protected val validUpdateOnDbEntity: SemesterDb = {
-    SemesterDb(dbEntity.label, "abbrev update", dbEntity.start, dbEntity.end, dbEntity.examStart, lastModified, dbEntity.invalidated, dbEntity.id)
+    dbEntity.copy(abbreviation = "updated", examStart = LocalDate.now.sqlDate)
   }
 
   override protected val dbEntities: List[SemesterDb] = semesters

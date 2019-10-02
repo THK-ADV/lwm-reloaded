@@ -5,21 +5,27 @@ import java.util.UUID
 import dao.{AuthorityDao, RoleDao}
 import database.{RoleDb, RoleTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{God, RightsManager}
+import models.Role.{CourseManager, God}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object RoleController {
   lazy val labelAttribute = "label"
+  lazy val filterAttribute = "filter"
+  lazy val selectValue = "courseSensitive"
 }
 
 @Singleton
-final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: RoleDao, val authorityDao: AuthorityDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
+final class RoleController @Inject()(
+  cc: ControllerComponents,
+  val abstractDao: RoleDao,
+  val authorityDao: AuthorityDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
 
   override protected implicit val writes: Writes[Role] = Role.writes
 
@@ -29,16 +35,22 @@ final class RoleController @Inject()(cc: ControllerComponents, val abstractDao: 
     import RoleController._
 
     (attribute, value) match {
-      case (`labelAttribute`, l) => l.makeLabelEqualsFilter
-      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+      case (`labelAttribute`, l) =>
+        l.makeLabelEqualsFilter
+      case (`filterAttribute`, `selectValue`) =>
+        Success(RoleDao.courseSensitiveFilter)
+      case (`filterAttribute`, other) =>
+        Failure(new Throwable(s"Value of [$filterAttribute] must be [$selectValue], but was $other"))
+      case _ =>
+        Failure(new Throwable(s"Unknown attribute $attribute"))
     }
   }
 
   override protected def toDbModel(protocol: Role, existingId: Option[UUID]): RoleDb = ???
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(RightsManager))
-    case GetAll => PartialSecureBlock(List(RightsManager))
+    case Get => PartialSecureBlock(List(CourseManager))
+    case GetAll => PartialSecureBlock(List(CourseManager))
     case _ => PartialSecureBlock(List(God))
   }
 

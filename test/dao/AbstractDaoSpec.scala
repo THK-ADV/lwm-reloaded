@@ -31,7 +31,7 @@ object AbstractDaoSpec {
   lazy val maxReportCardEntries = 100
   lazy val maxAuthorities = 10
   lazy val maxScheduleEntries = 100
-  lazy val maxGroups = 20
+  lazy val maxGroups = 4
   lazy val maxEvaluations = 100
   lazy val maxLabworkApplications = 20
   lazy val maxEvaluationPatterns = 4 * 5
@@ -104,15 +104,19 @@ object AbstractDaoSpec {
     TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
   }.toList
 
-  final def populateGroups(amount: Int)(labworks: List[LabworkDb], students: List[UserDb]) = (0 until amount).map { i =>
-    GroupDb(i.toString, takeOneOf(labworks).id, takeSomeOf(students).map(_.id).toSet)
-  }.toList
+  final def populateGroups(amountForEachLabwork: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
+    (for {
+      i <- 0 until amountForEachLabwork
+      l <- labworks
+    } yield GroupDb(i.toString + l.label, l.id, takeSomeOf(students).map(_.id).toSet)).toList
+  }
 
   final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
 
-  final def populateCourses(amount: Int)(semesterIndex: (Int) => Int) = (0 until amount).map { i =>
-    CourseDb(i.toString, i.toString, i.toString, randomEmployee.id, semesterIndex(i))
-  }.toList
+  final def populateCourses(amount: Int)(employees: List[UserDb])(semesterIndex: (Int) => Int) =
+    (0 until amount).zip(employees).map {
+      case (i, e) => CourseDb(i.toString, i.toString, i.toString, e.id, semesterIndex(i))
+    }.toList
 
   final def populateSemester(amount: Int) = {
     val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
@@ -138,7 +142,7 @@ object AbstractDaoSpec {
 
       ScheduleEntryDb(labwork, start.sqlTime, end.sqlTime, date.sqlDate, takeOneOf(rooms).id, takeSomeOf(employees).map(_.id).toSet, takeOneOf(groups).id)
     }
-  }.toList
+    }.toList
 
   def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = {
     var index = 0 // in order to satisfy uniqueness
@@ -224,14 +228,13 @@ object AbstractDaoSpec {
 
   lazy val employees = populateEmployees(maxEmployees)
 
-  lazy val courses = populateCourses(maxCourses)(_ % 6)
+  lazy val courses = populateCourses(maxCourses)(employees)(_ % 6)
 
   lazy val degrees = populateDegrees(maxDegrees)
 
   lazy val authorities = (0 until maxAuthorities).map { i =>
     val role: RoleDb = roles((i * 3) % roles.length)
-    val course: Option[UUID] = if (role.label == Role.RightsManager.label) Some(courses((i * 6) % maxCourses).id) else None
-    AuthorityDb(employees(i % maxEmployees).id, role.id, course)
+    AuthorityDb(employees(i % maxEmployees).id, role.id, None)
   }.toList
 
   lazy val roles = Role.all.map(r => RoleDb(r.label))
@@ -297,11 +300,11 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"not create a $name because model already exists" in {
-      async(dao.create(invalidDuplicateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(Seq(dbEntity)))
+      async(dao.create(invalidDuplicateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidDuplicateOfDbEntity, Seq(dbEntity)))
     }
 
     s"not update a $name because model already exists" in {
-      async(dao.update(invalidUpdateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(dbEntity))
+      async(dao.update(invalidUpdateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidUpdateOfDbEntity, dbEntity))
     }
 
     s"update a $name properly" in {
@@ -315,7 +318,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
 
     s"delete a $name by invalidating it" in {
       val deleted = for {
-        _ <- dao.delete(dbEntity)
+        _ <- dao.invalidate(dbEntity)
         e <- dao.getSingle(dbEntity.id)
       } yield e
 
