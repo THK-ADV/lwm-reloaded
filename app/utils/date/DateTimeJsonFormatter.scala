@@ -25,10 +25,16 @@ object DateTimeJsonFormatter extends DateTimeFormatterPattern {
     jsResult(triedDate)
   }
 
-  private def jsResult[A](a: Try[A]): JsResult[A] = a match {
+
+  implicit val readLocalDateTime: Reads[DateTime] = Reads { js =>
+    val triedDate = jsStringValue(js).flatMap(s => Try(dateTimeFormatter.parseDateTime(s)))
+    jsResult(triedDate)
+  }
+
+  protected final def jsResult[A](a: Try[A]): JsResult[A] = a match {
     case Success(s) => JsSuccess(s)
     case Failure(e) => JsError(e.getLocalizedMessage)
   }
 
-  private def jsStringValue(js: JsValue): Try[String] = Try(js.as[JsString].value)
+  protected final def jsStringValue(js: JsValue): Try[String] = Try(js.as[JsString].value)
 }

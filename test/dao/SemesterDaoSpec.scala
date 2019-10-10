@@ -5,10 +5,13 @@ import dao.SemesterDao.{endFilter, sinceFilter, startFilter, untilFilter}
 import database.SemesterDb
 import org.joda.time.LocalDate
 import play.api.inject.guice.GuiceableModule
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
 
 class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
+
+  override implicit val profile: JdbcProfile = _root_.slick.jdbc.PostgresProfile
 
   val dao = app.injector.instanceOf(classOf[SemesterDao])
 

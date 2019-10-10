@@ -32,8 +32,6 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected implicit def reads: Reads[Protocol]
 
-  //  implicit def listReads[R](implicit r: Reads[R]): Reads[List[R]] = Reads.list[R]
-
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
 
   protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

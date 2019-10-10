@@ -3,14 +3,15 @@ import auth.{KeycloakAuthorization, OAuthAuthorization}
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import dao._
+import database.helper.{DatabaseMigrator, DatabaseMigratorImpl}
 import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import security.{SecurityActionChain, SecurityActionChainImpl}
+import service._
 import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
-import service._
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
@@ -61,6 +62,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[UserDao]).to(classOf[UserDaoImpl]).in(classOf[Singleton])
     bind(classOf[DashboardDao]).to(classOf[DashboardDaoImpl]).in(classOf[Singleton])
     bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
+    bind(classOf[DatabaseMigrator]).to(classOf[DatabaseMigratorImpl]).in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {
