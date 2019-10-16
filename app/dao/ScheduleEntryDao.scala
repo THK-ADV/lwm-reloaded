@@ -21,7 +21,7 @@ trait ScheduleEntryDao
   extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike]
     with CrossInvalidated[ScheduleEntryTable, ScheduleEntryDb] {
 
-  import dao.helper.TableFilter.{groupFilter, labworkFilter}
+  import dao.helper.TableFilter.labworkFilter
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
 
@@ -44,7 +44,7 @@ trait ScheduleEntryDao
   }
 
   override protected def existsQuery(entity: ScheduleEntryDb): Query[ScheduleEntryTable, ScheduleEntryDb, Seq] = {
-    filterBy(List(labworkFilter(entity.labwork), groupFilter(entity.group)))
+    filterBy(List(TableFilter.idFilter(entity.id)))
   }
 
   override protected def shouldUpdate(existing: ScheduleEntryDb, toUpdate: ScheduleEntryDb): Boolean = {

@@ -65,7 +65,7 @@ class CourseDaoSpec extends AbstractDaoSpec[CourseTable, CourseDb, CourseLike] {
     CourseDb("label", "description", "abbreviation", privateEmployees.head.id, 3)
 
   override protected val invalidDuplicateOfDbEntity: CourseDb =
-    dbEntity.copy(label = "new label", id = UUID.randomUUID)
+    dbEntity.copy(label = "new label")
 
   override protected val invalidUpdateOfDbEntity: CourseDb =
     dbEntity.copy(label = "updated label", lecturer = privateEmployees.last.id)

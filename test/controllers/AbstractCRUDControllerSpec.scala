@@ -12,10 +12,13 @@ import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test._
 import security.SecurityActionChain
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Results {
+
+  override implicit val profile: JdbcProfile = _root_.slick.jdbc.PostgresProfile
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 

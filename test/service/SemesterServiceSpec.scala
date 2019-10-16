@@ -1,10 +1,12 @@
 package service
 
-import base.DatabaseSpec
+import base.{AsyncSpec, LwmFakeApplication, TestBaseDefinition}
+import org.scalatest.WordSpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.inject.guice.GuiceableModule
 import service.actor.NaturalDescribableYear
 
-class SemesterServiceSpec extends DatabaseSpec {
+class SemesterServiceSpec extends WordSpec with TestBaseDefinition with GuiceOneAppPerSuite {
 
   private val service = app.injector.instanceOf(classOf[SemesterService])
 
@@ -25,6 +27,4 @@ class SemesterServiceSpec extends DatabaseSpec {
       winter.abbreviation shouldBe "WS 18/19"
     }
   }
-
-  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

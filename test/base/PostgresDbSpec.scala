@@ -1,42 +1,14 @@
 package base
 
-import database._
+import database.helper.DatabaseTables
+import slick.jdbc.JdbcProfile
 
-abstract class PostgresDbSpec extends DatabaseSpec {
+abstract class PostgresDbSpec extends DatabaseSpec with DatabaseTables {
+  override implicit val profile: JdbcProfile = _root_.slick.jdbc.PostgresProfile
 
   import profile.api._
 
   protected def dependencies: DBIOAction[Unit, NoStream, Effect.Write]
-
-  private val schema = List(
-    TableQuery[RoleTable].schema,
-    TableQuery[DegreeTable].schema,
-    TableQuery[UserTable].schema,
-    TableQuery[SemesterTable].schema,
-    TableQuery[CourseTable].schema,
-    TableQuery[AuthorityTable].schema,
-    TableQuery[LabworkTable].schema,
-    TableQuery[LabworkApplicationTable].schema,
-    TableQuery[LabworkApplicationFriendTable].schema,
-    TableQuery[RoomTable].schema,
-    TableQuery[AssignmentEntryTable].schema,
-    TableQuery[AssignmentEntryTypeTable].schema,
-    TableQuery[BlacklistTable].schema,
-    TableQuery[TimetableTable].schema,
-    TableQuery[TimetableBlacklistTable].schema,
-    TableQuery[TimetableEntryTable].schema,
-    TableQuery[TimetableEntrySupervisorTable].schema,
-    TableQuery[ReportCardEntryTable].schema,
-    TableQuery[ReportCardRescheduledTable].schema,
-    TableQuery[ReportCardRetryTable].schema,
-    TableQuery[ReportCardEntryTypeTable].schema,
-    TableQuery[ReportCardEvaluationTable].schema,
-    TableQuery[ReportCardEvaluationPatternTable].schema,
-    TableQuery[GroupTable].schema,
-    TableQuery[GroupMembershipTable].schema,
-    TableQuery[ScheduleEntryTable].schema,
-    TableQuery[ScheduleEntrySupervisorTable].schema
-  )
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -44,7 +16,9 @@ abstract class PostgresDbSpec extends DatabaseSpec {
     createSchemas()
   }
 
-  protected def createSchemas(): Unit = runAsyncSequence(schema.map(_.create) :+ dependencies: _*)
+  protected def createSchemas(): Unit = {
+    runAsyncSequence(createAction(), dependencies)
+  }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
@@ -53,5 +27,5 @@ abstract class PostgresDbSpec extends DatabaseSpec {
     db.close()
   }
 
-  protected def dropSchemas(): Unit = runAsyncSequence(schema.reverseMap(_.drop): _*)
+  protected def dropSchemas(): Unit = runAsyncSequence(dropAction())
 }

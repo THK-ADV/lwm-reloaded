@@ -2,21 +2,20 @@ package service
 
 import java.io.File
 
-import base.DatabaseSpec
+import base.{AsyncSpec, TestBaseDefinition}
 import dao._
 import models.UniqueEntity
 import org.apache.commons.io.FileUtils
 import org.mockito.Mockito._
-import org.scalatest.TryValues
 import org.scalatest.mockito.MockitoSugar
-import play.api.inject.guice.GuiceableModule
+import org.scalatest.{TryValues, WordSpec}
 import play.api.libs.json.{Json, Writes}
 import service.backup.{BackupItem, BackupService, PSQLBackupService}
 
 import scala.concurrent.Future
 import scala.util.Try
 
-final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryValues {
+final class BackupServiceSpec extends WordSpec with TestBaseDefinition with AsyncSpec with MockitoSugar with TryValues {
 
   import dao.AbstractDaoSpec._
 
@@ -37,7 +36,6 @@ final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryVal
   val auths = authorities.map(_.toUniqueEntity)
   val schedules = scheduleEntries.map(_.toUniqueEntity)
   val grps = groups.map(_.toUniqueEntity)
-
 
   private val userDao = mock[UserDao]
   private val assignmentPlanDao = mock[AssignmentEntryDao]
@@ -143,6 +141,4 @@ final class BackupServiceSpec extends DatabaseSpec with MockitoSugar with TryVal
 
     backupService.backupItems
   }
-
-  override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

@@ -164,5 +164,27 @@ PUT           /courses/:c/insertIntoGroup                                      c
 PUT           /courses/:c/removeFromGroup                                      controllers.serviceResource.LwmServiceController.removeStudentFromGroup(c)
 PUT           /courses/:c/moveToGroup                                          controllers.serviceResource.LwmServiceController.moveStudentToGroup(c)
 
+# Migration
+PUT           /migration/drop                                                  controllers.MigrationController.dropDatabase
+PUT           /migration/create                                                controllers.MigrationController.createDatabase
+PUT           /migration/degrees                                               controllers.MigrationController.migrateDegrees
+PUT           /migration/roles                                                 controllers.MigrationController.migrateRoles
+PUT           /migration/students                                              controllers.MigrationController.migrateStudents
+PUT           /migration/employees                                             controllers.MigrationController.migrateEmployees
+PUT           /migration/courses                                               controllers.MigrationController.migrateCourses
+PUT           /migration/semesters                                             controllers.MigrationController.migrateSemesters
+PUT           /migration/authorities                                           controllers.MigrationController.migrateAuthorities
+PUT           /migration/labworks                                              controllers.MigrationController.migrateLabworks
+PUT           /migration/labworkApplications                                   controllers.MigrationController.migrateLabworkApplications
+PUT           /migration/rooms                                                 controllers.MigrationController.migrateRooms
+PUT           /migration/assignmentPlans                                       controllers.MigrationController.migrateAssignmentPlans
+PUT           /migration/timetables                                            controllers.MigrationController.migrateTimetables
+PUT           /migration/reportCardEntries                                     controllers.MigrationController.migrateReportCardEntries
+PUT           /migration/reportCardEvaluations                                 controllers.MigrationController.migrateReportCardEvaluations
+PUT           /migration/groups                                                controllers.MigrationController.migrateGroups
+PUT           /migration/scheduleEntries                                       controllers.MigrationController.migrateScheduleEntries
+
+PUT           /migration/resolveDuplicateStudents                              controllers.MigrationController.resolveDuplicateStudents
+
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)
