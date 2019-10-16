@@ -17,12 +17,12 @@ trait JsonParser {
 
   final protected def parseJsonArray[R](request: Request[AnyContent])(implicit reads: Reads[List[R]]): Try[List[R]] = unwrap(request).flatMap(js => validate(js)(reads))
 
-  def validate[A](json: JsValue)(implicit reads: Reads[A]): Try[A] = json.validate[A].fold[Try[A]](
+  protected def validate[A](json: JsValue)(implicit reads: Reads[A]): Try[A] = json.validate[A].fold[Try[A]](
     errors => Failure(new Throwable(JsError.toJson(errors).toString)),
     success => Success(success)
   )
 
-  private def unwrap(request: Request[AnyContent]): Try[JsValue] = request.body.asJson match {
+  protected def unwrap(request: Request[AnyContent]): Try[JsValue] = request.body.asJson match {
     case Some(json) => Success(json)
     case None => Failure(new Throwable("json body is required"))
   }

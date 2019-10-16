@@ -7,10 +7,9 @@ import dao._
 import dao.helper.Core
 import database._
 import models._
-import org.joda.time.{DateTime, LocalDate, LocalTime}
-import slick.dbio.DBIOAction
+import org.joda.time.{LocalDate, LocalTime}
 import slick.jdbc.JdbcProfile
-import slick.jdbc.PostgresProfile.api.Database
+import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -55,13 +54,7 @@ trait DatabaseMigrator extends Core with DatabaseTables {
   def dropDatabase: Future[Unit] = db run dropAction()
 
   def migrateStudents(students: List[Student]) = {
-    val duplicates = students.groupBy(_.systemId).filter(_._2.size > 1) // TODO resolve duplicates?
-
-    if (duplicates.nonEmpty) {
-      Future.failed(new Throwable(s"duplicate students found: $duplicates"))
-    } else {
-      userDao.createMany(students.map(toDbUser)).map(_.map(_.toUniqueEntity))
-    }
+    userDao.createMany(students.map(toDbUser)).map(_.map(_.toUniqueEntity))
   }
 
   def migrateEmployees(employees: List[Employee]) = {
@@ -109,11 +102,7 @@ trait DatabaseMigrator extends Core with DatabaseTables {
     timetableDao.createMany(timetables.map(t => toTimetables(t._1, t._2, t._3, t._4))).map(_.map(_.toUniqueEntity))
   }
 
-  type Rescheduled0 = (LocalDate, LocalTime, LocalTime, UUID)
-  type EntryType0 = (String, Boolean, Int, UUID)
-  type ReportCardEntry0 = (UUID, UUID, String, LocalDate, LocalTime, LocalTime, UUID, Set[EntryType0], Option[Rescheduled0], UUID)
-
-  def migrateReportCardEntries(entries: List[ReportCardEntry0]) = {
+  def migrateReportCardEntries(entries: List[ReportCardEntry]) = {
     reportCardEntryDao.createMany(entries.map(toReportCardEntryDb)).map(_.map(_.toUniqueEntity))
   }
 
@@ -180,21 +169,20 @@ trait DatabaseMigrator extends Core with DatabaseTables {
     TimetableDb(labwork, entries.map(toTimetableEntry), start.sqlDate, Set.empty, id = id)
   }
 
-  private def toReportCardEntryDb(e: ReportCardEntry0) = {
-    val id = e._10
-
+  private def toReportCardEntryDb(e: ReportCardEntry) = {
     ReportCardEntryDb(
-      e._1,
-      e._2,
-      e._3,
-      e._4.sqlDate,
-      e._5.sqlTime,
-      e._6.sqlTime,
-      e._7,
-      e._8.map(t => ReportCardEntryTypeDb(Some(id), None, t._1, Some(t._2), t._3)),
-      -1,
-      e._9.map(t => ReportCardRescheduledDb(id, t._1.sqlDate, t._2.sqlTime, t._3.sqlTime, t._4)),
-      id = id
+      e.student,
+      e.labwork,
+      e.label,
+      e.date.sqlDate,
+      e.start.sqlTime,
+      e.end.sqlTime,
+      e.room,
+      e.entryTypes.map(t => ReportCardEntryTypeDb(Some(e.id), None, t.entryType, t.bool, t.int, id = t.id)),
+      e.assignmentIndex,
+      e.rescheduled.map(t => ReportCardRescheduledDb(e.id, t.date.sqlDate, t.start.sqlTime, t.end.sqlTime, t.room, t.reason, id = t.id)),
+      None,
+      id = e.id
     )
   }
 
