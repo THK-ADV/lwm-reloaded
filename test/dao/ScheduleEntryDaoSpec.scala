@@ -91,7 +91,7 @@ final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntry
   )
 
   override protected val invalidDuplicateOfDbEntity: ScheduleEntryDb =
-    dbEntity.copy(id = UUID.randomUUID)
+    dbEntity.copy()
 
   override protected val invalidUpdateOfDbEntity: ScheduleEntryDb =
     dbEntity.copy(labwork = UUID.randomUUID, group = UUID.randomUUID)
