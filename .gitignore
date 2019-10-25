@@ -32,3 +32,4 @@ project/plugins/project/
 # docker
 .env
 lwm-backend-images.tar
+.docker_*

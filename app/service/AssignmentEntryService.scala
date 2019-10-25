@@ -29,23 +29,23 @@ trait AssignmentEntryService {
     } yield u.toUniqueEntity
   }
 
-  def invalidate(id: UUID): Future[List[AssignmentEntry]] = {
+  def invalidate(id: UUID): Future[AssignmentEntry] = {
     val query = for {
       all <- dao.withSameLabworkAs(id)
-      toUpdate = reorder(all.toList, id)
-      _ <- dao.invalidateSingle(id)
-      _ <- dao.updateIndices(toUpdate.map(a => (a.id, a.index)))
-    } yield toUpdate.map(_.toUniqueEntity)
+      indices = reorderIndices(all.toList, id)
+      deleted <- dao.invalidateSingle(id)
+      _ <- dao.updateIndices(indices)
+    } yield deleted.toUniqueEntity
 
     dao.transaction(query)
   }
 
-  def reorder(entries: List[AssignmentEntryDb], without: UUID): List[AssignmentEntryDb] = {
+  def reorderIndices(entries: List[AssignmentEntryDb], without: UUID): List[(UUID, Int)] = {
     entries
       .sortBy(_.index)
       .filterNot(_.id == without)
       .zipWithIndex
-      .map(t => t._1.copy(index = t._2))
+      .map(t => (t._1.id, t._2))
   }
 
   def getAtomic(id: UUID): Future[Option[AssignmentEntryAtom]] =
