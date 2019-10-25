@@ -139,12 +139,12 @@ GET           /courses/:c/reportCardEvaluationPatterns/:id                     c
 PUT           /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.updateFrom(c, id)
 DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.invalidateFrom(c, id)
 
-# AssignmentPlan 
-POST          /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.createFrom(course)
-PUT           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.updateFrom(course, id)
-GET           /courses/:course/assignmentPlans                                 controllers.AssignmentPlanController.allFrom(course)
-GET           /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.getFrom(course, id)
-DELETE        /courses/:course/assignmentPlans/:id                             controllers.AssignmentPlanController.invalidateFrom(course, id)
+# AssignmentEntries
+POST          /courses/:course/assignmentEntries                               controllers.AssignmentEntryController.createFrom(course)
+PUT           /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.updateFrom(course, id)
+GET           /courses/:course/assignmentEntries                               controllers.AssignmentEntryController.allFrom(course)
+GET           /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.getFrom(course, id)
+DELETE        /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.invalidateFrom(course, id)
 
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()
@@ -177,7 +177,7 @@ PUT           /migration/authorities                                           c
 PUT           /migration/labworks                                              controllers.MigrationController.migrateLabworks
 PUT           /migration/labworkApplications                                   controllers.MigrationController.migrateLabworkApplications
 PUT           /migration/rooms                                                 controllers.MigrationController.migrateRooms
-PUT           /migration/assignmentPlans                                       controllers.MigrationController.migrateAssignmentPlans
+PUT           /migration/assignmentEntries                                     controllers.MigrationController.migrateAssignmentEntries
 PUT           /migration/timetables                                            controllers.MigrationController.migrateTimetables
 PUT           /migration/reportCardEntries                                     controllers.MigrationController.migrateReportCardEntries
 PUT           /migration/reportCardEvaluations                                 controllers.MigrationController.migrateReportCardEvaluations

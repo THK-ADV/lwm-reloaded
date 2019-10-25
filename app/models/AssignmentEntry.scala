@@ -14,7 +14,7 @@ case class AssignmentEntry(labwork: UUID, index: Int, label: String, types: Set[
   override def labworkId = labwork
 }
 
-case class AssignmentEntryProtocol(labwork: UUID, index: Int, label: String, types: Set[AssignmentEntryType], duration: Int)
+case class AssignmentEntryProtocol(labwork: UUID, label: String, types: Set[AssignmentEntryType], duration: Int)
 
 case class AssignmentEntryType(entryType: String)
 

@@ -38,7 +38,7 @@ final class BackupServiceSpec extends WordSpec with TestBaseDefinition with Asyn
   val grps = groups.map(_.toUniqueEntity)
 
   private val userDao = mock[UserDao]
-  private val assignmentPlanDao = mock[AssignmentEntryDao]
+  private val assignmentEntryDao = mock[AssignmentEntryDao]
   private val courseDao = mock[CourseDao]
   private val degreeDao = mock[DegreeDao]
   private val labworkApplicationDao = mock[LabworkApplicationDao]
@@ -54,7 +54,7 @@ final class BackupServiceSpec extends WordSpec with TestBaseDefinition with Asyn
   private val groupDao = mock[GroupDao]
   private val reportCardEvaluationDao = mock[ReportCardEvaluationDao]
 
-  private val backupService = new PSQLBackupService(userDao, assignmentPlanDao, courseDao, degreeDao, labworkApplicationDao,
+  private val backupService = new PSQLBackupService(userDao, assignmentEntryDao, courseDao, degreeDao, labworkApplicationDao,
     labworkDao, roleDao, roomDao, semesterDao, timetableDao, blacklistDao, reportCardEntryDao,
     authorityDao, scheduleEntryDao, groupDao, reportCardEvaluationDao)
 
@@ -123,7 +123,7 @@ final class BackupServiceSpec extends WordSpec with TestBaseDefinition with Asyn
 
   private def backupItems: Future[Vector[BackupItem]] = {
     when(userDao.get()).thenReturn(Future.successful(usr))
-    when(assignmentPlanDao.get()).thenReturn(Future.successful(Seq.empty))
+    when(assignmentEntryDao.get()).thenReturn(Future.successful(Seq.empty))
     when(courseDao.get()).thenReturn(Future.successful(crs))
     when(degreeDao.get()).thenReturn(Future.successful(deg))
     when(labworkApplicationDao.get()).thenReturn(Future.successful(lapps))

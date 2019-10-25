@@ -15,7 +15,7 @@ import scala.util.Try
 
 final class PSQLBackupService @Inject()(
   val userDao: UserDao,
-  val assignmentPlanDao: AssignmentEntryDao,
+  val assignmentEntryDao: AssignmentEntryDao,
   val courseDao: CourseDao,
   val degreeDao: DegreeDao,
   val labworkApplicationDao: LabworkApplicationDao,
@@ -57,7 +57,7 @@ final class PSQLBackupService @Inject()(
   override def backupItems: Future[Vector[BackupItem]] = {
     for {
       users <- userDao.get(atomic = false, validOnly = false)
-      assignmentPlans <- assignmentPlanDao.get(atomic = false, validOnly = false)
+      assignmentEntries <- assignmentEntryDao.get(atomic = false, validOnly = false)
       courses <- courseDao.get(atomic = false, validOnly = false)
       degrees <- degreeDao.get(atomic = false, validOnly = false)
       labworkApplications <- labworkApplicationDao.get(atomic = false, validOnly = false)
@@ -72,7 +72,7 @@ final class PSQLBackupService @Inject()(
       scheduleEntries <- scheduleEntryDao.get(atomic = false, validOnly = false)
       groups <- groupDao.get(atomic = false, validOnly = false)
       reportCardEvaluations <- reportCardEvaluationDao.get(atomic = false, validOnly = false)
-    } yield List(users, assignmentPlans, courses, degrees, labworkApplications, labworks, roles, rooms,
+    } yield List(users, assignmentEntries, courses, degrees, labworkApplications, labworks, roles, rooms,
       semesters, timetables, blacklists, reportCardEntries, authorities, scheduleEntries, groups, reportCardEvaluations)
       .filter(_.nonEmpty)
       .map(seq => BackupItem(seq.head.getClass.getSimpleName, toJson(seq)))

@@ -6,6 +6,7 @@ import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
 import models._
+import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
@@ -28,6 +29,21 @@ trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEnt
   override val tableQuery = TableQuery[AssignmentEntryTable]
 
   val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
+
+  def withSameLabworkAs(id: UUID): DBIOAction[Seq[AssignmentEntryDb], NoStream, Effect.Read] = {
+    for {
+      x <- filterValidOnly(_.id === id).take(1).result.headOption if x.isDefined
+      xs <- filterValidOnly(_.labwork === x.get.labwork).result
+    } yield xs
+  }
+
+  def updateIndices(xs: List[(UUID, Int)]): DBIOAction[List[Int], NoStream, Effect.Write with Effect.Transactional] = {
+    val query = xs.map {
+      case (id, i) => filterValidOnly(a => a.id === id).map(_.index).update(i)
+    }
+
+    DBIO.sequence(query).transactionally
+  }
 
   override protected def toAtomic(query: Query[AssignmentEntryTable, AssignmentEntryDb, Seq]): Future[Seq[AssignmentEntryLike]] = collectDependencies(query) {
     case (entry, labwork, types) => AssignmentEntryAtom(labwork.toUniqueEntity, entry.index, entry.label, types, entry.duration, entry.id)
