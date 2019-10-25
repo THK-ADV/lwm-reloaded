@@ -91,7 +91,7 @@ trait DatabaseMigrator extends Core with DatabaseTables {
 
   type AssignmentPlan0 = (UUID, List[(Int, String, Set[String], Int)])
 
-  def migrateAssignmentPlans(plans: List[AssignmentPlan0]) = {
+  def migrateAssignmentEntries(plans: List[AssignmentPlan0]) = {
     assignmentDao.createMany(plans.flatMap(p => toAssignmentPlanEntries(p._1, p._2))).map(_.map(_.toUniqueEntity))
   }
 

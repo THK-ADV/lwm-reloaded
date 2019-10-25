@@ -2,7 +2,6 @@ package dao
 
 import java.util.UUID
 
-import dao.helper.TableFilter
 import database._
 import models._
 import play.api.inject.guice.GuiceableModule
@@ -16,7 +15,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def assignmentPlan(labwork: LabworkDb, number: Int) = {
+  def assignmentEntries(labwork: LabworkDb, number: Int) = {
     val types = AssignmentEntryType.all
 
     (0 until number).map { i =>
@@ -55,7 +54,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
   )
 
   override protected val toAdd: List[AssignmentEntryDb] = labworks.drop(6).zip(List(5, 8, 3, 9, 4)).flatMap {
-    case (labwork, number) => assignmentPlan(labwork, number)
+    case (labwork, number) => assignmentEntries(labwork, number)
   }
 
   override protected val numberOfUpdates: Int = 1

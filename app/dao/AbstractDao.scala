@@ -16,7 +16,9 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     with Updated[T, DbModel]
     with Retrieved[T, DbModel, LwmModel] {
 
-  final def transaction[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
+  final def transactions[R](args: DBIO[R]*): Future[Unit] = db.run(DBIO.seq(args: _*).transactionally)
+
+  final def transaction[R](a: DBIO[R]): Future[R] = db.run(a.transactionally)
 
   final def zip[A, B](a: DBIO[A], b: DBIO[B]): Future[(A, B)] = db.run(a.zip(b))
 

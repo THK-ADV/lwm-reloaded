@@ -50,7 +50,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
         for {
           maybeCourse <- abstractDao.getSingle(uuid, atomic = false) if maybeCourse.isDefined
           oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
-          _ <- abstractDao.transaction(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
+          _ <- abstractDao.transactions(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
         } yield newCourse
       }
     ).jsonResult

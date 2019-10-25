@@ -209,7 +209,7 @@ final class MigrationController @Inject()(
     }
   }
 
-  def migrateAssignmentPlans = actorAction { implicit request =>
+  def migrateAssignmentEntries = actorAction { implicit request =>
     new MigrationRequest[AssignmentEntry] {
       override def name = "assignmentEntry"
 
@@ -218,7 +218,7 @@ final class MigrationController @Inject()(
           courses <- migrator.courseDao.get(atomic = false)
           entries <- Future.sequence(
             courses
-              .map(c => migrationResult(unchunk(_, parseAssignmentPlan), migrator.migrateAssignmentPlans, substituteCourse(c.id)))
+              .map(c => migrationResult(unchunk(_, parseAssignmentEntries), migrator.migrateAssignmentEntries, substituteCourse(c.id)))
           )
         } yield entries.flatten
       }
@@ -472,7 +472,7 @@ final class MigrationController @Inject()(
     uuid(v.\("id"))
   )
 
-  private def parseAssignmentPlan(v: JsValue): (UUID, List[(Int, String, Set[String], Int)]) = (
+  private def parseAssignmentEntries(v: JsValue): (UUID, List[(Int, String, Set[String], Int)]) = (
     uuid(v.\("labwork")),
     array(v.\("entries"), e => {
       (
