@@ -9,37 +9,37 @@ trait DatabaseTables {
 
   import profile.api._
 
-  private def schemas = List(
-    TableQuery[RoleTable].schema,
-    TableQuery[DegreeTable].schema,
-    TableQuery[UserTable].schema,
-    TableQuery[SemesterTable].schema,
-    TableQuery[CourseTable].schema,
-    TableQuery[AuthorityTable].schema,
-    TableQuery[LabworkTable].schema,
-    TableQuery[LabworkApplicationTable].schema,
-    TableQuery[LabworkApplicationFriendTable].schema,
-    TableQuery[RoomTable].schema,
-    TableQuery[AssignmentEntryTable].schema,
-    TableQuery[AssignmentEntryTypeTable].schema,
-    TableQuery[BlacklistTable].schema,
-    TableQuery[TimetableTable].schema,
-    TableQuery[TimetableBlacklistTable].schema,
-    TableQuery[TimetableEntryTable].schema,
-    TableQuery[TimetableEntrySupervisorTable].schema,
-    TableQuery[ReportCardEntryTable].schema,
-    TableQuery[ReportCardRescheduledTable].schema,
-    TableQuery[ReportCardRetryTable].schema,
-    TableQuery[ReportCardEntryTypeTable].schema,
-    TableQuery[ReportCardEvaluationTable].schema,
-    TableQuery[ReportCardEvaluationPatternTable].schema,
-    TableQuery[GroupTable].schema,
-    TableQuery[GroupMembershipTable].schema,
-    TableQuery[ScheduleEntryTable].schema,
-    TableQuery[ScheduleEntrySupervisorTable].schema
+  protected def tables = List(
+    TableQuery[RoleTable],
+    TableQuery[DegreeTable],
+    TableQuery[UserTable],
+    TableQuery[SemesterTable],
+    TableQuery[CourseTable],
+    TableQuery[AuthorityTable],
+    TableQuery[LabworkTable],
+    TableQuery[LabworkApplicationTable],
+    TableQuery[LabworkApplicationFriendTable],
+    TableQuery[RoomTable],
+    TableQuery[AssignmentEntryTable],
+    TableQuery[AssignmentEntryTypeTable],
+    TableQuery[BlacklistTable],
+    TableQuery[TimetableTable],
+    TableQuery[TimetableBlacklistTable],
+    TableQuery[TimetableEntryTable],
+    TableQuery[TimetableEntrySupervisorTable],
+    TableQuery[ReportCardEntryTable],
+    TableQuery[ReportCardRescheduledTable],
+    TableQuery[ReportCardRetryTable],
+    TableQuery[ReportCardEntryTypeTable],
+    TableQuery[ReportCardEvaluationTable],
+    TableQuery[ReportCardEvaluationPatternTable],
+    TableQuery[GroupTable],
+    TableQuery[GroupMembershipTable],
+    TableQuery[ScheduleEntryTable],
+    TableQuery[ScheduleEntrySupervisorTable]
   )
 
-  protected def createAction(): DBIOAction[Unit, NoStream, Effect.Schema] = DBIO.seq(schemas.map(_.create): _*)
+  protected def createAction(): DBIOAction[Unit, NoStream, Effect.Schema] = DBIO.seq(tables.map(_.schema.create): _*)
 
-  protected def dropAction(): DBIOAction[Unit, NoStream, Effect.Schema] = DBIO.seq(schemas.reverseMap(_.drop): _*)
+  protected def dropAction(): DBIOAction[Unit, NoStream, Effect.Schema] = DBIO.seq(tables.reverseMap(_.schema.drop): _*)
 }

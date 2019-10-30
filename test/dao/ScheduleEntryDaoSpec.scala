@@ -1,185 +1,221 @@
 package dao
 
+import java.sql.{Date, Time, Timestamp}
 import java.util.UUID
 
+import base.{PostgresDbSpec, TestBaseDefinition}
 import database._
-import models._
-import org.joda.time.{LocalDate, LocalTime}
+import database.helper.LdapUserStatus
+import models.{LabworkAtom, ScheduleEntryLike}
 import play.api.inject.guice.GuiceableModule
-import slick.jdbc.PostgresProfile.api._
-import slick.lifted.TableQuery
-import utils.date.DateTimeOps._
+import slick.dbio.Effect.Write
 
-final class ScheduleEntryDaoSpec extends AbstractExpandableDaoSpec[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike] {
+import scala.collection.immutable
+import scala.concurrent.{ExecutionContext, Future}
 
-  import AbstractDaoSpec._
+final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import profile.api._
 
-  "A ScheduleEntryDaoSpec also" should {
+  implicit val ctx: ExecutionContext = app.injector.instanceOf(classOf[ExecutionContext])
 
-    "return competitive schedules based on given labwork" in {
-      val degrees = populateDegrees(4)
-      val semesters = populateSemester(4)
-      val courses = populateCourses(degrees.size * 4)(employees)(_ % 4)
-      val labworks = populateLabworks(courses.size * degrees.size)(semesters, courses, degrees)
+  val dao = app.injector.instanceOf(classOf[ScheduleEntryDao])
+  val labworkDao = app.injector.instanceOf(classOf[LabworkDao])
 
-      val entries = labworks.tail.flatMap { lab =>
-        populateScheduleEntry(8 * 8)(List(lab), rooms, employees, groups)
-      }
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    clearTables()
+  }
+
+  "A ScheduleEntryDaoSpec" should {
+
+    "return empty competitive entries if given labwork is the only one" in {
+      val labwork = populateLabwork
+      populateScheduleEntries(1, labwork.id)
+
+      val result = competitive(labwork.id, considerSemesterIndex = true)
+
+      async(result)(_ shouldBe empty)
+    }
+
+    "return empty competitive entries if given labwork is the only valid one" in {
+      val labwork1 = populateLabwork
+      val labwork2 = populateLabwork
+      populateScheduleEntries(1, labwork1.id)
+      populateScheduleEntries(1, labwork2.id)
+
+      val result = for {
+        _ <- labworkDao.invalidate(labwork2)
+        comps <- competitive(labwork1.id, considerSemesterIndex = true)
+      } yield comps
+
+      async(result)(_ shouldBe empty)
+    }
+
+    "return empty competitive entries if those are invalid ones" in {
+      val labwork1 = populateLabwork
+      val labwork2 = populateLabwork
+      populateScheduleEntries(1, labwork1.id)
+      val scheduleEntries = populateScheduleEntries(1, labwork2.id)
+
+      val result = for {
+        _ <- dao.invalidateMany(scheduleEntries.map(_.id).toList)
+        comps <- competitive(labwork1.id, considerSemesterIndex = true)
+      } yield comps
+
+      async(result)(_ shouldBe empty)
+    }
+
+    "return competitive entries of all labworks within a given course with the same semester index" in {
+      val labwork1 = populateLabwork
+      val labwork2 = createCopy(labwork1)
+      val labwork3 = createCopy(labwork1)
+      populateScheduleEntries(1, labwork1.id)
+      val comp1 = populateScheduleEntries(1, labwork2.id).toList
+      val comp2 = populateScheduleEntries(1, labwork3.id).toList
+
+      val result = competitive(labwork1.id, considerSemesterIndex = true)
+
+      async(result)(_ should contain theSameElementsAs (comp1 ::: comp2).map(_.toUniqueEntity))
+    }
+
+    "return competitive entries of all labworks within a given course with the same semester index as long as they are valid" in {
+      val labwork1 = populateLabwork
+      val labwork2 = createCopy(labwork1)
+      val labwork3 = createCopy(labwork1)
+      populateScheduleEntries(1, labwork1.id)
+      val comp1 = populateScheduleEntries(1, labwork2.id).toList
+      val comp2 = populateScheduleEntries(1, labwork3.id).toList
+
+      val result = for {
+        _ <- labworkDao.invalidate(labwork2)
+        comps <- competitive(labwork1.id, considerSemesterIndex = true)
+      } yield comps
+
+      async(result)(_ should contain theSameElementsAs comp2.map(_.toUniqueEntity))
+    }
+
+    "return competitive entries of all courses with the same semester index" in {
+      val labwork1 = populateLabwork
+
+      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course1 = CourseDb("", "", "", user1.id, 2)
+      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course2 = CourseDb("", "", "", user2.id, 1)
+      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course3 = CourseDb("", "", "", user3.id, 1)
+
+      val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
+      val labwork3 = labwork1.copy(id = UUID.randomUUID, course = course2.id)
+      val labwork4 = labwork1.copy(id = UUID.randomUUID, course = course3.id, invalidated = Some(new Timestamp(0)))
 
       runAsyncSequence(
-        dao.scheduleEntrySupervisorQuery.delete,
-        dao.tableQuery.delete,
-        TableQuery[DegreeTable].forceInsertAll(degrees),
-        TableQuery[SemesterTable].forceInsertAll(semesters),
-        TableQuery[CourseTable].forceInsertAll(courses),
-        TableQuery[LabworkTable].forceInsertAll(labworks),
-        dao.tableQuery.forceInsertAll(entries)
+        TableQuery[UserTable].forceInsertAll(List(user1, user2, user3)),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2, course3)),
+        TableQuery[LabworkTable].forceInsertAll(List(labwork2, labwork3, labwork4)),
       )
 
-      val current = {
-        val l = labworks.head
-        val course = courses.find(_.id == l.course).map { c =>
-          CourseAtom(c.label, c.description, c.abbreviation, employees.find(_.id == c.lecturer).get.toUniqueEntity, c.semesterIndex, c.id)
-        }
-        LabworkAtom(l.label, l.description, semesters.find(_.id == l.semester).get.toUniqueEntity, course.get, degrees.find(_.id == l.degree).get.toUniqueEntity, l.subscribable, l.published, l.id)
-      }
+      populateScheduleEntries(1, labwork1.id)
+      populateScheduleEntries(1, labwork2.id)
+      val comp = populateScheduleEntries(1, labwork3.id).toList
+      populateScheduleEntries(1, labwork4.id)
 
-      val future = for {
-        actual <- dao.competitive(current)
-        expected <- db.run(dao.tableQuery.filter { s =>
-          s.labworkFk.flatMap(_.courseFk).filter(_.semesterIndex === current.course.semesterIndex).exists &&
-            s.labworkFk.flatMap(_.semesterFk).filter(_.id === current.semester.id).exists &&
-            s.labworkFk.flatMap(_.degreeFk).filter(_.id === current.degree.id).exists &&
-            s.labwork =!= current.id
-        }.result)
-      } yield (actual, expected)
+      val result = competitive(labwork1.id, considerSemesterIndex = true)
 
-      async(future) {
-        case (result, res) =>
-          res.size shouldBe result.flatMap(_.entries).size
+      async(result)(_ should contain theSameElementsAs comp.map(_.toUniqueEntity))
+    }
 
-          res.groupBy(_.labwork).foreach {
-            case (l, e) =>
-              result.count(_.labwork == l) shouldBe 1
+    "return competitive entries of all courses regardless of semester index" in {
+      val labwork1 = populateLabwork
 
-              result.find(_.labwork == l).get.entries.forall { g =>
-                e.count { se =>
-                  se.group == g.group.id &&
-                    se.date.localDate.isEqual(g.date) &&
-                    se.start.localTime.isEqual(g.start) &&
-                    se.end.localTime.isEqual(g.end) &&
-                    se.room == g.room
-                } == 1
-              } shouldBe true
-          }
-      }
+      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course1 = CourseDb("", "", "", user1.id, 2)
+      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course2 = CourseDb("", "", "", user2.id, 5)
+      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course3 = CourseDb("", "", "", user3.id, 8)
+      val user4 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val course4 = CourseDb("", "", "", user4.id, 8)
+
+      val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
+      val labwork3 = labwork1.copy(id = UUID.randomUUID, course = course2.id)
+      val labwork4 = labwork1.copy(id = UUID.randomUUID, course = course3.id, invalidated = Some(new Timestamp(0)))
+      val labwork5 = labwork1.copy(id = UUID.randomUUID, course = course4.id)
+
+      runAsyncSequence(
+        TableQuery[UserTable].forceInsertAll(List(user1, user2, user3, user4)),
+        TableQuery[CourseTable].forceInsertAll(List(course1, course2, course3, course4)),
+        TableQuery[LabworkTable].forceInsertAll(List(labwork2, labwork3, labwork4, labwork5)),
+      )
+
+      populateScheduleEntries(1, labwork1.id)
+      val comp1 = populateScheduleEntries(1, labwork2.id).toList
+      val comp2 = populateScheduleEntries(1, labwork3.id).toList
+      populateScheduleEntries(1, labwork4.id)
+      val comp3 = populateScheduleEntries(1, labwork5.id).toList
+
+      val result = competitive(labwork1.id, considerSemesterIndex = false)
+
+      async(result)(_ should contain theSameElementsAs (comp1 ::: comp2 ::: comp3).map(_.toUniqueEntity))
     }
   }
 
-  override protected def name: String = "scheduleEntry"
+  private def createCopy(labwork: LabworkDb): LabworkDb = {
+    val labwork2 = labwork.copy(id = UUID.randomUUID)
+    runAsync(TableQuery[LabworkTable].forceInsert(labwork2))(_ => Unit)
+    labwork2
+  }
 
-  override protected val dbEntity: ScheduleEntryDb = ScheduleEntryDb(
-    labworks.head.id,
-    LocalTime.now.sqlTime,
-    LocalTime.now.plusHours(1).sqlTime,
-    LocalDate.now.sqlDate,
-    rooms.head.id,
-    Set.empty,
-    groups.head.id
-  )
-
-  override protected val invalidDuplicateOfDbEntity: ScheduleEntryDb =
-    dbEntity.copy()
-
-  override protected val invalidUpdateOfDbEntity: ScheduleEntryDb =
-    dbEntity.copy(labwork = UUID.randomUUID, group = UUID.randomUUID)
-
-  override protected val validUpdateOnDbEntity: ScheduleEntryDb =
-    dbEntity.copy(room = rooms.last.id, start = dbEntity.start.localTime.plusHours(1).sqlTime)
-
-  override protected val dbEntities: List[ScheduleEntryDb] = {
+  private def competitive(labwork: UUID, considerSemesterIndex: Boolean): Future[Seq[ScheduleEntryLike]] = {
     for {
-      labwork <- labworks.slice(1, 5)
-      group <- groups.slice(1, 6)
-    } yield {
-      import scala.util.Random.nextInt
-
-      val date = LocalDate.now.plusDays(nextInt(3))
-      val start = LocalTime.now.withHourOfDay(nextInt(20))
-      val end = start.plusHours(1)
-
-      ScheduleEntryDb(labwork.id, start.sqlTime, end.plusHours(1).sqlTime, date.sqlDate, randomRoom.id, Set.empty, group.id)
-    }
+      labworkAtom <- labworkDao.getSingle(labwork)
+      comps <- dao.competitive(
+        labworkAtom.get.asInstanceOf[LabworkAtom],
+        atomic = false,
+        considerSemesterIndex = considerSemesterIndex
+      )
+    } yield comps
   }
 
-  override protected val lwmAtom: ScheduleEntryLike = atom(dbEntity)
+  private def populateLabwork: LabworkDb = {
+    val semester = SemesterDb("", "", fakeDate, fakeDate, fakeDate)
+    val user = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+    val course = CourseDb("", "", "", user.id, 1)
+    val degree = DegreeDb("", "")
+    val labwork = LabworkDb("", "", semester.id, course.id, degree.id)
 
-  override protected val dependencies: DBIOAction[Unit, NoStream, Effect.Write] = DBIO.seq(
-    TableQuery[DegreeTable].forceInsertAll(degrees),
-    TableQuery[UserTable].forceInsertAll(employees ++ students /* ++ privateSupervisors*/),
-    TableQuery[SemesterTable].forceInsertAll(semesters),
-    TableQuery[CourseTable].forceInsertAll(courses),
-    TableQuery[LabworkTable].forceInsertAll(labworks /* ++ privateLabs*/),
-    TableQuery[RoomTable].forceInsertAll(rooms),
-    TableQuery[GroupTable].forceInsertAll(groups),
-    TableQuery[GroupMembershipTable].forceInsertAll(groupMemberships)
-  )
-
-  override protected val toAdd: List[ScheduleEntryDb] = {
-    for {
-      labwork <- labworks.slice(5, 9)
-      group <- groups.slice(6, 11)
-    } yield {
-      import scala.util.Random.nextInt
-
-      val date = LocalDate.now.plusDays(nextInt(3))
-      val start = LocalTime.now.withHourOfDay(nextInt(20))
-      val end = start.plusHours(1)
-      val supervisors = takeSomeOf(employees).map(_.id).toSet
-
-      ScheduleEntryDb(labwork.id, start.sqlTime, end.plusHours(1).sqlTime, date.sqlDate, randomRoom.id, supervisors, group.id)
-    }
-  }
-
-  override protected val numberOfUpdates: Int = (toAdd.size * 0.3).toInt
-
-  override protected val numberOfDeletions: Int = (toAdd.size * 0.3).toInt
-
-  override protected def update(toUpdate: List[ScheduleEntryDb]): List[ScheduleEntryDb] = toUpdate.map { e =>
-    e.copy(room = randomRoom.id, supervisor = takeSomeOf(employees).map(_.id).toSet, date = e.date.localDate.plusDays(1).sqlDate)
-  }
-
-  override protected def atom(dbModel: ScheduleEntryDb): ScheduleEntryLike = {
-    val labwork = for {
-      l <- labworks.find(_.id == dbModel.labwork)
-      s <- semesters.find(_.id == l.semester)
-      d <- degrees.find(_.id == l.degree)
-      c <- courses.find(_.id == l.course)
-      lec <- employees.find(_.id == c.lecturer)
-      ca = CourseAtom(c.label, c.description, c.abbreviation, lec.toUniqueEntity, c.semesterIndex, c.id)
-    } yield LabworkAtom(l.label, l.description, s.toUniqueEntity, ca, d.toUniqueEntity, l.subscribable, l.published, l.id)
-
-    ScheduleEntryAtom(
-      labwork.get,
-      dbModel.start.localTime,
-      dbModel.end.localTime,
-      dbModel.date.localDate,
-      rooms.find(_.id == dbModel.room).get.toUniqueEntity,
-      employees.filter(u => dbModel.supervisor.contains(u.id)).map(_.toUniqueEntity).toSet,
-      groups.find(_.id == dbModel.group).get.toUniqueEntity,
-      dbModel.id
+    runAsyncSequence(
+      TableQuery[SemesterTable].forceInsert(semester),
+      TableQuery[UserTable].forceInsert(user),
+      TableQuery[CourseTable].forceInsert(course),
+      TableQuery[DegreeTable].forceInsert(degree),
+      TableQuery[LabworkTable].forceInsert(labwork)
     )
+
+    labwork
   }
 
-  override protected def expanderSpecs(dbModel: ScheduleEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = {
-    dao.scheduleEntrySupervisorQuery.filter(_.scheduleEntry === dbModel.id).result.map { sups =>
-      sups.map(_.supervisor) should contain theSameElementsAs (if (isDefined) dbModel.supervisor else Nil)
+  private def populateScheduleEntries(n: Int, labwork: UUID): immutable.Seq[ScheduleEntryDb] = {
+    val room = RoomDb("", "", 1)
+    val grp = GroupDb("", labwork, Set.empty)
+    val scheduleEntries = (0 until n).map { _ =>
+      ScheduleEntryDb(labwork, fakeTime, fakeTime, fakeDate, room.id, Set.empty, grp.id)
     }
+
+    runAsyncSequence(
+      TableQuery[RoomTable].forceInsert(room),
+      TableQuery[GroupTable].forceInsert(grp),
+      TableQuery[ScheduleEntryTable].forceInsertAll(scheduleEntries)
+    )
+
+    scheduleEntries
   }
 
-  override protected val dao: ScheduleEntryDao = app.injector.instanceOf(classOf[ScheduleEntryDao])
+  private def fakeTime: Time = new Time(0)
+
+  private def fakeDate: Date = new Date(0)
+
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

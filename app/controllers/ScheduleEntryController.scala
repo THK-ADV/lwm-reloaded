@@ -99,6 +99,17 @@ final class ScheduleEntryController @Inject()(
   }
 
   private def generate(labwork: UUID)(implicit request: Request[AnyContent]) = {
+    def toScheduleGens(xs: Seq[ScheduleEntryLike]) = xs
+      .map(_.asInstanceOf[ScheduleEntryAtom])
+      .groupBy(_.labworkId)
+      .map { case (l, xs) =>
+        ScheduleGen(
+          l,
+          xs.map(x => ScheduleEntryGen(x.start, x.end, x.date, x.room.id, x.supervisor.map(_.id), x.group)).toVector
+        )
+      }
+      .toVector
+
     val labworkFilter = List(TableFilter.labworkFilter(labwork))
 
     for {
@@ -121,7 +132,7 @@ final class ScheduleEntryController @Inject()(
       semester = labAtom.semester
 
       considerSemesterIndex = boolOf(request.queryString)(semesterIndexConsiderationAttribute).getOrElse(true)
-      comps <- abstractDao.competitive(labAtom, considerSemesterIndex)
+      comps <- abstractDao.competitive(labAtom, atomic = true, considerSemesterIndex = considerSemesterIndex)
 
       i = intOf(request.queryString) _
       pop = i(popAttribute)
@@ -135,7 +146,7 @@ final class ScheduleEntryController @Inject()(
       groups,
       aps.toVector,
       semester,
-      comps,
+      toScheduleGens(comps),
       pop,
       gen,
       elite

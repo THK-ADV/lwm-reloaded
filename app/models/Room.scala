@@ -4,7 +4,7 @@ import java.util.UUID
 
 import play.api.libs.json.{Json, Reads, Writes}
 
-case class Room(label: String, description: String, capacity: Int, id: UUID = UUID.randomUUID) extends UniqueEntity
+case class Room(label: String, description: String, capacity: Int, id: UUID) extends UniqueEntity
 
 case class RoomProtocol(label: String, description: String, capacity: Int)
 

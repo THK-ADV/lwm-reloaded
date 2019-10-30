@@ -13,7 +13,6 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service._
 
-import scala.concurrent.Future
 import scala.util.Try
 
 object ReportCardEntryController {
@@ -28,9 +27,7 @@ object ReportCardEntryController {
 final class ReportCardEntryController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
-  val abstractDao: ReportCardEntryDao,
-  val scheduleEntryDao: ScheduleEntryDao,
-  val assignmentEntryDao: AssignmentEntryDao,
+  val service: ReportCardEntryService,
   val securedAction: SecurityActionChain
 ) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
   with TimeRangeTableFilter[ReportCardEntryTable] {
@@ -73,29 +70,23 @@ final class ReportCardEntryController @Inject()(
   def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
     labwork
       .uuidF
-      .flatMap(abstractDao.invalidateByLabwork)
+      .flatMap(service.dao.invalidateByLabwork)
       .map(_.map(_.toUniqueEntity))
       .jsonResult
   }
 
-  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
-    import dao.helper.TableFilter.labworkFilter
-
-    (for {
-      labworkId <- Future.fromTry(labwork.uuid)
-      schedules <- scheduleEntryDao.scheduleGenBy(labworkId) if schedules.isDefined
-      assignmentEntries <- assignmentEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
-      reportCardEntries = ReportCardService.reportCards(schedules.head, assignmentEntries.map(_.asInstanceOf[AssignmentEntry]))
-      _ <- abstractDao.createMany(reportCardEntries.toList)
-    } yield reportCardEntries.map(_.toUniqueEntity)).jsonResult
+  def createFrom(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
+    labwork
+      .uuidF
+      .flatMap(service.generate)
+      .jsonResult
   }
 
   def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { _ =>
-    (for {
-      courseId <- course.uuidF
-      labworkId <- labwork.uuidF
-      count <- abstractDao.numberOfStudents(courseId, labworkId)
-    } yield count).jsonResult
+    course.uuidF
+      .zip(labwork.uuidF)
+      .flatMap(t => service.dao.numberOfStudents(t._1, t._2))
+      .jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
@@ -112,16 +103,5 @@ final class ReportCardEntryController @Inject()(
     }
   }
 
-  def createByCopy(course: String) = restrictedContext(course)(Create) asyncAction { _ =>
-    ???
-  }
+  override protected val abstractDao: AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] = service.dao
 }
-
-/** TODO
-  * controller mit expander funktionen, beispielsweise
-  * removeStudentFromLabwork -> delete group membership, lapp and reportCardEntries
-  * insert student into group -> create lapp if needed, group membership with reportCardEntries
-  * swapGroup
-  * patch assignmentplan/timetable/group -> expand dependencies (reportcardEntries...)
-  *
-  */

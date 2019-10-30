@@ -16,9 +16,6 @@ abstract class PostgresDbSpec extends DatabaseSpec with DatabaseTables {
     createSchemas()
   }
 
-  protected def createSchemas(): Unit = {
-    runAsyncSequence(createAction(), dependencies)
-  }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
@@ -27,5 +24,9 @@ abstract class PostgresDbSpec extends DatabaseSpec with DatabaseTables {
     db.close()
   }
 
+  protected def createSchemas(): Unit = runAsyncSequence(createAction(), dependencies)
+
   protected def dropSchemas(): Unit = runAsyncSequence(dropAction())
+
+  protected def clearTables(): Unit = runAsyncSequence(tables.reverseMap(_.delete): _*)
 }

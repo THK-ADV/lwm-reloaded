@@ -96,8 +96,6 @@ DELETE        /blacklists/:id                                                  c
 GET           /reportCardEntries/student/:s                                    controllers.ReportCardEntryController.getForStudent(s)
 
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
-POST          /courses/:c/reportCardEntries/copy                               controllers.ReportCardEntryController.createByCopy(c)
-
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)

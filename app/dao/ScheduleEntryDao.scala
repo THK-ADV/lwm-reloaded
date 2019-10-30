@@ -5,8 +5,8 @@ import java.util.UUID
 import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
-import models.genesis.{ScheduleEntryGen, ScheduleGen}
-import models.{genesis, _}
+import models._
+import models.genesis.ScheduleGen
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
@@ -20,8 +20,6 @@ object ScheduleEntryDao extends TableFilter[ScheduleEntryTable] {
 trait ScheduleEntryDao
   extends AbstractDao[ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike]
     with CrossInvalidated[ScheduleEntryTable, ScheduleEntryDb] {
-
-  import dao.helper.TableFilter.labworkFilter
 
   override val tableQuery = TableQuery[ScheduleEntryTable]
 
@@ -83,33 +81,6 @@ trait ScheduleEntryDao
     db.run(action)
   }
 
-  private def collectDependenciesMin[A, B](query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq])
-    (build: (ScheduleEntryDb, GroupDb, Seq[(ScheduleEntrySupervisor, UserDb)]) => A)
-    (transform: Traversable[A] => Vector[B]): Future[Vector[B]] = {
-    val mandatory = for {
-      q <- query
-      g <- q.groupFk
-    } yield (q, g)
-
-    val supervisors = for {
-      s <- scheduleEntrySupervisorQuery
-      u <- s.userFk
-    } yield (s, u)
-
-    val group = groupQuery.joinLeft(groupMembershipQuery).on(_.id === _.group)
-
-    val action = mandatory.joinLeft(supervisors).on(_._1.id === _._1.scheduleEntry).joinLeft(group).on(_._1._1.group === _._1.id).result.map(_.groupBy(_._1._1._1.id).map {
-      case (id, dependencies) =>
-        val (((se, g), _), _) = dependencies.find(_._1._1._1.id == id).get
-        val sups = dependencies.flatMap(_._1._2)
-        val gm = dependencies.flatMap(_._2.flatMap(_._2))
-
-        build(se, g.copy(members = gm.map(_.student).toSet), sups)
-    })
-
-    db.run(action map transform)
-  }
-
   override protected val databaseExpander: Option[DatabaseExpander[ScheduleEntryDb]] = Some(new DatabaseExpander[ScheduleEntryDb] {
     override def expandCreationOf[E <: Effect](entities: ScheduleEntryDb*) = for {
       _ <- scheduleEntrySupervisorQuery ++= entities.flatMap { e =>
@@ -127,35 +98,15 @@ trait ScheduleEntryDao
     } yield c.head
   })
 
-  def competitive(labwork: LabworkAtom, considerSemesterIndex: Boolean = true): Future[Vector[ScheduleGen]] = {
+  def competitive(labwork: LabworkAtom, atomic: Boolean, considerSemesterIndex: Boolean = true): Future[Seq[ScheduleEntryLike]] = {
     val comps = tableQuery
-      .flatMap(t => t.labworkFk.withFilter(l => l.id =!= labwork.id)
-        .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
-          .flatMap(_ => l.semesterFk.withFilter(s => s.id === labwork.semester.id)
-            .flatMap(_ => l.degreeFk.withFilter(d => d.id === labwork.degree.id)
+      .flatMap(t => t.labworkFk.withFilter(l => l.isValid && l.id =!= labwork.id)
+        .flatMap(l => (if (considerSemesterIndex) l.courseFk.withFilter(c => c.isValid && c.semesterIndex === labwork.course.semesterIndex) else l.courseFk)
+          .flatMap(_ => l.semesterFk.withFilter(s => s.isValid && s.id === labwork.semester.id)
+            .flatMap(_ => l.degreeFk.withFilter(d => d.isValid && d.id === labwork.degree.id)
               .map(_ => t)))))
 
-    scheduleGen(filterValidOnly(comps))
-  }
-
-  def scheduleGenBy(labwork: UUID) =
-    scheduleGen(filterValidOnly(labworkFilter(labwork)).take(1)).map(_.headOption)
-
-  private def scheduleGen(query: Query[ScheduleEntryTable, ScheduleEntryDb, Seq]): Future[Vector[ScheduleGen]] = {
-    collectDependenciesMin(query) {
-      case (se, g, sups) => (ScheduleEntryGen(
-        se.start.localTime,
-        se.end.localTime,
-        se.date.localDate,
-        se.room,
-        sups.map(_._1.supervisor).toSet,
-        g.toUniqueEntity
-      ), se.labwork)
-    } { entries =>
-      entries.groupBy(_._2).map {
-        case (id, e) => genesis.ScheduleGen(id, e.map(_._1).toVector)
-      }.toVector
-    }
+    filterValidOnly(comps).retrieve(atomic)
   }
 
   override protected val schemas: List[PostgresProfile.DDL] = List(

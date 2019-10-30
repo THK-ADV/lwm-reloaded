@@ -12,7 +12,7 @@ trait DateGenerator {
     .withMonthOfYear(month)
     .withDayOfMonth(day)
 
-  protected def localTime(hour: Int, minute: Int, second: Int, milliSeconds: Int): LocalTime = LocalTime.now
+  protected def localTime(hour: Int, minute: Int = 0, second: Int = 0, milliSeconds: Int = 0): LocalTime = LocalTime.now
     .withHourOfDay(hour)
     .withMinuteOfHour(minute)
     .withSecondOfMinute(second)
