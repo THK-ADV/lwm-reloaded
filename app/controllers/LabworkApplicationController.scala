@@ -5,7 +5,7 @@ import java.util.UUID
 import dao._
 import database.{LabworkApplicationDb, LabworkApplicationTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{EmployeeRole, StudentRole}
+import models.Role.{CourseEmployee, CourseManager, EmployeeRole, God, StudentRole}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
@@ -64,5 +64,8 @@ final class LabworkApplicationController @Inject()(
     case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case _ => PartialSecureBlock(List(God))
+  }
 }
