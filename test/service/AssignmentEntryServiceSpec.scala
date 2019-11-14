@@ -73,8 +73,8 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
 
       val res = service.reorderIndices(entries, entries.head.id)
       res.size shouldBe 2
-      res(0) shouldBe (entries(1).id, 0)
-      res(1) shouldBe (entries(2).id, 1)
+      res(0) shouldBe(entries(1).id, 0)
+      res(1) shouldBe(entries(2).id, 1)
     }
 
     "reorder indices at the end" in {
@@ -87,8 +87,8 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
 
       val res = service.reorderIndices(entries, entries.last.id)
       res.size shouldBe 2
-      res(0) shouldBe (entries(0).id, 0)
-      res(1) shouldBe (entries(1).id, 1)
+      res(0) shouldBe(entries(0).id, 0)
+      res(1) shouldBe(entries(1).id, 1)
     }
 
     "reorder indices in the middle" in {
@@ -101,8 +101,8 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
 
       val res = service.reorderIndices(entries, entries(1).id)
       res.size shouldBe 2
-      res(0) shouldBe (entries(0).id, 0)
-      res(1) shouldBe (entries(2).id, 1)
+      res(0) shouldBe(entries(0).id, 0)
+      res(1) shouldBe(entries(2).id, 1)
     }
 
     "invalidate an assignment entry and adjust all indices afterwards" in {
@@ -128,6 +128,29 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
       async(service.invalidate(toDelete.id)) { deleted =>
         others.exists(_._2 == deleted.index) shouldBe true
         others.exists(_._1 == deleted.id) shouldBe false
+      }
+    }
+
+    "take over an existing assignment plan for a given labwork" in { // TODO test negative cases
+      val src = UUID.randomUUID
+      val dest = UUID.randomUUID
+      val templates = Seq(
+        AssignmentEntry(src, 0, "", Set.empty, 1, UUID.randomUUID),
+        AssignmentEntry(src, 1, "", Set.empty, 1, UUID.randomUUID),
+        AssignmentEntry(src, 2, "", Set.empty, 1, UUID.randomUUID)
+      )
+      val created = Seq(
+        service.dbModel(AssignmentEntryProtocol(dest, "", Set.empty, 1), 0, None),
+        service.dbModel(AssignmentEntryProtocol(dest, "", Set.empty, 1), 1, None),
+        service.dbModel(AssignmentEntryProtocol(dest, "", Set.empty, 1), 2, None),
+      )
+
+      when(dao.count(any(), any(), any())).thenReturn(Future.successful(0))
+      when(dao.get(any(), any(), any(), any())).thenReturn(Future.successful(templates))
+      when(dao.createMany(any())).thenReturn(Future.successful(created))
+
+      async(service.takeover(src, dest)) { copied =>
+        copied shouldBe created.map(_.toUniqueEntity)
       }
     }
   }

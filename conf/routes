@@ -138,11 +138,12 @@ PUT           /courses/:c/reportCardEvaluationPatterns/:id                     c
 DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.invalidateFrom(c, id)
 
 # AssignmentEntries
-POST          /courses/:course/assignmentEntries                               controllers.AssignmentEntryController.createFrom(course)
-PUT           /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.updateFrom(course, id)
-GET           /courses/:course/assignmentEntries                               controllers.AssignmentEntryController.allFrom(course)
-GET           /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.getFrom(course, id)
-DELETE        /courses/:course/assignmentEntries/:id                           controllers.AssignmentEntryController.invalidateFrom(course, id)
+POST          /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.createFrom(c)
+PUT           /courses/:c/assignmentEntries/takeover                           controllers.AssignmentEntryController.takeover(c)
+PUT           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.updateFrom(c, id)
+GET           /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.allFrom(c)
+GET           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.getFrom(c, id)
+DELETE        /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.invalidateFrom(c, id)
 
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()

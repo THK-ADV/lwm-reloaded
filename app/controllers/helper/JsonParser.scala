@@ -1,6 +1,9 @@
 package controllers.helper
 
-import play.api.libs.json.{JsError, JsValue, Reads, Writes}
+import java.util.UUID
+
+import org.joda.time.{DateTime, LocalDate, LocalTime}
+import play.api.libs.json.{JsArray, JsError, JsReadable, JsValue, Reads, Writes}
 import play.api.mvc.{AnyContent, Request}
 
 import scala.util.{Failure, Success, Try}
@@ -26,4 +29,20 @@ trait JsonParser {
     case Some(json) => Success(json)
     case None => Failure(new Throwable("json body is required"))
   }
+
+  protected def string[A <: JsReadable](r: A): String = r.validate[String].get // TODO rewrite, because it is using outside of migration
+
+  protected def int[A <: JsReadable](r: A): Int = r.validate[Int].get
+
+  protected def bool[A <: JsReadable](r: A): Boolean = r.validate[Boolean].get
+
+  protected def uuid[A <: JsReadable](r: A): UUID = UUID.fromString(string(r))
+
+  protected def dateTime[A <: JsReadable](r: A)(implicit reads: Reads[DateTime]): DateTime = r.validate[DateTime].get
+
+  protected def localTime[A <: JsReadable](r: A)(implicit reads: Reads[LocalTime]): LocalTime = r.validate[LocalTime].get
+
+  protected def localDate[A <: JsReadable](r: A)(implicit reads: Reads[LocalDate]): LocalDate = r.validate[LocalDate].get
+
+  protected def array[A <: JsReadable, B](r: A, f: JsValue => B): Set[B] = r.as[JsArray].value.map(f).toSet
 }

@@ -534,22 +534,6 @@ final class MigrationController @Inject()(
     )
   }
 
-  private def string[A <: JsReadable](r: A): String = r.validate[String].get
-
-  private def int[A <: JsReadable](r: A): Int = r.validate[Int].get
-
-  private def bool[A <: JsReadable](r: A): Boolean = r.validate[Boolean].get
-
-  private def uuid[A <: JsReadable](r: A): UUID = UUID.fromString(string(r))
-
-  private def dateTime[A <: JsReadable](r: A): DateTime = r.validate[DateTime].get
-
-  private def localTime[A <: JsReadable](r: A): LocalTime = r.validate[LocalTime].get
-
-  private def localDate[A <: JsReadable](r: A): LocalDate = r.validate[LocalDate].get
-
-  private def array[A <: JsReadable, B](r: A, f: JsValue => B): Set[B] = r.as[JsArray].value.map(f).toSet
-
   private def unchunk[A](raw: String, f: JsValue => A): List[A] = {
     val json = raw.replace("}{", "},{")
     val jsonArray = s"[$json]"
