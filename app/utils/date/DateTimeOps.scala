@@ -2,6 +2,7 @@ package utils.date
 
 import java.sql.{Date, Time, Timestamp}
 
+import models.ScheduleEntryAtom
 import models.genesis.ScheduleEntryGen
 import models.helper.TimetableDateEntry
 import org.joda.time._
@@ -45,6 +46,10 @@ object DateTimeOps extends DateTimeFormatterPattern {
   }
 
   def toLocalDateTime(entry: ScheduleEntryGen): LocalDateTime = {
+    entry.date.toLocalDateTime(entry.start)
+  }
+
+  def toLocalDateTime(entry: ScheduleEntryAtom): LocalDateTime = {
     entry.date.toLocalDateTime(entry.start)
   }
 

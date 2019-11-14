@@ -11,7 +11,6 @@ import models.{ReportCardEvaluationLike, ReportCardEvaluationProtocol}
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, ControllerComponents, Request, Result}
 import security.SecurityActionChain
-import service.ReportCardService
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -35,6 +34,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
 
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
+  import service.ReportCardEvaluationService._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -52,7 +52,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
       studentId <- student.uuidF
       existing <- abstractDao.get(List(labworkFilter(labworkId), userFilter(studentId)), atomic = false)
       result <- if (existing.isEmpty)
-        abstractDao.createMany(ReportCardService.evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).map(_.map(_.toUniqueEntity)).jsonResult
+        abstractDao.createMany(evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).map(_.map(_.toUniqueEntity)).jsonResult
       else
         Future.successful(preconditionFailed(s"$student was already evaluated: ${Json.toJson(existing)}. delete those first before continuing with explicit evaluation."))
     } yield result
@@ -99,7 +99,7 @@ final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, v
       cards <- reportCardEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
       existing <- abstractDao.get(List(labworkFilter(labworkId)), atomic = false)
 
-      evaluated = ReportCardService.evaluateDeltas(cards.toList, patterns.toList, existing.toList)
+      evaluated = evaluateDeltas(cards.toList, patterns.toList, existing.toList)
       _ <- if (persistence)
         abstractDao.createOrUpdateMany(evaluated)
       else

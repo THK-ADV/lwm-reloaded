@@ -13,14 +13,24 @@ sealed trait ScheduleEntryLike extends UniqueEntity {
   def start: LocalTime
   def end: LocalTime
   def date: LocalDate
+  def groupId: UUID
+  def roomId: UUID
 }
 
 case class ScheduleEntry(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: UUID, id: UUID = UUID.randomUUID) extends ScheduleEntryLike {
   override def labworkId = labwork
+
+  override def groupId = group
+
+  override def roomId = room
 }
 
 case class ScheduleEntryAtom(labwork: LabworkAtom, start: LocalTime, end: LocalTime, date: LocalDate, room: Room, supervisor: Set[User], group: Group, id: UUID) extends ScheduleEntryLike {
   override def labworkId = labwork.id
+
+  override def groupId = group.id
+
+  override def roomId = room.id
 }
 
 case class ScheduleEntryProtocol(labwork: UUID, start: LocalTime, end: LocalTime, date: LocalDate, room: UUID, supervisor: Set[UUID], group: UUID)

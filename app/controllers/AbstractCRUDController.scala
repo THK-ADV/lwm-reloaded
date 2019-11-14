@@ -47,7 +47,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
       protocol <- Future.fromTry(parseJson(request)(reads))
       dbModel = toDbModel(protocol, id)
       result <- action(dbModel)
-      atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+      atomic = isAtomic(default = false)
       lwmModel <- if (atomic)
         abstractDao.getSingle(result.id, atomic)
       else
@@ -94,8 +94,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     } yield makeTableFilter(attribute, values.head)).toList
   }
 
-  def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { request =>
-    val atomic = extractAttributes(request.queryString)._2.atomic
+  def get(id: String, secureContext: SecureContext = contextFrom(Get)) = secureContext asyncAction { implicit request =>
+    val atomic = isAtomic(default = true)
 
     (for {
       uuid <- id.uuidF

@@ -64,6 +64,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
     bind(classOf[DatabaseMigrator]).to(classOf[DatabaseMigratorImpl]).in(classOf[Singleton])
     bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
+    bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {

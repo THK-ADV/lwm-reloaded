@@ -2,6 +2,8 @@ package controllers.helper
 
 import java.sql.Timestamp
 
+import play.api.mvc.{AnyContent, Request}
+
 import scala.collection.Map
 import scala.util.Try
 
@@ -60,5 +62,9 @@ trait AttributeFilter {
 
   protected final def valueOf(queryString: Map[String, Seq[String]])(attribute: String): Option[String] = {
     queryString.get(attribute).flatMap(_.headOption)
+  }
+
+  protected final def isAtomic(default: Boolean)(implicit request: Request[AnyContent]): Boolean = {
+    extractAttributes(request.queryString, defaultAtomic = default)._2.atomic
   }
 }

@@ -12,7 +12,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service.TimetableService
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object TimetableController {
@@ -65,12 +65,18 @@ final class TimetableController @Inject()(
     get(id, NonSecureBlock)(request)
   }
 
-  def removeBlacklistFrom(course: String, timetableId: String, blacklistId: String) = restrictedContext(course)(Delete) asyncAction { _ =>
+  def removeBlacklistFrom(course: String, timetableId: String, blacklistId: String) = restrictedContext(course)(Delete) asyncAction { implicit request =>
     (for {
       tid <- timetableId.uuidF
       bid <- blacklistId.uuidF
       timetable <- TimetableService.removeBlacklistFromTimetable(blacklistDao, abstractDao)(bid, tid)
-    } yield timetable).jsonResult
+      atomic = isAtomic(default = true)
+      tt <- if (atomic)
+        abstractDao.getSingle(timetable._1.id, atomic)
+      else
+        Future.successful(Some(timetable._1))
+      if tt.isDefined
+    } yield tt.get).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
