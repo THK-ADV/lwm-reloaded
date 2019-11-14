@@ -21,12 +21,12 @@ object AssignmentEntryController {
 
 @Singleton
 final class AssignmentEntryController @Inject()(
-  cc: ControllerComponents,
-  val authorityDao: AuthorityDao,
-  val service: AssignmentEntryService,
-  val securedAction: SecurityActionChain,
-  implicit val ctx: ExecutionContext
-) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
+                                                 cc: ControllerComponents,
+                                                 val authorityDao: AuthorityDao,
+                                                 val service: AssignmentEntryService,
+                                                 val securedAction: SecurityActionChain,
+                                                 implicit val ctx: ExecutionContext
+                                               ) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
   import models.Role._
 
@@ -44,6 +44,22 @@ final class AssignmentEntryController @Inject()(
     case Delete => SecureBlock(restrictionId, List(CourseManager))
     case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+  }
+
+  def takeover(course: String) = restrictedContext(course)(Create) asyncAction { request =>
+    val result = for {
+      json <- Future.fromTry(unwrap(request))
+      srcId = uuid(json.\("srcLabwork"))
+      destId = uuid(json.\("destLabwork"))
+      created <- service.takeover(srcId, destId)
+      atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
+      entries <- if (atomic)
+        service.getManyAtomic(created.map(_.id).toList)
+      else
+        Future.successful(created)
+    } yield entries
+
+    result.created
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
