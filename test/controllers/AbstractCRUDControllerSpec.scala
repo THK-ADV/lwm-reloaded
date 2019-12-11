@@ -32,6 +32,7 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
     dao,
     app.injector.instanceOf(classOf[AuthorityDao]),
     app.injector.instanceOf(classOf[SecurityActionChain]),
+    app.injector.instanceOf(classOf[ExecutionContext]),
   )
 
   val items = (0 until 10).map(i => FakeDb(i.toString, i)).toList

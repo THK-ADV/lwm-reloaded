@@ -56,7 +56,8 @@ class FakeAbstractCRUDController @Inject()(
   val cc: ControllerComponents,
   val abstractDao: FakeAbstractDao,
   val authorityDao: AuthorityDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[FakeProtocol, FakeTable, FakeDb, FakeModel](cc) {
   override implicit protected def writes: Writes[FakeModel] = Json.writes[FakeModel]
 
