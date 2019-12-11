@@ -10,8 +10,8 @@ import slick.jdbc.PostgresProfile.api.Table
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
-trait Read[Protocol, T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
-  self: Core[Protocol, T, DbModel, LwmModel]
+trait Read[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity] {
+  self: Core[_, T, DbModel, LwmModel]
     with SecureControllerContext
     with ResultOps
     with JsonWrites[LwmModel]

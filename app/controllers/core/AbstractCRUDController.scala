@@ -12,7 +12,7 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
   cc: ControllerComponents
 ) extends AbstractController(cc)
   with Core[Protocol, T, DbModel, LwmModel]
-  with Read[Protocol, T, DbModel, LwmModel]
+  with Read[T, DbModel, LwmModel]
   with Create[Protocol, T, DbModel, LwmModel]
   with Delete[Protocol, T, DbModel, LwmModel]
   with Update[Protocol, T, DbModel, LwmModel]

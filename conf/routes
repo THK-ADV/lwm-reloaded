@@ -145,6 +145,9 @@ GET           /courses/:c/assignmentEntries                                    c
 GET           /courses/:c/assignmentEntries/:id                                controllers.assignment.AssignmentEntryController.getFrom(c, id)
 DELETE        /courses/:c/assignmentEntries/:id                                controllers.assignment.AssignmentEntryController.invalidateFrom(c, id)
 
+# AssignmentType
+GET           /courses/:c/assignmentTypes                                      controllers.assignment.AssignmentTypeController.all(c)
+
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()
 GET           /users                                                           controllers.UserController.all()
