@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryDb, ReportCardEntryTable}
@@ -13,6 +14,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service._
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 object ReportCardEntryController {
@@ -28,13 +30,13 @@ final class ReportCardEntryController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
   val service: ReportCardEntryService,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
   with TimeRangeTableFilter[ReportCardEntryTable] {
 
   import controllers.ReportCardEntryController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ReportCardEntryLike] = ReportCardEntryLike.writes
 

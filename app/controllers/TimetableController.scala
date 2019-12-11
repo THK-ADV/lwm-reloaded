@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{TimetableDb, TimetableTable}
 import javax.inject.{Inject, Singleton}
@@ -28,8 +29,9 @@ final class TimetableController @Inject()(
   val blacklistDao: BlacklistDao,
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
-)
-  extends AbstractCRUDController[TimetableProtocol, TimetableTable, TimetableDb, TimetableLike](cc) {
+) extends AbstractCRUDController[TimetableProtocol, TimetableTable, TimetableDb, TimetableLike](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[TimetableLike] = TimetableLike.writes
 

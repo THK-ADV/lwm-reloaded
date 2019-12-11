@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import dao.helper.TableFilter
 import database.{ReportCardEvaluationDb, ReportCardEvaluationTable}
@@ -12,7 +13,7 @@ import play.api.libs.json._
 import play.api.mvc.{AnyContent, ControllerComponents, Request, Result}
 import security.SecurityActionChain
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object ReportCardEvaluationController {
@@ -29,14 +30,21 @@ object ReportCardEvaluationController {
 }
 
 @Singleton
-final class ReportCardEvaluationController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationDao, val reportCardEntryDao: ReportCardEntryDao, val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
+final class ReportCardEvaluationController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEvaluationDao,
+  val reportCardEntryDao: ReportCardEntryDao,
+  val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+)
   extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
 
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
   import service.ReportCardEvaluationService._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   def get(student: String) = contextFrom(Get) asyncAction { request =>
     all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))

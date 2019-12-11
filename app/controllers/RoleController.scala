@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao.{AuthorityDao, RoleDao}
 import database.{RoleDb, RoleTable}
 import javax.inject.{Inject, Singleton}
@@ -11,6 +12,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object RoleController {
@@ -24,8 +26,11 @@ final class RoleController @Inject()(
   cc: ControllerComponents,
   val abstractDao: RoleDao,
   val authorityDao: AuthorityDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[Role, RoleTable, RoleDb, Role](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[Role] = Role.writes
 

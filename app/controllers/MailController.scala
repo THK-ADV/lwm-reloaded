@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import controllers.helper.{JsonParser, ResultOps, SecureControllerContext, Secured}
+import controllers.helper.{RawJsonParser, ResultOps, SecureControllerContext, Secured}
 import dao.{AuthorityDao, LabworkDao, ReportCardEntryDao}
 import javax.inject.{Inject, Singleton}
 import models.LabworkAtom
@@ -27,7 +27,7 @@ class MailController @Inject()(
 ) extends AbstractController(cc)
   with Secured
   with SecureControllerContext
-  with JsonParser
+  with RawJsonParser
   with ResultOps {
 
   private case class SimpleMailProtocol(subject: String, body: String, bcc: Seq[String])

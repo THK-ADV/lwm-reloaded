@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import dao.helper.TableFilter
@@ -14,7 +15,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object GroupController {
@@ -24,13 +25,18 @@ object GroupController {
 }
 
 @Singleton
-final class GroupController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: GroupDao, val labworkApplicationDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[GroupProtocol, GroupTable, GroupDb, GroupLike](cc)
+final class GroupController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: GroupDao,
+  val labworkApplicationDao: LabworkApplicationDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[GroupProtocol, GroupTable, GroupDb, GroupLike](cc)
     with GroupingStrategyAttributeFilter {
 
   import controllers.GroupController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[GroupLike] = GroupLike.writes
 

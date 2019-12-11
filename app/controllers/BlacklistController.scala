@@ -3,6 +3,7 @@ package controllers
 import java.util.UUID
 
 import controllers.BlacklistController.BlacklistRangeCreationRequest
+import controllers.core.AbstractCRUDController
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{BlacklistDb, BlacklistTable}
@@ -15,7 +16,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service.BlacklistApiService
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object BlacklistController {
@@ -26,11 +27,17 @@ object BlacklistController {
 }
 
 @Singleton
-final class BlacklistController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: BlacklistDao, val blacklistService: BlacklistApiService, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[BlacklistProtocol, BlacklistTable, BlacklistDb, Blacklist](cc)
+final class BlacklistController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: BlacklistDao,
+  val blacklistService: BlacklistApiService,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[BlacklistProtocol, BlacklistTable, BlacklistDb, Blacklist](cc)
     with TimeRangeTableFilter[BlacklistTable] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[Blacklist] = Blacklist.writes
 

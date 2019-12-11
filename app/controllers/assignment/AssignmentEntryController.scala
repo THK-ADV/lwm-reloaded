@@ -2,7 +2,7 @@ package controllers.assignment
 
 import java.util.UUID
 
-import controllers.AbstractCRUDController
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{AssignmentEntryDb, AssignmentEntryTable}
 import javax.inject.{Inject, Singleton}
@@ -30,6 +30,7 @@ final class AssignmentEntryController @Inject()(
 ) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
   import models.Role._
+  import controllers.core.DBFilterOps._
 
   override protected val abstractDao: AbstractDao[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] = service.dao
 

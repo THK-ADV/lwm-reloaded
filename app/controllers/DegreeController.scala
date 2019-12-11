@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{DegreeDb, DegreeTable}
 import javax.inject.{Inject, Singleton}
@@ -12,6 +13,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object DegreeController {
@@ -20,8 +22,15 @@ object DegreeController {
 }
 
 @Singleton
-final class DegreeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: DegreeDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[DegreeProtocol, DegreeTable, DegreeDb, Degree](cc) {
+final class DegreeController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: DegreeDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[DegreeProtocol, DegreeTable, DegreeDb, Degree](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(EmployeeRole, StudentRole))

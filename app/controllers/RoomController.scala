@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao.{AuthorityDao, RoomDao}
 import database.{RoomDb, RoomTable}
 import javax.inject.{Inject, Singleton}
@@ -12,6 +13,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object RoomController {
@@ -19,8 +21,15 @@ object RoomController {
 }
 
 @Singleton
-final class RoomController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: RoomDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[RoomProtocol, RoomTable, RoomDb, Room](cc) {
+final class RoomController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: RoomDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[RoomProtocol, RoomTable, RoomDb, Room](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[Room] = Room.writes
 

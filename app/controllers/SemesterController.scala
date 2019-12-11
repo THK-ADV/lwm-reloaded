@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{SemesterDb, SemesterTable}
 import javax.inject.{Inject, Singleton}
@@ -12,6 +13,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object SemesterController {
@@ -26,8 +28,15 @@ object SemesterController {
 }
 
 @Singleton
-final class SemesterController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: SemesterDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[SemesterProtocol, SemesterTable, SemesterDb, Semester](cc) {
+final class SemesterController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: SemesterDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[SemesterProtocol, SemesterTable, SemesterDb, Semester](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[Semester] = Semester.writes
 

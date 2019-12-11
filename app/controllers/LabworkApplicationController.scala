@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{LabworkApplicationDb, LabworkApplicationTable}
 import javax.inject.{Inject, Singleton}
@@ -27,6 +28,8 @@ final class LabworkApplicationController @Inject()(
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[LabworkApplicationLike] = LabworkApplicationLike.writes
 

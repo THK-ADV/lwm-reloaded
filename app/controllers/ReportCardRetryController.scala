@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable}
@@ -13,6 +14,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 object ReportCardRetryController {
@@ -24,11 +26,17 @@ object ReportCardRetryController {
 }
 
 @Singleton
-final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc)
+final class ReportCardRetryController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardRetryDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc)
     with TimeRangeTableFilter[ReportCardRetryTable] {
 
   import controllers.ReportCardRetryController._
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ReportCardRetryLike] = ReportCardRetryLike.writes
 

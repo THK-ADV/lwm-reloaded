@@ -3,6 +3,7 @@ package controllers
 import java.sql.Timestamp
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao.{AbstractDao, AuthorityDao}
 import database.UniqueTable
 import javax.inject.Inject
