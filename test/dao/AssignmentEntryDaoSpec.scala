@@ -20,7 +20,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
 
     (0 until number).map { i =>
       val id = UUID.randomUUID
-      val ts = types.take(nextInt(types.size - 1) + 1).map(t => AssignmentEntryTypeDb(id, t.entryType))
+      val ts = types.take(nextInt(types.size - 1) + 1).map(t => AssignmentTypeDb(id, t.entryType))
       AssignmentEntryDb(labwork.id, i, i.toString, ts, i, id = id)
     }.toSet
   }
@@ -37,7 +37,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
     dbEntity.copy(index = 1)
 
   override protected val validUpdateOnDbEntity: AssignmentEntryDb =
-    dbEntity.copy(label = "new label", types = Set(AssignmentEntryTypeDb(dbEntity.id, "foo")))
+    dbEntity.copy(label = "new label", types = Set(AssignmentTypeDb(dbEntity.id, "foo")))
 
   override protected val dbEntities: List[AssignmentEntryDb] = labworks.slice(1, 6).tail.zipWithIndex map {
     case (labwork, i) => AssignmentEntryDb(labwork.id, i, i.toString, Set.empty, i)
@@ -64,8 +64,8 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
   override protected def update(toUpdate: List[AssignmentEntryDb]): List[AssignmentEntryDb] = {
     toUpdate.map { chosen =>
       chosen.copy(types = chosen.types.drop(1) ++ Set(
-        AssignmentEntryTypeDb(chosen.id, "type 1"),
-        AssignmentEntryTypeDb(chosen.id, "type 2")
+        AssignmentTypeDb(chosen.id, "type 1"),
+        AssignmentTypeDb(chosen.id, "type 2")
       ))
     }
   }
@@ -75,7 +75,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
       labworks.find(_.id == dbModel.labwork).get.toUniqueEntity,
       dbModel.index,
       dbModel.label,
-      dbModel.types.map(t => AssignmentEntryType(t.entryType)),
+      dbModel.types.map(t => AssignmentEntryType(t.label)),
       dbModel.duration,
       dbModel.id
     )

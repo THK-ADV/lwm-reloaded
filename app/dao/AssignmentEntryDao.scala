@@ -28,7 +28,7 @@ trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEnt
 
   override val tableQuery = TableQuery[AssignmentEntryTable]
 
-  val assignmentEntryTypeQuery: TableQuery[AssignmentEntryTypeTable] = TableQuery[AssignmentEntryTypeTable]
+  val assignmentEntryTypeQuery: TableQuery[AssignmentTypeTable] = TableQuery[AssignmentTypeTable]
 
   def withSameLabworkAs(id: UUID): DBIOAction[Seq[AssignmentEntryDb], NoStream, Effect.Read] = {
     for {
@@ -61,7 +61,7 @@ trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEnt
       .map(_.groupBy(_._1._1.id).map {
         case (id, dependencies) =>
           val ((entry, labwork), _) = dependencies.find(_._1._1.id == id).get
-          val types = dependencies.flatMap(_._2).map(e => AssignmentEntryType(e.entryType)).toSet
+          val types = dependencies.flatMap(_._2).map(e => AssignmentEntryType(e.label)).toSet
 
           build(entry, labwork, types)
       }.toSeq)

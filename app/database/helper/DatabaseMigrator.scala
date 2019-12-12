@@ -159,7 +159,7 @@ trait DatabaseMigrator extends Core with DatabaseTables {
   private def toAssignmentPlanEntries(labwork: UUID, entries: List[(Int, String, Set[String], Int)]) = entries.map {
     case (index, label, types, duration) =>
       val id = UUID.randomUUID
-      AssignmentEntryDb(labwork, index, label, types.map(AssignmentEntryTypeDb(id, _)), duration, id = id)
+      AssignmentEntryDb(labwork, index, label, types.map(t => AssignmentTypeDb(id, t, UUID.randomUUID)), duration, id = id)
   }
 
   private def toTimetables(labwork: UUID, entries: Set[TimetableEntry0], start: LocalDate, id: UUID) = {

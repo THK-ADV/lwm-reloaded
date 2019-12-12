@@ -3,7 +3,7 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.{AssignmentEntry, AssignmentEntryType, UniqueDbEntity, UniqueEntity}
+import models.{AssignmentEntry, AssignmentEntryType, UniqueDbEntity}
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
@@ -25,6 +25,6 @@ class AssignmentEntryTable(tag: Tag) extends Table[AssignmentEntryDb](tag, "ASSI
   }
 }
 
-case class AssignmentEntryDb(labwork: UUID, index: Int, label: String, types: Set[AssignmentEntryTypeDb], duration: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toUniqueEntity = AssignmentEntry(labwork, index, label, types.map(t => AssignmentEntryType(t.entryType)), duration, id)
+case class AssignmentEntryDb(labwork: UUID, index: Int, label: String, types: Set[AssignmentTypeDb], duration: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
+  override def toUniqueEntity = AssignmentEntry(labwork, index, label, types.map(t => AssignmentEntryType(t.label)), duration, id)
 }

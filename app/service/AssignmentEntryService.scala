@@ -3,7 +3,7 @@ package service
 import java.util.UUID
 
 import dao.AssignmentEntryDao
-import database.{AssignmentEntryDb, AssignmentEntryTypeDb}
+import database.{AssignmentEntryDb, AssignmentTypeDb}
 import javax.inject.Inject
 import models.{AssignmentEntry, AssignmentEntryAtom, AssignmentEntryLike, AssignmentEntryProtocol}
 
@@ -22,7 +22,7 @@ trait AssignmentEntryService {
         destLabwork,
         e.index,
         e.label,
-        e.types.map(t => AssignmentEntryTypeDb(id, t.entryType)),
+        e.types.map(t => AssignmentTypeDb(id, t.entryType, UUID.randomUUID)),
         e.duration,
         id = id
       )
@@ -89,7 +89,7 @@ trait AssignmentEntryService {
       p.labwork,
       index,
       p.label,
-      p.types.map(t => AssignmentEntryTypeDb(uuid, t.entryType)),
+      p.types.map(t => AssignmentTypeDb(uuid, t.entryType, UUID.randomUUID)),
       p.duration,
       id = uuid
     )
