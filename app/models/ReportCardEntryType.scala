@@ -11,20 +11,6 @@ case class ReportCardEntryTypeProtocol(entryType: String, bool: Option[Boolean],
 
 object ReportCardEntryType {
 
-  lazy val all = Set(Attendance, Certificate, Bonus, Supplement)
-
-  lazy val Attendance = ReportCardEntryType(AssignmentEntryType.Attendance.entryType)
-
-  lazy val Certificate = ReportCardEntryType(AssignmentEntryType.Certificate.entryType)
-
-  lazy val Bonus = ReportCardEntryType(AssignmentEntryType.Bonus.entryType)
-
-  lazy val Supplement = ReportCardEntryType(AssignmentEntryType.Supplement.entryType)
-
-  lazy val BooleanBasedTypes = List(Attendance, Certificate, Supplement)
-
-  lazy val IntBasedTypes = List(Bonus)
-
   implicit val writes: Writes[ReportCardEntryType] = (
     (JsPath \ "entryType").write[String] and
       (JsPath \ "bool").write[Option[Boolean]] and

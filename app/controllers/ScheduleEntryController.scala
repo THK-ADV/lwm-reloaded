@@ -10,6 +10,7 @@ import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, CourseAssistant, CourseEmployee, CourseManager}
 import models._
+import models.assignment.AssignmentEntry
 import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}

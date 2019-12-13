@@ -3,6 +3,7 @@ package database
 import java.util.UUID
 
 import models.UniqueEntity
+import models.assignment.AssignmentType
 import slick.jdbc.PostgresProfile.api._
 
 class AssignmentTypeTable(tag: Tag) extends Table[AssignmentTypeDb](tag, "ASSIGNMENT_TYPE") with UniqueTable with LabelTable {
@@ -14,3 +15,10 @@ class AssignmentTypeTable(tag: Tag) extends Table[AssignmentTypeDb](tag, "ASSIGN
 }
 
 case class AssignmentTypeDb(assignmentEntry: UUID, label: String, id: UUID) extends UniqueEntity
+
+object AssignmentTypeDb {
+
+  implicit def convert(db: AssignmentTypeDb): Option[AssignmentType] = AssignmentType(db.label)
+
+  implicit def convertM(xs: Set[AssignmentTypeDb])(implicit f: AssignmentTypeDb => Option[AssignmentType]): Set[AssignmentType] = xs.flatMap(f.apply)
+}

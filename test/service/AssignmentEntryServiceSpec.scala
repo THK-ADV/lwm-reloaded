@@ -4,28 +4,33 @@ import java.util.UUID
 
 import base.{AsyncSpec, TestBaseDefinition}
 import dao.AssignmentEntryDao
-import models.{AssignmentEntry, AssignmentEntryProtocol, AssignmentEntryType}
+import models.assignment.{AssignmentEntry, AssignmentEntryProtocol, AssignmentType, AssignmentTypeProtocol}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.WordSpec
 import org.scalatest.mockito.MockitoSugar
+import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.Future
 
 class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with MockitoSugar with AsyncSpec {
 
-  import slick.jdbc.PostgresProfile.api._
+  import AssignmentType._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val dao = mock[AssignmentEntryDao]
   val service = new AssignmentEntryServiceImpl(dao, global)
 
+  implicit def convert(x: AssignmentType): AssignmentTypeProtocol = AssignmentTypeProtocol(identifier(x))
+
+  implicit def convert(x: AssignmentTypeProtocol): AssignmentType = AssignmentType(x.label).get
+
   "A AssignmentEntryServiceSpec" should {
 
     "create a fresh assignment entry" in {
       val id = UUID.randomUUID
-      val p = AssignmentEntryProtocol(UUID.randomUUID, "A", Set(AssignmentEntryType.Attendance), 1)
+      val p = AssignmentEntryProtocol(UUID.randomUUID, "A", Set(Attendance), 1)
       val i = 0
 
       when(dao.count(any(), any(), any()))
@@ -38,14 +43,14 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
         e.label shouldBe p.label
         e.index shouldBe 0
         e.duration shouldBe 1
-        e.types shouldBe p.types
+        e.types shouldBe p.types.map(convert)
         e.id shouldBe id
       }
     }
 
     "create yet another assignment entry" in {
       val id = UUID.randomUUID
-      val p = AssignmentEntryProtocol(UUID.randomUUID, "A", Set(AssignmentEntryType.Attendance), 1)
+      val p = AssignmentEntryProtocol(UUID.randomUUID, "A", Set(Attendance), 1)
       val i = 3
 
       when(dao.count(any(), any(), any()))
@@ -58,7 +63,7 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
         e.label shouldBe p.label
         e.index shouldBe 3
         e.duration shouldBe 1
-        e.types shouldBe p.types
+        e.types shouldBe p.types.map(convert)
         e.id shouldBe id
       }
     }
@@ -108,10 +113,10 @@ class AssignmentEntryServiceSpec extends WordSpec with TestBaseDefinition with M
     "invalidate an assignment entry and adjust all indices afterwards" in {
       val labwork = UUID.randomUUID
       val all = List(
-        AssignmentEntryProtocol(labwork, "A", Set(AssignmentEntryType.Attendance), 1),
-        AssignmentEntryProtocol(labwork, "B", Set(AssignmentEntryType.Attendance), 1),
-        AssignmentEntryProtocol(labwork, "C", Set(AssignmentEntryType.Attendance), 1),
-        AssignmentEntryProtocol(labwork, "D", Set(AssignmentEntryType.Attendance), 1)
+        AssignmentEntryProtocol(labwork, "A", Set(Attendance), 1),
+        AssignmentEntryProtocol(labwork, "B", Set(Attendance), 1),
+        AssignmentEntryProtocol(labwork, "C", Set(Attendance), 1),
+        AssignmentEntryProtocol(labwork, "D", Set(Attendance), 1)
       ).zipWithIndex.map(t => service.dbModel(t._1, t._2, None))
       val toDelete = all(1)
       val others = service.reorderIndices(all, toDelete.id)

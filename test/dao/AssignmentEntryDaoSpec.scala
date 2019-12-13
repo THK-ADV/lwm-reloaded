@@ -3,7 +3,7 @@ package dao
 import java.util.UUID
 
 import database._
-import models._
+import models.assignment.{AssignmentEntryAtom, AssignmentEntryLike}
 import play.api.inject.guice.GuiceableModule
 import slick.jdbc.PostgresProfile.api._
 
@@ -12,18 +12,16 @@ import scala.util.Random.nextInt
 final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] {
 
   import AbstractDaoSpec._
+  import AssignmentTypeDb._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def assignmentEntries(labwork: LabworkDb, number: Int) = {
-    val types = AssignmentEntryType.all
-
+  def assignmentEntries(labwork: LabworkDb, number: Int): Set[AssignmentEntryDb] =
     (0 until number).map { i =>
       val id = UUID.randomUUID
-      val ts = types.take(nextInt(types.size - 1) + 1).map(t => AssignmentTypeDb(id, t.entryType))
+      val ts = (1 until nextInt(3)).map(i => AssignmentTypeDb(id, i.toString, UUID.randomUUID)).toSet
       AssignmentEntryDb(labwork.id, i, i.toString, ts, i, id = id)
     }.toSet
-  }
 
   override protected def name: String = "assignmentEntry"
 
@@ -37,7 +35,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
     dbEntity.copy(index = 1)
 
   override protected val validUpdateOnDbEntity: AssignmentEntryDb =
-    dbEntity.copy(label = "new label", types = Set(AssignmentTypeDb(dbEntity.id, "foo")))
+    dbEntity.copy(label = "new label", types = Set(AssignmentTypeDb(dbEntity.id, "foo", UUID.randomUUID)))
 
   override protected val dbEntities: List[AssignmentEntryDb] = labworks.slice(1, 6).tail.zipWithIndex map {
     case (labwork, i) => AssignmentEntryDb(labwork.id, i, i.toString, Set.empty, i)
@@ -64,8 +62,8 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
   override protected def update(toUpdate: List[AssignmentEntryDb]): List[AssignmentEntryDb] = {
     toUpdate.map { chosen =>
       chosen.copy(types = chosen.types.drop(1) ++ Set(
-        AssignmentTypeDb(chosen.id, "type 1"),
-        AssignmentTypeDb(chosen.id, "type 2")
+        AssignmentTypeDb(chosen.id, "type 1", UUID.randomUUID),
+        AssignmentTypeDb(chosen.id, "type 2", UUID.randomUUID)
       ))
     }
   }
@@ -75,7 +73,7 @@ final class AssignmentEntryDaoSpec extends AbstractExpandableDaoSpec[AssignmentE
       labworks.find(_.id == dbModel.labwork).get.toUniqueEntity,
       dbModel.index,
       dbModel.label,
-      dbModel.types.map(t => AssignmentEntryType(t.label)),
+      dbModel.types,
       dbModel.duration,
       dbModel.id
     )

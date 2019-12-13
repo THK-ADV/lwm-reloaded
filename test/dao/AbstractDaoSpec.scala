@@ -58,9 +58,9 @@ object AbstractDaoSpec {
 
   def randomGroup = groups(nextInt(maxGroups))
 
-  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
+  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = Set.empty[ReportCardEntryTypeDb]/*takeSomeOf(ReportCardEntryType.all).map { entryType =>
     ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
-  }.toSet
+  }.toSet*/ // TODO
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
 

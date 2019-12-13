@@ -6,7 +6,7 @@ import controllers.core.AbstractCRUDController
 import dao._
 import database.{AssignmentEntryDb, AssignmentEntryTable}
 import javax.inject.{Inject, Singleton}
-import models.{AssignmentEntryLike, AssignmentEntryProtocol}
+import models.assignment.{AssignmentEntryLike, AssignmentEntryProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -29,8 +29,8 @@ final class AssignmentEntryController @Inject()(
   implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
-  import models.Role._
   import controllers.core.DBFilterOps._
+  import models.Role._
 
   override protected val abstractDao: AbstractDao[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] = service.dao
 

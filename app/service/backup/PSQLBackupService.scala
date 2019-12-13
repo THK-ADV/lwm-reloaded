@@ -6,6 +6,7 @@ import java.util.UUID
 import dao._
 import javax.inject.Inject
 import models._
+import models.assignment.AssignmentEntryLike
 import org.apache.commons.io.FileUtils
 import org.joda.time.LocalDateTime
 import play.api.libs.json.{JsValue, Json, Writes}

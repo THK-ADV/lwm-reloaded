@@ -7,6 +7,7 @@ import dao._
 import dao.helper.Core
 import database._
 import models._
+import models.assignment.AssignmentType
 import org.joda.time.{LocalDate, LocalTime}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
@@ -156,10 +157,21 @@ trait DatabaseMigrator extends Core with DatabaseTables {
   private def toAppDb(a: LabworkApplication) =
     LabworkApplicationDb(a.labwork, a.applicant, a.friends, a.lastModified.timestamp, id = a.id)
 
-  private def toAssignmentPlanEntries(labwork: UUID, entries: List[(Int, String, Set[String], Int)]) = entries.map {
-    case (index, label, types, duration) =>
-      val id = UUID.randomUUID
-      AssignmentEntryDb(labwork, index, label, types.map(t => AssignmentTypeDb(id, t, UUID.randomUUID)), duration, id = id)
+  private def toAssignmentPlanEntries(labwork: UUID, entries: List[(Int, String, Set[String], Int)]) = {
+    def assignmentType(s: String): AssignmentType = s match {
+      case "Anwesenheitspflichtig" => AssignmentType.Attendance
+      case "Testat" => AssignmentType.SimpleCertificate
+      case "Bonus" => AssignmentType.Bonus
+    }
+
+    def createAssignmentTypeDb(id: UUID)(t: AssignmentType) =
+      AssignmentTypeDb(id, AssignmentType.identifier(t), UUID.randomUUID)
+
+    entries.map {
+      case (index, label, types, duration) =>
+        val id = UUID.randomUUID
+        AssignmentEntryDb(labwork, index, label, types.map((assignmentType _ andThen createAssignmentTypeDb(id))), duration, id = id)
+    }
   }
 
   private def toTimetables(labwork: UUID, entries: Set[TimetableEntry0], start: LocalDate, id: UUID) = {

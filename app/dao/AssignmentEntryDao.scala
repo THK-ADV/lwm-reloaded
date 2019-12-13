@@ -5,7 +5,7 @@ import java.util.UUID
 import dao.helper.{DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
-import models._
+import models.assignment.{AssignmentEntry, AssignmentEntryAtom, AssignmentEntryLike, AssignmentType}
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -25,6 +25,7 @@ object AssignmentEntryDao extends TableFilter[AssignmentEntryTable] {
 trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] {
 
   import AssignmentEntryDao._
+  import AssignmentTypeDb._
 
   override val tableQuery = TableQuery[AssignmentEntryTable]
 
@@ -50,7 +51,7 @@ trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEnt
   }
 
   private def collectDependencies(query: Query[AssignmentEntryTable, AssignmentEntryDb, Seq])
-    (build: (AssignmentEntryDb, LabworkDb, Set[AssignmentEntryType]) => AssignmentEntryLike) = {
+    (build: (AssignmentEntryDb, LabworkDb, Set[AssignmentTypeDb]) => AssignmentEntryLike) = {
     val mandatory = for {
       q <- query
       l <- q.labworkFk
@@ -61,7 +62,7 @@ trait AssignmentEntryDao extends AbstractDao[AssignmentEntryTable, AssignmentEnt
       .map(_.groupBy(_._1._1.id).map {
         case (id, dependencies) =>
           val ((entry, labwork), _) = dependencies.find(_._1._1.id == id).get
-          val types = dependencies.flatMap(_._2).map(e => AssignmentEntryType(e.label)).toSet
+          val types = dependencies.flatMap(_._2).toSet
 
           build(entry, labwork, types)
       }.toSeq)

@@ -9,6 +9,7 @@ import database.{GroupDb, LabworkApplicationDb, ReportCardEntryDb, ReportCardEnt
 import database.helper.{DatabaseMigrator, LdapUserStatus}
 import javax.inject.Singleton
 import models._
+import models.assignment.AssignmentEntry
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json._
 import play.api.mvc._
