@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{LabworkDb, LabworkTable}
 import javax.inject.{Inject, Singleton}
@@ -12,6 +13,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object LabworkController {
@@ -24,10 +26,16 @@ object LabworkController {
 }
 
 @Singleton
-final class LabworkController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: LabworkDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[LabworkProtocol, LabworkTable, LabworkDb, LabworkLike](cc) {
+final class LabworkController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: LabworkDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[LabworkProtocol, LabworkTable, LabworkDb, LabworkLike](cc) {
 
   import controllers.LabworkController._
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[LabworkLike] = LabworkLike.writes
 

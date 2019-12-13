@@ -1,11 +1,12 @@
-package controllers
+package controllers.assignment
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{AssignmentEntryDb, AssignmentEntryTable}
 import javax.inject.{Inject, Singleton}
-import models.{AssignmentEntryLike, AssignmentEntryProtocol}
+import models.assignment.{AssignmentEntryLike, AssignmentEntryProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
@@ -21,13 +22,14 @@ object AssignmentEntryController {
 
 @Singleton
 final class AssignmentEntryController @Inject()(
-                                                 cc: ControllerComponents,
-                                                 val authorityDao: AuthorityDao,
-                                                 val service: AssignmentEntryService,
-                                                 val securedAction: SecurityActionChain,
-                                                 implicit val ctx: ExecutionContext
-                                               ) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val service: AssignmentEntryService,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
+  import controllers.core.DBFilterOps._
   import models.Role._
 
   override protected val abstractDao: AbstractDao[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] = service.dao
@@ -103,8 +105,7 @@ final class AssignmentEntryController @Inject()(
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    import controllers.AssignmentEntryController.courseAttribute
-
+    import AssignmentEntryController.courseAttribute
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 

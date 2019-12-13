@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
@@ -12,6 +13,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object CourseController {
@@ -22,10 +24,15 @@ object CourseController {
 }
 
 @Singleton
-final class CourseController @Inject()(cc: ControllerComponents, val abstractDao: CourseDao, val authorityDao: AuthorityDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[CourseProtocol, CourseTable, CourseDb, CourseLike](cc) {
+final class CourseController @Inject()(
+  cc: ControllerComponents,
+  val abstractDao: CourseDao,
+  val authorityDao: AuthorityDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[CourseProtocol, CourseTable, CourseDb, CourseLike](cc) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[CourseLike] = CourseLike.writes
 

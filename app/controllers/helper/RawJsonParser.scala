@@ -8,7 +8,7 @@ import play.api.mvc.{AnyContent, Request}
 
 import scala.util.{Failure, Success, Try}
 
-trait JsonParser {
+trait RawJsonParser {
 
   implicit def listReads[R](implicit r: Reads[R]): Reads[List[R]] = Reads.list[R](r)
 

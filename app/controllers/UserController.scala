@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
@@ -13,6 +14,7 @@ import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -24,10 +26,15 @@ object UserController {
 }
 
 @Singleton
-final class UserController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
+final class UserController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: UserDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[User] = User.writes
 

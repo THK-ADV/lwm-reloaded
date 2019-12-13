@@ -21,7 +21,7 @@ trait DatabaseTables {
     TableQuery[LabworkApplicationFriendTable],
     TableQuery[RoomTable],
     TableQuery[AssignmentEntryTable],
-    TableQuery[AssignmentEntryTypeTable],
+    TableQuery[AssignmentTypeTable],
     TableQuery[BlacklistTable],
     TableQuery[TimetableTable],
     TableQuery[TimetableBlacklistTable],

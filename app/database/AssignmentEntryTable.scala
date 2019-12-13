@@ -3,7 +3,8 @@ package database
 import java.sql.Timestamp
 import java.util.UUID
 
-import models.{AssignmentEntry, AssignmentEntryType, UniqueDbEntity, UniqueEntity}
+import models.UniqueDbEntity
+import models.assignment.AssignmentEntry
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
@@ -25,16 +26,9 @@ class AssignmentEntryTable(tag: Tag) extends Table[AssignmentEntryDb](tag, "ASSI
   }
 }
 
-class AssignmentEntryTypeTable(tag: Tag) extends Table[AssignmentEntryTypeDb](tag, "ASSIGNMENT_ENTRY_TYPE") with UniqueTable with EntryTypeTable {
-  def assignmentEntry = column[UUID]("ASSIGNMENT_ENTRY")
+case class AssignmentEntryDb(labwork: UUID, index: Int, label: String, types: Set[AssignmentTypeDb], duration: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
 
-  def assignmentEntryFk = foreignKey("ASSIGNMENT_ENTRIES_fkey", assignmentEntry, TableQuery[AssignmentEntryTable])(_.id)
+  import AssignmentTypeDb._
 
-  override def * = (assignmentEntry, entryType, id) <> ((AssignmentEntryTypeDb.apply _).tupled, AssignmentEntryTypeDb.unapply)
+  override def toUniqueEntity = AssignmentEntry(labwork, index, label, types, duration, id)
 }
-
-case class AssignmentEntryDb(labwork: UUID, index: Int, label: String, types: Set[AssignmentEntryTypeDb], duration: Int, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toUniqueEntity = AssignmentEntry(labwork, index, label, types.map(t => AssignmentEntryType(t.entryType)), duration, id)
-}
-
-case class AssignmentEntryTypeDb(assignmentEntry: UUID, entryType: String, id: UUID = UUID.randomUUID) extends UniqueEntity

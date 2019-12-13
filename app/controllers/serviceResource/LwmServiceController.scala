@@ -1,6 +1,6 @@
 package controllers.serviceResource
 
-import controllers.helper.{JsonParser, ResultOps, SecureControllerContext, Secured}
+import controllers.helper.{RawJsonParser, ResultOps, SecureControllerContext, Secured}
 import dao.{AuthorityDao, LwmServiceDao}
 import database.GroupMembership
 import javax.inject.Inject
@@ -23,7 +23,7 @@ final class LwmServiceController @Inject()(
     with Secured
     with SecureControllerContext
     with ResultOps
-    with JsonParser {
+    with RawJsonParser {
 
   private implicit def membershipWrites: OWrites[GroupMembership] = Json.writes[GroupMembership]
 

@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
@@ -13,6 +14,7 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 object ReportCardRescheduledController {
@@ -24,11 +26,17 @@ object ReportCardRescheduledController {
 }
 
 @Singleton
-final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
+final class ReportCardRescheduledController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardRescheduledDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
     with TimeRangeTableFilter[ReportCardRescheduledTable] {
 
   import controllers.ReportCardRescheduledController._
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ReportCardRescheduledLike] = ReportCardRescheduledLike.writes
 

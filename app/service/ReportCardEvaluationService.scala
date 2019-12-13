@@ -52,6 +52,7 @@ object ReportCardEvaluationService {
   }
 
   def evaluateExplicit(student: UUID, labwork: UUID): List[ReportCardEvaluationDb] = { // TODO replace with dynamic PostgresReportCardEntryType.all when needed
-    ReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
+    ??? // TODO
+    // ReportCardEntryType.all.map(t => partialEval(student, labwork)(t.entryType, boolean = true, EvaluatedExplicit)).toList
   }
 }

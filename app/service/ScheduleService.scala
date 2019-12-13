@@ -3,6 +3,7 @@ package service
 import java.util.UUID
 
 import javax.inject.Inject
+import models.assignment.AssignmentEntry
 import models.{genesis, _}
 import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import models.helper.TimetableDateEntry

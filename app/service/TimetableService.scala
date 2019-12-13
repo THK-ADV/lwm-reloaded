@@ -4,6 +4,7 @@ import java.util.UUID
 
 import dao.{BlacklistDao, TimetableDao}
 import database.{BlacklistDb, TimetableDb}
+import models.assignment.AssignmentEntry
 import models.helper.{TimetableDateEntry, Weekday}
 import models.{helper, _}
 import org.joda.time.{Interval, LocalDate, Weeks}

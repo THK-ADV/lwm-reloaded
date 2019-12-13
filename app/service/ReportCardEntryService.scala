@@ -7,6 +7,7 @@ import dao.{ReportCardEntryDao, ScheduleEntryDao}
 import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardRescheduledDb, ReportCardRetryDb}
 import javax.inject.Inject
 import models._
+import models.assignment.AssignmentEntry
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -38,7 +39,7 @@ object ReportCardEntryService {
           s.start,
           s.end,
           s.room.id,
-          a.types.map(t => ReportCardEntryType(t.entryType)),
+          Set.empty/*a.types.map(t => ReportCardEntryType(t.label))*/, // TODO
           a.index
         )
       }

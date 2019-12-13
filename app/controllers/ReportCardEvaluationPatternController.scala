@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable}
 import javax.inject.{Inject, Singleton}
@@ -11,6 +12,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object ReportCardEvaluationPatternController {
@@ -20,8 +22,15 @@ object ReportCardEvaluationPatternController {
 }
 
 @Singleton
-final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
+final class ReportCardEvaluationPatternController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEvaluationPatternDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
+
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ReportCardEvaluationPattern] = ReportCardEvaluationPattern.writes
 

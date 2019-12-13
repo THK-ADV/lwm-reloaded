@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import controllers.helper.{GroupingStrategyAttributeFilter, TimeRangeTableFilter}
 import dao._
 import dao.helper.TableFilter
@@ -9,6 +10,7 @@ import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{Admin, CourseAssistant, CourseEmployee, CourseManager}
 import models._
+import models.assignment.AssignmentEntry
 import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
@@ -16,7 +18,7 @@ import security.SecurityActionChain
 import service._
 import utils.Gen
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object ScheduleEntryController {
@@ -43,14 +45,14 @@ final class ScheduleEntryController @Inject()(
   val timetableDao: TimetableDao,
   val labworkApplicationDao: LabworkApplicationDao,
   val groupDao: GroupDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
   with GroupingStrategyAttributeFilter
   with TimeRangeTableFilter[ScheduleEntryTable] {
 
   import controllers.ScheduleEntryController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ScheduleEntryLike] = ScheduleEntryLike.writes
 

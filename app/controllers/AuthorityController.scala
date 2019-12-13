@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao._
 import database.{AuthorityDb, AuthorityTable}
 import javax.inject.{Inject, Singleton}
@@ -11,6 +12,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import security.SecurityActionChain
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object AuthorityController {
@@ -22,10 +24,14 @@ object AuthorityController {
 }
 
 @Singleton
-final class AuthorityController @Inject()(cc: ControllerComponents, val abstractDao: AuthorityDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[AuthorityProtocol, AuthorityTable, AuthorityDb, AuthorityLike](cc) {
+final class AuthorityController @Inject()(
+  cc: ControllerComponents,
+  val abstractDao: AuthorityDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[AuthorityProtocol, AuthorityTable, AuthorityDb, AuthorityLike](cc) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[AuthorityLike] = AuthorityLike.writes
 

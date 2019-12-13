@@ -47,7 +47,7 @@ trait DashboardDao extends Core {
       sortedUpcomingCards = if (sortedByDate) upcomingCards sortBy (s => (s.date, s.start)) else upcomingCards
 
       allEvals <- reportCardEvaluationDao get(List(idFilter(student.id)), atomic = true) // must be atomic
-      passedEvals = allEvals map (_.asInstanceOf[ReportCardEvaluationAtom]) groupBy (_.labwork) map {
+      passedEvals = Seq.empty /*allEvals map (_.asInstanceOf[ReportCardEvaluationAtom]) groupBy (_.labwork) map {
         case (labwork, evals) =>
           val boolBased = evals filter (e => ReportCardEntryType.BooleanBasedTypes.exists(_.entryType == e.label))
           val intBased = evals filter (e => ReportCardEntryType.IntBasedTypes.exists(_.entryType == e.label))
@@ -56,13 +56,13 @@ trait DashboardDao extends Core {
           val bonus = intBased map (_.int) sum
 
           (labwork.course.abbreviation, labwork.semester.abbreviation, passed, bonus)
-      }
+      }*/ // TODO
 
       groupsQuery = groupDao filterValidOnly (g => g.labwork.inSet(labworkIds) && g.contains(student.id)) map (g => (g.label, g.labwork))
       groupLabels <- db run groupsQuery.result
       groups = groupLabels.map(g => (g._1, labworks.find(_.id == g._2).get))
 
-    } yield StudentDashboard(student, StudentStatus, semester, labworks, lapps, groups, sortedUpcomingCards, allEvals, passedEvals toSeq)
+    } yield StudentDashboard(student, StudentStatus, semester, labworks, lapps, groups, sortedUpcomingCards, allEvals, passedEvals)
   }
 
   private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {

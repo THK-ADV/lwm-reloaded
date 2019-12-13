@@ -4,7 +4,8 @@ import java.util.UUID
 
 import base.{DateGenerator, TestBaseDefinition}
 import models.genesis.ScheduleEntryGen
-import models._
+import models.{assignment, _}
+import models.assignment.{AssignmentEntry, AssignmentType}
 import org.joda.time.LocalDate
 import org.scalatest.WordSpec
 
@@ -107,12 +108,13 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
     val labwork = UUID.randomUUID
 
     (0 until n)
-      .map(i => AssignmentEntry(labwork, i, i.toString, assignmentEntryTypes(), 1, UUID.randomUUID))
+      .map(i => assignment.AssignmentEntry(labwork, i, i.toString, assignmentEntryTypes(), 1, UUID.randomUUID))
       .toList
   }
 
-  private def assignmentEntryTypes(): Set[AssignmentEntryType] = {
+  private def assignmentEntryTypes(): Set[AssignmentType] = {
     import scala.util.Random.nextInt
-    AssignmentEntryType.all.take(1 + nextInt(AssignmentEntryType.all.size - 1))
+    ??? // TODO
+    //AssignmentEntryType.all.take(1 + nextInt(AssignmentEntryType.all.size - 1))
   }
 }

@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.core.AbstractCRUDController
 import dao.{AuthorityDao, ReportCardEntryTypeDao}
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
 import javax.inject.{Inject, Singleton}
@@ -11,14 +12,19 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 @Singleton
-class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryTypeDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
+class ReportCardEntryTypeController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEntryTypeDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import controllers.core.DBFilterOps._
 
   override protected implicit val writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
 

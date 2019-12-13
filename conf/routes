@@ -138,12 +138,15 @@ PUT           /courses/:c/reportCardEvaluationPatterns/:id                     c
 DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     controllers.ReportCardEvaluationPatternController.invalidateFrom(c, id)
 
 # AssignmentEntries
-POST          /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.createFrom(c)
-PUT           /courses/:c/assignmentEntries/takeover                           controllers.AssignmentEntryController.takeover(c)
-PUT           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.updateFrom(c, id)
-GET           /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.allFrom(c)
-GET           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.getFrom(c, id)
-DELETE        /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.invalidateFrom(c, id)
+POST          /courses/:c/assignmentEntries                                    controllers.assignment.AssignmentEntryController.createFrom(c)
+PUT           /courses/:c/assignmentEntries/takeover                           controllers.assignment.AssignmentEntryController.takeover(c)
+PUT           /courses/:c/assignmentEntries/:id                                controllers.assignment.AssignmentEntryController.updateFrom(c, id)
+GET           /courses/:c/assignmentEntries                                    controllers.assignment.AssignmentEntryController.allFrom(c)
+GET           /courses/:c/assignmentEntries/:id                                controllers.assignment.AssignmentEntryController.getFrom(c, id)
+DELETE        /courses/:c/assignmentEntries/:id                                controllers.assignment.AssignmentEntryController.invalidateFrom(c, id)
+
+# AssignmentType
+GET           /courses/:c/assignmentTypes                                      controllers.assignment.AssignmentTypeController.all(c)
 
 # Users 
 # POST          /users                                                           controllers.UserControllerPostgres.create()

@@ -4,11 +4,12 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import com.google.inject.Inject
-import controllers.helper.{JsonParser, ResultOps}
+import controllers.helper.{RawJsonParser, ResultOps}
 import database.{GroupDb, LabworkApplicationDb, ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardEvaluationDb, ReportCardRescheduledDb, UserDb}
 import database.helper.{DatabaseMigrator, LdapUserStatus}
 import javax.inject.Singleton
 import models._
+import models.assignment.AssignmentEntry
 import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.json._
 import play.api.mvc._
@@ -26,7 +27,7 @@ final class MigrationController @Inject()(
   val system: ActorSystem,
   implicit val ctx: ExecutionContext
 ) extends AbstractController(cc)
-  with JsonParser
+  with RawJsonParser
   with ResultOps {
 
   import slick.jdbc.PostgresProfile.api._

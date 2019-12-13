@@ -42,7 +42,7 @@ class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
       val now = LocalDate.now
 
       val semesters = (now.getYear - 5 until now.getYear + 5).map { i =>
-        createSemester(i.toString, i, 1, 1, i, 11, 30, i, 12, 1)
+        createSemester(i.toString, i, 1, 1, i, 12, 31, i, 12, 1)
       }.toList
 
       async(dao.createMany(semesters))(_ => Unit)
