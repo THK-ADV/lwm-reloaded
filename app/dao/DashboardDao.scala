@@ -20,26 +20,38 @@ trait DashboardDao extends Core {
       user <- userDao.getSingleWhere(_.systemId === systemId, atomic = atomic)
       board <- user match {
         case Some(student: StudentLike) =>
-          studentDashboard(student, semester)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
+          studentDashboard(student, semester, atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
         case Some(employee) =>
-          employeeDashboard(employee, semester)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
+          employeeDashboard(employee, semester, atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
         case None =>
           throw new Throwable(s"no user found for $systemId")
       }
     } yield board
   }
 
-  private def studentDashboard(student: StudentLike, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {
+  private def studentDashboard(
+    student: StudentLike,
+    semester: Semester,
+    atomic: Boolean,
+    numberOfUpcomingElements: Option[Int],
+    entriesSinceNow: Boolean,
+    sortedByDate: Boolean
+  ) = {
     import dao.helper.TableFilter.{idFilter, sinceFilter}
 
     for {
-      labworks <- labworkDao get(List(idFilter(semester.id), idFilter(student.enrollmentId)), atomic = atomic)
+      labworks <- labworkDao.getByQuery(
+        labworkDao filterValidOnly (l => l.semester === semester.id && l.degree === student.enrollmentId),
+        atomic = atomic
+      )
       labworkIds = labworks map (_.id)
 
-      lappQuery = labworkApplicationDao filterValidOnly (app => app.labwork.inSet(labworkIds) && app.user === student.id)
-      lapps <- labworkApplicationDao getByQuery(lappQuery, atomic = atomic)
+      lapps <- labworkApplicationDao.getByQuery(
+        labworkApplicationDao filterValidOnly (app => app.labwork.inSet(labworkIds) && app.user === student.id),
+        atomic = atomic
+      )
 
-      allCardsQuery = reportCardEntryDao filterValidOnly (e => e.labwork.inSet(labworkIds) && e.user === student.id)
+      allCardsQuery = reportCardEntryDao filterValidOnly (e => e.labwork.inSet(labworkIds) && e.user === student.id && e.labworkFk.filter(_.published).exists)
       sinceNowFilter = if (entriesSinceNow) Option apply sinceFilter(LocalDate.now.sqlDate) else Option.empty
       cardsSinceNowQuery = sinceNowFilter.fold(allCardsQuery)(f => allCardsQuery.filter(f.apply))
       cards <- reportCardEntryDao getByQuery(cardsSinceNowQuery, atomic = atomic)
@@ -65,7 +77,14 @@ trait DashboardDao extends Core {
     } yield StudentDashboard(student, StudentStatus, semester, labworks, lapps, groups, sortedUpcomingCards, allEvals, passedEvals toSeq)
   }
 
-  private def employeeDashboard(employee: User, semester: Semester)(atomic: Boolean, numberOfUpcomingElements: Option[Int], entriesSinceNow: Boolean, sortedByDate: Boolean) = {
+  private def employeeDashboard(
+    employee: User,
+    semester: Semester,
+    atomic: Boolean,
+    numberOfUpcomingElements: Option[Int],
+    entriesSinceNow: Boolean,
+    sortedByDate: Boolean
+  ) = {
     import dao.helper.TableFilter.{sinceFilter, userFilter}
 
     for {
