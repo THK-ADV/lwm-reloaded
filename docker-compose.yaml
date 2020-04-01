@@ -36,8 +36,10 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - nginx_vol:/etc/cert/
+      - nginx_cert_vol:/etc/cert
+      - nginx_config_vol:/etc/nginx/conf.d
 
 volumes:
   psql_vol:
-  nginx_vol:
+  nginx_cert_vol:
+  nginx_config_vol:
