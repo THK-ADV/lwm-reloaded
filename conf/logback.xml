@@ -30,7 +30,7 @@
     <!-- uncomment for logging each sql statement -->
     <!--<logger name="slick.jdbc" level="DEBUG"/>-->
 
-    <logger name="akka" level="INFO"/>
+    <logger name="akka" level="DEBUG"/>
     <logger name="service.actor.BackupServiceActor" level="INFO"/>
     <!--<logger name="services.blacklist.BlacklistServiceActor" level="INFO"/>-->
     <logger name="services.actor.SemesterCreationActor" level="INFO"/>

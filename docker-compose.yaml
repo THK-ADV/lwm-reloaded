@@ -5,8 +5,8 @@ services:
     container_name: lwm-db
     image: postgres:11.4
     restart: always
-    ports:
-      - 5432:5432
+    expose:
+      - 5432
     environment:
       POSTGRES_USER: ${USERNAME}
       POSTGRES_PASSWORD: ${PASSWORD}
@@ -18,8 +18,8 @@ services:
     container_name: lwm-backend
     image: lwm-backend
     restart: always
-    ports:
-      - 9000:9000
+    expose:
+      - 9000
     environment:
       LWM_DB_URL: jdbc:postgresql://psql:5432/${USERNAME}
       LWM_DB_USER: ${USERNAME}
@@ -28,5 +28,16 @@ services:
     depends_on:
       - psql
 
+  frontend:
+    container_name: lwm-frontend
+    image: lwm-frontend
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - nginx_vol:/etc/cert/
+
 volumes:
   psql_vol:
+  nginx_vol:
