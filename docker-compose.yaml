@@ -18,8 +18,8 @@ services:
     container_name: lwm-backend
     image: lwm-backend
     restart: always
-    expose:
-      - 9000
+    ports:
+      - 9000:9000
     environment:
       LWM_DB_URL: jdbc:postgresql://psql:5432/${USERNAME}
       LWM_DB_USER: ${USERNAME}
