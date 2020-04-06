@@ -5,7 +5,7 @@ import java.util.UUID
 import dao._
 import database.{CourseDb, CourseTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.{Admin, EmployeeRole, God, StudentRole}
+import models.Role.{Admin, CourseManager, EmployeeRole, God, StudentRole}
 import models.{Course, CourseLike, CourseProtocol}
 import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
@@ -41,7 +41,7 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     ).created
   }
 
-  override def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { implicit request =>
+  override def update(id: String, secureContext: SecureContext) = restrictedContext(id)(Update) asyncAction { implicit request =>
     val uuid = UUID.fromString(id)
 
     parsed(
@@ -81,7 +81,10 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     case _ => PartialSecureBlock(List(Admin))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case _ => PartialSecureBlock(List(God))
+  }
 
   private def toCourseDb(c: Course) = CourseDb(c.label, c.description, c.abbreviation, c.lecturer, c.semesterIndex, id = c.id)
 }
