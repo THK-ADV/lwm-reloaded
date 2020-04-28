@@ -58,8 +58,8 @@ object ReportCardEntryService {
     }
   }
 
-  def extendReportCardEntries(descriptions: List[ReportCardEntryDescription], cards: Seq[ReportCardEntry]): Seq[ReportCardEntry] = {
-    def makeCard(student: UUID, labwork: UUID)(e: ReportCardEntryDescription, index: Int) = ReportCardEntry(
+  def liftDescriptions(descriptions: List[ReportCardEntryDescription], student: UUID, labwork: UUID, currentMaxIndex: Int): Seq[ReportCardEntry] = {
+    def go(e: ReportCardEntryDescription, index: Int) = ReportCardEntry(
       student,
       labwork,
       e.label,
@@ -71,15 +71,8 @@ object ReportCardEntryService {
       index,
     )
 
-    cards.headOption match {
-      case Some(card) =>
-        val makeCardF = makeCard(card.student, card.labwork) _
-        val lastIndex = cards.maxBy(_.assignmentIndex).assignmentIndex + 1 // TODO extended ReportCards should not have an index, since they are on top or special in some way
-
-        cards ++ descriptions.zipWithIndex.map(d => makeCardF(d._1, lastIndex + d._2))
-      case None =>
-        cards
-    }
+    val lastIndex = currentMaxIndex + 1 // TODO extended ReportCards should not have an index, since they are on top or special in some way
+    descriptions.zipWithIndex.map(d => go(d._1, lastIndex + d._2))
   }
 }
 
@@ -105,15 +98,23 @@ trait ReportCardEntryService {
     } yield reportCardEntries
   }
 
-  def extendBy(labwork: UUID, descriptions: List[ReportCardEntryDescription]): Future[Map[UUID, Seq[ReportCardEntry]]] = {
+  def extendBy(labwork: UUID, descriptions: List[ReportCardEntryDescription], atomic: Boolean): Future[Seq[ReportCardEntryLike]] = {
+    def lift(cards: Seq[ReportCardEntry]): Seq[ReportCardEntry] = cards.headOption match {
+      case Some(card) =>
+        liftDescriptions(descriptions, card.student, card.labwork, cards.maxBy(_.assignmentIndex).assignmentIndex)
+      case None =>
+        Nil
+    }
+
     for {
       cards <- dao.get(List(TableFilter.labworkFilter(labwork)), atomic = false)
-      extended = cards
+      lifted = cards
         .map(_.asInstanceOf[ReportCardEntry])
         .groupBy(_.student)
-        .mapValues(cards => extendReportCardEntries(descriptions, cards))
-      _ <- dao.createMany(extended.values.flatten.map(toDb).toList)
-    } yield extended
+        .flatMap(a => lift(a._2))
+      _ <- dao.createMany(lifted.map(toDb).toList)
+      all <- dao.get(List(TableFilter.labworkFilter(labwork)), atomic)
+    } yield all
   }
 
   private def toDb(x: ReportCardEntry): ReportCardEntryDb = ReportCardEntryDb(

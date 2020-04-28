@@ -91,14 +91,15 @@ final class ReportCardEntryController @Inject()(
       .jsonResult
   }
 
-  def extend(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
+  def extend(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
     import utils.date.DateTimeJsonFormatter.{readLocalDate, readLocalTime}
     implicit val reads: Reads[ReportCardEntryDescription] = Json.reads[ReportCardEntryDescription]
 
     (for {
       descriptions <- Future.fromTry(parseJsonArray(request)(listReads(reads)))
       labworkId <- labwork.uuidF
-      cards <- service.extendBy(labworkId, descriptions)
+      atomic = isAtomic(default = true)
+      cards <- service.extendBy(labworkId, descriptions, atomic)
     } yield cards).jsonResult
   }
 
