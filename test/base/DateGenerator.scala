@@ -27,16 +27,8 @@ trait DateGenerator {
     .withSecondOfMinute(second)
     .withMillisOfSecond(milliSeconds)
 
-  def dates: Gen[DateTime] = {
-    for {
-      year <- Gen.choose(1970, 2019)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, 28)
-      hour <- Gen.choose(1, 23)
-      minute <- Gen.choose(1, 59)
-      second <- Gen.choose(1, 59)
-    } yield dateTime(year, month, day, hour, minute, second, 0)
-  }
+  def dates: Gen[DateTime] =
+    Gen.choose(0, DateTime.now.toInstant.getMillis).map(DateTime.now().withMillis(_))
 
   def randomLocalDate = dates.sample.get.toLocalDate
 
