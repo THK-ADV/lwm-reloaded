@@ -141,6 +141,9 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
               l.start shouldBe r.start
               l.end shouldBe r.end
               l.room shouldBe r.room
+              l.entryTypes.size shouldBe r.entryTypes.size
+              l.entryTypes.map(_.entryType) shouldBe r.entryTypes.map(_.entryType)
+              l.entryTypes.forall(t => t.bool.isEmpty && t.int == 0) shouldBe true
           }
       }
     }
