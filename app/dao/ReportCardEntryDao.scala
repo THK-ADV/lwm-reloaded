@@ -2,6 +2,7 @@ package dao
 
 import java.util.UUID
 
+import dao.helper.TableFilter.{labworkFilter, userFilter}
 import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
 import javax.inject.Inject
@@ -9,7 +10,7 @@ import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.TableQuery
+import slick.lifted.{Rep, TableQuery}
 import utils.date.DateTimeOps._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -111,6 +112,19 @@ trait ReportCardEntryDao
 
     db.run(action)
   }
+
+  def withEntryTypes(preds: List[ReportCardEntryTable => Rep[Boolean]]): DBIOAction[Seq[ReportCardEntryDb], NoStream, Effect.Read] =
+    filterBy(preds)
+      .joinLeft(entryTypeQuery)
+      .on(_.id === _.reportCardEntry)
+      .result
+      .map(_.groupBy(_._1.id).map {
+        case (id, dep) =>
+          val (entry, _) = dep.find(_._1.id == id).get
+          val entryTypes = dep.flatMap(_._2)
+
+          entry.copy(entryTypes = entryTypes.toSet)
+      }.toSeq)
 
   override protected def existsQuery(entity: ReportCardEntryDb): Query[ReportCardEntryTable, ReportCardEntryDb, Seq] = {
     filterBy(List(
