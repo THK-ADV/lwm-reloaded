@@ -34,16 +34,13 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
   override protected implicit val reads: Reads[LabworkProtocol] = LabworkProtocol.reads
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(StudentRole))
-    case GetAll => PartialSecureBlock(List(StudentRole))
+    case Get | GetAll => PartialSecureBlock(List(StudentRole))
     case _ => PartialSecureBlock(List(God))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
-    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Create | Update => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll | Get => SecureBlock(restrictionId, List(CourseAssistant, CourseManager, CourseEmployee))
     case Delete => PartialSecureBlock(List(God))
   }
 
