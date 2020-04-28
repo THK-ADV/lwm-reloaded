@@ -8,11 +8,13 @@ import database.{ReportCardEntryDb, ReportCardEntryTable}
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
+import service.ReportCardEntryService.ReportCardEntryDescription
 import service._
 
+import scala.concurrent.Future
 import scala.util.Try
 
 object ReportCardEntryController {
@@ -87,6 +89,17 @@ final class ReportCardEntryController @Inject()(
       .zip(labwork.uuidF)
       .flatMap(t => service.dao.numberOfStudents(t._1, t._2))
       .jsonResult
+  }
+
+  def extend(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
+    import utils.date.DateTimeJsonFormatter.{readLocalDate, readLocalTime}
+    implicit val reads: Reads[ReportCardEntryDescription] = Json.reads[ReportCardEntryDescription]
+
+    (for {
+      descriptions <- Future.fromTry(parseJsonArray(request)(listReads(reads)))
+      labworkId <- labwork.uuidF
+      cards <- service.extendBy(labworkId, descriptions)
+    } yield cards).jsonResult
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

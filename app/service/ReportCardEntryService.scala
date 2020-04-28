@@ -7,11 +7,15 @@ import dao.{ReportCardEntryDao, ScheduleEntryDao}
 import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardRescheduledDb, ReportCardRetryDb}
 import javax.inject.Inject
 import models._
+import org.joda.time.{LocalDate, LocalTime}
+import scalaz.NonEmptyList
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object ReportCardEntryService {
+
+  case class ReportCardEntryDescription(label: String, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, entryTypes: Set[String])
 
   def generateReportCardEntries(scheduleEntries: Seq[ScheduleEntryAtom], assignmentEntries: Seq[AssignmentEntry]): Try[Seq[ReportCardEntry]] = {
     def sortedAppointments(student: UUID): Seq[ScheduleEntryAtom] = {
@@ -53,6 +57,30 @@ object ReportCardEntryService {
         Failure(new Throwable(s"can't distribute ${assignmentEntries.size} assignment entries over ${scheduleEntries.size} schedule entries"))
     }
   }
+
+  def extendReportCardEntries(descriptions: List[ReportCardEntryDescription], cards: Seq[ReportCardEntry]): Seq[ReportCardEntry] = {
+    def makeCard(student: UUID, labwork: UUID)(e: ReportCardEntryDescription, index: Int) = ReportCardEntry(
+      student,
+      labwork,
+      e.label,
+      e.date,
+      e.start,
+      e.end,
+      e.room,
+      e.entryTypes.map(ReportCardEntryType(_)),
+      index,
+    )
+
+    cards.headOption match {
+      case Some(card) =>
+        val makeCardF = makeCard(card.student, card.labwork) _
+        val lastIndex = cards.maxBy(_.assignmentIndex).assignmentIndex + 1 // TODO extended ReportCards should not have an index, since they are on top or special in some way
+
+        cards ++ descriptions.zipWithIndex.map(d => makeCardF(d._1, lastIndex + d._2))
+      case None =>
+        cards
+    }
+  }
 }
 
 trait ReportCardEntryService {
@@ -75,6 +103,17 @@ trait ReportCardEntryService {
       reportCardEntries <- Future.fromTry(generateReportCardEntries(scheduleEntries.map(_.asInstanceOf[ScheduleEntryAtom]), assignmentEntries.map(_.asInstanceOf[AssignmentEntry])))
       _ <- dao.createMany(reportCardEntries.map(toDb).toList)
     } yield reportCardEntries
+  }
+
+  def extendBy(labwork: UUID, descriptions: List[ReportCardEntryDescription]): Future[Map[UUID, Seq[ReportCardEntry]]] = {
+    for {
+      cards <- dao.get(List(TableFilter.labworkFilter(labwork)), atomic = false)
+      extended = cards
+        .map(_.asInstanceOf[ReportCardEntry])
+        .groupBy(_.student)
+        .mapValues(cards => extendReportCardEntries(descriptions, cards))
+      _ <- dao.createMany(extended.values.flatten.map(toDb).toList)
+    } yield extended
   }
 
   private def toDb(x: ReportCardEntry): ReportCardEntryDb = ReportCardEntryDb(

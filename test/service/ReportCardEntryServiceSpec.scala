@@ -5,7 +5,7 @@ import java.util.UUID
 import base.{DateGenerator, TestBaseDefinition}
 import models.genesis.ScheduleEntryGen
 import models._
-import org.joda.time.LocalDate
+import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
 final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition with DateGenerator {
@@ -84,6 +84,51 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
         (1, localDate(2019, 2, 2), localTime(9), localTime(10)),
         (2, localDate(2019, 3, 2), localTime(9), localTime(10))
       )
+    }
+
+    "not extend reportCardEntries if there are no cards" in {
+      val descriptions = List(ReportCardEntryDescription("", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("1")))
+      extendReportCardEntries(descriptions, Nil) shouldBe empty
+    }
+
+    "not extend reportCardEntries if there is nothing to extend" in {
+      val cards = List(
+        ReportCardEntry(UUID.randomUUID, UUID.randomUUID, "01", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set(ReportCardEntryType("01")), 0)
+      )
+
+      extendReportCardEntries(Nil, cards) shouldBe cards
+    }
+
+    "extend reportCardEntries by increasing assignmentIndex" in {
+      def isSame(x: ReportCardEntry, index: Int, label: String) =
+        x.label == label && x.assignmentIndex == index
+
+      val student = UUID.randomUUID
+      val labwork = UUID.randomUUID
+
+      val cards = List(
+        ReportCardEntry(student, labwork, "01", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set(ReportCardEntryType("01")), 0),
+        ReportCardEntry(student, labwork, "02", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set(ReportCardEntryType("02")), 1),
+      )
+
+      val descs = List(
+        ReportCardEntryDescription("1", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("1")),
+        ReportCardEntryDescription("2", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("2")),
+        ReportCardEntryDescription("3", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("3")),
+      )
+
+      val res = extendReportCardEntries(descs, cards)
+
+      res.size shouldBe 5
+      res.forall(_.student == student) shouldBe true
+      res.forall(_.labwork == labwork) shouldBe true
+
+      val sorted = res.sortBy(_.assignmentIndex)
+      isSame(sorted(0), 0, "01") shouldBe true
+      isSame(sorted(1), 1, "02") shouldBe true
+      isSame(sorted(2), 2, "1") shouldBe true
+      isSame(sorted(3), 3, "2") shouldBe true
+      isSame(sorted(4), 4, "3") shouldBe true
     }
   }
 
