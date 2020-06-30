@@ -48,7 +48,8 @@ lazy val scalazDependencies = Seq(
 
 lazy val lwmDependencies = Seq(
   "com.typesafe.play" %% "play-json" % "2.6.10",
-  "commons-io" % "commons-io" % "2.6"
+  "commons-io" % "commons-io" % "2.6",
+  "org.apache.poi" % "poi" % "4.1.2"
 )
 
 lazy val postgresDependencies = Seq(

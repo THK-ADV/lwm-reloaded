@@ -126,7 +126,7 @@ GET           /reportCardEvaluations/student/:s                                c
 POST          /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.createForStudent(c, l, s)
 GET           /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.allFrom(c, l)
-GET           /courses/:c/labworks/:l/reportCardEvaluations/preview            controllers.ReportCardEvaluationController.preview(c, l)
+GET           /courses/:c/labworks/:l/reportCardEvaluations/sheet              controllers.ReportCardEvaluationController.renderEvaluationSheet(c, l)
 PUT           /courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationController.updateFrom(c, l, id)
 DELETE        /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.invalidateFromLabwork(c, l)
 DELETE        /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.invalidateFromStudent(c, l, s)

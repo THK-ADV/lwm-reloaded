@@ -17,16 +17,22 @@ sealed trait ReportCardEvaluationLike extends UniqueEntity {
   def int: Int
 
   def labworkId: UUID
+
+  def studentId: UUID
 }
 
 case class ReportCardEvaluation(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike {
   override def labworkId = labwork
+
+  override def studentId = student
 }
 
 case class ReportCardEvaluationProtocol(student: UUID, labwork: UUID, label: String, bool: Boolean, int: Int)
 
 case class ReportCardEvaluationAtom(student: User, labwork: LabworkAtom, label: String, bool: Boolean, int: Int, lastModified: DateTime, id: UUID = UUID.randomUUID) extends ReportCardEvaluationLike {
   override def labworkId = labwork.id
+
+  override def studentId = student.id
 }
 
 object ReportCardEvaluation {
