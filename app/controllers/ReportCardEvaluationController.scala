@@ -128,16 +128,13 @@ final class ReportCardEvaluationController @Inject()(
 
     def footer() = SheetFooter("Generiert durch das Praktikumstool (https://praktikum.gm.fh-koeln.de)", showPageNumbers = true)
 
-    def hasPassed(evals: Seq[ReportCardEvaluationAtom]): List[ReportCardEvaluationAtom] = {
-      def go(evals: Seq[ReportCardEvaluationAtom]): Boolean = evals.foldLeft(true) {
-        case (acc, eval) => acc && eval.bool
-      }
+    def hasPassed(evals: Seq[ReportCardEvaluationAtom]): Map[UUID, Seq[ReportCardEvaluationAtom]] = {
+      evals.groupBy(_.student.id).filter(_._2.forall(_.bool))
+    }
 
-      evals
-        .groupBy(_.student.id)
-        .filter(t => go(t._2))
-        .map(_._2.head)
-        .toList
+    def merge(evals: Map[UUID, Seq[ReportCardEvaluationAtom]]): List[ReportCardEvaluationAtom] = {
+      import utils.date.DateTimeOps.dateTimeOrd
+      evals.map(t => t._2.maxBy(_.lastModified)).toList
     }
 
     def toContent(evals: List[ReportCardEvaluationAtom]): List[List[Row]] = evals
@@ -160,7 +157,7 @@ final class ReportCardEvaluationController @Inject()(
       allEvals <- whenNonEmpty(abstractDao.get(List(labworkFilter(labworkId))))(() => "no evaluations found")
       allEvals0 = allEvals.map(_.asInstanceOf[ReportCardEvaluationAtom])
       labwork = allEvals0.head.labwork
-      content = toContent(hasPassed(allEvals0))
+      content = (hasPassed _ andThen merge andThen toContent) (allEvals0)
       token = request.userToken if token.isDefined
       sheet = Sheet(labwork.degree.label, header(labwork), rowHeader(), content, signature(token.get), footer())
       res <- Future.fromTry(SheetService.createSheet(sheet))
