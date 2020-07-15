@@ -49,8 +49,8 @@ final class AssignmentEntryController @Inject()(
   def takeover(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     val result = for {
       json <- Future.fromTry(unwrap(request))
-      srcId = uuid(json.\("srcLabwork"))
-      destId = uuid(json.\("destLabwork"))
+      srcId <- Future.fromTry(asTry(uuid(json.\("srcLabwork"))))
+      destId <- Future.fromTry(asTry(uuid(json.\("destLabwork"))))
       created <- service.takeover(srcId, destId)
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
       entries <- if (atomic)

@@ -29,7 +29,7 @@ final class DateTimeOpsSpec extends WordSpec with TestBaseDefinition with DateGe
         val sqlTime = localTime.sqlTime
 
         sqlTime shouldEqual Time.valueOf(s"${localTime.getHourOfDay}:${localTime.getMinuteOfHour}:${localTime.getSecondOfMinute}")
-        sqlTime.localTime shouldEqual this.localTime(localTime.getHourOfDay, localTime.getMinuteOfHour, localTime.getSecondOfMinute, localTime.getMillisOfSecond)
+        sqlTime.localTime shouldEqual this.localTime(localTime.getHourOfDay, localTime.getMinuteOfHour, localTime.getSecondOfMinute, localTime.getMillisOfSecond).withMillisOfSecond(0)
       }
     }
 

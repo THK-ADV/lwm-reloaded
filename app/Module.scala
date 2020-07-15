@@ -3,7 +3,6 @@ import auth.{KeycloakAuthorization, OAuthAuthorization}
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import dao._
-import database.helper.{DatabaseMigrator, DatabaseMigratorImpl}
 import di._
 import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
@@ -62,7 +61,6 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[UserDao]).to(classOf[UserDaoImpl]).in(classOf[Singleton])
     bind(classOf[DashboardDao]).to(classOf[DashboardDaoImpl]).in(classOf[Singleton])
     bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
-    bind(classOf[DatabaseMigrator]).to(classOf[DatabaseMigratorImpl]).in(classOf[Singleton])
     bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
   }
