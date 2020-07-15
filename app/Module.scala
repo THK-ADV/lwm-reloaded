@@ -33,8 +33,6 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[KeycloakDeployment]).toProvider(classOf[KeycloakDeploymentProvider])
     bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
 
-    bind(classOf[SemesterService]).in(classOf[Singleton])
-
     bind(classOf[SecurityActionChain]).to(classOf[SecurityActionChainImpl]).in(classOf[Singleton])
   }
 

@@ -4,10 +4,11 @@ import java.util.GregorianCalendar
 
 import dao.SemesterDao
 import database.SemesterDb
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import org.joda.time.LocalDate
 import service.actor.NaturalDescribableYear
 
+@Singleton
 final class SemesterService @Inject()(private val semesterDao: SemesterDao) {
 
   def createSemester(year: NaturalDescribableYear) = (semesters _ andThen semesterDao.createManyPartial) (year)

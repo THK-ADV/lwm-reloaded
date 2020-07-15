@@ -164,5 +164,8 @@ PUT           /courses/:c/insertIntoGroup                                      c
 PUT           /courses/:c/removeFromGroup                                      controllers.serviceResource.LwmServiceController.removeStudentFromGroup(c)
 PUT           /courses/:c/moveToGroup                                          controllers.serviceResource.LwmServiceController.moveStudentToGroup(c)
 
+POST          /queries                                                         controllers.QueryController.performQuery
+GET           /queries                                                         controllers.QueryController.queryOptions
+
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)
