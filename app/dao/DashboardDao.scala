@@ -1,9 +1,10 @@
 package dao
 
 import dao.helper.Core
+import dao.helper.TableFilter.userFilter
 import database.helper.LdapUserStatus.{EmployeeStatus, StudentStatus}
 import javax.inject.Inject
-import models.{AuthorityAtom, Dashboard, EmployeeDashboard, ReportCardEntryType, ReportCardEvaluationAtom, Semester, StudentDashboard, StudentLike, User}
+import models._
 import org.joda.time.LocalDate
 import slick.jdbc.PostgresProfile.api._
 
@@ -37,7 +38,7 @@ trait DashboardDao extends Core {
     entriesSinceNow: Boolean,
     sortedByDate: Boolean
   ) = {
-    import dao.helper.TableFilter.{idFilter, sinceFilter}
+    import dao.helper.TableFilter.sinceFilter
 
     for {
       labworks <- labworkDao.getByQuery(
@@ -58,7 +59,7 @@ trait DashboardDao extends Core {
       upcomingCards = numberOfUpcomingElements.fold(cards)(n => cards.groupBy(_.labworkId).flatMap(_._2.take(n)).toSeq)
       sortedUpcomingCards = if (sortedByDate) upcomingCards sortBy (s => (s.date, s.start)) else upcomingCards
 
-      allEvals <- reportCardEvaluationDao get(List(idFilter(student.id)), atomic = true) // must be atomic
+      allEvals <- reportCardEvaluationDao get(List(userFilter(student.id)), atomic = true) // must be atomic
       passedEvals = allEvals map (_.asInstanceOf[ReportCardEvaluationAtom]) groupBy (_.labwork) map {
         case (labwork, evals) =>
           val boolBased = evals filter (e => ReportCardEntryType.BooleanBasedTypes.exists(_.entryType == e.label))
