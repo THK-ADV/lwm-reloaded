@@ -11,6 +11,7 @@ import security.{SecurityActionChain, SecurityActionChainImpl}
 import service._
 import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
@@ -101,6 +102,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
 
   private def bindDatabase(): Unit = {
     bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
+    bind(classOf[JdbcProfile]).toProvider(classOf[JdbcProfileProvider])
     bind(classOf[DatabaseCloseHook]).asEagerSingleton()
   }
 }
