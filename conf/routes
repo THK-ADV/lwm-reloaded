@@ -98,6 +98,7 @@ GET           /reportCardEntries/student/:s                                    c
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/reportCardEntries/extend                 controllers.ReportCardEntryController.extend(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
+GET           /courses/:c/rescheduleCandidates/semesters/:sid                  controllers.ReportCardEntryController.rescheduleCandidates(c, sid)
 GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)
 DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)

@@ -5,7 +5,9 @@ import java.util.UUID
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-sealed trait LabworkLike extends UniqueEntity
+sealed trait LabworkLike extends UniqueEntity {
+  def label: String
+}
 
 case class Labwork(label: String, description: String, semester: UUID, course: UUID, degree: UUID, subscribable: Boolean = false, published: Boolean = false, id: UUID = UUID.randomUUID) extends LabworkLike
 

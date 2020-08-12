@@ -8,7 +8,7 @@ import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardRescheduled
 import javax.inject.Inject
 import models._
 import org.joda.time.{LocalDate, LocalTime}
-import scalaz.NonEmptyList
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -78,7 +78,10 @@ object ReportCardEntryService {
 
 trait ReportCardEntryService {
 
+  val profile: JdbcProfile
+
   import ReportCardEntryService._
+  import profile.api._
   import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
 
   implicit def ctx: ExecutionContext
@@ -88,6 +91,19 @@ trait ReportCardEntryService {
   def scheduleEntryDao: ScheduleEntryDao
 
   def assignmentEntryService: AssignmentEntryService
+
+  def rescheduleCandidates(course: UUID, semester: UUID) = {
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
+
+    val query = (for {
+      x <- dao.filterValidOnly(x => x.memberOfCourse(course) && x.inSemester(semester))
+      r <- x.roomFk
+    } yield (x.date, x.start, x.end, r)).distinct
+
+    val action = query.result.map(_.map(x => (x._1.localDate, x._2.localTime, x._3.localTime, x._4.toUniqueEntity)))
+
+    dao.db.run(action)
+  }
 
   def generate(labwork: UUID): Future[Seq[ReportCardEntry]] = {
     for {
@@ -167,5 +183,6 @@ final class ReportCardEntryServiceImpl @Inject()(
   val ctx: ExecutionContext,
   val dao: ReportCardEntryDao,
   val scheduleEntryDao: ScheduleEntryDao,
-  val assignmentEntryService: AssignmentEntryService
+  val assignmentEntryService: AssignmentEntryService,
+  val profile: JdbcProfile
 ) extends ReportCardEntryService

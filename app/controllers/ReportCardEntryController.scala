@@ -14,7 +14,7 @@ import security.SecurityActionChain
 import service.ReportCardEntryService.ReportCardEntryDescription
 import service._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object ReportCardEntryController {
@@ -30,13 +30,13 @@ final class ReportCardEntryController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
   val service: ReportCardEntryService,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
   with TimeRangeTableFilter[ReportCardEntryTable] {
 
   import controllers.ReportCardEntryController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.date.DateTimeJsonFormatter._
 
   override protected implicit val writes: Writes[ReportCardEntryLike] = ReportCardEntryLike.writes
 
@@ -91,8 +91,22 @@ final class ReportCardEntryController @Inject()(
       .jsonResult
   }
 
+  def rescheduleCandidates(course: String, semester: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    (for {
+      cid <- course.uuidF
+      sid <- semester.uuidF
+      candidates <- service.rescheduleCandidates(cid, sid)
+    } yield candidates.map {
+      case (date, start, end, room) => Json.obj(
+        "date" -> date,
+        "start" -> start,
+        "end" -> end,
+        "room" -> room
+      )
+    }).jsonResult
+  }
+
   def extend(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
-    import utils.date.DateTimeJsonFormatter.{readLocalDate, readLocalTime}
     implicit val reads: Reads[ReportCardEntryDescription] = Json.reads[ReportCardEntryDescription]
 
     (for {

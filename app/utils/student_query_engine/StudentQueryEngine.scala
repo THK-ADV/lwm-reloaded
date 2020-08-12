@@ -46,7 +46,7 @@ final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
               ctx = ctx + Context.Semester(semesterId)
 
               table => {
-                val q = TableQuery[LabworkApplicationTable].filter(t => t.labworkFk.filter(_.semester === semesterId).exists).map(_.user)
+                val q = TableQuery[LabworkApplicationTable].filter(t => t.inSemester(semesterId)).map(_.user)
                 table.id.in(q)
               }
             case Key.Lastname => table => UserDao.lastnameFilter(value)(table)
@@ -72,7 +72,7 @@ final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
   private def queryAssignment(label: String, shouldPass: Boolean, ctx: Set[Context]): UserTable => Rep[Boolean] = table => {
     val initQ = ctx.foldLeft[ReportCardEntryTable => Rep[Boolean]](_ => true) {
       case (acc, Context.Course(id)) => table => acc(table) && table.memberOfCourse(id)
-      case (acc, Context.Semester(id)) => table => acc(table) && table.labworkFk.filter(_.semester === id).exists
+      case (acc, Context.Semester(id)) => table => acc(table) && table.inSemester(id)
       case (acc, Context.Labwork(id)) => table => acc(table) && table.labwork === id
     }
 
