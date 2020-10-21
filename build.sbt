@@ -1,10 +1,5 @@
-name := """lwm-reloaded"""
-
-maintainer := "Alexander Dobrynin <alexander.dobrynin@th-koeln.de>"
-
-version := "1.0-SNAPSHOT"
-
-resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+resolvers +=
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 lazy val scalazVersion = "7.1.12"
 lazy val scalatestVersion = "3.0.5"
@@ -15,8 +10,8 @@ lazy val commonSettings = Seq(
   name := "lwm-reloaded",
   version := "1.0",
   organization := "lwm",
-  version := "0.1.0",
-  scalaVersion := "2.12.6"
+  scalaVersion := "2.12.12",
+  maintainer := "alexander.dobrynin@th-koeln.de"
 )
 
 lazy val root = (project in file(".")).
