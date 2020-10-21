@@ -32,3 +32,6 @@ project/plugins/project/
 # docker
 .env
 docker
+
+# custom
+/conf/keycloak.json
