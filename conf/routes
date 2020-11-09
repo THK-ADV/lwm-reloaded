@@ -148,10 +148,10 @@ GET           /courses/:c/assignmentEntries/:id                                c
 DELETE        /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.invalidateFrom(c, id)
 
 # Users 
-# POST          /users                                                           controllers.UserControllerPostgres.create()
 GET           /users                                                           controllers.UserController.all()
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
 GET           /users/:id                                                       controllers.UserController.get(id)
+PUT           /users/:id                                                      controllers.AssignmentEntryController.update(id)
 
 # Mail
 POST          /courses/:c/mails                                                controllers.MailController.sendMailWithBody(c)

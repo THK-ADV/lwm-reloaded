@@ -25,18 +25,18 @@ object UserController {
 
 @Singleton
 final class UserController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
+  extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[User] = User.writes
 
-  override protected implicit val reads: Reads[UserProtocol] = UserProtocol.reads
+  override protected implicit val reads: Reads[StudentProtocol] = StudentProtocol.reads
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get => PartialSecureBlock(List(StudentRole, EmployeeRole, CourseAssistant))
     case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole, CourseAssistant))
-    case Create => PartialSecureBlock(List(Admin))
+    case Update => PartialSecureBlock(List(Admin))
     case _ => PartialSecureBlock(List(God))
   }
 
@@ -54,29 +54,16 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
     }
   }
 
-  override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): UserDb = ???
-
-  //  override def create(secureContext: SecureContext) = secureContext asyncContentTypedAction { request =>
-  //    import models.User.writes
-  //
-  //    (for {
-  //      userProtocol <- Future.fromTry(parse[UserProtocol](request))
-  //      ldapUser <- ldapService.user(userProtocol.systemId)
-  //      userWithAuth <- abstractDao.createOrUpdate(ldapUser)
-  //    } yield userWithAuth).jsonResult { userWithAuth =>
-  //      val (user, maybeAuth) = userWithAuth
-  //      val userJson = Json.toJson(user)
-  //
-  //      maybeAuth.fold {
-  //        Ok(userJson)
-  //      } { auth =>
-  //        Created(Json.obj(
-  //          "user" -> userJson,
-  //          "authority" -> Json.toJson(auth)(PostgresAuthorityAtom.writes)
-  //        ))
-  //      }
-  //    }
-  //  }
+  override protected def toDbModel(protocol: StudentProtocol, existingId: Option[UUID]): UserDb = UserDb(
+    protocol.systemId,
+    protocol.lastname,
+    protocol.firstname,
+    protocol.email,
+    LdapUserStatus.StudentStatus,
+    Some(protocol.registrationId),
+    Some(protocol.enrollment),
+    id = existingId.getOrElse(UUID.randomUUID)
+  )
 
   def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
     val buddyResult = for {
