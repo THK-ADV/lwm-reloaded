@@ -1,5 +1,7 @@
 package models
 
+import java.util.UUID
+
 import play.api.libs.json.{Json, Reads, Writes}
 
 trait User extends UniqueEntity {
@@ -12,7 +14,7 @@ trait User extends UniqueEntity {
   def email: String
 }
 
-case class UserProtocol(systemId: String)
+case class StudentProtocol(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID)
 
 object User {
 
@@ -24,6 +26,6 @@ object User {
   }
 }
 
-object UserProtocol {
-  implicit val reads: Reads[UserProtocol] = Json.reads[UserProtocol]
+object StudentProtocol {
+  implicit val reads: Reads[StudentProtocol] = Json.reads[StudentProtocol]
 }
