@@ -3,6 +3,7 @@ package controllers
 import java.util.UUID
 
 import dao._
+import dao.helper.TableFilter.{courseFilter, labworkFilter}
 import database.{LabworkApplicationDb, LabworkApplicationTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager, EmployeeRole, God, StudentRole}
@@ -10,6 +11,7 @@ import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
+import service.sheet.{ApplicantExport, FileStreamResult}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
@@ -21,25 +23,36 @@ object LabworkApplicationController {
 
 @Singleton
 final class LabworkApplicationController @Inject()(
-  cc: ControllerComponents,
-  val authorityDao: AuthorityDao,
-  val abstractDao: LabworkApplicationDao,
-  val securedAction: SecurityActionChain,
-  implicit val ctx: ExecutionContext
-) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc) {
+                                                    cc: ControllerComponents,
+                                                    val authorityDao: AuthorityDao,
+                                                    val abstractDao: LabworkApplicationDao,
+                                                    val securedAction: SecurityActionChain,
+                                                    implicit val ctx: ExecutionContext
+                                                  )
+  extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc)
+    with FileStreamResult {
 
   override protected implicit val writes: Writes[LabworkApplicationLike] = LabworkApplicationLike.writes
 
   override protected implicit val reads: Reads[LabworkApplicationProtocol] = LabworkApplicationProtocol.reads
 
   def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    import dao.helper.TableFilter.{courseFilter, labworkFilter}
-
     (for {
       courseId <- course.uuidF
       labworkId <- labwork.uuidF
       count <- abstractDao.count(List(courseFilter(courseId), labworkFilter(labworkId)))
     } yield count).jsonResult
+  }
+
+  def renderApplicantSheet(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
+    import utils.Ops.whenNonEmpty
+
+    for {
+      labworkId <- labwork.uuidF
+      apps <- whenNonEmpty(abstractDao.get(List(labworkFilter(labworkId))))(() => "no applications found")
+      atoms = apps.map(_.asInstanceOf[LabworkApplicationAtom]).toList
+      sheet = ApplicantExport.createSheet(atoms, atoms.head.labwork)
+    } yield toResult(sheet)
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
@@ -66,6 +79,7 @@ final class LabworkApplicationController @Inject()(
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case Get => SecureBlock(restrictionId, List(CourseManager))
     case _ => PartialSecureBlock(List(God))
   }
 }

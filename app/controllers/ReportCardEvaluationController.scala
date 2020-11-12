@@ -35,13 +35,15 @@ object ReportCardEvaluationController {
 
 @Singleton
 final class ReportCardEvaluationController @Inject()(
-  cc: ControllerComponents,
-  val authorityDao: AuthorityDao,
-  val abstractDao: ReportCardEvaluationDao,
-  val reportCardEntryDao: ReportCardEntryDao,
-  val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
-  val securedAction: SecurityActionChain
-) extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc) {
+                                                      cc: ControllerComponents,
+                                                      val authorityDao: AuthorityDao,
+                                                      val abstractDao: ReportCardEvaluationDao,
+                                                      val reportCardEntryDao: ReportCardEntryDao,
+                                                      val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
+                                                      val securedAction: SecurityActionChain
+                                                    )
+  extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc)
+    with FileStreamResult {
 
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
@@ -104,64 +106,14 @@ final class ReportCardEvaluationController @Inject()(
   def renderEvaluationSheet(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { request =>
     import utils.Ops.whenNonEmpty
 
-    def rowHeader() = {
-      import Fraction._
-
-      RowHeader(
-        List(
-          Row("#") -> Low,
-          Row("Nachname") -> AutoFit,
-          Row("Vorname") -> AutoFit,
-          Row("MatNr.") -> Medium,
-          Row("Datum") -> Medium
-        ),
-        IndexedColors.GREY_25_PERCENT,
-        repeating = true
-      )
-    }
-
-    def header(labwork: LabworkAtom) = SheetHeader(
-      s"${labwork.course.label}\n${labwork.course.lecturer.firstname} ${labwork.course.lecturer.lastname}",
-      labwork.degree.label,
-      LocalDate.now.toString("dd.MM.yy")
-    )
-
-    def footer() = SheetFooter("Generiert durch das Praktikumstool (https://praktikum.gm.fh-koeln.de)", showPageNumbers = true)
-
-    def hasPassed(evals: Seq[ReportCardEvaluationAtom]): Map[UUID, Seq[ReportCardEvaluationAtom]] = {
-      evals.groupBy(_.student.id).filter(_._2.forall(_.bool))
-    }
-
-    def merge(evals: Map[UUID, Seq[ReportCardEvaluationAtom]]): List[ReportCardEvaluationAtom] = {
-      import utils.date.DateTimeOps.dateTimeOrd
-      evals.map(t => t._2.maxBy(_.lastModified)).toList
-    }
-
-    def toContent(evals: List[ReportCardEvaluationAtom]): List[List[Row]] = evals
-      .sortBy(a => (a.student.lastname, a.student.firstname))
-      .zipWithIndex
-      .map {
-        case (eval, index) => List(
-          Row((index + 1).toString),
-          Row(eval.student.lastname),
-          Row(eval.student.firstname),
-          Row(eval.student.asInstanceOf[Student].registrationId.dropRight(2)),
-          Row(eval.lastModified.toString("dd.MM.yy")),
-        )
-      }
-
-    def signature(token: UserToken) = Signature(s"Für die Richtigkeit der Angaben: ${token.firstName.charAt(0)}. ${token.lastName}")
-
     for {
       labworkId <- labwork.uuidF
       allEvals <- whenNonEmpty(abstractDao.get(List(labworkFilter(labworkId))))(() => "no evaluations found")
       allEvals0 = allEvals.map(_.asInstanceOf[ReportCardEvaluationAtom])
       labwork = allEvals0.head.labwork
-      content = (hasPassed _ andThen merge andThen toContent) (allEvals0)
       token = request.userToken if token.isDefined
-      sheet = Sheet(labwork.degree.label, header(labwork), rowHeader(), content, signature(token.get), footer())
-      res <- Future.fromTry(SheetService.createSheet(sheet))
-    } yield Ok(res.toByteArray).as("application/vndd.ms-excel")
+      sheet = ExaminationOfficeExport.createSheet(allEvals0, labwork, token.get.firstName, token.get.lastName)
+    } yield toResult(sheet)
   }
 
   private def delete(list: List[TableFilterPredicate]): Future[Result] = {
