@@ -10,7 +10,7 @@ import scala.util.control.NonFatal
 trait ResultOps {
   self: BaseController =>
 
-  private def errorJson(throwable: Throwable): JsValue = Json.obj(
+  protected def errorJson(throwable: Throwable): JsValue = Json.obj(
     "message" -> throwable.getMessage,
     "trace" -> throwable.getStackTrace.map(_.toString)
   )

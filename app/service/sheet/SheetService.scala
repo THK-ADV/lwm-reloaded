@@ -31,7 +31,7 @@ case class Signature(text: String)
 
 case class SheetFooter(left: String, showPageNumbers: Boolean)
 
-case class Sheet(name: String, header: SheetHeader, rowHeader: RowHeader, rowContent: List[List[Row]], signature: Signature, footer: SheetFooter)
+case class Sheet(name: String, header: SheetHeader, rowHeader: RowHeader, rowContent: List[List[Row]], footer: SheetFooter)
 
 object SheetService {
 
@@ -48,10 +48,9 @@ object SheetService {
     } yield stream
   }
 
-  def createSheet(sheet: Sheet): Try[ByteArrayOutputStream] = withSheet(sheet.name) { (sheet0, book) =>
+  def createSheet(sheet: Sheet)(custom: (HSSFSheet) => Unit): Try[ByteArrayOutputStream] = withSheet(sheet.name) { (sheet0, book) =>
     val headerStyle = book.createCellStyle()
     val contentStyle = book.createCellStyle()
-    val closingStyle = book.createCellStyle()
     val font = book.createFont()
 
     createHeader(sheet0, sheet.header)
@@ -63,7 +62,7 @@ object SheetService {
     val contentCells = createRows(sheet0, lastRow + 1, sheet.rowContent)
     applyBorders(contentStyle, contentCells)
 
-    createClosing(sheet0, closingStyle, sheet.signature, sheet.rowContent.size, sheet.rowContent.head.size)
+    custom(sheet0)
 
     applyWidth(sheet0, sheet)
   }
@@ -149,18 +148,6 @@ object SheetService {
     if (footer.showPageNumbers) {
       sheet.getFooter.setRight(s"${HeaderFooter.page} / ${HeaderFooter.numPages}")
     }
-  }
-
-  private def createClosing(sheet: HSSFSheet, style: HSSFCellStyle, signature: Signature, lastRow: Int, maxCol: Int): Unit = {
-    val row = sheet.createRow(lastRow + 3)
-    val mergeRegion = new CellRangeAddress(row.getRowNum, row.getRowNum, maxCol - 3, maxCol - 1)
-    sheet.addMergedRegion(mergeRegion)
-    val cell = row.createCell(maxCol - 3)
-
-    RegionUtil.setBorderTop(BorderStyle.MEDIUM, mergeRegion, sheet)
-    RegionUtil.setTopBorderColor(IndexedColors.BLACK.index, mergeRegion, sheet)
-
-    cell.setCellValue(signature.text)
   }
 
   private def createRows(sheet: HSSFSheet, nextRow: Int, rows: List[List[Row]]): List[HSSFCell] = {

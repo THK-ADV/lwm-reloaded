@@ -60,7 +60,7 @@ PUT           /labworkApplications/:id                                         c
 GET           /labworkApplications                                             controllers.LabworkApplicationController.all()
 GET           /labworkApplications/:id                                         controllers.LabworkApplicationController.get(id)
 DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.invalidate(id)
-
+GET           /courses/:c/labworks/:l/labworkApplications/sheet                controllers.LabworkApplicationController.renderApplicantSheet(c, l)
 GET           /courses/:c/labworks/:l/labworkApplications/count                controllers.LabworkApplicationController.countFrom(c, l)
 
 # Schedule / ScheduleEntries
@@ -151,7 +151,7 @@ DELETE        /courses/:c/assignmentEntries/:id                                c
 GET           /users                                                           controllers.UserController.all()
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
 GET           /users/:id                                                       controllers.UserController.get(id)
-PUT           /users/:id                                                      controllers.AssignmentEntryController.update(id)
+PUT           /users/:id                                                       controllers.AssignmentEntryController.update(id)
 
 # Mail
 POST          /courses/:c/mails                                                controllers.MailController.sendMailWithBody(c)
