@@ -10,9 +10,12 @@ import utils.Ops.JsPathX
 
 sealed trait LabworkApplicationLike extends UniqueEntity {
   def lastModified: DateTime
+  def labworkId: UUID
 }
 
 case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID], lastModified: DateTime, id: UUID = UUID.randomUUID) extends LabworkApplicationLike {
+
+  override def labworkId: UUID = labwork
 
   override def equals(obj: Any) = obj match {
     case LabworkApplication(l, a, f, _, i) =>
@@ -25,6 +28,9 @@ case class LabworkApplication(labwork: UUID, applicant: UUID, friends: Set[UUID]
 }
 
 case class LabworkApplicationAtom(labwork: LabworkAtom, applicant: User, friends: Set[User], lastModified: DateTime, id: UUID) extends LabworkApplicationLike {
+
+  override def labworkId: UUID = labwork.id
+
   override def equals(obj: Any) = obj match {
     case LabworkApplicationAtom(l, a, f, _, i) =>
       l == labwork &&

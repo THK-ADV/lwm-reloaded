@@ -142,6 +142,7 @@ DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     c
 # AssignmentEntries
 POST          /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.createFrom(c)
 PUT           /courses/:c/assignmentEntries/takeover                           controllers.AssignmentEntryController.takeover(c)
+PUT           /courses/:c/assignmentEntries/insert/:index                      controllers.AssignmentEntryController.insert(c, index)
 PUT           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.updateFrom(c, id)
 GET           /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.allFrom(c)
 GET           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.getFrom(c, id)

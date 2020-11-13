@@ -3,6 +3,7 @@ package service
 import java.util.UUID
 
 import dao.AssignmentEntryDao
+import dao.helper.TableFilter.labworkFilter
 import database.{AssignmentEntryDb, AssignmentEntryTypeDb}
 import javax.inject.Inject
 import models.{AssignmentEntry, AssignmentEntryAtom, AssignmentEntryLike, AssignmentEntryProtocol}
@@ -53,6 +54,24 @@ trait AssignmentEntryService {
     } yield u.toUniqueEntity
   }
 
+  // TODO care: reportCardEntries are not changed along assignment entries
+  def insert(p: AssignmentEntryProtocol, index: Int): Future[Seq[AssignmentEntryLike]] = {
+    def insert[A](list: List[A], i: Int, value: A): List[A] = list match { // TODO move to ops
+      case head :: tail if i > 0 => head :: insert(tail, i - 1, value)
+      case _ => value :: list
+    }
+
+    for {
+      xs <- dao.get(List(labworkFilter(p.labwork)), atomic = false).map(_.map(_.asInstanceOf[AssignmentEntry]).toList)
+      freshCreated <- create(p)
+      reorderedIndices = insert(xs.sortBy(_.index), index, freshCreated)
+        .zipWithIndex
+        .map(t => (t._1.id, t._2))
+      _ <- dao.db.run(dao.updateIndices(reorderedIndices))
+      updated <- dao.get(List(labworkFilter(p.labwork)), atomic = false)
+    } yield updated
+  }
+
   def invalidate(id: UUID): Future[AssignmentEntry] = {
     val query = for {
       all <- dao.withSameLabworkAs(id)
@@ -94,11 +113,9 @@ trait AssignmentEntryService {
       id = uuid
     )
   }
-
-
 }
 
 final class AssignmentEntryServiceImpl @Inject()(
-  val dao: AssignmentEntryDao,
-  val ctx: ExecutionContext
-) extends AssignmentEntryService
+                                                  val dao: AssignmentEntryDao,
+                                                  val ctx: ExecutionContext
+                                                ) extends AssignmentEntryService
