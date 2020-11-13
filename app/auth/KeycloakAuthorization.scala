@@ -45,7 +45,7 @@ class KeycloakAuthorization @Inject()(keycloakDeployment: KeycloakDeployment, ws
   private def extractAttributes(accessToken: AccessToken): Future[UserToken] = {
     val attributes = accessToken.getOtherClaims.asScala
     val maybeToken = for {
-      systemId <- attributes.get(SystemIdAttribute).map(_.toString)
+      systemId <- attributes.get(SystemIdAttribute).map(_.toString.toLowerCase)
       firstname <- attributes.get(FirstNameAttribute).map(_.toString)
       lastname <- attributes.get(LastNameAttribute).map(_.toString)
       status <- attributes.get(StatusAttribute).map(_.toString)
