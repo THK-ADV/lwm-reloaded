@@ -40,17 +40,16 @@ trait DashboardDao extends Core {
   ) = {
     import dao.helper.TableFilter.sinceFilter
 
+    // TODO test whether students see all their applications
+    
     for {
-      labworks <- labworkDao.getByQuery(
-        labworkDao filterValidOnly (l => l.semester === semester.id && l.degree === student.enrollmentId),
-        atomic = atomic
-      )
-      labworkIds = labworks map (_.id)
-
       lapps <- labworkApplicationDao.getByQuery(
-        labworkApplicationDao filterValidOnly (app => app.labwork.inSet(labworkIds) && app.user === student.id),
+        labworkApplicationDao filterValidOnly (app => app.inSemester(semester.id) && app.user === student.id),
         atomic = atomic
       )
+
+      labworkIds = lapps.map(_.labworkId).distinct.toList
+      labworks <- labworkDao.getMany(labworkIds, atomic = atomic)
 
       allCardsQuery = reportCardEntryDao filterValidOnly (e => e.labwork.inSet(labworkIds) && e.user === student.id && e.labworkFk.filter(_.published).exists)
       sinceNowFilter = if (entriesSinceNow) Option apply sinceFilter(LocalDate.now.sqlDate) else Option.empty
