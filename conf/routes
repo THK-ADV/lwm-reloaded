@@ -154,7 +154,7 @@ DELETE        /courses/:c/assignmentEntries/:id                                c
 GET           /users                                                           controllers.UserController.all()
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
 GET           /users/:id                                                       controllers.UserController.get(id)
-PUT           /users/:id                                                       controllers.AssignmentEntryController.update(id)
+PUT           /users/:id                                                       controllers.UserController.update(id)
 
 # Mail
 POST          /courses/:c/mails                                                controllers.MailController.sendMailWithBody(c)
