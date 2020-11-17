@@ -112,6 +112,14 @@ final class AssignmentEntryController @Inject()(
     get(id, NonSecureBlock)(request)
   }
 
+  def insert(course: String, index: String) = restrictedContext(course)(Update) asyncAction { request =>
+    (for {
+      protocol <- Future.fromTry(parseJson(request))
+      idx <- Future.fromTry(Try(index.toInt))
+      entries <- service.insert(protocol, idx)
+    } yield entries).jsonResult
+  }
+
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

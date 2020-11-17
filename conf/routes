@@ -63,10 +63,12 @@ DELETE        /labworkApplications/:id                                         c
 GET           /courses/:c/labworks/:l/labworkApplications/sheet                controllers.LabworkApplicationController.renderApplicantSheet(c, l)
 GET           /courses/:c/labworks/:l/labworkApplications/count                controllers.LabworkApplicationController.countFrom(c, l)
 
-# Schedule / ScheduleEntries
+# Schedule / ScheduleEntries Gen
 POST          /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.createFrom(c)
 GET           /courses/:c/labworks/:l/scheduleEntries/preview                  controllers.ScheduleEntryController.preview(c, l)
 
+# Schedule / ScheduleEntries Other
+POST          /courses/:c/scheduleEntries/entry                                controllers.ScheduleEntryController.createEntry(c)
 GET           /courses/:c/scheduleEntries                                      controllers.ScheduleEntryController.allFrom(c)
 GET           /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.allFromLabwork(c, l)
 GET           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.getFrom(c, id)
@@ -141,6 +143,7 @@ DELETE        /courses/:c/reportCardEvaluationPatterns/:id                     c
 
 # AssignmentEntries
 POST          /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.createFrom(c)
+POST          /courses/:c/assignmentEntries/insert/:index                      controllers.AssignmentEntryController.insert(c, index)
 PUT           /courses/:c/assignmentEntries/takeover                           controllers.AssignmentEntryController.takeover(c)
 PUT           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.updateFrom(c, id)
 GET           /courses/:c/assignmentEntries                                    controllers.AssignmentEntryController.allFrom(c)

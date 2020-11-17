@@ -34,17 +34,17 @@ object ScheduleEntryController {
 
 @Singleton
 final class ScheduleEntryController @Inject()(
-  cc: ControllerComponents,
-  val authorityDao: AuthorityDao,
-  val abstractDao: ScheduleEntryDao,
-  val scheduleService: ScheduleService,
-  val assignmentEntryDao: AssignmentEntryDao,
-  val labworkDao: LabworkDao,
-  val timetableDao: TimetableDao,
-  val labworkApplicationDao: LabworkApplicationDao,
-  val groupDao: GroupDao,
-  val securedAction: SecurityActionChain
-) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
+                                               cc: ControllerComponents,
+                                               val authorityDao: AuthorityDao,
+                                               val abstractDao: ScheduleEntryDao,
+                                               val scheduleService: ScheduleService,
+                                               val assignmentEntryDao: AssignmentEntryDao,
+                                               val labworkDao: LabworkDao,
+                                               val timetableDao: TimetableDao,
+                                               val labworkApplicationDao: LabworkApplicationDao,
+                                               val groupDao: GroupDao,
+                                               val securedAction: SecurityActionChain
+                                             ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
   with GroupingStrategyAttributeFilter
   with TimeRangeTableFilter[ScheduleEntryTable] {
 
@@ -177,11 +177,15 @@ final class ScheduleEntryController @Inject()(
     update(id, NonSecureBlock)(request)
   }
 
-  def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { request =>
+  def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>
     (for {
       labworkId <- labwork.uuidF
       (_, ds) <- ScheduleCombinatorDao.invalidate(labworkId)(abstractDao, groupDao)
     } yield ds).jsonResult
+  }
+
+  def createEntry(course: String) = restrictedContext(course)(Create) asyncAction { request =>
+    create(NonSecureBlock)(request)
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
@@ -197,7 +201,20 @@ final class ScheduleEntryController @Inject()(
     }
   }
 
-  override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = ???
+  override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = {
+    import utils.date.DateTimeOps.{LocalTimeConverter, LocalDateConverter}
+
+    ScheduleEntryDb(
+      protocol.labwork,
+      protocol.start.sqlTime,
+      protocol.`end`.sqlTime,
+      protocol.date.sqlDate,
+      protocol.room,
+      protocol.supervisor,
+      protocol.group,
+      id = existingId getOrElse UUID.randomUUID
+    )
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }
