@@ -5,6 +5,7 @@ import java.util.UUID
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import dao.helper.TableFilter
+import dao.helper.TableFilter.labworkFilter
 import database.{GroupDb, GroupTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager, God}
@@ -13,6 +14,7 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service._
+import service.sheet.{FileStreamResult, GroupMemberExport}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -26,7 +28,8 @@ object GroupController {
 @Singleton
 final class GroupController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: GroupDao, val labworkApplicationDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
   extends AbstractCRUDController[GroupProtocol, GroupTable, GroupDb, GroupLike](cc)
-    with GroupingStrategyAttributeFilter {
+    with GroupingStrategyAttributeFilter
+    with FileStreamResult {
 
   import controllers.GroupController._
 
@@ -48,6 +51,17 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
       groupingStrategy <- Future.fromTry(extractGroupingStrategy(request.queryString))
       groups = GroupService.groupApplicantsBy(groupingStrategy)(apps, labworkId)
     } yield groups).jsonResult
+  }
+
+  def renderGroupSheet(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
+    import utils.Ops.whenNonEmpty
+
+    for {
+      labworkId <- labwork.uuidF
+      groups <- whenNonEmpty(abstractDao.get(List(labworkFilter(labworkId))))(() => "no applications found")
+      atoms = groups.map(_.asInstanceOf[GroupAtom]).toList
+      sheet = GroupMemberExport.createSheet(atoms, atoms.head.labwork)
+    } yield toResult(sheet)
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

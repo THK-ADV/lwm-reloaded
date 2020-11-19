@@ -18,6 +18,7 @@ GET           /courses/:id                                                     c
 # Group 2
 GET           /courses/:c/labworks/:l/groups                                   controllers.GroupController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/groups/preview                           controllers.GroupController.preview(c, l)
+GET           /courses/:c/labworks/:l/groups/sheet                             controllers.GroupController.renderGroupSheet(c, l)
 
 # Labwork 
 GET           /labworks/degrees/:degree                                        controllers.LabworkController.allWithDegree(degree)
