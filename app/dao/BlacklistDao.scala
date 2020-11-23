@@ -1,6 +1,7 @@
 package dao
 
 import dao.helper.TableFilter
+import dao.helper.TableFilter.{onEndFilter, onStartFilter}
 import database.{BlacklistDb, BlacklistTable}
 import javax.inject.Inject
 import models.Blacklist
@@ -28,7 +29,10 @@ trait BlacklistDao extends AbstractDao[BlacklistTable, BlacklistDb, Blacklist] {
     if (entity.global)
       filterValidOnly(b => b.global && onDateFilter(entity.date).apply(b))
     else
-      filterValidOnly(b => b.global && onDateFilter(entity.date).apply(b) || onDateFilter(entity.date).apply(b) && labelFilterEquals(entity.label).apply(b))
+      filterValidOnly(b =>
+        b.global && onDateFilter(entity.date).apply(b) && onStartFilter(entity.start).apply(b) && onEndFilter(entity.end).apply(b) ||
+          onDateFilter(entity.date).apply(b) && labelFilterEquals(entity.label).apply(b)
+      )
 
   override protected def shouldUpdate(from: BlacklistDb, to: BlacklistDb): Boolean =
     if (to.global)
