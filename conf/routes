@@ -162,7 +162,7 @@ POST          /courses/:c/mails                                                c
 POST          /courses/:c/labworks/:l/mails                                    controllers.MailController.sendMailToAttendeesOf(c, l)
 
 # Dashboard
-GET           /dashboard                                                       controllers.DashboardController.dashboard(systemId: Option[String])
+GET           /dashboard                                                       controllers.DashboardController.dashboard()
 
 # Service
 PUT           /courses/:c/insertIntoGroup                                      controllers.serviceResource.LwmServiceController.insertStudentToGroup(c)

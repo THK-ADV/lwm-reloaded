@@ -173,9 +173,9 @@ object Ops {
   }
 
   implicit class OptionOps[A](val option: Option[A]) {
-    def toTry(throwable: Throwable): Try[A] = option match {
+    def toTry(message: String): Try[A] = option match {
       case Some(a) => Success(a)
-      case None => Failure(throwable)
+      case None => Failure(new Throwable(message))
     }
   }
 
@@ -196,5 +196,8 @@ object Ops {
 
   def whenNonEmpty[A](f: Future[Seq[A]])(elseMsg: () => String)(implicit ctx: ExecutionContext): Future[Seq[A]] =
     when(f)(_.nonEmpty)(elseMsg)
+
+  def whenDefined[A](f: Future[Option[A]])(elseMsg: () => String)(implicit ctx: ExecutionContext): Future[Option[A]] =
+    when(f)(_.isDefined)(elseMsg)
 }
 

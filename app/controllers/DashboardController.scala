@@ -66,15 +66,12 @@ final class DashboardController @Inject()(
     }
   }
 
-  def dashboard(systemId: Option[String]) = contextFrom(Get) asyncAction { implicit request =>
+  def dashboard = contextFrom(Get) asyncAction { implicit request =>
     import DashboardController._
     import utils.Ops.OptionOps
 
-    val explicitly = systemId
-    val implicitly = request.systemId
-
     (for {
-      id <- Future.fromTry(explicitly orElse implicitly toTry new Throwable("No User ID found in request"))
+      id <- Future.fromTry(request.systemId.toTry("No User ID found in request"))
       atomic = extractAttributes(request.queryString)._2.atomic
       numberOfUpcomingElements = intOf(request.queryString)(numberOfUpcomingElementsAttribute)
       entriesSinceNow = boolOf(request.queryString)(entriesSinceNowAttribute) getOrElse true
