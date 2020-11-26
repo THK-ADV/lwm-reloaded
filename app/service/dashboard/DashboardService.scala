@@ -2,7 +2,7 @@ package service.dashboard
 
 import dao.{DashboardDao, SemesterDao, UserDao}
 import javax.inject.Inject
-import models.{Dashboard, Employee, EmployeeDashboard, Lecturer, Semester, Student, StudentDashboard, StudentLike, User}
+import models._
 import utils.Ops.unwrap
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +51,7 @@ final class DashboardServiceImpl @Inject()(
       config.numberOfUpcomingElements,
       config.entriesSinceNow getOrElse true,
       config.sortedByDate getOrElse true,
-      config.ownEntriesOnly getOrElse false
+      config.ownEntriesOnly getOrElse true
     )
 
   private def studentDashboard(
@@ -65,7 +65,8 @@ final class DashboardServiceImpl @Inject()(
       config.atomic,
       config.numberOfUpcomingElements,
       config.entriesSinceNow getOrElse true,
-      config.sortedByDate getOrElse true
+      config.sortedByDate getOrElse true,
+      config.ownEntriesOnly getOrElse true
     )
 
   private def currentUser(systemId: String, atomic: Boolean) =

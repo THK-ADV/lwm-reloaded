@@ -37,7 +37,8 @@ trait DashboardDao extends Core {
     atomic: Boolean,
     numberOfUpcomingElements: Option[Int],
     entriesSinceNow: Boolean,
-    sortedByDate: Boolean
+    sortedByDate: Boolean,
+    ownEntriesOnly: Boolean
   ): Future[StudentDashboard]
 
   def employeeDashboard(
@@ -73,16 +74,28 @@ final class DashboardDaoImpl @Inject()(
     atomic: Boolean,
     numberOfUpcomingElements: Option[Int],
     entriesSinceNow: Boolean,
-    sortedByDate: Boolean
-  ) = {
+    sortedByDate: Boolean,
+    ownEntriesOnly: Boolean
+  ): Future[StudentDashboard] = {
     for {
       labworks <- labworksToApplyFor(semester.id, student.enrollmentId, atomic)
       labworkIds = labworks.map(_.id)
       lapps <- labworkApplicationsFor(labworkIds, student.id, atomic)
       cards <- reportCardsSinceNow(labworkIds, student.id, entriesSinceNow, atomic)
       modify = takeReportCardEntries(numberOfUpcomingElements) andThen sortReportCardEntries(sortedByDate)
-      (evals, evalResults) <- reportCardEvaluationFor(student.id)
+      evalResults <- reportCardEvaluationFor(student.id)
       groupLabels <- groupsFor(student.id, labworkIds)
+      courses <- restrictedCourses(student.id)
+      scheduleEntries <- scheduleEntries(
+        student.id,
+        semester,
+        courses.map(_.id),
+        entriesSinceNow,
+        ownEntriesOnly,
+        sortedByDate,
+        numberOfUpcomingElements,
+        atomic
+      )
     } yield StudentDashboard(
       student,
       StudentStatus,
@@ -91,8 +104,8 @@ final class DashboardDaoImpl @Inject()(
       lapps,
       groupLabels,
       modify(cards),
-      evals,
-      evalResults
+      evalResults,
+      scheduleEntries
     )
   }
 
@@ -107,23 +120,31 @@ final class DashboardDaoImpl @Inject()(
   ) =
     for {
       courses <- restrictedCourses(employee.id)
-      scheduleEntries <- scheduleEntriesSinceNow(semester, courses.map(_.id), entriesSinceNow, if (ownEntriesOnly) Some(employee.id) else None, atomic)
-      modify = takeScheduleEntries(numberOfUpcomingElements) andThen sortScheduleEntries(sortedByDate)
+      scheduleEntries <- scheduleEntries(
+        employee.id,
+        semester,
+        courses.map(_.id),
+        entriesSinceNow,
+        ownEntriesOnly,
+        sortedByDate,
+        numberOfUpcomingElements,
+        atomic
+      )
     } yield EmployeeDashboard(
       employee,
       EmployeeStatus,
       semester,
       courses,
-      modify(scheduleEntries)
+      scheduleEntries
     )
 
   def groupsFor(student: UUID, labworks: Seq[UUID]) = {
     val query = for {
       g <- groupDao.filterValidOnly(g => g.labwork.inSet(labworks) && g.contains(student))
       l <- g.labworkFk
-    } yield (g.label, l.label)
+    } yield (g.label, l.label, l.id)
 
-    db.run(query.result.map(_.map(t => DashboardGroupLabel(t._1, t._2))))
+    db.run(query.result.map(_.map(t => DashboardGroupLabel(t._1, t._2, t._3))))
   }
 
   def labworksToApplyFor(semester: UUID, degree: UUID, atomic: Boolean) =
@@ -138,7 +159,7 @@ final class DashboardDaoImpl @Inject()(
     reportCardEntryDao.getByQuery(sinceNowQuery, atomic = atomic)
   }
 
-  def reportCardEvaluationFor(student: UUID): Future[(Seq[ReportCardEvaluationLike], Seq[DashboardEvaluationResult])] = {
+  def reportCardEvaluationFor(student: UUID): Future[Seq[DashboardEvaluationResult]] = {
     def accInts(acc: Int, eval: ReportCardEvaluationAtom): Int =
       if (ReportCardEntryType.IntBasedTypes.exists(_.entryType == eval.label)) acc + eval.int
       else acc
@@ -167,7 +188,7 @@ final class DashboardDaoImpl @Inject()(
               bonus
             )
         }
-    } yield evals -> evalResults.toSeq
+    } yield evalResults.toSeq
   }
 
   def restrictedCourses(userId: UUID) = for {
@@ -193,6 +214,23 @@ final class DashboardDaoImpl @Inject()(
 
   def take[A](numberOfEntries: Option[Int])(f: (Int, Seq[A]) => Seq[A])(seq: Seq[A]) =
     numberOfEntries.fold(seq)(n => f(n, seq))
+
+  def scheduleEntries(
+    user: UUID,
+    semester: Semester,
+    courses: Seq[UUID],
+    entriesSinceNow: Boolean,
+    ownEntriesOnly: Boolean,
+    sortedByDate: Boolean,
+    numberOfUpcomingElements: Option[Int],
+    atomic: Boolean
+  ) = for {
+    scheduleEntries <- scheduleEntriesSinceNow(semester, courses, entriesSinceNow, if (ownEntriesOnly) Some(user) else None, atomic)
+    modified = if (scheduleEntries.nonEmpty)
+      (takeScheduleEntries(numberOfUpcomingElements) andThen sortScheduleEntries(sortedByDate)) (scheduleEntries)
+    else
+      scheduleEntries
+  } yield modified
 
   def scheduleEntriesSinceNow(
     semester: Semester,

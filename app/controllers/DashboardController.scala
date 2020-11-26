@@ -5,7 +5,7 @@ import dao._
 import database.helper.LdapUserStatus
 import javax.inject.{Inject, Singleton}
 import models.Role.{EmployeeRole, God, StudentRole}
-import models.{Dashboard, EmployeeDashboard, LabworkApplicationLike, LabworkLike, ReportCardEntryLike, ReportCardEvaluationLike, Semester, StudentDashboard, User}
+import models.{CourseAtom, Dashboard, EmployeeDashboard, StudentDashboard}
 import play.api.libs.json.{JsString, Json, Writes}
 import play.api.mvc._
 import security.SecurityActionChain
@@ -35,22 +35,15 @@ final class DashboardController @Inject()(
     with RequestOps {
 
   implicit val dashboardWrites: Writes[Dashboard] = {
-    implicit val ldapStatusWrites: Writes[LdapUserStatus] = (o: LdapUserStatus) => JsString(o.label)
+    implicit def ldapStatusWrites: Writes[LdapUserStatus] =
+      (o: LdapUserStatus) => JsString(o.label)
 
     {
-      case s: StudentDashboard => Json.obj(
-        "user" -> s.user,
-        "status" -> s.status,
-        "semester" -> s.semester,
-        "labworks" -> s.labworks,
-        "labworkApplications" -> s.labworkApplications,
-        "groups" -> s.groups,
-        "reportCardEntries" -> s.reportCardEntries,
-        "allEvaluations" -> s.allEvaluations,
-        "passedEvaluations" -> s.passedEvaluations
-      )
+      case s: StudentDashboard =>
+        Json.writes[StudentDashboard].writes(s)
       case e: EmployeeDashboard =>
-        import models.CourseAtom.writes
+        implicit def courseWrites: Writes[CourseAtom] = models.CourseAtom.writes
+
         Json.writes[EmployeeDashboard].writes(e)
     }
   }
