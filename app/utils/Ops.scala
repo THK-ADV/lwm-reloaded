@@ -95,7 +95,7 @@ object Ops {
 
   //optimized sequence for traversables
   //We could actually use `sequenceM` for this as well, but this is specialized for scala collections and thus, faster
-  def sequence[F[+ _], A, M[X] <: TraversableOnce[X]](z: M[F[A]])(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = {
+  def sequence[F[+_], A, M[X] <: TraversableOnce[X]](z: M[F[A]])(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = {
     import M.monadSyntax._
 
     def go(toGo: List[F[A]], soFar: F[mutable.Builder[A, M[A]]]): F[M[A]] = toGo match {
@@ -143,7 +143,7 @@ object Ops {
     def foldMap[B](b: B, f: A => B)(g: (B, B) => B): B = Z.foldLeft(b)((b, a) => g(b, f(a)))
   }
 
-  implicit class SeqOps[F[+ _], A, M[X] <: TraversableOnce[X]](z: M[F[A]]) {
+  implicit class SeqOps[F[+_], A, M[X] <: TraversableOnce[X]](z: M[F[A]]) {
     def sequence(implicit M: Monad[F], cbf: CanBuildFrom[M[A], A, M[A]]): F[M[A]] = self.sequence[F, A, M](z)
   }
 
@@ -197,7 +197,10 @@ object Ops {
   def whenNonEmpty[A](f: Future[Seq[A]])(elseMsg: () => String)(implicit ctx: ExecutionContext): Future[Seq[A]] =
     when(f)(_.nonEmpty)(elseMsg)
 
-  def whenDefined[A](f: Future[Option[A]])(elseMsg: () => String)(implicit ctx: ExecutionContext): Future[Option[A]] =
+  def whenDefined[A](f: Future[Option[A]], elseMsg: () => String)(implicit ctx: ExecutionContext): Future[Option[A]] =
     when(f)(_.isDefined)(elseMsg)
+
+  def unwrap[A](f: Future[Option[A]], elseMsg: () => String)(implicit ctx: ExecutionContext): Future[A] =
+    whenDefined(f, elseMsg).map(_.get)
 }
 

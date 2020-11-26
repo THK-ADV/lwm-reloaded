@@ -1,6 +1,7 @@
 package models
 
 import database.helper.LdapUserStatus
+import service.dashboard.{DashboardEvaluationResult, DashboardGroupLabel}
 
 import scala.collection.Seq
 
@@ -16,10 +17,10 @@ case class StudentDashboard(
   semester: Semester,
   labworks: Seq[LabworkLike],
   labworkApplications: Seq[LabworkApplicationLike],
-  groups: Seq[(String, LabworkLike)],
+  groups: Seq[DashboardGroupLabel],
   reportCardEntries: Seq[ReportCardEntryLike],
   allEvaluations: Seq[ReportCardEvaluationLike],
-  passedEvaluations: Seq[(String, String, Boolean, Int)]
+  passedEvaluations: Seq[DashboardEvaluationResult]
 ) extends Dashboard
 
 case class EmployeeDashboard(

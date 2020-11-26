@@ -9,6 +9,7 @@ import models.{Dashboard, EmployeeDashboard, LabworkApplicationLike, LabworkLike
 import play.api.libs.json.{JsString, Json, Writes}
 import play.api.mvc._
 import security.SecurityActionChain
+import service.dashboard.{DashboardConfig, DashboardService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,13 +17,14 @@ object DashboardController {
   lazy val numberOfUpcomingElementsAttribute = "numberOfUpcomingElements"
   lazy val entriesSinceNowAttribute = "entriesSinceNow"
   lazy val sortedByDateAttribute = "sortedByDate"
+  lazy val ownEntriesOnlyAttribute = "ownEntriesOnly"
 }
 
 @Singleton
 final class DashboardController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
-  val dashboardDao: DashboardDao,
+  val service: DashboardService,
   val securedAction: SecurityActionChain
 )(implicit executionContext: ExecutionContext)
   extends AbstractController(cc)
@@ -37,47 +39,42 @@ final class DashboardController @Inject()(
 
     {
       case s: StudentDashboard => Json.obj(
-        "user" -> User.writes.writes(s.user),
+        "user" -> s.user,
         "status" -> s.status,
-        "semester" -> Semester.writes.writes(s.semester),
-        "labworks" -> s.labworks.map(LabworkLike.writes.writes),
-        "labworkApplications" -> s.labworkApplications.map(LabworkApplicationLike.writes.writes),
-        "groups" -> s.groups.map {
-          case (groupLabel, labwork) => Json.obj(
-            "groupLabel" -> groupLabel,
-            "labwork" -> LabworkLike.writes.writes(labwork)
-          )
-        },
-        "reportCardEntries" -> s.reportCardEntries.map(ReportCardEntryLike.writes.writes),
-        "allEvaluations" -> s.allEvaluations.map(ReportCardEvaluationLike.writes.writes),
-        "passedEvaluations" -> s.passedEvaluations.map {
-          case (course, semester, passed, bonus) => Json.obj(
-            "course" -> course,
-            "semester" -> semester,
-            "passed" -> passed,
-            "bonus" -> bonus
-          )
-        }
+        "semester" -> s.semester,
+        "labworks" -> s.labworks,
+        "labworkApplications" -> s.labworkApplications,
+        "groups" -> s.groups,
+        "reportCardEntries" -> s.reportCardEntries,
+        "allEvaluations" -> s.allEvaluations,
+        "passedEvaluations" -> s.passedEvaluations
       )
-      case e: EmployeeDashboard => {
+      case e: EmployeeDashboard =>
         import models.CourseAtom.writes
         Json.writes[EmployeeDashboard].writes(e)
-      }
     }
   }
 
-  def dashboard = contextFrom(Get) asyncAction { implicit request =>
-    import DashboardController._
+  def dashboard = contextFrom(Get) asyncAction { request =>
     import utils.Ops.OptionOps
 
     (for {
       id <- Future.fromTry(request.systemId.toTry("No User ID found in request"))
-      atomic = extractAttributes(request.queryString)._2.atomic
-      numberOfUpcomingElements = intOf(request.queryString)(numberOfUpcomingElementsAttribute)
-      entriesSinceNow = boolOf(request.queryString)(entriesSinceNowAttribute) getOrElse true
-      sortedByDate = boolOf(request.queryString)(sortedByDateAttribute) getOrElse true
-      board <- dashboardDao.dashboard(id)(atomic, numberOfUpcomingElements, entriesSinceNow, sortedByDate)
+      config = parseConfig(request)
+      board <- service.dashboard(id, config)
     } yield board).jsonResult
+  }
+
+  private def parseConfig(request: Request[AnyContent]): DashboardConfig = {
+    import controllers.DashboardController._
+
+    DashboardConfig(
+      extractAttributes(request.queryString)._2.atomic,
+      intOf(request.queryString)(numberOfUpcomingElementsAttribute),
+      boolOf(request.queryString)(entriesSinceNowAttribute),
+      boolOf(request.queryString)(sortedByDateAttribute),
+      boolOf(request.queryString)(ownEntriesOnlyAttribute),
+    )
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
