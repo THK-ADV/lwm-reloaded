@@ -37,10 +37,12 @@ case class ScheduleEntryProtocol(labwork: UUID, start: LocalTime, end: LocalTime
 
 object ScheduleEntry {
   implicit val writes: Writes[ScheduleEntry] = Json.writes[ScheduleEntry]
+  implicit val reads: Reads[ScheduleEntry] = Json.reads[ScheduleEntry]
 }
 
 object ScheduleEntryProtocol {
   implicit val reads: Reads[ScheduleEntryProtocol] = Json.reads[ScheduleEntryProtocol]
+  implicit val writes: Writes[ScheduleEntryProtocol] = Json.writes[ScheduleEntryProtocol]
 }
 
 object ScheduleEntryAtom {

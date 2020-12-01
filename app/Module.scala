@@ -11,6 +11,7 @@ import security.{SecurityActionChain, SecurityActionChainImpl}
 import service._
 import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
 import service.backup.{BackupService, PSQLBackupService}
+import service.dashboard.{DashboardService, DashboardServiceImpl}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
@@ -62,6 +63,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
     bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
+    bind(classOf[DashboardService]).to(classOf[DashboardServiceImpl]).in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {
