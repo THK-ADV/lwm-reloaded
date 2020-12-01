@@ -20,6 +20,9 @@ class ScheduleEntryTable(tag: Tag) extends Table[ScheduleEntryDb](tag, "SCHEDULE
   def unmapRow: ScheduleEntryDb => Option[(UUID, Time, Time, Date, UUID, UUID, Timestamp, Option[Timestamp], UUID)] = { entry =>
     Option((entry.labwork, entry.start, entry.end, entry.date, entry.room, entry.group, entry.lastModified, entry.invalidated, entry.id))
   }
+
+  def containsSupervisor(supervisor: UUID) =
+    TableQuery[ScheduleEntrySupervisorTable].filter(e => e.scheduleEntry === id && e.user === supervisor).exists
 }
 
 class ScheduleEntrySupervisorTable(tag: Tag) extends Table[ScheduleEntrySupervisor](tag, "SCHEDULE_ENTRY_SUPERVISOR") with UniqueTable with UserIdTable {

@@ -38,6 +38,9 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   def labworkApplicationDao: LabworkApplicationDao
 
+  final def get(systemId: String, atomic: Boolean): Future[Option[User]] =
+    getSingleWhere(u => u.systemId === systemId, atomic)
+
   final def userId(systemId: String) = filterValidOnly(_.systemId === systemId).map(_.id).take(1).result.headOption
 
   final def makeUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
