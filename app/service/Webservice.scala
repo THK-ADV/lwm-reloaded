@@ -18,6 +18,9 @@ class Webservice @Inject()(ws: WSClient, applicationLifecycle: ApplicationLifecy
   def postWithToken[A](url: String, token: String, body: JsValue)(parse: JsValue => A)(implicit executor: ExecutionContext): Future[A] =
     ws.url(url).addHttpHeaders("Authorization" -> token, "Content-Type" -> "application/json").post(body).map(resp => parse(resp.json))
 
+  def putWithToken[A](url: String, token: String, body: JsValue)(parse: JsValue => A)(implicit executor: ExecutionContext): Future[A] =
+    ws.url(url).addHttpHeaders("Authorization" -> token, "Content-Type" -> "application/json").put(body).map(resp => parse(resp.json))
+
   applicationLifecycle.addStopHook { () =>
     Future.successful(ws.close)
   }
