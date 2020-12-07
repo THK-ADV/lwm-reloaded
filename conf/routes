@@ -151,7 +151,8 @@ GET           /courses/:c/assignmentEntries                                    c
 GET           /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.getFrom(c, id)
 DELETE        /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.invalidateFrom(c, id)
 
-# Users 
+# Users
+POST          /users                                                           controllers.UserController.createFromToken
 GET           /users                                                           controllers.UserController.all()
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
 GET           /users/:id                                                       controllers.UserController.get(id)
