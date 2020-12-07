@@ -97,11 +97,12 @@ final class ReportCardEntryController @Inject()(
       sid <- semester.uuidF
       candidates <- service.rescheduleCandidates(cid, sid)
     } yield candidates.map {
-      case (date, start, end, room) => Json.obj(
+      case (date, start, end, room, members) => Json.obj(
         "date" -> date,
         "start" -> start,
         "end" -> end,
-        "room" -> room
+        "room" -> room,
+        "members" -> members
       )
     }).jsonResult
   }
