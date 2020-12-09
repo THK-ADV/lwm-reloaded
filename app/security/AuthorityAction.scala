@@ -20,7 +20,7 @@ class AuthorityAction @Inject()(authorityDao: AuthorityDao, userDao: UserDao)(im
       else
         Left(Conflict(Json.obj(
           "status" -> "KO",
-          "message" -> s"no user found with sytemId ${request.systemId}"
+          "message" -> s"no user found with systemId ${request.systemId}"
         )))
     }.recover {
       case t => Left(error(t.getLocalizedMessage))

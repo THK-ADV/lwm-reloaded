@@ -68,7 +68,6 @@ final class UserDaoImpl @Inject()(
   def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read] = filterValidOnly(systemIdFilter(systemId)).map(_.id).take(1).result.headOption
 
   def makeUserModel(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[UserDb] = {
-    println("makeUserModel")
     val action = for {
       status <- DBIO.from(Future.fromTry(LdapUserStatus(status)))
       maybeDegree <- status match {
@@ -88,16 +87,12 @@ final class UserDaoImpl @Inject()(
   }
 
   def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]] = {
-    println("createOrUpdateWithBasicAuthority", user)
     val result = for {
       existing <- userId(user.systemId)
-      _ = println("existing", existing)
       createOrUpdated <- existing match {
         case Some(_) =>
-          println("should not happen")
           updateQuery(user).map(u => DBResult.Updated(u))
         case None =>
-          println("create...")
           createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
       }
     } yield createOrUpdated
@@ -106,8 +101,6 @@ final class UserDaoImpl @Inject()(
   }
 
   def createOrUpdateWithBasicAuthority(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[DBResult[UserDb]] = {
-    println("createOrUpdateWithBasicAuthority")
-
     for {
       user <- makeUserModel(systemId, lastname, firstname, email, status, registrationId, enrollment)
       res <- createOrUpdateWithBasicAuthority(user)
@@ -115,7 +108,6 @@ final class UserDaoImpl @Inject()(
   }
 
   def createWithBasicAuthorityQuery(user: UserDb) = {
-    println("createWithBasicAuthorityQuery", user)
     (for {
       createdUser <- createQuery(user) // 1
       baseAuth <- authorityDao.createBasicAuthorityFor(user)
