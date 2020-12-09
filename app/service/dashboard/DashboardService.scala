@@ -70,7 +70,7 @@ final class DashboardServiceImpl @Inject()(
     )
 
   private def currentUser(systemId: String, atomic: Boolean) =
-    unwrap(userDao.get(systemId, atomic), () => s"none or more than one user found for systemId $systemId")
+    unwrap(userDao.getBySystemId(systemId, atomic), () => s"none or more than one user found for systemId $systemId")
 
   private def currentSemester(atomic: Boolean): Future[Semester] =
     unwrap(semesterDao.current(atomic), () => s"none or more than one semester was found, but there should only one current semester")

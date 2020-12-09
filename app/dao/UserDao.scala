@@ -12,8 +12,6 @@ import javax.inject.Inject
 import models._
 import models.helper._
 import slick.dbio.Effect
-import slick.jdbc
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.SqlAction
 
@@ -41,7 +39,7 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   def labworkApplicationDao: LabworkApplicationDao
 
-  def get(systemId: String, atomic: Boolean): Future[Option[User]]
+  def getBySystemId(systemId: String, atomic: Boolean): Future[Option[User]]
 
   def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read]
 
@@ -62,7 +60,7 @@ final class UserDaoImpl @Inject()(
   implicit val executionContext: ExecutionContext
 ) extends UserDao {
 
-  def get(systemId: String, atomic: Boolean): Future[Option[User]] =
+  def getBySystemId(systemId: String, atomic: Boolean): Future[Option[User]] =
     getSingleWhere(u => u.systemId === systemId, atomic)
 
   def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read] = filterValidOnly(systemIdFilter(systemId)).map(_.id).take(1).result.headOption

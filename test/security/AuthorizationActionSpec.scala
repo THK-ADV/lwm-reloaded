@@ -23,7 +23,7 @@ class AuthorizationActionSpec extends PlaySpec with GuiceOneAppPerSuite with Lwm
   "A AuthorizationActionSpec" should {
 
     "pass user authorization" in {
-      when(authMock.authorized(any)).thenReturn(Future.successful(UserToken("id", Set.empty, "first", "last", "systemId value", "email", "status", Some("abbreviation"), Some("regId"))))
+      when(authMock.authorized(any)).thenReturn(Future.successful(UserToken("id", "first", "last", "systemId value", "email", "status", Some("abbreviation"), Some("regId"))))
 
       val action = authAction(r => Results.Ok(r.systemId))
       val result = call(action, FakeRequest())

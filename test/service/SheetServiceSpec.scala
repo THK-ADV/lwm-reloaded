@@ -41,8 +41,8 @@ class SheetServiceSpec extends WordSpec with TestBaseDefinition {
 
       val footer = SheetFooter("Generiert durch das Praktikumstool (praktikum.gm.fh-koeln.de)", true)
 
-      val sheet = Sheet("A", sheetHeader, rowHeader, cols, Signature("Alex"), footer)
-      val res = SheetService.createSheet(sheet)
+      val sheet = Sheet("A", sheetHeader, rowHeader, cols, footer)
+      val res = SheetService.createSheet(sheet)(_ => Unit)
 
       val f = new File("foo.xls")
       FileUtils.writeByteArrayToFile(f, res.success.value.toByteArray)
