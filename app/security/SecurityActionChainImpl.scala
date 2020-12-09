@@ -13,7 +13,7 @@ import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait SecurityActionChain {
-  protected def authorizationAction: AuthorizationAction
+  def authorizationAction: AuthorizationAction
 
   protected def authorityAction: AuthorityAction
 

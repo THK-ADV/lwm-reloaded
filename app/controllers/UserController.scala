@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import controllers.helper.RequestOps
 import dao._
 import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
@@ -13,6 +14,7 @@ import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -24,8 +26,12 @@ object UserController {
 }
 
 @Singleton
-final class UserController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: UserDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
+final class UserController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: UserDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -64,6 +70,19 @@ final class UserController @Inject()(cc: ControllerComponents, val authorityDao:
     Some(protocol.enrollment),
     id = existingId.getOrElse(UUID.randomUUID)
   )
+
+  def createFromToken() = securedAction.authorizationAction.async { request =>
+    val result = request.unwrapped.userToken match {
+      case Some(token) =>
+        for {
+          result <- abstractDao.createOrUpdateWithBasicAuthority(token.systemId, token.lastName, token.firstName, token.email, token.status, token.registrationId, token.degreeAbbrev)
+        } yield result.entity.toUniqueEntity
+      case None =>
+        Future.failed(new Throwable(s"no ${RequestOps.UserToken} found in request"))
+    }
+
+    result.created
+  }
 
   def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
     val buddyResult = for {

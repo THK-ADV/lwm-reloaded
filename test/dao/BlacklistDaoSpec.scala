@@ -61,9 +61,9 @@ final class BlacklistDaoSpec extends AbstractDaoSpec[BlacklistTable, BlacklistDb
         _ <- dao.create(bl2)
         _ <- dao.create(bl3)
         _ <- dao.create(bl4)
-      } yield ()
+      } yield Unit
 
-      async(f)(_ shouldBe ())
+      async(f)(_ shouldBe Unit)
     }
 
     "not create a local Blacklist if a global one exists on the same day" in {

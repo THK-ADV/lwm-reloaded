@@ -2,6 +2,8 @@ package dao
 
 import java.util.UUID
 
+import dao.UserDao.systemIdFilter
+import dao.helper.TableFilter.{abbreviationFilter, idFilter}
 import dao.helper.{DBResult, TableFilter}
 import database.helper.LdapUserStatus
 import database.helper.LdapUserStatus._
@@ -9,7 +11,9 @@ import database.{UserDb, UserTable}
 import javax.inject.Inject
 import models._
 import models.helper._
+import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
+import slick.sql.SqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,9 +31,6 @@ object UserDao extends TableFilter[UserTable] {
 
 trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
-  import TableFilter.{abbreviationFilter, idFilter}
-  import UserDao.systemIdFilter
-
   override val tableQuery: TableQuery[UserTable] = TableQuery[UserTable]
 
   def degreeDao: DegreeDao
@@ -38,13 +39,34 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
 
   def labworkApplicationDao: LabworkApplicationDao
 
-  final def get(systemId: String, atomic: Boolean): Future[Option[User]] =
+  def getBySystemId(systemId: String, atomic: Boolean): Future[Option[User]]
+
+  def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read]
+
+  def buddyResult(requesterId: UUID, requesteeSystemId: String, labwork: UUID): Future[BuddyResult]
+
+  def makeUserModel(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[UserDb]
+
+  def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]]
+
+  def createOrUpdateWithBasicAuthority(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[DBResult[UserDb]]
+}
+
+final class UserDaoImpl @Inject()(
+  val db: Database,
+  val authorityDao: AuthorityDao,
+  val degreeDao: DegreeDao,
+  val labworkApplicationDao: LabworkApplicationDao,
+  implicit val executionContext: ExecutionContext
+) extends UserDao {
+
+  def getBySystemId(systemId: String, atomic: Boolean): Future[Option[User]] =
     getSingleWhere(u => u.systemId === systemId, atomic)
 
-  final def userId(systemId: String) = filterValidOnly(_.systemId === systemId).map(_.id).take(1).result.headOption
+  def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read] = filterValidOnly(systemIdFilter(systemId)).map(_.id).take(1).result.headOption
 
-  final def makeUser(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
-    for {
+  def makeUserModel(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[UserDb] = {
+    val action = for {
       status <- DBIO.from(Future.fromTry(LdapUserStatus(status)))
       maybeDegree <- status match {
         case StudentStatus if enrollment.isDefined && registrationId.isDefined =>
@@ -58,49 +80,39 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
       }
       user = UserDb(systemId, lastname, firstname, email, status, registrationId, maybeDegree)
     } yield user
+
+    db.run(action)
   }
 
-  final def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]] = {
+  def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]] = {
     val result = for {
       existing <- userId(user.systemId)
       createOrUpdated <- existing match {
-        case Some(_) => updateQuery(user).map(u => DBResult.Updated(u))
-        case None => createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
+        case Some(_) =>
+          updateQuery(user).map(u => DBResult.Updated(u))
+        case None =>
+          createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
       }
     } yield createOrUpdated
 
     db.run(result)
   }
 
-  final def createOrUpdateWithBasicAuthority(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[DBResult[UserDb]] = {
-    val result = for {
-      user <- makeUser(systemId, lastname, firstname, email, status, registrationId, enrollment)
-      existing <- userId(user.systemId)
-      createOrUpdated <- existing match {
-        case Some(_) => updateQuery(user).map(u => DBResult.Updated(u))
-        case None => createWithBasicAuthorityQuery(user).map(t => DBResult.Created(t._1))
-      }
-    } yield createOrUpdated
-
-    db.run(result)
+  def createOrUpdateWithBasicAuthority(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[DBResult[UserDb]] = {
+    for {
+      user <- makeUserModel(systemId, lastname, firstname, email, status, registrationId, enrollment)
+      res <- createOrUpdateWithBasicAuthority(user)
+    } yield res
   }
 
-  final def createWithBasicAuthorityQuery(user: UserDb) = {
+  def createWithBasicAuthorityQuery(user: UserDb) = {
     (for {
-      createdUser <- createQuery(user)
+      createdUser <- createQuery(user) // 1
       baseAuth <- authorityDao.createBasicAuthorityFor(user)
     } yield (createdUser, baseAuth)).transactionally
   }
 
-  final def createWithBasicAuthorityQuery(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]) = {
-    (for {
-      user <- makeUser(systemId, lastname, firstname, email, status, registrationId, enrollment)
-      createdUser <- createQuery(user)
-      baseAuth <- authorityDao.createBasicAuthorityFor(user)
-    } yield (createdUser, baseAuth)).transactionally
-  }
-
-  final def buddyResult(requesterId: UUID, requesteeSystemId: String, labwork: UUID): Future[BuddyResult] = {
+  def buddyResult(requesterId: UUID, requesteeSystemId: String, labwork: UUID): Future[BuddyResult] = {
     val requesteeSystemIdFilter = systemIdFilter(requesteeSystemId)
     val requesterIdFilter = idFilter(requesterId)
 
@@ -155,11 +167,3 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
     }))
   }
 }
-
-final class UserDaoImpl @Inject()(
-  val db: Database,
-  val authorityDao: AuthorityDao,
-  val degreeDao: DegreeDao,
-  val labworkApplicationDao: LabworkApplicationDao,
-  val executionContext: ExecutionContext
-) extends UserDao

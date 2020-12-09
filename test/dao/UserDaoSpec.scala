@@ -99,14 +99,14 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
         firstnameFilter("3"),
         lastnameFilter("3"),
         systemIdFilter("4")
-      ), atomic = false))(_ shouldBe empty)
+      ), atomic = false))(_.isEmpty shouldBe true)
     }
 
     "make a student by given properties" in {
       val degree = degrees(nextInt(maxDegrees))
-      val query = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some(degree.abbreviation))
+      val res = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some(degree.abbreviation))
 
-      runAsync(query) { user =>
+      async(res) { user =>
         user.systemId shouldBe "make student systemId"
         user.lastname shouldBe "make student last"
         user.firstname shouldBe "make student first"
@@ -118,65 +118,65 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "fail to make any user if properties are wrong" in {
-      val query1 = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, None)
-      val query2 = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("x"), None)
-      val query3 = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, Some("x"))
+      val query1 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, None)
+      val query2 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("x"), None)
+      val query3 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, Some("x"))
 
       List(query1, query2, query3) foreach { action =>
-        runAsync(action.failed)(_.getLocalizedMessage.containsSlice("must have a associated registration-id and degree abbreviation") shouldBe true)
+        async(action.failed)(_.getLocalizedMessage.containsSlice("must have a associated registration-id and degree abbreviation") shouldBe true)
       }
     }
 
     "fail to make a student if status is wrong" in {
       val degree = degrees(nextInt(maxDegrees))
-      val query = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", "bad status", Some("make student regId"), Some(degree.abbreviation))
+      val query = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", "bad status", Some("make student regId"), Some(degree.abbreviation))
 
-      runAsync(query.failed) { throwable =>
+      async(query.failed) { throwable =>
         throwable.getLocalizedMessage.containsSlice("status") shouldBe true
       }
     }
 
     "fail to make a student if degree abbreviation is not found" in {
-      val query = dao.makeUser("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some("invalid abbrev"))
+      val query = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some("invalid abbrev"))
 
-      runAsync(query.failed) { throwable =>
+      async(query.failed) { throwable =>
         throwable.getLocalizedMessage.containsSlice("'invalid abbrev' not found") shouldBe true
       }
     }
 
     "make a employee by given properties" in {
-      val query = dao.makeUser("make employee systemId", "make employee last", "make employee first", "make employee email", EmployeeStatus.label, None, None)
+      val query = dao.makeUserModel("make employee systemId", "make employee last", "make employee first", "make employee email", EmployeeStatus.label, None, None)
 
-      runAsync(query) { user =>
+      async(query) { user =>
         user.systemId shouldBe "make employee systemId"
         user.lastname shouldBe "make employee last"
         user.firstname shouldBe "make employee first"
         user.email shouldBe "make employee email"
         user.status shouldBe EmployeeStatus
-        user.registrationId shouldBe empty
-        user.enrollment shouldBe empty
+        user.registrationId shouldBe None
+        user.enrollment shouldBe None
       }
     }
 
     "make a lecturer by given properties" in {
-      val query = dao.makeUser("make lecturer systemId", "make lecturer last", "make lecturer first", "make lecturer email", LecturerStatus.label, None, None)
+      val query = dao.makeUserModel("make lecturer systemId", "make lecturer last", "make lecturer first", "make lecturer email", LecturerStatus.label, None, None)
 
-      runAsync(query) { user =>
+      async(query) { user =>
         user.systemId shouldBe "make lecturer systemId"
         user.lastname shouldBe "make lecturer last"
         user.firstname shouldBe "make lecturer first"
         user.email shouldBe "make lecturer email"
         user.status shouldBe LecturerStatus
-        user.registrationId shouldBe empty
-        user.enrollment shouldBe empty
+        user.registrationId shouldBe None
+        user.enrollment shouldBe None
       }
     }
 
-    "create a student with dedicated basic authority" in {
+   /* "create a student with dedicated basic authority" in {
       val degree = degrees(nextInt(maxDegrees))
       val user = UserDb("student systemId", "student last", "student first", "student email", StudentStatus, Some("regId"), Some(degree.id))
 
-      runAsync(dao.createWithBasicAuthorityQuery(user)) {
+      async(dao.createOrUpdateWithBasicAuthority(user)) {
         case (createdUser, createdAuth) =>
           createdUser shouldBe user
           createdAuth.user shouldBe user.id
@@ -187,7 +187,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     "create a employee with dedicated basic authority" in {
       val user = UserDb("employee systemId", "employee last", "employee first", "employee email", EmployeeStatus, None, None)
 
-      runAsync(dao.createWithBasicAuthorityQuery(user)) {
+      async(dao.createOrUpdateWithBasicAuthority(user)) {
         case (createdUser, createdAuth) =>
           createdUser shouldBe user
           createdAuth.user shouldBe user.id
@@ -198,13 +198,13 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     "create a lecturer with dedicated basic authority" in {
       val user = UserDb("lecturer systemId", "lecturer last", "lecturer first", "lecturer email", LecturerStatus, None, None)
 
-      runAsync(dao.createWithBasicAuthorityQuery(user)) {
+      async(dao.createWithBasicAuthorityQuery(user)) {
         case (createdUser, createdAuth) =>
           createdUser shouldBe user
           createdAuth.user shouldBe user.id
           createdAuth.course shouldBe empty
       }
-    }
+    }*/
 
     "create and update student with dedicated basic authority" in {
       val degree = degrees(nextInt(maxDegrees))
