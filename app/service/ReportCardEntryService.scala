@@ -94,13 +94,24 @@ trait ReportCardEntryService {
 
   def rescheduleCandidates(course: UUID, semester: UUID) = {
     import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
+    import ReportCardEntryDao.precisedAppointmentFilter
 
     val query = (for {
       x <- dao.filterValidOnly(x => x.memberOfCourse(course) && x.inSemester(semester))
       r <- x.roomFk
     } yield (x.date, x.start, x.end, r)).distinct
 
-    val action = query.result.map(_.map(x => (x._1.localDate, x._2.localTime, x._3.localTime, x._4.toUniqueEntity)))
+    val query2 = for {
+      (date, start, end, room) <- query
+      xs <- dao.filterValidOnly(x =>
+        precisedAppointmentFilter(course, semester, date, start, end, room)(x) // TODO remove rescheduled outs, add rescheduled ins
+      )
+    } yield (date, start, end, room, xs.id)
+
+    val action = query2.result.map(_.groupBy(t => (t._1.localDate, t._2.localTime, t._3.localTime, t._4.toUniqueEntity)).map {
+      case ((date, start, end, room), members) =>
+        (date, start, end, room, members.size)
+    })
 
     dao.db.run(action)
   }

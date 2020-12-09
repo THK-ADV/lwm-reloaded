@@ -1,5 +1,6 @@
 package dao
 
+import java.sql.{Date, Time}
 import java.util.UUID
 
 import dao.helper.TableFilter.{labworkFilter, userFilter}
@@ -16,14 +17,60 @@ import utils.date.DateTimeOps._
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
-  def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s => // TODO test
+  def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s =>
     val schedule = s.id === scheduleEntry
     val ordinary = s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
-    val rescheduled = TableQuery[ReportCardRescheduledTable].filter(rs => rs.reportCardEntry === r.id && rs.room === s.room && rs.start === s.start && rs.end === s.end && rs.date === s.date).exists
-    val retry = TableQuery[ReportCardRetryTable].filter(rt => rt.reportCardEntry === r.id && rt.room === s.room && rt.start === s.start && rt.end === s.end && rt.date === s.date).exists
+    val rescheduled = isRescheduled(r, s.date, s.start, s.end, s.room)
+    val retry = isRetried(r, s.date, s.start, s.end, s.room)
 
     schedule && (ordinary || rescheduled || retry)
   }.exists
+
+  def precisedAppointmentFilter(
+    course: UUID,
+    semester: UUID,
+    date: Rep[Date],
+    start: Rep[Time],
+    end: Rep[Time],
+    room: RoomTable
+  ): TableFilterPredicate = r => {
+    val entry = r.memberOfCourse(course) && r.inSemester(semester)
+    val ordinary = room.id === r.room && start === r.start && end === r.end && date === r.date
+    val rescheduled = isRescheduled(r, date, start, end, room.id)
+    val retry = isRetried(r, date, start, end, room.id)
+
+    entry && (ordinary || rescheduled || retry)
+  }
+
+  private def isRetried(
+    r: ReportCardEntryTable,
+    date: Rep[Date],
+    start: Rep[Time],
+    end: Rep[Time],
+    room: Rep[UUID]
+  ) = {
+    TableQuery[ReportCardRetryTable].filter(rt =>
+      rt.reportCardEntry === r.id &&
+        rt.room === room &&
+        rt.start === start &&
+        rt.end === end &&
+        rt.date === date
+    ).exists
+  }
+
+  private def isRescheduled(
+    r: ReportCardEntryTable,
+    date: Rep[Date],
+    start: Rep[Time],
+    end: Rep[Time],
+    room: Rep[UUID]
+  ) = TableQuery[ReportCardRescheduledTable].filter(rs =>
+    rs.reportCardEntry === r.id &&
+      rs.room === room &&
+      rs.start === start &&
+      rs.end === end &&
+      rs.date === date
+  ).exists
 
   def indexFilter(index: Int): TableFilterPredicate = _.assignmentIndex === index
 }
