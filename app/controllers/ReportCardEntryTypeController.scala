@@ -11,14 +11,17 @@ import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 @Singleton
-class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEntryTypeDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+class ReportCardEntryTypeController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEntryTypeDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
 
   override protected implicit val writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
 
@@ -37,14 +40,20 @@ class ReportCardEntryTypeController @Inject()(cc: ControllerComponents, val auth
     )).jsonResult
   }
 
+  def batchUpdate(course: String, labwork: String) = restrictedContext(course)(Update) asyncAction { request =>
+    ???
+  }
+
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = Failure(new Throwable("no filter attributes allowed"))
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
+    Failure(new Throwable("no filter attributes allowed"))
 
   override protected def toDbModel(protocol: ReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] =
+    forbiddenAction()
 }
