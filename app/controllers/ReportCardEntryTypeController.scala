@@ -7,7 +7,7 @@ import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
 import javax.inject.{Inject, Singleton}
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager, God}
 import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
-import play.api.libs.json.{Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
@@ -22,6 +22,10 @@ class ReportCardEntryTypeController @Inject()(
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
+
+  case class BatchUpdateRequest(users: List[UUID], assignmentEntry: UUID, entryType: String, bool: Option[Boolean], int: Option[Int])
+
+  private def batchReads: Reads[BatchUpdateRequest] = Json.reads[BatchUpdateRequest]
 
   override protected implicit val writes: Writes[ReportCardEntryType] = ReportCardEntryType.writes
 
@@ -41,7 +45,16 @@ class ReportCardEntryTypeController @Inject()(
   }
 
   def batchUpdate(course: String, labwork: String) = restrictedContext(course)(Update) asyncAction { request =>
-    ???
+    for {
+      lid <- labwork.uuidF
+      p <- Future.fromTry(parseJson(request)(batchReads))
+      res <- if (p.bool.isDefined)
+        abstractDao.updateFields(p.users, p.assignmentEntry, lid, p.entryType, p.bool.get)
+      else if (p.int.isDefined)
+        abstractDao.updateFields(p.users, p.assignmentEntry, lid, p.entryType, p.int.get)
+      else
+        Future.failed(new Throwable("either bool or int must be set"))
+    } yield Created(Json.toJson(res))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {

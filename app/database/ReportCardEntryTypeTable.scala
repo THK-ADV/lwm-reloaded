@@ -22,6 +22,8 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
 
   def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
 
+  def joinReportCardEntry(f: ReportCardEntryTable => Rep[Boolean]) = reportCardEntryFk.filter(e => e.isValid && e.id === reportCardEntry && f(e))
+
   override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }
 

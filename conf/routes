@@ -108,6 +108,7 @@ DELETE        /courses/:c/labworks/:l/reportCardEntries                        c
 
 # ReportCardEntryType 
 PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeController.updateFrom(c, id)
+PUT           /courses/:c/labworks/:l/reportCardEntryTypes                     controllers.ReportCardEntryTypeController.batchUpdate(c, l)
 
 # ReportCardRescheduled 
 POST          /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
