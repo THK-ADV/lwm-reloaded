@@ -15,6 +15,9 @@ class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPO
 
   override def * = (user, labwork, label, date, start, end, room, assignmentIndex, lastModified, invalidated, id) <> (mapRow, unmapRow)
 
+  def joinAssignmentEntry(id: UUID) = // TODO replace with real join is ReportCardEntryType has an assignmentEntryFk
+    TableQuery[AssignmentEntryTable].filter(a => a.isValid && a.id === id && a.label === label && a.index === assignmentIndex)
+
   def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Int, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
     case (student, labwork, label, date, start, end, room, index, lastModified, invalidated, id) =>
       ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, index, None, None, lastModified, invalidated, id)
