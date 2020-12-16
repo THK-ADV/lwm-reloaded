@@ -177,6 +177,8 @@ object Ops {
       case Some(a) => Success(a)
       case None => Failure(new Throwable(message))
     }
+
+    def toFuture: Future[A] = Future.fromTry(option.toTry("option was empty"))
   }
 
   implicit class TryOps[A](val t: Try[A]) {

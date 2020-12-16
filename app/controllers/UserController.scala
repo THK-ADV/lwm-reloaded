@@ -33,6 +33,8 @@ final class UserController @Inject()(
   val securedAction: SecurityActionChain
 ) extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
 
+  import dao.UserDao._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[User] = User.writes
@@ -48,7 +50,6 @@ final class UserController @Inject()(
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import UserController._
-    import dao.UserDao._
 
     (attribute, value) match {
       case (`statusAttribute`, s) => LdapUserStatus(s) map statusFilter
@@ -117,6 +118,30 @@ final class UserController @Inject()(
         "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
       ))
     }
+  }
+
+  def resolveStudents() = contextFrom(Update) asyncAction { request =>
+    import utils.Ops._
+
+    for {
+      text <- request.body.asText.toFuture
+      students = text.split("\n").map { name =>
+        val names = name.split(",")
+        (names.head.trim, names.last.trim)
+      }
+      users <- abstractDao.get(List(statusFilter(LdapUserStatus.StudentStatus)), atomic = false)
+      (gmids, duplicates) = students.foldLeft((List.empty[String], List.empty[Student])) {
+        case ((found, notFound), (lastname, firstname)) =>
+          val xs = users.filter(s => s.lastname == lastname && s.firstname == firstname)
+          if (xs.size == 1)
+            (xs.head.systemId +: found, notFound)
+          else
+            (found, xs.toList.map(_.asInstanceOf[Student]) ++ notFound)
+      }
+    } yield ok(
+      "gmids" -> gmids.mkString(","),
+      "duplicates" -> Json.toJson(duplicates)
+    )
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
