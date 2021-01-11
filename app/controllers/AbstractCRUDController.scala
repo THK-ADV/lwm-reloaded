@@ -1,18 +1,17 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper._
 import dao.AbstractDao
 import dao.helper.TableFilter
 import database._
-import javax.inject.Inject
 import models.{UniqueDbEntity, UniqueEntity}
 import play.api.libs.json._
 import play.api.mvc._
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -25,6 +24,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     with RequestOps
     with TableFilter[T]
     with JsonParser {
+
+  import logger.AccessLoggingAction.log
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -56,18 +57,18 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     } yield lwmModel.get
   }
 
-  def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction { implicit request =>
+  def create(secureContext: SecureContext = contextFrom(Create)) = secureContext asyncAction log { implicit request =>
     parsed(None, abstractDao.create)
       .created
   }
 
-  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction { implicit request =>
+  def update(id: String, secureContext: SecureContext = contextFrom(Update)) = secureContext asyncAction log { implicit request =>
     id.uuidF
       .flatMap(uuid => parsed(Some(uuid), abstractDao.update))
       .jsonResult
   }
 
-  def invalidate(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction { _ =>
+  def invalidate(id: String, secureContext: SecureContext = contextFrom(Delete)) = secureContext asyncAction log { _ =>
     id.uuidF.flatMap(invalidate0).jsonResult
   }
 

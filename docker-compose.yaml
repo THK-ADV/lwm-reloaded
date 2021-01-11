@@ -25,6 +25,8 @@ services:
       LWM_DB_USER: ${USERNAME}
       LWM_DB_NAME: ${USERNAME}
       LWM_DB_PASSWORD: ${PASSWORD}
+    volumes:
+    - backend_logs_vol:/lwm/logs
     depends_on:
       - psql
 
@@ -43,3 +45,4 @@ volumes:
   psql_vol:
   nginx_cert_vol:
   nginx_config_vol:
+  backend_logs_vol:

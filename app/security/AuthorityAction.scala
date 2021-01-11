@@ -1,17 +1,16 @@
 package security
 
-import controllers.helper.RequestOps
-import dao.{AuthorityDao, UserDao}
-import javax.inject.{Inject, Singleton}
+import dao.AuthorityDao
 import play.api.libs.json.Json
 import play.api.mvc.Results.{Conflict, InternalServerError}
 import play.api.mvc.{ActionRefiner, Result}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AuthorityAction @Inject()(authorityDao: AuthorityDao, userDao: UserDao)(implicit val executionContext: ExecutionContext)
-  extends ActionRefiner[IdRequest, AuthRequest] with RequestOps {
+class AuthorityAction @Inject()(authorityDao: AuthorityDao)(implicit val executionContext: ExecutionContext)
+  extends ActionRefiner[IdRequest, AuthRequest] {
 
   override protected def refine[A](request: IdRequest[A]): Future[Either[Result, AuthRequest[A]]] =
     authorityDao.authoritiesFor(request.systemId).map { authorities =>
