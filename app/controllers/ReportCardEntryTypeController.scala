@@ -1,16 +1,15 @@
 package controllers
 
-import java.util.UUID
-
 import dao.{AuthorityDao, ReportCardEntryTypeDao}
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
-import javax.inject.{Inject, Singleton}
 import models.Role.{CourseAssistant, CourseEmployee, CourseManager, God}
 import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
@@ -23,6 +22,8 @@ class ReportCardEntryTypeController @Inject()(
   implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEntryTypeProtocol, ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType](cc) {
 
+  import logger.AccessLoggingAction.log
+
   case class BatchUpdateRequest(users: List[UUID], assignmentEntry: UUID, entryType: String, bool: Option[Boolean], int: Option[Int])
 
   private def batchReads: Reads[BatchUpdateRequest] = Json.reads[BatchUpdateRequest]
@@ -31,7 +32,7 @@ class ReportCardEntryTypeController @Inject()(
 
   override protected implicit val reads: Reads[ReportCardEntryTypeProtocol] = ReportCardEntryTypeProtocol.reads
 
-  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction { request =>
+  def updateFrom(course: String, id: String) = restrictedContext(course)(Update) asyncAction log { request =>
     (for {
       uuid <- id.uuidF
       protocol <- Future.fromTry(parseJson(request))

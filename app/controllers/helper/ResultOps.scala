@@ -1,5 +1,6 @@
 package controllers.helper
 
+import play.api.Logger
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{BaseController, Result}
@@ -9,6 +10,8 @@ import scala.util.control.NonFatal
 
 trait ResultOps {
   self: BaseController =>
+
+  private val errorLogger = Logger("httpResponse")
 
   protected def errorJson(throwable: Throwable): JsValue = Json.obj(
     "message" -> throwable.getMessage,
@@ -28,7 +31,9 @@ trait ResultOps {
   protected def notFound(element: String): Result = NotFound(msgJson(s"No such element for $element"))
 
   private def recoverBadRequest(): PartialFunction[Throwable, Result] = {
-    case NonFatal(e) => badRequest(e)
+    case NonFatal(e) =>
+      errorLogger.error(e.getMessage)
+      badRequest(e)
   }
 
   implicit class TraversableResult[A](val future: Future[Traversable[A]]) {
