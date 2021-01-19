@@ -1,11 +1,17 @@
 package models
 
-import java.util.UUID
-
 import org.joda.time.DateTime
 
-//case class Annotation(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String, timestamp: DateTime = DateTime.now, invalidated: Option[DateTime] = None, id: UUID = UUID.randomUUID) extends UniqueEntity
-//
-//case class AnnotationProtocol(student: UUID, labwork: UUID, reportCardEntry: UUID, message: String)
-//
-//case class AnnotationAtom(student: SesameStudent, labwork: SesameLabwork, reportCardEntry: SesameReportCardEntry, message: String, timestamp: DateTime, invalidated: Option[DateTime], id: UUID) extends UniqueEntity
+import java.util.UUID
+
+sealed trait AnnotationLike extends UniqueEntity
+
+object AnnotationLike {
+
+  case class Annotation(reportCardEntry: UUID, author: UUID, message: String, lastModified: DateTime, id: UUID) extends AnnotationLike
+
+  case class AnnotationAtom(reportCardEntry: ReportCardEntry, author: User, message: String, lastModified: DateTime, id: UUID) extends AnnotationLike
+
+}
+
+case class AnnotationProtocol(reportCardEntry: UUID, author: UUID, message: String)

@@ -1,11 +1,7 @@
 package dao
 
-import java.util.UUID
-
-import dao.helper.TableFilter.labworkFilter
 import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database._
-import javax.inject.Inject
 import models._
 import slick.dbio.Effect
 import slick.jdbc
@@ -13,6 +9,8 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.{FixedSqlAction, SqlAction}
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object GroupDao extends TableFilter[GroupTable] {
@@ -27,15 +25,13 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInv
 
   val groupMembershipQuery: TableQuery[GroupMembershipTable] = TableQuery[GroupMembershipTable]
 
-  def firstStudentIn(group: UUID): SqlAction[Option[UUID], NoStream, Effect.Read] = {
+  def firstStudentIn(group: UUID): SqlAction[Option[UUID], NoStream, Effect.Read] =
     groupMembershipQuery.filter(_.group === group).map(_.user).result.headOption
-  }
 
-  def groupHasAtLeastTwoMembers(group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+  def groupHasAtLeastTwoMembers(group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] =
     (groupMembershipQuery.filter(groupFilter(group)).size > 1).result
-  }
 
-  def add(student: UUID, group: UUID): DBIOAction[GroupMembership, NoStream, Effect.Read with Effect.Write] = {
+  def add(student: UUID, group: UUID): DBIOAction[GroupMembership, NoStream, Effect.Read with Effect.Write] =
     for {
       exists <- isInGroup(student, group)
       membership <- if (exists)
@@ -43,9 +39,8 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInv
       else
         (groupMembershipQuery returning groupMembershipQuery) += GroupMembership(group, student)
     } yield membership
-  }
 
-  def remove(student: UUID, group: UUID): DBIOAction[Int, NoStream, Effect.Read with Effect.Write] = {
+  def remove(student: UUID, group: UUID): DBIOAction[Int, NoStream, Effect.Read with Effect.Write] =
     for {
       exists <- isInGroup(student, group)
       membership <- if (exists)
@@ -53,11 +48,9 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInv
       else
         DBIO.failed(new Throwable(s"student $student is not a member of group $group"))
     } yield membership
-  }
 
-  def isInGroup(student: UUID, group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
+  def isInGroup(student: UUID, group: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] =
     groupMembershipQuery.filter(t => groupFilter(group).apply(t) && userFilter(student).apply(t)).exists.result
-  }
 
   override protected def toAtomic(query: Query[GroupTable, GroupDb, Seq]): Future[Seq[GroupLike]] = collectDependencies(query) {
     case (g, l, m) => GroupAtom(g.label, l.toUniqueEntity, m.map(_.toUniqueEntity).toSet, g.id)
@@ -86,13 +79,11 @@ trait GroupDao extends AbstractDao[GroupTable, GroupDb, GroupLike] with CrossInv
     }.toSeq))
   }
 
-  override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] = {
+  override protected def existsQuery(entity: GroupDb): Query[GroupTable, GroupDb, Seq] =
     filterBy(List(labworkFilter(entity.labwork), labelFilterEquals(entity.label)))
-  }
 
-  override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean = {
+  override protected def shouldUpdate(existing: GroupDb, toUpdate: GroupDb): Boolean =
     existing.labwork == toUpdate.labwork && existing.label == toUpdate.label
-  }
 
   override protected val databaseExpander: Option[DatabaseExpander[GroupDb]] = Some(new DatabaseExpander[GroupDb] {
     override def expandCreationOf[E <: Effect](entities: GroupDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[GroupDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = for {

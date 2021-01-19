@@ -26,5 +26,5 @@ trait AbstractDao[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
 
   final def dropSchema: Future[Unit] = db.run(DBIO.seq(schemas.reverseMap(_.drop): _*).transactionally)
 
-  def close = Future.successful(db.close())
+  def close: Future[Unit] = Future.successful(db.close())
 }

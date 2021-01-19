@@ -24,13 +24,11 @@ trait DegreeDao extends AbstractDao[DegreeTable, DegreeDb, Degree] {
 
   override val tableQuery: TableQuery[DegreeTable] = TableQuery[DegreeTable]
 
-  override protected def shouldUpdate(existing: DegreeDb, toUpdate: DegreeDb): Boolean = {
+  override protected def shouldUpdate(existing: DegreeDb, toUpdate: DegreeDb): Boolean =
     existing.abbreviation == toUpdate.abbreviation
-  }
 
-  override protected def existsQuery(entity: DegreeDb): Query[DegreeTable, DegreeDb, Seq] = {
+  override protected def existsQuery(entity: DegreeDb): Query[DegreeTable, DegreeDb, Seq] =
     filterBy(List(abbreviationFilter(entity.abbreviation)))
-  }
 
   override protected def toAtomic(query: Query[DegreeTable, DegreeDb, Seq]): Future[Seq[Degree]] = toUniqueEntity(query)
 

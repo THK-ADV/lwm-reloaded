@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import dao._
 import di._
-import javax.inject.Singleton
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import security.{SecurityActionChain, SecurityActionChainImpl}
@@ -14,6 +13,8 @@ import service.backup.{BackupService, PSQLBackupService}
 import service.dashboard.{DashboardService, DashboardServiceImpl}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
+
+import javax.inject.Singleton
 
 class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
 
@@ -61,6 +62,8 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[UserDao]).to(classOf[UserDaoImpl]).in(classOf[Singleton])
     bind(classOf[DashboardDao]).to(classOf[DashboardDaoImpl]).in(classOf[Singleton])
     bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
+    bind(classOf[AnnotationDao]).to(classOf[AnnotationDaoImpl]).in(classOf[Singleton])
+
     bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[DashboardService]).to(classOf[DashboardServiceImpl]).in(classOf[Singleton])
