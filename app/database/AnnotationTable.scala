@@ -19,5 +19,5 @@ class AnnotationTable(tag: Tag) extends Table[AnnotationDb](tag, "ANNOTATIONS") 
 }
 
 case class AnnotationDb(reportCardEntry: UUID, author: UUID, message: String, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toUniqueEntity = Annotation(reportCardEntry, author, message, lastModified.dateTime, id)
+  override def toUniqueEntity: Annotation = Annotation(reportCardEntry, author, message, lastModified.dateTime, id)
 }

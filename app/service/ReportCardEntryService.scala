@@ -1,15 +1,14 @@
 package service
 
-import java.util.UUID
-
 import dao.helper.TableFilter
-import dao.{ReportCardEntryDao, ScheduleEntryDao}
-import database.{ReportCardEntryDb, ReportCardEntryTypeDb, ReportCardRescheduledDb, ReportCardRetryDb}
-import javax.inject.Inject
+import dao.{AnnotationDao, ReportCardEntryDao, ScheduleEntryDao}
+import database._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
 import slick.jdbc.JdbcProfile
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -81,6 +80,7 @@ trait ReportCardEntryService {
   val profile: JdbcProfile
 
   import ReportCardEntryService._
+  import TableFilter.{labworkByReportCardEntryFilter, userByReportCardEntryFilter}
   import profile.api._
   import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
 
@@ -88,13 +88,30 @@ trait ReportCardEntryService {
 
   def dao: ReportCardEntryDao
 
+  def annotationDao: AnnotationDao
+
   def scheduleEntryDao: ScheduleEntryDao
 
   def assignmentEntryService: AssignmentEntryService
 
+  def withAnnotationCountInLabwork(
+    filter: List[ReportCardEntryTable => Rep[Boolean]],
+    atomic: Boolean,
+    validOnly: Boolean,
+    lastModified: Option[String]
+  ) = {
+    def annotationFor(e: ReportCardEntryLike) =
+      annotationDao.count(List(userByReportCardEntryFilter(e.studentId), labworkByReportCardEntryFilter(e.labworkId)))
+
+    for {
+      entries <- dao.get(filter, atomic, validOnly, lastModified)
+      withAnnotations <- Future.sequence(entries.map(e => annotationFor(e).map((e, _))))
+    } yield withAnnotations
+  }
+
   def rescheduleCandidates(course: UUID, semester: UUID) = {
-    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
     import ReportCardEntryDao.precisedAppointmentFilter
+    import utils.date.DateTimeOps.{SqlDateConverter, SqlTimeConverter}
 
     val query = (for {
       x <- dao.filterValidOnly(x => x.memberOfCourse(course) && x.inSemester(semester))
@@ -193,6 +210,7 @@ trait ReportCardEntryService {
 final class ReportCardEntryServiceImpl @Inject()(
   val ctx: ExecutionContext,
   val dao: ReportCardEntryDao,
+  val annotationDao: AnnotationDao,
   val scheduleEntryDao: ScheduleEntryDao,
   val assignmentEntryService: AssignmentEntryService,
   val profile: JdbcProfile

@@ -67,6 +67,7 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
     bind(classOf[DashboardService]).to(classOf[DashboardServiceImpl]).in(classOf[Singleton])
+    bind(classOf[StudentSearchService]).to(classOf[StudentSearchServiceImpl]).in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {

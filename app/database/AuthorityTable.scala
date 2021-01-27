@@ -20,6 +20,8 @@ class AuthorityTable(tag: Tag) extends Table[AuthorityDb](tag, "AUTHORITIES") wi
   override def * = (user, role, course, lastModified, invalidated, id) <> ((AuthorityDb.apply _).tupled, AuthorityDb.unapply)
 
   override protected def userColumnName: String = "USER"
+
+  def hasRole(label: String) = roleFk.filter(_.label === label).exists
 }
 
 case class AuthorityDb(user: UUID, role: UUID, course: Option[UUID] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {

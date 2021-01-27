@@ -1,11 +1,11 @@
 package dao.helper
 
-import java.sql.{Date, Time}
-import java.util.UUID
-
 import database._
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Rep
+
+import java.sql.{Date, Time}
+import java.util.UUID
 
 trait TableFilter[T <: Table[_]] {
   type TableFilterPredicate = T => Rep[Boolean]
@@ -38,6 +38,8 @@ object TableFilter {
   def courseByReportCardEntryFilter[T <: ReportCardEntryIdTable](course: UUID): T => Rep[Boolean] = _.reportCardEntryFk.map(_.memberOfCourse(course)).exists
 
   def userByReportCardEntryFilter[T <: ReportCardEntryIdTable](user: UUID): T => Rep[Boolean] = _.reportCardEntryFk.filter(_.user === user).exists
+
+  def systemIdByReportCardEntryFilter[T <: ReportCardEntryIdTable](systemId: String): T => Rep[Boolean] = _.reportCardEntryFk.filter(e => systemIdFilter(systemId)(e)).exists
 
   def roomByReportCardEntryFilter[T <: ReportCardEntryIdTable](room: UUID): T => Rep[Boolean] = _.reportCardEntryFk.filter(_.room === room).exists
 

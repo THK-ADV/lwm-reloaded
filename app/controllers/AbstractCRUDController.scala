@@ -76,17 +76,30 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     abstractDao.invalidate(uuid).map(toLwmModel)
   }
 
-  def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { request =>
+  def all(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { implicit request =>
+    allWithFilter { (filter, defaults) =>
+      abstractDao.get(filter, defaults.atomic, defaults.valid, defaults.lastModified).jsonResult
+    }
+  }
+
+  // TODO use this to count number of entries
+  def count(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { implicit request =>
+    allWithFilter { (filter, defaults) =>
+      abstractDao.count(filter, defaults.valid, defaults.lastModified).jsonResult
+    }
+  }
+
+  protected def allWithFilter[A](f: (List[TableFilterPredicate], DefaultAttributes) => Future[Result])(implicit request: Request[AnyContent]): Future[Result] = {
     import utils.Ops.MonadInstances.tryM
     import utils.Ops._
 
     val (queryString, defaults) = extractAttributes(request.queryString)
     val filter = makeTableFilter(queryString).sequence
 
-    (for {
+    for {
       filter <- Future.fromTry(filter)
-      results <- abstractDao.get(filter, defaults.atomic, defaults.valid, defaults.lastModified)
-    } yield results).jsonResult
+      result <- f(filter, defaults)
+    } yield result
   }
 
   private def makeTableFilter(queryString: QueryString): List[Try[TableFilterPredicate]] = {

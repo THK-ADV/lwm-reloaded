@@ -1,12 +1,8 @@
 package dao
 
-import java.sql.{Date, Time}
-import java.util.UUID
-
-import dao.helper.TableFilter.{labworkFilter, userFilter}
 import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
-import database._
-import javax.inject.Inject
+import database.{LabworkDb, ReportCardEntryDb, RoomDb, UserDb, _}
+import models.AnnotationLike.{Annotation, AnnotationAtom}
 import models._
 import slick.jdbc
 import slick.jdbc.PostgresProfile
@@ -14,6 +10,9 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Rep, TableQuery}
 import utils.date.DateTimeOps._
 
+import java.sql.{Date, Time}
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
@@ -103,8 +102,78 @@ trait ReportCardEntryDao
     db run query.result
   }
 
-  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
-    case ((entry, labwork, student, room), optRs, optRt, entryTypes) => ReportCardEntryAtom(
+  override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] =
+    collectDependencies(query) {
+      case ((e, l, s, u), rs, rt) => makeAtomicModel(e, l, s, u, rs, rt)
+    }
+
+  override def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] =
+    collectDependencies(query) {
+      case ((e, _, _, _), rs, rt) => makeNonAtomicModel(e, rs, rt)
+    }
+
+  private def baseQuery(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]) = for {
+    (q, ts) <- query.joinLeft(entryTypeQuery).on(_.id === _.reportCardEntry) if q.isValid
+    l <- q.labworkFk
+    s <- q.userFk
+    r <- q.roomFk
+  } yield (q, l, s, r, ts)
+
+  private def retriesQuery = for {
+    (rt, ts) <- retryQuery.joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry) if rt.isValid
+    r <- rt.roomFk
+  } yield (rt, ts, r)
+
+  private def reschedulesQuery = for {
+    rs <- rescheduledQuery if rs.isValid
+    r <- rs.roomFk
+  } yield (rs, r)
+
+  private def annotationQuery = for {
+    q <- TableQuery[AnnotationTable] if q.isValid
+    u <- q.userFk
+  } yield (q, u)
+
+  def withAnnotations(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq], atomic: Boolean): Future[Seq[(ReportCardEntryLike, Set[AnnotationLike])]] = {
+    val action = baseQuery(query)
+      .joinLeft(reschedulesQuery).on(_._1.id === _._1.reportCardEntry)
+      .joinLeft(retriesQuery).on(_._1._1.id === _._1.reportCardEntry)
+      .joinLeft(annotationQuery).on(_._1._1._1.id === _._1.reportCardEntry)
+      .result.map(_.groupBy(_._1._1._1._1.id).map {
+      case (_, dependencies) =>
+        val (e, l, s, r) = makeEntry(dependencies.map(_._1._1._1))
+        val rs = makeReschedule(dependencies.flatMap(_._1._1._2))
+        val rt = makeRetry(dependencies.flatMap(_._1._2))
+        val as = dependencies.flatMap(_._2)
+
+        if (atomic)
+          (makeAtomicModel(e, l, s, r, rs, rt), as.map(a => makeAnnotationAtom(a._1, a._2)).toSet)
+        else
+          (makeNonAtomicModel(e, rs, rt), as.map(a => makeAnnotation(a._1)).toSet)
+    }.toSeq)
+
+    db.run(action)
+  }
+
+  private def makeRetry(rts: Seq[(ReportCardRetryDb, Option[ReportCardEntryTypeDb], RoomDb)]) =
+    rts.headOption.map {
+      case (retry, _, room) =>
+        (retry.copy(entryTypes = rts.flatMap(_._2).toSet), room)
+    }
+
+  private def makeReschedule(rs: Seq[(ReportCardRescheduledDb, RoomDb)]) =
+    rs.headOption
+
+  private def makeEntry(rts: Seq[(ReportCardEntryDb, LabworkDb, UserDb, RoomDb, Option[ReportCardEntryTypeDb])]) = {
+    val (e, l, u, r, _) = rts.head
+    (e.copy(entryTypes = rts.flatMap(_._5).toSet), l, u, r)
+  }
+
+  private def makeNonAtomicModel(entry: ReportCardEntryDb, optRs: Option[(ReportCardRescheduledDb, RoomDb)], optRt: Option[(ReportCardRetryDb, RoomDb)]) =
+    entry.copy(rescheduled = optRs.map(_._1), retry = optRt.map(_._1)).toUniqueEntity
+
+  private def makeAtomicModel(entry: ReportCardEntryDb, labwork: LabworkDb, student: UserDb, room: RoomDb, optRs: Option[(ReportCardRescheduledDb, RoomDb)], optRt: Option[(ReportCardRetryDb, RoomDb)]): ReportCardEntryLike =
+    ReportCardEntryAtom(
       student.toUniqueEntity,
       labwork.toUniqueEntity,
       entry.label,
@@ -112,49 +181,37 @@ trait ReportCardEntryDao
       entry.start.localTime,
       entry.end.localTime,
       room.toUniqueEntity,
-      entryTypes.map(_.toUniqueEntity).toSet,
+      entry.entryTypes.map(_.toUniqueEntity),
       entry.assignmentIndex,
       optRs.map { case (rs, r) => ReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toUniqueEntity, rs.reason, rs.id) },
       optRt.map { case (rt, r) => ReportCardRetryAtom(rt.date.localDate, rt.start.localTime, rt.end.localTime, r.toUniqueEntity, rt.entryTypes.map(_.toUniqueEntity), rt.reason, rt.id) },
       entry.id
     )
-  }
 
-  override protected def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] = collectDependencies(query) {
-    case ((entry, _, _, _), optRs, optRt, entryTypes) => entry.copy(entryTypes = entryTypes.toSet, rescheduled = optRs.map(_._1), retry = optRt.map(_._1)).toUniqueEntity
-  }
+  private def makeAnnotationAtom(a: AnnotationDb, u: UserDb): AnnotationLike =
+    AnnotationAtom(
+      a.reportCardEntry,
+      u.toUniqueEntity,
+      a.message,
+      a.lastModified.dateTime,
+      a.id
+    )
+
+  private def makeAnnotation(a: AnnotationDb): AnnotationLike =
+    a.toUniqueEntity
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)], Seq[ReportCardEntryTypeDb]) => ReportCardEntryLike) = {
-    val mandatory = for {
-      q <- query
-      l <- q.labworkFk
-      s <- q.userFk
-      r <- q.roomFk
-    } yield (q, l, s, r)
-
-    val retries = for {
-      rt <- retryQuery.joinLeft(entryTypeQuery).on(_.id === _.reportCardRetry)
-      r <- rt._1.roomFk
-    } yield (rt, r)
-
-    val rescheduled = for {
-      rs <- rescheduledQuery
-      r <- rs.roomFk
-    } yield (rs, r)
-
-    val action = mandatory
-      .joinLeft(rescheduled).on(_._1.id === _._1.reportCardEntry)
-      .joinLeft(retries).on(_._1._1.id === _._1._1.reportCardEntry)
-      .joinLeft(entryTypeQuery).on(_._1._1._1.id === _.reportCardEntry)
-      .result.map(_.groupBy(_._1._1._1._1.id).map {
-      case (id, dependencies) =>
-        val (((entry, rescheduled), retry), _) = dependencies.find(_._1._1._1._1.id == id).get // lhs first, which should be the grouped key
-        val retryEntryTypes = dependencies.flatMap(_._1._2.flatMap(_._1._2)) // resolve other n to m relationship
-        val entryTypes = dependencies.flatMap(_._2) // rhs next, which should be the grouped values, the reason we grouped for
-        val retryWithEntryTypes = retry.map(t => (t._1._1.copy(entryTypes = retryEntryTypes.toSet), t._2))
-
-        build(entry, rescheduled, retryWithEntryTypes, entryTypes)
+    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)], Option[(ReportCardRetryDb, RoomDb)]) => ReportCardEntryLike) = {
+    val action = baseQuery(query)
+      .joinLeft(reschedulesQuery).on(_._1.id === _._1.reportCardEntry)
+      .joinLeft(retriesQuery).on(_._1._1.id === _._1.reportCardEntry)
+      .result.map(_.groupBy(_._1._1._1.id).map {
+      case (_, dependencies) =>
+        build(
+          makeEntry(dependencies.map(_._1._1)),
+          makeReschedule(dependencies.flatMap(_._1._2)),
+          makeRetry(dependencies.flatMap(_._2))
+        )
     }.toSeq)
 
     db.run(action)

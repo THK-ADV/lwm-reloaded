@@ -10,7 +10,7 @@ object AnnotationLike {
 
   case class Annotation(reportCardEntry: UUID, author: UUID, message: String, lastModified: DateTime, id: UUID) extends AnnotationLike
 
-  case class AnnotationAtom(reportCardEntry: ReportCardEntry, author: User, message: String, lastModified: DateTime, id: UUID) extends AnnotationLike
+  case class AnnotationAtom(reportCardEntry: UUID, author: User, message: String, lastModified: DateTime, id: UUID) extends AnnotationLike
 
 }
 

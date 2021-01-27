@@ -1,11 +1,8 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryDb, ReportCardEntryTable}
-import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
@@ -14,6 +11,8 @@ import security.SecurityActionChain
 import service.ReportCardEntryService.ReportCardEntryDescription
 import service._
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -61,12 +60,18 @@ final class ReportCardEntryController @Inject()(
     all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
   }
 
-  def allFromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) asyncAction { request =>
-    all(NonSecureBlock)(request.appending(scheduleEntryAttribute -> Seq(scheduleEntry)))
-  }
-
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
+  }
+
+  def fromScheduleEntry(course: String, scheduleEntry: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    val requestWithScheduleEntry = request.appending(scheduleEntryAttribute -> Seq(scheduleEntry))
+
+    allWithFilter { (filter, defaults) =>
+      service
+        .withAnnotationCountInLabwork(filter, defaults.atomic, defaults.valid, defaults.lastModified)
+        .jsonResult
+    }(requestWithScheduleEntry)
   }
 
   def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>

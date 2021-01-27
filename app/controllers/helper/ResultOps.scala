@@ -59,6 +59,7 @@ trait ResultOps {
 
     def jsonResult(f: A => Result)(implicit executor: ExecutionContext): Future[Result] = future
       .map(f)
+
       .recover(recoverBadRequest())
   }
 

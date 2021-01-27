@@ -25,7 +25,7 @@ final class DashboardServiceImpl @Inject()(
 ) extends DashboardService {
 
   override def dashboard(systemId: String, config: DashboardConfig): Future[Dashboard] = for {
-    semester <- currentSemester(config.atomic)
+    semester <- currentSemester()
     user <- currentUser(systemId, config.atomic)
     board <- user match {
       case employee: Employee =>
@@ -72,6 +72,6 @@ final class DashboardServiceImpl @Inject()(
   private def currentUser(systemId: String, atomic: Boolean) =
     unwrap(userDao.getBySystemId(systemId, atomic), () => s"none or more than one user found for systemId $systemId")
 
-  private def currentSemester(atomic: Boolean): Future[Semester] =
-    unwrap(semesterDao.current(atomic), () => s"none or more than one semester was found, but there should only one current semester")
+  private def currentSemester(): Future[Semester] =
+    unwrap(semesterDao.current, () => s"none or more than one semester was found, but there should only one current semester")
 }

@@ -101,8 +101,8 @@ GET           /reportCardEntries/student/:s                                    c
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/reportCardEntries/extend                 controllers.ReportCardEntryController.extend(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
+GET           /courses/:c/reportCardEntries/scheduleEntry/:sid                 controllers.ReportCardEntryController.fromScheduleEntry(c, sid)
 GET           /courses/:c/rescheduleCandidates/semesters/:sid                  controllers.ReportCardEntryController.rescheduleCandidates(c, sid)
-GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)
 DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)
 
@@ -161,11 +161,17 @@ GET           /users/:id                                                       c
 PUT           /users/:id                                                       controllers.UserController.update(id)
 
 # Annotation
+GET           /labworks/:l/annotations                                         controllers.AnnotationController.forStudent(l)
+
 POST          /courses/:c/annotations                                          controllers.AnnotationController.createFrom(c)
 GET           /courses/:c/annotations                                          controllers.AnnotationController.allFrom(c)
+GET           /courses/:c/annotations/count                                    controllers.AnnotationController.countFrom(c)
 GET           /courses/:c/annotations/:id                                      controllers.AnnotationController.getFrom(c, id)
 PUT           /courses/:c/annotations/:id                                      controllers.AnnotationController.updateFrom(c, id)
 DELETE        /courses/:c/annotations/:id                                      controllers.AnnotationController.invalidateFrom(c, id)
+
+# Student Search
+GET           /studentSearch/:s                                                controllers.StudentSearchController.dashboard(s)
 
 # Mail
 POST          /courses/:c/mails                                                controllers.MailController.sendMailWithBody(c)

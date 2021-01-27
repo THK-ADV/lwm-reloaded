@@ -80,7 +80,7 @@ trait Retrieved[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity,
 
   final def filterValidOnly(query: Query[T, DbModel, Seq]): Query[T, DbModel, Seq] = query.filterBy(validOnly = true, None)
 
-  protected implicit class QueryOps(val query: Query[T, DbModel, Seq]) {
+  implicit class QueryOps(val query: Query[T, DbModel, Seq]) {
     def retrieve(atomic: Boolean): Future[Seq[LwmModel]] = if (atomic) toAtomic(query) else toUniqueEntity(query)
 
     def filterBy(validOnly: Boolean, sinceLastModified: Option[String]): Query[T, DbModel, Seq] = query.filterLastModified(sinceLastModified).filterValidOnly(validOnly)

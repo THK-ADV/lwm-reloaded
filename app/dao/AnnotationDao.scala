@@ -33,14 +33,13 @@ final class AnnotationDaoImpl @Inject()(
   override protected def toAtomic(query: Query[AnnotationTable, AnnotationDb, Seq]): Future[Seq[AnnotationAtom]] = {
     val join = for {
       q <- query
-      r <- q.reportCardEntryFk
       u <- q.userFk
-    } yield (q, r, u)
+    } yield (q, u)
 
     val action = join.result.map(_.map {
-      case (annotation, reportCardEntry, author) =>
+      case (annotation, author) =>
         AnnotationAtom(
-          reportCardEntry.toUniqueEntity,
+          annotation.reportCardEntry,
           author.toUniqueEntity,
           annotation.message,
           annotation.lastModified.dateTime,

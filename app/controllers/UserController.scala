@@ -1,16 +1,16 @@
 package controllers
 
 import java.util.UUID
-
 import controllers.helper.RequestOps
 import dao._
 import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
+
 import javax.inject.{Inject, Singleton}
 import models.Role._
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsNull, Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 
@@ -114,7 +114,7 @@ final class UserController @Inject()(
       case NotExisting(b) => Ok(Json.obj(
         "status" -> "KO",
         "type" -> buddyResult.toString,
-        "buddy" -> None,
+        "buddy" -> JsNull,
         "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
       ))
     }
