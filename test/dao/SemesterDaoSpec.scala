@@ -46,7 +46,7 @@ class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
       }.toList
 
       async(dao.createMany(semesters))(_.size shouldEqual semesters.size)
-      async(dao.current(false))(_.value shouldEqual semesters.find(_.start.localDate.getYear == now.getYear).get.toUniqueEntity)
+      async(dao.current)(_.value shouldEqual semesters.find(_.start.localDate.getYear == now.getYear).get.toUniqueEntity)
     }
 
     "not return current semester if there is none" in {
@@ -57,7 +57,7 @@ class SemesterDaoSpec extends DatabaseSpec with DateGenerator {
       }.toList
 
       async(dao.createMany(semesters))(_ => Unit)
-      async(dao.current(false))(_ shouldBe empty)
+      async(dao.current)(_ shouldBe empty)
     }
 
     "filter semesters by start and end date " in {

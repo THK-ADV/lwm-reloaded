@@ -35,9 +35,8 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
 
   protected def abstractDao: AbstractDao[T, DbModel, LwmModel]
 
-  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
+  protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     Failure(new Throwable(s"no filter for $attribute and $value"))
-  }
 
   protected def toDbModel(protocol: Protocol, existingId: Option[UUID]): DbModel
 
