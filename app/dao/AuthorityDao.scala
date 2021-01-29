@@ -35,10 +35,6 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def courseManagerRole: LWMRole = Role.CourseManager
 
-  private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
-    filterValidOnly(a => a.user === user && a.role === role).exists.result
-  }
-
   def isAdmin(user: UUID): Future[Boolean] =
     db.run(filterValidOnly(a => a.user === user && a.hasRole(Role.Admin.label)).exists.result)
 

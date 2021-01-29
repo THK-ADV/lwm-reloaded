@@ -1,14 +1,18 @@
 package utils.student_query_engine
 
-import dao.UserDao
-import database.{LabworkApplicationTable, ReportCardEntryTable, ReportCardEntryTypeTable, UserTable}
+import dao.{LabworkApplicationDao, ReportCardEntryDao, UserDao}
+import database.{ReportCardEntryTable, ReportCardEntryTypeTable, UserTable}
 import slick.jdbc.JdbcProfile
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
+final class StudentQueryEngine @Inject()(
+  val profile: JdbcProfile,
+  val labworkApplicationDao: LabworkApplicationDao,
+  val reportCardEntryDao: ReportCardEntryDao
+) {
 
   import Expression._
   import profile.api._
@@ -62,13 +66,13 @@ final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
 
   private def semester(semesterId: UUID): UserTable => Rep[Boolean] =
     table => {
-      val q = TableQuery[LabworkApplicationTable].filter(_.inSemester(semesterId)).map(_.user)
+      val q = labworkApplicationDao.filterValidOnly(_.inSemester(semesterId)).map(_.user)
       table.id.in(q)
     }
 
   private def course(courseId: UUID): UserTable => Rep[Boolean] =
     table => {
-      val q = TableQuery[LabworkApplicationTable].filter(_.memberOfCourse(courseId)).map(_.user)
+      val q = labworkApplicationDao.filterValidOnly(_.memberOfCourse(courseId)).map(_.user)
       table.id.in(q)
     }
 
@@ -77,7 +81,7 @@ final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
 
   private def labwork(labworkId: UUID): UserTable => Rep[Boolean] =
     user => {
-      val q = TableQuery[LabworkApplicationTable].filter(_.labwork === labworkId).map(_.user)
+      val q = labworkApplicationDao.filterValidOnly(_.labwork === labworkId).map(_.user)
       user.id.in(q)
     }
 
@@ -89,9 +93,9 @@ final class StudentQueryEngine @Inject()(val profile: JdbcProfile) {
         case (acc, Context.Labwork(id)) => table => acc(table) && table.labwork === id
       }
 
-      val q = TableQuery[ReportCardEntryTable]
-        .filter(t => inContext(t) && t.label === label)
-        .joinLeft(TableQuery[ReportCardEntryTypeTable])
+      val q = reportCardEntryDao
+        .filterValidOnly(t => inContext(t) && t.label === label)
+        .joinLeft(TableQuery[ReportCardEntryTypeTable].filter(_.isValid))
         .on(_.id === _.reportCardEntry)
         .filter(t => t._2.map(t => t.entryType === "Testat" && (if (shouldPass) t.bool.getOrElse(false) else !t.bool.getOrElse(false))).getOrElse(false))
         .map(t => t._1.user)
