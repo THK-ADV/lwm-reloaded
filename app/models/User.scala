@@ -1,8 +1,9 @@
 package models
 
-import java.util.UUID
-
+import database.helper.LdapUserStatus
 import play.api.libs.json.{Json, Reads, Writes}
+
+import java.util.UUID
 
 trait User extends UniqueEntity {
   def systemId: String
@@ -12,6 +13,8 @@ trait User extends UniqueEntity {
   def firstname: String
 
   def email: String
+
+  def status: LdapUserStatus
 }
 
 case class StudentProtocol(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID)

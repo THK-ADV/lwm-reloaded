@@ -1,22 +1,29 @@
 package controllers
 
 import controllers.helper.{JsonParser, ResultOps}
-import javax.inject.Inject
+import dao.AnnotationDao
+import play.api.libs.json.JsBoolean
 import play.api.mvc.{AbstractController, ControllerComponents}
 import service.Webservice
 import utils.date.DateTimeFormatterPattern
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class DevController @Inject()(
   cc: ControllerComponents,
   implicit val ctx: ExecutionContext,
-  val ws: Webservice
+  val ws: Webservice,
+  val dao: AnnotationDao
 ) extends AbstractController(cc)
   with DateTimeFormatterPattern
   with JsonParser
   with ResultOps {
+
+  def createAnnotation = Action.async { r =>
+    dao.createSchema.map(_ => Ok(JsBoolean(true)))
+  }
 
   def go() = Action.async(parse.json) { request =>
     import utils.Ops.MonadInstances.tryM

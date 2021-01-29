@@ -1,7 +1,5 @@
 package controllers
 
-import java.util.UUID
-
 import base.DatabaseSpec
 import dao.AuthorityDao
 import dao.helper.NoEntityFound
@@ -14,7 +12,9 @@ import play.api.test._
 import security.SecurityActionChain
 import slick.jdbc.JdbcProfile
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Results {
 
@@ -69,10 +69,13 @@ class AbstractCRUDControllerSpec extends DatabaseSpec with MockitoSugar with Res
 
     "fail a get request if filter are bad" in {
       val request = FakeRequest("GET", "?foo=bar")
-      val result = controller.all().apply(request)
 
-      status(result) shouldBe BAD_REQUEST
-      contentAsJsonMessage(result) shouldBe JsString("no filter for foo and bar")
+      controller.all().apply(request).value.get match {
+        case Failure(exception) =>
+          exception.getMessage shouldBe "no filter for foo and bar"
+        case Success(value) =>
+          fail(s"request should throw an error, but was $value")
+      }
     }
 
     "return get a single value" in {

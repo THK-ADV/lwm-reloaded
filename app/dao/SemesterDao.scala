@@ -36,7 +36,7 @@ trait SemesterDao extends AbstractDao[SemesterTable, SemesterDb, Semester] {
 
   override val tableQuery: TableQuery[SemesterTable] = TableQuery[SemesterTable]
 
-  final def current(atomic: Boolean) = getSingleWhere(currentFilter().apply)
+  final def current = getSingleWhere(currentFilter().apply)
 
   override protected def shouldUpdate(existing: SemesterDb, toUpdate: SemesterDb): Boolean = {
     existing.label == toUpdate.label &&

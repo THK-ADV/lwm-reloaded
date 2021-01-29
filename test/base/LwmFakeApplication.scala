@@ -9,9 +9,9 @@ trait LwmFakeApplication {
   self: GuiceOneAppPerSuite =>
 
   val fakeDbConfig = Configuration(
-    "database.properties.url" -> "jdbc:postgresql://localhost:5432/alex",
+    "database.properties.url" -> "jdbc:postgresql://localhost:5432/postgres",
     "database.properties.user" -> "alex",
-    "database.properties.databaseName" -> "alex",
+    "database.properties.databaseName" -> "postgres",
     "database.properties.password" -> ""
   )
 

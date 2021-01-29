@@ -1,11 +1,8 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
-import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager}
 import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
@@ -13,6 +10,8 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 object ReportCardRescheduledController {
@@ -51,12 +50,12 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
     ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = { // TODO discuss
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case Delete => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>

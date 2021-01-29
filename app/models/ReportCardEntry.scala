@@ -16,6 +16,10 @@ sealed trait ReportCardEntryLike extends UniqueEntity {
   def start: LocalTime
 
   def end: LocalTime
+
+  def assignmentIndex: Int
+
+  def studentId: UUID
 }
 
 case class ReportCardEntry(
@@ -33,6 +37,8 @@ case class ReportCardEntry(
   id: UUID = UUID.randomUUID
 ) extends ReportCardEntryLike {
   override def labworkId = labwork
+
+  override def studentId = student
 }
 
 case class ReportCardEntryProtocol(
@@ -60,6 +66,8 @@ case class ReportCardEntryAtom(
   id: UUID
 ) extends ReportCardEntryLike {
   override def labworkId = labwork.id
+
+  override def studentId = student.id
 }
 
 object ReportCardEntry {

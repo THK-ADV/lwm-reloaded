@@ -1,15 +1,14 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.TableFilter
 import database._
-import javax.inject.Inject
 import models._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.FixedSqlAction
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object AuthorityDao extends TableFilter[AuthorityTable] {
@@ -36,9 +35,8 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   def courseManagerRole: LWMRole = Role.CourseManager
 
-  private def hasAuthority(user: UUID, role: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
-    filterValidOnly(a => a.user === user && a.role === role).exists.result
-  }
+  def isAdmin(user: UUID): Future[Boolean] =
+    db.run(filterValidOnly(a => a.user === user && a.hasRole(Role.Admin.label)).exists.result)
 
   def isCourseManager(user: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
     val query = for {

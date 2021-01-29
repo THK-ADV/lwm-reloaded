@@ -101,8 +101,8 @@ GET           /reportCardEntries/student/:s                                    c
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/reportCardEntries/extend                 controllers.ReportCardEntryController.extend(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
+GET           /courses/:c/reportCardEntries/scheduleEntry/:sid                 controllers.ReportCardEntryController.fromScheduleEntry(c, sid)
 GET           /courses/:c/rescheduleCandidates/semesters/:sid                  controllers.ReportCardEntryController.rescheduleCandidates(c, sid)
-GET           /courses/:c/scheduleEntries/:s/reportCardEntries                 controllers.ReportCardEntryController.allFromScheduleEntry(c, s)
 GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)
 DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)
 
@@ -160,6 +160,19 @@ GET           /labworks/:labwork/users/:user/buddies/:buddy                    c
 GET           /users/:id                                                       controllers.UserController.get(id)
 PUT           /users/:id                                                       controllers.UserController.update(id)
 
+# Annotation
+GET           /labworks/:l/annotations                                         controllers.AnnotationController.forStudent(l)
+
+POST          /courses/:c/annotations                                          controllers.AnnotationController.createFrom(c)
+GET           /courses/:c/annotations                                          controllers.AnnotationController.allFrom(c)
+GET           /courses/:c/annotations/count                                    controllers.AnnotationController.countFrom(c)
+GET           /courses/:c/annotations/:id                                      controllers.AnnotationController.getFrom(c, id)
+PUT           /courses/:c/annotations/:id                                      controllers.AnnotationController.updateFrom(c, id)
+DELETE        /courses/:c/annotations/:id                                      controllers.AnnotationController.invalidateFrom(c, id)
+
+# Student Search
+GET           /studentSearch/:s                                                controllers.StudentSearchController.dashboard(s)
+
 # Mail
 POST          /courses/:c/mails                                                controllers.MailController.sendMailWithBody(c)
 POST          /courses/:c/labworks/:l/mails                                    controllers.MailController.sendMailToAttendeesOf(c, l)
@@ -172,10 +185,11 @@ PUT           /courses/:c/insertIntoGroup                                      c
 PUT           /courses/:c/removeFromGroup                                      controllers.serviceResource.LwmServiceController.removeStudentFromGroup(c)
 PUT           /courses/:c/moveToGroup                                          controllers.serviceResource.LwmServiceController.moveStudentToGroup(c)
 
-POST          /queries                                                         controllers.QueryController.performQuery
-GET           /queries                                                         controllers.QueryController.queryOptions
+PUT           /query                                                           controllers.QueryController.performQuery
+GET           /query/options                                                   controllers.QueryController.queryOptions
 
 POST          /dev/go                                                          controllers.DevController.go
+GET           /dev/anno                                                        controllers.DevController.createAnnotation
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)

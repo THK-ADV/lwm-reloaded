@@ -31,6 +31,7 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
     with TimeRangeTableFilter[BlacklistTable] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.date.DateTimeJsonFormatter.writeDateTime
 
   override protected implicit val writes: Writes[Blacklist] = Blacklist.writes
 

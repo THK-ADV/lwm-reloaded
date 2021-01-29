@@ -1,15 +1,14 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.TableFilter
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
-import javax.inject.Inject
 import models.ReportCardEntryType
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
@@ -19,6 +18,9 @@ object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
 }
 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
+
+  override val tableQuery = TableQuery[ReportCardEntryTypeTable]
+
   def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Int]
 
   def updateFields(users: List[UUID], assignmentEntry: UUID, labwork: UUID, entryType: String, bool: Boolean): Future[Int]
@@ -34,8 +36,6 @@ final class ReportCardEntryTypeDaoImpl @Inject()(
   import ReportCardEntryTypeDao._
   import TableFilter.entryTypeFilter
   import utils.date.DateTimeOps._
-
-  override val tableQuery = TableQuery[ReportCardEntryTypeTable]
 
   override protected def toAtomic(query: Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq]): Future[Seq[ReportCardEntryType]] = toUniqueEntity(query)
 

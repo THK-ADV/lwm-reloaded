@@ -41,6 +41,8 @@ trait LabworkIdTable {
   def memberOfCourses(course: Traversable[UUID]) = labworkFk.filter(_.course.inSet(course)).exists
 
   def inSemester(id: UUID) = labworkFk.filter(_.semester === id).exists
+
+  def course() = labworkFk.flatMap(_.courseFk)
 }
 
 trait RoomIdTable {
@@ -62,6 +64,8 @@ trait ReportCardEntryIdTable {
   def reportCardEntry = column[UUID]("REPORT_CARD_ENTRY")
 
   def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id)
+
+  def inLabwork(labwork: UUID) = reportCardEntryFk.filter(_.labwork === labwork).exists
 }
 
 trait LabelTable {

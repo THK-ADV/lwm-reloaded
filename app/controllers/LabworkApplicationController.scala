@@ -1,11 +1,8 @@
 package controllers
 
-import java.util.UUID
-
 import dao._
-import dao.helper.TableFilter.{courseFilter, labworkFilter}
+import dao.helper.TableFilter.labworkFilter
 import database.{LabworkApplicationDb, LabworkApplicationTable}
-import javax.inject.{Inject, Singleton}
 import models.Role.{CourseEmployee, CourseManager, EmployeeRole, God, StudentRole}
 import models._
 import play.api.libs.json.{Reads, Writes}
@@ -13,35 +10,36 @@ import play.api.mvc.ControllerComponents
 import security.SecurityActionChain
 import service.sheet.{ApplicantExport, FileStreamResult}
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 object LabworkApplicationController {
   lazy val labworkAttribute = "labwork"
+  lazy val courseAttribute = "course"
   lazy val applicantAttribute = "applicant"
 }
 
 @Singleton
 final class LabworkApplicationController @Inject()(
-                                                    cc: ControllerComponents,
-                                                    val authorityDao: AuthorityDao,
-                                                    val abstractDao: LabworkApplicationDao,
-                                                    val securedAction: SecurityActionChain,
-                                                    implicit val ctx: ExecutionContext
-                                                  )
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: LabworkApplicationDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+)
   extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc)
     with FileStreamResult {
+
+  import LabworkApplicationController._
 
   override protected implicit val writes: Writes[LabworkApplicationLike] = LabworkApplicationLike.writes
 
   override protected implicit val reads: Reads[LabworkApplicationProtocol] = LabworkApplicationProtocol.reads
 
   def countFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { implicit request =>
-    (for {
-      courseId <- course.uuidF
-      labworkId <- labwork.uuidF
-      count <- abstractDao.count(List(courseFilter(courseId), labworkFilter(labworkId)))
-    } yield count).jsonResult
+    count(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
 
   def renderApplicantSheet(course: String, labwork: String) = restrictedContext(course)(Get) asyncAction { implicit request =>
@@ -55,15 +53,13 @@ final class LabworkApplicationController @Inject()(
     } yield toResult(sheet)
   }
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import LabworkApplicationController._
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`labworkAttribute`, l) => l.makeLabworkFilter
+      case (`courseAttribute`, c) => c.makeCourseFilter
       case (`applicantAttribute`, a) => a.makeUserFilter
       case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
-  }
 
   override protected def toDbModel(protocol: LabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = {
     LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends, id = existingId getOrElse UUID.randomUUID)

@@ -75,7 +75,5 @@ final class DashboardController @Inject()(
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(List(God))
-  }
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

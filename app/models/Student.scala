@@ -1,7 +1,8 @@
 package models
 
-import java.util.UUID
+import database.helper.LdapUserStatus
 
+import java.util.UUID
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Writes}
 
@@ -12,10 +13,14 @@ trait StudentLike extends User {
 
 case class Student(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID, id: UUID = UUID.randomUUID) extends StudentLike {
   override def enrollmentId = enrollment
+
+  override def status = LdapUserStatus.StudentStatus
 }
 
 case class StudentAtom(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: Degree, id: UUID) extends StudentLike {
   override def enrollmentId = enrollment.id
+
+  override def status = LdapUserStatus.StudentStatus
 }
 
 object Student {

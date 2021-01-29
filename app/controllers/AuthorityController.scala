@@ -40,6 +40,10 @@ final class AuthorityController @Inject()(cc: ControllerComponents, val abstract
     } yield deleted.toUniqueEntity).jsonResult
   }
 
+  // TODO marcel:
+  // TODO None & Employee
+  // TODO Some(DB1) & CourseManager
+  // TODO Some(DB2) & CourseManager
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(List(CourseManager))
     case Delete => PartialSecureBlock(List(CourseManager))
