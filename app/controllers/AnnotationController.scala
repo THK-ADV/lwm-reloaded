@@ -70,11 +70,7 @@ class AnnotationController @Inject()(
   )
 
   override protected def restrictedContext(restrictionId: String) = {
-    case Create => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
-    case Update => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
-    case Get => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
+    case _ => SecureBlock(restrictionId, List(CourseAssistant, CourseEmployee, CourseManager))
   }
 
   override protected def contextFrom = {
