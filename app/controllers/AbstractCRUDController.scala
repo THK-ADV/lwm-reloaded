@@ -82,7 +82,6 @@ abstract class AbstractCRUDController[Protocol, T <: Table[DbModel] with UniqueT
     }
   }
 
-  // TODO use this to count number of entries
   def count(secureContext: SecureContext = contextFrom(GetAll)) = secureContext asyncAction { implicit request =>
     allWithFilter { (filter, defaults) =>
       abstractDao.count(filter, defaults.valid, defaults.lastModified).jsonResult
