@@ -21,10 +21,6 @@ class DevController @Inject()(
   with JsonParser
   with ResultOps {
 
-  def createAnnotation = Action.async { r =>
-    dao.createSchema.map(_ => Ok(JsBoolean(true)))
-  }
-
   def go() = Action.async(parse.json) { request =>
     import utils.Ops.MonadInstances.tryM
     import utils.Ops._
