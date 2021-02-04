@@ -38,9 +38,12 @@ trait Invalidated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     invalidateSingle0(query, now)
   }
 
-  final def delete(id: UUID) = for {
+  final def delete(id: UUID): DBIOAction[Int, NoStream, Effect.Write] = for {
     d <- filterValidOnly(_.id === id).delete if d == 1
   } yield d
+
+  final def deleteHard(ids: List[UUID]): Future[Int] =
+    db.run(tableQuery.filter(_.id.inSet(ids)).delete)
 
   private def invalidateSingle0(query: Query[T, DbModel, Seq], now: Timestamp) = {
     val singleQuery = query.exactlyOne { toDelete =>
