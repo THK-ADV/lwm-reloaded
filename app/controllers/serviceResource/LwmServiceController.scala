@@ -5,7 +5,7 @@ import dao.{AuthorityDao, LwmServiceDao}
 import database.GroupMembership
 import play.api.libs.json.{Json, OWrites}
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
-import security.LWMRole.{CourseEmployee, CourseManager, God}
+import security.LWMRole.{Admin, CourseEmployee, CourseManager, God}
 import security.SecurityActionChain
 
 import javax.inject.Inject
@@ -28,6 +28,7 @@ final class LwmServiceController @Inject()(
 
   import models.LabworkApplication.{writes => lappWrites}
   import models.ReportCardEntry.{writes => cardWrites}
+  import models.Student.{writes => studentWrites}
 
   def insertStudentToGroup(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     (parseJson[GroupChangeRequest] _ andThen mapJson andThen (r => r(insertIntoGroup))) (request)
@@ -39,6 +40,23 @@ final class LwmServiceController @Inject()(
 
   def moveStudentToGroup(course: String) = restrictedContext(course)(Update) asyncAction { request =>
     (parseJson[GroupMovingRequest] _ andThen mapJson andThen (r => r(moveToGroup))) (request)
+  }
+
+  def mergeUsers() = contextFrom(Update) asyncAction { request =>
+    (for {
+      json <- Future.fromTry(unwrap(request))
+      origin <- Future.fromTry(asTry(string(json.\("origin"))))
+      drop <- Future.fromTry(asTry(string(json.\("drop"))))
+      res <- serviceDao.mergeUser(origin, drop)
+    } yield res).jsonResult
+  }
+
+  def duplicateUsers() = contextFrom(Get) asyncAction { _ =>
+    serviceDao.duplicateStudents().jsonResult
+  }
+
+  def usersWithoutRegistrationId() = contextFrom(Get) asyncAction { _ =>
+    serviceDao.usersWithoutRegistrationId().jsonResult
   }
 
   private def insertIntoGroup(request: GroupChangeRequest): Future[Result] = {
@@ -85,5 +103,8 @@ final class LwmServiceController @Inject()(
     case _ => PartialSecureBlock(List(God))
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Update => PartialSecureBlock(List(Admin))
+    case Get => PartialSecureBlock(List(Admin))
+  }
 }

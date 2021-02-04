@@ -5,11 +5,17 @@ import java.util.UUID
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-sealed trait AuthorityLike extends UniqueEntity
+sealed trait AuthorityLike extends UniqueEntity {
+  def courseId: Option[UUID]
+}
 
-case class Authority(user: UUID, role: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends AuthorityLike
+case class Authority(user: UUID, role: UUID, course: Option[UUID] = None, id: UUID = UUID.randomUUID) extends AuthorityLike {
+  override def courseId = course
+}
 
-case class AuthorityAtom(user: User, role: Role, course: Option[CourseAtom], id: UUID) extends AuthorityLike
+case class AuthorityAtom(user: User, role: Role, course: Option[CourseAtom], id: UUID) extends AuthorityLike {
+  override def courseId = course.map(_.id)
+}
 
 case class AuthorityProtocol(user: UUID, role: UUID, course: Option[UUID] = None)
 
