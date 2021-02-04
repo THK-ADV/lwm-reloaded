@@ -1,22 +1,18 @@
 package controllers
 
-import java.util.UUID
-
-import auth.UserToken
 import dao._
 import dao.helper.TableFilter
 import database.{ReportCardEvaluationDb, ReportCardEvaluationTable}
-import javax.inject.{Inject, Singleton}
-import models.Role._
 import models._
-import org.apache.poi.ss.usermodel.IndexedColors
-import org.joda.time.LocalDate
 import play.api.libs.json._
 import play.api.mvc.{ControllerComponents, Result}
+import security.LWMRole.{CourseEmployee, CourseManager, God, StudentRole}
 import security.SecurityActionChain
 import service.sheet._
 import utils.Ops
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
@@ -24,26 +20,18 @@ object ReportCardEvaluationController {
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
   lazy val studentAttribute = "student"
-
-  /*lazy val labelAttribute = "label" // TODO
-  lazy val boolAttribute = "bool"
-  lazy val intAttribute = "int"
-  lazy val minIntAttribute = "minInt"
-  lazy val maxIntAttribute = "maxInt"
-  lazy val explicitAttribute = "explicit"*/
 }
 
 @Singleton
 final class ReportCardEvaluationController @Inject()(
-                                                      cc: ControllerComponents,
-                                                      val authorityDao: AuthorityDao,
-                                                      val abstractDao: ReportCardEvaluationDao,
-                                                      val reportCardEntryDao: ReportCardEntryDao,
-                                                      val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
-                                                      val securedAction: SecurityActionChain
-                                                    )
-  extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc)
-    with FileStreamResult {
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEvaluationDao,
+  val reportCardEntryDao: ReportCardEntryDao,
+  val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc)
+  with FileStreamResult {
 
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
@@ -143,10 +131,7 @@ final class ReportCardEvaluationController @Inject()(
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Get => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
+    case Create | Get | Delete | Update => SecureBlock(restrictionId, List(CourseManager))
     case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
     case _ => PartialSecureBlock(List(God))
   }

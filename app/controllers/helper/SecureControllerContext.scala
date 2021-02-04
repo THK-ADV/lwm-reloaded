@@ -1,19 +1,17 @@
 package controllers.helper
 
-import java.util.UUID
-
-import models.LWMRole
-import models.Role.God
 import play.api.mvc._
-import security.SecurityActionChain
+import security.LWMRole.{BasicRole, CourseRelatedRole}
+import security.{LWMRole, SecurityActionChain}
 
+import java.util.UUID
 import scala.concurrent.Future
 
 trait SecureControllerContext {
   self: BaseController =>
 
   final protected def forbiddenAction(): PartialFunction[Rule, SecureContext] = {
-    case _ => PartialSecureBlock(List(God))
+    case _ => PartialSecureBlock(List(LWMRole.God))
   }
 
   protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext]
@@ -22,28 +20,28 @@ trait SecureControllerContext {
 
   protected def securedAction: SecurityActionChain
 
-  trait SecureContext {
+  sealed trait SecureContext {
 
     def action(block: Request[AnyContent] => Result): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => securedAction.secured(opt, role)(block),
+      restricted = (id, roles) => securedAction.secured(id, roles)(block),
       simple = Action(block)
     )
 
     def asyncAction(block: Request[AnyContent] => Future[Result]): Action[AnyContent] = apply[AnyContent](
-      restricted = (opt, role) => securedAction.securedAsync(opt, role)(block),
+      restricted = (id, roles) => securedAction.securedAsync(id, roles)(block),
       simple = Action.async(block)
     )
 
     def apply[A](restricted: (Option[UUID], List[LWMRole]) => Action[A], simple: => Action[A]) = this match {
-      case SecureBlock(id, role) => restricted(Some(UUID.fromString(id)), role)
-      case PartialSecureBlock(role) => restricted(None, role)
+      case SecureBlock(id, roles) => restricted(Some(UUID.fromString(id)), roles)
+      case PartialSecureBlock(roles) => restricted(None, roles)
       case NonSecureBlock => simple()
     }
   }
 
-  case class SecureBlock(restrictionRef: String, roles: List[LWMRole]) extends SecureContext
+  case class SecureBlock(restrictionRef: String, roles: List[CourseRelatedRole]) extends SecureContext
 
-  case class PartialSecureBlock(roles: List[LWMRole]) extends SecureContext
+  case class PartialSecureBlock(roles: List[BasicRole]) extends SecureContext
 
   case object NonSecureBlock extends SecureContext
 
@@ -58,5 +56,4 @@ trait SecureControllerContext {
   case object Get extends Rule
 
   case object Update extends Rule
-
 }

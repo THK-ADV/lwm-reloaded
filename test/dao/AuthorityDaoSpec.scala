@@ -1,13 +1,13 @@
 package dao
 
 import java.util.UUID
-
 import dao.helper.TableFilter
 import database._
 import database.helper.LdapUserStatus._
 import models._
 import org.joda.time.DateTime
 import play.api.inject.guice.GuiceableModule
+import security.LWMRole._
 import slick.dbio.Effect.Write
 
 class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, AuthorityLike] {
@@ -18,13 +18,13 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private def courseManager: RoleDb = roles.find(_.label == Role.CourseManager.label).get
+  private def courseManager: RoleDb = roles.find(_.label == CourseManager.label).get
 
-  private def employeeRole: RoleDb = roles.find(_.label == Role.EmployeeRole.label).get
+  private def employeeRole: RoleDb = roles.find(_.label == EmployeeRole.label).get
 
-  private def studentRole: RoleDb = roles.find(_.label == Role.StudentRole.label).get
+  private def studentRole: RoleDb = roles.find(_.label == StudentRole.label).get
 
-  private def adminRole: RoleDb = roles.find(_.label == Role.Admin.label).get
+  private def adminRole: RoleDb = roles.find(_.label == Admin.label).get
 
   "A AuthorityDaoSpec" should {
 
@@ -38,17 +38,17 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
         dao.createBasicAuthorityFor(employee) map { auth =>
           auth.user shouldBe employee.id
           auth.role shouldBe roles.find(_.label == employeeRole.label).get.id
-          auth.course shouldBe empty
+          auth.course shouldBe None
         },
         dao.createBasicAuthorityFor(lecturer) map { auth =>
           auth.user shouldBe lecturer.id
           auth.role shouldBe roles.find(_.label == employeeRole.label).get.id
-          auth.course shouldBe empty
+          auth.course shouldBe None
         },
         dao.createBasicAuthorityFor(student) map { auth =>
           auth.user shouldBe student.id
           auth.role shouldBe roles.find(_.label == studentRole.label).get.id
-          auth.course shouldBe empty
+          auth.course shouldBe None
         }
       )
     }
@@ -68,7 +68,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     "delete authorities as long as the are not associated with a basic role" in {
       val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
       val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
-      val nonBasicRoles = roles.filter(r => r.label == Role.CourseAssistant.label || r.label == Role.CourseEmployee.label)
+      val nonBasicRoles = roles.filter(r => r.label == CourseAssistant.label || r.label == CourseEmployee.label)
       val auths = courses.take(2).zip(nonBasicRoles).map {
         case (course, role) => AuthorityDb(student.id, role.id, Some(course.id))
       }
@@ -94,7 +94,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
       val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
       val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
       val basicAuth = AuthorityDb(student.id, roles.find(_.label == studentRole.label).get.id)
-      val nonBasicAuth = AuthorityDb(student.id, roles.find(_.label == Role.CourseAssistant.label).get.id)
+      val nonBasicAuth = AuthorityDb(student.id, roles.find(_.label == CourseAssistant.label).get.id)
 
       runAsyncSequence(
         TableQuery[UserTable].forceInsertAll(List(otherUser, student)),

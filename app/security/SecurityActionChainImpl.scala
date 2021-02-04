@@ -1,15 +1,14 @@
 package security
 
-import java.util.UUID
-import java.util.concurrent.Executors
-
 import dao.RoleDao
-import javax.inject.Inject
-import models.{Authority, LWMRole}
+import models.Authority
 import play.api.libs.json.Json
 import play.api.mvc.Results.Forbidden
 import play.api.mvc._
 
+import java.util.UUID
+import java.util.concurrent.Executors
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 trait SecurityActionChain {
@@ -24,7 +23,11 @@ trait SecurityActionChain {
   def securedAsync[R <: LWMRole](restricted: Option[UUID], required: List[R])(block: Request[AnyContent] => Future[Result]): Action[AnyContent]
 }
 
-final class SecurityActionChainImpl @Inject()(val authorizationAction: AuthorizationAction, val authorityAction: AuthorityAction, val roleDao: RoleDao) extends SecurityActionChain {
+final class SecurityActionChainImpl @Inject()(
+  val authorizationAction: AuthorizationAction,
+  val authorityAction: AuthorityAction,
+  val roleDao: RoleDao
+) extends SecurityActionChain {
 
   private implicit val actionExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 

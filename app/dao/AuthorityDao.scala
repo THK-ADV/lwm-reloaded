@@ -3,6 +3,7 @@ package dao
 import dao.helper.TableFilter
 import database._
 import models._
+import security.LWMRole._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.FixedSqlAction
@@ -29,19 +30,13 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
 
   protected def roleDao: RoleDao
 
-  def studentRole: LWMRole = Role.StudentRole
-
-  def employeeRole: LWMRole = Role.EmployeeRole
-
-  def courseManagerRole: LWMRole = Role.CourseManager
-
   def isAdmin(user: UUID): Future[Boolean] =
-    db.run(filterValidOnly(a => a.user === user && a.hasRole(Role.Admin.label)).exists.result)
+    db.run(filterValidOnly(a => a.user === user && a.hasRole(Admin.label)).exists.result)
 
   def isCourseManager(user: UUID): FixedSqlAction[Boolean, NoStream, Effect.Read] = {
     val query = for {
       q <- tableQuery if q.user === user && q.course.isDefined
-      r <- q.roleFk if r.label === courseManagerRole.label
+      r <- q.roleFk if r.label === CourseManager.label
     } yield q
 
     filterValidOnly(query).exists.result
@@ -51,7 +46,7 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
     filterValidOnly { a =>
       a.user === course.lecturer &&
         a.course.map(_ === course.id).getOrElse(false) &&
-        a.roleFk.filter(_.label === courseManagerRole.label).exists
+        a.roleFk.filter(_.label === CourseManager.label).exists
     }.delete
   }
 
@@ -64,27 +59,29 @@ trait AuthorityDao extends AbstractDao[AuthorityTable, AuthorityDb, AuthorityLik
   }
 
   def deleteAuthorityIfNotBasic(id: UUID): Future[AuthorityDb] = {
-    val query = filterValidOnly {
-      for {
-        q <- tableQuery if q.id === id
-        r <- q.roleFk if r.label =!= studentRole.label && r.label =!= employeeRole.label
-      } yield q
-    }
+    val query = for {
+      q <- tableQuery if q.isValid && q.id === id
+      r <- q.roleFk if !isBasicRole(r)
+    } yield q
 
     val action = for {
+      q <- query.result
       nonBasic <- query.exists.result
       d <- if (nonBasic)
-        invalidateSingle(id)
+        delete(id)
       else
-        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${studentRole.label} or ${employeeRole.label}"))
-    } yield d
+        DBIO.failed(new Throwable(s"The user associated with $id have to remain with at least one basic role, namely ${StudentRole.label} or ${EmployeeRole.label}"))
+    } yield q.head
 
-    db run action
+    db.run(action)
   }
+
+  private def isBasicRole(r: RoleTable) =
+    r.label === StudentRole.label || r.label === EmployeeRole.label
 
   def createAssociatedAuthorities(course: CourseDb) = {
     (for {
-      courseManager <- roleDao.byRoleLabelQuery(courseManagerRole.label) if courseManager.isDefined
+      courseManager <- roleDao.byRoleLabelQuery(CourseManager.label) if courseManager.isDefined
       courseManagerAuth = AuthorityDb(course.lecturer, courseManager.head.id, Some(course.id))
       created <- createQuery(courseManagerAuth)
     } yield created).transactionally

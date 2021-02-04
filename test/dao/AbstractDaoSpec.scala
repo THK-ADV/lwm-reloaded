@@ -2,13 +2,13 @@ package dao
 
 import java.sql.Timestamp
 import java.util.UUID
-
 import base.PostgresDbSpec
 import dao.helper.ModelAlreadyExists
 import database._
 import database.helper.LdapUserStatus._
 import models._
 import org.joda.time.{LocalDate, LocalTime}
+import security.LWMRole
 import slick.dbio.Effect.Write
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps._
@@ -237,7 +237,7 @@ object AbstractDaoSpec {
     AuthorityDb(employees(i % maxEmployees).id, role.id, None)
   }.toList
 
-  lazy val roles = Role.all.map(r => RoleDb(r.label))
+  lazy val roles = LWMRole.all.map(r => RoleDb(r.label))
 
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 

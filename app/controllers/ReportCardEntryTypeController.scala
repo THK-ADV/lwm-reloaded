@@ -2,16 +2,15 @@ package controllers
 
 import dao.{AuthorityDao, ReportCardEntryTypeDao}
 import database.{ReportCardEntryTypeDb, ReportCardEntryTypeTable}
-import models.Role.{CourseAssistant, CourseEmployee, CourseManager, God}
 import models.{ReportCardEntryType, ReportCardEntryTypeProtocol}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{CourseAssistant, CourseEmployee, CourseManager, God}
 import security.SecurityActionChain
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
 
 @Singleton
 class ReportCardEntryTypeController @Inject()(
@@ -58,15 +57,12 @@ class ReportCardEntryTypeController @Inject()(
     } yield Created(Json.toJson(res))
   }
 
+  override protected def toDbModel(protocol: ReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
+
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
     case _ => PartialSecureBlock(List(God))
   }
-
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
-    Failure(new Throwable("no filter attributes allowed"))
-
-  override protected def toDbModel(protocol: ReportCardEntryTypeProtocol, existingId: Option[UUID]): ReportCardEntryTypeDb = ???
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] =
     forbiddenAction()

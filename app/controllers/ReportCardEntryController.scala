@@ -3,10 +3,10 @@ package controllers
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryDb, ReportCardEntryTable}
-import models.Role._
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole._
 import security.SecurityActionChain
 import service.ReportCardEntryService.ReportCardEntryDescription
 import service._
@@ -42,19 +42,6 @@ final class ReportCardEntryController @Inject()(
   override protected implicit val reads: Reads[ReportCardEntryProtocol] = ReportCardEntryProtocol.reads
 
   override protected def toDbModel(protocol: ReportCardEntryProtocol, existingId: Option[UUID]): ReportCardEntryDb = ???
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(StudentRole, CourseAssistant))
-    case _ => PartialSecureBlock(List(God))
-  }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-    case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case _ => PartialSecureBlock(List(God))
-  }
 
   def getForStudent(student: String) = contextFrom(Get) asyncAction { request =>
     all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
@@ -138,4 +125,16 @@ final class ReportCardEntryController @Inject()(
   }
 
   override protected val abstractDao: AbstractDao[ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike] = service.dao
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(List(StudentRole))
+    case _ => PartialSecureBlock(List(God))
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create | Delete => SecureBlock(restrictionId, List(CourseManager))
+    case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case _ => PartialSecureBlock(List(God))
+  }
 }

@@ -1,20 +1,19 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.BlacklistController.BlacklistRangeCreationRequest
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{BlacklistDb, BlacklistTable}
-import javax.inject.{Inject, Singleton}
-import models.Role.{Admin, EmployeeRole}
 import models.{Blacklist, BlacklistProtocol}
 import org.joda.time.LocalDate
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{Admin, EmployeeRole}
 import security.SecurityActionChain
 import service.BlacklistApiService
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -23,6 +22,7 @@ object BlacklistController {
   lazy val labelAttribute = "label"
 
   case class BlacklistRangeCreationRequest(label: String, start: LocalDate, end: LocalDate)
+
 }
 
 @Singleton
@@ -31,7 +31,6 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
     with TimeRangeTableFilter[BlacklistTable] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  import utils.date.DateTimeJsonFormatter.writeDateTime
 
   override protected implicit val writes: Writes[Blacklist] = Blacklist.writes
 
@@ -68,11 +67,6 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
     blacklists <- blacklistService.fetchLegalHolidays(year)
   } yield blacklists
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(EmployeeRole))
-    case _ => PartialSecureBlock(List(Admin))
-  }
-
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import BlacklistController._
     import dao.BlacklistDao._
@@ -87,6 +81,11 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
   override protected def toDbModel(protocol: BlacklistProtocol, existingId: Option[UUID]): BlacklistDb = {
     import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
     BlacklistDb(protocol.label, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.global, id = existingId.getOrElse(UUID.randomUUID))
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get => PartialSecureBlock(List(EmployeeRole))
+    case _ => PartialSecureBlock(List(Admin))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()

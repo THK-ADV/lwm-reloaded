@@ -3,12 +3,12 @@ package controllers
 import dao.{AnnotationDao, AuthorityDao}
 import database.{AnnotationDb, AnnotationTable}
 import models.AnnotationLike.{Annotation, AnnotationAtom}
-import models.Role._
 import models.{AnnotationLike, AnnotationProtocol, User}
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Json, Reads, Writes, _}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{CourseAssistant, CourseEmployee, CourseManager, StudentRole}
 import security.SecurityActionChain
 
 import java.util.UUID

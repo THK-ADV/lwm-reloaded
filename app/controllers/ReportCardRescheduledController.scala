@@ -3,10 +3,10 @@ package controllers
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
-import models.Role.{CourseEmployee, CourseManager}
 import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{CourseEmployee, CourseManager}
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
@@ -23,9 +23,13 @@ object ReportCardRescheduledController {
 }
 
 @Singleton
-final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRescheduledDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
-    with TimeRangeTableFilter[ReportCardRescheduledTable] {
+final class ReportCardRescheduledController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardRescheduledDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
+  with TimeRangeTableFilter[ReportCardRescheduledTable] {
 
   import controllers.ReportCardRescheduledController._
 
@@ -33,9 +37,7 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
 
   override protected implicit val reads: Reads[ReportCardRescheduledProtocol] = ReportCardRescheduledProtocol.reads
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import ReportCardRescheduledController._
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`reportCardEntryAttribute`, e) => e.makeReportCardEntryFilter
       case (`studentAttribute`, s) => s.makeUserByReportCardEntryFilter
@@ -44,19 +46,16 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
       case (`roomAttribute`, r) => r.makeRoomByReportCardEntryFilter
       case _ => makeTimeRangeFilter(attribute, value)
     }
-  }
 
-  override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb = {
-    ReportCardRescheduledDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, protocol.reason, id = existingId getOrElse UUID.randomUUID)
-  }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Delete => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Update => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-  }
+  override protected def toDbModel(protocol: ReportCardRescheduledProtocol, existingId: Option[UUID]): ReportCardRescheduledDb =
+    ReportCardRescheduledDb(
+      protocol.reportCardEntry,
+      protocol.date.sqlDate,
+      protocol.start.sqlTime,
+      protocol.end.sqlTime,
+      protocol.room,
+      protocol.reason, id = existingId getOrElse UUID.randomUUID
+    )
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     create(NonSecureBlock)(request)
@@ -76,6 +75,10 @@ final class ReportCardRescheduledController @Inject()(cc: ControllerComponents, 
 
   def invalidateFrom(course: String, id: String) = restrictedContext(course)(Delete) asyncAction { request =>
     invalidate(id, NonSecureBlock)(request)
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()

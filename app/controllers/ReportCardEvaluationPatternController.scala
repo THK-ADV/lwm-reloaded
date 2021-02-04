@@ -5,7 +5,7 @@ import java.util.UUID
 import dao._
 import database.{ReportCardEvaluationPatternDb, ReportCardEvaluationPatternTable}
 import javax.inject.{Inject, Singleton}
-import models.Role.CourseManager
+import security.LWMRole.CourseManager
 import models.{ReportCardEvaluationPattern, ReportCardEvaluationPatternProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
@@ -20,8 +20,12 @@ object ReportCardEvaluationPatternController {
 }
 
 @Singleton
-final class ReportCardEvaluationPatternController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardEvaluationPatternDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
+final class ReportCardEvaluationPatternController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardEvaluationPatternDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[ReportCardEvaluationPatternProtocol, ReportCardEvaluationPatternTable, ReportCardEvaluationPatternDb, ReportCardEvaluationPattern](cc) {
 
   override protected implicit val writes: Writes[ReportCardEvaluationPattern] = ReportCardEvaluationPattern.writes
 
@@ -49,14 +53,6 @@ final class ReportCardEvaluationPatternController @Inject()(cc: ControllerCompon
     get(id, NonSecureBlock)(request)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Get => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-  }
-
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import ReportCardEvaluationPatternController._
 
@@ -68,9 +64,18 @@ final class ReportCardEvaluationPatternController @Inject()(cc: ControllerCompon
     }
   }
 
-  override protected def toDbModel(protocol: ReportCardEvaluationPatternProtocol, existingId: Option[UUID]): ReportCardEvaluationPatternDb = {
-    ReportCardEvaluationPatternDb(protocol.labwork, protocol.entryType, protocol.min, protocol.property.toString, id = existingId getOrElse UUID.randomUUID)
-  }
+  override protected def toDbModel(protocol: ReportCardEvaluationPatternProtocol, existingId: Option[UUID]): ReportCardEvaluationPatternDb =
+    ReportCardEvaluationPatternDb(
+      protocol.labwork,
+      protocol.entryType,
+      protocol.min,
+      protocol.property.toString,
+      id = existingId getOrElse UUID.randomUUID
+    )
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => SecureBlock(restrictionId, List(CourseManager))
+  }
 }

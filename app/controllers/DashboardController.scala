@@ -4,7 +4,7 @@ import controllers.helper._
 import dao._
 import database.helper.LdapUserStatus
 import javax.inject.{Inject, Singleton}
-import models.Role.{EmployeeRole, God, StudentRole}
+import security.LWMRole.{EmployeeRole, God, StudentRole}
 import models.{CourseAtom, Dashboard, EmployeeDashboard, StudentDashboard}
 import play.api.libs.json.{JsString, Json, Writes}
 import play.api.mvc._

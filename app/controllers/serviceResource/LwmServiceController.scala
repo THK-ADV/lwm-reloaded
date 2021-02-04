@@ -3,12 +3,12 @@ package controllers.serviceResource
 import controllers.helper.{JsonParser, ResultOps, SecureControllerContext, Secured}
 import dao.{AuthorityDao, LwmServiceDao}
 import database.GroupMembership
-import javax.inject.Inject
-import models.Role.{CourseEmployee, CourseManager, God}
 import play.api.libs.json.{Json, OWrites}
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
+import security.LWMRole.{CourseEmployee, CourseManager, God}
 import security.SecurityActionChain
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -18,17 +18,16 @@ final class LwmServiceController @Inject()(
   val securedAction: SecurityActionChain,
   val serviceDao: LwmServiceDao,
   implicit val executionContext: ExecutionContext
-)
-  extends AbstractController(cc)
-    with Secured
-    with SecureControllerContext
-    with ResultOps
-    with JsonParser {
+) extends AbstractController(cc)
+  with Secured
+  with SecureControllerContext
+  with ResultOps
+  with JsonParser {
 
   private implicit def membershipWrites: OWrites[GroupMembership] = Json.writes[GroupMembership]
 
-  import models.ReportCardEntry.{writes => cardWrites}
   import models.LabworkApplication.{writes => lappWrites}
+  import models.ReportCardEntry.{writes => cardWrites}
 
   def insertStudentToGroup(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     (parseJson[GroupChangeRequest] _ andThen mapJson andThen (r => r(insertIntoGroup))) (request)
@@ -72,19 +71,17 @@ final class LwmServiceController @Inject()(
     }
   }
 
-  private def mapJson[A](json: Try[A])(f: A => Future[Result]): Future[Result] = {
+  private def mapJson[A](json: Try[A])(f: A => Future[Result]): Future[Result] =
     json match {
       case Success(r) =>
         f(r)
       case Failure(e) =>
         (badRequest _ andThen Future.successful) (e)
     }
-  }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Update => SecureBlock(restrictionId, List(CourseEmployee, CourseManager))
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
+    case Create | Delete => SecureBlock(restrictionId, List(CourseManager))
     case _ => PartialSecureBlock(List(God))
   }
 
