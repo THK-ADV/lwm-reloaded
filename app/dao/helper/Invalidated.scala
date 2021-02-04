@@ -1,14 +1,13 @@
 package dao.helper
 
-import java.sql.Timestamp
-import java.util.UUID
-
 import database.UniqueTable
 import models.UniqueDbEntity
 import org.joda.time.DateTime
 import slick.jdbc.PostgresProfile.api._
 import utils.date.DateTimeOps.DateTimeConverter
 
+import java.sql.Timestamp
+import java.util.UUID
 import scala.concurrent.Future
 
 trait Invalidated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity] {
@@ -38,6 +37,10 @@ trait Invalidated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
   final def invalidateSingleQuery(query: Query[T, DbModel, Seq], now: Timestamp = DateTime.now.timestamp) = {
     invalidateSingle0(query, now)
   }
+
+  final def delete(id: UUID) = for {
+    d <- filterValidOnly(_.id === id).delete if d == 1
+  } yield d
 
   private def invalidateSingle0(query: Query[T, DbModel, Seq], now: Timestamp) = {
     val singleQuery = query.exactlyOne { toDelete =>

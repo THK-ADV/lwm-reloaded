@@ -1,16 +1,16 @@
 package controllers
 
-import java.util.UUID
-
 import dao._
 import database.{AssignmentEntryDb, AssignmentEntryTable}
-import javax.inject.{Inject, Singleton}
 import models.{AssignmentEntryLike, AssignmentEntryProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{CourseEmployee, CourseManager}
 import security.SecurityActionChain
 import service.AssignmentEntryService
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
@@ -21,14 +21,12 @@ object AssignmentEntryController {
 
 @Singleton
 final class AssignmentEntryController @Inject()(
-                                                 cc: ControllerComponents,
-                                                 val authorityDao: AuthorityDao,
-                                                 val service: AssignmentEntryService,
-                                                 val securedAction: SecurityActionChain,
-                                                 implicit val ctx: ExecutionContext
-                                               ) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
-
-  import models.Role._
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val service: AssignmentEntryService,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[AssignmentEntryProtocol, AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike](cc) {
 
   override protected val abstractDao: AbstractDao[AssignmentEntryTable, AssignmentEntryDb, AssignmentEntryLike] = service.dao
 

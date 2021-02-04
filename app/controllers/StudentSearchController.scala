@@ -2,10 +2,10 @@ package controllers
 
 import controllers.helper.{RequestOps, ResultOps, SecureControllerContext, Secured}
 import dao.AuthorityDao
-import models.Role.{EmployeeRole, StudentRole}
 import models.{CourseLike, LabworkAtom}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
+import security.LWMRole.{EmployeeRole, StudentRole}
 import security.SecurityActionChain
 import service.StudentSearchService
 
@@ -26,13 +26,6 @@ final class StudentSearchController @Inject()(
   with SecureControllerContext
   with ResultOps
   with RequestOps {
-
-  override protected def restrictedContext(restrictionId: String) =
-    forbiddenAction()
-
-  override protected def contextFrom = {
-    case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
-  }
 
   def dashboard(student: String) = contextFrom(GetAll) asyncAction { request =>
     import utils.Ops.OptionOps
@@ -59,5 +52,12 @@ final class StudentSearchController @Inject()(
         }
       ))
     }
+  }
+
+  override protected def restrictedContext(restrictionId: String) =
+    forbiddenAction()
+
+  override protected def contextFrom = {
+    case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
   }
 }

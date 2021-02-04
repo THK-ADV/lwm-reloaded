@@ -3,10 +3,10 @@ package controllers
 import dao._
 import dao.helper.TableFilter.labworkFilter
 import database.{LabworkApplicationDb, LabworkApplicationTable}
-import models.Role.{CourseEmployee, CourseManager, EmployeeRole, God, StudentRole}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole._
 import security.SecurityActionChain
 import service.sheet.{ApplicantExport, FileStreamResult}
 
@@ -28,9 +28,8 @@ final class LabworkApplicationController @Inject()(
   val abstractDao: LabworkApplicationDao,
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
-)
-  extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc)
-    with FileStreamResult {
+) extends AbstractCRUDController[LabworkApplicationProtocol, LabworkApplicationTable, LabworkApplicationDb, LabworkApplicationLike](cc)
+  with FileStreamResult {
 
   import LabworkApplicationController._
 
@@ -61,9 +60,8 @@ final class LabworkApplicationController @Inject()(
       case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
 
-  override protected def toDbModel(protocol: LabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb = {
+  override protected def toDbModel(protocol: LabworkApplicationProtocol, existingId: Option[UUID]): LabworkApplicationDb =
     LabworkApplicationDb(protocol.labwork, protocol.applicant, protocol.friends, id = existingId getOrElse UUID.randomUUID)
-  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Create => PartialSecureBlock(List(StudentRole))

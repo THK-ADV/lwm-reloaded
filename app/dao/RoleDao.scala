@@ -1,23 +1,21 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.TableFilter
 import database.helper.LdapUserStatus
 import database.helper.LdapUserStatus._
 import database.{RoleDb, RoleTable}
-import javax.inject.Inject
-import models.Role.{CourseAssistant, CourseEmployee, CourseManager, EmployeeRole, StudentRole}
 import models._
+import security.LWMRole
+import security.LWMRole._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object RoleDao extends TableFilter[RoleTable] {
-  def courseSensitiveRoles = List(CourseEmployee, CourseAssistant, CourseManager)
-
-  def courseSensitiveFilter: TableFilterPredicate = _.label.inSet(courseSensitiveRoles.map(_.label))
+  def courseRelated: TableFilterPredicate = _.label.inSet(LWMRole.courseRelated.map(_.label))
 }
 
 trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
@@ -46,21 +44,20 @@ trait RoleDao extends AbstractDao[RoleTable, RoleDb, Role] {
     filterValidOnly(_.label === label).take(1).result.headOption
   }
 
-  private def roleOf(status: LdapUserStatus): LWMRole = status match {
-    case EmployeeStatus => EmployeeRole
-    case LecturerStatus => EmployeeRole
+  private def roleOf(status: LdapUserStatus): BasicRole = status match {
+    case EmployeeStatus | LecturerStatus => EmployeeRole
     case StudentStatus => StudentRole
   }
 
   def isAuthorized(restricted: Option[UUID], required: List[LWMRole])(authorities: Seq[Authority]): Future[Boolean] = (restricted, required) match {
-    case (_, roles) if roles contains Role.God => Future.successful(false)
+    case (_, roles) if roles contains God => Future.successful(false)
     case (optCourse, requiredRoles) =>
       val userRoles = authorities.map(_.role)
       val restrictedUserRoles = authorities.filter(_.course == optCourse).map(_.role)
       val requiredRoleLabels = requiredRoles.map(_.label)
 
       val query = filterValidOnly { r =>
-        def isAdmin: Rep[Boolean] = r.label === Role.Admin.label && r.id.inSet(userRoles)
+        def isAdmin: Rep[Boolean] = r.label === Admin.label && r.id.inSet(userRoles)
 
         def hasPermission: Rep[Boolean] = r.id.inSet(restrictedUserRoles) && r.label.inSet(requiredRoleLabels)
 

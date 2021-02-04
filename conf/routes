@@ -15,7 +15,7 @@ PUT           /courses/:id                                                     c
 GET           /courses                                                         controllers.CourseController.all()
 GET           /courses/:id                                                     controllers.CourseController.get(id)
 
-# Group 2
+# Group
 GET           /courses/:c/labworks/:l/groups                                   controllers.GroupController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/groups/preview                           controllers.GroupController.preview(c, l)
 GET           /courses/:c/labworks/:l/groups/sheet                             controllers.GroupController.renderGroupSheet(c, l)
@@ -45,15 +45,16 @@ GET           /semesters                                                       c
 GET           /semesters/:id                                                   controllers.SemesterController.get(id)
 DELETE        /semesters/:id                                                   controllers.SemesterController.invalidate(id)
 
-# Role 
-GET           /roles/:id                                                       controllers.RoleController.get(id)
-GET           /roles                                                           controllers.RoleController.all()
+# Role restricted
+GET           /courses/:c/roles                                                controllers.RoleController.allFrom(c)
 
 # Authority 
-POST          /authorities                                                     controllers.AuthorityController.create()
 GET           /authorities                                                     controllers.AuthorityController.all()
 GET           /authorities/:id                                                 controllers.AuthorityController.get(id)
-DELETE        /authorities/:id                                                 controllers.AuthorityController.invalidate(id)
+
+# Authority restricted
+POST          /courses/:c/authorities                                          controllers.AuthorityController.createFrom(c)
+DELETE        /courses/:c/authorities/:id                                      controllers.AuthorityController.invalidateFrom(c, id)
 
 # LabworkApplications 
 POST          /labworkApplications                                             controllers.LabworkApplicationController.create()
@@ -76,8 +77,7 @@ GET           /courses/:c/scheduleEntries/:id                                  c
 PUT           /courses/:c/scheduleEntries/:id                                  controllers.ScheduleEntryController.updateFrom(c, id)
 DELETE        /courses/:c/labworks/:l/scheduleEntries                          controllers.ScheduleEntryController.invalidateFrom(c, l)
 
-# Timetable restricted
-
+# Timetable
 POST          /courses/:c/timetables                                           controllers.TimetableController.createFrom(c)
 PUT           /courses/:c/timetables/:id                                       controllers.TimetableController.updateFrom(c, id)
 GET           /courses/:c/timetables                                           controllers.TimetableController.allFrom(c)
@@ -98,6 +98,7 @@ DELETE        /blacklists/:id                                                  c
 # ReportCardEntry 
 GET           /reportCardEntries/student/:s                                    controllers.ReportCardEntryController.getForStudent(s)
 
+# ReportCardEntry restricted
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/reportCardEntries/extend                 controllers.ReportCardEntryController.extend(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
@@ -160,9 +161,10 @@ GET           /labworks/:labwork/users/:user/buddies/:buddy                    c
 GET           /users/:id                                                       controllers.UserController.get(id)
 PUT           /users/:id                                                       controllers.UserController.update(id)
 
-# Annotation
+# Annotations
 GET           /labworks/:l/annotations                                         controllers.AnnotationController.forStudent(l)
 
+# Annotations restricted
 POST          /courses/:c/annotations                                          controllers.AnnotationController.createFrom(c)
 GET           /courses/:c/annotations                                          controllers.AnnotationController.allFrom(c)
 GET           /courses/:c/annotations/count                                    controllers.AnnotationController.countFrom(c)
@@ -185,9 +187,11 @@ PUT           /courses/:c/insertIntoGroup                                      c
 PUT           /courses/:c/removeFromGroup                                      controllers.serviceResource.LwmServiceController.removeStudentFromGroup(c)
 PUT           /courses/:c/moveToGroup                                          controllers.serviceResource.LwmServiceController.moveStudentToGroup(c)
 
+# Search Query
 PUT           /query                                                           controllers.QueryController.performQuery
 GET           /query/options                                                   controllers.QueryController.queryOptions
 
+# Dev
 POST          /dev/go                                                          controllers.DevController.go
 
 # Map static resources from the /public folder to the /assets URL path

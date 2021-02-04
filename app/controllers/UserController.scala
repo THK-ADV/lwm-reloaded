@@ -1,20 +1,19 @@
 package controllers
 
-import java.util.UUID
 import controllers.helper.RequestOps
 import dao._
 import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
-
-import javax.inject.{Inject, Singleton}
-import models.Role._
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{JsNull, Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{EmployeeRole, _}
 import security.SecurityActionChain
 
-import scala.concurrent.Future
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object UserController {
@@ -30,27 +29,18 @@ final class UserController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
   val abstractDao: UserDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
 
+  import UserController._
   import dao.UserDao._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override protected implicit val writes: Writes[User] = User.writes
 
   override protected implicit val reads: Reads[StudentProtocol] = StudentProtocol.reads
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(StudentRole, EmployeeRole, CourseAssistant))
-    case GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole, CourseAssistant))
-    case Update => PartialSecureBlock(List(Admin))
-    case _ => PartialSecureBlock(List(God))
-  }
-
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import UserController._
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`statusAttribute`, s) => LdapUserStatus(s) map statusFilter
       case (`degreeAttribute`, d) => d.uuid map enrollmentFilter
@@ -59,18 +49,18 @@ final class UserController @Inject()(
       case (`lastnameAttribute`, l) => Success(lastnameFilter(l))
       case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
-  }
 
-  override protected def toDbModel(protocol: StudentProtocol, existingId: Option[UUID]): UserDb = UserDb(
-    protocol.systemId,
-    protocol.lastname,
-    protocol.firstname,
-    protocol.email,
-    LdapUserStatus.StudentStatus,
-    Some(protocol.registrationId),
-    Some(protocol.enrollment),
-    id = existingId.getOrElse(UUID.randomUUID)
-  )
+  override protected def toDbModel(protocol: StudentProtocol, existingId: Option[UUID]): UserDb =
+    UserDb(
+      protocol.systemId,
+      protocol.lastname,
+      protocol.firstname,
+      protocol.email,
+      LdapUserStatus.StudentStatus,
+      Some(protocol.registrationId),
+      Some(protocol.enrollment),
+      id = existingId.getOrElse(UUID.randomUUID)
+    )
 
   def createFromToken() = securedAction.authorizationAction.async { request =>
     val result = request.unwrapped.userToken match {
@@ -142,6 +132,12 @@ final class UserController @Inject()(
       "gmids" -> gmids.mkString(","),
       "duplicates" -> Json.toJson(duplicates)
     )
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get | GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
+    case Update => PartialSecureBlock(List(Admin))
+    case _ => PartialSecureBlock(List(God))
   }
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()

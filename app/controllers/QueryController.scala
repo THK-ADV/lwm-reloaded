@@ -3,10 +3,10 @@ package controllers
 import com.google.inject.Inject
 import controllers.helper._
 import dao.{AuthorityDao, UserDao}
-import models.Role.Admin
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
+import security.LWMRole.Admin
 import security.SecurityActionChain
 import utils.student_query_engine.{Expression, Key, Operator, StudentQueryEngine}
 

@@ -1,17 +1,16 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper.{JsonParser, ResultOps, SecureControllerContext, Secured}
 import dao.{AuthorityDao, LabworkDao, ReportCardEntryDao}
-import javax.inject.{Inject, Singleton}
 import models.LabworkAtom
-import models.Role.{CourseManager, God}
 import play.api.libs.json.{Json, Reads}
 import play.api.mvc.{AbstractController, ControllerComponents}
+import security.LWMRole.{CourseManager, God}
 import security.SecurityActionChain
 import service.MailerService
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 

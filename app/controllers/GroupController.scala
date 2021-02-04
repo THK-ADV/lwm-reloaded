@@ -1,14 +1,14 @@
 package controllers
 
 import java.util.UUID
-
 import controllers.helper.GroupingStrategyAttributeFilter
 import dao._
 import dao.helper.TableFilter
 import dao.helper.TableFilter.labworkFilter
 import database.{GroupDb, GroupTable}
+
 import javax.inject.{Inject, Singleton}
-import models.Role.{CourseEmployee, CourseManager, God}
+import security.LWMRole.{CourseEmployee, CourseManager, God}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
@@ -16,7 +16,7 @@ import security.SecurityActionChain
 import service._
 import service.sheet.{FileStreamResult, GroupMemberExport}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object GroupController {
@@ -26,14 +26,20 @@ object GroupController {
 }
 
 @Singleton
-final class GroupController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: GroupDao, val labworkApplicationDao: LabworkApplicationDao, val securedAction: SecurityActionChain)
+final class GroupController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: GroupDao,
+  val labworkApplicationDao: LabworkApplicationDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+)
   extends AbstractCRUDController[GroupProtocol, GroupTable, GroupDb, GroupLike](cc)
     with GroupingStrategyAttributeFilter
     with FileStreamResult {
 
-  import controllers.GroupController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import GroupController._
+  import dao.GroupDao._
 
   override protected implicit val writes: Writes[GroupLike] = GroupLike.writes
 
@@ -64,25 +70,21 @@ final class GroupController @Inject()(cc: ControllerComponents, val authorityDao
     } yield toResult(sheet)
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case _ => PartialSecureBlock(List(God))
-  }
+  override protected def toDbModel(protocol: GroupProtocol, existingId: Option[UUID]): GroupDb = ???
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import GroupController._
-    import dao.GroupDao._
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`labworkAttribute`, l) => l.makeLabworkFilter
       case (`studentAttribute`, s) => s.uuid map studentFilter
       case (`labelAttribute`, l) => l.makeLabelEqualsFilter
       case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
-  }
 
-  override protected def toDbModel(protocol: GroupProtocol, existingId: Option[UUID]): GroupDb = ???
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+    case _ => PartialSecureBlock(List(God))
+  }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
 }

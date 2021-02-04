@@ -1,17 +1,16 @@
 package controllers
 
-import java.util.UUID
-
 import dao._
 import database.{LabworkDb, LabworkTable}
-import javax.inject.{Inject, Singleton}
-import models.Role._
 import models._
 import org.joda.time.DateTime
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import security.LWMRole._
 import security.SecurityActionChain
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Try}
 
 object LabworkController {
@@ -32,17 +31,6 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
   override protected implicit val writes: Writes[LabworkLike] = LabworkLike.writes
 
   override protected implicit val reads: Reads[LabworkProtocol] = LabworkProtocol.reads
-
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get | GetAll => PartialSecureBlock(List(StudentRole))
-    case _ => PartialSecureBlock(List(God))
-  }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create | Update => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll | Get => SecureBlock(restrictionId, List(CourseAssistant, CourseManager, CourseEmployee))
-    case Delete => PartialSecureBlock(List(God))
-  }
 
   def allWithDegree(degree: String): Action[AnyContent] = contextFrom(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.appending(degreeAttribute -> Seq(degree)))
@@ -86,5 +74,16 @@ final class LabworkController @Inject()(cc: ControllerComponents, val authorityD
   override protected def toDbModel(protocol: LabworkProtocol, existingId: Option[UUID]): LabworkDb = {
     import utils.date.DateTimeOps.DateTimeConverter
     LabworkDb(protocol.label, protocol.description, protocol.semester, protocol.course, protocol.degree, protocol.subscribable, protocol.published, DateTime.now.timestamp, None, existingId getOrElse UUID.randomUUID)
+  }
+
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case Get | GetAll => PartialSecureBlock(List(StudentRole))
+    case _ => PartialSecureBlock(List(God))
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create | Update => SecureBlock(restrictionId, List(CourseManager))
+    case GetAll | Get => SecureBlock(restrictionId, List(CourseAssistant, CourseManager, CourseEmployee))
+    case Delete => PartialSecureBlock(List(God))
   }
 }

@@ -1,18 +1,17 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper.TimeRangeTableFilter
 import dao._
 import database.{ReportCardEntryTypeDb, ReportCardRetryDb, ReportCardRetryTable}
-import javax.inject.{Inject, Singleton}
-import models.Role.{CourseEmployee, CourseManager}
 import models._
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
+import security.LWMRole.{CourseEmployee, CourseManager}
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 object ReportCardRetryController {
@@ -24,9 +23,13 @@ object ReportCardRetryController {
 }
 
 @Singleton
-final class ReportCardRetryController @Inject()(cc: ControllerComponents, val authorityDao: AuthorityDao, val abstractDao: ReportCardRetryDao, val securedAction: SecurityActionChain)
-  extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc)
-    with TimeRangeTableFilter[ReportCardRetryTable] {
+final class ReportCardRetryController @Inject()(
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ReportCardRetryDao,
+  val securedAction: SecurityActionChain
+) extends AbstractCRUDController[ReportCardRetryProtocol, ReportCardRetryTable, ReportCardRetryDb, ReportCardRetryLike](cc)
+  with TimeRangeTableFilter[ReportCardRetryTable] {
 
   import controllers.ReportCardRetryController._
 
@@ -34,9 +37,7 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
 
   override protected implicit val reads: Reads[ReportCardRetryProtocol] = ReportCardRetryProtocol.reads
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import ReportCardRetryController._
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`reportCardEntryAttribute`, e) => e.makeReportCardEntryFilter
       case (`studentAttribute`, s) => s.makeUserByReportCardEntryFilter
@@ -45,21 +46,19 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
       case (`roomAttribute`, r) => r.makeRoomByReportCardEntryFilter
       case _ => makeTimeRangeFilter(attribute, value)
     }
-  }
 
   override protected def toDbModel(protocol: ReportCardRetryProtocol, existingId: Option[UUID]): ReportCardRetryDb = {
     val uuid = existingId getOrElse UUID.randomUUID
     val entryTypes = protocol.entryTypes.map(t => ReportCardEntryTypeDb(None, Some(uuid), t.entryType, t.bool, t.int))
 
-    ReportCardRetryDb(protocol.reportCardEntry, protocol.date.sqlDate, protocol.start.sqlTime, protocol.end.sqlTime, protocol.room, entryTypes, protocol.reason, id = uuid)
-  }
-
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = { // TODO discuss
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
-    case Update => SecureBlock(restrictionId, List(CourseManager))
+    ReportCardRetryDb(
+      protocol.reportCardEntry,
+      protocol.date.sqlDate,
+      protocol.start.sqlTime,
+      protocol.end.sqlTime,
+      protocol.room, entryTypes,
+      protocol.reason, id = uuid
+    )
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
@@ -83,4 +82,8 @@ final class ReportCardRetryController @Inject()(cc: ControllerComponents, val au
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case _ => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
+  }
 }

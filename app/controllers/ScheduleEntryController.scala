@@ -1,22 +1,21 @@
 package controllers
 
-import java.util.UUID
-
 import controllers.helper.{GroupingStrategyAttributeFilter, TimeRangeTableFilter}
 import dao._
 import dao.helper.TableFilter
 import database.{GroupDb, ScheduleEntryDb, ScheduleEntryTable}
-import javax.inject.{Inject, Singleton}
-import models.Role.{Admin, CourseAssistant, CourseEmployee, CourseManager}
 import models._
 import models.genesis.{Conflict, ScheduleEntryGen, ScheduleGen}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
+import security.LWMRole.{Admin, CourseAssistant, CourseEmployee, CourseManager}
 import security.SecurityActionChain
 import service._
 import utils.Gen
 
-import scala.concurrent.Future
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object ScheduleEntryController {
@@ -34,36 +33,35 @@ object ScheduleEntryController {
 
 @Singleton
 final class ScheduleEntryController @Inject()(
-                                               cc: ControllerComponents,
-                                               val authorityDao: AuthorityDao,
-                                               val abstractDao: ScheduleEntryDao,
-                                               val scheduleService: ScheduleService,
-                                               val assignmentEntryDao: AssignmentEntryDao,
-                                               val labworkDao: LabworkDao,
-                                               val timetableDao: TimetableDao,
-                                               val labworkApplicationDao: LabworkApplicationDao,
-                                               val groupDao: GroupDao,
-                                               val securedAction: SecurityActionChain
-                                             ) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
+  cc: ControllerComponents,
+  val authorityDao: AuthorityDao,
+  val abstractDao: ScheduleEntryDao,
+  val scheduleService: ScheduleService,
+  val assignmentEntryDao: AssignmentEntryDao,
+  val labworkDao: LabworkDao,
+  val timetableDao: TimetableDao,
+  val labworkApplicationDao: LabworkApplicationDao,
+  val groupDao: GroupDao,
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
+) extends AbstractCRUDController[ScheduleEntryProtocol, ScheduleEntryTable, ScheduleEntryDb, ScheduleEntryLike](cc)
   with GroupingStrategyAttributeFilter
   with TimeRangeTableFilter[ScheduleEntryTable] {
 
-  import controllers.ScheduleEntryController._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import ScheduleEntryController._
+  import dao.ScheduleEntryDao.supervisorFilter
 
   override protected implicit val writes: Writes[ScheduleEntryLike] = ScheduleEntryLike.writes
 
   override protected implicit val reads: Reads[ScheduleEntryProtocol] = ScheduleEntryProtocol.reads
 
-  implicit val genWrites: Writes[(Gen[ScheduleGen, Conflict, Int], Int)] = new Writes[(Gen[ScheduleGen, Conflict, Int], Int)] {
-    override def writes(gen: (Gen[ScheduleGen, Conflict, Int], Int)) = Json.obj(
+  implicit val genWrites: Writes[(Gen[ScheduleGen, Conflict, Int], Int)] = gen =>
+    Json.obj(
       "schedule" -> Json.toJson(gen._1.elem),
       "conflicts" -> Json.toJson(gen._1.evaluate.err),
       "conflict value" -> gen._1.evaluate.value,
       "fitness" -> gen._2
     )
-  }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { implicit request =>
     def groups(entries: Vector[ScheduleEntryGen]) = entries
@@ -157,14 +155,6 @@ final class ScheduleEntryController @Inject()(
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course)))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
-    case Create => SecureBlock(restrictionId, List(CourseManager))
-    case Delete => SecureBlock(restrictionId, List(CourseManager))
-    case GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case Get => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
-    case Update => PartialSecureBlock(List(Admin))
-  }
-
   def allFromLabwork(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
     all(NonSecureBlock)(request.appending(courseAttribute -> Seq(course), labworkAttribute -> Seq(labwork)))
   }
@@ -188,10 +178,7 @@ final class ScheduleEntryController @Inject()(
     create(NonSecureBlock)(request)
   }
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
-    import ScheduleEntryController._
-    import dao.ScheduleEntryDao.supervisorFilter
-
+  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
       case (`courseAttribute`, c) => c.makeCourseFilter
       case (`labworkAttribute`, l) => l.makeLabworkFilter
@@ -199,10 +186,9 @@ final class ScheduleEntryController @Inject()(
       case (`supervisorAttribute`, s) => s.uuid map supervisorFilter
       case _ => makeTimeRangeFilter(attribute, value)
     }
-  }
 
   override protected def toDbModel(protocol: ScheduleEntryProtocol, existingId: Option[UUID]): ScheduleEntryDb = {
-    import utils.date.DateTimeOps.{LocalTimeConverter, LocalDateConverter}
+    import utils.date.DateTimeOps.{LocalDateConverter, LocalTimeConverter}
 
     ScheduleEntryDb(
       protocol.labwork,
@@ -214,6 +200,12 @@ final class ScheduleEntryController @Inject()(
       protocol.group,
       id = existingId getOrElse UUID.randomUUID
     )
+  }
+
+  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
+    case Create | Delete => SecureBlock(restrictionId, List(CourseManager))
+    case Get | GetAll => SecureBlock(restrictionId, List(CourseManager, CourseEmployee, CourseAssistant))
+    case Update => PartialSecureBlock(List(Admin))
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()

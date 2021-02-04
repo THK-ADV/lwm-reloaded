@@ -2,7 +2,6 @@ package controllers
 
 import controllers.helper.{JsonParser, ResultOps}
 import dao.AnnotationDao
-import play.api.libs.json.JsBoolean
 import play.api.mvc.{AbstractController, ControllerComponents}
 import service.Webservice
 import utils.date.DateTimeFormatterPattern
