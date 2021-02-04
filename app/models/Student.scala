@@ -1,13 +1,14 @@
 package models
 
 import database.helper.LdapUserStatus
-
-import java.util.UUID
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Writes}
 
+import java.util.UUID
+
 trait StudentLike extends User {
   def registrationId: String
+
   def enrollmentId: UUID
 }
 
