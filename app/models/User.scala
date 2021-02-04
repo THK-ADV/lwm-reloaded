@@ -1,7 +1,7 @@
 package models
 
 import database.helper.LdapUserStatus
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 
 import java.util.UUID
 
@@ -17,7 +17,26 @@ trait User extends UniqueEntity {
   def status: LdapUserStatus
 }
 
-case class StudentProtocol(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID)
+sealed trait UserProtocol
+
+object UserProtocol {
+
+  case class StudentProtocol(systemId: String, lastname: String, firstname: String, email: String, registrationId: String, enrollment: UUID) extends UserProtocol
+
+  case class EmployeeProtocol(systemId: String, lastname: String, firstname: String, email: String) extends UserProtocol
+
+  implicit val readsStudent: Reads[StudentProtocol] = Json.reads[StudentProtocol]
+
+  implicit val readsEmployee: Reads[EmployeeProtocol] = Json.reads[EmployeeProtocol]
+
+  implicit val reads: Reads[UserProtocol] = (json: JsValue) => {
+    val enrollment = json.\("enrollment")
+    val registrationId = json.\("registrationId")
+
+    if (enrollment.isDefined && registrationId.isDefined) Json.fromJson(json)(readsStudent)
+    else Json.fromJson(json)(readsEmployee)
+  }
+}
 
 object User {
 
@@ -29,6 +48,3 @@ object User {
   }
 }
 
-object StudentProtocol {
-  implicit val reads: Reads[StudentProtocol] = Json.reads[StudentProtocol]
-}

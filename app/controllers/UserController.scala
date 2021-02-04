@@ -4,6 +4,7 @@ import controllers.helper.RequestOps
 import dao._
 import database.helper.LdapUserStatus
 import database.{UserDb, UserTable}
+import models.UserProtocol.{EmployeeProtocol, StudentProtocol}
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{JsNull, Json, Reads, Writes}
@@ -31,14 +32,14 @@ final class UserController @Inject()(
   val abstractDao: UserDao,
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
-) extends AbstractCRUDController[StudentProtocol, UserTable, UserDb, User](cc) {
+) extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
 
   import UserController._
   import dao.UserDao._
 
   override protected implicit val writes: Writes[User] = User.writes
 
-  override protected implicit val reads: Reads[StudentProtocol] = StudentProtocol.reads
+  override protected implicit val reads: Reads[UserProtocol] = UserProtocol.reads
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
     (attribute, value) match {
@@ -50,17 +51,16 @@ final class UserController @Inject()(
       case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
 
-  override protected def toDbModel(protocol: StudentProtocol, existingId: Option[UUID]): UserDb =
-    UserDb(
-      protocol.systemId,
-      protocol.lastname,
-      protocol.firstname,
-      protocol.email,
-      LdapUserStatus.StudentStatus,
-      Some(protocol.registrationId),
-      Some(protocol.enrollment),
-      id = existingId.getOrElse(UUID.randomUUID)
-    )
+  override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): UserDb = {
+    val id = existingId.getOrElse(UUID.randomUUID)
+
+    protocol match {
+      case StudentProtocol(systemId, lastname, firstname, email, registrationId, enrollment) =>
+        UserDb(systemId, lastname, firstname, email, LdapUserStatus.StudentStatus, Some(registrationId), Some(enrollment), id = id)
+      case EmployeeProtocol(systemId, lastname, firstname, email) =>
+        UserDb(systemId, lastname, firstname, email, LdapUserStatus.EmployeeStatus, None, None, id = id)
+    }
+  }
 
   def createFromToken() = securedAction.authorizationAction.async { request =>
     val result = request.unwrapped.userToken match {
