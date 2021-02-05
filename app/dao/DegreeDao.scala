@@ -1,13 +1,12 @@
 package dao
 
-import java.util.UUID
-
 import dao.helper.TableFilter
 import database.{DegreeDb, DegreeTable}
-import javax.inject.Inject
 import models.Degree
 import slick.jdbc.PostgresProfile.api._
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object DegreeDao extends TableFilter[DegreeTable] {

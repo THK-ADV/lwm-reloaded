@@ -1,20 +1,19 @@
 package dao
 
-import java.util.UUID
-
 import dao.UserDao.systemIdFilter
 import dao.helper.TableFilter.{abbreviationFilter, idFilter}
 import dao.helper.{DBResult, TableFilter}
 import database.helper.LdapUserStatus
 import database.helper.LdapUserStatus._
-import database.{UserDb, UserTable}
-import javax.inject.Inject
+import database.{DegreeDb, UserDb, UserTable}
 import models._
 import models.helper._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.SqlAction
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object UserDao extends TableFilter[UserTable] {
@@ -65,23 +64,34 @@ final class UserDaoImpl @Inject()(
 
   def userId(systemId: String): SqlAction[Option[UUID], NoStream, Effect.Read] = filterValidOnly(systemIdFilter(systemId)).map(_.id).take(1).result.headOption
 
-  def makeUserModel(systemId: String, lastname: String, firstname: String, email: String, status: String, registrationId: Option[String], enrollment: Option[String]): Future[UserDb] = {
-    val action = for {
-      status <- DBIO.from(Future.fromTry(LdapUserStatus(status)))
+  def makeUserModel(
+    systemId: String,
+    lastname: String,
+    firstname: String,
+    email: String,
+    status: String,
+    registrationId: Option[String],
+    enrollment: Option[String]
+  ): Future[UserDb] = {
+    def createDegree(abbrev: String): Future[Degree] =
+      degreeDao.create(DegreeDb("", abbrev)).map(_.toUniqueEntity)
+
+    for {
+      status <- Future.fromTry(LdapUserStatus(status))
       maybeDegree <- status match {
         case StudentStatus if enrollment.isDefined && registrationId.isDefined =>
-          degreeDao.filterBy(List(abbreviationFilter(enrollment.get))).result.flatMap { degrees =>
-            degrees.headOption
-              .map(d => DBIO.successful(Some(d.id)))
-              .getOrElse(DBIO.failed(new Throwable(s"degree with label '${enrollment.get}' not found")))
-          }
-        case EmployeeStatus | LecturerStatus => DBIO.successful(Option.empty[UUID])
-        case _ => DBIO.failed(new Throwable(s"user with $status label must have a associated registration-id and degree abbreviation, but was $registrationId and $enrollment"))
+          val degreeAbbrev = enrollment.get
+          for {
+            maybeDegree <- degreeDao.getSingleWhere(abbreviationFilter(degreeAbbrev).apply)
+            degree <- maybeDegree.fold(createDegree(degreeAbbrev))(Future.successful)
+          } yield Some(degree.id)
+        case EmployeeStatus | LecturerStatus =>
+          Future.successful(Option.empty[UUID])
+        case _ =>
+          Future.failed(new Throwable(s"user with $status label must have a associated registration-id and degree abbreviation, but was $registrationId and $enrollment"))
       }
       user = UserDb(systemId, lastname, firstname, email, status, registrationId, maybeDegree)
     } yield user
-
-    db.run(action)
   }
 
   def createOrUpdateWithBasicAuthority(user: UserDb): Future[DBResult[UserDb]] = {

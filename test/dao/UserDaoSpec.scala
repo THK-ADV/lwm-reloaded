@@ -17,8 +17,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
   import AbstractDaoSpec._
   import slick.jdbc.PostgresProfile.api._
-
   import scala.util.Random.nextInt
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   val maxUser = 200
   val maxDegrees = 3
@@ -136,11 +136,20 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       }
     }
 
-    "fail to make a student if degree abbreviation is not found" in {
-      val query = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some("invalid abbrev"))
+    "create a degree if abbreviation is not found" in {
+      val query = for {
+        user <- dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some("unknown abbrev"))
+        degree <- degreeDao.getSingle(user.enrollment.get)
+      } yield (user, degree.get)
 
-      async(query.failed) { throwable =>
-        throwable.getLocalizedMessage.containsSlice("'invalid abbrev' not found") shouldBe true
+      async(query) { case (user, degree) =>
+        user.systemId shouldBe "make student systemId"
+        user.lastname shouldBe "make student last"
+        user.firstname shouldBe "make student first"
+        user.email shouldBe "make student email"
+        user.status shouldBe StudentStatus
+        user.registrationId shouldBe Some("make student regId")
+        user.enrollment shouldBe Some(degree.id)
       }
     }
 
@@ -172,39 +181,39 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       }
     }
 
-   /* "create a student with dedicated basic authority" in {
-      val degree = degrees(nextInt(maxDegrees))
-      val user = UserDb("student systemId", "student last", "student first", "student email", StudentStatus, Some("regId"), Some(degree.id))
+    /* "create a student with dedicated basic authority" in {
+       val degree = degrees(nextInt(maxDegrees))
+       val user = UserDb("student systemId", "student last", "student first", "student email", StudentStatus, Some("regId"), Some(degree.id))
 
-      async(dao.createOrUpdateWithBasicAuthority(user)) {
-        case (createdUser, createdAuth) =>
-          createdUser shouldBe user
-          createdAuth.user shouldBe user.id
-          createdAuth.course shouldBe empty
-      }
-    }
+       async(dao.createOrUpdateWithBasicAuthority(user)) {
+         case (createdUser, createdAuth) =>
+           createdUser shouldBe user
+           createdAuth.user shouldBe user.id
+           createdAuth.course shouldBe empty
+       }
+     }
 
-    "create a employee with dedicated basic authority" in {
-      val user = UserDb("employee systemId", "employee last", "employee first", "employee email", EmployeeStatus, None, None)
+     "create a employee with dedicated basic authority" in {
+       val user = UserDb("employee systemId", "employee last", "employee first", "employee email", EmployeeStatus, None, None)
 
-      async(dao.createOrUpdateWithBasicAuthority(user)) {
-        case (createdUser, createdAuth) =>
-          createdUser shouldBe user
-          createdAuth.user shouldBe user.id
-          createdAuth.course shouldBe empty
-      }
-    }
+       async(dao.createOrUpdateWithBasicAuthority(user)) {
+         case (createdUser, createdAuth) =>
+           createdUser shouldBe user
+           createdAuth.user shouldBe user.id
+           createdAuth.course shouldBe empty
+       }
+     }
 
-    "create a lecturer with dedicated basic authority" in {
-      val user = UserDb("lecturer systemId", "lecturer last", "lecturer first", "lecturer email", LecturerStatus, None, None)
+     "create a lecturer with dedicated basic authority" in {
+       val user = UserDb("lecturer systemId", "lecturer last", "lecturer first", "lecturer email", LecturerStatus, None, None)
 
-      async(dao.createWithBasicAuthorityQuery(user)) {
-        case (createdUser, createdAuth) =>
-          createdUser shouldBe user
-          createdAuth.user shouldBe user.id
-          createdAuth.course shouldBe empty
-      }
-    }*/
+       async(dao.createWithBasicAuthorityQuery(user)) {
+         case (createdUser, createdAuth) =>
+           createdUser shouldBe user
+           createdAuth.user shouldBe user.id
+           createdAuth.course shouldBe empty
+       }
+     }*/
 
     "create and update student with dedicated basic authority" in {
       val degree = degrees(nextInt(maxDegrees))
@@ -311,6 +320,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
   )
 
   override protected val dao: UserDao = app.injector.instanceOf(classOf[UserDao])
+
+  val degreeDao: DegreeDao = app.injector.instanceOf(classOf[DegreeDao])
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }
