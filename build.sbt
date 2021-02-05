@@ -5,6 +5,7 @@ lazy val scalazVersion = "7.1.12"
 lazy val scalatestVersion = "3.0.5"
 lazy val slickVersion = "3.3.0"
 lazy val mailVersion = "6.0.1"
+lazy val postgresVersion = "42.2.18"
 
 lazy val commonSettings = Seq(
   name := "lwm-reloaded",
@@ -50,7 +51,7 @@ lazy val lwmDependencies = Seq(
 lazy val postgresDependencies = Seq(
   "com.typesafe.slick" %% "slick" % slickVersion,
   "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
-  "org.postgresql" % "postgresql" % "9.4-1206-jdbc42"
+  "org.postgresql" % "postgresql" % postgresVersion
 )
 
 val keycloakDepencencies = Seq(
