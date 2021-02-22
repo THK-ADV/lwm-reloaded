@@ -1,28 +1,35 @@
 package service
 
-import java.util.UUID
-
 import database.ReportCardEvaluationDb
-import models.{ReportCardEntry, ReportCardEntryLike, ReportCardEntryType, ReportCardEvaluation, ReportCardEvaluationLike, ReportCardEvaluationPattern}
+import models._
 import models.helper.EvaluationProperty
 
-object ReportCardEvaluationService {
+import java.util.UUID
+
+object ReportCardEvaluationService { // TODO TEST
 
   lazy val EvaluatedExplicit: Int = 3201 // this value indicates explicit evaluations
 
-  def partialEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb = {
+  def partialEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluationDb =
     ReportCardEvaluationDb(student, labwork, entryType, boolean, int)
-  }
+
+  def count(cards: List[ReportCardEntryLike], entryType: String, property: EvaluationProperty): Int =
+    property match {
+      case EvaluationProperty.BoolBased =>
+        cards
+          .count(_.entryTypes.exists(e => e.entryType == entryType && e.bool.getOrElse(false)))
+      case EvaluationProperty.IntBased =>
+        cards
+          .filter(_.entryTypes.exists(_.entryType == entryType))
+          .flatMap(_.entryTypes.map(_.int))
+          .sum
+    }
 
   def evaluate(student: UUID, cards: List[ReportCardEntry], patterns: List[ReportCardEvaluationPattern], labwork: UUID): List[ReportCardEvaluationDb] = {
     val eval = partialEval(student, labwork) _
 
     patterns.map { pattern =>
-      val counts = pattern.property match {
-        case EvaluationProperty.BoolBased => cards.count(_.entryTypes.exists(e => e.entryType == pattern.entryType && e.bool.getOrElse(false)))
-        case EvaluationProperty.IntBased => cards.filter(_.entryTypes.exists(_.entryType == pattern.entryType)).flatMap(_.entryTypes.map(_.int)).sum
-      }
-
+      val counts = count(cards, pattern.entryType, pattern.property)
       eval(pattern.entryType, counts >= pattern.min, counts)
     }
   }

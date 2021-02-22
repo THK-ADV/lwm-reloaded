@@ -101,6 +101,7 @@ GET           /reportCardEntries/student/:s                                    c
 # ReportCardEntry restricted
 POST          /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.createFrom(c, l)
 POST          /courses/:c/labworks/:l/reportCardEntries/extend                 controllers.ReportCardEntryController.extend(c, l)
+GET           /courses/:c/labworks/:l/reportCardEntries/sheet                  controllers.ReportCardEntryController.renderStatSheet(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
 GET           /courses/:c/reportCardEntries/scheduleEntry/:sid                 controllers.ReportCardEntryController.fromScheduleEntry(c, sid)
 GET           /courses/:c/rescheduleCandidates/semesters/:sid                  controllers.ReportCardEntryController.rescheduleCandidates(c, sid)
