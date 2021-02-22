@@ -13,7 +13,7 @@ import utils.Ops
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object ReportCardEvaluationController {
@@ -29,15 +29,15 @@ final class ReportCardEvaluationController @Inject()(
   val abstractDao: ReportCardEvaluationDao,
   val reportCardEntryDao: ReportCardEntryDao,
   val reportCardEvaluationPatternDao: ReportCardEvaluationPatternDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEvaluationProtocol, ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike](cc)
   with FileStreamResult {
 
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
   import service.ReportCardEvaluationService._
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import utils.date.DateTimeOps.DateTimeConverter
 
   def get(student: String) = contextFrom(Get) asyncAction { request =>
     all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
@@ -49,7 +49,8 @@ final class ReportCardEvaluationController @Inject()(
       patterns <- Ops.when(reportCardEvaluationPatternDao.get(List(labworkFilter(labworkId)), atomic = false))(_.nonEmpty)(() => "no eval pattern defined")
       cards <- reportCardEntryDao.get(List(labworkFilter(labworkId)), atomic = false)
       existing <- abstractDao.get(List(labworkFilter(labworkId)), atomic = false)
-      _ <- abstractDao.createOrUpdateMany(evaluateDeltas(cards.toList, patterns.toList, existing.toList))
+      evals = evaluateDeltas(cards.toList, patterns.toList, existing.toList).map(toDb)
+      _ <- abstractDao.createOrUpdateMany(evals)
 
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
       evaluations <- abstractDao.get(List(labworkFilter(labworkId)), atomic)
@@ -62,7 +63,9 @@ final class ReportCardEvaluationController @Inject()(
       studentId <- student.uuidF
       existing <- abstractDao.get(List(labworkFilter(labworkId), userFilter(studentId)), atomic = false)
       result <- if (existing.isEmpty)
-        abstractDao.createMany(evaluateExplicit(UUID.fromString(student), UUID.fromString(labwork))).map(_.map(_.toUniqueEntity)).jsonResult
+        abstractDao.createMany(fastForwardStudent(studentId, labworkId).map(toDb))
+          .map(_.map(_.toUniqueEntity))
+          .jsonResult
       else
         Future.successful(preconditionFailed(s"$student was already evaluated: ${Json.toJson(existing)}. delete those first before continuing with explicit evaluation."))
     } yield result
@@ -126,9 +129,20 @@ final class ReportCardEvaluationController @Inject()(
     }
   }
 
-  override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb = {
+  override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb =
     ReportCardEvaluationDb(protocol.student, protocol.labwork, protocol.label, protocol.bool, protocol.int, id = existingId getOrElse UUID.randomUUID)
-  }
+
+  private def toDb(eval: ReportCardEvaluation): ReportCardEvaluationDb =
+    ReportCardEvaluationDb(
+      eval.student,
+      eval.labwork,
+      eval.label,
+      eval.bool,
+      eval.int,
+      eval.lastModified.timestamp,
+      None,
+      eval.id
+    )
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create | Get | Delete | Update => SecureBlock(restrictionId, List(CourseManager))

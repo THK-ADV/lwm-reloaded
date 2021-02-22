@@ -20,6 +20,8 @@ sealed trait ReportCardEntryLike extends UniqueEntity {
   def assignmentIndex: Int
 
   def studentId: UUID
+
+  def entryTypes: Set[ReportCardEntryType]
 }
 
 case class ReportCardEntry(

@@ -2,6 +2,7 @@ package controllers
 
 import controllers.helper.TimeRangeTableFilter
 import dao._
+import dao.helper.TableFilter.labworkFilter
 import database.{ReportCardEntryDb, ReportCardEntryTable}
 import models._
 import play.api.libs.json.{Json, Reads, Writes}
@@ -10,6 +11,7 @@ import security.LWMRole._
 import security.SecurityActionChain
 import service.ReportCardEntryService.ReportCardEntryDescription
 import service._
+import service.sheet.{FileStreamResult, ReportCardEntryExport}
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
@@ -32,7 +34,8 @@ final class ReportCardEntryController @Inject()(
   val securedAction: SecurityActionChain,
   implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardEntryProtocol, ReportCardEntryTable, ReportCardEntryDb, ReportCardEntryLike](cc)
-  with TimeRangeTableFilter[ReportCardEntryTable] {
+  with TimeRangeTableFilter[ReportCardEntryTable]
+  with FileStreamResult {
 
   import controllers.ReportCardEntryController._
   import utils.date.DateTimeJsonFormatter._
@@ -108,6 +111,18 @@ final class ReportCardEntryController @Inject()(
       atomic = isAtomic(default = true)
       cards <- service.extendBy(labworkId, descriptions, atomic)
     } yield cards).jsonResult
+  }
+
+  def renderStatSheet(course: String, labwork: String) = restrictedContext(course)(Create) asyncAction { _ =>
+    import utils.Ops.whenNonEmpty
+
+    for {
+      labworkId <- labwork.uuidF
+      allCards <- whenNonEmpty(abstractDao.get(List(labworkFilter(labworkId))))(() => "no report cards found")
+      allCards0 = allCards.map(_.asInstanceOf[ReportCardEntryAtom]).toList
+      labwork = allCards0.head.labwork
+      sheet = ReportCardEntryExport.createSheet(allCards0, labwork)
+    } yield toResult(sheet)
   }
 
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {

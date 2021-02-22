@@ -43,34 +43,7 @@ final class ReportCardServiceSpec extends WordSpec with TestBaseDefinition {
       } shouldBe true
     }
 
-    "pass a student's report card when everything is fine" in {
-      val bonusPoints = 10
-      val cardEntries = planEntries.map { e =>
-        val types = e.types.map {
-          case att if att.entryType == Attendance.entryType => ReportCardEntryType(att.entryType, Some(!(e.index == 0)))
-          case cert if cert.entryType == Certificate.entryType => ReportCardEntryType(cert.entryType, Some(true))
-          case bonus if bonus.entryType == Bonus.entryType => ReportCardEntryType(bonus.entryType, Some(false), bonusPoints)
-          case supp if supp.entryType == Supplement.entryType => ReportCardEntryType(supp.entryType, Some(true))
-        }
 
-        ReportCardEntry(student, UUID.randomUUID, e.label, LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, types)
-      }
-      val types = planEntries.flatMap(_.types)
-      val attendance = types.count(_.entryType == Attendance.entryType)
-      val mandatory = types.count(_.entryType == Certificate.entryType)
-      val pattern = List(
-        ReportCardEvaluationPattern(labworkId, Attendance.entryType, attendance - 1, BoolBased),
-        ReportCardEvaluationPattern(labworkId, Certificate.entryType, mandatory, BoolBased),
-        ReportCardEvaluationPattern(labworkId, Bonus.entryType, 0, IntBased),
-        ReportCardEvaluationPattern(labworkId, Supplement.entryType, 0, BoolBased)
-      )
-
-      val result = ReportCardService.evaluate(cardEntries.toList, pattern)
-
-      result.size shouldBe ReportCardEntryType.all.size
-      result.forall(_.bool) shouldBe true
-      result.find(r => r.label == Bonus.entryType && r.int == bonusPoints) shouldBe defined
-    }
 
     "pass a student's report card even when he barley performed" in {
       val cardEntries = planEntries.map { e =>
