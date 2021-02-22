@@ -1,0 +1,32 @@
+[
+  {
+    "date": "2021-02-01",
+    "notes": [
+      "Annotationen für Studierende",
+      "Vebesserte UI in der Terminansicht (nur Abnehmer)",
+      "Modulmitarbeiter können nun auch Termine verschieben",
+      "Performance und UX Verbesserung bei der Suche nach Studierenden",
+      "Bei der Suche nach Studierenden werden jetzt auch die Evalutationsergebnisse beim jeweiligen Praktikum angezeigt",
+      "Studierende können nun auf ihre Notenhefte vom Dashboard aus zugreifen (Laufende Praktika)",
+      "Studierende sehen jetzt ihre verschobenen Termine im Kalender",
+      "Verbesserte Darstellung der Termine im Kalender"
+    ],
+    "version": "1.0.0"
+  },
+  {
+    "date": "2021-02-04",
+    "notes": [
+      "Benutzeraccounts können zusammengeführt werden",
+      "Benutzeraccounts können aktualisiert werden"
+    ],
+    "version": "1.1.0"
+  },
+  {
+    "date": "2021-02-22",
+    "notes": [
+      "Download detaillierter Praktikumsergebnisse in der Evaluationsansicht (nur Modulverantwortliche)",
+      "Praktika in der Modulansicht werden nun alphabetisch sortiert (nur Modulmitarbeiter)"
+    ],
+    "version": "1.2.0"
+  }
+]
