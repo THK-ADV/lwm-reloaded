@@ -29,6 +29,8 @@ final class LwmServiceController @Inject()(
   import models.LabworkApplication.{writes => lappWrites}
   import models.ReportCardEntry.{writes => cardWrites}
   import models.Student.{writes => studentWrites}
+  import models.ReportCardEvaluation.{writes => evalWrites}
+  import models.GroupLike.{writes => groupWrites}
 
   def insertStudentToGroup(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     (parseJson[GroupChangeRequest] _ andThen mapJson andThen (r => r(insertIntoGroup))) (request)
@@ -40,6 +42,10 @@ final class LwmServiceController @Inject()(
 
   def moveStudentToGroup(course: String) = restrictedContext(course)(Update) asyncAction { request =>
     (parseJson[GroupMovingRequest] _ andThen mapJson andThen (r => r(moveToGroup))) (request)
+  }
+
+  def evaluateExplicit(course: String) = restrictedContext(course)(Create) asyncAction { request =>
+    (parseJson[ExplicitEvaluationRequest] _ andThen mapJson andThen (r => r(evalExplicit))) (request)
   }
 
   def mergeUsers() = contextFrom(Update) asyncAction { request =>
@@ -59,35 +65,40 @@ final class LwmServiceController @Inject()(
     serviceDao.usersWithoutRegistrationId().jsonResult
   }
 
-  private def insertIntoGroup(request: GroupChangeRequest): Future[Result] = {
-    serviceDao.insertStudentToGroup(request.student, request.labwork, request.group).map {
+  private def insertIntoGroup(request: GroupChangeRequest): Future[Result] =
+    serviceDao.insertStudentToGroup(request.student, request.labwork, request.group).jsonResult {
       case (membership, app, cards, _) => ok(
         "labworkApplication" -> Json.toJson(app),
         "membership" -> Json.toJson(membership),
         "reportCardEntries" -> Json.toJson(cards)
       )
     }
-  }
 
-  private def removeFromGroup(request: GroupChangeRequest): Future[Result] = {
-    serviceDao.removeStudentFromGroup(request.student, request.labwork, request.group).map {
+  private def removeFromGroup(request: GroupChangeRequest): Future[Result] =
+    serviceDao.removeStudentFromGroup(request.student, request.labwork, request.group).jsonResult {
       case (groupDeleted, deleteApp, deletedCards) => ok(
         "changedMembership" -> Json.toJson(groupDeleted),
         "labworkApplication" -> Json.toJson(deleteApp),
         "reportCardEntries" -> Json.toJson(deletedCards)
       )
     }
-  }
 
-  private def moveToGroup(request: GroupMovingRequest): Future[Result] = {
-    serviceDao.moveStudentToGroup(request.student, request.labwork, request.srcGroup, request.destGroup).map {
+  private def moveToGroup(request: GroupMovingRequest): Future[Result] =
+    serviceDao.moveStudentToGroup(request.student, request.labwork, request.srcGroup, request.destGroup).jsonResult {
       case (groupDeleted, newMembership, _, _, updatedCards) => ok(
         "changedMembership" -> Json.toJson(groupDeleted),
         "newMembership" -> Json.toJson(newMembership),
         "updatedReportCardEntries" -> Json.toJson(updatedCards)
       )
     }
-  }
+
+  private def evalExplicit(request: ExplicitEvaluationRequest): Future[Result] =
+    serviceDao.evaluateExplicit(request.student, request.labwork, request.group, request.kind).jsonResult {
+      case (evals, group) => ok(
+        "evals" -> Json.toJson(evals),
+        "group" -> Json.toJson(group)
+      )
+    }
 
   private def mapJson[A](json: Try[A])(f: A => Future[Result]): Future[Result] =
     json match {

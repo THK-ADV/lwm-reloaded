@@ -131,7 +131,6 @@ GET           /reportCardEvaluations/student/:s                                c
 
 # ReportCardEvaluation restricted
 POST          /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.createFrom(c, l)
-POST          /courses/:c/labworks/:l/students/:s/reportCardEvaluations        controllers.ReportCardEvaluationController.createForStudent(c, l, s)
 GET           /courses/:c/labworks/:l/reportCardEvaluations                    controllers.ReportCardEvaluationController.allFrom(c, l)
 GET           /courses/:c/labworks/:l/reportCardEvaluations/sheet              controllers.ReportCardEvaluationController.renderEvaluationSheet(c, l)
 PUT           /courses/:c/labworks/:l/reportCardEvaluations/:id                controllers.ReportCardEvaluationController.updateFrom(c, l, id)
@@ -187,6 +186,7 @@ GET           /dashboard                                                       c
 PUT           /courses/:c/insertIntoGroup                                      controllers.serviceResource.LwmServiceController.insertStudentToGroup(c)
 PUT           /courses/:c/removeFromGroup                                      controllers.serviceResource.LwmServiceController.removeStudentFromGroup(c)
 PUT           /courses/:c/moveToGroup                                          controllers.serviceResource.LwmServiceController.moveStudentToGroup(c)
+PUT           /courses/:c/evaluateExplicit                                     controllers.serviceResource.LwmServiceController.evaluateExplicit(c)
 PUT           /service/mergeUsers                                              controllers.serviceResource.LwmServiceController.mergeUsers()
 GET           /service/duplicateUsers                                          controllers.serviceResource.LwmServiceController.duplicateUsers()
 GET           /service/usersWithoutRegistrationId                              controllers.serviceResource.LwmServiceController.usersWithoutRegistrationId()
