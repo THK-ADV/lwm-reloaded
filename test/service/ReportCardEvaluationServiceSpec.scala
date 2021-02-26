@@ -48,6 +48,21 @@ class ReportCardEvaluationServiceSpec extends WordSpec with TestBaseDefinition {
     }
   }
 
+  "fast rewind an evaluation by setting all bools to false" in {
+    val student = UUID.randomUUID
+    val labwork = UUID.randomUUID
+
+    val evals = fireStudent(student, labwork)
+
+    evals.map(_.label).toSet shouldBe ReportCardEntryType.all.map(_.entryType)
+    evals foreach { eval =>
+      eval.student shouldBe student
+      eval.labwork shouldBe labwork
+      eval.int shouldBe FireValue
+      eval.bool shouldBe false
+    }
+  }
+
   "count number of bools and ints of entryTypes properly" in {
     val student = UUID.randomUUID
     val labwork = UUID.randomUUID
@@ -278,6 +293,27 @@ class ReportCardEvaluationServiceSpec extends WordSpec with TestBaseDefinition {
       ReportCardEvaluation(student, labwork, Certificate.entryType, bool = true, FastForwardValue, DateTime.now),
       ReportCardEvaluation(student, labwork, Bonus.entryType, bool = true, FastForwardValue, DateTime.now),
       ReportCardEvaluation(student, labwork, Supplement.entryType, bool = true, FastForwardValue, DateTime.now),
+    )
+
+    val newEvals = List(
+      freshEval(Attendance.entryType, true, 3),
+      freshEval(Certificate.entryType, true, 3),
+    )
+
+    val result = deltas(existingEvals, newEvals)
+    result.isEmpty shouldBe true
+  }
+
+  "skip delta eval if the given student is fired" in {
+    val student = UUID.randomUUID
+    val labwork = UUID.randomUUID
+    val freshEval = eval(student, labwork) _
+
+    val existingEvals = List(
+      ReportCardEvaluation(student, labwork, Attendance.entryType, bool = false, FireValue, DateTime.now),
+      ReportCardEvaluation(student, labwork, Certificate.entryType, bool = false, FireValue, DateTime.now),
+      ReportCardEvaluation(student, labwork, Bonus.entryType, bool = false, FireValue, DateTime.now),
+      ReportCardEvaluation(student, labwork, Supplement.entryType, bool = false, FireValue, DateTime.now),
     )
 
     val newEvals = List(

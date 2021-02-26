@@ -1,9 +1,11 @@
 package dao
 
+import controllers.serviceResource.ExplicitEvaluationType
 import dao.helper.{Core, TableFilter}
 import database._
 import database.helper.LdapUserStatus
 import models._
+import service.ReportCardEvaluationService
 import slick.jdbc.PostgresProfile.api._
 
 import java.util.UUID
@@ -18,11 +20,15 @@ trait LwmServiceDao extends Core {
 
   protected def reportCardEntryDao: ReportCardEntryDao
 
+  protected def reportCardEvaluationDao: ReportCardEvaluationDao
+
   def insertStudentToGroup(student: UUID, labwork: UUID, group: UUID): Future[(GroupMembership, LabworkApplication, Seq[ReportCardEntry], Option[UUID])]
 
   def removeStudentFromGroup(student: UUID, labwork: UUID, group: UUID): Future[(Boolean, LabworkApplication, Seq[ReportCardEntry])]
 
   def moveStudentToGroup(student: UUID, labwork: UUID, srcGroup: UUID, destGroup: UUID): Future[(Boolean, GroupMembership, Seq[ReportCardEntry], Seq[ReportCardEntry], Seq[ReportCardEntry])]
+
+  def evaluateExplicit(student: UUID, labwork: UUID, group: UUID, kind: ExplicitEvaluationType): Future[(Seq[ReportCardEvaluation], GroupLike)]
 
   def mergeUser(originSystemId: String, dropSystemId: String): Future[List[String]]
 
@@ -46,6 +52,7 @@ final class LwmServiceDaoImpl @Inject()(
 
   import TableFilter.{labworkFilter, userFilter}
   import utils.Ops.unwrap
+  import utils.Ops.whenNonEmpty
 
   def insertStudentToGroup(student: UUID, labwork: UUID, group: UUID): Future[(GroupMembership, LabworkApplication, Seq[ReportCardEntry], Option[UUID])] = {
     val result = for {
@@ -107,6 +114,29 @@ final class LwmServiceDaoImpl @Inject()(
     } yield (removedMembership > 0, newMembership, srcStudentCards.map(_.toUniqueEntity), destStudentCards.map(_.toUniqueEntity), updatedSrcCards.map(_.toUniqueEntity))
 
     db.run(result.transactionally)
+  }
+
+  override def evaluateExplicit(student: UUID, labwork: UUID, group: UUID, kind: ExplicitEvaluationType): Future[(Seq[ReportCardEvaluation], GroupLike)] = {
+    import controllers.ReportCardEvaluationController.toDb
+
+    def eval(): List[ReportCardEvaluation] = kind match {
+      case ExplicitEvaluationType.FastForward =>
+        ReportCardEvaluationService.fastForwardStudent(student, labwork)
+      case ExplicitEvaluationType.Fire =>
+        ReportCardEvaluationService.fireStudent(student, labwork)
+    }
+
+    val action = for {
+      existing <- reportCardEvaluationDao.filterBy(List(labworkFilter(labwork), userFilter(student))).result
+      _ <- reportCardEvaluationDao.deleteManyHardQuery(existing.map(_.id).toList)
+      evals <- reportCardEvaluationDao.createManyQuery(eval().map(toDb))
+      _ <- groupDao.remove(student, group)
+    } yield evals
+
+    for {
+      evals <- db.run(action.transactionally)
+      group <- groupDao.getSingle(group)
+    } yield (evals.map(_.toUniqueEntity), group.get)
   }
 
   private def ensure(predicate: Boolean, orMsg: () => String): DBIOAction[Unit, NoStream, Effect] =

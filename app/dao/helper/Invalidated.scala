@@ -3,7 +3,9 @@ package dao.helper
 import database.UniqueTable
 import models.UniqueDbEntity
 import org.joda.time.DateTime
+import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
+import slick.sql.FixedSqlAction
 import utils.date.DateTimeOps.DateTimeConverter
 
 import java.sql.Timestamp
@@ -38,12 +40,14 @@ trait Invalidated[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntit
     invalidateSingle0(query, now)
   }
 
-  final def delete(id: UUID): DBIOAction[Int, NoStream, Effect.Write] = for {
-    d <- filterValidOnly(_.id === id).delete if d == 1
-  } yield d
+  final def deleteHardQuery(id: UUID): FixedSqlAction[Int, NoStream, Effect.Write] =
+    deleteManyHardQuery(List(id))
+
+  final def deleteManyHardQuery(ids: List[UUID]): FixedSqlAction[Int, NoStream, Effect.Write] =
+    tableQuery.filter(_.id.inSet(ids)).delete
 
   final def deleteHard(ids: List[UUID]): Future[Int] =
-    db.run(tableQuery.filter(_.id.inSet(ids)).delete)
+    db.run(deleteManyHardQuery(ids))
 
   private def invalidateSingle0(query: Query[T, DbModel, Seq], now: Timestamp) = {
     val singleQuery = query.exactlyOne { toDelete =>

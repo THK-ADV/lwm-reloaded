@@ -16,9 +16,11 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
+
   def scheduleEntryFilter(scheduleEntry: UUID): TableFilterPredicate = r => TableQuery[ScheduleEntryTable].filter { s =>
     val schedule = s.id === scheduleEntry
-    val ordinary = s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
+    val inGrp = TableQuery[GroupMembershipTable].filter(g => g.group === s.group && g.user === r.user).exists
+    val ordinary = inGrp && s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
     val rescheduled = isRescheduled(r, s.date, s.start, s.end, s.room)
     val retry = isRetried(r, s.date, s.start, s.end, s.room)
 

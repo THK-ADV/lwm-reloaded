@@ -17,9 +17,23 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 object ReportCardEvaluationController {
+  import utils.date.DateTimeOps.DateTimeConverter
+
   lazy val courseAttribute = "course"
   lazy val labworkAttribute = "labwork"
   lazy val studentAttribute = "student"
+
+  def toDb(eval: ReportCardEvaluation): ReportCardEvaluationDb =
+    ReportCardEvaluationDb(
+      eval.student,
+      eval.labwork,
+      eval.label,
+      eval.bool,
+      eval.int,
+      eval.lastModified.timestamp,
+      None,
+      eval.id
+    )
 }
 
 @Singleton
@@ -37,7 +51,6 @@ final class ReportCardEvaluationController @Inject()(
   import TableFilter.{labworkFilter, userFilter}
   import controllers.ReportCardEvaluationController._
   import service.ReportCardEvaluationService._
-  import utils.date.DateTimeOps.DateTimeConverter
 
   def get(student: String) = contextFrom(Get) asyncAction { request =>
     all(NonSecureBlock)(request.appending(studentAttribute -> Seq(student)))
@@ -55,20 +68,6 @@ final class ReportCardEvaluationController @Inject()(
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic
       evaluations <- abstractDao.get(List(labworkFilter(labworkId)), atomic)
     } yield evaluations).jsonResult
-  }
-
-  def createForStudent(course: String, labwork: String, student: String) = restrictedContext(course)(Create) asyncAction { _ =>
-    for {
-      labworkId <- labwork.uuidF
-      studentId <- student.uuidF
-      existing <- abstractDao.get(List(labworkFilter(labworkId), userFilter(studentId)), atomic = false)
-      result <- if (existing.isEmpty)
-        abstractDao.createMany(fastForwardStudent(studentId, labworkId).map(toDb))
-          .map(_.map(_.toUniqueEntity))
-          .jsonResult
-      else
-        Future.successful(preconditionFailed(s"$student was already evaluated: ${Json.toJson(existing)}. delete those first before continuing with explicit evaluation."))
-    } yield result
   }
 
   def allFrom(course: String, labwork: String) = restrictedContext(course)(GetAll) asyncAction { request =>
@@ -131,18 +130,6 @@ final class ReportCardEvaluationController @Inject()(
 
   override protected def toDbModel(protocol: ReportCardEvaluationProtocol, existingId: Option[UUID]): ReportCardEvaluationDb =
     ReportCardEvaluationDb(protocol.student, protocol.labwork, protocol.label, protocol.bool, protocol.int, id = existingId getOrElse UUID.randomUUID)
-
-  private def toDb(eval: ReportCardEvaluation): ReportCardEvaluationDb =
-    ReportCardEvaluationDb(
-      eval.student,
-      eval.labwork,
-      eval.label,
-      eval.bool,
-      eval.int,
-      eval.lastModified.timestamp,
-      None,
-      eval.id
-    )
 
   override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = {
     case Create | Get | Delete | Update => SecureBlock(restrictionId, List(CourseManager))

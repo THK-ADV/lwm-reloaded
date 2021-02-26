@@ -8,7 +8,9 @@ import java.util.UUID
 
 object ReportCardEvaluationService {
 
-  lazy val FastForwardValue: Int = 3201 // this value indicates fast forward evaluations
+  lazy val FastForwardValue: Int = 3201 // this value indicates a positive evaluation witch was granted explicitly
+
+  lazy val FireValue: Int = 3207 // this value indicates a negative evaluation witch was granted explicitly
 
   private def freshEval(student: UUID, labwork: UUID)(entryType: String, boolean: Boolean, int: Int): ReportCardEvaluation =
     ReportCardEvaluation(student, labwork, entryType, boolean, int, DateTime.now)
@@ -40,7 +42,7 @@ object ReportCardEvaluationService {
         oldEvals
           .find(_.label == newEval.label)
           .fold(list.+:(newEval)) {
-            case abort if abort.int == FastForwardValue =>
+            case abort if abort.int == FastForwardValue || abort.int == FireValue=>
               list
             case oldEval if oldEval.bool != newEval.bool || oldEval.int != newEval.int =>
               list.+:(newEval.copy(id = oldEval.id))
@@ -68,5 +70,6 @@ object ReportCardEvaluationService {
   def fastForwardStudent(student: UUID, labwork: UUID): List[ReportCardEvaluation] =
     ReportCardEntryType.all.map(t => freshEval(student, labwork)(t.entryType, boolean = true, FastForwardValue)).toList
 
-  def fireStudent(student: UUID, labwork: UUID): List[ReportCardEvaluation] = ???
+  def fireStudent(student: UUID, labwork: UUID): List[ReportCardEvaluation] =
+    ReportCardEntryType.all.map(t => freshEval(student, labwork)(t.entryType, boolean = false, FireValue)).toList
 }
