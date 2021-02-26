@@ -28,5 +28,12 @@
       "Praktika in der Modulansicht werden nun alphabetisch sortiert (nur Modulmitarbeiter)"
     ],
     "version": "1.2.0"
+  },
+    {
+    "date": "2021-02-26",
+    "notes": [
+      "Studierende können vorzeitig das Praktikum anerkannt bekommen oder vorzeitig im Praktikum durchfallen (nur Modulverantwortliche)",
+    ],
+    "version": "1.3.0"
   }
 ]
