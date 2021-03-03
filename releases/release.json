@@ -35,5 +35,12 @@
       "Studierende können vorzeitig das Praktikum anerkannt bekommen oder vorzeitig im Praktikum durchfallen (nur Modulverantwortliche)"
     ],
     "version": "1.3.0"
+  },
+  {
+    "date": "2021-03-03",
+    "notes": [
+      "Verbessert die Visualisierung der Praktikumsleistungen (nur Modulmitarbeiter)"
+    ],
+    "version": "1.4.0"
   }
 ]
