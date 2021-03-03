@@ -24,6 +24,7 @@ object ReportCardEntryController {
   lazy val labworkAttribute = "labwork"
   lazy val roomAttribute = "room"
   lazy val scheduleEntryAttribute = "scheduleEntry"
+  lazy val semesterAttribute = "semester"
 }
 
 @Singleton
@@ -128,6 +129,7 @@ final class ReportCardEntryController @Inject()(
   override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] = {
     import ReportCardEntryController._
     import ReportCardEntryDao._
+    import dao.helper.TableFilter.semesterFilter
 
     (attribute, value) match {
       case (`studentAttribute`, s) => s.makeUserFilter
@@ -135,6 +137,7 @@ final class ReportCardEntryController @Inject()(
       case (`labworkAttribute`, l) => l.makeLabworkFilter
       case (`roomAttribute`, r) => r.makeRoomFilter
       case (`scheduleEntryAttribute`, s) => s.uuid map scheduleEntryFilter
+      case (`semesterAttribute`, s) => s.uuid map semesterFilter
       case _ => makeTimeRangeFilter(attribute, value)
     }
   }

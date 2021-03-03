@@ -17,6 +17,8 @@ object TableFilter {
 
   def courseFilter[T <: LabworkIdTable](course: UUID): T => Rep[Boolean] = _.memberOfCourse(course)
 
+  def semesterFilter[T <: LabworkIdTable](semester: UUID): T => Rep[Boolean] = _.inSemester(semester)
+
   def labelFilterEquals[T <: LabelTable](label: String): T => Rep[Boolean] = _.label.toLowerCase === label.toLowerCase
 
   def labelFilterLike[T <: LabelTable](label: String): T => Rep[Boolean] = _.label.toLowerCase like s"%${label.toLowerCase}%"
