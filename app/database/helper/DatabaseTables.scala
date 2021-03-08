@@ -29,7 +29,6 @@ trait DatabaseTables {
     TableQuery[TimetableEntrySupervisorTable],
     TableQuery[ReportCardEntryTable],
     TableQuery[ReportCardRescheduledTable],
-    TableQuery[ReportCardRetryTable],
     TableQuery[ReportCardEntryTypeTable],
     TableQuery[ReportCardEvaluationTable],
     TableQuery[ReportCardEvaluationPatternTable],

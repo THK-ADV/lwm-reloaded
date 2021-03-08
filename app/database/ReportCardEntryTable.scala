@@ -20,7 +20,7 @@ class ReportCardEntryTable(tag: Tag) extends Table[ReportCardEntryDb](tag, "REPO
 
   def mapRow: ((UUID, UUID, String, Date, Time, Time, UUID, Int, Timestamp, Option[Timestamp], UUID)) => ReportCardEntryDb = {
     case (student, labwork, label, date, start, end, room, index, lastModified, invalidated, id) =>
-      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, index, None, None, lastModified, invalidated, id)
+      ReportCardEntryDb(student, labwork, label, date, start, end, room, Set.empty, index, None, lastModified, invalidated, id)
   }
 
   def unmapRow: ReportCardEntryDb => Option[(UUID, UUID, String, Date, Time, Time, UUID, Int, Timestamp, Option[Timestamp], UUID)] = { entry =>
@@ -39,7 +39,6 @@ case class ReportCardEntryDb(
   entryTypes: Set[ReportCardEntryTypeDb],
   assignmentIndex: Int = -1,
   rescheduled: Option[ReportCardRescheduledDb] = None,
-  retry: Option[ReportCardRetryDb] = None,
   lastModified: Timestamp = DateTime.now.timestamp,
   invalidated: Option[Timestamp] = None,
   id: UUID = UUID.randomUUID
@@ -56,12 +55,11 @@ case class ReportCardEntryDb(
     entryTypes.map(_.toUniqueEntity),
     assignmentIndex,
     rescheduled.map(_.toUniqueEntity),
-    retry.map(_.toUniqueEntity),
     id
   )
 
   override def equals(that: scala.Any) = that match {
-    case ReportCardEntryDb(s, l, lb, dt, st, et, r, ts, idx, rs, rt, _, _, i) =>
+    case ReportCardEntryDb(s, l, lb, dt, st, et, r, ts, idx, rs, _, _, i) =>
       s == student &&
         l == labwork &&
         lb == label &&
@@ -72,7 +70,6 @@ case class ReportCardEntryDb(
         idx == assignmentIndex &&
         ts == entryTypes &&
         rs == rescheduled &&
-        rt == retry &&
         i == id
     case _ => false
   }

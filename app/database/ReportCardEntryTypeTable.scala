@@ -13,23 +13,17 @@ class ReportCardEntryTypeTable(tag: Tag) extends Table[ReportCardEntryTypeDb](ta
 
   def int = column[Int]("INT")
 
-  // reportCardEntries types can either be created from reportCardEntry or reportCardRetry. thus both ids are optional
-  def reportCardEntry = column[Option[UUID]]("REPORT_CARD_ENTRY")
+  def reportCardEntry = column[UUID]("REPORT_CARD_ENTRY")
 
-  def reportCardRetry = column[Option[UUID]]("REPORT_CARD_RETRY")
-
-  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id.?)
-
-  def reportCardRetryFk = foreignKey("REPORT_CARD_RETRY_fkey", reportCardRetry, TableQuery[ReportCardRetryTable])(_.id.?)
+  def reportCardEntryFk = foreignKey("REPORT_CARD_ENTRY_fkey", reportCardEntry, TableQuery[ReportCardEntryTable])(_.id)
 
   def joinReportCardEntry(f: ReportCardEntryTable => Rep[Boolean]) = reportCardEntryFk.filter(e => e.isValid && e.id === reportCardEntry && f(e))
 
-  override def * = (reportCardEntry, reportCardRetry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
+  override def * = (reportCardEntry, entryType, bool, int, lastModified, invalidated, id) <> ((ReportCardEntryTypeDb.apply _).tupled, ReportCardEntryTypeDb.unapply)
 }
 
 case class ReportCardEntryTypeDb(
-  reportCardEntry: Option[UUID],
-  reportCardRetry: Option[UUID],
+  reportCardEntry: UUID,
   entryType: String,
   bool: Option[Boolean] = None,
   int: Int = 0,
@@ -41,9 +35,8 @@ case class ReportCardEntryTypeDb(
   override def toUniqueEntity = ReportCardEntryType(entryType, bool, int, id)
 
   override def equals(obj: Any) = obj match {
-    case ReportCardEntryTypeDb(e, r, t, _bool, _int, _, _, i) =>
+    case ReportCardEntryTypeDb(e, t, _bool, _int, _, _, i) =>
       e == reportCardEntry &&
-        r == reportCardRetry &&
         t == entryType &&
         _bool == bool &&
         _int == int &&

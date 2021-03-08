@@ -172,13 +172,11 @@ trait ReportCardEntryService {
     x.entryTypes.map(toEntryTypeDb(x.id)),
     x.assignmentIndex,
     x.rescheduled.map(toRescheduledDb(x.id)),
-    x.retry.map(toRetryDb(x.id)),
     id = x.id
   )
 
   private def toEntryTypeDb(reportCardEntry: UUID)(t: ReportCardEntryType) = ReportCardEntryTypeDb(
-    Some(reportCardEntry),
-    None,
+    reportCardEntry,
     t.entryType,
     t.bool,
     t.int,
@@ -191,17 +189,6 @@ trait ReportCardEntryService {
     r.start.sqlTime,
     r.end.sqlTime,
     r.room,
-    r.reason,
-    id = r.id
-  )
-
-  private def toRetryDb(reportCardEntry: UUID)(r: ReportCardRetry) = ReportCardRetryDb(
-    reportCardEntry,
-    r.date.sqlDate,
-    r.start.sqlTime,
-    r.end.sqlTime,
-    r.room,
-    r.entryTypes.map(toEntryTypeDb(reportCardEntry)),
     r.reason,
     id = r.id
   )

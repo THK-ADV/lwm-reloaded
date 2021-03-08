@@ -112,19 +112,12 @@ DELETE        /courses/:c/labworks/:l/reportCardEntries                        c
 PUT           /courses/:c/reportCardEntryTypes/:id                             controllers.ReportCardEntryTypeController.updateFrom(c, id)
 PUT           /courses/:c/labworks/:l/reportCardEntryTypes                     controllers.ReportCardEntryTypeController.batchUpdate(c, l)
 
-# ReportCardRescheduled 
+# ReportCardRescheduled
 POST          /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
 GET           /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.allFrom(c)
 GET           /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.getFrom(c, id)
 PUT           /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.updateFrom(c, id)
 DELETE        /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.invalidateFrom(c, id)
-
-# ReportCardRetry 
-POST          /courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.createFrom(c)
-GET           /courses/:c/reportCardRetries                                    controllers.ReportCardRetryController.allFrom(c)
-GET           /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.getFrom(c, id)
-PUT           /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.updateFrom(c, id)
-DELETE        /courses/:c/reportCardRetries/:id                                controllers.ReportCardRetryController.invalidateFrom(c, id)
 
 # ReportCardEvaluation 
 GET           /reportCardEvaluations/student/:s                                controllers.ReportCardEvaluationController.get(s)

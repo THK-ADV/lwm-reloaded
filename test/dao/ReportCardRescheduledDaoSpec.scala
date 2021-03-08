@@ -17,7 +17,7 @@ final class ReportCardRescheduledDaoSpec extends AbstractDaoSpec[ReportCardResch
 
   private val amount = 50
   private lazy val privateLabworks = labworks.take(4)
-  private lazy val reportCardEntries = populateReportCardEntries(amount, 8, withRescheduledAndRetry = true)(privateLabworks, students)
+  private lazy val reportCardEntries = populateReportCardEntries(amount, 8, withReschedule = true)(privateLabworks, students)
 
   def rescheduled(reportCardEntryId: UUID, i: Int): ReportCardRescheduledDb = {
     val rDate = LocalDate.now.plusDays(i)
