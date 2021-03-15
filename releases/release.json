@@ -42,5 +42,13 @@
       "Verbessert die Visualisierung der Praktikumsleistungen (nur Modulmitarbeiter)"
     ],
     "version": "1.4.0"
+  },
+  {
+    "date": "2021-03-15",
+    "notes": [
+      "Mehr Auswahl an Gründen für Termin verschieben",
+      "Der Termin eines Studierenden kann mehrmals verschoben werden"
+    ],
+    "version": "1.5.0"
   }
 ]
