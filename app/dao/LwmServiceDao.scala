@@ -63,7 +63,7 @@ final class LwmServiceDaoImpl @Inject()(
       srcCards <- DBIO.sequenceOption(srcStudent.map(s => reportCards(labwork, s)))
       copied = srcCards.getOrElse(Seq.empty).map { card =>
         val newId = UUID.randomUUID
-        val newEntryTypes = card.entryTypes.map(t => ReportCardEntryTypeDb(Some(newId), None, t.entryType))
+        val newEntryTypes = card.entryTypes.map(t => ReportCardEntryTypeDb(newId, t.entryType))
 
         ReportCardEntryDb(student, labwork, card.label, card.date, card.start, card.end, card.room, newEntryTypes, card.assignmentIndex, id = newId)
       }
@@ -199,17 +199,9 @@ final class LwmServiceDaoImpl @Inject()(
       e.end.sqlTime,
       e.room,
       e.entryTypes.map(t =>
-        ReportCardEntryTypeDb(Some(e.id), None, t.entryType, t.bool, t.int, id = t.id)
+        ReportCardEntryTypeDb(e.id, t.entryType, t.bool, t.int, id = t.id)
       ),
       e.assignmentIndex,
-      e.rescheduled.map(rs =>
-        ReportCardRescheduledDb(e.id, rs.date.sqlDate, rs.start.sqlTime, rs.end.sqlTime, rs.room, rs.reason, id = rs.id)
-      ),
-      e.retry.map(rt =>
-        ReportCardRetryDb(e.id, rt.date.sqlDate, rt.start.sqlTime, rt.end.sqlTime, rt.room, rt.entryTypes.map(t =>
-          ReportCardEntryTypeDb(None, Some(rt.id), t.entryType, t.bool, t.int, id = t.id)
-        ), rt.reason, id = rt.id)
-      ),
       id = e.id
     )
   }

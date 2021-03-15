@@ -55,7 +55,6 @@ class Module(environment: Environment, implicit val config: Configuration) exten
     bind(classOf[ReportCardEvaluationDao]).to(classOf[ReportCardEvaluationDaoImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardEvaluationPatternDao]).to(classOf[ReportCardEvaluationPatternDaoImpl]).in(classOf[Singleton])
     bind(classOf[ReportCardRescheduledDao]).to(classOf[ReportCardRescheduledDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardRetryDao]).to(classOf[ReportCardRetryDaoImpl]).in(classOf[Singleton])
     bind(classOf[RoleDao]).to(classOf[RoleDaoImpl]).in(classOf[Singleton])
     bind(classOf[ScheduleEntryDao]).to(classOf[ScheduleEntryDaoImpl]).in(classOf[Singleton])
     bind(classOf[TimetableDao]).to(classOf[TimetableDaoImpl]).in(classOf[Singleton])

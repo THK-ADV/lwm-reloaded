@@ -34,8 +34,6 @@ case class ReportCardEntry(
   room: UUID,
   entryTypes: Set[ReportCardEntryType],
   assignmentIndex: Int,
-  rescheduled: Option[ReportCardRescheduled] = None,
-  retry: Option[ReportCardRetry] = None,
   id: UUID = UUID.randomUUID
 ) extends ReportCardEntryLike {
   override def labworkId = labwork
@@ -63,8 +61,6 @@ case class ReportCardEntryAtom(
   room: Room,
   entryTypes: Set[ReportCardEntryType],
   assignmentIndex: Int,
-  rescheduled: Option[ReportCardRescheduledAtom],
-  retry: Option[ReportCardRetryAtom],
   id: UUID
 ) extends ReportCardEntryLike {
   override def labworkId = labwork.id
@@ -84,8 +80,6 @@ object ReportCardEntry {
       (JsPath \ "room").write[UUID] and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType](ReportCardEntryType.writes) and
       (JsPath \ "assignmentIndex").write[Int] and
-      (JsPath \ "rescheduled").writeNullable[ReportCardRescheduled](ReportCardRescheduled.writes) and
-      (JsPath \ "retry").writeNullable[ReportCardRetry](ReportCardRetry.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(ReportCardEntry.unapply))
 }
@@ -106,8 +100,6 @@ object ReportCardEntryAtom {
       (JsPath \ "room").write[Room](Room.writes) and
       (JsPath \ "entryTypes").writeSet[ReportCardEntryType](ReportCardEntryType.writes) and
       (JsPath \ "assignmentIndex").write[Int] and
-      (JsPath \ "rescheduled").writeNullable[ReportCardRescheduledAtom](ReportCardRescheduledAtom.writes) and
-      (JsPath \ "retry").writeNullable[ReportCardRetryAtom](ReportCardRetryAtom.writes) and
       (JsPath \ "id").write[UUID]
     ) (unlift(ReportCardEntryAtom.unapply))
 }

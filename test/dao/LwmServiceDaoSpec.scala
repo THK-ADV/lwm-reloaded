@@ -123,7 +123,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
           val lhs = cards
             .sortBy(_.date)
 
-          lhs.forall(r => r.labwork == labwork.id && r.student == student.id && r.rescheduled.isEmpty && r.retry.isEmpty && r.entryTypes.forall(_.bool.isEmpty)) shouldBe true
+          lhs.forall(r => r.labwork == labwork.id && r.student == student.id && r.entryTypes.forall(_.bool.isEmpty)) shouldBe true
 
           val rhs = reportCardEntries
             .filter(_.student == srcStudent.get)
@@ -308,8 +308,6 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
               u.student shouldBe s.student
               u.labwork shouldBe s.labwork
               u.entryTypes shouldBe s.entryTypes
-              u.rescheduled shouldBe s.rescheduled
-              u.retry shouldBe s.retry
 
               u.date shouldBe d.date
               u.start shouldBe d.start
@@ -404,7 +402,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
       s <- g.members
       e <- (1 until 5).map { i =>
         val id = UUID.randomUUID
-        val types = (0 until 4).map(i => ReportCardEntryTypeDb(Some(id), None, i.toString)).toSet
+        val types = (0 until 4).map(i => ReportCardEntryTypeDb(id, i.toString)).toSet
 
         ReportCardEntryDb(s, g.labwork, i.toString, randomLocalDate.sqlDate, randomLocalTime.sqlTime, randomLocalTime.sqlTime, rooms.head.id, types, i, id = id)
       }

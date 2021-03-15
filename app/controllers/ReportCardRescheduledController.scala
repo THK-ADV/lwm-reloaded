@@ -6,12 +6,13 @@ import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
 import models.{ReportCardRescheduledLike, ReportCardRescheduledProtocol}
 import play.api.libs.json.{Reads, Writes}
 import play.api.mvc.ControllerComponents
-import security.LWMRole.{CourseEmployee, CourseManager}
+import security.LWMRole.{CourseEmployee, CourseManager, StudentRole}
 import security.SecurityActionChain
 import utils.date.DateTimeOps._
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object ReportCardRescheduledController {
@@ -27,7 +28,8 @@ final class ReportCardRescheduledController @Inject()(
   cc: ControllerComponents,
   val authorityDao: AuthorityDao,
   val abstractDao: ReportCardRescheduledDao,
-  val securedAction: SecurityActionChain
+  val securedAction: SecurityActionChain,
+  implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[ReportCardRescheduledProtocol, ReportCardRescheduledTable, ReportCardRescheduledDb, ReportCardRescheduledLike](cc)
   with TimeRangeTableFilter[ReportCardRescheduledTable] {
 
@@ -57,6 +59,21 @@ final class ReportCardRescheduledController @Inject()(
       protocol.reason, id = existingId getOrElse UUID.randomUUID
     )
 
+  def forStudent(reportCardEntry: String) = contextFrom(GetAll) asyncAction { request =>
+    import dao.helper.TableFilter.systemIdByReportCardEntryFilter
+    import utils.Ops.OptionOps
+
+    val newRequest = request.appending(reportCardEntryAttribute -> Seq(reportCardEntry))
+
+    allWithFilter { (filter, defaults) =>
+      (for {
+        systemId <- Future.fromTry(request.systemId.toTry("No User ID found in request"))
+        newFilter = systemIdByReportCardEntryFilter(systemId) :: filter
+        reschedules <- abstractDao.get(newFilter, defaults.atomic, defaults.valid, defaults.lastModified)
+      } yield reschedules).jsonResult
+    }(newRequest)
+  }
+
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
     create(NonSecureBlock)(request)
   }
@@ -81,5 +98,7 @@ final class ReportCardRescheduledController @Inject()(
     case _ => SecureBlock(restrictionId, List(CourseManager, CourseEmployee))
   }
 
-  override protected def contextFrom: PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
+    case GetAll => PartialSecureBlock(List(StudentRole))
+  }
 }

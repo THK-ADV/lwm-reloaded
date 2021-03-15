@@ -94,19 +94,32 @@ trait ReportCardEntryService {
 
   def assignmentEntryService: AssignmentEntryService
 
-  def withAnnotationCountInLabwork(
+  def withAnnotationCountAndReschedulesInLabwork(
+    filter: List[ReportCardEntryTable => Rep[Boolean]],
+    atomic: Boolean,
+    lastModified: Option[String]
+  ): Future[Seq[(ReportCardEntryLike, Int, Set[ReportCardRescheduledLike])]] = {
+    def annotationFor(e: ReportCardEntryLike): Future[Int] =
+      annotationDao.count(List(userByReportCardEntryFilter(e.studentId), labworkByReportCardEntryFilter(e.labworkId)))
+
+    val query = dao.filterBy(filter, atomic, lastModified)
+
+    for {
+      entries <- dao.withReschedules(query, atomic)
+      withAnnotations <- Future.sequence(entries.map {
+        case (e, rs) => annotationFor(e).map((e, _, rs))
+      })
+    } yield withAnnotations
+  }
+
+  def withReschedules(
     filter: List[ReportCardEntryTable => Rep[Boolean]],
     atomic: Boolean,
     validOnly: Boolean,
     lastModified: Option[String]
-  ) = {
-    def annotationFor(e: ReportCardEntryLike) =
-      annotationDao.count(List(userByReportCardEntryFilter(e.studentId), labworkByReportCardEntryFilter(e.labworkId)))
-
-    for {
-      entries <- dao.get(filter, atomic, validOnly, lastModified)
-      withAnnotations <- Future.sequence(entries.map(e => annotationFor(e).map((e, _))))
-    } yield withAnnotations
+  ): Future[Seq[(ReportCardEntryLike, Set[ReportCardRescheduledLike])]] = {
+    val baseQuery = dao.filterBy(filter, validOnly, lastModified)
+    dao.withReschedules(baseQuery, atomic)
   }
 
   def rescheduleCandidates(course: UUID, semester: UUID) = {
@@ -171,39 +184,15 @@ trait ReportCardEntryService {
     x.room,
     x.entryTypes.map(toEntryTypeDb(x.id)),
     x.assignmentIndex,
-    x.rescheduled.map(toRescheduledDb(x.id)),
-    x.retry.map(toRetryDb(x.id)),
     id = x.id
   )
 
   private def toEntryTypeDb(reportCardEntry: UUID)(t: ReportCardEntryType) = ReportCardEntryTypeDb(
-    Some(reportCardEntry),
-    None,
+    reportCardEntry,
     t.entryType,
     t.bool,
     t.int,
     id = t.id
-  )
-
-  private def toRescheduledDb(reportCardEntry: UUID)(r: ReportCardRescheduled) = ReportCardRescheduledDb(
-    reportCardEntry,
-    r.date.sqlDate,
-    r.start.sqlTime,
-    r.end.sqlTime,
-    r.room,
-    r.reason,
-    id = r.id
-  )
-
-  private def toRetryDb(reportCardEntry: UUID)(r: ReportCardRetry) = ReportCardRetryDb(
-    reportCardEntry,
-    r.date.sqlDate,
-    r.start.sqlTime,
-    r.end.sqlTime,
-    r.room,
-    r.entryTypes.map(toEntryTypeDb(reportCardEntry)),
-    r.reason,
-    id = r.id
   )
 }
 

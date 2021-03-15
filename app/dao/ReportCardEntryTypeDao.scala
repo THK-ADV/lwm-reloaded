@@ -13,8 +13,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ReportCardEntryTypeDao extends TableFilter[ReportCardEntryTypeTable] {
   def reportCardEntryFilter(reportCardEntry: UUID): TableFilterPredicate = _.reportCardEntryFk.filter(_.id === reportCardEntry).exists
-
-  def reportCardRetryFilter(reportCardRetry: UUID): TableFilterPredicate = _.reportCardRetryFk.filter(_.id === reportCardRetry).exists
 }
 
 trait ReportCardEntryTypeDao extends AbstractDao[ReportCardEntryTypeTable, ReportCardEntryTypeDb, ReportCardEntryType] {
@@ -44,17 +42,12 @@ final class ReportCardEntryTypeDaoImpl @Inject()(
   }
 
   override protected def existsQuery(entity: ReportCardEntryTypeDb): Query[ReportCardEntryTypeTable, ReportCardEntryTypeDb, Seq] = {
-    val labelFilter: List[TableFilterPredicate] = List(entryTypeFilter(entity.entryType))
-    val withEntryFilter = entity.reportCardEntry.map(id => labelFilter.+:(reportCardEntryFilter(id)))
-    val withRetryFilter = entity.reportCardRetry.map(id => labelFilter.+:(reportCardRetryFilter(id)))
-
-    filterBy((withEntryFilter orElse withRetryFilter) getOrElse labelFilter)
+    filterBy(List(entryTypeFilter(entity.entryType), reportCardEntryFilter(entity.reportCardEntry)))
   }
 
   override protected def shouldUpdate(existing: ReportCardEntryTypeDb, toUpdate: ReportCardEntryTypeDb): Boolean = {
     existing.entryType == toUpdate.entryType &&
-      existing.reportCardEntry == toUpdate.reportCardEntry &&
-      existing.reportCardRetry == toUpdate.reportCardRetry
+      existing.reportCardEntry == toUpdate.reportCardEntry
   }
 
   def updateFields(id: UUID, bool: Option[Boolean], int: Int): Future[Int] = db.run(

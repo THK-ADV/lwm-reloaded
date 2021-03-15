@@ -14,7 +14,20 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 trait StudentSearchService {
-  type StudentSearchDashboard = (User, Semester, Map[CourseAtom, Seq[(LabworkAtom, Seq[(ReportCardEntryLike, Set[AnnotationLike])], Seq[ReportCardEvaluationLike])]])
+  type StudentSearchDashboard = (
+    User,
+      Semester,
+      Map[
+        CourseAtom,
+        Seq[
+          (
+            LabworkAtom,
+              Seq[(ReportCardEntryLike, Set[AnnotationLike], Set[ReportCardRescheduledLike])],
+              Seq[ReportCardEvaluationLike]
+            )
+        ]
+      ]
+    )
 
   def semesterDao: SemesterDao
 
@@ -66,7 +79,11 @@ final class StudentSearchServiceImpl @Inject()(
         labworks
           .sortWith((a, b) => a.semester.start.isAfter(b.semester.start))
           .map { l =>
-            (l, groupedReportCardEntries(l.id).sortBy(a => a._1.assignmentIndex), groupedEvals.getOrElse(l.id, Nil))
+            (
+              l,
+              groupedReportCardEntries(l.id).sortBy(a => a._1.assignmentIndex),
+              groupedEvals.getOrElse(l.id, Nil)
+            )
           }
       )
     }
@@ -101,7 +118,7 @@ final class StudentSearchServiceImpl @Inject()(
     courses: Option[Seq[UUID]],
     currentSemester: UUID,
     currentUserStatus: LdapUserStatus
-  ): Future[Seq[(ReportCardEntryLike, Set[AnnotationLike])]] = {
+  ): Future[Seq[(ReportCardEntryLike, Set[AnnotationLike], Set[ReportCardRescheduledLike])]] = {
     def byStudent: ReportCardEntryTable => Rep[Boolean] = r => r.user === student
 
     def inCourse(courses: Seq[UUID]): ReportCardEntryTable => Rep[Boolean] = r => r.memberOfCourses(courses)
@@ -121,7 +138,7 @@ final class StudentSearchServiceImpl @Inject()(
     }
 
     val query = reportCardEntryDao.filterBy(filter)
-    reportCardEntryDao.withAnnotations(query, atomic = true)
+    reportCardEntryDao.withAnnotationsAndReschedules(query, atomic = true)
   }
 
   private def labworks(ids: Seq[UUID]): Future[Seq[LabworkAtom]] =

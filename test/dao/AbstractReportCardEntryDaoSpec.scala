@@ -30,12 +30,6 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
     rooms.find(_.id == entry.room).get.toUniqueEntity,
     entry.entryTypes.map(_.toUniqueEntity),
     entry.assignmentIndex,
-    entry.rescheduled.map(r =>
-      ReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.reason, r.id)
-    ),
-    entry.retry.map(r =>
-      ReportCardRetryAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.entryTypes.map(_.toUniqueEntity), r.reason, r.id)
-    ),
     entry.id
   )
 
@@ -66,7 +60,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
     TableQuery[RoomTable].forceInsertAll(rooms)
   )
 
-  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8, withRescheduledAndRetry = true)(privateLabs, privateStudents)
+  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8)(privateLabs, privateStudents)
 
   override protected val numberOfUpdates: Int = 10
 
@@ -81,13 +75,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
   override protected def expanderSpecs(dbModel: ReportCardEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
     dao.entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
       entryTypes.toSet shouldBe (if (isDefined) dbModel.entryTypes else Set.empty)
-    },
-    dao.rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
-      rescheduled.toSet shouldBe (if (isDefined) dbModel.rescheduled.toSet else Set.empty)
-    },
-    dao.retryQuery.filter(_.reportCardEntry === dbModel.id).joinLeft(dao.entryTypeQuery).on(_.id === _.reportCardRetry).result.map(_.groupBy(_._1.id)).map(_.foreach {
-      case (_, values) => values.map(_._1).head.copy(entryTypes = values.flatMap(_._2).toSet) shouldBe dbModel.retry.get
-    })
+    }
   )
 
   override protected val dao: ReportCardEntryDao = app.injector.instanceOf(classOf[ReportCardEntryDao])

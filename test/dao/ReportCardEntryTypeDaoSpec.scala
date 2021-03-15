@@ -19,7 +19,7 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     "update certain fields of entryType properly" in {
       import scala.util.Random.shuffle
 
-      val cards = populateReportCardEntries(1, 8, withRescheduledAndRetry = false)(labworks, students)
+      val cards = populateReportCardEntries(1, 8)(labworks, students)
       val entryTypes = cards.flatMap(_.entryTypes)
 
       val shuffled = shuffle(entryTypes)
@@ -80,20 +80,20 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     }
   }
 
-  private val cards = populateReportCardEntries(5, 5, withRescheduledAndRetry = false)(labworks, students)
+  private val cards = populateReportCardEntries(5, 5)(labworks, students)
 
   override protected def name: String = "reportCardEntryType"
 
-  override protected val dbEntity: ReportCardEntryTypeDb = ReportCardEntryTypeDb(Some(cards.head.id), None, "entryType", Some(true), 10)
+  override protected val dbEntity: ReportCardEntryTypeDb = ReportCardEntryTypeDb(cards.head.id, "entryType", Some(true), 10)
 
   override protected val invalidDuplicateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(id = UUID.randomUUID)
 
-  override protected val invalidUpdateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(entryType = "new type", reportCardEntry = None)
+  override protected val invalidUpdateOfDbEntity: ReportCardEntryTypeDb = dbEntity.copy(entryType = "new type", reportCardEntry = UUID.randomUUID())
 
   override protected val validUpdateOnDbEntity: ReportCardEntryTypeDb = dbEntity.copy(bool = Some(false), int = 3)
 
   override protected val dbEntities: List[ReportCardEntryTypeDb] = cards.tail flatMap { card =>
-    0 until 5 map (i => ReportCardEntryTypeDb(Some(card.id), None, i.toString, if (nextBoolean) Some(nextBoolean) else None, nextInt(10)))
+    0 until 5 map (i => ReportCardEntryTypeDb(card.id, i.toString, if (nextBoolean) Some(nextBoolean) else None, nextInt(10)))
   }
 
   override protected val lwmAtom: ReportCardEntryType = dbEntity.toUniqueEntity

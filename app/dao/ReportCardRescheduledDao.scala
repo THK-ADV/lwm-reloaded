@@ -1,7 +1,9 @@
 package dao
 
 import dao.helper.TableFilter
+import dao.helper.TableFilter.{onDateFilter, onEndFilter, onStartFilter, roomFilter}
 import database.{ReportCardRescheduledDb, ReportCardRescheduledTable}
+
 import javax.inject.Inject
 import models._
 import slick.jdbc.PostgresProfile.api._
@@ -22,7 +24,16 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
     } yield (q, r)
 
     db.run(mandatory.result.map(_.map {
-      case (entry, room) => ReportCardRescheduledAtom(entry.date.localDate, entry.start.localTime, entry.end.localTime, room.toUniqueEntity, entry.reason, entry.id)
+      case (entry, room) =>
+        ReportCardRescheduledAtom(
+          entry.date.localDate,
+          entry.start.localTime,
+          entry.end.localTime,
+          room.toUniqueEntity,
+          entry.reason,
+          entry.lastModified.dateTime,
+          entry.id
+        )
     }))
   }
 
@@ -31,12 +42,17 @@ trait ReportCardRescheduledDao extends AbstractDao[ReportCardRescheduledTable, R
   }
 
   override protected def existsQuery(entity: ReportCardRescheduledDb): Query[ReportCardRescheduledTable, ReportCardRescheduledDb, Seq] = {
-    filterBy(List(reportCardEntryFilter(entity.reportCardEntry)))
+    filterBy(List(
+      reportCardEntryFilter(entity.reportCardEntry),
+      onDateFilter(entity.date),
+      onStartFilter(entity.start),
+      onEndFilter(entity.end),
+      roomFilter(entity.room)
+    ))
   }
 
-  override protected def shouldUpdate(existing: ReportCardRescheduledDb, toUpdate: ReportCardRescheduledDb): Boolean = {
-    existing.reportCardEntry == toUpdate.reportCardEntry
-  }
+  override protected def shouldUpdate(existing: ReportCardRescheduledDb, toUpdate: ReportCardRescheduledDb): Boolean =
+    false
 }
 
 final class ReportCardRescheduledDaoImpl @Inject()(val db: Database, val executionContext: ExecutionContext) extends ReportCardRescheduledDao

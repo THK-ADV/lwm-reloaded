@@ -58,8 +58,8 @@ object AbstractDaoSpec {
 
   def randomGroup = groups(nextInt(maxGroups))
 
-  def randomReportCardEntryTypes(reportCardEntry: Option[UUID], reportCardRetry: Option[UUID]) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
-    ReportCardEntryTypeDb(reportCardEntry, reportCardRetry, entryType.entryType)
+  def randomReportCardEntryTypes(reportCardEntry: UUID) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
+    ReportCardEntryTypeDb(reportCardEntry, entryType.entryType)
   }.toSet
 
   final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
@@ -144,60 +144,24 @@ object AbstractDaoSpec {
     }
     }.toList
 
-  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withRescheduledAndRetry: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = {
+  def populateReportCardEntries(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
     var index = 0 // in order to satisfy uniqueness
 
     (0 until amount).flatMap { _ =>
-      def reportCardRescheduled(e: ReportCardEntryDb) = {
-        val rDate = e.date.localDate.plusDays(1)
-        val rStart = e.start.localTime.plusHours(1)
-        val rEnd = e.end.localTime.plusHours(1)
-
-        ReportCardRescheduledDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, Some("some reason"))
-      }
-
-      def reportCardRetry(e: ReportCardEntryDb) = {
-        val rDate = e.date.localDate.plusDays(1)
-        val rStart = e.start.localTime.plusHours(1)
-        val rEnd = e.end.localTime.plusHours(1)
-
-        val id = UUID.randomUUID
-        val entryTypes = randomReportCardEntryTypes(None, Some(id))
-
-        ReportCardRetryDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, entryTypes, Some("some reason"), id = id)
-      }
-
       val student = takeOneOf(students).id
       val labwork = takeOneOf(labworks).id
       val room = randomRoom.id
 
-      val entries = (0 until numberOfEntries).map { i =>
+      (0 until numberOfEntries).map { i =>
         val date = LocalDate.now.plusDays(i)
         val start = LocalTime.now.plusHours(i)
         val end = start.plusHours(1)
 
         val id = UUID.randomUUID
-        val types = randomReportCardEntryTypes(Some(id), None)
+        val types = randomReportCardEntryTypes(id)
 
         index += 1
         ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, index, id = id)
-      }
-
-      if (nextBoolean && withRescheduledAndRetry) {
-        val rs = nextBoolean
-        val rt = nextBoolean
-
-        entries.map {
-          case rescheduled if rs && !rt =>
-            rescheduled.copy(rescheduled = Some(reportCardRescheduled(rescheduled)))
-          case retry if !rs && rt =>
-            retry.copy(retry = Some(reportCardRetry(retry)))
-          case both if rs && rt =>
-            both.copy(rescheduled = Some(reportCardRescheduled(both)), retry = Some(reportCardRetry(both)))
-          case nothing => nothing
-        }
-      } else {
-        entries
       }
     }.toList
   }
@@ -249,7 +213,7 @@ object AbstractDaoSpec {
 
   lazy val students = populateStudents(maxStudents)(degrees)
 
-  lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withRescheduledAndRetry = false)(labworks, students)
+  lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8)(labworks, students)
 
   lazy val groups = populateGroups(maxGroups)(labworks, students) // remember to add groupMemberships also
 
@@ -322,7 +286,7 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
         e <- dao.getSingle(dbEntity.id)
       } yield e
 
-      async(deleted)(_ shouldBe empty)
+      async(deleted)(_.isEmpty shouldBe true)
     }
   }
 }
