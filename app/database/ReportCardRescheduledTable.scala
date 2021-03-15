@@ -14,8 +14,26 @@ class ReportCardRescheduledTable(tag: Tag) extends Table[ReportCardRescheduledDb
   override def * = (reportCardEntry, date, start, end, room, reason, lastModified, invalidated, id) <> ((ReportCardRescheduledDb.apply _).tupled, ReportCardRescheduledDb.unapply)
 }
 
-case class ReportCardRescheduledDb(reportCardEntry: UUID, date: Date, start: Time, end: Time, room: UUID, reason: Option[String] = None, lastModified: Timestamp = DateTime.now.timestamp, invalidated: Option[Timestamp] = None, id: UUID = UUID.randomUUID) extends UniqueDbEntity {
-  override def toUniqueEntity = ReportCardRescheduled(date.localDate, start.localTime, end.localTime, room, reason, id)
+case class ReportCardRescheduledDb(
+  reportCardEntry: UUID,
+  date: Date,
+  start: Time,
+  end: Time,
+  room: UUID,
+  reason: Option[String] = None,
+  lastModified: Timestamp = DateTime.now.timestamp,
+  invalidated: Option[Timestamp] = None,
+  id: UUID = UUID.randomUUID
+) extends UniqueDbEntity {
+  override def toUniqueEntity = ReportCardRescheduled(
+    date.localDate,
+    start.localTime,
+    end.localTime,
+    room,
+    reason,
+    lastModified.dateTime,
+    id
+  )
 
   override def equals(that: scala.Any) = that match {
     case ReportCardRescheduledDb(rc, dt, st, et, r, rs, _, _, i) =>

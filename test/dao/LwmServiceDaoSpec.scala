@@ -123,7 +123,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
           val lhs = cards
             .sortBy(_.date)
 
-          lhs.forall(r => r.labwork == labwork.id && r.student == student.id && r.rescheduled.isEmpty && r.entryTypes.forall(_.bool.isEmpty)) shouldBe true
+          lhs.forall(r => r.labwork == labwork.id && r.student == student.id && r.entryTypes.forall(_.bool.isEmpty)) shouldBe true
 
           val rhs = reportCardEntries
             .filter(_.student == srcStudent.get)
@@ -308,7 +308,6 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
               u.student shouldBe s.student
               u.labwork shouldBe s.labwork
               u.entryTypes shouldBe s.entryTypes
-              u.rescheduled shouldBe s.rescheduled
 
               u.date shouldBe d.date
               u.start shouldBe d.start

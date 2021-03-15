@@ -2,9 +2,8 @@ package dao
 
 import dao.helper.{CrossInvalidated, DatabaseExpander, TableFilter}
 import database.{LabworkDb, ReportCardEntryDb, RoomDb, UserDb, _}
-import models.AnnotationLike.{Annotation, AnnotationAtom}
+import models.AnnotationLike.AnnotationAtom
 import models._
-import slick.jdbc
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Rep, TableQuery}
@@ -21,7 +20,7 @@ object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
     val schedule = s.id === scheduleEntry
     val inGrp = TableQuery[GroupMembershipTable].filter(g => g.group === s.group && g.user === r.user).exists
     val ordinary = inGrp && s.room === r.room && s.start === r.start && s.end === r.end && s.date === r.date
-    val rescheduled = isRescheduled(r, s.date, s.start, s.end, s.room)
+    val rescheduled = isRescheduled(r, s.date, s.start, s.end, s.room) // TODO use latest once
 
     schedule && (ordinary || rescheduled)
   }.exists
@@ -53,7 +52,7 @@ object ReportCardEntryDao extends TableFilter[ReportCardEntryTable] {
       rs.start === start &&
       rs.end === end &&
       rs.date === date
-  ).exists
+  ).sorted(_.lastModified).take(1).exists
 
   def indexFilter(index: Int): TableFilterPredicate = _.assignmentIndex === index
 }
@@ -87,12 +86,12 @@ trait ReportCardEntryDao
 
   override protected def toAtomic(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] =
     collectDependencies(query) {
-      case ((e, l, s, u), rs) => makeAtomicModel(e, l, s, u, rs)
+      case ((e, l, s, u)) => makeAtomicModel(e, l, s, u)
     }
 
   override def toUniqueEntity(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]): Future[Seq[ReportCardEntryLike]] =
     collectDependencies(query) {
-      case ((e, _, _, _), rs) => makeNonAtomicModel(e, rs)
+      case ((e, _, _, _)) => makeNonAtomicModel(e)
     }
 
   private def baseQuery(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq]) = for {
@@ -114,40 +113,95 @@ trait ReportCardEntryDao
 
   def withAnnotations(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq], atomic: Boolean): Future[Seq[(ReportCardEntryLike, Set[AnnotationLike])]] = {
     val action = baseQuery(query)
-      .joinLeft(reschedulesQuery).on(_._1.id === _._1.reportCardEntry)
-      .joinLeft(annotationQuery).on(_._1._1.id === _._1.reportCardEntry)
-      .result.map(_.groupBy(_._1._1._1.id).map {
+      .joinLeft(annotationQuery).on(_._1.id === _._1.reportCardEntry)
+      .result.map(_.groupBy(_._1._1.id).map {
       case (_, dependencies) =>
-        val (e, l, s, r) = makeEntry(dependencies.map(_._1._1))
-        val rs = makeReschedule(dependencies.flatMap(_._1._2))
+        val (e, l, s, r) = makeEntry(dependencies.map(_._1))
         val as = dependencies.flatMap(_._2)
 
         if (atomic)
-          (makeAtomicModel(e, l, s, r, rs), as.map(a => makeAnnotationAtom(a._1, a._2)).toSet)
+          (makeAtomicModel(e, l, s, r), as.map(a => makeAnnotationAtom(a._1, a._2)).toSet)
         else
-          (makeNonAtomicModel(e, rs), as.map(a => makeAnnotation(a._1)).toSet)
+          (makeNonAtomicModel(e), as.map(a => makeAnnotation(a._1)).toSet)
     }.toSeq)
 
     db.run(action)
   }
 
-  private def makeReschedule(rs: Seq[(ReportCardRescheduledDb, RoomDb)]) =
-    rs.headOption
+  def withReschedules(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq], atomic: Boolean): Future[Seq[(ReportCardEntryLike, Set[ReportCardRescheduledLike])]] = {
+    val action = baseQuery(query)
+      .joinLeft(reschedulesQuery)
+      .on(_._1.id === _._1.reportCardEntry)
+      .result
+      .map(_.groupBy(_._1._1.id).map {
+        case (_, dependencies) =>
+          val (e, l, s, r) = makeEntry(dependencies.map(_._1))
+          val rs = dependencies.flatMap(_._2)
+
+          if (atomic)
+            (makeAtomicModel(e, l, s, r), rs.map(a => makeRescheduleAtom(a._1, a._2)).toSet)
+          else
+            (makeNonAtomicModel(e), rs.map(a => makeReschedule(a._1)).toSet)
+      }.toSeq)
+
+    db.run(action)
+  }
+
+  def withAnnotationsAndReschedules(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq], atomic: Boolean): Future[Seq[(ReportCardEntryLike, Set[AnnotationLike], Set[ReportCardRescheduledLike])]] = {
+    val action = baseQuery(query)
+      .joinLeft(annotationQuery).on(_._1.id === _._1.reportCardEntry)
+      .joinLeft(reschedulesQuery).on(_._1._1.id === _._1.reportCardEntry)
+      .result
+      .map(_.groupBy(_._1._1._1.id).map {
+        case (_, dependencies) =>
+          val (e, l, s, r) = makeEntry(dependencies.map(_._1._1))
+          val as = dependencies.flatMap(_._1._2)
+          val rs = dependencies.flatMap(_._2)
+
+          if (atomic)
+            (
+              makeAtomicModel(e, l, s, r),
+              as.map(a => makeAnnotationAtom(a._1, a._2)).toSet,
+              rs.map(a => makeRescheduleAtom(a._1, a._2)).toSet
+            )
+          else
+            (
+              makeNonAtomicModel(e),
+              as.map(a => makeAnnotation(a._1)).toSet,
+              rs.map(a => makeReschedule(a._1)).toSet
+            )
+      }.toSeq)
+
+    db.run(action)
+  }
+
+  private def makeReschedule(rs: ReportCardRescheduledDb): ReportCardRescheduledLike =
+    rs.toUniqueEntity
+
+  private def makeRescheduleAtom(rs: ReportCardRescheduledDb, r: RoomDb): ReportCardRescheduledLike =
+    ReportCardRescheduledAtom(
+      rs.date.localDate,
+      rs.start.localTime,
+      rs.end.localTime,
+      r.toUniqueEntity,
+      rs.reason,
+      rs.lastModified.dateTime,
+      rs.id
+    )
 
   private def makeEntry(rts: Seq[(ReportCardEntryDb, LabworkDb, UserDb, RoomDb, Option[ReportCardEntryTypeDb])]) = {
     val (e, l, u, r, _) = rts.head
     (e.copy(entryTypes = rts.flatMap(_._5).toSet), l, u, r)
   }
 
-  private def makeNonAtomicModel(entry: ReportCardEntryDb, optRs: Option[(ReportCardRescheduledDb, RoomDb)]) =
-    entry.copy(rescheduled = optRs.map(_._1)).toUniqueEntity
+  private def makeNonAtomicModel(entry: ReportCardEntryDb) =
+    entry.toUniqueEntity
 
   private def makeAtomicModel(
     entry: ReportCardEntryDb,
     labwork: LabworkDb,
     student: UserDb,
-    room: RoomDb,
-    optRs: Option[(ReportCardRescheduledDb, RoomDb)],
+    room: RoomDb
   ): ReportCardEntryLike =
     ReportCardEntryAtom(
       student.toUniqueEntity,
@@ -159,7 +213,6 @@ trait ReportCardEntryDao
       room.toUniqueEntity,
       entry.entryTypes.map(_.toUniqueEntity),
       entry.assignmentIndex,
-      optRs.map { case (rs, r) => ReportCardRescheduledAtom(rs.date.localDate, rs.start.localTime, rs.end.localTime, r.toUniqueEntity, rs.reason, rs.id) },
       entry.id
     )
 
@@ -176,20 +229,16 @@ trait ReportCardEntryDao
     a.toUniqueEntity
 
   private def collectDependencies(query: Query[ReportCardEntryTable, ReportCardEntryDb, Seq])
-    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb), Option[(ReportCardRescheduledDb, RoomDb)]) => ReportCardEntryLike) = {
-    val action = baseQuery(query)
-      .joinLeft(reschedulesQuery).on(_._1.id === _._1.reportCardEntry)
-      .result.map(_.groupBy(_._1._1.id).map {
+    (build: ((ReportCardEntryDb, LabworkDb, UserDb, RoomDb)) => ReportCardEntryLike) = {
+    val action = baseQuery(query).result.map(_.groupBy(_._1.id).map {
       case (_, dependencies) =>
-        build(
-          makeEntry(dependencies.map(_._1)),
-          makeReschedule(dependencies.flatMap(_._2))
-        )
+        build(makeEntry(dependencies))
     }.toSeq)
 
     db.run(action)
   }
 
+  // TODO remove?
   def withEntryTypes(preds: List[ReportCardEntryTable => Rep[Boolean]]): DBIOAction[Seq[ReportCardEntryDb], NoStream, Effect.Read] =
     filterBy(preds)
       .joinLeft(entryTypeQuery)
@@ -217,24 +266,17 @@ trait ReportCardEntryDao
       existing.student == toUpdate.student
   }
 
-  // TODO remove expanded creation / updates / deletion of reschedules
   override protected val databaseExpander: Option[DatabaseExpander[ReportCardEntryDb]] = Some(new DatabaseExpander[ReportCardEntryDb] {
-    // entry -> types
-    // entry -> rescheduled
-    override def expandCreationOf[E <: Effect](entities: ReportCardEntryDb*): jdbc.PostgresProfile.api.DBIOAction[Seq[ReportCardEntryDb], jdbc.PostgresProfile.api.NoStream, Effect.Write with Any] = {
+
+    override def expandCreationOf[E <: Effect](entities: ReportCardEntryDb*): DBIOAction[Seq[ReportCardEntryDb], NoStream, Effect.Write with Any] = {
       for {
-        _ <- rescheduledQuery ++= entities.flatMap(_.rescheduled)
         _ <- entryTypeQuery ++= entities.flatMap(_.entryTypes)
       } yield entities
     }
 
-    override def expandDeleteOf(entity: ReportCardEntryDb) = { // entry -> types, rescheduled, (retry -> types)
-      val rs = rescheduledQuery.filter(_.reportCardEntry === entity.id)
-      val types = entryTypeQuery.filter(t => t.reportCardEntry === entity.id)
-
+    override def expandDeleteOf(entity: ReportCardEntryDb) = {
       for {
-        _ <- types.delete
-        _ <- rs.delete
+        _ <- entryTypeQuery.filter(t => t.reportCardEntry === entity.id).delete
       } yield entity
     }
 
@@ -244,7 +286,6 @@ trait ReportCardEntryDao
 
   override protected val schemas: List[PostgresProfile.DDL] = List(
     tableQuery.schema,
-    rescheduledQuery.schema,
     entryTypeQuery.schema
   )
 }

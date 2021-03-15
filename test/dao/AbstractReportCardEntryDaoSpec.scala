@@ -30,9 +30,6 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
     rooms.find(_.id == entry.room).get.toUniqueEntity,
     entry.entryTypes.map(_.toUniqueEntity),
     entry.assignmentIndex,
-    entry.rescheduled.map(r =>
-      ReportCardRescheduledAtom(r.date.localDate, r.start.localTime, r.end.localTime, rooms.find(_.id == r.room).get.toUniqueEntity, r.reason, r.id)
-    ),
     entry.id
   )
 
@@ -63,7 +60,7 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
     TableQuery[RoomTable].forceInsertAll(rooms)
   )
 
-  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8, withReschedule = true)(privateLabs, privateStudents)
+  override protected val toAdd: List[ReportCardEntryDb] = populateReportCardEntries(10, 8)(privateLabs, privateStudents)
 
   override protected val numberOfUpdates: Int = 10
 
@@ -78,9 +75,6 @@ final class AbstractReportCardEntryDaoSpec extends AbstractExpandableDaoSpec[Rep
   override protected def expanderSpecs(dbModel: ReportCardEntryDb, isDefined: Boolean): DBIOAction[Unit, NoStream, Effect.Read] = DBIO.seq(
     dao.entryTypeQuery.filter(_.reportCardEntry === dbModel.id).result.map { entryTypes =>
       entryTypes.toSet shouldBe (if (isDefined) dbModel.entryTypes else Set.empty)
-    },
-    dao.rescheduledQuery.filter(_.reportCardEntry === dbModel.id).result.map { rescheduled =>
-      rescheduled.toSet shouldBe (if (isDefined) dbModel.rescheduled.toSet else Set.empty)
     }
   )
 

@@ -2,10 +2,10 @@ package controllers
 
 import controllers.helper.TimeRangeTableFilter
 import dao._
-import dao.helper.TableFilter.labworkFilter
+import dao.helper.TableFilter.{courseFilter, labworkFilter}
 import database.{ReportCardEntryDb, ReportCardEntryTable}
 import models._
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{JsObject, JsValue, Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
 import security.LWMRole._
 import security.SecurityActionChain
@@ -25,6 +25,12 @@ object ReportCardEntryController {
   lazy val roomAttribute = "room"
   lazy val scheduleEntryAttribute = "scheduleEntry"
   lazy val semesterAttribute = "semester"
+
+  implicit val writes2: Writes[(ReportCardEntryLike, Set[ReportCardRescheduledLike])] =
+    (o: (ReportCardEntryLike, Set[ReportCardRescheduledLike])) => {
+      val entry = Json.obj("entry" -> Json.toJson(o._1))
+      if (o._2.isEmpty) entry else entry + ("reschedules" -> Json.toJson(o._2))
+    }
 }
 
 @Singleton
@@ -60,9 +66,19 @@ final class ReportCardEntryController @Inject()(
 
     allWithFilter { (filter, defaults) =>
       service
-        .withAnnotationCountInLabwork(filter, defaults.atomic, defaults.valid, defaults.lastModified)
+        .withAnnotationCountAndReschedulesInLabwork(filter, defaults.atomic, defaults.lastModified)
         .jsonResult
     }(requestWithScheduleEntry)
+  }
+
+  def withReschedules(course: String) = restrictedContext(course)(GetAll) asyncAction { request =>
+    val newRequest = request.appending(courseAttribute -> Seq(course))
+
+    allWithFilter { (filter, defaults) =>
+      service
+        .withReschedules(filter, defaults.atomic, defaults.valid, defaults.lastModified)
+        .jsonResult
+    }(newRequest)
   }
 
   def invalidateFrom(course: String, labwork: String) = restrictedContext(course)(Delete) asyncAction { _ =>

@@ -202,9 +202,6 @@ final class LwmServiceDaoImpl @Inject()(
         ReportCardEntryTypeDb(e.id, t.entryType, t.bool, t.int, id = t.id)
       ),
       e.assignmentIndex,
-      e.rescheduled.map(rs =>
-        ReportCardRescheduledDb(e.id, rs.date.sqlDate, rs.start.sqlTime, rs.end.sqlTime, rs.room, rs.reason, id = rs.id)
-      ),
       id = e.id
     )
   }

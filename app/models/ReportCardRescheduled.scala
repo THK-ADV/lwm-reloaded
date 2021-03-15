@@ -1,19 +1,40 @@
 package models
 
 import java.util.UUID
-
-import org.joda.time.{LocalDate, LocalTime}
+import org.joda.time.{DateTime, LocalDate, LocalTime}
 import play.api.libs.functional.syntax.{unlift, _}
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import utils.date.DateTimeJsonFormatter._
 
 trait ReportCardRescheduledLike extends UniqueEntity
 
-case class ReportCardRescheduled(date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None, id: UUID = UUID.randomUUID) extends ReportCardRescheduledLike
+case class ReportCardRescheduled(
+  date: LocalDate,
+  start: LocalTime,
+  end: LocalTime,
+  room: UUID,
+  reason: Option[String] = None,
+  lastModified: DateTime,
+  id: UUID = UUID.randomUUID
+) extends ReportCardRescheduledLike
 
-case class ReportCardRescheduledProtocol(reportCardEntry: UUID, date: LocalDate, start: LocalTime, end: LocalTime, room: UUID, reason: Option[String] = None)
+case class ReportCardRescheduledProtocol(
+  reportCardEntry: UUID,
+  date: LocalDate,
+  start: LocalTime,
+  end: LocalTime,
+  room: UUID,
+  reason: Option[String] = None
+)
 
-case class ReportCardRescheduledAtom(date: LocalDate, start: LocalTime, end: LocalTime, room: Room, reason: Option[String], id: UUID) extends ReportCardRescheduledLike
+case class ReportCardRescheduledAtom(date: LocalDate,
+  start: LocalTime,
+  end: LocalTime,
+  room: Room,
+  reason: Option[String],
+  lastModified: DateTime,
+  id: UUID
+) extends ReportCardRescheduledLike
 
 object ReportCardRescheduledLike {
 
@@ -39,6 +60,7 @@ object ReportCardRescheduledAtom {
       (JsPath \ "end").write[LocalTime] and
       (JsPath \ "room").write[Room](Room.writes) and
       (JsPath \ "reason").writeNullable[String] and
+      (JsPath \ "lastModified").write[DateTime] and
       (JsPath \ "id").write[UUID]
     ) (unlift(ReportCardRescheduledAtom.unapply))
 }

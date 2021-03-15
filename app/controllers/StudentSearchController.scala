@@ -8,6 +8,7 @@ import play.api.mvc.{AbstractController, ControllerComponents}
 import security.LWMRole.{EmployeeRole, StudentRole}
 import security.SecurityActionChain
 import service.StudentSearchService
+import controllers.AnnotationController.annotationLikeWrites
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
@@ -44,7 +45,13 @@ final class StudentSearchController @Inject()(
             "labworks" -> content.map {
               case (labwork, reportCardEntryData, evals) => Json.obj(
                 "labwork" -> Json.toJson(labwork)(LabworkAtom.writes),
-                "reportCardEntries" -> Json.toJson(reportCardEntryData),
+                "reportCardEntries" -> reportCardEntryData.map {
+                  case (e, as, rs) => Json.obj(
+                    "reportCardEntry" -> Json.toJson(e),
+                    "annotations" -> Json.toJson(as),
+                    "reschedules" -> Json.toJson(rs)
+                  )
+                },
                 "evals" -> evals
               )
             }

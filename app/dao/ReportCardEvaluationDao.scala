@@ -10,38 +10,6 @@ import utils.date.DateTimeOps.SqlTimestampConverter
 
 import scala.concurrent.{ExecutionContext, Future}
 
-//case class StudentFilter(value: String) extends TableFilter[ReportCardEvaluationTable] { // TODO rethink
-//  override def predicate = _.student === UUID.fromString(value)
-//}
-//
-//case class LabworkFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.labwork === UUID.fromString(value)
-//}
-//
-//case class CourseFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.memberOfCourse(value)
-//}
-//
-//case class LabelFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.label === value
-//}
-//
-//case class BoolFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.bool === Try(value.toBoolean).getOrElse(false)
-//}
-//
-//case class IntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.int === Try(value.toInt).getOrElse(-1)
-//}
-//
-//case class MinIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.int >= Try(value.toInt).getOrElse(-1)
-//}
-//
-//case class MaxIntFilter(value: String) extends TableFilter[ReportCardEvaluationTable] {
-//  override def predicate = _.int <= Try(value.toInt).getOrElse(-1)
-//}
-
 trait ReportCardEvaluationDao extends AbstractDao[ReportCardEvaluationTable, ReportCardEvaluationDb, ReportCardEvaluationLike] {
 
   import TableFilter.{labelFilterEquals, labworkFilter, userFilter}

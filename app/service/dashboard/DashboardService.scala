@@ -1,10 +1,12 @@
 package service.dashboard
 
 import dao.{DashboardDao, SemesterDao, UserDao}
+
 import javax.inject.Inject
 import models._
 import utils.Ops.unwrap
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 trait DashboardService {

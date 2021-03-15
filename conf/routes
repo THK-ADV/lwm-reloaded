@@ -104,6 +104,7 @@ POST          /courses/:c/labworks/:l/reportCardEntries/extend                 c
 GET           /courses/:c/labworks/:l/reportCardEntries/sheet                  controllers.ReportCardEntryController.renderStatSheet(c, l)
 GET           /courses/:c/reportCardEntries                                    controllers.ReportCardEntryController.allFrom(c)
 GET           /courses/:c/reportCardEntries/scheduleEntry/:sid                 controllers.ReportCardEntryController.fromScheduleEntry(c, sid)
+GET           /courses/:c/reportCardEntries/withReschedules                    controllers.ReportCardEntryController.withReschedules(c)
 GET           /courses/:c/rescheduleCandidates/semesters/:sid                  controllers.ReportCardEntryController.rescheduleCandidates(c, sid)
 GET           /courses/:c/labworks/:l/reportCardEntries/count                  controllers.ReportCardEntryController.countFrom(c, l)
 DELETE        /courses/:c/labworks/:l/reportCardEntries                        controllers.ReportCardEntryController.invalidateFrom(c, l)
@@ -113,6 +114,9 @@ PUT           /courses/:c/reportCardEntryTypes/:id                             c
 PUT           /courses/:c/labworks/:l/reportCardEntryTypes                     controllers.ReportCardEntryTypeController.batchUpdate(c, l)
 
 # ReportCardRescheduled
+GET           /reportCardEntries/:id/reportCardReschedules                     controllers.ReportCardRescheduledController.forStudent(id)
+
+# ReportCardRescheduled restricted
 POST          /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.createFrom(c)
 GET           /courses/:c/reportCardReschedules                                controllers.ReportCardRescheduledController.allFrom(c)
 GET           /courses/:c/reportCardReschedules/:id                            controllers.ReportCardRescheduledController.getFrom(c, id)

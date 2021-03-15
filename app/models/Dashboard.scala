@@ -18,7 +18,7 @@ case class StudentDashboard(
   labworks: Seq[LabworkLike],
   labworkApplications: Seq[LabworkApplicationLike],
   groups: Seq[DashboardGroupLabel],
-  reportCardEntries: Seq[ReportCardEntryLike],
+  reportCardEntries: Seq[(ReportCardEntryLike, Set[ReportCardRescheduledLike])],
   evaluationResults: Seq[DashboardEvaluationResult],
   scheduleEntries: Seq[ScheduleEntryLike]
 ) extends Dashboard

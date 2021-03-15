@@ -19,7 +19,7 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     "update certain fields of entryType properly" in {
       import scala.util.Random.shuffle
 
-      val cards = populateReportCardEntries(1, 8, withReschedule = false)(labworks, students)
+      val cards = populateReportCardEntries(1, 8)(labworks, students)
       val entryTypes = cards.flatMap(_.entryTypes)
 
       val shuffled = shuffle(entryTypes)
@@ -80,7 +80,7 @@ final class ReportCardEntryTypeDaoSpec extends AbstractDaoSpec[ReportCardEntryTy
     }
   }
 
-  private val cards = populateReportCardEntries(5, 5, withReschedule = false)(labworks, students)
+  private val cards = populateReportCardEntries(5, 5)(labworks, students)
 
   override protected def name: String = "reportCardEntryType"
 

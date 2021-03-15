@@ -144,23 +144,15 @@ object AbstractDaoSpec {
     }
     }.toList
 
-  def populateReportCardEntries(amount: Int, numberOfEntries: Int, withReschedule: Boolean)(labworks: List[LabworkDb], students: List[UserDb]) = {
+  def populateReportCardEntries(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
     var index = 0 // in order to satisfy uniqueness
 
     (0 until amount).flatMap { _ =>
-      def reportCardRescheduled(e: ReportCardEntryDb) = {
-        val rDate = e.date.localDate.plusDays(1)
-        val rStart = e.start.localTime.plusHours(1)
-        val rEnd = e.end.localTime.plusHours(1)
-
-        ReportCardRescheduledDb(e.id, rDate.sqlDate, rStart.sqlTime, rEnd.sqlTime, randomRoom.id, Some("some reason"))
-      }
-
       val student = takeOneOf(students).id
       val labwork = takeOneOf(labworks).id
       val room = randomRoom.id
 
-      val entries = (0 until numberOfEntries).map { i =>
+      (0 until numberOfEntries).map { i =>
         val date = LocalDate.now.plusDays(i)
         val start = LocalTime.now.plusHours(i)
         val end = start.plusHours(1)
@@ -170,19 +162,6 @@ object AbstractDaoSpec {
 
         index += 1
         ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, index, id = id)
-      }
-
-      if (nextBoolean && withReschedule) {
-        val rs = nextBoolean
-
-        entries.map {
-          case rescheduled if rs =>
-            rescheduled.copy(rescheduled = Some(reportCardRescheduled(rescheduled)))
-          case nothing =>
-            nothing
-        }
-      } else {
-        entries
       }
     }.toList
   }
@@ -234,7 +213,7 @@ object AbstractDaoSpec {
 
   lazy val students = populateStudents(maxStudents)(degrees)
 
-  lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8, withReschedule = false)(labworks, students)
+  lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8)(labworks, students)
 
   lazy val groups = populateGroups(maxGroups)(labworks, students) // remember to add groupMemberships also
 
