@@ -44,19 +44,8 @@ final class CourseController @Inject()(cc: ControllerComponents, val abstractDao
     ).created
   }
 
-  override def update(id: String, secureContext: SecureContext) = restrictedContext(id)(Update) asyncAction { implicit request =>
-    val uuid = UUID.fromString(id)
-
-    parsed(
-      Some(uuid),
-      newCourse => {
-        for {
-          maybeCourse <- abstractDao.getSingle(uuid, atomic = false) if maybeCourse.isDefined
-          oldCourse = maybeCourse.map(_.asInstanceOf[Course]).map(toCourseDb).get
-          _ <- abstractDao.transactions(abstractDao.updateQuery(newCourse), authorityDao.updateAssociatedAuthorities(oldCourse, newCourse))
-        } yield newCourse
-      }
-    ).jsonResult
+  def updateFrom(id: String) = restrictedContext(id)(Update) asyncAction { implicit request =>
+    update(id, NonSecureBlock)(request)
   }
 
   override protected def toDbModel(protocol: CourseProtocol, existingId: Option[UUID]): CourseDb =

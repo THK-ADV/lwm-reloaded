@@ -11,7 +11,7 @@ GET           /degrees/:id                                                     c
 
 # Course 
 POST          /courses                                                         controllers.CourseController.create()
-PUT           /courses/:id                                                     controllers.CourseController.update(id)
+PUT           /courses/:id                                                     controllers.CourseController.updateFrom(id)
 GET           /courses                                                         controllers.CourseController.all()
 GET           /courses/:id                                                     controllers.CourseController.get(id)
 
