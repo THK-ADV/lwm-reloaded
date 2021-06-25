@@ -1,0 +1,44 @@
+[
+  {
+    "id": "$id",
+    "createdTimestamp": 1603284265205,
+    "username": "lwmadmin",
+    "enabled": true,
+    "totp": false,
+    "emailVerified": false,
+    "firstName": "LWM2",
+    "lastName": "Admin",
+    "email": "uwe.muesse@th-koeln.de",
+    "federationLink": "$federationLink",
+    "attributes": {
+      "systemId": [
+        "lwmadmin"
+      ],
+      "LDAP_ENTRY_DN": [
+        "uid=foo,ou=bar,ou=baz,dc=bou,dc=dou,dc=uh"
+      ],
+      "createTimestamp": [
+        "20160324105132Z"
+      ],
+      "modifyTimestamp": [
+        "20200817084342Z"
+      ],
+      "status": [
+        "employee"
+      ],
+      "LDAP_ID": [
+        "lwmadmin"
+      ]
+    },
+    "disableableCredentialTypes": [],
+    "requiredActions": [],
+    "notBefore": 0,
+    "access": {
+      "manageGroupMembership": false,
+      "view": true,
+      "mapRoles": false,
+      "impersonate": false,
+      "manage": false
+    }
+  }
+]

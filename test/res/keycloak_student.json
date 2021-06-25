@@ -1,0 +1,37 @@
+[
+  {
+    "id": "$id",
+    "createdTimestamp": 1607092717041,
+    "username": "ravram",
+    "enabled": true,
+    "totp": false,
+    "emailVerified": false,
+    "firstName": "Robert",
+    "lastName": "Avram",
+    "email": "foo@foo.com",
+    "attributes": {
+      "registrationId": [
+        "12345678"
+      ],
+      "degreeAbbrev": [
+        "MI"
+      ],
+      "systemId": [
+        "inf001"
+      ],
+      "status": [
+        "student"
+      ]
+    },
+    "disableableCredentialTypes": [],
+    "requiredActions": [],
+    "notBefore": 0,
+    "access": {
+      "manageGroupMembership": false,
+      "view": true,
+      "mapRoles": false,
+      "impersonate": false,
+      "manage": false
+    }
+  }
+]

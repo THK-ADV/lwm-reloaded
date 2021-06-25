@@ -24,13 +24,16 @@ class KeycloakApiService @Inject() (
     "client_id" -> config.adminCliClientId
   )
 
-  private def parseBearerToken(js: JsValue): Future[String] =
+  def parseBearerToken(js: JsValue): Future[String] =
     (js \ "access_token").validate[String] match {
       case JsSuccess(value, _) =>
-        Future.successful(s"Bearer $value")
+        Future.successful(s"bearer $value")
       case JsError(errors) =>
         Future.failed(new Throwable(errors.mkString(",")))
     }
+
+  def parseKeycloakUser(js: JsValue): JsResult[List[KeycloakUser]] =
+    js.validate[List[KeycloakUser]]
 
   def authenticate: Future[String] =
     ws
@@ -56,9 +59,7 @@ class KeycloakApiService @Inject() (
       )
       .withQueryStringParameters("username" -> username)
       .get()
-      .map(r =>
-        takeFirst(r.json.validate[List[KeycloakUser]]).map(ku => (user, ku))
-      )
+      .map(r => takeFirst(parseKeycloakUser(r.json)).map(ku => (user, ku)))
 
   private def takeFirst(
       users: JsResult[List[KeycloakUser]]

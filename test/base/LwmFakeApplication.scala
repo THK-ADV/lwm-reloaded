@@ -12,7 +12,11 @@ trait LwmFakeApplication {
     "database.properties.url" -> "jdbc:postgresql://localhost:5432/postgres",
     "database.properties.user" -> "alex",
     "database.properties.databaseName" -> "postgres",
-    "database.properties.password" -> ""
+    "database.properties.password" -> "",
+    "keycloak.api.baseUrl" -> "",
+    "keycloak.api.realm" -> "",
+    "keycloak.api.admin-cli.clientId" -> "",
+    "keycloak.api.admin-cli.clintSecret" -> ""
   )
 
   implicit lazy val materializer: Materializer = app.materializer
