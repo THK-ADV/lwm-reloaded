@@ -68,9 +68,8 @@ class KeycloakApiServiceSpec
       val user: User =
         Student("ravram", "fake", "fake", "fake", "fake", UUID.randomUUID())
 
-      async(service.fetchUsers(List(user))(_.systemId)) { res =>
-        res.size shouldBe 1
-        val (u, student) = getJson(res.head)
+      async(service.fetchUser(user)(_.systemId)) { case (u, res) =>
+        val student = getJson(res)
 
         u shouldBe user
         student.systemId shouldBe "inf001"
@@ -86,9 +85,8 @@ class KeycloakApiServiceSpec
       val user: User =
         Employee("lwmadmin", "fake", "fake", "fake", UUID.randomUUID())
 
-      async(service.fetchUsers(List(user))(_.systemId)) { res =>
-        res.size shouldBe 1
-        val (u, employee) = getJson(res.head)
+      async(service.fetchUser(user)(_.systemId)) { case (u, res) =>
+        val employee = getJson(res)
 
         u shouldBe user
         employee.systemId shouldBe "lwmadmin"

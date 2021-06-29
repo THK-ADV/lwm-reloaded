@@ -158,6 +158,8 @@ GET           /labworks/:labwork/users/:user/buddies/:buddy                    c
 GET           /users/:id                                                       controllers.UserController.get(id)
 PUT           /users/:id                                                       controllers.UserController.update(id)
 
+PUT           /users/:id/sync                                                  controllers.UserSyncController.sync(id)
+
 # Annotations
 GET           /labworks/:l/annotations                                         controllers.AnnotationController.forStudent(l)
 

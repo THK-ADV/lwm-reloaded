@@ -45,27 +45,25 @@ class KeycloakApiService @Inject() (
       .post(authPayload)
       .flatMap(r => parseBearerToken(r.json))
 
-  def fetchUsers[A](users: Seq[A])(username: A => String) =
-    for {
-      token <- authenticate
-      users <- Future.sequence(users.map(u => user(token, u, username(u))))
-    } yield users
+  def fetchUser[A](user: A)(username: A => String) = {
+    def go(token: String) =
+      ws.url(usersUrl)
+        .withHttpHeaders(
+          "Authorization" -> token,
+          "Content-Type" -> "application/json"
+        )
+        .withQueryStringParameters("username" -> username(user))
+        .get()
+        .map(r => (user, takeFirst(parseKeycloakUser(r.json))))
 
-  private def user[A](token: String, user: A, username: String) =
-    ws.url(usersUrl)
-      .withHttpHeaders(
-        "Authorization" -> token,
-        "Content-Type" -> "application/json"
-      )
-      .withQueryStringParameters("username" -> username)
-      .get()
-      .map(r => takeFirst(parseKeycloakUser(r.json)).map(ku => (user, ku)))
+    authenticate.flatMap(go)
+  }
 
   private def takeFirst(
       users: JsResult[List[KeycloakUser]]
   ): JsResult[KeycloakUser] =
     users.flatMap {
       case h :: Nil => JsSuccess(h)
-      case xs       => JsError(s"expect only one user, but found: $xs")
+      case xs       => JsError(s"expect exactly one user, but found: $xs")
     }
 }

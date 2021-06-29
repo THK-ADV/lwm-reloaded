@@ -1,6 +1,7 @@
-package keycloakapi
+package service
 
 import base.{AsyncSpec, LwmFakeApplication, TestBaseDefinition}
+import keycloakapi.KeycloakUser
 import models.{Employee, Lecturer, Student}
 import org.scalatest.WordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -9,24 +10,24 @@ import play.api.libs.json.{JsError, JsSuccess}
 
 import java.util.UUID
 
-class KeycloakUserSyncServiceSpec
+class UserSyncServiceSpec
     extends WordSpec
     with TestBaseDefinition
     with GuiceOneAppPerSuite
     with LwmFakeApplication
     with AsyncSpec {
 
-  val service = app.injector.instanceOf(classOf[KeycloakUserSyncService])
+  val service = app.injector.instanceOf(classOf[UserSyncService])
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 
-  "A KeycloakUserSyncService" should {
+  "A UserSyncServiceSpec" should {
     "update an existing student by its keycloak representation" in {
       val enrollment = UUID.randomUUID()
       val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", Some("D1"), Some("kr1"))
-      val Seq(res) =
-        service.update(Seq(JsSuccess((stu, k1))))(_ => Some(enrollment))
+      val res =
+        service.update(stu, JsSuccess(k1))(_ => Some(enrollment))
       val user = res.right.value.asInstanceOf[Student]
       user.id shouldBe stu.id
       user.systemId shouldBe stu.systemId
@@ -40,7 +41,7 @@ class KeycloakUserSyncServiceSpec
     "update an existing employee by its keycloak representation" in {
       val emp = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "e1", None, None)
-      val Seq(res) = service.update(Seq(JsSuccess((emp, k1))))(_ => None)
+      val res = service.update(emp, JsSuccess(k1))(_ => None)
       val user = res.right.value.asInstanceOf[Employee]
       user.id shouldBe emp.id
       user.systemId shouldBe emp.systemId
@@ -52,7 +53,7 @@ class KeycloakUserSyncServiceSpec
     "update an existing lecturer by its keycloak representation" in {
       val lec = Lecturer("l1", "ll1", "lf1", "le1", UUID.randomUUID())
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "l1", None, None)
-      val Seq(res) = service.update(Seq(JsSuccess((lec, k1))))(_ => None)
+      val res = service.update(lec, JsSuccess(k1))(_ => None)
       val user = res.right.value.asInstanceOf[Lecturer]
       user.id shouldBe lec.id
       user.systemId shouldBe lec.systemId
@@ -64,12 +65,14 @@ class KeycloakUserSyncServiceSpec
     "not update an existing user if there is an id miss match" in {
       val s1 = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "k1", None, None)
-      val Seq(res) = service.update(Seq(JsSuccess((s1, k1))))(_ => None)
+      val res = service.update(s1, JsSuccess(k1))(_ => None)
       res.left.value.startsWith("user miss match") shouldBe true
     }
 
     "not update an existing user if there is a parsing error" in {
-      val Seq(res) = service.update(Seq(JsError("parsing error")))(_ => None)
+      val user = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
+      val res =
+        service.update(user, JsError("parsing error"))(_ => None)
       res.left.value.contains("parsing error") shouldBe true
     }
 
@@ -77,8 +80,8 @@ class KeycloakUserSyncServiceSpec
       val enrollment = UUID.randomUUID()
       val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", Some("D1"), Some("kr1"))
-      val Seq(res) =
-        service.update(Seq(JsSuccess((stu, k1))))(_ => None)
+      val res =
+        service.update(stu, JsSuccess(k1))(_ => None)
       res.left.value shouldBe "no degree found for D1"
     }
 
@@ -86,8 +89,8 @@ class KeycloakUserSyncServiceSpec
       val enrollment = UUID.randomUUID()
       val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
       val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", None, None)
-      val Seq(res) =
-        service.update(Seq(JsSuccess((stu, k1))))(_ => Some(enrollment))
+      val res =
+        service.update(stu, JsSuccess(k1))(_ => Some(enrollment))
       res.left.value shouldBe "student must have a registration id and an enrollment"
     }
   }
