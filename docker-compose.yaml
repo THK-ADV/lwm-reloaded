@@ -26,6 +26,10 @@ services:
       LWM_DB_USER: ${USERNAME}
       LWM_DB_NAME: ${USERNAME}
       LWM_DB_PASSWORD: ${PASSWORD}
+      LWM_KCAPI_BASE_URL: ${KCAPI_BASE_URL}
+      LWM_KCAPI_REALM: ${KCAPI_REALM}
+      LWM_KCAPI_CLI_CLIENT_ID: ${KCAPI_CLI_CLIENT_ID}
+      LWM_KCAPI_CLI_CLIENT_SECRET: ${KCAPI_CLI_CLIENT_SECRET}
     volumes:
       - backend_logs_vol:/lwm/logs
       - backend_config_vol:/lwm/conf
