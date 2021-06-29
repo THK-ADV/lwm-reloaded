@@ -9,10 +9,14 @@ trait LwmFakeApplication {
   self: GuiceOneAppPerSuite =>
 
   val fakeDbConfig = Configuration(
-    "database.properties.url" -> "jdbc:postgresql://localhost:5432/postgres",
-    "database.properties.user" -> "alex",
-    "database.properties.databaseName" -> "postgres",
-    "database.properties.password" -> ""
+    "database.properties.url" -> "jdbc:postgresql://localhost:5432/lwm_test",
+    "database.properties.user" -> "postgres",
+    "database.properties.databaseName" -> "lwm_test",
+    "database.properties.password" -> "",
+    "keycloak.api.baseUrl" -> "TODO",
+    "keycloak.api.realm" -> "TODO",
+    "keycloak.api.admin-cli.clientId" -> "TODO",
+    "keycloak.api.admin-cli.clintSecret" -> "TODO"
   )
 
   implicit lazy val materializer: Materializer = app.materializer

@@ -4,11 +4,12 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import dao._
 import di._
+import keycloakapi.KeycloakApiConfig
 import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import security.{SecurityActionChain, SecurityActionChainImpl}
 import service._
-import service.actor.{ActorScheduler, BackupServiceActor, BlacklistApiServiceActor, SemesterCreationActor}
+import service.actor._
 import service.backup.{BackupService, PSQLBackupService}
 import service.dashboard.{DashboardService, DashboardServiceImpl}
 import slick.jdbc.JdbcProfile
@@ -16,7 +17,9 @@ import slick.jdbc.PostgresProfile.api._
 
 import javax.inject.Singleton
 
-class Module(environment: Environment, implicit val config: Configuration) extends AbstractModule with ConfigReader {
+class Module(environment: Environment, implicit val config: Configuration)
+    extends AbstractModule
+    with ConfigReader {
 
   override def configure(): Unit = {
     bindDatabase()
@@ -27,46 +30,97 @@ class Module(environment: Environment, implicit val config: Configuration) exten
 
   private def bindServices(): Unit = {
     bind(classOf[Webservice]).in(classOf[Singleton])
-    bind(classOf[BlacklistApiService]).to(classOf[BlacklistApiServiceImpl]).in(classOf[Singleton])
-    bind(classOf[OAuthAuthorization]).to(classOf[KeycloakAuthorization]).in(classOf[Singleton])
-    bind(classOf[BackupService]).to(classOf[PSQLBackupService]).in(classOf[Singleton])
+    bind(classOf[BlacklistApiService])
+      .to(classOf[BlacklistApiServiceImpl])
+      .in(classOf[Singleton])
+    bind(classOf[OAuthAuthorization])
+      .to(classOf[KeycloakAuthorization])
+      .in(classOf[Singleton])
+    bind(classOf[BackupService])
+      .to(classOf[PSQLBackupService])
+      .in(classOf[Singleton])
 
     bind(classOf[ScheduleService]).toProvider(classOf[ScheduleServiceProvider])
-    bind(classOf[KeycloakDeployment]).toProvider(classOf[KeycloakDeploymentProvider])
+    bind(classOf[KeycloakDeployment]).toProvider(
+      classOf[KeycloakDeploymentProvider]
+    )
     bind(classOf[MailerService]).toProvider(classOf[MailerServiceProvider])
+    bind(classOf[KeycloakApiConfig]).toProvider(
+      classOf[KeycloakApiConfigProvider]
+    )
 
-    bind(classOf[SecurityActionChain]).to(classOf[SecurityActionChainImpl]).in(classOf[Singleton])
+    bind(classOf[SecurityActionChain])
+      .to(classOf[SecurityActionChainImpl])
+      .in(classOf[Singleton])
   }
 
   private def bindDaos(): Unit = {
-    bind(classOf[SemesterDao]).to(classOf[SemesterDaoImpl]).in(classOf[Singleton])
-    bind(classOf[AuthorityDao]).to(classOf[AuthorityDaoImpl]).in(classOf[Singleton])
+    bind(classOf[SemesterDao])
+      .to(classOf[SemesterDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[AuthorityDao])
+      .to(classOf[AuthorityDaoImpl])
+      .in(classOf[Singleton])
     bind(classOf[RoleDao]).to(classOf[RoleDaoImpl]).in(classOf[Singleton])
-    bind(classOf[AssignmentEntryDao]).to(classOf[AssignmentEntryDaoImpl]).in(classOf[Singleton])
-    bind(classOf[BlacklistDao]).to(classOf[BlacklistDaoImpl]).in(classOf[Singleton])
+    bind(classOf[AssignmentEntryDao])
+      .to(classOf[AssignmentEntryDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[BlacklistDao])
+      .to(classOf[BlacklistDaoImpl])
+      .in(classOf[Singleton])
     bind(classOf[CourseDao]).to(classOf[CourseDaoImpl]).in(classOf[Singleton])
     bind(classOf[DegreeDao]).to(classOf[DegreeDaoImpl]).in(classOf[Singleton])
     bind(classOf[GroupDao]).to(classOf[GroupDaoImpl]).in(classOf[Singleton])
     bind(classOf[RoomDao]).to(classOf[RoomDaoImpl]).in(classOf[Singleton])
-    bind(classOf[LabworkApplicationDao]).to(classOf[LabworkApplicationDaoImpl]).in(classOf[Singleton])
+    bind(classOf[LabworkApplicationDao])
+      .to(classOf[LabworkApplicationDaoImpl])
+      .in(classOf[Singleton])
     bind(classOf[LabworkDao]).to(classOf[LabworkDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardEntryDao]).to(classOf[ReportCardEntryDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardEntryTypeDao]).to(classOf[ReportCardEntryTypeDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardEvaluationDao]).to(classOf[ReportCardEvaluationDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardEvaluationPatternDao]).to(classOf[ReportCardEvaluationPatternDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardRescheduledDao]).to(classOf[ReportCardRescheduledDaoImpl]).in(classOf[Singleton])
+    bind(classOf[ReportCardEntryDao])
+      .to(classOf[ReportCardEntryDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[ReportCardEntryTypeDao])
+      .to(classOf[ReportCardEntryTypeDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[ReportCardEvaluationDao])
+      .to(classOf[ReportCardEvaluationDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[ReportCardEvaluationPatternDao])
+      .to(classOf[ReportCardEvaluationPatternDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[ReportCardRescheduledDao])
+      .to(classOf[ReportCardRescheduledDaoImpl])
+      .in(classOf[Singleton])
     bind(classOf[RoleDao]).to(classOf[RoleDaoImpl]).in(classOf[Singleton])
-    bind(classOf[ScheduleEntryDao]).to(classOf[ScheduleEntryDaoImpl]).in(classOf[Singleton])
-    bind(classOf[TimetableDao]).to(classOf[TimetableDaoImpl]).in(classOf[Singleton])
+    bind(classOf[ScheduleEntryDao])
+      .to(classOf[ScheduleEntryDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[TimetableDao])
+      .to(classOf[TimetableDaoImpl])
+      .in(classOf[Singleton])
     bind(classOf[UserDao]).to(classOf[UserDaoImpl]).in(classOf[Singleton])
-    bind(classOf[DashboardDao]).to(classOf[DashboardDaoImpl]).in(classOf[Singleton])
-    bind(classOf[LwmServiceDao]).to(classOf[LwmServiceDaoImpl]).in(classOf[Singleton])
-    bind(classOf[AnnotationDao]).to(classOf[AnnotationDaoImpl]).in(classOf[Singleton])
+    bind(classOf[DashboardDao])
+      .to(classOf[DashboardDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[LwmServiceDao])
+      .to(classOf[LwmServiceDaoImpl])
+      .in(classOf[Singleton])
+    bind(classOf[AnnotationDao])
+      .to(classOf[AnnotationDaoImpl])
+      .in(classOf[Singleton])
 
-    bind(classOf[AssignmentEntryService]).to(classOf[AssignmentEntryServiceImpl]).in(classOf[Singleton])
-    bind(classOf[ReportCardEntryService]).to(classOf[ReportCardEntryServiceImpl]).in(classOf[Singleton])
-    bind(classOf[DashboardService]).to(classOf[DashboardServiceImpl]).in(classOf[Singleton])
-    bind(classOf[StudentSearchService]).to(classOf[StudentSearchServiceImpl]).in(classOf[Singleton])
+    bind(classOf[AssignmentEntryService])
+      .to(classOf[AssignmentEntryServiceImpl])
+      .in(classOf[Singleton])
+    bind(classOf[ReportCardEntryService])
+      .to(classOf[ReportCardEntryServiceImpl])
+      .in(classOf[Singleton])
+    bind(classOf[DashboardService])
+      .to(classOf[DashboardServiceImpl])
+      .in(classOf[Singleton])
+    bind(classOf[StudentSearchService])
+      .to(classOf[StudentSearchServiceImpl])
+      .in(classOf[Singleton])
   }
 
   private def bindActors(): Unit = {
