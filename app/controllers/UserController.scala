@@ -26,12 +26,12 @@ object UserController {
 }
 
 @Singleton
-final class UserController @Inject()(
-  cc: ControllerComponents,
-  val authorityDao: AuthorityDao,
-  val abstractDao: UserDao,
-  val securedAction: SecurityActionChain,
-  implicit val ctx: ExecutionContext
+final class UserController @Inject() (
+    cc: ControllerComponents,
+    val authorityDao: AuthorityDao,
+    val abstractDao: UserDao,
+    val securedAction: SecurityActionChain,
+    implicit val ctx: ExecutionContext
 ) extends AbstractCRUDController[UserProtocol, UserTable, UserDb, User](cc) {
 
   import UserController._
@@ -39,26 +39,58 @@ final class UserController @Inject()(
 
   override protected implicit val writes: Writes[User] = User.writes
 
-  override protected implicit val reads: Reads[UserProtocol] = UserProtocol.reads
+  override protected implicit val reads: Reads[UserProtocol] =
+    UserProtocol.reads
 
-  override protected def makeTableFilter(attribute: String, value: String): Try[TableFilterPredicate] =
+  override protected def makeTableFilter(
+      attribute: String,
+      value: String
+  ): Try[TableFilterPredicate] =
     (attribute, value) match {
-      case (`statusAttribute`, s) => LdapUserStatus(s) map statusFilter
-      case (`degreeAttribute`, d) => d.uuid map enrollmentFilter
-      case (`systemIdAttribute`, s) => Success(systemIdFilter(s))
+      case (`statusAttribute`, s)    => LdapUserStatus(s) map statusFilter
+      case (`degreeAttribute`, d)    => d.uuid map enrollmentFilter
+      case (`systemIdAttribute`, s)  => Success(systemIdFilter(s))
       case (`firstnameAttribute`, f) => Success(firstnameFilter(f))
-      case (`lastnameAttribute`, l) => Success(lastnameFilter(l))
-      case _ => Failure(new Throwable(s"Unknown attribute $attribute"))
+      case (`lastnameAttribute`, l)  => Success(lastnameFilter(l))
+      case _                         => Failure(new Throwable(s"Unknown attribute $attribute"))
     }
 
-  override protected def toDbModel(protocol: UserProtocol, existingId: Option[UUID]): UserDb = {
+  override protected def toDbModel(
+      protocol: UserProtocol,
+      existingId: Option[UUID]
+  ): UserDb = {
     val id = existingId.getOrElse(UUID.randomUUID)
 
     protocol match {
-      case StudentProtocol(systemId, lastname, firstname, email, registrationId, enrollment) =>
-        UserDb(systemId, lastname, firstname, email, LdapUserStatus.StudentStatus, Some(registrationId), Some(enrollment), id = id)
+      case StudentProtocol(
+            systemId,
+            lastname,
+            firstname,
+            email,
+            registrationId,
+            enrollment
+          ) =>
+        UserDb(
+          systemId,
+          lastname,
+          firstname,
+          email,
+          LdapUserStatus.StudentStatus,
+          Some(registrationId),
+          Some(enrollment),
+          id = id
+        )
       case EmployeeProtocol(systemId, lastname, firstname, email) =>
-        UserDb(systemId, lastname, firstname, email, LdapUserStatus.EmployeeStatus, None, None, id = id)
+        UserDb(
+          systemId,
+          lastname,
+          firstname,
+          email,
+          LdapUserStatus.EmployeeStatus,
+          None,
+          None,
+          id = id
+        )
     }
   }
 
@@ -66,49 +98,72 @@ final class UserController @Inject()(
     val result = request.unwrapped.userToken match {
       case Some(token) =>
         for {
-          result <- abstractDao.createOrUpdateWithBasicAuthority(token.systemId, token.lastName, token.firstName, token.email, token.status, token.registrationId, token.degreeAbbrev)
+          result <- abstractDao.createOrUpdateWithBasicAuthority(
+            token.systemId,
+            token.lastName,
+            token.firstName,
+            token.email,
+            token.status,
+            token.registrationId,
+            token.degreeAbbrev
+          )
         } yield result.entity.toUniqueEntity
       case None =>
-        Future.failed(new Throwable(s"no ${RequestOps.UserToken} found in request"))
+        Future.failed(
+          new Throwable(s"no ${RequestOps.UserToken} found in request")
+        )
     }
 
     result.created
   }
 
-  def buddy(labwork: String, student: String, buddy: String) = contextFrom(Get) asyncAction { _ =>
-    val buddyResult = for {
-      labworkId <- labwork.uuidF
-      studentId <- student.uuidF
-      result <- abstractDao.buddyResult(studentId, buddy, labworkId)
-    } yield result
+  def buddy(labwork: String, student: String, buddy: String) =
+    contextFrom(Get) asyncAction { _ =>
+      val buddyResult = for {
+        labworkId <- labwork.uuidF
+        studentId <- student.uuidF
+        result <- abstractDao.buddyResult(studentId, buddy, labworkId)
+      } yield result
 
-    buddyResult.jsonResult {
-      case Allowed(b) => Ok(Json.obj(
-        "status" -> "OK",
-        "type" -> buddyResult.toString,
-        "buddy" -> Json.toJson(b),
-        "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
-      ))
-      case Almost(b) => Ok(Json.obj(
-        "status" -> "OK",
-        "type" -> buddyResult.toString,
-        "buddy" -> Json.toJson(b),
-        "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
-      ))
-      case Denied(b) => Ok(Json.obj(
-        "status" -> "KO",
-        "type" -> buddyResult.toString,
-        "buddy" -> Json.toJson(b),
-        "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
-      ))
-      case NotExisting(b) => Ok(Json.obj(
-        "status" -> "KO",
-        "type" -> buddyResult.toString,
-        "buddy" -> JsNull,
-        "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
-      ))
+      buddyResult.jsonResult {
+        case Allowed(b) =>
+          Ok(
+            Json.obj(
+              "status" -> "OK",
+              "type" -> buddyResult.toString,
+              "buddy" -> Json.toJson(b),
+              "message" -> s"Dein Partner ${b.systemId} hat Dich ebenfalls referenziert."
+            )
+          )
+        case Almost(b) =>
+          Ok(
+            Json.obj(
+              "status" -> "OK",
+              "type" -> buddyResult.toString,
+              "buddy" -> Json.toJson(b),
+              "message" -> s"Dein Partner ${b.systemId} muss Dich ebenfalls referenzieren, ansonsten wird dieser Partnerwunsch nicht berücksichtigt."
+            )
+          )
+        case Denied(b) =>
+          Ok(
+            Json.obj(
+              "status" -> "KO",
+              "type" -> buddyResult.toString,
+              "buddy" -> Json.toJson(b),
+              "message" -> s"Dein Partner ${b.systemId} und Du sind nicht im selben Studiengang."
+            )
+          )
+        case NotExisting(b) =>
+          Ok(
+            Json.obj(
+              "status" -> "KO",
+              "type" -> buddyResult.toString,
+              "buddy" -> JsNull,
+              "message" -> s"Dein Partner $b existiert nicht oder hat sich noch nicht im Praktikumstool angemeldet."
+            )
+          )
+      }
     }
-  }
 
   def resolveStudents() = contextFrom(Update) asyncAction { request =>
     import utils.Ops._
@@ -119,26 +174,38 @@ final class UserController @Inject()(
         val names = name.split(",")
         (names.head.trim, names.last.trim)
       }
-      users <- abstractDao.get(List(statusFilter(LdapUserStatus.StudentStatus)), atomic = false)
-      (gmids, duplicates) = students.foldLeft((List.empty[String], List.empty[Student])) {
-        case ((found, notFound), (lastname, firstname)) =>
-          val xs = users.filter(s => s.lastname == lastname && s.firstname == firstname)
-          if (xs.size == 1)
-            (xs.head.systemId +: found, notFound)
-          else
-            (found, xs.toList.map(_.asInstanceOf[Student]) ++ notFound)
+      users <- abstractDao.get(
+        List(statusFilter(LdapUserStatus.StudentStatus)),
+        atomic = false
+      )
+      (gmids, duplicates, unknown) = students.foldLeft(
+        (List.empty[String], List.empty[User], List.empty[String])
+      ) { case ((found, duplicates, unknown), (lastname, firstname)) =>
+        users.filter(s =>
+          s.lastname == lastname && s.firstname == firstname
+        ).toList match {
+          case h :: Nil =>
+            (h.systemId :: found, duplicates, unknown)
+          case h :: t =>
+            (found, (h :: duplicates) ::: t, unknown)
+          case Nil =>
+            (found, duplicates, s"$lastname,$firstname" :: unknown)
+        }
       }
     } yield ok(
       "gmids" -> gmids.mkString(","),
-      "duplicates" -> Json.toJson(duplicates)
+      "duplicates" -> Json.toJson(duplicates),
+      "unknown" -> Json.toJson(unknown)
     )
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
     case Get | GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
-    case Update => PartialSecureBlock(List(Admin))
-    case _ => PartialSecureBlock(List(God))
+    case Update       => PartialSecureBlock(List(Admin))
+    case _            => PartialSecureBlock(List(God))
   }
 
-  override protected def restrictedContext(restrictionId: String): PartialFunction[Rule, SecureContext] = forbiddenAction()
+  override protected def restrictedContext(
+      restrictionId: String
+  ): PartialFunction[Rule, SecureContext] = forbiddenAction()
 }
