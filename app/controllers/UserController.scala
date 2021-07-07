@@ -64,6 +64,7 @@ final class UserController @Inject() (
     protocol match {
       case StudentProtocol(
             systemId,
+            campusId,
             lastname,
             firstname,
             email,
@@ -72,6 +73,7 @@ final class UserController @Inject() (
           ) =>
         UserDb(
           systemId,
+          campusId,
           lastname,
           firstname,
           email,
@@ -80,9 +82,10 @@ final class UserController @Inject() (
           Some(enrollment),
           id = id
         )
-      case EmployeeProtocol(systemId, lastname, firstname, email) =>
+      case EmployeeProtocol(systemId, campusId, lastname, firstname, email) =>
         UserDb(
           systemId,
+          campusId,
           lastname,
           firstname,
           email,
@@ -100,6 +103,7 @@ final class UserController @Inject() (
         for {
           result <- abstractDao.createOrUpdateWithBasicAuthority(
             token.systemId,
+            token.campusId,
             token.lastName,
             token.firstName,
             token.email,
@@ -181,9 +185,9 @@ final class UserController @Inject() (
       (gmids, duplicates, unknown) = students.foldLeft(
         (List.empty[String], List.empty[User], List.empty[String])
       ) { case ((found, duplicates, unknown), (lastname, firstname)) =>
-        users.filter(s =>
-          s.lastname == lastname && s.firstname == firstname
-        ).toList match {
+        users
+          .filter(s => s.lastname == lastname && s.firstname == firstname)
+          .toList match {
           case h :: Nil =>
             (h.systemId :: found, duplicates, unknown)
           case h :: t =>

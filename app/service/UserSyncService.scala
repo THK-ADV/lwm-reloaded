@@ -58,21 +58,9 @@ class UserSyncService @Inject() (
           if existing.systemId.toLowerCase == latest.systemId.toLowerCase =>
         existing match {
           case employee: Employee =>
-            Right(
-              employee.copy(
-                lastname = latest.lastname,
-                firstname = latest.firstname,
-                email = latest.email
-              )
-            )
+            Right(updateEmployee(latest, employee))
           case lecturer: Lecturer =>
-            Right(
-              lecturer.copy(
-                lastname = latest.lastname,
-                firstname = latest.firstname,
-                email = latest.email
-              )
-            )
+            Right(updateLecturer(latest, lecturer))
           case student: Student =>
             zipOpt(latest.registrationId, latest.degreeAbbrev)
               .toRight(
@@ -80,13 +68,7 @@ class UserSyncService @Inject() (
               )
               .flatMap(a => findDegree(a._2).map(id => (a._1, id)))
               .map { case (reg, deg) =>
-                student.copy(
-                  lastname = latest.lastname,
-                  firstname = latest.firstname,
-                  email = latest.email,
-                  registrationId = reg,
-                  enrollment = deg
-                )
+                updateStudent(latest, student, reg, deg)
               }
         }
       case JsSuccess(latest, _) =>
@@ -97,23 +79,47 @@ class UserSyncService @Inject() (
     }
   }
 
-  private def partitionMap[L, R1, R2](
-      either: Seq[Either[L, R1]]
-  )(f: R1 => R2): (List[L], List[R2]) =
-    either.foldLeft((List.empty[L], List.empty[R2])) { case (acc, e) =>
-      e match {
-        case Left(l) =>
-          (l :: acc._1, acc._2)
-        case Right(r) =>
-          (acc._1, f(r) :: acc._2)
-      }
-    }
+  private def updateStudent(
+      latest: KeycloakUser,
+      student: Student,
+      registrationId: String,
+      degree: UUID
+  ) = {
+    student.copy(
+      systemId = latest.systemId,
+      campusId = latest.campusId,
+      lastname = latest.lastname,
+      firstname = latest.firstname,
+      email = latest.email,
+      registrationId = registrationId,
+      enrollment = degree
+    )
+  }
+
+  private def updateLecturer(latest: KeycloakUser, lecturer: Lecturer) =
+    lecturer.copy(
+      systemId = latest.systemId,
+      campusId = latest.campusId,
+      lastname = latest.lastname,
+      firstname = latest.firstname,
+      email = latest.email
+    )
+
+  private def updateEmployee(latest: KeycloakUser, employee: Employee) =
+    employee.copy(
+      systemId = latest.systemId,
+      campusId = latest.campusId,
+      lastname = latest.lastname,
+      firstname = latest.firstname,
+      email = latest.email
+    )
 
   private def toUserDb(user: User): UserDb =
     user match {
-      case Employee(systemId, lastname, firstname, email, id) =>
+      case Employee(systemId, campusId, lastname, firstname, email, id) =>
         UserDb(
           systemId,
+          campusId,
           lastname,
           firstname,
           email,
@@ -122,9 +128,10 @@ class UserSyncService @Inject() (
           None,
           id = id
         )
-      case Lecturer(systemId, lastname, firstname, email, id) =>
+      case Lecturer(systemId, campusId, lastname, firstname, email, id) =>
         UserDb(
           systemId,
+          campusId,
           lastname,
           firstname,
           email,
@@ -135,6 +142,7 @@ class UserSyncService @Inject() (
         )
       case Student(
             systemId,
+            campusId,
             lastname,
             firstname,
             email,
@@ -144,6 +152,7 @@ class UserSyncService @Inject() (
           ) =>
         UserDb(
           systemId,
+          campusId,
           lastname,
           firstname,
           email,

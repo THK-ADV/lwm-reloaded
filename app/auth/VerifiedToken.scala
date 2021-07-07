@@ -5,12 +5,13 @@ sealed trait VerifiedToken {
 }
 
 case class UserToken(
-  id: String,
-  firstName: String,
-  lastName: String,
-  systemId: String,
-  email: String,
-  status: String,
-  degreeAbbrev: Option[String],
-  registrationId: Option[String]
+    id: String,
+    firstName: String,
+    lastName: String,
+    systemId: String,
+    campusId: String,
+    email: String,
+    status: String,
+    degreeAbbrev: Option[String],
+    registrationId: Option[String]
 ) extends VerifiedToken

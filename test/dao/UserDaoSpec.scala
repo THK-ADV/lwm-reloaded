@@ -41,7 +41,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val status = randomStatus
       val (regId, enrollment) = studentAttributes(status, i)
 
-      UserDb(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
+      UserDb(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment, campusId = )
     }.toList
   }
 
@@ -49,7 +49,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
   val semester = populateSemester(1).head
 
-  val employee = UserDb("", "", "", "", EmployeeStatus, None, None)
+  val employee = UserDb("", "", "", "", EmployeeStatus, None, None, campusId = )
 
   val course = CourseDb("", "", "", employee.id, 1)
 
@@ -218,7 +218,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     "create and update student with dedicated basic authority" in {
       val degree = degrees(nextInt(maxDegrees))
 
-      val user = UserDb("another student systemId", "another student last", "another student first", "another student email", StudentStatus, Some("another regId"), Some(degree.id))
+      val user = UserDb("another student systemId", "another student last", "another student first", "another student email", StudentStatus, Some("another regId"), Some(degree.id), campusId = )
       async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated student last", email = "updated student email")
@@ -226,7 +226,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "create and update employee with dedicated basic authority" in {
-      val user = UserDb("another employee systemId", "another employee last", "another employee first", "another employee email", EmployeeStatus, None, None)
+      val user = UserDb("another employee systemId", "another employee last", "another employee first", "another employee email", EmployeeStatus, None, None, campusId = )
       async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated employee last", email = "updated employee email")
@@ -234,7 +234,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "create and update lecturer with dedicated basic authority" in {
-      val user = UserDb("another lecturer systemId", "another lecturer last", "another lecturer first", "another lecturer email", LecturerStatus, None, None)
+      val user = UserDb("another lecturer systemId", "another lecturer last", "another lecturer first", "another lecturer email", LecturerStatus, None, None, campusId = )
       async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
 
       val updated = user.copy(lastname = "updated lecturer last", email = "updated lecturer email")
@@ -296,7 +296,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
   override protected def name: String = "user"
 
   override protected val dbEntity: UserDb =
-    UserDb("delete", "delete", "delete", "delete", StudentStatus, Some("regId"), Some(degrees.head.id))
+    UserDb("delete", "delete", "delete", "delete", StudentStatus, Some("regId"), Some(degrees.head.id), campusId = )
 
   override protected val invalidDuplicateOfDbEntity: UserDb =
     dbEntity.copy(id = UUID.randomUUID)

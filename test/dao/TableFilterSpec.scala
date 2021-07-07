@@ -142,7 +142,7 @@ class TableFilterSpec extends PostgresDbSpec with DateGenerator {
 
     "filter by systemId through users" in {
       val users = (0 until 10).map { i =>
-        UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None)
+        UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None, campusId = )
       }.toList
 
       val entries = users.map(u => (u.id, UUID.randomUUID))

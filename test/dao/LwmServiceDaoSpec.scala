@@ -48,7 +48,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "insert a student into an existing group even if an application exists" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       val groups = createGroups
       val reportCardEntries = createReportCardEntries(groups).filterNot(_.labwork == labwork.id)
       val application = LabworkApplicationDb(labwork.id, student.id, Set.empty)
@@ -74,7 +74,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "insert a student into an existing group by creating a new application" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       val added = GroupDb("foo", labworks.find(_.id != labwork.id).get.id, Set(student.id))
       val groups = createGroups :+ added
       val reportCardEntries = createReportCardEntries(groups).filterNot(_.labwork == labwork.id)
@@ -101,7 +101,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "insert a student into an existing group by creating a new application and copying reportCardEntries" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       val groups = createGroups
       val reportCardEntries = createReportCardEntries(groups)
 
@@ -150,7 +150,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail inserting a student into an existing group if he has already one" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       val groups = createGroups
       val destGrp = groups.find(_.labwork == labwork.id).get
       val added = destGrp.copy(members = destGrp.members + student.id)
@@ -169,7 +169,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "remove a student from an existing group by removing application, membership and reportCardEntries" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var group = groups.find(_.labwork == labwork.id).get
       group = group.copy(members = group.members + student.id)
@@ -201,7 +201,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "remove a student from an existing group even if no reportCardEntries exists" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var group = groups.find(_.labwork == labwork.id).get
       group = group.copy(members = group.members + student.id)
@@ -232,7 +232,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail removing a student from a group if he is no member of that group" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       val groups = createGroups
       val group = groups.find(g => g.labwork == labwork.id && !g.members.contains(student.id)).get
 
@@ -246,7 +246,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail removing a student from an existing group if he has no valid application" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var group = groups.find(_.labwork == labwork.id).get
       group = group.copy(members = group.members + student.id)
@@ -262,7 +262,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail removing a student from an existing group if he would be the last one" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var group = groups.find(_.labwork == labwork.id).get
       group = group.copy(members = Set(student.id))
@@ -278,7 +278,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "move a student into another group by changing the membership and copying reportCardEntries" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var srcGroup = groups.find(_.labwork == labwork.id).get
       srcGroup = srcGroup.copy(members = srcGroup.members + student.id)
@@ -319,7 +319,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail moving a student into another group if src- and dest- reportCardEntries are inconsistent" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var srcGroup = groups.find(_.labwork == labwork.id).get
       srcGroup = srcGroup.copy(members = srcGroup.members + student.id)
@@ -339,7 +339,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail moving a student into another group if he has no group in the first place" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var srcGroup = groups.find(_.labwork == labwork.id).get
       srcGroup = srcGroup.copy(members = srcGroup.members + student.id)
@@ -359,7 +359,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail moving a student into another group if he would be the last one" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var srcGroup = groups.find(_.labwork == labwork.id).get
       srcGroup = srcGroup.copy(members = Set(student.id))
@@ -377,7 +377,7 @@ class LwmServiceDaoSpec extends PostgresDbSpec with DateGenerator {
 
     "fail moving a student into another group if reportCardEntries are not supported" in {
       val labwork = labworks.head
-      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree))
+      val student = UserDb("", "", "", "", StudentStatus, Some(""), Some(labwork.degree), campusId = )
       var groups = createGroups
       var srcGroup = groups.find(_.labwork == labwork.id).get
       srcGroup = srcGroup.copy(members = srcGroup.members + student.id)

@@ -29,9 +29,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
   "A AuthorityDaoSpec" should {
 
     "create a associated basic authority for a given user" in {
-      val employee = UserDb("id", "last", "first", "mail", EmployeeStatus, None, None)
-      val lecturer = UserDb("id", "last", "first", "mail", LecturerStatus, None, None)
-      val student = UserDb("id", "last", "first", "mail", StudentStatus, None, None)
+      val employee = UserDb("id", "last", "first", "mail", EmployeeStatus, None, None, campusId = )
+      val lecturer = UserDb("id", "last", "first", "mail", LecturerStatus, None, None, campusId = )
+      val student = UserDb("id", "last", "first", "mail", StudentStatus, None, None, campusId = )
 
       runAsyncSequence(
         TableQuery[UserTable].forceInsertAll(List(employee, lecturer, student)),
@@ -54,7 +54,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "not create a associated basic authority for a given user if he already has one" in {
-      val student = UserDb("system id", "last", "first", "mail", StudentStatus, None, None)
+      val student = UserDb("system id", "last", "first", "mail", StudentStatus, None, None, campusId = )
 
       runAsyncSequence(
         TableQuery[UserTable].forceInsert(student),
@@ -66,8 +66,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "delete authorities as long as the are not associated with a basic role" in {
-      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
-      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None, campusId = )
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None, campusId = )
       val nonBasicRoles = roles.filter(r => r.label == CourseAssistant.label || r.label == CourseEmployee.label)
       val auths = courses.take(2).zip(nonBasicRoles).map {
         case (course, role) => AuthorityDb(student.id, role.id, Some(course.id))
@@ -91,8 +91,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "never delete an authority which is associated with a basic role" in {
-      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None)
-      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None)
+      val student = UserDb(UUID.randomUUID.toString, "last", "first", "mail", StudentStatus, None, None, campusId = )
+      val otherUser = UserDb(UUID.randomUUID.toString, "last", "first", "mail", EmployeeStatus, None, None, campusId = )
       val basicAuth = AuthorityDb(student.id, roles.find(_.label == studentRole.label).get.id)
       val nonBasicAuth = AuthorityDb(student.id, roles.find(_.label == CourseAssistant.label).get.id)
 
@@ -107,7 +107,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "create course manager authority for a given course" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
 
@@ -126,7 +126,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "successfully return if a given user is a course manager" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
       val auths = List(
@@ -149,7 +149,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "successfully return if a given user is not a course manager at all" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val auths = List(
         AuthorityDb(lecturer.id, employeeRole.id),
         AuthorityDb(lecturer.id, adminRole.id)
@@ -163,7 +163,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "delete course manager authority for a given course" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
       val auths = List(
@@ -183,7 +183,7 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "delete associated authorities for a given course" in {
-      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val course1 = CourseDb("course1", "course1", "course1", lecturer.id, 1)
       val course2 = CourseDb("course2", "course2", "course2", lecturer.id, 3)
       val auths = List(
@@ -203,8 +203,8 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "update course manager authority for a given course" in {
-      val oldLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
-      val newLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val oldLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
+      val newLecturer = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val oldCourse1 = CourseDb("course1", "course1", "course1", oldLecturer.id, 1)
       val oldCourse2 = CourseDb("course2", "course2", "course2", oldLecturer.id, 3)
       val newCourse = oldCourse1.copy(lecturer = newLecturer.id, label = "new course")
@@ -232,9 +232,9 @@ class AuthorityDaoSpec extends AbstractDaoSpec[AuthorityTable, AuthorityDb, Auth
     }
 
     "successfully return all authorities for a user's system id" in {
-      val lecturer1 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
-      val lecturer2 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
-      val lecturer3 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None)
+      val lecturer1 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
+      val lecturer2 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
+      val lecturer3 = UserDb(UUID.randomUUID.toString, "last", "first", "mail", LecturerStatus, None, None, campusId = )
       val auths = List(
         AuthorityDb(lecturer1.id, employeeRole.id),
         AuthorityDb(lecturer1.id, adminRole.id),

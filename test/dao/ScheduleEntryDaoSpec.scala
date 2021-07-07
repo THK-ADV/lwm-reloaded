@@ -98,11 +98,11 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
     "return competitive entries of all courses with the same semester index" in {
       val labwork1 = populateLabwork
 
-      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course1 = CourseDb("", "", "", user1.id, 2)
-      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course2 = CourseDb("", "", "", user2.id, 1)
-      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course3 = CourseDb("", "", "", user3.id, 1)
 
       val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
@@ -128,13 +128,13 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
     "return competitive entries of all courses regardless of semester index" in {
       val labwork1 = populateLabwork
 
-      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course1 = CourseDb("", "", "", user1.id, 2)
-      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course2 = CourseDb("", "", "", user2.id, 5)
-      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course3 = CourseDb("", "", "", user3.id, 8)
-      val user4 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+      val user4 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
       val course4 = CourseDb("", "", "", user4.id, 8)
 
       val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
@@ -179,7 +179,7 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
   private def populateLabwork: LabworkDb = {
     val semester = SemesterDb("", "", fakeDate, fakeDate, fakeDate)
-    val user = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
+    val user = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
     val course = CourseDb("", "", "", user.id, 1)
     val degree = DegreeDb("", "")
     val labwork = LabworkDb("", "", semester.id, course.id, degree.id)

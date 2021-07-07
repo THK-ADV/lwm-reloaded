@@ -1,6 +1,12 @@
 package controllers
 
-import controllers.helper.{AttributeFilter, ResultOps, SecureControllerContext, Secured}
+import akka.actor.ActorSystem
+import controllers.helper.{
+  AttributeFilter,
+  ResultOps,
+  SecureControllerContext,
+  Secured
+}
 import dao.AuthorityDao
 import logger.AccessLoggingAction.log
 import play.api.libs.json.Json
@@ -19,6 +25,7 @@ class UserSyncController @Inject() (
     val authorityDao: AuthorityDao,
     val securedAction: SecurityActionChain,
     val syncService: UserSyncService,
+    val system: ActorSystem,
     implicit val context: ExecutionContext
 ) extends AbstractController(cc)
     with Secured
