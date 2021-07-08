@@ -20,29 +20,23 @@ class UserSyncService @Inject() (
     private implicit val ctx: ExecutionContext
 ) {
 
-  import utils.Ops.unwrap
-
   case class Updated[A](previous: A, updated: A)
 
-  def fetchUpdatedUser(id: UUID) =
+  def fetchUpdatedUser(user: User) =
     for {
-      currentUser <- unwrap(
-        userDao.getSingle(id, atomic = false),
-        () => s"user not found with id: $id"
-      )
       degrees <- degreeDao.get(atomic = false)
-      (existing, res) <- apiService.fetchUser(currentUser)(_.systemId)
+      (existing, res) <- apiService.fetchUser(user)(_.systemId)
       updatedUser <- update(existing, res)(e =>
         degrees.find(_.abbreviation.toLowerCase == e.toLowerCase).map(_.id)
       ).fold(
         err => Future.failed(new Throwable(err)),
         Future.successful
       )
-    } yield Updated(currentUser, updatedUser)
+    } yield Updated(user, updatedUser)
 
-  def fetchAndUpdateUser(id: UUID) =
+  def fetchAndUpdateUser(user: User) =
     for {
-      user <- fetchUpdatedUser(id)
+      user <- fetchUpdatedUser(user)
       res <- userDao.update(toUserDb(user.updated))
     } yield user.copy(updated = res.toUniqueEntity)
 
