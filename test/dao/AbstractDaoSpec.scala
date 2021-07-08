@@ -58,13 +58,19 @@ object AbstractDaoSpec {
 
   def randomGroup = groups(nextInt(maxGroups))
 
-  def randomReportCardEntryTypes(reportCardEntry: UUID) = takeSomeOf(ReportCardEntryType.all).map { entryType =>
-    ReportCardEntryTypeDb(reportCardEntry, entryType.entryType)
-  }.toSet
+  def randomReportCardEntryTypes(reportCardEntry: UUID) =
+    takeSomeOf(ReportCardEntryType.all).map { entryType =>
+      ReportCardEntryTypeDb(reportCardEntry, entryType.entryType)
+    }.toSet
 
-  final def takeSomeOf[A](traversable: Traversable[A]) = if (traversable.isEmpty) traversable else traversable.take(nextInt(traversable.size - 1) + 1)
+  final def takeSomeOf[A](traversable: Traversable[A]) = if (
+    traversable.isEmpty
+  ) traversable
+  else traversable.take(nextInt(traversable.size - 1) + 1)
 
-  final def takeOneOf[A](traversable: Traversable[A]) = shuffle(traversable).head
+  final def takeOneOf[A](traversable: Traversable[A]) = shuffle(
+    traversable
+  ).head
 
   final def populateBlacklists(amount: Int) = (0 until amount).map { i =>
     val global = nextBoolean
@@ -84,55 +90,127 @@ object AbstractDaoSpec {
     BlacklistDb(i.toString, date.sqlDate, start.sqlTime, end.sqlTime, global)
   }.toList
 
-  final def populateLabworks(amount: Int)(semesters: List[SemesterDb], courses: List[CourseDb], degrees: List[DegreeDb]) = (0 until amount).map { i =>
-    LabworkDb(i.toString, i.toString, takeOneOf(semesters).id, takeOneOf(courses).id, takeOneOf(degrees).id)
+  final def populateLabworks(amount: Int)(
+    semesters: List[SemesterDb],
+    courses: List[CourseDb],
+    degrees: List[DegreeDb]
+  ) = (0 until amount).map { i =>
+    LabworkDb(
+      i.toString,
+      i.toString,
+      takeOneOf(semesters).id,
+      takeOneOf(courses).id,
+      takeOneOf(degrees).id
+    )
   }.toList
 
   final def populateEmployees(amount: Int) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, i.toString, EmployeeStatus, None, None, campusId = )
+    UserDb(
+      i.toString,
+      i.toString,
+      i.toString,
+      i.toString,
+      i.toString,
+      EmployeeStatus,
+      None,
+      None
+    )
   }.toList
 
-  final def populateStudents(amount: Int)(degrees: List[DegreeDb]) = (0 until amount).map { i =>
-    UserDb(i.toString, i.toString, i.toString, s"$i@th-koeln.de", StudentStatus, Some(i.toString), Some(takeOneOf(degrees).id), campusId = )
-  }.toList
+  final def populateStudents(amount: Int)(degrees: List[DegreeDb]) =
+    (0 until amount).map { i =>
+      UserDb(
+        i.toString,
+        i.toString,
+        i.toString,
+        i.toString,
+        s"$i@th-koeln.de",
+        StudentStatus,
+        Some(i.toString),
+        Some(takeOneOf(degrees).id)
+      )
+    }.toList
 
-  final def populateTimetables(amount: Int, numberOfEntries: Int)(users: List[UserDb], labworks: List[LabworkDb], blacklists: List[BlacklistDb]) = (0 until amount).map { i =>
+  final def populateTimetables(amount: Int, numberOfEntries: Int)(
+    users: List[UserDb],
+    labworks: List[LabworkDb],
+    blacklists: List[BlacklistDb]
+  ) = (0 until amount).map { i =>
     val entries = (0 until numberOfEntries).map { j =>
-      TimetableEntry(takeSomeOf(users).map(_.id).toSet, randomRoom.id, nextInt(5), LocalTime.now.plusHours(j).withMillisOfSecond(0), LocalTime.now.plusHours(j + 1).withMillisOfSecond(0))
+      TimetableEntry(
+        takeSomeOf(users).map(_.id).toSet,
+        randomRoom.id,
+        nextInt(5),
+        LocalTime.now.plusHours(j).withMillisOfSecond(0),
+        LocalTime.now.plusHours(j + 1).withMillisOfSecond(0)
+      )
     }
 
-    TimetableDb(labworks(i).id, entries.toSet, LocalDate.now.plusDays(i).sqlDate, takeSomeOf(blacklists).map(_.id).toSet)
+    TimetableDb(
+      labworks(i).id,
+      entries.toSet,
+      LocalDate.now.plusDays(i).sqlDate,
+      takeSomeOf(blacklists).map(_.id).toSet
+    )
   }.toList
 
-  final def populateGroups(amountForEachLabwork: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
+  final def populateGroups(
+    amountForEachLabwork: Int
+  )(labworks: List[LabworkDb], students: List[UserDb]) = {
     (for {
       i <- 0 until amountForEachLabwork
       l <- labworks
-    } yield GroupDb(i.toString + l.label, l.id, takeSomeOf(students).map(_.id).toSet)).toList
+    } yield GroupDb(
+      i.toString + l.label,
+      l.id,
+      takeSomeOf(students).map(_.id).toSet
+    )).toList
   }
 
-  final def populateDegrees(amount: Int) = (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
+  final def populateDegrees(amount: Int) =
+    (0 until amount).map(i => DegreeDb(i.toString, i.toString)).toList
 
-  final def populateCourses(amount: Int)(employees: List[UserDb])(semesterIndex: (Int) => Int) =
-    (0 until amount).zip(employees).map {
-      case (i, e) => CourseDb(i.toString, i.toString, i.toString, e.id, semesterIndex(i))
-    }.toList
+  final def populateCourses(
+    amount: Int
+  )(employees: List[UserDb])(semesterIndex: (Int) => Int) =
+    (0 until amount)
+      .zip(employees)
+      .map { case (i, e) =>
+        CourseDb(i.toString, i.toString, i.toString, e.id, semesterIndex(i))
+      }
+      .toList
 
   final def populateSemester(amount: Int) = {
-    val template = LocalDate.now.withDayOfWeek(1).withMonthOfYear(9).minusYears(5).plusMonths(6)
+    val template = LocalDate.now
+      .withDayOfWeek(1)
+      .withMonthOfYear(9)
+      .minusYears(5)
+      .plusMonths(6)
 
-    (0 until amount).foldLeft((List.empty[SemesterDb], template)) {
-      case ((list, t), i) =>
+    (0 until amount)
+      .foldLeft((List.empty[SemesterDb], template)) { case ((list, t), i) =>
         val start = t.plusDays(1)
         val end = start.plusMonths(6)
         val exam = end.minusMonths(1)
 
-        val current = SemesterDb(i.toString, i.toString, start.sqlDate, end.sqlDate, exam.sqlDate)
+        val current = SemesterDb(
+          i.toString,
+          i.toString,
+          start.sqlDate,
+          end.sqlDate,
+          exam.sqlDate
+        )
         (list.:+(current), end)
-    }._1
+      }
+      ._1
   }
 
-  def populateScheduleEntry(amount: Int)(labworks: List[LabworkDb], rooms: List[RoomDb], employees: List[UserDb], groups: List[GroupDb]) = {
+  def populateScheduleEntry(amount: Int)(
+    labworks: List[LabworkDb],
+    rooms: List[RoomDb],
+    employees: List[UserDb],
+    groups: List[GroupDb]
+  ) = {
     val labwork = takeOneOf(labworks).id
 
     (0 until amount).map { i =>
@@ -140,11 +218,22 @@ object AbstractDaoSpec {
       val start = LocalTime.now.plusHours(i)
       val end = start.plusHours(1)
 
-      ScheduleEntryDb(labwork, start.sqlTime, end.sqlTime, date.sqlDate, takeOneOf(rooms).id, takeSomeOf(employees).map(_.id).toSet, takeOneOf(groups).id)
+      ScheduleEntryDb(
+        labwork,
+        start.sqlTime,
+        end.sqlTime,
+        date.sqlDate,
+        takeOneOf(rooms).id,
+        takeSomeOf(employees).map(_.id).toSet,
+        takeOneOf(groups).id
+      )
     }
-    }.toList
+  }.toList
 
-  def populateReportCardEntries(amount: Int, numberOfEntries: Int)(labworks: List[LabworkDb], students: List[UserDb]) = {
+  def populateReportCardEntries(
+    amount: Int,
+    numberOfEntries: Int
+  )(labworks: List[LabworkDb], students: List[UserDb]) = {
     var index = 0 // in order to satisfy uniqueness
 
     (0 until amount).flatMap { _ =>
@@ -161,7 +250,18 @@ object AbstractDaoSpec {
         val types = randomReportCardEntryTypes(id)
 
         index += 1
-        ReportCardEntryDb(student, labwork, s"assignment $i", date.sqlDate, start.sqlTime, end.sqlTime, room, types, index, id = id)
+        ReportCardEntryDb(
+          student,
+          labwork,
+          s"assignment $i",
+          date.sqlDate,
+          start.sqlTime,
+          end.sqlTime,
+          room,
+          types,
+          index,
+          id = id
+        )
       }
     }.toList
   }
@@ -177,16 +277,27 @@ object AbstractDaoSpec {
   }
 
   // does not care about business rules such as only one applicant per labwork
-  def populateLabworkApplications(amount: Int, withFriends: Boolean)(labworks: List[LabworkDb], applicants: List[UserDb]) = (0 until amount).map { _ =>
+  def populateLabworkApplications(amount: Int, withFriends: Boolean)(
+    labworks: List[LabworkDb],
+    applicants: List[UserDb]
+  ) = (0 until amount).map { _ =>
     val applicant = takeOneOf(applicants).id
-    val friends = if (withFriends) Set(randomStudent(applicant, applicants)) else Set.empty[UUID]
+    val friends =
+      if (withFriends) Set(randomStudent(applicant, applicants))
+      else Set.empty[UUID]
     database.LabworkApplicationDb(takeOneOf(labworks).id, applicant, friends)
   }.toList
 
-  def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) = (0 until amount).map { i =>
-    import models.helper.EvaluationProperty._
-    ReportCardEvaluationPatternDb(takeOneOf(labworks).id, i.toString, nextInt(10) + 1, (if (nextBoolean) BoolBased else IntBased).toString)
-  }.toList
+  def populateEvaluationPatterns(amount: Int)(labworks: List[LabworkDb]) =
+    (0 until amount).map { i =>
+      import models.helper.EvaluationProperty._
+      ReportCardEvaluationPatternDb(
+        takeOneOf(labworks).id,
+        i.toString,
+        nextInt(10) + 1,
+        (if (nextBoolean) BoolBased else IntBased).toString
+      )
+    }.toList
 
   lazy val semesters = populateSemester(maxSemesters)
 
@@ -205,28 +316,49 @@ object AbstractDaoSpec {
 
   lazy val labworks = populateLabworks(maxLabworks)(semesters, courses, degrees)
 
-  lazy val rooms = (0 until maxRooms).map(i => RoomDb(i.toString, i.toString, i)).toList
+  lazy val rooms =
+    (0 until maxRooms).map(i => RoomDb(i.toString, i.toString, i)).toList
 
   lazy val blacklists = populateBlacklists(maxBlacklists)
 
-  lazy val timetables = populateTimetables(maxTimetables, 6)(employees, labworks.drop(1), blacklists)
+  lazy val timetables = populateTimetables(maxTimetables, 6)(
+    employees,
+    labworks.drop(1),
+    blacklists
+  )
 
   lazy val students = populateStudents(maxStudents)(degrees)
 
-  lazy val reportCardEntries = populateReportCardEntries(maxReportCardEntries, 8)(labworks, students)
+  lazy val reportCardEntries =
+    populateReportCardEntries(maxReportCardEntries, 8)(labworks, students)
 
-  lazy val groups = populateGroups(maxGroups)(labworks, students) // remember to add groupMemberships also
+  lazy val groups = populateGroups(maxGroups)(
+    labworks,
+    students
+  ) // remember to add groupMemberships also
 
-  lazy val groupMemberships = groups.flatMap(g => g.members.map(m => GroupMembership(g.id, m)))
+  lazy val groupMemberships =
+    groups.flatMap(g => g.members.map(m => GroupMembership(g.id, m)))
 
-  lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(labworks, rooms, employees, groups)
+  lazy val scheduleEntries = populateScheduleEntry(maxScheduleEntries)(
+    labworks,
+    rooms,
+    employees,
+    groups
+  )
 
-  lazy val labworkApplications = populateLabworkApplications(maxLabworkApplications, withFriends = true)(labworks, students)
+  lazy val labworkApplications = populateLabworkApplications(
+    maxLabworkApplications,
+    withFriends = true
+  )(labworks, students)
 
-  lazy val reportCardEvaluationpatterns = populateEvaluationPatterns(maxEvaluationPatterns)(labworks)
+  lazy val reportCardEvaluationpatterns =
+    populateEvaluationPatterns(maxEvaluationPatterns)(labworks)
 }
 
-abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
+abstract class AbstractDaoSpec[T <: Table[
+  DbModel
+] with UniqueTable, DbModel <: UniqueDbEntity, LwmModel <: UniqueEntity]
   extends PostgresDbSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -243,9 +375,12 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
   protected def name: String
 
   protected def dbEntity: DbModel // dbEntity should not expand
-  protected def invalidDuplicateOfDbEntity: DbModel // invalidDuplicateOfDbEntity should not expand
-  protected def invalidUpdateOfDbEntity: DbModel // invalidUpdateOfDbEntity should not expand
-  protected def validUpdateOnDbEntity: DbModel // validUpdateOnDbEntity should not expand
+  protected def invalidDuplicateOfDbEntity
+  : DbModel // invalidDuplicateOfDbEntity should not expand
+  protected def invalidUpdateOfDbEntity
+  : DbModel // invalidUpdateOfDbEntity should not expand
+  protected def validUpdateOnDbEntity
+  : DbModel // validUpdateOnDbEntity should not expand
   protected def dbEntities: List[DbModel] // dbEntities should not expand
 
   protected def lwmAtom: LwmModel
@@ -259,16 +394,22 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"get a $name" in {
-      async(dao.getSingle(dbEntity.id, atomic = false))(_.value shouldBe dbEntity.toUniqueEntity)
+      async(dao.getSingle(dbEntity.id, atomic = false))(
+        _.value shouldBe dbEntity.toUniqueEntity
+      )
       async(dao.getSingle(dbEntity.id))(_.value shouldBe lwmAtom)
     }
 
     s"not create a $name because model already exists" in {
-      async(dao.create(invalidDuplicateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidDuplicateOfDbEntity, Seq(dbEntity)))
+      async(dao.create(invalidDuplicateOfDbEntity).failed)(
+        _ shouldBe ModelAlreadyExists(invalidDuplicateOfDbEntity, Seq(dbEntity))
+      )
     }
 
     s"not update a $name because model already exists" in {
-      async(dao.update(invalidUpdateOfDbEntity).failed)(_ shouldBe ModelAlreadyExists(invalidUpdateOfDbEntity, dbEntity))
+      async(dao.update(invalidUpdateOfDbEntity).failed)(
+        _ shouldBe ModelAlreadyExists(invalidUpdateOfDbEntity, dbEntity)
+      )
     }
 
     s"update a $name properly" in {
@@ -276,8 +417,12 @@ abstract class AbstractDaoSpec[T <: Table[DbModel] with UniqueTable, DbModel <: 
     }
 
     s"create many $name" in {
-      async(dao.createMany(dbEntities))(_ should contain theSameElementsAs dbEntities)
-      async(dao.getMany(dbEntities.map(_.id), atomic = false))(_.map(_.id) should contain theSameElementsAs dbEntities.map(_.id))
+      async(dao.createMany(dbEntities))(
+        _ should contain theSameElementsAs dbEntities
+      )
+      async(dao.getMany(dbEntities.map(_.id), atomic = false))(
+        _.map(_.id) should contain theSameElementsAs dbEntities.map(_.id)
+      )
     }
 
     s"delete a $name by invalidating it" in {
