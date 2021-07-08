@@ -5,7 +5,14 @@ import play.api.libs.json.{Json, Writes}
 
 import java.util.UUID
 
-case class Employee(systemId: String, lastname: String, firstname: String, email: String, id: UUID) extends User {
+case class Employee(
+    systemId: String,
+    campusId: String,
+    lastname: String,
+    firstname: String,
+    email: String,
+    id: UUID
+) extends User {
   override def status = LdapUserStatus.EmployeeStatus
 }
 

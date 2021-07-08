@@ -17,7 +17,8 @@ trait RequestOps {
       Request(headers, request.body)
     }
 
-    def withUserToken(userToken: UserToken): Request[A] = request.addAttr(RequestOps.UserToken, userToken)
+    def withUserToken(userToken: UserToken): Request[A] =
+      request.addAttr(RequestOps.UserToken, userToken)
 
     def userToken: Option[UserToken] = request.attrs.get(RequestOps.UserToken)
 

@@ -9,6 +9,7 @@ case class KeycloakUser(
     lastname: String,
     email: String,
     systemId: String,
+    campusId: String,
     degreeAbbrev: Option[String],
     registrationId: Option[String]
 )
@@ -21,10 +22,11 @@ object KeycloakUser {
     path.readNullable[List[String]].map(_.flatMap(_.headOption))
 
   implicit val reads: Reads[KeycloakUser] = (
-      (JsPath \ "firstName").read[String] and
+    (JsPath \ "firstName").read[String] and
       (JsPath \ "lastName").read[String] and
       (JsPath \ "email").read[String] and
       firstStringOf(JsPath \ "attributes" \ "systemId") and
+      firstStringOf(JsPath \ "attributes" \ "campusId") and
       firstStringOrNullOf(JsPath \ "attributes" \ "degreeAbbrev") and
       firstStringOrNullOf(JsPath \ "attributes" \ "registrationId")
   )(KeycloakUser.apply _)

@@ -28,7 +28,9 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
   }
 
   val dbUser: List[UserDb] = {
-    def randomStatus = scala.util.Random.shuffle(List(StudentStatus, EmployeeStatus, LecturerStatus)).head
+    def randomStatus = scala.util.Random
+      .shuffle(List(StudentStatus, EmployeeStatus, LecturerStatus))
+      .head
 
     def studentAttributes(status: LdapUserStatus, number: Int) = {
       if (status == StudentStatus)
@@ -41,7 +43,16 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       val status = randomStatus
       val (regId, enrollment) = studentAttributes(status, i)
 
-      UserDb(i.toString, i.toString, i.toString, i.toString, status, regId, enrollment)
+      UserDb(
+        i.toString,
+        i.toString,
+        i.toString,
+        i.toString,
+        i.toString,
+        status,
+        regId,
+        enrollment
+      )
     }.toList
   }
 
@@ -49,11 +60,12 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
   val semester = populateSemester(1).head
 
-  val employee = UserDb("", "", "", "", EmployeeStatus, None, None)
+  val employee = UserDb("", "", "", "", "", EmployeeStatus, None, None)
 
   val course = CourseDb("", "", "", employee.id, 1)
 
-  val labwork = LabworkDb("label", "desc", semester.id, course.id, chosenDegree.id)
+  val labwork =
+    LabworkDb("label", "desc", semester.id, course.id, chosenDegree.id)
 
   val otherLabwork = labwork.copy(id = UUID.randomUUID)
 
@@ -62,52 +74,109 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     "return a user by id (either atomic or non atomic)" in {
       val student = dbUser.find(_.status == StudentStatus)
       val studentAtom = student.map { u =>
-        val d = u.enrollment.flatMap(id => degrees.find(_.id == id)).get.toUniqueEntity
-        StudentAtom(u.systemId, u.lastname, u.firstname, u.email, u.registrationId.get, d, u.id)
+        val d = u.enrollment
+          .flatMap(id => degrees.find(_.id == id))
+          .get
+          .toUniqueEntity
+        StudentAtom(
+          u.systemId,
+          u.campusId,
+          u.lastname,
+          u.firstname,
+          u.email,
+          u.registrationId.get,
+          d,
+          u.id
+        )
       }
 
       val employee = dbUser.find(_.status == EmployeeStatus)
-      val employeeAtom = employee.map(e => Employee(e.systemId, e.lastname, e.firstname, e.email, e.id))
+      val employeeAtom = employee.map(e =>
+        Employee(e.systemId, e.campusId, e.lastname, e.firstname, e.email, e.id)
+      )
 
-      async(dao.get(List(idFilter(student.get.id)), atomic = false))(_.headOption shouldBe student.map(_.toUniqueEntity))
-      async(dao.get(List(idFilter(employee.get.id)), atomic = false))(_.headOption shouldBe employee.map(_.toUniqueEntity))
-      async(dao.get(List(idFilter(studentAtom.get.id))))(_.headOption shouldBe studentAtom)
-      async(dao.get(List(idFilter(employeeAtom.get.id))))(_.headOption shouldBe employeeAtom)
+      async(dao.get(List(idFilter(student.get.id)), atomic = false))(
+        _.headOption shouldBe student.map(_.toUniqueEntity)
+      )
+      async(dao.get(List(idFilter(employee.get.id)), atomic = false))(
+        _.headOption shouldBe employee.map(_.toUniqueEntity)
+      )
+      async(dao.get(List(idFilter(studentAtom.get.id))))(
+        _.headOption shouldBe studentAtom
+      )
+      async(dao.get(List(idFilter(employeeAtom.get.id))))(
+        _.headOption shouldBe employeeAtom
+      )
     }
 
     "filter users by certain attributes" in {
       val degree = degrees(nextInt(maxDegrees))
-      val possibleUsers1 = dbUser.filter(u => u.status == StudentStatus && u.enrollment.get == degree.id).map(_.toUniqueEntity)
-      val possibleUsers2 = dbUser.filter(u => u.firstname.contains("5") && u.lastname.contains("5")).map(_.toUniqueEntity)
-      val possibleUsers3 = dbUser.filter(_.systemId == "10").map(_.toUniqueEntity)
+      val possibleUsers1 = dbUser
+        .filter(u => u.status == StudentStatus && u.enrollment.get == degree.id)
+        .map(_.toUniqueEntity)
+      val possibleUsers2 = dbUser
+        .filter(u => u.firstname.contains("5") && u.lastname.contains("5"))
+        .map(_.toUniqueEntity)
+      val possibleUsers3 =
+        dbUser.filter(_.systemId == "10").map(_.toUniqueEntity)
 
-      async(dao.get(List(
-        statusFilter(StudentStatus),
-        enrollmentFilter(degree.id)
-      ), atomic = false))(_ should contain theSameElementsAs possibleUsers1)
+      async(
+        dao.get(
+          List(
+            statusFilter(StudentStatus),
+            enrollmentFilter(degree.id)
+          ),
+          atomic = false
+        )
+      )(_ should contain theSameElementsAs possibleUsers1)
 
-      async(dao.get(List(
-        firstnameFilter("5"),
-        lastnameFilter("5")
-      ), atomic = false))(_ should contain theSameElementsAs possibleUsers2)
+      async(
+        dao.get(
+          List(
+            firstnameFilter("5"),
+            lastnameFilter("5")
+          ),
+          atomic = false
+        )
+      )(_ should contain theSameElementsAs possibleUsers2)
 
-      async(dao.get(List(
-        systemIdFilter("10")
-      ), atomic = false))(_ should contain theSameElementsAs possibleUsers3)
+      async(
+        dao.get(
+          List(
+            systemIdFilter("10")
+          ),
+          atomic = false
+        )
+      )(_ should contain theSameElementsAs possibleUsers3)
 
-      async(dao.get(List(
-        firstnameFilter("3"),
-        lastnameFilter("3"),
-        systemIdFilter("4")
-      ), atomic = false))(_.isEmpty shouldBe true)
+      async(
+        dao.get(
+          List(
+            firstnameFilter("3"),
+            lastnameFilter("3"),
+            systemIdFilter("4")
+          ),
+          atomic = false
+        )
+      )(_.isEmpty shouldBe true)
     }
 
     "make a student by given properties" in {
       val degree = degrees(nextInt(maxDegrees))
-      val res = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some(degree.abbreviation))
+      val res = dao.makeUserModel(
+        "make student systemId",
+        "make student campusId",
+        "make student last",
+        "make student first",
+        "make student email",
+        StudentStatus.label,
+        Some("make student regId"),
+        Some(degree.abbreviation)
+      )
 
       async(res) { user =>
         user.systemId shouldBe "make student systemId"
+        user.campusId shouldBe "make student campusId"
         user.lastname shouldBe "make student last"
         user.firstname shouldBe "make student first"
         user.email shouldBe "make student email"
@@ -118,18 +187,58 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "fail to make any user if properties are wrong" in {
-      val query1 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, None)
-      val query2 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("x"), None)
-      val query3 = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, None, Some("x"))
+      val query1 = dao.makeUserModel(
+        "make student systemId",
+        "make student campusId",
+        "make student last",
+        "make student first",
+        "make student email",
+        StudentStatus.label,
+        None,
+        None
+      )
+      val query2 = dao.makeUserModel(
+        "make student systemId",
+        "make student campusId",
+        "make student last",
+        "make student first",
+        "make student email",
+        StudentStatus.label,
+        Some("x"),
+        None
+      )
+      val query3 = dao.makeUserModel(
+        "make student systemId",
+        "make student campusId",
+        "make student last",
+        "make student first",
+        "make student email",
+        StudentStatus.label,
+        None,
+        Some("x")
+      )
 
       List(query1, query2, query3) foreach { action =>
-        async(action.failed)(_.getLocalizedMessage.containsSlice("must have a associated registration-id and degree abbreviation") shouldBe true)
+        async(action.failed)(
+          _.getLocalizedMessage.containsSlice(
+            "must have a associated registration-id and degree abbreviation"
+          ) shouldBe true
+        )
       }
     }
 
     "fail to make a student if status is wrong" in {
       val degree = degrees(nextInt(maxDegrees))
-      val query = dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", "bad status", Some("make student regId"), Some(degree.abbreviation))
+      val query = dao.makeUserModel(
+        "make student systemId",
+        "make student campusId",
+        "make student last",
+        "make student first",
+        "make student email",
+        "bad status",
+        Some("make student regId"),
+        Some(degree.abbreviation)
+      )
 
       async(query.failed) { throwable =>
         throwable.getLocalizedMessage.containsSlice("status") shouldBe true
@@ -138,12 +247,22 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
     "create a degree if abbreviation is not found" in {
       val query = for {
-        user <- dao.makeUserModel("make student systemId", "make student last", "make student first", "make student email", StudentStatus.label, Some("make student regId"), Some("unknown abbrev"))
+        user <- dao.makeUserModel(
+          "make student systemId",
+          "make student campusId",
+          "make student last",
+          "make student first",
+          "make student email",
+          StudentStatus.label,
+          Some("make student regId"),
+          Some("unknown abbrev")
+        )
         degree <- degreeDao.getSingle(user.enrollment.get)
       } yield (user, degree.get)
 
       async(query) { case (user, degree) =>
         user.systemId shouldBe "make student systemId"
+        user.campusId shouldBe "make student campusId"
         user.lastname shouldBe "make student last"
         user.firstname shouldBe "make student first"
         user.email shouldBe "make student email"
@@ -154,10 +273,20 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "make a employee by given properties" in {
-      val query = dao.makeUserModel("make employee systemId", "make employee last", "make employee first", "make employee email", EmployeeStatus.label, None, None)
+      val query = dao.makeUserModel(
+        "make employee systemId",
+        "make employee campusId",
+        "make employee last",
+        "make employee first",
+        "make employee email",
+        EmployeeStatus.label,
+        None,
+        None
+      )
 
       async(query) { user =>
         user.systemId shouldBe "make employee systemId"
+        user.campusId shouldBe "make employee campusId"
         user.lastname shouldBe "make employee last"
         user.firstname shouldBe "make employee first"
         user.email shouldBe "make employee email"
@@ -168,10 +297,20 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     }
 
     "make a lecturer by given properties" in {
-      val query = dao.makeUserModel("make lecturer systemId", "make lecturer last", "make lecturer first", "make lecturer email", LecturerStatus.label, None, None)
+      val query = dao.makeUserModel(
+        "make lecturer systemId",
+        "make lecturer campusId",
+        "make lecturer last",
+        "make lecturer first",
+        "make lecturer email",
+        LecturerStatus.label,
+        None,
+        None
+      )
 
       async(query) { user =>
         user.systemId shouldBe "make lecturer systemId"
+        user.campusId shouldBe "make lecturer campusId"
         user.lastname shouldBe "make lecturer last"
         user.firstname shouldBe "make lecturer first"
         user.email shouldBe "make lecturer email"
@@ -218,43 +357,124 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     "create and update student with dedicated basic authority" in {
       val degree = degrees(nextInt(maxDegrees))
 
-      val user = UserDb("another student systemId", "another student last", "another student first", "another student email", StudentStatus, Some("another regId"), Some(degree.id))
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
+      val user = UserDb(
+        "another student systemId",
+        "another student campusId",
+        "another student last",
+        "another student first",
+        "another student email",
+        StudentStatus,
+        Some("another regId"),
+        Some(degree.id)
+      )
+      async(dao.createOrUpdateWithBasicAuthority(user))(
+        _ shouldBe DBResult.Created(user)
+      )
 
-      val updated = user.copy(lastname = "updated student last", email = "updated student email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
+      val updated = user.copy(
+        lastname = "updated student last",
+        email = "updated student email"
+      )
+      async(dao.createOrUpdateWithBasicAuthority(updated))(
+        _ shouldBe DBResult.Updated(updated)
+      )
     }
 
     "create and update employee with dedicated basic authority" in {
-      val user = UserDb("another employee systemId", "another employee last", "another employee first", "another employee email", EmployeeStatus, None, None)
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
+      val user = UserDb(
+        "another employee systemId",
+        "another employee campusId",
+        "another employee last",
+        "another employee first",
+        "another employee email",
+        EmployeeStatus,
+        None,
+        None
+      )
+      async(dao.createOrUpdateWithBasicAuthority(user))(
+        _ shouldBe DBResult.Created(user)
+      )
 
-      val updated = user.copy(lastname = "updated employee last", email = "updated employee email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
+      val updated = user.copy(
+        lastname = "updated employee last",
+        email = "updated employee email"
+      )
+      async(dao.createOrUpdateWithBasicAuthority(updated))(
+        _ shouldBe DBResult.Updated(updated)
+      )
     }
 
     "create and update lecturer with dedicated basic authority" in {
-      val user = UserDb("another lecturer systemId", "another lecturer last", "another lecturer first", "another lecturer email", LecturerStatus, None, None)
-      async(dao.createOrUpdateWithBasicAuthority(user))(_ shouldBe DBResult.Created(user))
+      val user = UserDb(
+        "another lecturer systemId",
+        "another lecturer campusId",
+        "another lecturer last",
+        "another lecturer first",
+        "another lecturer email",
+        LecturerStatus,
+        None,
+        None
+      )
+      async(dao.createOrUpdateWithBasicAuthority(user))(
+        _ shouldBe DBResult.Created(user)
+      )
 
-      val updated = user.copy(lastname = "updated lecturer last", email = "updated lecturer email")
-      async(dao.createOrUpdateWithBasicAuthority(updated))(_ shouldBe DBResult.Updated(updated))
+      val updated = user.copy(
+        lastname = "updated lecturer last",
+        email = "updated lecturer email"
+      )
+      async(dao.createOrUpdateWithBasicAuthority(updated))(
+        _ shouldBe DBResult.Updated(updated)
+      )
     }
 
     "deny buddy requests properly" in {
-      val student = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)).get
-      val buddy = dbUser.find(u => u.status == StudentStatus && !u.enrollment.contains(chosenDegree.id)).get
+      val student = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)
+        )
+        .get
+      val buddy = dbUser
+        .find(u =>
+          u.status == StudentStatus && !u.enrollment.contains(chosenDegree.id)
+        )
+        .get
       val invalidBuddy = "not in system"
 
-      async(dao.buddyResult(student.id, invalidBuddy, labwork.id))(_ shouldBe NotExisting(invalidBuddy))
-      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Denied(buddy.toUniqueEntity))
+      async(dao.buddyResult(student.id, invalidBuddy, labwork.id))(
+        _ shouldBe NotExisting(invalidBuddy)
+      )
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(
+        _ shouldBe Denied(buddy.toUniqueEntity)
+      )
     }
 
     "allow a buddy request" in {
-      val student = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)).get
-      val buddy = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
-      val someoneElse = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
-      val someoneElse2 = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
+      val student = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)
+        )
+        .get
+      val buddy = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment
+            .contains(chosenDegree.id) && u.id != student.id
+        )
+        .get
+      val someoneElse = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(
+            chosenDegree.id
+          ) && !List(student.id, buddy.id).contains(u.id)
+        )
+        .get
+      val someoneElse2 = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(
+            chosenDegree.id
+          ) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)
+        )
+        .get
 
       val lapps = List(
         LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
@@ -263,15 +483,40 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       )
 
       async(dao.labworkApplicationDao.createMany(lapps))(_ should not be empty)
-      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Allowed(buddy.toUniqueEntity))
-      async(dao.labworkApplicationDao.invalidateMany(lapps.map(_.id)))(_.size shouldBe lapps.size)
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(
+        _ shouldBe Allowed(buddy.toUniqueEntity)
+      )
+      async(dao.labworkApplicationDao.invalidateMany(lapps.map(_.id)))(
+        _.size shouldBe lapps.size
+      )
     }
 
     "almost allow a buddy request" in {
-      val student = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)).get
-      val buddy = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && u.id != student.id).get
-      val someoneElse = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id).contains(u.id)).get
-      val someoneElse2 = dbUser.find(u => u.status == StudentStatus && u.enrollment.contains(chosenDegree.id) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)).get
+      val student = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(chosenDegree.id)
+        )
+        .get
+      val buddy = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment
+            .contains(chosenDegree.id) && u.id != student.id
+        )
+        .get
+      val someoneElse = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(
+            chosenDegree.id
+          ) && !List(student.id, buddy.id).contains(u.id)
+        )
+        .get
+      val someoneElse2 = dbUser
+        .find(u =>
+          u.status == StudentStatus && u.enrollment.contains(
+            chosenDegree.id
+          ) && !List(student.id, buddy.id, someoneElse.id).contains(u.id)
+        )
+        .get
 
       val lapps = List(
         LabworkApplicationDb(labwork.id, someoneElse.id, Set(someoneElse2.id)),
@@ -280,23 +525,35 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
       )
 
       async(dao.labworkApplicationDao.createMany(lapps))(_ should not be empty)
-      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(_ shouldBe Almost(buddy.toUniqueEntity))
+      async(dao.buddyResult(student.id, buddy.systemId, labwork.id))(
+        _ shouldBe Almost(buddy.toUniqueEntity)
+      )
     }
   }
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq(
-    TableQuery[SemesterTable].forceInsert(semester),
-    TableQuery[UserTable].forceInsert(employee),
-    TableQuery[CourseTable].forceInsert(course),
-    TableQuery[DegreeTable].forceInsertAll(degrees),
-    TableQuery[LabworkTable].forceInsertAll(List(labwork, otherLabwork)),
-    TableQuery[RoleTable].forceInsertAll(roles)
-  )
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] =
+    DBIO.seq(
+      TableQuery[SemesterTable].forceInsert(semester),
+      TableQuery[UserTable].forceInsert(employee),
+      TableQuery[CourseTable].forceInsert(course),
+      TableQuery[DegreeTable].forceInsertAll(degrees),
+      TableQuery[LabworkTable].forceInsertAll(List(labwork, otherLabwork)),
+      TableQuery[RoleTable].forceInsertAll(roles)
+    )
 
   override protected def name: String = "user"
 
   override protected val dbEntity: UserDb =
-    UserDb("delete", "delete", "delete", "delete", StudentStatus, Some("regId"), Some(degrees.head.id))
+    UserDb(
+      "delete",
+      "delete",
+      "delete",
+      "delete",
+      "delete",
+      StudentStatus,
+      Some("regId"),
+      Some(degrees.head.id)
+    )
 
   override protected val invalidDuplicateOfDbEntity: UserDb =
     dbEntity.copy(id = UUID.randomUUID)
@@ -311,6 +568,7 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
 
   override protected val lwmAtom: User = StudentAtom(
     dbEntity.systemId,
+    dbEntity.campusId,
     dbEntity.lastname,
     dbEntity.firstname,
     dbEntity.email,
@@ -319,7 +577,8 @@ final class UserDaoSpec extends AbstractDaoSpec[UserTable, UserDb, User] {
     dbEntity.id
   )
 
-  override protected val dao: UserDao = app.injector.instanceOf(classOf[UserDao])
+  override protected val dao: UserDao =
+    app.injector.instanceOf(classOf[UserDao])
 
   val degreeDao: DegreeDao = app.injector.instanceOf(classOf[DegreeDao])
 
