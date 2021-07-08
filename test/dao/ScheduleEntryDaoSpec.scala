@@ -13,11 +13,14 @@ import slick.dbio.Effect.Write
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition {
+final class ScheduleEntryDaoSpec
+    extends PostgresDbSpec
+    with TestBaseDefinition {
 
   import profile.api._
 
-  implicit val ctx: ExecutionContext = app.injector.instanceOf(classOf[ExecutionContext])
+  implicit val ctx: ExecutionContext =
+    app.injector.instanceOf(classOf[ExecutionContext])
 
   val dao = app.injector.instanceOf(classOf[ScheduleEntryDao])
   val labworkDao = app.injector.instanceOf(classOf[LabworkDao])
@@ -76,7 +79,11 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
       val result = competitive(labwork1.id, considerSemesterIndex = true)
 
-      async(result)(_ should contain theSameElementsAs (comp1 ::: comp2).map(_.toUniqueEntity))
+      async(result)(
+        _ should contain theSameElementsAs (comp1 ::: comp2).map(
+          _.toUniqueEntity
+        )
+      )
     }
 
     "return competitive entries of all labworks within a given course with the same semester index as long as they are valid" in {
@@ -92,27 +99,38 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
         comps <- competitive(labwork1.id, considerSemesterIndex = true)
       } yield comps
 
-      async(result)(_ should contain theSameElementsAs comp2.map(_.toUniqueEntity))
+      async(result)(
+        _ should contain theSameElementsAs comp2.map(_.toUniqueEntity)
+      )
     }
 
     "return competitive entries of all courses with the same semester index" in {
       val labwork1 = populateLabwork
 
-      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user1 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course1 = CourseDb("", "", "", user1.id, 2)
-      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user2 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course2 = CourseDb("", "", "", user2.id, 1)
-      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user3 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course3 = CourseDb("", "", "", user3.id, 1)
 
       val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
       val labwork3 = labwork1.copy(id = UUID.randomUUID, course = course2.id)
-      val labwork4 = labwork1.copy(id = UUID.randomUUID, course = course3.id, invalidated = Some(new Timestamp(0)))
+      val labwork4 = labwork1.copy(
+        id = UUID.randomUUID,
+        course = course3.id,
+        invalidated = Some(new Timestamp(0))
+      )
 
       runAsyncSequence(
         TableQuery[UserTable].forceInsertAll(List(user1, user2, user3)),
         TableQuery[CourseTable].forceInsertAll(List(course1, course2, course3)),
-        TableQuery[LabworkTable].forceInsertAll(List(labwork2, labwork3, labwork4)),
+        TableQuery[LabworkTable].forceInsertAll(
+          List(labwork2, labwork3, labwork4)
+        )
       )
 
       populateScheduleEntries(1, labwork1.id)
@@ -122,30 +140,44 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
       val result = competitive(labwork1.id, considerSemesterIndex = true)
 
-      async(result)(_ should contain theSameElementsAs comp.map(_.toUniqueEntity))
+      async(result)(
+        _ should contain theSameElementsAs comp.map(_.toUniqueEntity)
+      )
     }
 
     "return competitive entries of all courses regardless of semester index" in {
       val labwork1 = populateLabwork
 
-      val user1 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user1 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course1 = CourseDb("", "", "", user1.id, 2)
-      val user2 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user2 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course2 = CourseDb("", "", "", user2.id, 5)
-      val user3 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user3 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course3 = CourseDb("", "", "", user3.id, 8)
-      val user4 = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+      val user4 =
+        UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
       val course4 = CourseDb("", "", "", user4.id, 8)
 
       val labwork2 = labwork1.copy(id = UUID.randomUUID, course = course1.id)
       val labwork3 = labwork1.copy(id = UUID.randomUUID, course = course2.id)
-      val labwork4 = labwork1.copy(id = UUID.randomUUID, course = course3.id, invalidated = Some(new Timestamp(0)))
+      val labwork4 = labwork1.copy(
+        id = UUID.randomUUID,
+        course = course3.id,
+        invalidated = Some(new Timestamp(0))
+      )
       val labwork5 = labwork1.copy(id = UUID.randomUUID, course = course4.id)
 
       runAsyncSequence(
         TableQuery[UserTable].forceInsertAll(List(user1, user2, user3, user4)),
-        TableQuery[CourseTable].forceInsertAll(List(course1, course2, course3, course4)),
-        TableQuery[LabworkTable].forceInsertAll(List(labwork2, labwork3, labwork4, labwork5)),
+        TableQuery[CourseTable].forceInsertAll(
+          List(course1, course2, course3, course4)
+        ),
+        TableQuery[LabworkTable].forceInsertAll(
+          List(labwork2, labwork3, labwork4, labwork5)
+        )
       )
 
       populateScheduleEntries(1, labwork1.id)
@@ -156,7 +188,11 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
       val result = competitive(labwork1.id, considerSemesterIndex = false)
 
-      async(result)(_ should contain theSameElementsAs (comp1 ::: comp2 ::: comp3).map(_.toUniqueEntity))
+      async(result)(
+        _ should contain theSameElementsAs (comp1 ::: comp2 ::: comp3).map(
+          _.toUniqueEntity
+        )
+      )
     }
   }
 
@@ -166,7 +202,10 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
     labwork2
   }
 
-  private def competitive(labwork: UUID, considerSemesterIndex: Boolean): Future[Seq[ScheduleEntryLike]] = {
+  private def competitive(
+      labwork: UUID,
+      considerSemesterIndex: Boolean
+  ): Future[Seq[ScheduleEntryLike]] = {
     for {
       labworkAtom <- labworkDao.getSingle(labwork)
       comps <- dao.competitive(
@@ -179,7 +218,8 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
   private def populateLabwork: LabworkDb = {
     val semester = SemesterDb("", "", fakeDate, fakeDate, fakeDate)
-    val user = UserDb("", "", "", "", LdapUserStatus.EmployeeStatus, None, None, campusId = )
+    val user =
+      UserDb("", "", "", "", "", LdapUserStatus.EmployeeStatus, None, None)
     val course = CourseDb("", "", "", user.id, 1)
     val degree = DegreeDb("", "")
     val labwork = LabworkDb("", "", semester.id, course.id, degree.id)
@@ -195,11 +235,22 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
     labwork
   }
 
-  private def populateScheduleEntries(n: Int, labwork: UUID): immutable.Seq[ScheduleEntryDb] = {
+  private def populateScheduleEntries(
+      n: Int,
+      labwork: UUID
+  ): immutable.Seq[ScheduleEntryDb] = {
     val room = RoomDb("", "", 1)
     val grp = GroupDb("", labwork, Set.empty)
     val scheduleEntries = (0 until n).map { _ =>
-      ScheduleEntryDb(labwork, fakeTime, fakeTime, fakeDate, room.id, Set.empty, grp.id)
+      ScheduleEntryDb(
+        labwork,
+        fakeTime,
+        fakeTime,
+        fakeDate,
+        room.id,
+        Set.empty,
+        grp.id
+      )
     }
 
     runAsyncSequence(
@@ -215,7 +266,8 @@ final class ScheduleEntryDaoSpec extends PostgresDbSpec with TestBaseDefinition 
 
   private def fakeDate: Date = new Date(0)
 
-  override protected def dependencies: DBIOAction[Unit, NoStream, Write] = DBIO.seq()
+  override protected def dependencies: DBIOAction[Unit, NoStream, Write] =
+    DBIO.seq()
 
   override protected def bindings: Seq[GuiceableModule] = Seq.empty
 }

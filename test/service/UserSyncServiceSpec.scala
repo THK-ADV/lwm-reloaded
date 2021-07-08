@@ -24,8 +24,16 @@ class UserSyncServiceSpec
   "A UserSyncServiceSpec" should {
     "update an existing student by its keycloak representation" in {
       val enrollment = UUID.randomUUID()
-      val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", Some("D1"), Some("kr1"))
+      val stu = Student("lec", "cid1", "sl1", "sf1", "se1", "sr1", enrollment)
+      val k1 = KeycloakUser(
+        "kf1",
+        "kl1",
+        "ke1",
+        "lec",
+        "cid2",
+        Some("D1"),
+        Some("kr1")
+      )
       val res =
         service.update(stu, JsSuccess(k1))(_ => Some(enrollment))
       val user = res.right.value.asInstanceOf[Student]
@@ -39,8 +47,8 @@ class UserSyncServiceSpec
     }
 
     "update an existing employee by its keycloak representation" in {
-      val emp = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "e1", None, None)
+      val emp = Employee("e1", "cid1", "el1", "ef1", "ee1", UUID.randomUUID())
+      val k1 = KeycloakUser("kf1", "kl1", "ke1", "e1", "cid1", None, None)
       val res = service.update(emp, JsSuccess(k1))(_ => None)
       val user = res.right.value.asInstanceOf[Employee]
       user.id shouldBe emp.id
@@ -51,8 +59,8 @@ class UserSyncServiceSpec
     }
 
     "update an existing lecturer by its keycloak representation" in {
-      val lec = Lecturer("l1", "ll1", "lf1", "le1", UUID.randomUUID())
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "l1", None, None)
+      val lec = Lecturer("l1", "cid1", "ll1", "lf1", "le1", UUID.randomUUID())
+      val k1 = KeycloakUser("kf1", "kl1", "ke1", "l1", "cid1", None, None)
       val res = service.update(lec, JsSuccess(k1))(_ => None)
       val user = res.right.value.asInstanceOf[Lecturer]
       user.id shouldBe lec.id
@@ -63,14 +71,14 @@ class UserSyncServiceSpec
     }
 
     "not update an existing user if there is an id miss match" in {
-      val s1 = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "k1", None, None)
+      val s1 = Employee("e1", "cid1", "el1", "ef1", "ee1", UUID.randomUUID())
+      val k1 = KeycloakUser("kf1", "kl1", "ke1", "k1", "cid1", None, None)
       val res = service.update(s1, JsSuccess(k1))(_ => None)
       res.left.value.startsWith("user miss match") shouldBe true
     }
 
     "not update an existing user if there is a parsing error" in {
-      val user = Employee("e1", "el1", "ef1", "ee1", UUID.randomUUID())
+      val user = Employee("e1", "cid1", "el1", "ef1", "ee1", UUID.randomUUID())
       val res =
         service.update(user, JsError("parsing error"))(_ => None)
       res.left.value.contains("parsing error") shouldBe true
@@ -78,8 +86,16 @@ class UserSyncServiceSpec
 
     "not update an existing student if the enrollment is unknown" in {
       val enrollment = UUID.randomUUID()
-      val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", Some("D1"), Some("kr1"))
+      val stu = Student("lec", "cid1", "sl1", "sf1", "se1", "sr1", enrollment)
+      val k1 = KeycloakUser(
+        "kf1",
+        "kl1",
+        "ke1",
+        "lec",
+        "cid1",
+        Some("D1"),
+        Some("kr1")
+      )
       val res =
         service.update(stu, JsSuccess(k1))(_ => None)
       res.left.value shouldBe "no degree found for D1"
@@ -87,8 +103,8 @@ class UserSyncServiceSpec
 
     "not update an existing student if enrollment or registrationId is missing" in {
       val enrollment = UUID.randomUUID()
-      val stu = Student("lec", "sl1", "sf1", "se1", "sr1", enrollment)
-      val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", None, None)
+      val stu = Student("lec", "cid1", "sl1", "sf1", "se1", "sr1", enrollment)
+      val k1 = KeycloakUser("kf1", "kl1", "ke1", "lec", "cid1", None, None)
       val res =
         service.update(stu, JsSuccess(k1))(_ => Some(enrollment))
       res.left.value shouldBe "student must have a registration id and an enrollment"

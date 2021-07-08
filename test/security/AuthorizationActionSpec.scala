@@ -14,7 +14,11 @@ import play.api.test._
 
 import scala.concurrent.Future
 
-class AuthorizationActionSpec extends PlaySpec with GuiceOneAppPerSuite with LwmFakeApplication with MockitoSugar {
+class AuthorizationActionSpec
+    extends PlaySpec
+    with GuiceOneAppPerSuite
+    with LwmFakeApplication
+    with MockitoSugar {
 
   val authMock = mock[OAuthAuthorization]
 
@@ -23,7 +27,21 @@ class AuthorizationActionSpec extends PlaySpec with GuiceOneAppPerSuite with Lwm
   "A AuthorizationActionSpec" should {
 
     "pass user authorization" in {
-      when(authMock.authorized(any)).thenReturn(Future.successful(UserToken("id", "first", "last", "systemId value", "email", "status", Some("abbreviation"), Some("regId"))))
+      when(authMock.authorized(any)).thenReturn(
+        Future.successful(
+          UserToken(
+            "id",
+            "first",
+            "last",
+            "systemId value",
+            "campusId value",
+            "email",
+            "status",
+            Some("abbreviation"),
+            Some("regId")
+          )
+        )
+      )
 
       val action = authAction(r => Results.Ok(r.systemId))
       val result = call(action, FakeRequest())
@@ -33,7 +51,8 @@ class AuthorizationActionSpec extends PlaySpec with GuiceOneAppPerSuite with Lwm
     }
 
     "return unauthorized when authorization fails" in {
-      when(authMock.authorized(any)).thenReturn(Future.failed(new Throwable("some message")))
+      when(authMock.authorized(any))
+        .thenReturn(Future.failed(new Throwable("some message")))
 
       val action = authAction(r => Results.Ok(r.systemId))
       val result = call(action, FakeRequest())

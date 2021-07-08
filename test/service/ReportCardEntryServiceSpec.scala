@@ -8,7 +8,10 @@ import models._
 import org.joda.time.{LocalDate, LocalTime}
 import org.scalatest.WordSpec
 
-final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition with DateGenerator {
+final class ReportCardEntryServiceSpec
+    extends WordSpec
+    with TestBaseDefinition
+    with DateGenerator {
 
   import service.ReportCardEntryService._
 
@@ -17,15 +20,22 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
     "not generate report card entries if schedule and/or assignment entries are empty" in {
       val entries = generateReportCardEntries(List.empty, List.empty)
 
-      entries.failure.exception.getMessage.contains("can't generate") shouldBe true
+      entries.failure.exception.getMessage
+        .contains("can't generate") shouldBe true
     }
 
     "not generate report card entries if schedule entries can't cover assignment entries" in {
-      val scheduleEntries = List(scheduleEntry(9, 10, 2019, 1, 1, Group("", UUID.randomUUID(), uuids(2))))
+      val scheduleEntries = List(
+        scheduleEntry(9, 10, 2019, 1, 1, Group("", UUID.randomUUID(), uuids(2)))
+      )
       val assignments = assignmentEntries(3)
-      val entries = generateReportCardEntries(toAtom(scheduleEntries, UUID.randomUUID), assignments)
+      val entries = generateReportCardEntries(
+        toAtom(scheduleEntries, UUID.randomUUID),
+        assignments
+      )
 
-      entries.failure.exception.getMessage.contains("can't distribute") shouldBe true
+      entries.failure.exception.getMessage
+        .contains("can't distribute") shouldBe true
     }
 
     "generate report card entries using a schedule and assignment entries" in {
@@ -59,11 +69,16 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
       )
 
       val assignments = assignmentEntries(3)
-      val reportCardEntries = generateReportCardEntries(toAtom(scheduleEntries, labwork), assignments).success.value
+      val reportCardEntries = generateReportCardEntries(
+        toAtom(scheduleEntries, labwork),
+        assignments
+      ).success.value
       val students = 5 + 5 + 3 + 3 + 2 + 4
 
       reportCardEntries.size shouldBe students * assignments.size
-      reportCardEntries.groupBy(_.student).foreach(_._2.size == assignments.size shouldBe true)
+      reportCardEntries
+        .groupBy(_.student)
+        .foreach(_._2.size == assignments.size shouldBe true)
 
       val appointmentsGrpA = reportCardEntries
         .filter(_.student == grpA.members.head)
@@ -94,9 +109,30 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
       val labwork = UUID.randomUUID
 
       val descs = List(
-        ReportCardEntryDescription("1", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("1")),
-        ReportCardEntryDescription("2", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("2")),
-        ReportCardEntryDescription("3", LocalDate.now, LocalTime.now, LocalTime.now, UUID.randomUUID, Set("3")),
+        ReportCardEntryDescription(
+          "1",
+          LocalDate.now,
+          LocalTime.now,
+          LocalTime.now,
+          UUID.randomUUID,
+          Set("1")
+        ),
+        ReportCardEntryDescription(
+          "2",
+          LocalDate.now,
+          LocalTime.now,
+          LocalTime.now,
+          UUID.randomUUID,
+          Set("2")
+        ),
+        ReportCardEntryDescription(
+          "3",
+          LocalDate.now,
+          LocalTime.now,
+          LocalTime.now,
+          UUID.randomUUID,
+          Set("3")
+        )
       )
 
       val res = liftDescriptions(descs, student, labwork, 1)
@@ -112,18 +148,60 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
     }
   }
 
-  private def scheduleEntry(start: Int, end: Int, year: Int, month: Int, day: Int, grp: Group): ScheduleEntryGen = ScheduleEntryGen(
-    localTime(start), localTime(end), localDate(year, month, day), UUID.randomUUID, Set.empty, grp
+  private def scheduleEntry(
+      start: Int,
+      end: Int,
+      year: Int,
+      month: Int,
+      day: Int,
+      grp: Group
+  ): ScheduleEntryGen = ScheduleEntryGen(
+    localTime(start),
+    localTime(end),
+    localDate(year, month, day),
+    UUID.randomUUID,
+    Set.empty,
+    grp
   )
 
-  private def toAtom(xs: List[ScheduleEntryGen], labwork: UUID): List[ScheduleEntryAtom] = {
-    val semester = Semester("", "", LocalDate.now, LocalDate.now, LocalDate.now, UUID.randomUUID)
-    val user = Employee("", "", "", "", UUID.randomUUID)
+  private def toAtom(
+      xs: List[ScheduleEntryGen],
+      labwork: UUID
+  ): List[ScheduleEntryAtom] = {
+    val semester = Semester(
+      "",
+      "",
+      LocalDate.now,
+      LocalDate.now,
+      LocalDate.now,
+      UUID.randomUUID
+    )
+    val user = Employee("", "", "", "", "", UUID.randomUUID)
     val course = CourseAtom("", "", "", user, 1, UUID.randomUUID)
     val degree = Degree("", "", UUID.randomUUID)
-    val atom = LabworkAtom("", "", semester, course, degree, subscribable = false, published = false, UUID.randomUUID)
+    val atom = LabworkAtom(
+      "",
+      "",
+      semester,
+      course,
+      degree,
+      subscribable = false,
+      published = false,
+      UUID.randomUUID
+    )
 
-    xs.map(x => ScheduleEntryAtom(atom, x.start, x.end, x.date, Room("", "", 1, x.room), Set.empty, x.group, UUID.randomUUID))
+    xs.map(x =>
+      ScheduleEntryAtom(
+        atom,
+        x.start,
+        x.end,
+        x.date,
+        Room("", "", 1, x.room),
+        Set.empty,
+        x.group,
+        UUID.randomUUID
+      )
+    )
   }
 
   private def uuids(n: Int) = (0 until n).map(_ => UUID.randomUUID).toSet
@@ -132,7 +210,16 @@ final class ReportCardEntryServiceSpec extends WordSpec with TestBaseDefinition 
     val labwork = UUID.randomUUID
 
     (0 until n)
-      .map(i => AssignmentEntry(labwork, i, i.toString, assignmentEntryTypes(), 1, UUID.randomUUID))
+      .map(i =>
+        AssignmentEntry(
+          labwork,
+          i,
+          i.toString,
+          assignmentEntryTypes(),
+          1,
+          UUID.randomUUID
+        )
+      )
       .toList
   }
 
