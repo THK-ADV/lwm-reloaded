@@ -152,7 +152,8 @@ DELETE        /courses/:c/assignmentEntries/:id                                c
 
 # Users
 POST          /users                                                           controllers.UserController.createFromToken
-POST          /users/resolve                                                   controllers.UserController.resolveStudents()
+POST          /users/resolveByName                                             controllers.UserController.resolveStudentsByName()
+POST          /users/byCampusIds                                               controllers.UserController.getByCampusIds()
 GET           /users                                                           controllers.UserController.all()
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
 GET           /users/:id                                                       controllers.UserController.get(id)

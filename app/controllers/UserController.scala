@@ -36,6 +36,7 @@ final class UserController @Inject() (
 
   import UserController._
   import dao.UserDao._
+  import utils.Ops._
 
   override protected implicit val writes: Writes[User] = User.writes
 
@@ -169,9 +170,36 @@ final class UserController @Inject() (
       }
     }
 
-  def resolveStudents() = contextFrom(Update) asyncAction { request =>
-    import utils.Ops._
+  def getByCampusIds() = contextFrom(Update) asyncAction { request =>
+    val map = valueOf(request.queryString)("map")
 
+    for {
+      text <- request.body.asText.toFuture
+      campusIds = text.split("\n").foldLeft(List.empty[String]) {
+        case (xs, x) => x.toLowerCase :: xs
+      }
+      users <- abstractDao.getByCampusIds(campusIds)
+    } yield {
+      val (found, notFound) =
+        campusIds.foldLeft((List.empty[User], List.empty[String])) {
+          case ((found, notFound), cid) =>
+            users.find(_.campusId == cid) match {
+              case Some(user) => (user :: found, notFound)
+              case None       => (found, cid :: notFound)
+            }
+        }
+      val foundJs =
+        if (map.contains("systemId")) Json.toJson(found.map(_.systemId))
+        else Json.toJson(found)
+
+      ok(
+        "found" -> foundJs,
+        "notFound" -> notFound
+      )
+    }
+  }
+
+  def resolveStudentsByName() = contextFrom(Update) asyncAction { request =>
     for {
       text <- request.body.asText.toFuture
       students = text.split("\n").map { name =>

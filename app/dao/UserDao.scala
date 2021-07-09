@@ -79,6 +79,8 @@ trait UserDao extends AbstractDao[UserTable, UserDb, User] {
       registrationId: Option[String],
       enrollment: Option[String]
   ): Future[DBResult[UserDb]]
+
+  def getByCampusIds(campusIds: List[String]): Future[Seq[User]]
 }
 
 final class UserDaoImpl @Inject() (
@@ -88,6 +90,9 @@ final class UserDaoImpl @Inject() (
     val labworkApplicationDao: LabworkApplicationDao,
     implicit val executionContext: ExecutionContext
 ) extends UserDao {
+
+  def getByCampusIds(campusIds: List[String]): Future[Seq[User]] =
+    toUniqueEntity(filterValidOnly(_.campusId.toLowerCase.inSet(campusIds)))
 
   def getBySystemId(systemId: String, atomic: Boolean): Future[Option[User]] =
     getSingleWhere(u => u.systemId === systemId, atomic)
