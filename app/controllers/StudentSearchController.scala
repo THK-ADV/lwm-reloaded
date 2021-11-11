@@ -41,7 +41,7 @@ final class StudentSearchController @Inject()(
         "semester" -> semester,
         "courses" -> reportCards.map {
           case (course, content) => Json.obj(
-            "course" -> Json.toJson(course)(CourseLike.writes),
+            "course" -> Json.toJson(course),
             "labworks" -> content.map {
               case (labwork, reportCardEntryData, evals) => Json.obj(
                 "labwork" -> Json.toJson(labwork)(LabworkAtom.writes),

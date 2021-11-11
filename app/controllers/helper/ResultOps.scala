@@ -36,7 +36,7 @@ trait ResultOps {
       badRequest(e)
   }
 
-  implicit class TraversableResult[A](val future: Future[Traversable[A]]) {
+  implicit class SeqResult[A](val future: Future[Seq[A]]) {
     def jsonResult(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future
       .map(a => ok(a))
       .recover(recoverBadRequest())
@@ -62,7 +62,7 @@ trait ResultOps {
       .recover(recoverBadRequest())
   }
 
-  implicit class PartialResult[A](val future: Future[(Traversable[A], Traversable[A], List[Throwable])]) {
+  implicit class PartialResult[A](val future: Future[(Seq[A], Seq[A], List[Throwable])]) {
     def jsonResult(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future
       .map { res =>
         val (attempted, created, throwable) = res

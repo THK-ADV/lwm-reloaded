@@ -2,7 +2,7 @@
 # This file defines all() application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                                                                controllers.HomepageController.index
+GET           /                                                                controllers.HomepageController.index()
 
 # Degree 
 PUT           /degrees/:id                                                     controllers.DegreeController.update(id)
@@ -151,7 +151,7 @@ GET           /courses/:c/assignmentEntries/:id                                c
 DELETE        /courses/:c/assignmentEntries/:id                                controllers.AssignmentEntryController.invalidateFrom(c, id)
 
 # Users
-POST          /users                                                           controllers.UserController.createFromToken
+POST          /users                                                           controllers.UserController.createFromToken()
 POST          /users/resolveByName                                             controllers.UserController.resolveStudentsByName()
 POST          /users/byCampusIds                                               controllers.UserController.getByCampusIds()
 GET           /users                                                           controllers.UserController.all()
@@ -193,11 +193,11 @@ GET           /service/duplicateUsers                                          c
 GET           /service/usersWithoutRegistrationId                              controllers.serviceResource.LwmServiceController.usersWithoutRegistrationId()
 
 # Search Query
-PUT           /query                                                           controllers.QueryController.performQuery
-GET           /query/options                                                   controllers.QueryController.queryOptions
+PUT           /query                                                           controllers.QueryController.performQuery()
+GET           /query/options                                                   controllers.QueryController.queryOptions()
 
 # Dev
-POST          /dev/go                                                          controllers.DevController.go
+POST          /dev/go                                                          controllers.DevController.go()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                                                    controllers.Assets.at(path="/public", file)

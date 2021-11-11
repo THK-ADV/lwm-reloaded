@@ -1,7 +1,6 @@
 package di
 
-import com.google.inject.Provider
-import javax.inject.Singleton
+import javax.inject.{Provider, Singleton}
 import slick.jdbc.JdbcProfile
 
 @Singleton

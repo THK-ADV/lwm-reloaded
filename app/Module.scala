@@ -9,7 +9,12 @@ import org.keycloak.adapters.KeycloakDeployment
 import play.api.{Configuration, Environment}
 import security.{SecurityActionChain, SecurityActionChainImpl}
 import service._
-import service.actor._
+import service.actor.{
+  ActorScheduler,
+  BackupServiceActor,
+  BlacklistApiServiceActor,
+  SemesterCreationActor
+}
 import service.backup.{BackupService, PSQLBackupService}
 import service.dashboard.{DashboardService, DashboardServiceImpl}
 import slick.jdbc.JdbcProfile
@@ -22,6 +27,8 @@ class Module(environment: Environment, implicit val config: Configuration)
     with ConfigReader {
 
   override def configure(): Unit = {
+    super.configure()
+
     bindDatabase()
     bindDaos()
     bindServices()

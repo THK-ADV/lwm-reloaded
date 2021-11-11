@@ -207,7 +207,7 @@ object Ops {
     def writeSet[A](implicit w: Writes[A]): OWrites[Set[A]] =
       Writes.at[Set[A]](p)(Writes.set(w))
 
-    def writeSeq[A](implicit w: Writes[A]): OWrites[Vector[A]] =
+    def writeSeq[A](implicit w: Writes[A]): OWrites[Seq[A]] =
       Writes.at[Seq[A]](p)(Writes.seq(w))
   }
 

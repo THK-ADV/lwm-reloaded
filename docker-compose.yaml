@@ -32,7 +32,6 @@ services:
       LWM_KCAPI_CLI_CLIENT_SECRET: ${KCAPI_CLI_CLIENT_SECRET}
     volumes:
       - backend_logs_vol:/lwm/logs
-      - backend_config_vol:/lwm/conf
     depends_on:
       - psql
 
@@ -52,4 +51,3 @@ volumes:
   nginx_cert_vol:
   nginx_config_vol:
   backend_logs_vol:
-  backend_config_vol:

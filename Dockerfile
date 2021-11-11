@@ -1,5 +1,7 @@
-FROM openjdk:15.0.1
-LABEL maintainer="Alexander.Dobrynin@th-koeln.de"
+FROM hseeberger/scala-sbt:15.0.1_1.4.7_2.12.12
+LABEL maintainer="alexander.dobrynin@th-koeln.de"
 
-COPY target/universal/lwm-reloaded-1.0 /lwm
-CMD /lwm/bin/lwm-reloaded
+WORKDIR /lwm
+COPY . .
+RUN sbt compile
+CMD sbt run
