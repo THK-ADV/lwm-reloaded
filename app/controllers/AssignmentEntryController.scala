@@ -45,7 +45,7 @@ final class AssignmentEntryController @Inject()(
   }
 
   def takeover(course: String) = restrictedContext(course)(Create) asyncAction { request =>
-    val result = for {
+    val result: Future[Seq[AssignmentEntryLike]] = for {
       json <- Future.fromTry(unwrap(request))
       srcId <- Future.fromTry(asTry(uuid(json.\("srcLabwork"))))
       destId <- Future.fromTry(asTry(uuid(json.\("destLabwork"))))
@@ -61,7 +61,7 @@ final class AssignmentEntryController @Inject()(
   }
 
   def createFrom(course: String) = restrictedContext(course)(Create) asyncAction { request =>
-    val result = for {
+    val result: Future[AssignmentEntryLike] = for {
       protocol <- Future.fromTry(parseJson(request))
       created <- service.create(protocol)
       atomic = extractAttributes(request.queryString, defaultAtomic = false)._2.atomic

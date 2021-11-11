@@ -1,6 +1,5 @@
 package controllers
 
-import com.google.inject.Inject
 import controllers.helper._
 import dao.{AuthorityDao, UserDao}
 import play.api.libs.functional.syntax._
@@ -10,6 +9,7 @@ import security.LWMRole.Admin
 import security.SecurityActionChain
 import utils.student_query_engine.{Expression, Key, Operator, StudentQueryEngine}
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 final class QueryController @Inject()(
