@@ -50,5 +50,13 @@
       "Der Termin eines Studierenden kann mehrmals verschoben werden"
     ],
     "version": "1.5.0"
+  },
+  {
+    "date": "2021-11-16",
+    "notes": [
+      "Einzelne Benutzerprofile können mit dem Usermanagement Backend abgeglichen und aktualisiert werden",
+      "Studierende sehen nun auch ihre Anmeldung und ihr Notenheft, auch wenn Sie in einem studiengangsfremden Praktikum sind"
+    ],
+    "version": "1.6.0"
   }
 ]
