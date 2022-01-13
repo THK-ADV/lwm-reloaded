@@ -38,7 +38,6 @@ case "$1" in
   ;;
 "stage")
   clearDockerImages &&
-    buildApp &&
     buildDockerImage &&
     packBackend &&
     uploadToServer $2 &&
