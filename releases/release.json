@@ -58,5 +58,12 @@
       "Studierende sehen nun auch ihre Anmeldung und ihr Notenheft, auch wenn Sie in einem studiengangsfremden Praktikum sind"
     ],
     "version": "1.6.0"
+  },
+    {
+    "date": "2022-04-22",
+    "notes": [
+      "Typo"
+    ],
+    "version": "1.6.1"
   }
 ]
