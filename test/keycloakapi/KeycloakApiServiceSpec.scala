@@ -37,6 +37,7 @@ class KeycloakApiServiceSpec
 
       val student = users.head
       student.systemId shouldBe "inf001"
+      student.campusId shouldBe "avram"
       student.email shouldBe "foo@foo.com"
       student.lastname shouldBe "Avram"
       student.firstname shouldBe "Robert"
@@ -53,6 +54,7 @@ class KeycloakApiServiceSpec
 
       val employee = users.head
       employee.systemId shouldBe "lwmadmin"
+      employee.campusId shouldBe "lwmadmin"
       employee.email shouldBe "uwe.muesse@th-koeln.de"
       employee.lastname shouldBe "Admin"
       employee.firstname shouldBe "LWM2"
@@ -68,7 +70,7 @@ class KeycloakApiServiceSpec
       val user: User =
         Student(
           "ravram",
-          "fake",
+          "avram_",
           "fake",
           "fake",
           "fake",
@@ -81,6 +83,7 @@ class KeycloakApiServiceSpec
 
         u shouldBe user
         student.systemId shouldBe "inf001"
+        student.campusId shouldBe "avram_"
         student.email shouldBe "foo@foo.com"
         student.lastname shouldBe "Avram"
         student.firstname shouldBe "Robert"
