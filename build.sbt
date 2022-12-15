@@ -1,17 +1,17 @@
 resolvers +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-lazy val scalazVersion = "7.1.12"
+lazy val scalazVersion = "7.1.17"
 lazy val scalatestVersion = "3.0.5"
-lazy val slickVersion = "3.3.0"
-lazy val mailVersion = "6.0.1"
-lazy val postgresVersion = "42.2.18"
+lazy val slickVersion = "3.4.1"
+lazy val mailVersion = "8.0.1"
+lazy val postgresVersion = "42.5.1"
 
 lazy val commonSettings = Seq(
   name := "lwm-reloaded",
   version := "1.0",
   organization := "lwm",
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.15",
   maintainer := "alexander.dobrynin@th-koeln.de"
 )
 
@@ -43,9 +43,10 @@ lazy val scalazDependencies = Seq(
 )
 
 lazy val lwmDependencies = Seq(
-  "com.typesafe.play" %% "play-json" % "2.6.10",
+  "com.typesafe.play" %% "play-json" % "2.9.3",
   "commons-io" % "commons-io" % "2.6",
-  "org.apache.poi" % "poi" % "4.1.2"
+  "org.apache.poi" % "poi" % "4.1.2",
+  "joda-time" % "joda-time" % "2.12.2"
 )
 
 lazy val postgresDependencies = Seq(

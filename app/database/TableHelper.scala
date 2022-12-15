@@ -38,7 +38,7 @@ trait LabworkIdTable {
 
   def memberOfCourse(course: UUID) = memberOfCourses(List(course))
 
-  def memberOfCourses(course: Traversable[UUID]) = labworkFk.filter(_.course.inSet(course)).exists
+  def memberOfCourses(course: Iterable[UUID]) = labworkFk.filter(_.course.inSet(course)).exists
 
   def inSemester(id: UUID) = labworkFk.filter(_.semester === id).exists
 

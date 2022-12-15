@@ -19,6 +19,9 @@
       "systemId": [
         "inf001"
       ],
+      "campusId": [
+        "avram"
+      ],
       "status": [
         "student"
       ]
