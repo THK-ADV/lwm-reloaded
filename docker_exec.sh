@@ -4,8 +4,7 @@ img_name=lwm-backend
 packed_img_name=${img_name}.tar
 
 buildDockerImage() {
-  docker image rm ${img_name}
-  docker build -t ${img_name} .
+  docker build --progress=plain -t ${img_name} .
 }
 
 packBackend() {
@@ -14,10 +13,13 @@ packBackend() {
   echo image packed
 }
 
-clearDockerImages() {
+stop() {
   docker-compose stop &&
-    docker-compose down &&
-    docker image rm ${img_name}
+    docker-compose down
+}
+
+clearDockerImages() {
+  docker image rm ${img_name}
   docker image prune -f
 }
 
@@ -31,13 +33,15 @@ uploadToServer() {
 
 case "$1" in
 "local")
-  clearDockerImages &&
+  stop &&
+    clearDockerImages &&
     buildDockerImage &&
     docker-compose up -d &&
     exit 0
   ;;
 "stage")
-  clearDockerImages &&
+  stop &&
+    clearDockerImages &&
     buildDockerImage &&
     packBackend &&
     uploadToServer $2 &&
