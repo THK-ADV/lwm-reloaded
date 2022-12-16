@@ -4,6 +4,7 @@ img_name=lwm-backend
 packed_img_name=${img_name}.tar
 
 buildDockerImage() {
+  rm -rf target
   docker build --progress=plain -t ${img_name} .
 }
 
