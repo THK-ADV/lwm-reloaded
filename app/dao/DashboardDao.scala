@@ -198,18 +198,7 @@ final class DashboardDaoImpl @Inject() (
 
   def reportCardEvaluationFor(
       student: UUID
-  ): Future[Seq[DashboardEvaluationResult]] = {
-    def accInts(acc: Int, eval: ReportCardEvaluationAtom): Int =
-      if (ReportCardEntryType.IntBasedTypes.exists(_.entryType == eval.label))
-        acc + eval.int
-      else acc
-
-    def accBooleans(acc: Boolean, eval: ReportCardEvaluationAtom): Boolean =
-      if (
-        ReportCardEntryType.BooleanBasedTypes.exists(_.entryType == eval.label)
-      ) acc && eval.bool
-      else acc
-
+  ): Future[Seq[DashboardEvaluationResult]] =
     for {
       evals <- reportCardEvaluationDao.get(
         List(userFilter(student))
@@ -220,19 +209,27 @@ final class DashboardDaoImpl @Inject() (
           val atoms = evalLike.map(_.asInstanceOf[ReportCardEvaluationAtom])
           val labwork = atoms.head.labwork
 
-          val (bonus, passed) = atoms.foldLeft((0, true)) { (acc, eval) =>
-            (accInts(acc._1, eval), accBooleans(acc._2, eval))
-          }
+          if (atoms.isEmpty)
+            DashboardEvaluationResult(
+              labwork.course.abbreviation,
+              labwork.semester.abbreviation,
+              passed = false,
+              0
+            )
+          else {
+            val (bonus, passed) = atoms.foldLeft((0, true)) { (acc, eval) =>
+              (acc._1 + eval.int, acc._2 && eval.bool)
+            }
 
-          DashboardEvaluationResult(
-            labwork.course.abbreviation,
-            labwork.semester.abbreviation,
-            passed,
-            bonus
-          )
+            DashboardEvaluationResult(
+              labwork.course.abbreviation,
+              labwork.semester.abbreviation,
+              passed,
+              bonus
+            )
+          }
         }
     } yield evalResults.toSeq
-  }
 
   def restrictedCourses(userId: UUID): Future[Seq[CourseAtom]] = for {
     authorities <- authorityDao.get(
