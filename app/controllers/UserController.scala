@@ -9,7 +9,7 @@ import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
 import play.api.libs.json.{JsNull, Json, Reads, Writes}
 import play.api.mvc.ControllerComponents
-import security.LWMRole.{EmployeeRole, _}
+import security.LWMRole._
 import security.SecurityActionChain
 
 import java.util.UUID
@@ -231,13 +231,44 @@ final class UserController @Inject() (
     )
   }
 
+  def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction {
+    request =>
+      super.all(NonSecureBlock)(request)
+  }
+
+  def allStudentsRestricted(course: String) =
+    restrictedContext(course)(Get) asyncAction { request =>
+      (for {
+        id <- Future.fromTry(
+          request.systemId.toTry("No User ID found in request")
+        )
+        auths <- authorityDao.authoritiesFor(id)
+        courses = auths.filter(_.course.isDefined).map(_.course.get)
+        users <- abstractDao.get(
+          List(
+            UserDao.statusFilter(LdapUserStatus.StudentStatus),
+            UserDao.applicationInCourseFilter(courses)
+          ),
+          atomic = false
+        )
+      } yield users).jsonResult
+    }
+
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get | GetAll => PartialSecureBlock(List(StudentRole, EmployeeRole))
-    case Update       => PartialSecureBlock(List(Admin))
-    case _            => PartialSecureBlock(List(God))
+    case Get    => PartialSecureBlock(List(Admin))
+    case GetAll => PartialSecureBlock(List(Admin))
+    case Update => PartialSecureBlock(List(Admin))
+    case _      => PartialSecureBlock(List(God))
   }
 
   override protected def restrictedContext(
       restrictionId: String
-  ): PartialFunction[Rule, SecureContext] = forbiddenAction()
+  ): PartialFunction[Rule, SecureContext] = {
+    case Get =>
+      SecureBlock(
+        restrictionId,
+        List(CourseAssistant, CourseEmployee, CourseManager)
+      )
+    case GetAll => SecureBlock(restrictionId, List(CourseManager))
+  }
 }
