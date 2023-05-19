@@ -58,10 +58,14 @@ DELETE        /courses/:c/authorities/:id                                      c
 
 # LabworkApplications 
 POST          /labworkApplications                                             controllers.LabworkApplicationController.create()
+POST          /courses/:c/labworkApplications                                  controllers.LabworkApplicationController.createFrom(c)
 PUT           /labworkApplications/:id                                         controllers.LabworkApplicationController.update(id)
+PUT           /courses/:c/labworkApplications/:id                              controllers.LabworkApplicationController.updateFrom(c, id)
 GET           /labworkApplications                                             controllers.LabworkApplicationController.all()
+GET           /courses/:c/labworks/:l/labworkApplications                      controllers.LabworkApplicationController.allFrom(c, l)
 GET           /labworkApplications/:id                                         controllers.LabworkApplicationController.get(id)
 DELETE        /labworkApplications/:id                                         controllers.LabworkApplicationController.invalidate(id)
+DELETE        /courses/:c/labworkApplications/:id                              controllers.LabworkApplicationController.invalidateFrom(c, id)
 GET           /courses/:c/labworks/:l/labworkApplications/sheet                controllers.LabworkApplicationController.renderApplicantSheet(c, l)
 GET           /courses/:c/labworks/:l/labworkApplications/count                controllers.LabworkApplicationController.countFrom(c, l)
 
