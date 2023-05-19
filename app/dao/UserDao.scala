@@ -5,7 +5,7 @@ import dao.helper.TableFilter.{abbreviationFilter, idFilter}
 import dao.helper.{DBResult, TableFilter}
 import database.helper.LdapUserStatus
 import database.helper.LdapUserStatus._
-import database.{DegreeDb, UserDb, UserTable}
+import database.{DegreeDb, LabworkApplicationTable, UserDb, UserTable}
 import models._
 import models.helper._
 import slick.dbio.Effect
@@ -34,6 +34,12 @@ object UserDao extends TableFilter[UserTable] {
 
   def statusFilter(status: LdapUserStatus): TableFilterPredicate =
     _.status.toLowerCase === status.label.toLowerCase
+
+  def applicationInCourseFilter(courses: Seq[UUID]): TableFilterPredicate =
+    u =>
+      TableQuery[LabworkApplicationTable]
+        .filter(app => app.user === u.id && app.memberOfCourses(courses))
+        .exists
 }
 
 trait UserDao extends AbstractDao[UserTable, UserDb, User] {
