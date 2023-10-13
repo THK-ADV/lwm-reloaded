@@ -47,7 +47,7 @@ final class LabworkApplicationController @Inject() (
   override protected implicit val reads: Reads[LabworkApplicationProtocol] =
     LabworkApplicationProtocol.reads
 
-  private def ensureIsStudent(
+  private def ensureIsStudent(checkInJson: Boolean)(
       k: () => Future[Result]
   )(implicit request: Request[AnyContent]): Future[Result] =
     for {
@@ -55,18 +55,25 @@ final class LabworkApplicationController @Inject() (
         request.systemId.toTry("No User ID found in request")
       )
       student <- userDao.getBySystemId(systemId, atomic = false)
-      protocol <- Future.fromTry(parseJson(request)(reads))
+      protocol <-
+        if (checkInJson)
+          Future.fromTry(parseJson(request)(reads)).map(Some.apply)
+        else Future.successful(None)
       res <- student match {
-        case Some(student) if student.id == protocol.applicant => k()
         case Some(student) =>
-          Future.successful(
-            Unauthorized(
-              Json.obj(
-                "status" -> "KO",
-                "message" -> s"${student.systemId} is unauthorized for the current action"
+          protocol match {
+            case Some(p) if student.id == p.applicant => k()
+            case Some(_) =>
+              Future.successful(
+                Unauthorized(
+                  Json.obj(
+                    "status" -> "KO",
+                    "message" -> s"${student.systemId} is unauthorized for the current action"
+                  )
+                )
               )
-            )
-          )
+            case None => k()
+          }
         case None =>
           Future.failed(new Throwable("No Student ID found in request"))
       }
@@ -74,7 +81,9 @@ final class LabworkApplicationController @Inject() (
 
   override def create(secureContext: SecureContext) =
     secureContext asyncAction { implicit request =>
-      ensureIsStudent(() => super.create(NonSecureBlock)(request))
+      ensureIsStudent(checkInJson = true)(() =>
+        super.create(NonSecureBlock)(request)
+      )
     }
 
   def createFrom(course: String) =
@@ -84,7 +93,9 @@ final class LabworkApplicationController @Inject() (
 
   override def update(id: String, secureContext: SecureContext) =
     secureContext asyncAction { implicit request =>
-      ensureIsStudent(() => super.update(id, NonSecureBlock)(request))
+      ensureIsStudent(checkInJson = true)(() =>
+        super.update(id, NonSecureBlock)(request)
+      )
     }
 
   def updateFrom(course: String, id: String) =
@@ -94,7 +105,9 @@ final class LabworkApplicationController @Inject() (
 
   override def invalidate(id: String, secureContext: SecureContext) =
     secureContext asyncAction { implicit request =>
-      ensureIsStudent(() => super.invalidate(id, secureContext)(request))
+      ensureIsStudent(checkInJson = false)(() =>
+        super.invalidate(id, secureContext)(request)
+      )
     }
 
   def invalidateFrom(course: String, id: String) =
@@ -104,7 +117,9 @@ final class LabworkApplicationController @Inject() (
 
   override def get(id: String, secureContext: SecureContext) =
     secureContext asyncAction { implicit request =>
-      ensureIsStudent(() => super.get(id, secureContext)(request))
+      ensureIsStudent(checkInJson = false)(() =>
+        super.get(id, secureContext)(request)
+      )
     }
 
   def allFrom(course: String, labwork: String) =

@@ -159,6 +159,7 @@ POST          /users                                                           c
 POST          /users/resolveByName                                             controllers.UserController.resolveStudentsByName()
 POST          /users/byCampusIds                                               controllers.UserController.getByCampusIds()
 GET           /users                                                           controllers.UserController.all()
+GET           /users/buddies/:degree                                           controllers.UserController.buddies(degree: java.util.UUID)
 GET           /courses/:c/users                                                controllers.UserController.allFrom(c)
 GET           /courses/:c/users/students                                       controllers.UserController.allStudentsRestricted(c)
 GET           /labworks/:labwork/users/:user/buddies/:buddy                    controllers.UserController.buddy(labwork, user, buddy)
