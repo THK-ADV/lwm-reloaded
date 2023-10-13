@@ -40,6 +40,10 @@ trait ResultOps {
     def jsonResult(implicit writes: Writes[A], executor: ExecutionContext): Future[Result] = future
       .map(a => ok(a))
       .recover(recoverBadRequest())
+
+    def jsonResult(f: A => JsValue)(implicit executor: ExecutionContext): Future[Result] = future
+      .map(as => ok(as.map(f)))
+      .recover(recoverBadRequest())
   }
 
   implicit class OptionResult[A](val future: Future[Option[A]]) {

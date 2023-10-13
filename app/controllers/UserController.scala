@@ -7,7 +7,7 @@ import database.{UserDb, UserTable}
 import models.UserProtocol.{EmployeeProtocol, StudentProtocol}
 import models._
 import models.helper.{Allowed, Almost, Denied, NotExisting}
-import play.api.libs.json.{JsNull, Json, Reads, Writes}
+import play.api.libs.json._
 import play.api.mvc.ControllerComponents
 import security.LWMRole._
 import security.SecurityActionChain
@@ -229,6 +229,21 @@ final class UserController @Inject() (
       "duplicates" -> Json.toJson(duplicates),
       "unknown" -> Json.toJson(unknown)
     )
+  }
+
+  def buddies(degree: UUID) = Action.async { request =>
+    val newRequest = request.appending(
+      UserController.statusAttribute -> Seq("student"),
+      UserController.degreeAttribute -> Seq(degree.toString)
+    )
+    allWithFilter { (filter, defaults) =>
+      abstractDao
+        .get(filter, defaults.atomic, defaults.valid, defaults.lastModified)
+        .map(_.map(u => (u.id, u.systemId)))
+        .jsonResult { case (id, systemId) =>
+          Json.obj("id" -> id, "systemId" -> systemId)
+        }
+    }(newRequest)
   }
 
   def allFrom(course: String) = restrictedContext(course)(GetAll) asyncAction {
