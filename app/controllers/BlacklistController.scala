@@ -84,7 +84,7 @@ final class BlacklistController @Inject()(cc: ControllerComponents, val authorit
   }
 
   override protected def contextFrom: PartialFunction[Rule, SecureContext] = {
-    case Get => PartialSecureBlock(List(EmployeeRole))
+    case Get | GetAll => PartialSecureBlock(List(EmployeeRole))
     case _ => PartialSecureBlock(List(Admin))
   }
 
